@@ -1,30 +1,14 @@
 import { expect, test } from "@playwright/test";
+import { resetScenario } from "./helpers.js";
 
-async function mockSetupStatus(page, needsSetup) {
-  await page.route("**/api/auth/setup-status", async (route) => {
-    await route.fulfill({ json: { needsSetup } });
-  });
-}
+test.beforeEach(async ({ page }) => {
+  await resetScenario(page, "auth");
+});
 
 test("first-run setup validates weak passwords before registering", async ({ page }) => {
-  await mockSetupStatus(page, true);
   const registerRequests = [];
-  await page.route("**/api/auth/register", async (route) => {
-    registerRequests.push(route.request().postDataJSON());
-    await route.fulfill({
-      status: 201,
-      json: {
-        token: "token-1",
-        user: {
-          id: "u1",
-          username: "alice",
-          displayName: "Alice",
-          isAdmin: true,
-          mustResetPassword: false,
-          onboarded: true,
-        },
-      },
-    });
+  page.on("request", (request) => {
+    if (request.url().includes("/api/auth/register")) registerRequests.push(request);
   });
 
   await page.goto("/");
@@ -40,54 +24,50 @@ test("first-run setup validates weak passwords before registering", async ({ pag
 });
 
 test("login displays server errors", async ({ page }) => {
-  await mockSetupStatus(page, false);
-  await page.route("**/api/auth/login", async (route) => {
-    await route.fulfill({
-      status: 401,
-      json: { error: "Invalid username or password" },
-    });
-  });
-
   await page.goto("/");
+  await page.getByLabel("Username").fill("alice");
+  await page.getByLabel("Display name").fill("Alice");
+  await page.locator('input[type="password"]').fill("Password1");
+  await page.getByRole("button", { name: "Create admin account" }).click();
+
+  await expect(page.getByText("#general", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Sign out" }).click({ force: true });
+  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
 
   await page.getByLabel("Username").fill("alice");
-  await page.locator('input[type="password"]').fill("Password1");
+  await page.locator('input[type="password"]').fill("WrongPassword1");
   await page.getByRole("button", { name: "Sign in" }).click();
 
   await expect(page.getByText("Invalid username or password")).toBeVisible();
 });
 
 test("create account tab submits registration payload", async ({ page }) => {
-  await mockSetupStatus(page, false);
   let payload;
-  await page.route("**/api/auth/register", async (route) => {
-    payload = route.request().postDataJSON();
-    await route.fulfill({
-      status: 201,
-      json: {
-        token: "token-1",
-        user: {
-          id: "u1",
-          username: "alice",
-          displayName: "Alice Example",
-          isAdmin: false,
-          mustResetPassword: false,
-          onboarded: true,
-        },
-      },
-    });
+  page.on("request", (request) => {
+    if (request.url().includes("/api/auth/register") && request.method() === "POST") {
+      payload = request.postDataJSON();
+    }
   });
 
   await page.goto("/");
-  await page.getByRole("tab", { name: "Create account" }).click();
   await page.getByLabel("Username").fill("alice");
-  await page.getByLabel("Display name").fill("Alice Example");
+  await page.getByLabel("Display name").fill("Alice");
+  await page.locator('input[type="password"]').fill("Password1");
+  await page.getByRole("button", { name: "Create admin account" }).click();
+  await expect(page.getByText("#general", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Sign out" }).click({ force: true });
+  await expect(page.getByRole("tab", { name: "Create account" })).toBeVisible();
+
+  await page.getByRole("tab", { name: "Create account" }).click();
+  await page.getByLabel("Username").fill("bob");
+  await page.getByLabel("Display name").fill("Bob Builder");
   await page.locator('input[type="password"]').fill("Password1");
   await page.getByRole("button", { name: "Create account" }).click();
 
   await expect.poll(() => payload).toEqual({
-    username: "alice",
-    displayName: "Alice Example",
+    username: "bob",
+    displayName: "Bob Builder",
     password: "Password1",
   });
 });

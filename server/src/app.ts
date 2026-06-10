@@ -16,6 +16,7 @@ import { savedRouter } from "./routes/saved.js";
 import { messagesRouter } from "./routes/messages.js";
 import { webhooksRouter } from "./routes/webhooks.js";
 import { openApiDocument } from "./openapi.js";
+import { e2eRouter } from "./routes/e2e.js";
 
 export function createApp() {
   const app = express();
@@ -44,6 +45,9 @@ export function createApp() {
   app.use("/api/saved", savedRouter);
   app.use("/api/messages", messagesRouter);
   app.use("/api/webhooks", webhooksRouter);
+  if (process.env.E2E_RESET_TOKEN) {
+    app.use("/api/e2e", e2eRouter);
+  }
 
   // Keep the process alive and return a consistent JSON payload on crashes.
   app.use((err, _req, res, _next) => {

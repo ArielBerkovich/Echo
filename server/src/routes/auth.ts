@@ -17,6 +17,9 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: "Too many attempts, please try again later" },
 });
+// E2E runs many auth flows against one live server instance; skip throttling
+// there so the suite exercises real auth without hitting artificial limits.
+const authRateLimit = process.env.E2E_RESET_TOKEN ? (_req, _res, next) => next() : authLimiter;
 
 // GET /api/auth/setup-status — public. Tells the login screen whether the
 // workspace still needs its first (admin) account created.
@@ -26,7 +29,7 @@ authRouter.get("/setup-status", async (_req, res) => {
 });
 
 // POST /api/auth/register
-authRouter.post("/register", authLimiter, async (req, res) => {
+authRouter.post("/register", authRateLimit, async (req, res) => {
   const { username, password, displayName } = req.body || {};
   if (!username || !password) {
     return res.status(400).json({ error: "username and password are required" });
@@ -69,7 +72,7 @@ authRouter.post("/register", authLimiter, async (req, res) => {
 });
 
 // POST /api/auth/login
-authRouter.post("/login", authLimiter, async (req, res) => {
+authRouter.post("/login", authRateLimit, async (req, res) => {
   const { username, password } = req.body || {};
   if (!username || !password) {
     return res.status(400).json({ error: "username and password are required" });
