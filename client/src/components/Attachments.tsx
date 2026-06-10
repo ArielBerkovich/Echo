@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { DownloadIcon, FileIcon } from "lucide-react";
 import { formatSize } from "../lib/format.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
 
@@ -106,7 +107,7 @@ function Lightbox({ src, name, onClose, inline = false }) {
         </div>
         <div className="lightbox-toolbar" onClick={(e) => e.stopPropagation()}>
           <button className="lb-tool" onClick={handleDownload} title="Download">
-            <DownloadIcon />
+            <DownloadIcon size={18} strokeWidth={2} />
           </button>
 <input
             type="range"
@@ -179,8 +180,8 @@ function FileAttachment({ a }) {
       }}
       title={a.name}
     >
-      <span className="att-file-icon">
-        <FileIcon />
+          <span className="att-file-icon">
+        <FileIcon size={20} strokeWidth={1.5} />
       </span>
       <span className="att-file-info">
         <span className="att-file-name">{a.name}</span>
@@ -189,26 +190,3 @@ function FileAttachment({ a }) {
     </a>
   );
 }
-
-function FileIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor"
-      strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M11 2.5H6A1.5 1.5 0 004.5 4v12A1.5 1.5 0 006 17.5h8a1.5 1.5 0 001.5-1.5V7z" />
-      <path d="M11 2.5V7h4.5" />
-    </svg>
-  );
-}
-
-function DownloadIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-      <polyline points="7 10 12 15 17 10" />
-      <line x1="12" y1="15" x2="12" y2="3" />
-    </svg>
-  );
-}
-
-

@@ -1,28 +1,9 @@
 import { useState } from "react";
+import { ChevronDownIcon, LockKeyholeIcon, MoonIcon, SettingsIcon, SunIcon } from "lucide-react";
 import Logo from "./Logo.js";
 import Avatar from "./Avatar.js";
 import { relativeTime } from "../lib/time.js";
 import { LeaveIcon } from "./Icons.js";
-
-// Small lock glyph for private channels (inherits the navy sidebar text color).
-function LockIcon() {
-  return (
-    <svg className="ch-lock" width="11" height="11" viewBox="0 0 20 20" fill="none">
-      <rect x="4.5" y="9" width="11" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.6" />
-      <path d="M7 9V6.5a3 3 0 016 0V9" stroke="currentColor" strokeWidth="1.6" />
-    </svg>
-  );
-}
-
-function ChannelIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="10" cy="10" r="7" />
-      <path d="M6.5 10h7" />
-      <path d="M10 6.5v7" />
-    </svg>
-  );
-}
 
 // Plain-text preview of a (markdown) message body for the DM list.
 function preview(body) {
@@ -198,7 +179,7 @@ export default function Sidebar({
                 className={`channel-item channel-row ${activeChannel?.id === c.id ? "active" : ""} ${c.unread ? "unread" : ""}`}
                 onClick={() => onSelect(c)}
               >
-                <span className="ch-mark">{c.type === "private" ? <LockIcon /> : "#"}</span>
+                <span className="ch-mark">{c.type === "private" ? <LockKeyholeIcon className="ch-lock" size={11} strokeWidth={1.6} /> : "#"}</span>
                 <span className="ci-name">{c.name}</span>
                 {c.unread > 0 && <span className="unread-badge">{c.unread > 99 ? "99+" : c.unread}</span>}
               </button>
@@ -257,13 +238,13 @@ export default function Sidebar({
             title={themeMode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
             aria-label="Toggle dark mode"
           >
-            {themeMode === "dark" ? <SunIcon /> : <MoonIcon />}
+            {themeMode === "dark" ? <SunIcon size={16} strokeWidth={1.5} /> : <MoonIcon size={16} strokeWidth={1.5} />}
           </button>
           <button className="link" onClick={onOpenApiDocs} title="API reference" aria-label="API reference">
             <ApiIcon />
           </button>
           <button className="link" onClick={onOpenSettings} title="Settings">
-            <GearIcon />
+            <SettingsIcon size={17} strokeWidth={1.7} />
           </button>
           <button className="link footer-signout" onClick={onLogout} title="Sign out" aria-label="Sign out">
             <LeaveIcon />
@@ -277,46 +258,9 @@ export default function Sidebar({
 
 // Section collapse chevron — points down when expanded, right when collapsed.
 function Chevron({ collapsed }) {
-  return (
-    <svg
-      className={`sl-chevron ${collapsed ? "collapsed" : ""}`}
-      width="11" height="11" viewBox="0 0 20 20" fill="none"
-      stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"
-    >
-      <path d="M5 8l5 5 5-5" />
-    </svg>
-  );
-}
-
-function MoonIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor"
-      strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M16.5 11.5A6.5 6.5 0 018.5 3.5a6.5 6.5 0 108 8z" />
-    </svg>
-  );
-}
-
-function SunIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor"
-      strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="10" cy="10" r="3.4" />
-      <path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.5 4.5l1.4 1.4M13.9 13.9l1.6 1.6M15.5 4.5l-1.4 1.4M6.1 13.9l-1.6 1.6" />
-    </svg>
-  );
+  return <ChevronDownIcon className={`sl-chevron ${collapsed ? "collapsed" : ""}`} size={11} strokeWidth={2.4} />;
 }
 
 function ApiIcon() {
   return <span className="api-mini-icon" aria-hidden="true">API</span>;
-}
-
-function GearIcon() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-    </svg>
-  );
 }
