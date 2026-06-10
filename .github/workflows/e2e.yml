@@ -8,6 +8,7 @@ on:
 
 jobs:
   unit:
+    name: Unit
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -51,6 +52,7 @@ jobs:
         run: npm run build
 
   e2e:
+    name: E2E
     runs-on: ubuntu-latest
     needs: unit
 
