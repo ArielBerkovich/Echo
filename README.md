@@ -4,20 +4,21 @@
   <img src="client/src/assets/echo-logo.png" alt="Echo logo" width="120" />
 </p>
 
-Echo is a lightweight team chat application built for secure, air-gapped environments.
+Echo is a self-hosted team chat platform for secure networks, air-gapped deployments, and infrastructure that needs to stay under your control.
 
-It provides channels, direct messages, threads, and automation features without depending on external SaaS services. The app ships as a small Docker Compose stack with a React client, Node/Express API server, MongoDB, and MinIO-compatible object storage.
+It ships as a compact Docker Compose stack with a React client, Node/Express API server, MongoDB, and MinIO-compatible object storage. The system is designed to run without external SaaS dependencies and can also connect to a replica set or cluster through a standard MongoDB URI.
 
-![Echo workspace](docs/images/workspace.png)
+![Echo hero banner](docs/images/hero-banner.png)
 
-## Highlights
+## Capabilities
 
-- Channels, private channels, direct messages, threads, reactions, pinned messages, saved messages, mentions, and activity.
+- Channels, private channels, direct messages, threads, reactions, pinned messages, saved messages, mentions, and activity tracking.
 - Rich message formatting with Markdown-style paste support.
 - File uploads backed by S3-compatible storage through MinIO.
-- Built-in REST API for automation and CI/CD notifications.
+- Built-in REST API for automation, notifications, and CI/CD workflows.
 - Webhooks, idempotent message upserts, OpenAPI export, and API token support.
 - Docker Compose deployment with no external runtime dependencies beyond the container images.
+- MongoDB URI support for standalone deployments, replica sets, and cluster/SRV connections.
 
 ## Screenshots
 
@@ -75,6 +76,8 @@ Common service URLs:
 - Server API inside Compose: `http://server:4000`
 - MongoDB inside Compose: `mongodb://mongo:27017/echo`
 - MinIO inside Compose: `http://minio:9000`
+
+To point Echo at an external MongoDB replica set or cluster, set `MONGO_URI` to a standard MongoDB URI such as `mongodb://db1:27017,db2:27017/echo?replicaSet=rs0` or `mongodb+srv://user:pass@cluster.example/echo`. The server retries connections during startup, so it can wait for the database to become ready.
 
 ## Development
 

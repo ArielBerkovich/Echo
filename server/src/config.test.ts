@@ -37,7 +37,7 @@ describe("config", () => {
     const { config } = await loadConfig({
       JWT_SECRET: "secret",
       PORT: "5000",
-      MONGO_URI: "mongodb://db/echo",
+      MONGO_URI: "mongodb://db1:27017,db2:27017/echo?replicaSet=rs0",
       CLIENT_ORIGIN: "https://echo.example",
       S3_ENDPOINT: "https://s3.example",
       S3_ACCESS_KEY: "access",
@@ -49,7 +49,7 @@ describe("config", () => {
     });
 
     assert.equal(config.port, 5000);
-    assert.equal(config.mongoUri, "mongodb://db/echo");
+    assert.equal(config.mongoUri, "mongodb://db1:27017,db2:27017/echo?replicaSet=rs0");
     assert.equal(config.clientOrigin, "https://echo.example");
     assert.deepEqual(config.s3, {
       endpoint: "https://s3.example",

@@ -6,7 +6,9 @@ import { config } from "./config.js";
 export async function connectDb(retries = 10, delayMs = 3000) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      await mongoose.connect(config.mongoUri);
+      await mongoose.connect(config.mongoUri, {
+        serverSelectionTimeoutMS: 10000,
+      });
       console.log("Connected to MongoDB");
       return;
     } catch (err) {

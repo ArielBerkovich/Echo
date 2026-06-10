@@ -33,7 +33,7 @@ services:
     restart: unless-stopped
     environment:
       - PORT=4000
-      - MONGO_URI=mongodb://mongo:27017/echo
+      - MONGO_URI=${MONGO_URI:-mongodb://mongo:27017/echo}
       - JWT_SECRET=${JWT_SECRET:?JWT_SECRET env var must be set}
       - CLIENT_ORIGIN=http://localhost:8090
       - S3_ENDPOINT=http://minio:9000
@@ -41,8 +41,6 @@ services:
       - S3_SECRET_KEY=${MINIO_ROOT_PASSWORD:-echo-dev-secret}
       - S3_BUCKET=echo-uploads
     depends_on:
-      mongo:
-        condition: service_healthy
       minio:
         condition: service_healthy
 
