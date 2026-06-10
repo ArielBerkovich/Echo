@@ -1,4 +1,4 @@
-name: E2E
+name: Verify
 
 on:
   pull_request:
