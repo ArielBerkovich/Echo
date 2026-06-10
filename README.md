@@ -1,14 +1,10 @@
 # Echo
 
-<p align="center">
-  <img src="client/src/assets/echo-logo.png" alt="Echo logo" width="120" />
-</p>
+![Echo hero banner](docs/images/hero-banner.png)
 
 Echo is a self-hosted team chat platform for secure networks, air-gapped deployments, and infrastructure that needs to stay under your control.
 
 It ships as a compact Docker Compose stack with a React client, Node/Express API server, MongoDB, and MinIO-compatible object storage. The system is designed to run without external SaaS dependencies and can also connect to a replica set or cluster through a standard MongoDB URI.
-
-![Echo hero banner](docs/images/hero-banner.png)
 
 ## Capabilities
 
@@ -21,6 +17,10 @@ It ships as a compact Docker Compose stack with a React client, Node/Express API
 - MongoDB URI support for standalone deployments, replica sets, and cluster/SRV connections.
 
 ## Screenshots
+
+### Workspace
+
+![Echo workspace](docs/images/workspace.png)
 
 ### Login
 
