@@ -1,14 +1,33 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, useWatch } from "react-hook-form";
 import { api } from "../api.js";
 import Modal from "./Modal.js";
+import { emojiNameSchema, normalizeEmojiNameInput } from "../lib/formSchemas.js";
 
 // Upload an image/GIF and register it as a :shortcode: custom emoji.
 export default function AddEmojiModal({ existing = [], onCreated, onClose }) {
-  const [name, setName] = useState("");
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
-  const [error, setError] = useState(null);
-  const [saving, setSaving] = useState(false);
+  const [serverError, setServerError] = useState(null);
+  const nameSchema = useMemo(() => emojiNameSchema(existing), [existing]);
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    control,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    mode: "onChange",
+    resolver: zodResolver(nameSchema),
+    defaultValues: {
+      name: "",
+    },
+  });
+  const nameField = register("name");
+  const watchedName = useWatch({ control, name: "name" }) || "";
+  const cleanName = normalizeEmojiNameInput(watchedName);
+  const taken = existing.some((e) => e.name === cleanName);
 
   // Build (and clean up) a local preview URL for the chosen file.
   useEffect(() => {
@@ -18,35 +37,30 @@ export default function AddEmojiModal({ existing = [], onCreated, onClose }) {
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  const cleanName = name.trim().replace(/^:|:$/g, "").toLowerCase();
-  const nameValid = /^[a-z0-9_-]{2,32}$/.test(cleanName);
-  const taken = existing.some((e) => e.name === cleanName);
-  const canSave = nameValid && !taken && file && !saving;
-
   function pickFile(e) {
     const f = e.target.files?.[0];
     if (f && !f.type.startsWith("image/")) {
-      setError("Custom emoji must be an image (PNG, GIF, etc.)");
+      setServerError("Custom emoji must be an image (PNG, GIF, etc.)");
       return;
     }
-    setError(null);
+    setServerError(null);
     setFile(f || null);
   }
 
-  async function submit(e) {
-    e.preventDefault();
-    if (!canSave) return;
-    setSaving(true);
-    setError(null);
+  const submit = handleSubmit(async (values) => {
+    if (!file) {
+      setServerError("An image file is required");
+      return;
+    }
+    setServerError(null);
     try {
-      const { emoji } = await api.createEmoji(cleanName, file);
+      const { emoji } = await api.createEmoji(normalizeEmojiNameInput(values.name), file);
       onCreated?.(emoji);
       onClose();
     } catch (err) {
-      setError(err.message);
-      setSaving(false);
+      setServerError(err.message);
     }
-  }
+  });
 
   return (
     <Modal title="Add custom emoji" onClose={onClose}>
@@ -61,27 +75,43 @@ export default function AddEmojiModal({ existing = [], onCreated, onClose }) {
             <label className="emoji-name-label">Shortcode</label>
             <div className="emoji-name-input">
               <span>:</span>
-              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="party-parrot" autoFocus maxLength={34} />
+              <input
+                {...nameField}
+                value={watchedName}
+                onChange={(e) => {
+                  setServerError(null);
+                  setValue("name", normalizeEmojiNameInput(e.target.value), {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                }}
+                onBlur={nameField.onBlur}
+                placeholder="party-parrot"
+                autoFocus
+                maxLength={34}
+              />
               <span>:</span>
             </div>
             <div className="emoji-name-hint">
-              {taken ? (
+              {errors.name?.message ? (
+                <span className="bad">{errors.name.message}</span>
+              ) : taken ? (
                 <span className="bad">":{cleanName}:" already exists</span>
-              ) : name && !nameValid ? (
-                <span className="bad">2–32 chars: letters, numbers, _ or -</span>
-              ) : (
+              ) : watchedName ? (
                 <span>Type :{cleanName || "name"}: in a message to use it.</span>
+              ) : (
+                <span>Type :name: in a message to use it.</span>
               )}
             </div>
           </div>
         </div>
 
-        {error && <div className="error">{error}</div>}
+        {serverError && <div className="error">{serverError}</div>}
 
         <div className="modal-actions">
           <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
-          <button type="submit" className="btn-primary" disabled={!canSave}>
-            {saving ? "Saving…" : "Add emoji"}
+          <button type="submit" className="btn-primary" disabled={isSubmitting}>
+            {isSubmitting ? "Saving…" : "Add emoji"}
           </button>
         </div>
       </form>

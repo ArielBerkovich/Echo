@@ -1,34 +1,43 @@
 import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import { api } from "../api.js";
 import Logo from "./Logo.js";
+import { PASSWORD_RULE } from "../lib/password.js";
+import { passwordPairSchema } from "../lib/formSchemas.js";
 
 // Shown (blocking) right after a user signs in with an admin-issued one-time
 // password: they must choose their own new password before using the app.
 export default function ForcePasswordReset({ user, onDone, onCancel }) {
-  const [next, setNext] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    mode: "onChange",
+    resolver: zodResolver(passwordPairSchema()),
+    defaultValues: {
+      newPassword: "",
+      confirmPassword: "",
+    },
+  });
+  const newPasswordField = register("newPassword");
+  const confirmPasswordField = register("confirmPassword");
 
-  const valid = next.length >= 6 && next === confirm;
-
-  async function submit(e) {
-    e?.preventDefault();
+  const submit = handleSubmit(async ({ newPassword }) => {
     setError(null);
-    if (next.length < 6) return setError("Password must be at least 6 characters");
-    if (next !== confirm) return setError("Passwords don't match");
-    setBusy(true);
     try {
       // No current password needed — the account is on a one-time password and
       // the user is already authenticated with it.
-      const { user: updated } = await api.changePassword(undefined, next);
+      const { user: updated } = await api.changePassword(undefined, newPassword);
       onDone(updated);
+      reset();
     } catch (err) {
       setError(err.message);
-    } finally {
-      setBusy(false);
     }
-  }
+  });
 
   return (
     <div className="force-reset">
@@ -40,22 +49,31 @@ export default function ForcePasswordReset({ user, onDone, onCancel }) {
           one-time password — choose a new password to finish.
         </p>
         <input
+          {...newPasswordField}
           className="settings-input"
           type="password"
-          placeholder="New password (min 6 chars)"
-          value={next}
+          placeholder="New password"
           autoFocus
-          onChange={(e) => setNext(e.target.value)}
+          onChange={(e) => {
+            setError(null);
+            newPasswordField.onChange(e);
+          }}
         />
+        {errors.newPassword && <div className="error small">{errors.newPassword.message}</div>}
         <input
+          {...confirmPasswordField}
           className="settings-input"
           type="password"
           placeholder="Confirm new password"
-          value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
+          onChange={(e) => {
+            setError(null);
+            confirmPasswordField.onChange(e);
+          }}
         />
-        <button type="submit" className="btn-primary" disabled={!valid || busy}>
-          {busy ? "Saving…" : "Save and continue"}
+        {errors.confirmPassword && <div className="error small">{errors.confirmPassword.message}</div>}
+        <div className="field-hint">{PASSWORD_RULE}</div>
+        <button type="submit" className="btn-primary" disabled={isSubmitting}>
+          {isSubmitting ? "Saving…" : "Save and continue"}
         </button>
         {error && <div className="error">{error}</div>}
         {onCancel && (

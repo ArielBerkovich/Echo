@@ -1,13 +1,31 @@
 import { useEffect, useRef, useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, useWatch } from "react-hook-form";
 import Modal from "./Modal.js";
+import { channelSchema, normalizeChannelNameInput } from "../lib/formSchemas.js";
 
 // "Create a channel" dialog with a name field and public/private choice.
 export default function CreateChannelModal({ onCreate, onClose }) {
-  const [name, setName] = useState("");
-  const [type, setType] = useState("public");
   const [error, setError] = useState(null);
-  const [busy, setBusy] = useState(false);
   const inputRef = useRef(null);
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    control,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    mode: "onChange",
+    resolver: zodResolver(channelSchema),
+    defaultValues: {
+      name: "",
+      type: "public",
+    },
+  });
+  const name = useWatch({ control, name: "name" }) || "";
+  const type = useWatch({ control, name: "type" }) || "public";
+  const nameField = register("name");
+  const typeField = register("type");
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -16,48 +34,75 @@ export default function CreateChannelModal({ onCreate, onClose }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  // Live-normalize to the allowed channel-name characters (lowercase, no spaces).
-  function handleName(value) {
-    setName(value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9_-]/g, ""));
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    if (!name.trim()) return;
+  const submit = handleSubmit(async (values) => {
     setError(null);
-    setBusy(true);
     try {
-      await onCreate(name.trim(), type);
+      await onCreate(values.name, values.type);
       onClose();
     } catch (err) {
       setError(err.message);
-      setBusy(false);
     }
-  }
+  });
 
   return (
     <Modal title="Create a channel" onClose={onClose}>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={submit}>
         <label className="field">
           <span className="field-label">Name</span>
           <div className="name-input">
             <span className="name-prefix">{type === "private" ? "🔒" : "#"}</span>
-            <input ref={inputRef} value={name} onChange={(e) => handleName(e.target.value)} placeholder="e.g. marketing" maxLength={64} />
+            <input
+              {...nameField}
+              ref={(el) => {
+                nameField.ref(el);
+                inputRef.current = el;
+              }}
+              value={name}
+              onChange={(e) => {
+                setError(null);
+                setValue("name", normalizeChannelNameInput(e.target.value), {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
+              }}
+              onBlur={nameField.onBlur}
+              placeholder="e.g. marketing"
+              maxLength={64}
+            />
           </div>
+          {errors.name && <span className="field-hint error small">{errors.name.message}</span>}
         </label>
 
         <div className="field">
           <span className="field-label">Visibility</span>
           <div className="visibility">
             <label className={`visibility-option ${type === "public" ? "selected" : ""}`}>
-              <input type="radio" name="type" checked={type === "public"} onChange={() => setType("public")} />
+              <input
+                {...typeField}
+                type="radio"
+                value="public"
+                checked={type === "public"}
+                onChange={() => {
+                  setError(null);
+                  setValue("type", "public", { shouldDirty: true, shouldValidate: true });
+                }}
+              />
               <div className="vo-body">
                 <div className="vo-title"># Public</div>
                 <div className="vo-desc">Anyone in the workspace can find and join.</div>
               </div>
             </label>
             <label className={`visibility-option ${type === "private" ? "selected" : ""}`}>
-              <input type="radio" name="type" checked={type === "private"} onChange={() => setType("private")} />
+              <input
+                {...typeField}
+                type="radio"
+                value="private"
+                checked={type === "private"}
+                onChange={() => {
+                  setError(null);
+                  setValue("type", "private", { shouldDirty: true, shouldValidate: true });
+                }}
+              />
               <div className="vo-body">
                 <div className="vo-title">🔒 Private</div>
                 <div className="vo-desc">Only invited members can view and join.</div>
@@ -72,8 +117,8 @@ export default function CreateChannelModal({ onCreate, onClose }) {
           <button type="button" className="btn-secondary" onClick={onClose}>
             Cancel
           </button>
-          <button type="submit" className="btn-primary" disabled={!name.trim() || busy}>
-            {busy ? "Creating…" : "Create"}
+          <button type="submit" className="btn-primary" disabled={isSubmitting}>
+            {isSubmitting ? "Creating…" : "Create"}
           </button>
         </div>
       </form>

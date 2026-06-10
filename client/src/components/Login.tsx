@@ -1,8 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { EyeIcon, EyeOffIcon, IdCardIcon, LockIcon, MailIcon, NotebookTextIcon, UserIcon } from "lucide-react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import { api } from "../api.js";
 import Logo from "./Logo.js";
-import { passwordProblem, PASSWORD_RULE } from "../lib/password.js";
+import { PASSWORD_RULE } from "../lib/password.js";
+import { authSchema } from "../lib/formSchemas.js";
 
 // Little postal letters that drift gently around the hero panel — each with its
 // own position, size, drift vector and timing for an organic "floating" feel.
@@ -20,16 +23,27 @@ const FLOATERS = [
 // Combined login / register screen — split hero + auth form.
 export default function Login({ onAuthed }) {
   const [mode, setMode] = useState("login");
-  const [username, setUsername] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
-  const [error, setError] = useState(null);
-  const [busy, setBusy] = useState(false);
+  const [serverError, setServerError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [needsSetup, setNeedsSetup] = useState(false); // no users yet → create the admin
 
-  const isRegister = mode === "register";
+  const isRegister = needsSetup || mode === "register";
+  const resolver = useMemo(() => zodResolver(authSchema(isRegister ? "register" : "login")), [isRegister]);
+  const {
+    register,
+    handleSubmit,
+    clearErrors,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    mode: "onChange",
+    resolver,
+    defaultValues: {
+      username: "",
+      displayName: "",
+      password: "",
+    },
+  });
 
   // First-run: if the workspace has no accounts, show the "create admin" screen.
   useEffect(() => {
@@ -48,32 +62,29 @@ export default function Login({ onAuthed }) {
   }, []);
 
   function switchMode(next) {
-    setError(null);
+    setServerError(null);
+    clearErrors();
     setMode(next);
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setError(null);
-    // Enforce a secure password when creating an account (signup or first-run).
-    if (isRegister) {
-      const weak = passwordProblem(password);
-      if (weak) return setError(weak);
-    }
-    setBusy(true);
+  const submit = handleSubmit(async (values) => {
+    setServerError(null);
     try {
       const payload = isRegister
-        ? { username, password, displayName }
-        : { username, password };
+        ? {
+            username: values.username,
+            password: values.password,
+            displayName: values.displayName?.trim() || undefined,
+          }
+        : { username: values.username, password: values.password };
       const result = isRegister ? await api.register(payload) : await api.login(payload);
       // Play the ripple-burst welcome, then hand off to the app.
       setSuccess(true);
       setTimeout(() => onAuthed(result), 1150);
     } catch (err) {
-      setError(err.message);
-      setBusy(false);
+      setServerError(err.message);
     }
-  }
+  });
 
   return (
     <div className="auth-screen">
@@ -122,7 +133,7 @@ export default function Login({ onAuthed }) {
         </aside>
 
         {/* Auth form panel */}
-        <form className="auth-card" onSubmit={handleSubmit}>
+        <form className="auth-card" onSubmit={submit}>
           <div className="auth-card-head">
             <div className="auth-logo-sm">
               <Logo size={44} />
@@ -177,13 +188,12 @@ export default function Login({ onAuthed }) {
             <div className="input-wrap">
               <UserIcon size={17} strokeWidth={1.6} />
               <input
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                {...register("username")}
                 autoComplete="username"
                 placeholder="your-handle"
-                required
               />
             </div>
+            {errors.username && <span className="field-hint error small">{errors.username.message}</span>}
           </label>
 
           {isRegister && (
@@ -192,11 +202,11 @@ export default function Login({ onAuthed }) {
               <div className="input-wrap">
                 <IdCardIcon size={17} strokeWidth={1.6} />
                 <input
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
+                  {...register("displayName")}
                   placeholder="How others see you"
                 />
               </div>
+              {errors.displayName && <span className="field-hint error small">{errors.displayName.message}</span>}
             </label>
           )}
 
@@ -205,12 +215,10 @@ export default function Login({ onAuthed }) {
             <div className="input-wrap">
               <LockIcon size={17} strokeWidth={1.6} />
               <input
+                {...register("password")}
                 type={showPw ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
                 autoComplete={isRegister ? "new-password" : "current-password"}
                 placeholder="••••••••"
-                required
               />
               <button
                 type="button"
@@ -223,12 +231,13 @@ export default function Login({ onAuthed }) {
               </button>
             </div>
             {isRegister && <span className="field-hint">{PASSWORD_RULE}</span>}
+            {errors.password && <span className="field-hint error small">{errors.password.message}</span>}
           </label>
 
-          {error && <div className="error">{error}</div>}
+          {serverError && <div className="error">{serverError}</div>}
 
-          <button type="submit" className="btn-primary auth-submit" disabled={busy}>
-            {busy ? (
+          <button type="submit" className="btn-primary auth-submit" disabled={isSubmitting}>
+            {isSubmitting ? (
               <span className="spinner" />
             ) : needsSetup ? (
               "Create admin account"

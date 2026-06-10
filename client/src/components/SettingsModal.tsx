@@ -1,6 +1,10 @@
 import { useRef, useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import { api } from "../api.js";
 import Avatar from "./Avatar.js";
+import { PASSWORD_RULE } from "../lib/password.js";
+import { passwordPairSchema } from "../lib/formSchemas.js";
 import {
   notifySupported,
   notifyPermission,
@@ -259,32 +263,36 @@ function NotificationToggle() {
 
 // Self-service: change your own password (requires the current one).
 function ChangePassword() {
-  const [current, setCurrent] = useState("");
-  const [next, setNext] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [done, setDone] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    mode: "onChange",
+    resolver: zodResolver(passwordPairSchema({ currentPassword: true })),
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
+  });
+  const currentPasswordField = register("currentPassword");
+  const newPasswordField = register("newPassword");
+  const confirmPasswordField = register("confirmPassword");
 
-  const valid = current && next.length >= 6 && next === confirm;
-
-  async function submit() {
+  const submit = handleSubmit(async ({ currentPassword, newPassword }) => {
     setError(null);
-    if (next !== confirm) return setError("New passwords don't match");
-    if (next.length < 6) return setError("New password must be at least 6 characters");
-    setBusy(true);
     try {
-      await api.changePassword(current, next);
+      await api.changePassword(currentPassword, newPassword);
       setDone(true);
-      setCurrent("");
-      setNext("");
-      setConfirm("");
+      reset();
     } catch (err) {
       setError(err.message);
-    } finally {
-      setBusy(false);
     }
-  }
+  });
 
   return (
     <section className="settings-section">
@@ -295,28 +303,44 @@ function ChangePassword() {
       </p>
       <div className="pw-form">
         <input
+          {...currentPasswordField}
           className="settings-input"
           type="password"
           placeholder="Current password"
-          value={current}
-          onChange={(e) => { setCurrent(e.target.value); setDone(false); }}
+          onChange={(e) => {
+            setDone(false);
+            setError(null);
+            currentPasswordField.onChange(e);
+          }}
         />
+        {errors.currentPassword && <div className="error small">{errors.currentPassword.message}</div>}
         <input
+          {...newPasswordField}
           className="settings-input"
           type="password"
-          placeholder="New password (min 6 chars)"
-          value={next}
-          onChange={(e) => { setNext(e.target.value); setDone(false); }}
+          placeholder="New password"
+          onChange={(e) => {
+            setDone(false);
+            setError(null);
+            newPasswordField.onChange(e);
+          }}
         />
+        {errors.newPassword && <div className="error small">{errors.newPassword.message}</div>}
         <input
+          {...confirmPasswordField}
           className="settings-input"
           type="password"
           placeholder="Confirm new password"
-          value={confirm}
-          onChange={(e) => { setConfirm(e.target.value); setDone(false); }}
+          onChange={(e) => {
+            setDone(false);
+            setError(null);
+            confirmPasswordField.onChange(e);
+          }}
         />
-        <button type="button" className="btn-primary" disabled={!valid || busy} onClick={submit}>
-          {busy ? "Updating…" : "Update password"}
+        {errors.confirmPassword && <div className="error small">{errors.confirmPassword.message}</div>}
+        <div className="field-hint">{PASSWORD_RULE}</div>
+        <button type="button" className="btn-primary" disabled={isSubmitting} onClick={submit}>
+          {isSubmitting ? "Updating…" : "Update password"}
         </button>
       </div>
       {done && <div className="settings-saved">Password updated ✓</div>}
