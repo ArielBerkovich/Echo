@@ -1,5 +1,9 @@
 # Echo
 
+<p align="center">
+  <img src="client/src/assets/echo-logo.png" alt="Echo logo" width="120" />
+</p>
+
 Echo is a lightweight team chat application built for secure, air-gapped environments.
 
 It provides a Slack-style workspace experience without depending on external SaaS services. The app ships as a small Docker Compose stack with a React client, Node/Express API server, MongoDB, and MinIO-compatible object storage.
