@@ -7,11 +7,18 @@ import { formatSize } from "../lib/format.js";
 import { formatDateTime } from "../lib/time.js";
 import Avatar from "./Avatar.js";
 import EmojiPicker from "./EmojiPicker.js";
+import Modal from "./Modal.js";
 import { useMentionGate } from "../lib/useMentionGate.js";
 import {
   LinkIcon, OrderedListIcon, BulletListIcon, QuoteIcon, CodeIcon, CodeBlockIcon,
   PlusIcon, SmileyIcon, SendIcon, ChevronIcon,
 } from "./ComposerIcons.js";
+
+const SCHEDULE_PRESETS = [
+  { label: "In 30 min", minutes: 30 },
+  { label: "In 1 hour", minutes: 60 },
+  { label: "In 3 hours", minutes: 180 },
+];
 
 // Rich-text message composer: @mention autocomplete, a formatting toolbar,
 // emoji, and file attachments. Owns all of its own editor state — mount it with
@@ -628,155 +635,127 @@ export default function Composer({ channel, parentId = null, users = [], customE
       )}
 
       {scheduleAt !== null && (
-        <div className="modal-backdrop" onMouseDown={() => setScheduleAt(null)}>
-          <div className="modal schedule-modal" onMouseDown={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Schedule message</h2>
-              <button type="button" className="modal-close" onClick={() => setScheduleAt(null)} aria-label="Close">
-                ✕
+        <Modal title="Schedule message" className="schedule-modal" onClose={() => setScheduleAt(null)}>
+          <p className="settings-hint">Choose when this message should be sent.</p>
+          <div className="schedule-presets">
+            {SCHEDULE_PRESETS.map(({ label, minutes }) => (
+              <button type="button" key={label} onClick={() => setScheduleAt(toLocalInput(new Date(Date.now() + minutes * 60 * 1000)))}>
+                {label}
               </button>
-            </div>
-            <p className="settings-hint">Choose when this message should be sent.</p>
-            <div className="schedule-presets">
-              <button type="button" onClick={() => setScheduleAt(toLocalInput(new Date(Date.now() + 30 * 60 * 1000)))}>
-                In 30 min
-              </button>
-              <button type="button" onClick={() => setScheduleAt(toLocalInput(new Date(Date.now() + 60 * 60 * 1000)))}>
-                In 1 hour
-              </button>
-              <button type="button" onClick={() => setScheduleAt(toLocalInput(new Date(Date.now() + 3 * 60 * 60 * 1000)))}>
-                In 3 hours
-              </button>
-            </div>
-            <input
-              className="settings-input schedule-input"
-              type="datetime-local"
-              value={scheduleAt}
-              min={toLocalInput(new Date(Date.now() + 60 * 1000))}
-              onChange={(e) => setScheduleAt(e.target.value)}
-            />
-            <div className="modal-actions">
-              <button type="button" className="btn-secondary" onClick={() => setScheduleAt(null)}>
-                Cancel
-              </button>
-              <button type="button" className="btn-primary" onClick={confirmSchedule}>
-                Schedule
-              </button>
-            </div>
+            ))}
           </div>
-        </div>
+          <input
+            className="settings-input schedule-input"
+            type="datetime-local"
+            value={scheduleAt}
+            min={toLocalInput(new Date(Date.now() + 60 * 1000))}
+            onChange={(e) => setScheduleAt(e.target.value)}
+          />
+          <div className="modal-actions">
+            <button type="button" className="btn-secondary" onClick={() => setScheduleAt(null)}>
+              Cancel
+            </button>
+            <button type="button" className="btn-primary" onClick={confirmSchedule}>
+              Schedule
+            </button>
+          </div>
+        </Modal>
       )}
 
       {showScheduled && (
-        <div className="modal-backdrop" onMouseDown={() => setShowScheduled(false)}>
-          <div className="modal scheduled-modal" onMouseDown={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Scheduled messages</h2>
-              <button type="button" className="modal-close" onClick={() => setShowScheduled(false)} aria-label="Close">
-                ✕
-              </button>
-            </div>
-            {scheduledMsgs.length === 0 ? (
-              <p className="settings-hint">No scheduled messages for this channel.</p>
-            ) : (
-              <div className="scheduled-list">
-                {scheduledMsgs.map((s) =>
-                  editingSched?.id === s.id ? (
-                    <div className="scheduled-item editing" key={s.id}>
-                      <div className="scheduled-edit">
-                        <textarea
-                          className="settings-input"
-                          rows={2}
-                          dir="auto"
-                          value={editingSched.body}
-                          onChange={(e) => setEditingSched((d) => ({ ...d, body: e.target.value }))}
-                        />
-                        <input
-                          className="settings-input"
-                          type="datetime-local"
-                          value={editingSched.at}
-                          min={toLocalInput(new Date(Date.now() + 60 * 1000))}
-                          onChange={(e) => setEditingSched((d) => ({ ...d, at: e.target.value }))}
-                        />
-                        <div className="scheduled-edit-actions">
-                          <button type="button" className="btn-secondary" onClick={() => setEditingSched(null)}>
-                            Cancel
-                          </button>
-                          <button type="button" className="btn-primary" onClick={saveSchedEdit}>
-                            Save
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="scheduled-item" key={s.id}>
-                      <div className="scheduled-body">
-                        <div className="scheduled-when">{formatDateTime(s.scheduledFor)}</div>
-                        <div className="scheduled-preview" dir="auto">
-                          {s.body || `${s.attachments.length} attachment(s)`}
-                        </div>
-                      </div>
-                      <div className="scheduled-actions">
-                        <button type="button" className="scheduled-edit-btn" onClick={() => startSchedEdit(s)}>
-                          Edit
-                        </button>
-                        <button type="button" className="link-danger" onClick={() => cancelScheduled(s.id)}>
+        <Modal title="Scheduled messages" className="scheduled-modal" onClose={() => setShowScheduled(false)}>
+          {scheduledMsgs.length === 0 ? (
+            <p className="settings-hint">No scheduled messages for this channel.</p>
+          ) : (
+            <div className="scheduled-list">
+              {scheduledMsgs.map((s) =>
+                editingSched?.id === s.id ? (
+                  <div className="scheduled-item editing" key={s.id}>
+                    <div className="scheduled-edit">
+                      <textarea
+                        className="settings-input"
+                        rows={2}
+                        dir="auto"
+                        value={editingSched.body}
+                        onChange={(e) => setEditingSched((d) => ({ ...d, body: e.target.value }))}
+                      />
+                      <input
+                        className="settings-input"
+                        type="datetime-local"
+                        value={editingSched.at}
+                        min={toLocalInput(new Date(Date.now() + 60 * 1000))}
+                        onChange={(e) => setEditingSched((d) => ({ ...d, at: e.target.value }))}
+                      />
+                      <div className="scheduled-edit-actions">
+                        <button type="button" className="btn-secondary" onClick={() => setEditingSched(null)}>
                           Cancel
                         </button>
+                        <button type="button" className="btn-primary" onClick={saveSchedEdit}>
+                          Save
+                        </button>
                       </div>
                     </div>
-                  )
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+                  </div>
+                ) : (
+                  <div className="scheduled-item" key={s.id}>
+                    <div className="scheduled-body">
+                      <div className="scheduled-when">{formatDateTime(s.scheduledFor)}</div>
+                      <div className="scheduled-preview" dir="auto">
+                        {s.body || `${s.attachments.length} attachment(s)`}
+                      </div>
+                    </div>
+                    <div className="scheduled-actions">
+                      <button type="button" className="scheduled-edit-btn" onClick={() => startSchedEdit(s)}>
+                        Edit
+                      </button>
+                      <button type="button" className="link-danger" onClick={() => cancelScheduled(s.id)}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )
+              )}
+            </div>
+          )}
+        </Modal>
       )}
 
       {linkDraft && (
-        <div className="modal-backdrop" onMouseDown={() => setLinkDraft(null)}>
-          <div className="modal link-modal" onMouseDown={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Add link</h2>
-              <button type="button" className="modal-close" onClick={() => setLinkDraft(null)} aria-label="Close">
-                ✕
-              </button>
-            </div>
-            <label className="link-field">
-              <span>Text</span>
-              <input
-                className="settings-input"
-                value={linkDraft.text}
-                placeholder="Link text (optional)"
-                onChange={(e) => setLinkDraft((d) => ({ ...d, text: e.target.value }))}
-              />
-            </label>
-            <label className="link-field">
-              <span>URL</span>
-              <input
-                className="settings-input"
-                value={linkDraft.url}
-                autoFocus
-                placeholder="https://example.com"
-                onChange={(e) => setLinkDraft((d) => ({ ...d, url: e.target.value }))}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    confirmLink();
-                  }
-                }}
-              />
-            </label>
-            <div className="modal-actions">
-              <button type="button" className="btn-secondary" onClick={() => setLinkDraft(null)}>
-                Cancel
-              </button>
-              <button type="button" className="btn-primary" disabled={!linkDraft.url.trim()} onClick={confirmLink}>
-                Add link
-              </button>
-            </div>
+        <Modal title="Add link" className="link-modal" onClose={() => setLinkDraft(null)}>
+          <label className="link-field">
+            <span>Text</span>
+            <input
+              className="settings-input"
+              value={linkDraft.text}
+              placeholder="Link text (optional)"
+              onChange={(e) => setLinkDraft((d) => ({ ...d, text: e.target.value }))}
+            />
+          </label>
+          <label className="link-field">
+            <span>URL</span>
+            <input
+              className="settings-input"
+              value={linkDraft.url}
+              autoFocus
+              placeholder="https://example.com"
+              onChange={(e) => setLinkDraft((d) => ({ ...d, url: e.target.value }))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  confirmLink();
+                }
+              }}
+            />
+          </label>
+          <div className="modal-actions">
+            <button type="button" className="btn-secondary" onClick={() => setLinkDraft(null)}>
+              Cancel
+            </button>
+            <button type="button" className="btn-primary" disabled={!linkDraft.url.trim()} onClick={confirmLink}>
+              Add link
+            </button>
           </div>
-        </div>
+        </Modal>
       )}
 
       {mentionModal}

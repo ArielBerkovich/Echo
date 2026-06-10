@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "../api.js";
-import { createRenderer } from "../markdown.js";
 import { formatDateTime } from "../lib/time.js";
+import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
 import Avatar from "./Avatar.js";
 import { BookmarkIcon } from "./Icons.js";
 
@@ -11,14 +11,7 @@ export default function SavedFeed({ user, users = [], customEmojis = [], onJump,
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const knownUsernames = useMemo(
-    () => new Set(users.map((u) => u.username.toLowerCase())),
-    [users]
-  );
-  const renderMarkdown = useMemo(
-    () => createRenderer(knownUsernames, user.username, customEmojis),
-    [knownUsernames, user.username, customEmojis]
-  );
+  const renderMarkdown = useMarkdownRenderer(users, user.username, customEmojis);
 
   useEffect(() => {
     let cancelled = false;

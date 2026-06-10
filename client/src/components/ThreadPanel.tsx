@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api.js";
 import { getSocket } from "../socket.js";
-import { createRenderer } from "../markdown.js";
+import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
 import EmojiPicker from "./EmojiPicker.js";
 import Message from "./Message.js";
 import Composer from "./Composer.js";
@@ -38,14 +38,7 @@ export default function ThreadPanel({
   const [error, setError] = useState(null);
   const bottomRef = useRef(null);
 
-  const knownUsernames = useMemo(
-    () => new Set(users.map((u) => u.username.toLowerCase())),
-    [users]
-  );
-  const renderMarkdown = useMemo(
-    () => createRenderer(knownUsernames, user.username, customEmojis),
-    [knownUsernames, user.username, customEmojis]
-  );
+  const renderMarkdown = useMarkdownRenderer(users, user.username, customEmojis);
   const emojiMap = useMemo(
     () => new Map(customEmojis.map((e) => [e.name.toLowerCase(), e.url])),
     [customEmojis]

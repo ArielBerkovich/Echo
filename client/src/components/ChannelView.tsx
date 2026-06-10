@@ -1,7 +1,6 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api.js";
 import { getSocket } from "../socket.js";
-import { createRenderer } from "../markdown.js";
 import Avatar from "./Avatar.js";
 import EmojiPicker from "./EmojiPicker.js";
 import ThreadPanel from "./ThreadPanel.js";
@@ -14,6 +13,7 @@ import ConfirmDialog from "./ConfirmDialog.js";
 import { PersonAddIcon, LeaveIcon, PinIcon } from "./Icons.js";
 import { formatDayDivider, isDifferentDay } from "../lib/time.js";
 import { playEmojiEffectFor } from "../lib/emojiEffects.js";
+import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
 
 // Shimmering placeholder rows shown while a channel's history loads, so the
 // pane has structure immediately instead of flashing an empty "say hello" state.
@@ -92,14 +92,7 @@ export default function ChannelView({
   const jumpingRef = useRef(false); // a jump scroll is in flight — pause scroll-up pagination
   const jumpSettleRef = useRef(null); // timer that re-enables pagination after a jump lands
 
-  const knownUsernames = useMemo(
-    () => new Set(users.map((u) => u.username.toLowerCase())),
-    [users]
-  );
-  const renderMarkdown = useMemo(
-    () => createRenderer(knownUsernames, user.username, customEmojis),
-    [knownUsernames, user.username, customEmojis]
-  );
+  const renderMarkdown = useMarkdownRenderer(users, user.username, customEmojis);
   const emojiMap = useMemo(
     () => new Map(customEmojis.map((e) => [e.name.toLowerCase(), e.url])),
     [customEmojis]

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api.js";
+import Modal from "./Modal.js";
 
 // Upload an image/GIF and register it as a :shortcode: custom emoji.
 export default function AddEmojiModal({ existing = [], onCreated, onClose }) {
@@ -48,59 +49,42 @@ export default function AddEmojiModal({ existing = [], onCreated, onClose }) {
   }
 
   return (
-    <div className="modal-backdrop" onMouseDown={onClose}>
-      <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Add custom emoji</h2>
-          <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
-        </div>
+    <Modal title="Add custom emoji" onClose={onClose}>
+      <form onSubmit={submit}>
+        <div className="emoji-form-row">
+          <label className="emoji-drop">
+            {preview ? <img src={preview} alt="preview" /> : <span className="emoji-drop-hint">Choose image / GIF</span>}
+            <input type="file" accept="image/*" hidden onChange={pickFile} />
+          </label>
 
-        <form onSubmit={submit}>
-          <div className="emoji-form-row">
-            <label className="emoji-drop">
-              {preview ? (
-                <img src={preview} alt="preview" />
+          <div className="emoji-form-fields">
+            <label className="emoji-name-label">Shortcode</label>
+            <div className="emoji-name-input">
+              <span>:</span>
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="party-parrot" autoFocus maxLength={34} />
+              <span>:</span>
+            </div>
+            <div className="emoji-name-hint">
+              {taken ? (
+                <span className="bad">":{cleanName}:" already exists</span>
+              ) : name && !nameValid ? (
+                <span className="bad">2–32 chars: letters, numbers, _ or -</span>
               ) : (
-                <span className="emoji-drop-hint">Choose image / GIF</span>
+                <span>Type :{cleanName || "name"}: in a message to use it.</span>
               )}
-              <input type="file" accept="image/*" hidden onChange={pickFile} />
-            </label>
-
-            <div className="emoji-form-fields">
-              <label className="emoji-name-label">Shortcode</label>
-              <div className="emoji-name-input">
-                <span>:</span>
-                <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="party-parrot"
-                  autoFocus
-                  maxLength={34}
-                />
-                <span>:</span>
-              </div>
-              <div className="emoji-name-hint">
-                {taken ? (
-                  <span className="bad">":{cleanName}:" already exists</span>
-                ) : name && !nameValid ? (
-                  <span className="bad">2–32 chars: letters, numbers, _ or -</span>
-                ) : (
-                  <span>Type :{cleanName || "name"}: in a message to use it.</span>
-                )}
-              </div>
             </div>
           </div>
+        </div>
 
-          {error && <div className="error">{error}</div>}
+        {error && <div className="error">{error}</div>}
 
-          <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn-primary" disabled={!canSave}>
-              {saving ? "Saving…" : "Add emoji"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="modal-actions">
+          <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
+          <button type="submit" className="btn-primary" disabled={!canSave}>
+            {saving ? "Saving…" : "Add emoji"}
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 }

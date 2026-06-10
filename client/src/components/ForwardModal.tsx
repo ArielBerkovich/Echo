@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import Avatar from "./Avatar.js";
+import Modal from "./Modal.js";
 
 // Pick a channel or DM to forward a message into. Forwarding is a single click;
 // `onForward` resolves once the message lands in the destination.
@@ -42,58 +43,44 @@ export default function ForwardModal({ message, channels = [], dms = [], onForwa
   const preview = (message?.body || "").slice(0, 240);
 
   return (
-    <div className="modal-backdrop" onMouseDown={onClose}>
-      <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Forward message</h2>
-          <button className="modal-close" onClick={onClose} aria-label="Close">
-            ✕
-          </button>
-        </div>
-
-        <div className="forward-preview">
-          <div className="forward-preview-author">{message?.author?.displayName || "unknown"}</div>
-          <div className="forward-preview-body">{preview || "(no text)"}</div>
-        </div>
-
-        <input
-          className="people-filter"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          placeholder="Search channels and people"
-          autoFocus
-        />
-
-        <div className="people-list">
-          {destinations.length === 0 ? (
-            <div className="people-empty">No matching destinations.</div>
-          ) : (
-            destinations.map((dest) => (
-              <div className="person-row" key={`${dest.kind}-${dest.id}`}>
-                {dest.kind === "dm" ? (
-                  <Avatar name={dest.label} src={dest.avatarUrl} size={32} />
-                ) : (
-                  <span className="forward-chan-icon">{dest.icon}</span>
-                )}
-                <div className="person-info">
-                  <div className="person-name">{dest.label}</div>
-                  <div className="person-handle">{dest.kind === "dm" ? "Direct message" : "Channel"}</div>
-                </div>
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  disabled={sending === dest.id}
-                  onClick={() => forward(dest)}
-                >
-                  {sending === dest.id ? "Forwarding…" : "Forward"}
-                </button>
-              </div>
-            ))
-          )}
-        </div>
-
-        {error && <div className="error">{error}</div>}
+    <Modal title="Forward message" onClose={onClose}>
+      <div className="forward-preview">
+        <div className="forward-preview-author">{message?.author?.displayName || "unknown"}</div>
+        <div className="forward-preview-body">{preview || "(no text)"}</div>
       </div>
-    </div>
+
+      <input
+        className="people-filter"
+        value={filter}
+        onChange={(e) => setFilter(e.target.value)}
+        placeholder="Search channels and people"
+        autoFocus
+      />
+
+      <div className="people-list">
+        {destinations.length === 0 ? (
+          <div className="people-empty">No matching destinations.</div>
+        ) : (
+          destinations.map((dest) => (
+            <div className="person-row" key={`${dest.kind}-${dest.id}`}>
+              {dest.kind === "dm" ? (
+                <Avatar name={dest.label} src={dest.avatarUrl} size={32} />
+              ) : (
+                <span className="forward-chan-icon">{dest.icon}</span>
+              )}
+              <div className="person-info">
+                <div className="person-name">{dest.label}</div>
+                <div className="person-handle">{dest.kind === "dm" ? "Direct message" : "Channel"}</div>
+              </div>
+              <button type="button" className="btn-secondary" disabled={sending === dest.id} onClick={() => forward(dest)}>
+                {sending === dest.id ? "Forwarding…" : "Forward"}
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+
+      {error && <div className="error">{error}</div>}
+    </Modal>
   );
 }

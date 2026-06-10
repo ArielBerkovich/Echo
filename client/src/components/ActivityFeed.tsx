@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "../api.js";
 import { getSocket } from "../socket.js";
-import { createRenderer } from "../markdown.js";
 import { formatDateTime } from "../lib/time.js";
+import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
 import Avatar from "./Avatar.js";
 
 // Feed of messages that @mention the current user. Clicking jumps to the channel.
@@ -10,14 +10,7 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const knownUsernames = useMemo(
-    () => new Set(users.map((u) => u.username.toLowerCase())),
-    [users]
-  );
-  const renderMarkdown = useMemo(
-    () => createRenderer(knownUsernames, user.username, customEmojis),
-    [knownUsernames, user.username, customEmojis]
-  );
+  const renderMarkdown = useMarkdownRenderer(users, user.username, customEmojis);
 
   useEffect(() => {
     let cancelled = false;
@@ -103,4 +96,3 @@ function kindLabel(it) {
   if (it.kind === "reaction") return `reacted ${it.emoji || ""} to your message`;
   return "mentioned you";
 }
-

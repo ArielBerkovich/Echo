@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Avatar from "./Avatar.js";
+import Modal from "./Modal.js";
 
 // Pick workspace members to add to a channel. Adding is immediate; the person
 // then drops out of the list. "Done" closes the dialog.
@@ -32,57 +33,41 @@ export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
   }
 
   return (
-    <div className="modal-backdrop" onMouseDown={onClose}>
-      <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>
-            Add people to {channel.type === "private" ? "🔒" : "#"} {channel.name}
-          </h2>
-          <button className="modal-close" onClick={onClose} aria-label="Close">
-            ✕
-          </button>
-        </div>
+    <Modal title={`Add people to ${channel.type === "private" ? "🔒" : "#"} ${channel.name}`} onClose={onClose}>
+      <input
+        className="people-filter"
+        value={filter}
+        onChange={(e) => setFilter(e.target.value)}
+        placeholder="Search people"
+        autoFocus
+      />
 
-        <input
-          className="people-filter"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          placeholder="Search people"
-          autoFocus
-        />
-
-        <div className="people-list">
-          {available.length === 0 ? (
-            <div className="people-empty">Everyone in the workspace is already here.</div>
-          ) : (
-            available.map((u) => (
-              <div className="person-row" key={u.id}>
-                <Avatar name={u.displayName} src={u.avatarUrl} size={32} />
-                <div className="person-info">
-                  <div className="person-name">{u.displayName}</div>
-                  <div className="person-handle">@{u.username}</div>
-                </div>
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  disabled={adding === u.id}
-                  onClick={() => add(u)}
-                >
-                  {adding === u.id ? "Adding…" : "Add"}
-                </button>
+      <div className="people-list">
+        {available.length === 0 ? (
+          <div className="people-empty">Everyone in the workspace is already here.</div>
+        ) : (
+          available.map((u) => (
+            <div className="person-row" key={u.id}>
+              <Avatar name={u.displayName} src={u.avatarUrl} size={32} />
+              <div className="person-info">
+                <div className="person-name">{u.displayName}</div>
+                <div className="person-handle">@{u.username}</div>
               </div>
-            ))
-          )}
-        </div>
-
-        {error && <div className="error">{error}</div>}
-
-        <div className="modal-actions">
-          <button type="button" className="btn-primary" onClick={onClose}>
-            Done
-          </button>
-        </div>
+              <button type="button" className="btn-secondary" disabled={adding === u.id} onClick={() => add(u)}>
+                {adding === u.id ? "Adding…" : "Add"}
+              </button>
+            </div>
+          ))
+        )}
       </div>
-    </div>
+
+      {error && <div className="error">{error}</div>}
+
+      <div className="modal-actions">
+        <button type="button" className="btn-primary" onClick={onClose}>
+          Done
+        </button>
+      </div>
+    </Modal>
   );
 }

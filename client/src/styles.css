@@ -272,7 +272,8 @@ html[data-mode="dark"] .search-result .body {
   color: var(--text);
 }
 html[data-mode="dark"] .chat-pane {
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
 }
 
 /* Send box (composer) in dark mode — dark surfaces with clearly legible text. */
@@ -342,6 +343,28 @@ html[data-mode="dark"] .mention--broadcast {
 
 * {
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(140, 155, 185, 0.32) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(140, 155, 185, 0.28);
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(140, 155, 185, 0.5);
+  background-clip: padding-box;
+}
+.channel-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
 }
 
 html,
@@ -353,6 +376,9 @@ body {
   background: var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "cv11", "ss01";
 }
 
 button {
@@ -382,6 +408,11 @@ input:focus {
   outline: none;
   border-color: var(--blue-400);
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+}
+:focus-visible {
+  outline: 2px solid var(--blue-400);
+  outline-offset: 2px;
+  border-radius: 6px;
 }
 
 .centered {
@@ -977,7 +1008,7 @@ input:focus {
 .btn-primary {
   padding: 12px;
   border-radius: 10px;
-  background: linear-gradient(120deg, var(--blue-500), var(--navy-600));
+  background: linear-gradient(135deg, var(--blue-400), var(--blue-500) 55%, var(--navy-600));
   color: #fff;
   font-size: 15px;
   font-weight: 600;
@@ -1632,6 +1663,9 @@ html[data-theme="slack"] .chat-pane {
   flex-direction: column;
   flex-shrink: 0;
 }
+html[data-mode="dark"] .sidebar {
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
 .sidebar-header {
   display: flex;
   align-items: center;
@@ -2114,10 +2148,11 @@ html[data-theme="slack"] .chat-pane {
   display: flex;
   flex-direction: column;
   margin: 10px 12px 12px 8px;
+  border: 1px solid var(--border);
   border-radius: 16px;
   overflow: hidden;
   background: var(--surface);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
+  box-shadow: var(--shadow-md);
 }
 .pane-search {
   flex: none;
@@ -2138,10 +2173,11 @@ html[data-theme="slack"] .chat-pane {
   border-radius: 9px;
   background: var(--surface-2);
   color: var(--muted);
+  transition: background 0.16s ease, box-shadow 0.18s ease;
 }
 .search-box-field:focus-within {
   background: var(--surface);
-  box-shadow: 0 0 0 2px var(--blue-400) inset;
+  box-shadow: 0 0 0 2px var(--blue-400) inset, 0 6px 18px rgba(37, 99, 235, 0.18);
 }
 /* The input sits transparently over a "mirror" that renders the same text
    with the filter keywords (in:/from:/has:) styled — native inputs can't
@@ -2498,7 +2534,7 @@ html[data-theme="slack"] .chat-pane {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 16px 0 8px;
+  margin: 18px 0 10px;
 }
 .day-divider::before,
 .day-divider::after {
@@ -2508,13 +2544,18 @@ html[data-theme="slack"] .chat-pane {
   background: var(--border);
 }
 .day-divider-label {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
   color: var(--muted);
   background: var(--surface);
-  padding: 2px 12px;
+  padding: 3px 14px;
   border: 1px solid var(--border);
   border-radius: 999px;
+  box-shadow: var(--shadow-sm);
+}
+html[data-mode="dark"] .day-divider-label {
+  background: var(--surface-2);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 /* Saved ("save for later") bookmark — active state shows a filled accent mark. */
@@ -2550,15 +2591,17 @@ html[data-theme="slack"] .chat-pane {
   padding: 2px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 9px;
+  border-radius: 10px;
   box-shadow: var(--shadow-md);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.12s ease;
+  transform: translateY(-2px);
+  transition: opacity 0.12s ease, transform 0.12s ease;
 }
 .msg-actions.visible {
   opacity: 1;
   pointer-events: auto;
+  transform: translateY(0);
 }
 .msg-actions button {
   width: 30px;
@@ -2568,12 +2611,16 @@ html[data-theme="slack"] .chat-pane {
   justify-content: center;
   background: none;
   border-radius: 6px;
-  color: #616061;
+  color: var(--muted);
 }
 .msg-actions button:hover,
 .msg-actions button.active {
   background: var(--surface-2);
   color: var(--text);
+}
+.msg-actions .act-danger:hover {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
 }
 
 /* "more actions" dropdown (edit / delete) */
@@ -3719,12 +3766,18 @@ html[data-theme="slack"] .chat-pane {
 
 /* Brief highlight when jumping to a message */
 .message.flash {
-  animation: msgFlash 2.2s ease-out;
-  border-radius: 8px;
+  animation: msgFlash 3s ease-out;
 }
 @keyframes msgFlash {
-  0% { background: rgba(37, 99, 235, 0.18); }
-  100% { background: transparent; }
+  0%,
+  35% {
+    background: rgba(37, 99, 235, 0.32);
+    box-shadow: inset 4px 0 0 var(--blue-400), 0 0 0 1px rgba(59, 130, 246, 0.45);
+  }
+  100% {
+    background: transparent;
+    box-shadow: inset 4px 0 0 transparent, 0 0 0 1px transparent;
+  }
 }
 
 /* Transient notice (e.g. no access to a forwarded message's channel) */
@@ -3828,21 +3881,23 @@ html[data-theme="slack"] .chat-pane {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  height: 24px;
+  height: 26px;
   padding: 0 9px;
-  border-radius: 12px;
+  border-radius: 13px;
   background: var(--surface-2);
-  border: 1px solid transparent;
+  border: 1px solid var(--border);
   font-size: 13px;
   color: var(--text);
+  transition: background 0.14s ease, border-color 0.14s ease, transform 0.1s ease;
 }
 .reaction:hover {
-  border-color: #cdd8e8;
+  border-color: var(--blue-400);
+  transform: translateY(-1px);
 }
 .reaction.mine {
-  background: rgba(37, 99, 235, 0.12);
-  border-color: rgba(37, 99, 235, 0.4);
-  color: var(--blue-500);
+  background: rgba(59, 130, 246, 0.16);
+  border-color: var(--blue-400);
+  color: var(--blue-400);
 }
 .reaction-emoji {
   font-size: 14px;
@@ -3944,8 +3999,13 @@ html[data-theme="slack"] .chat-pane {
   border-bottom: 1px solid var(--border);
   background: var(--surface);
   box-shadow: var(--shadow-sm);
+  backdrop-filter: saturate(1.1);
   z-index: 1;
   min-width: 0;
+}
+html[data-mode="dark"] .channel-header {
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  border-bottom-color: rgba(255, 255, 255, 0.06);
 }
 .channel-header .ch-name {
   font-weight: 800;
@@ -4149,13 +4209,16 @@ html[data-theme="slack"] .chat-pane {
 .message {
   display: flex;
   gap: 12px;
-  padding: 8px 10px;
-  border-radius: 10px;
+  padding: 7px 14px;
+  border-radius: 12px;
   animation: fadeInUp 0.28s ease both;
-  transition: background 0.15s ease;
+  scroll-margin: 24px;
+  box-shadow: inset 2px 0 0 transparent;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
 }
 .message:hover {
   background: var(--surface-2);
+  box-shadow: inset 2px 0 0 var(--blue-400);
 }
 .message.grouped {
   padding-top: 2px;
@@ -4205,7 +4268,7 @@ html[data-theme="slack"] .chat-pane {
   color: #fff;
   font-weight: 700;
   flex-shrink: 0;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-sm), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 
 /* Mentions */
@@ -4844,145 +4907,6 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   transform: translateY(0) scale(0.97);
 }
 
-/* Scrollbars */
-.messages::-webkit-scrollbar,
-.channel-list::-webkit-scrollbar {
-  width: 8px;
-}
-.messages::-webkit-scrollbar-thumb {
-  background: #cdd8e8;
-  border-radius: 4px;
-}
-.channel-list::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
-}
-
-/* ============================================================
-   Visual polish — typography, depth, scrollbars, interactions.
-   Layered on top of the base styles for a more refined feel.
-   ============================================================ */
-
-/* Crisper type rendering across the app. */
-body {
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-  font-feature-settings: "cv11", "ss01";
-  letter-spacing: -0.006em;
-}
-
-/* Thin, unobtrusive scrollbars everywhere — they brighten on hover and stay
-   out of the way until you need them. */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(140, 155, 185, 0.32) transparent;
-}
-*::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-*::-webkit-scrollbar-track {
-  background: transparent;
-}
-*::-webkit-scrollbar-thumb {
-  background: rgba(140, 155, 185, 0.28);
-  border-radius: 999px;
-  border: 3px solid transparent;
-  background-clip: padding-box;
-}
-*::-webkit-scrollbar-thumb:hover {
-  background: rgba(140, 155, 185, 0.5);
-  background-clip: padding-box;
-}
-/* Keep the existing sidebar scrollbar tuned for the dark navy rail. */
-.channel-list::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.16);
-  border: 3px solid transparent;
-  background-clip: padding-box;
-}
-
-/* The main conversation pane reads as a floating, softly-lit card. */
-.chat-pane {
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-md);
-}
-html[data-mode="dark"] .chat-pane {
-  border-color: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-}
-
-/* Sidebar: deeper, richer rail with a clean seam against the pane. */
-html[data-mode="dark"] .sidebar {
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-/* Header sits on a faint translucent layer so it reads as elevated chrome. */
-.channel-header {
-  backdrop-filter: saturate(1.1);
-}
-html[data-mode="dark"] .channel-header {
-  background: color-mix(in srgb, var(--surface) 72%, transparent);
-  border-bottom-color: rgba(255, 255, 255, 0.06);
-}
-
-/* Search field: a clearer focus ring with a soft glow. */
-.search-box-field {
-  transition: background 0.16s ease, box-shadow 0.18s ease;
-}
-.search-box-field:focus-within {
-  box-shadow: 0 0 0 2px var(--blue-400) inset, 0 6px 18px rgba(37, 99, 235, 0.18);
-}
-
-/* Message rows: gentler, springier hover with a hairline accent on the left. */
-.message {
-  padding: 7px 14px;
-  border-radius: 12px;
-  scroll-margin: 24px;
-  box-shadow: inset 2px 0 0 transparent;
-  transition: background 0.15s ease, box-shadow 0.15s ease;
-}
-.message:hover {
-  background: var(--surface-2);
-  box-shadow: inset 2px 0 0 var(--blue-400);
-}
-
-/* Avatars: a subtle ring lifts them off the background. */
-.avatar {
-  box-shadow: var(--shadow-sm), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-}
-
-/* Jump-to / highlight: an unmistakable accent wash that holds briefly so a
-   jumped-to message clearly announces itself — even when it lands near a screen
-   edge — then fades out. The thick (4px) accent bar distinguishes it from the
-   2px hover bar so the two are never confused. */
-.message.flash {
-  animation: msgFlash 3s ease-out;
-}
-@keyframes msgFlash {
-  0%,
-  35% {
-    background: rgba(37, 99, 235, 0.32);
-    box-shadow: inset 4px 0 0 var(--blue-400), 0 0 0 1px rgba(59, 130, 246, 0.45);
-  }
-  100% {
-    background: transparent;
-    box-shadow: inset 4px 0 0 transparent, 0 0 0 1px transparent;
-  }
-}
-
-/* Primary buttons: a touch more depth and a crisp gradient. */
-.btn-primary {
-  background: linear-gradient(135deg, var(--blue-400), var(--blue-500) 55%, var(--navy-600));
-  letter-spacing: 0.005em;
-}
-
-/* Keyboard focus is visible and on-brand everywhere (mouse clicks stay clean). */
-:focus-visible {
-  outline: 2px solid var(--blue-400);
-  outline-offset: 2px;
-  border-radius: 6px;
-}
-
 /* Respect users who prefer less motion. */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -5014,67 +4938,6 @@ html[data-mode="dark"] .channel-header {
 }
 .message.grouped:hover .grouped-time {
   opacity: 0.85;
-}
-
-/* Date dividers float and stick to the top of the scroll area as you read,
-   so you always know which day you're looking at. */
-.day-divider {
-  /* Inline separator (not sticky) so the label never floats over and overlaps
-     messages when the conversation scrolls. */
-  margin: 18px 0 10px;
-}
-.day-divider-label {
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
-  font-size: 11.5px;
-  padding: 3px 14px;
-}
-html[data-mode="dark"] .day-divider-label {
-  background: var(--surface-2);
-  border-color: rgba(255, 255, 255, 0.08);
-}
-
-/* Reaction chips: a little rounder, with a clearer "you reacted" state and a
-   subtle hover lift. */
-.reaction {
-  height: 26px;
-  border-radius: 13px;
-  border-color: var(--border);
-  transition: background 0.14s ease, border-color 0.14s ease, transform 0.1s ease;
-}
-.reaction:hover {
-  border-color: var(--blue-400);
-  transform: translateY(-1px);
-}
-.reaction.mine {
-  background: rgba(59, 130, 246, 0.16);
-  border-color: var(--blue-400);
-  color: var(--blue-400);
-}
-
-/* Hover toolbar: legible icons in both themes, gentle entrance.
-   Anchored just inside the message's top-right (not overhanging into the
-   neighbouring message) so moving the cursor to it never crosses into another
-   message's hover area — otherwise the toolbar flickers/jumps and is hard to
-   click in dense conversations. */
-.msg-actions {
-  top: 2px;
-  border-radius: 10px;
-  transform: translateY(-2px);
-  transition: opacity 0.12s ease, transform 0.12s ease;
-}
-.msg-actions.visible {
-  transform: translateY(0);
-}
-.msg-actions button {
-  color: var(--muted);
-}
-.msg-actions button:hover {
-  color: var(--text);
-}
-.msg-actions .act-danger:hover {
-  color: var(--danger);
-  background: color-mix(in srgb, var(--danger) 14%, transparent);
 }
 
 /* ---- Presence dots ---- */
