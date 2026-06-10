@@ -18,6 +18,10 @@ It ships as a compact Docker Compose stack with a React client, Node/Express API
 
 ## Screenshots
 
+### Workspace
+
+![Echo workspace](docs/images/workspace.png)
+
 ### Login
 
 ![Echo login](docs/images/login.png)
