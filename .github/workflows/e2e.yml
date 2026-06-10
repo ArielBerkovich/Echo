@@ -1,7 +1,6 @@
-name: E2E
+name: Verify
 
 on:
-  push:
   pull_request:
     branches:
       - main
