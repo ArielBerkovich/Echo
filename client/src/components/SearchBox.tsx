@@ -1,4 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { SearchIcon } from "lucide-react";
 import Avatar from "./Avatar.js";
 
 // Things "has:" can filter on, suggested as you type the token.
@@ -292,10 +293,7 @@ const SearchBox = forwardRef(function SearchBox(
   return (
     <div className="search-box" ref={wrapRef}>
       <div className="search-box-field">
-        <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
-          <circle cx="9" cy="9" r="6" />
-          <path d="M14 14l4 4" strokeLinecap="round" />
-        </svg>
+        <SearchIcon size={15} strokeWidth={1.8} />
         <div className="search-input-wrap">
           <div className="search-highlight" ref={highlightRef} aria-hidden="true" dir="auto">
             {renderHighlighted(query)}
@@ -394,10 +392,7 @@ const SearchBox = forwardRef(function SearchBox(
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={submitMessageSearch}
                 >
-                  <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
-                    <circle cx="9" cy="9" r="6" />
-                    <path d="M14 14l4 4" strokeLinecap="round" />
-                  </svg>
+                  <SearchIcon size={15} strokeWidth={1.8} />
                   <span className="search-name">Search messages for “{query.trim()}”</span>
                   <span className="search-kind">Enter ↵</span>
                 </button>

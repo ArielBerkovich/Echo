@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ChevronDownIcon } from "lucide-react";
 import { api } from "../api.js";
 import { apiEndpointKey } from "../lib/apiDocs.js";
 
@@ -302,19 +303,11 @@ export default function ApiDocsPage({ onClose }) {
                   aria-expanded={openGroups.has(g.title)}
                 >
                   <span className="api-group-title">
-                    <svg
+                    <ChevronDownIcon
                       className={`api-chevron ${openGroups.has(g.title) ? "" : "collapsed"}`}
-                      width="12"
-                      height="12"
-                      viewBox="0 0 20 20"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M5 8l5 5 5-5" />
-                    </svg>
+                      size={12}
+                      strokeWidth={2.4}
+                    />
                     <span>{g.title}</span>
                   </span>
                   <span className="api-group-count">{g.endpoints.length}</span>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { EyeIcon, EyeOffIcon, IdCardIcon, LockIcon, MailIcon, NotebookTextIcon, UserIcon } from "lucide-react";
 import { api } from "../api.js";
 import Logo from "./Logo.js";
 import { passwordProblem, PASSWORD_RULE } from "../lib/password.js";
@@ -103,7 +104,7 @@ export default function Login({ onAuthed }) {
                   animationDelay: `${f.delay}s`,
                 }}
               >
-                {f.t === "note" ? <NoteIcon /> : <EnvelopeIcon />}
+                {f.t === "note" ? <NotebookTextIcon /> : <MailIcon />}
               </span>
             ))}
           </div>
@@ -174,7 +175,7 @@ export default function Login({ onAuthed }) {
           <label className="field">
             <span>Username</span>
             <div className="input-wrap">
-              <UserIcon />
+              <UserIcon size={17} strokeWidth={1.6} />
               <input
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -189,7 +190,7 @@ export default function Login({ onAuthed }) {
             <label className="field">
               <span>Display name</span>
               <div className="input-wrap">
-                <IdIcon />
+                <IdCardIcon size={17} strokeWidth={1.6} />
                 <input
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
@@ -202,7 +203,7 @@ export default function Login({ onAuthed }) {
           <label className="field">
             <span>Password</span>
             <div className="input-wrap">
-              <LockIcon />
+              <LockIcon size={17} strokeWidth={1.6} />
               <input
                 type={showPw ? "text" : "password"}
                 value={password}
@@ -218,7 +219,7 @@ export default function Login({ onAuthed }) {
                 aria-label={showPw ? "Hide password" : "Show password"}
                 tabIndex={-1}
               >
-                {showPw ? <EyeOffIcon /> : <EyeIcon />}
+                {showPw ? <EyeOffIcon size={17} strokeWidth={1.6} /> : <EyeIcon size={17} strokeWidth={1.6} />}
               </button>
             </div>
             {isRegister && <span className="field-hint">{PASSWORD_RULE}</span>}
@@ -265,73 +266,5 @@ export default function Login({ onAuthed }) {
         </div>
       )}
     </div>
-  );
-}
-
-/* ---- floating "postal letter" icons ---- */
-function EnvelopeIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"
-      strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2.5" y="5" width="19" height="14" rx="2.5" />
-      <path d="M3.5 7l8.5 6 8.5-6" />
-    </svg>
-  );
-}
-function NoteIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"
-      strokeLinecap="round" strokeLinejoin="round">
-      <rect x="5" y="3" width="14" height="18" rx="2.5" />
-      <path d="M8.5 8h7M8.5 12h7M8.5 16h4" />
-    </svg>
-  );
-}
-
-/* ---- inline icons ---- */
-function UserIcon() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor"
-      strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="10" cy="6.5" r="3.2" />
-      <path d="M3.5 16.5c0-3.3 2.9-5.5 6.5-5.5s6.5 2.2 6.5 5.5" />
-    </svg>
-  );
-}
-function IdIcon() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor"
-      strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2.5" y="4.5" width="15" height="11" rx="2" />
-      <circle cx="7" cy="9.5" r="1.8" />
-      <path d="M4.8 14c0-1.4 1-2.3 2.2-2.3s2.2.9 2.2 2.3M11.5 8.5h4M11.5 11.5h3" />
-    </svg>
-  );
-}
-function LockIcon() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor"
-      strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="4" y="9" width="12" height="8" rx="2" />
-      <path d="M7 9V6.5a3 3 0 016 0V9" />
-    </svg>
-  );
-}
-function EyeIcon() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor"
-      strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M1.5 10S4.5 4.5 10 4.5 18.5 10 18.5 10 15.5 15.5 10 15.5 1.5 10 1.5 10z" />
-      <circle cx="10" cy="10" r="2.4" />
-    </svg>
-  );
-}
-function EyeOffIcon() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor"
-      strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M8 4.7A7 7 0 0110 4.5c5.5 0 8.5 5.5 8.5 5.5a13 13 0 01-2.2 2.8M5 5.8A13 13 0 001.5 10S4.5 15.5 10 15.5a7 7 0 003-.65" />
-      <path d="M2 2l16 16" />
-    </svg>
   );
 }
