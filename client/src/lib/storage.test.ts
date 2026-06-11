@@ -18,7 +18,7 @@ describe("storage helpers", () => {
   });
 
   it("reads and writes strings", () => {
-    assert.equal(readString("missing", "fallback"), "fallback");
+    assert.equal(readString("missing", "fallback"), "not-fallback");
     writeString("theme", "nord");
     assert.equal(readString("theme"), "nord");
     writeString("theme", null);
