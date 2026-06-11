@@ -87,6 +87,7 @@ export default function App() {
   const [showTour, setShowTour] = useState(false); // first-run walkthrough
   const [theme, setTheme] = useState(() => readThemeMode().theme); // colour identity
   const [mode, setMode] = useState(() => readThemeMode().mode); // "light" | "dark"
+  const [messageCache, setMessageCache] = useState({}); // channel/DM history snapshots for instant revisits
   const [jumpMessageId, setJumpMessageId] = useState(null); // message to scroll to + highlight
   const [searchQuery, setSearchQuery] = useState(null); // active message-search query (results pane)
   const [openThreadReq, setOpenThreadReq] = useState(null); // { channelId, rootId } — thread to open after a jump
@@ -147,6 +148,25 @@ export default function App() {
   function refreshChannels() {
     api.listChannels().then(({ channels }) => setChannels(channels)).catch(() => {});
     api.listAllChannels().then(({ channels }) => setAllChannels(channels)).catch(() => {});
+  }
+
+  function cacheMessages(channelId, messages) {
+    setMessageCache((prev) => {
+      const current = prev[channelId];
+      if (current === messages) return prev;
+      if (current && current.length === messages.length && current.every((m, i) => m.id === messages[i]?.id)) {
+        return prev;
+      }
+      return { ...prev, [channelId]: messages };
+    });
+  }
+
+  function prefetchMessages(channelId) {
+    if (!channelId || messageCache[channelId]) return;
+    api
+      .getMessages(channelId)
+      .then(({ messages }) => cacheMessages(channelId, messages))
+      .catch(() => {});
   }
 
   // Mark a conversation read: clear its unread locally (no refetch) and persist
@@ -617,12 +637,14 @@ export default function App() {
                 setActiveChannel(c);
                 setNavOpen(false);
               }}
+              onPrefetchChannel={prefetchMessages}
               onNewChannel={() => setShowCreate(true)}
               onNewMessage={() => searchRef.current?.focus()}
               onOpenDm={(u, isSelf) => {
                 handleOpenDm(u, isSelf);
                 setNavOpen(false);
               }}
+              onPrefetchDm={prefetchMessages}
               onHideDm={handleHideDm}
               onHideChannel={handleHideChannel}
               onLogout={handleLogout}
@@ -690,6 +712,7 @@ export default function App() {
           ) : activeChannel && (view === "home" || activeChannel.type === "dm") ? (
             <ChannelView
               channel={activeChannel}
+              cachedMessages={messageCache[activeChannel.id] || null}
               user={user}
               users={users}
               channels={channels}
@@ -697,6 +720,7 @@ export default function App() {
               customEmojis={emojis}
               savedIds={savedIds}
               onToggleSave={handleToggleSave}
+              onCacheMessages={cacheMessages}
               onOpenProfile={openProfile}
               jumpMessageId={jumpMessageId}
               canJumpToForward={canJumpToForward}

@@ -31,9 +31,11 @@ export default function Sidebar({
   activeChannel,
   mode = "home",
   onSelect,
+  onPrefetchChannel,
   onNewChannel,
   onNewMessage,
   onOpenDm,
+  onPrefetchDm,
   onHideDm,
   onHideChannel,
   onLogout,
@@ -68,7 +70,12 @@ export default function Sidebar({
     const label = conv.isSelf ? `${conv.withUser.displayName} (you)` : conv.withUser.displayName;
     return (
       <div key={conv.id} className={`channel-item dm-item ${active ? "active" : ""} ${unread ? "unread" : ""}`}>
-        <button className="dm-open" onClick={() => onOpenDm(conv.withUser, conv.isSelf)}>
+        <button
+          className="dm-open"
+          onClick={() => onOpenDm(conv.withUser, conv.isSelf)}
+          onMouseEnter={() => onPrefetchDm?.(conv.id)}
+          onFocus={() => onPrefetchDm?.(conv.id)}
+        >
           <PresenceAvatar
             name={conv.withUser.displayName}
             src={conv.withUser.avatarUrl}
@@ -178,6 +185,8 @@ export default function Sidebar({
                 type="button"
                 className={`channel-item channel-row ${activeChannel?.id === c.id ? "active" : ""} ${c.unread ? "unread" : ""}`}
                 onClick={() => onSelect(c)}
+                onMouseEnter={() => onPrefetchChannel?.(c.id)}
+                onFocus={() => onPrefetchChannel?.(c.id)}
               >
                 <span className="ch-mark">{c.type === "private" ? <LockKeyholeIcon className="ch-lock" size={11} strokeWidth={1.6} /> : "#"}</span>
                 <span className="ci-name">{c.name}</span>

@@ -36,6 +36,7 @@ function MessagesSkeleton() {
 
 export default function ChannelView({
   channel,
+  cachedMessages = null,
   user,
   users = [],
   channels = [],
@@ -43,6 +44,7 @@ export default function ChannelView({
   customEmojis = [],
   savedIds,
   onToggleSave,
+  onCacheMessages,
   onOpenProfile,
   jumpMessageId = null,
   canJumpToForward,
@@ -130,12 +132,20 @@ export default function ChannelView({
     jumpingRef.current = false;
     clearTimeout(jumpSettleRef.current);
     setLoadingOlder(false);
+    if (cachedMessages?.length) {
+      setMessages(cachedMessages);
+      setLoading(false);
+    } else {
+      setMessages([]);
+      setLoading(true);
+    }
 
     api
       .getMessages(channel.id)
       .then(({ messages, lastReadAt }) => {
         if (cancelled) return;
         setMessages(messages);
+        onCacheMessages?.(channel.id, messages);
         // First message from someone else that arrived after we last read —
         // the channel will open scrolled to it (where we left off).
         const since = lastReadAt ? new Date(lastReadAt) : null;
@@ -358,7 +368,9 @@ export default function ChannelView({
           const have = new Set(prev.map((m) => m.id));
           const fresh = older.filter((m) => !have.has(m.id));
           if (fresh.length === 0) hasMoreOlderRef.current = false;
-          return fresh.length ? [...fresh, ...prev] : prev;
+          const next = fresh.length ? [...fresh, ...prev] : prev;
+          onCacheMessages?.(channel.id, next);
+          return next;
         });
       })
       .catch(() => {})
@@ -473,6 +485,7 @@ export default function ChannelView({
       .then(({ messages: windowed }) => {
         if (cancelled) return;
         setMessages(windowed);
+        onCacheMessages?.(channel.id, windowed);
         requestAnimationFrame(() =>
           requestAnimationFrame(() => {
             if (!scrollToTarget()) setError("Couldn't locate that message.");
