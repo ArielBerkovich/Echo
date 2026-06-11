@@ -1,0 +1,41 @@
+{
+  "name": "echo-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "node -e \"console.log('TypeScript migration check: noCheck=true, so this validates parsing/module resolution, not full type safety.')\" && tsc --noEmit",
+    "preview": "vite preview",
+    "test": "node --import tsx --test $(find src \\( -name '*.test.ts' -o -name '*.test.tsx' -o -name '*.test.js' \\) -print)",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed --workers=1"
+  },
+  "dependencies": {
+    "@emoji-mart/data": "^1.2.1",
+    "@emoji-mart/react": "^1.1.1",
+    "@hookform/resolvers": "^5.4.0",
+    "dompurify": "^3.1.6",
+    "emoji-mart": "^5.6.0",
+    "highlight.js": "^11.11.1",
+    "lucide-react": "^1.17.0",
+    "marked": "^13.0.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.78.0",
+    "socket.io-client": "^4.7.5",
+    "turndown": "^7.2.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "@types/node": "^24.13.1",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.3.1",
+    "tsx": "^4.22.4",
+    "typescript": "^5.9.3",
+    "vite": "^5.3.1"
+  }
+}

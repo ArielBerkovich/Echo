@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "echo.serverServiceName" . }}
+  labels:
+    {{- include "echo.labels" . | nindent 4 }}
+    app.kubernetes.io/component: server
+spec:
+  replicas: {{ .Values.server.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "echo.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: server
+  template:
+    metadata:
+      labels:
+        {{- include "echo.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: server
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: server
+          image: {{ include "echo.image" (dict "registry" .Values.global.imageRegistry "repository" .Values.server.image.repository "tag" .Values.server.image.tag) }}
+          imagePullPolicy: {{ .Values.server.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.server.service.port }}
+          env:
+            - name: PORT
+              value: {{ .Values.server.service.port | quote }}
+            - name: MONGO_URI
+              value: {{ include "echo.mongoUri" . | quote }}
+            - name: CLIENT_ORIGIN
+              value: {{ include "echo.clientOrigin" . | quote }}
+            - name: S3_ENDPOINT
+              value: {{ include "echo.s3Endpoint" . | quote }}
+            - name: S3_ACCESS_KEY
+              value: {{ include "echo.s3AccessKey" . | quote }}
+            - name: S3_SECRET_KEY
+              value: {{ include "echo.s3SecretKey" . | quote }}
+            - name: S3_BUCKET
+              value: {{ .Values.server.s3.bucket | quote }}
+            - name: S3_REGION
+              value: {{ .Values.server.s3.region | quote }}
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "echo.secretName" . }}
+                  key: jwt-secret
+            {{- with .Values.server.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.server.resources | nindent 12 }}
+      {{- if .Values.mongodb.enabled }}
+      initContainers:
+        - name: wait-for-mongo
+          image: {{ include "echo.image" (dict "registry" .Values.global.imageRegistry "repository" .Values.mongodb.image.repository "tag" .Values.mongodb.image.tag) }}
+          imagePullPolicy: {{ .Values.mongodb.image.pullPolicy }}
+          command:
+            - sh
+            - -ec
+            - |
+              for i in $(seq 1 60); do
+                if mongosh "mongodb://{{ include "echo.mongodbName" . }}:{{ .Values.mongodb.service.port }}/admin" --quiet --eval 'db.hello().isWritablePrimary' | grep -q true; then
+                  exit 0
+                fi
+                sleep 2
+              done
+              exit 1
+      {{- end }}

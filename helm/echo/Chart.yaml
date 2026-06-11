@@ -1,0 +1,20 @@
+apiVersion: v2
+name: echo
+description: Echo is a self-hosted team chat platform for secure and air-gapped environments.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - chat
+  - collaboration
+  - mongodb
+  - minio
+dependencies:
+  - name: mongodb
+    version: 0.1.0
+    repository: file://charts/mongodb
+    condition: mongodb.enabled
+  - name: minio
+    version: 0.1.0
+    repository: file://charts/minio
+    condition: minio.enabled

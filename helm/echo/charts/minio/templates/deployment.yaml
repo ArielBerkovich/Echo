@@ -1,0 +1,69 @@
+{{- if .Values.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "minio.serviceName" . }}
+  labels:
+    {{- include "minio.labels" . | nindent 4 }}
+    app.kubernetes.io/component: minio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "minio.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: minio
+  template:
+    metadata:
+      labels:
+        {{- include "minio.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: minio
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: minio
+          image: {{ include "minio.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - server
+            - /data
+            - --console-address
+            - :{{ .Values.service.consolePort }}
+          env:
+            - name: MINIO_ROOT_USER
+              value: {{ .Values.rootUser | quote }}
+            - name: MINIO_ROOT_PASSWORD
+              value: {{ .Values.rootPassword | quote }}
+          ports:
+            - name: api
+              containerPort: {{ .Values.service.apiPort }}
+            - name: console
+              containerPort: {{ .Values.service.consolePort }}
+          readinessProbe:
+            httpGet:
+              path: /minio/health/ready
+              port: api
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /minio/health/live
+              port: api
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: data
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "minio.serviceName" . }}-data
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+{{- end }}

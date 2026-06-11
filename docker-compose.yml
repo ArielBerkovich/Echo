@@ -1,0 +1,86 @@
+services:
+  mongo:
+    image: mongo:7
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval 'try { db.hello().isWritablePrimary } catch (e) { quit(1) }' | grep -q true"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongo-init:
+    image: mongo:7
+    restart: "no"
+    depends_on:
+      - mongo
+    command:
+      - sh
+      - -lc
+      - |
+        for i in $$(seq 1 60); do
+          if mongosh --host mongo --quiet --eval 'try { rs.status().ok } catch (e) { rs.initiate({_id:"rs0", members:[{_id:0, host:"mongo:27017"}]}) }' >/dev/null 2>&1; then
+            for j in $$(seq 1 60); do
+              if mongosh --host mongo --quiet --eval 'db.hello().isWritablePrimary' | grep -q true; then
+                exit 0
+              fi
+              sleep 1
+            done
+            exit 1
+          fi
+          sleep 2
+        done
+        exit 1
+
+  # Self-hosted, S3-compatible object storage for file uploads. Fully
+  # air-gapped: nothing leaves the Docker network at runtime.
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-echo}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-echo-dev-secret}
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build: ./server
+    container_name: echo-server
+    restart: unless-stopped
+    environment:
+      - PORT=4000
+      - MONGO_URI=${MONGO_URI:-mongodb://mongo:27017/echo?replicaSet=rs0}
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET env var must be set}
+      - CLIENT_ORIGIN=http://localhost:8090
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY=${MINIO_ROOT_USER:-echo}
+      - S3_SECRET_KEY=${MINIO_ROOT_PASSWORD:-echo-dev-secret}
+      - S3_BUCKET=echo-uploads
+    depends_on:
+      mongo:
+        condition: service_healthy
+      mongo-init:
+        condition: service_completed_successfully
+      minio:
+        condition: service_healthy
+
+  client:
+    build: ./client
+    container_name: echo-client
+    restart: unless-stopped
+    ports:
+      - "8090:80"
+    depends_on:
+      - server
+
+volumes:
+  mongo-data:
+  minio-data:

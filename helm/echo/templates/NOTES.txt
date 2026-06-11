@@ -1,0 +1,22 @@
+Echo is deployed.
+
+Client service:
+  {{ include "echo.clientServiceName" . }}:{{ .Values.client.service.port }}
+
+Server service:
+  {{ include "echo.serverServiceName" . }}:{{ .Values.server.service.port }}
+
+{{- if .Values.client.ingress.enabled }}
+Ingress hosts:
+{{- range .Values.client.ingress.hosts }}
+  - {{ .host }}
+{{- end }}
+{{- else }}
+If you want external access, enable `client.ingress.enabled` or port-forward the client service.
+{{- end }}
+
+If you disable the bundled MongoDB or MinIO workloads, make sure to provide:
+  - `server.mongoUri`
+  - `server.s3.endpoint`
+  - `server.s3.accessKey`
+  - `server.s3.secretKey`
