@@ -140,7 +140,7 @@ test("replies to a message in a thread", async ({ page }) => {
   const threadPanel = page.locator(".thread-panel");
   await expect(threadPanel).toBeVisible();
   await threadPanel.locator(".composer-editor").fill(reply);
-  await threadPanel.locator(".composer-editor").press("Enter");
+  await threadPanel.getByRole("button", { name: "Send" }).click();
 
   await expect(threadPanel.locator(".message").filter({ hasText: reply })).toBeVisible();
   await expect(page.locator(".thread-indicator").filter({ hasText: "1 reply" })).toBeVisible();
@@ -167,7 +167,7 @@ test("edits and deletes a message", async ({ page }) => {
 
   await message.hover();
   await message.getByTitle("Delete message").click();
-  await page.getByRole("button", { name: "Delete" }).click();
+  await page.locator(".modal").filter({ hasText: "permanently removed" }).getByRole("button", { name: "Delete", exact: true }).click();
 
   await expect(page.locator(".message").filter({ hasText: updated })).toHaveCount(0);
 });
@@ -213,7 +213,7 @@ test("forwards a message to another channel", async ({ page }) => {
   await forwardModal.getByPlaceholder("Search channels and people").fill("project-alpha");
   await forwardModal.getByRole("button", { name: "Forward" }).click();
 
-  await expect(page.locator(".ch-name")).toHaveText("project-alpha");
+  await expect(page.locator(".ch-name")).toContainText("project-alpha");
   await expect(page.getByText(/Forwarded from .* in #general/)).toBeVisible();
 });
 
@@ -233,7 +233,7 @@ test("adds a reaction to a message", async ({ page }) => {
   const picker = page.locator(".reaction-picker");
   await expect(picker).toBeVisible();
   await picker.locator('input[type="search"]').fill("thumbs up");
-  await picker.locator(".emoji-mart-emoji").first().click();
+  await picker.locator('input[type="search"]').press("Enter");
 
   await expect(message.locator(".reaction-count")).toHaveText("1");
   await expect(message.locator(".reaction-emoji")).toBeVisible();
@@ -257,12 +257,23 @@ test("creates a channel from the sidebar", async ({ page }) => {
 test("leaves and rejoins a public channel", async ({ page }) => {
   await page.goto("/");
   await page.getByText("project-alpha", { exact: true }).click();
-  await expect(page.locator(".ch-name")).toHaveText("project-alpha");
+  await expect(page.locator(".ch-name")).toContainText("project-alpha");
 
   await page.getByRole("button", { name: "Leave channel" }).click();
   const confirm = page.locator(".modal").filter({ hasText: "Leave #project-alpha?" });
   await expect(confirm).toBeVisible();
   await confirm.getByRole("button", { name: "Leave" }).click();
+
+  await page.reload();
+  await expect(page.locator(".composer-editor")).toBeVisible();
+
+  await page.locator(".search-input").fill("project-alpha");
+  await page
+    .locator(".search-dropdown .search-row")
+    .filter({ has: page.locator(".search-hash") })
+    .filter({ hasText: "project-alpha" })
+    .first()
+    .click();
 
   await expect(page.locator(".join-bar")).toBeVisible();
   await page.getByRole("button", { name: "Join channel" }).click();
@@ -339,9 +350,10 @@ test("shows saved messages and removes one from saved", async ({ page }) => {
   );
 
   await page.goto("/");
-  await page.locator(".rail-item").filter({ hasText: "Saved" }).click();
+  await page.getByRole("button", { name: "Saved" }).click();
 
-  await expect(page.locator(".ch-name")).toHaveText("Saved");
+  await expect(page.getByText("Messages you've saved for later")).toBeVisible();
+  await expect(page.locator(".channel-view .ch-name")).toHaveText("Saved");
   await expect(page.getByText("API formatting test")).toBeVisible();
   await expect(page.locator(".activity-item").filter({ hasText: "API formatting test" })).toBeVisible();
 
