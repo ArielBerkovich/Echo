@@ -1,0 +1,177 @@
+name: Verify
+
+on:
+pull_request:
+branches:
+- main
+
+jobs:
+unit:
+name: Unit
+runs-on: ubuntu-latest
+defaults:
+run:
+shell: bash
+
+```
+steps:
+  - name: Checkout
+    uses: actions/checkout@v4
+
+  - name: Setup Node
+    uses: actions/setup-node@v4
+    with:
+      node-version: 22
+      cache: npm
+      cache-dependency-path: |
+        server/package-lock.json
+        client/package-lock.json
+
+  - name: Install server dependencies
+    working-directory: server
+    run: npm ci
+
+  - name: Install client dependencies
+    working-directory: client
+    run: npm ci
+
+  - name: Run server unit tests
+    working-directory: server
+    run: npm test
+
+  - name: Run client unit tests
+    working-directory: client
+    run: npm test
+```
+
+compile:
+name: Compile
+runs-on: ubuntu-latest
+defaults:
+run:
+shell: bash
+
+```
+steps:
+  - name: Checkout
+    uses: actions/checkout@v4
+
+  - name: Setup Node
+    uses: actions/setup-node@v4
+    with:
+      node-version: 22
+      cache: npm
+      cache-dependency-path: |
+        server/package-lock.json
+        client/package-lock.json
+
+  - name: Install server dependencies
+    working-directory: server
+    run: npm ci
+
+  - name: Install client dependencies
+    working-directory: client
+    run: npm ci
+
+  - name: Build server
+    working-directory: server
+    run: npm run build
+
+  - name: Build client
+    working-directory: client
+    run: npm run build
+```
+
+e2e:
+name: E2E
+runs-on: ubuntu-latest
+needs:
+- unit
+- compile
+
+```
+services:
+  mongo:
+    image: mongo:7
+    ports:
+      - 27017:27017
+
+  minio:
+    image: minio/minio:latest
+    ports:
+      - 9000:9000
+    env:
+      MINIO_ROOT_USER: echo
+      MINIO_ROOT_PASSWORD: echo-dev-secret
+    command: server /data
+
+defaults:
+  run:
+    working-directory: client
+    shell: bash
+
+env:
+  PORT: 4000
+  MONGO_URI: mongodb://127.0.0.1:27017/echo-e2e
+  JWT_SECRET: test-secret
+  CLIENT_ORIGIN: http://127.0.0.1:5173
+  S3_ENDPOINT: http://127.0.0.1:9000
+  S3_ACCESS_KEY: echo
+  S3_SECRET_KEY: echo-dev-secret
+  S3_BUCKET: echo-uploads
+  E2E_RESET_TOKEN: ci-reset-token
+
+steps:
+  - name: Checkout
+    uses: actions/checkout@v4
+
+  - name: Setup Node
+    uses: actions/setup-node@v4
+    with:
+      node-version: 22
+      cache: npm
+      cache-dependency-path: |
+        server/package-lock.json
+        client/package-lock.json
+
+  - name: Install server dependencies
+    working-directory: server
+    run: npm ci
+
+  - name: Install client dependencies
+    run: npm ci
+
+  - name: Build server
+    working-directory: server
+    run: npm run build
+
+  - name: Start server
+    working-directory: server
+    run: |
+      for i in $(seq 1 60); do
+        if curl -fsS http://127.0.0.1:9000/minio/health/live >/dev/null; then
+          break
+        fi
+        sleep 2
+      done
+
+      npm start > /tmp/echo-server.log 2>&1 &
+      echo $! > /tmp/echo-server.pid
+
+      for i in $(seq 1 60); do
+        if curl -fsS http://127.0.0.1:4000/api/health >/dev/null; then
+          exit 0
+        fi
+        sleep 2
+      done
+
+      cat /tmp/echo-server.log
+      exit 1
+
+  - name: Install Playwright browsers
+    run: npx playwright install --with-deps chromium
+
+  - name: Run E2E tests
+    run: npm run test:e2e
+```
+
