@@ -52,6 +52,10 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- printf "%s-minio" (include "echo.fullname" .) -}}
 {{- end -}}
 
+{{- define "echo.mongodbPodHost" -}}
+{{- printf "%s-0.%s.%s.svc.%s" (include "echo.mongodbName" .) (include "echo.mongodbHeadlessName" .) .Release.Namespace .Values.global.clusterDomain -}}
+{{- end -}}
+
 {{- define "echo.secretName" -}}
 {{- printf "%s-secrets" (include "echo.fullname" .) -}}
 {{- end -}}

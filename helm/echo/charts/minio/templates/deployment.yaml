@@ -1,21 +1,21 @@
-{{- if .Values.minio.enabled }}
+{{- if .Values.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "echo.minioName" . }}
+  name: {{ include "minio.serviceName" . }}
   labels:
-    {{- include "echo.labels" . | nindent 4 }}
+    {{- include "minio.labels" . | nindent 4 }}
     app.kubernetes.io/component: minio
 spec:
   replicas: 1
   selector:
     matchLabels:
-      {{- include "echo.selectorLabels" . | nindent 6 }}
+      {{- include "minio.selectorLabels" . | nindent 6 }}
       app.kubernetes.io/component: minio
   template:
     metadata:
       labels:
-        {{- include "echo.selectorLabels" . | nindent 8 }}
+        {{- include "minio.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: minio
     spec:
       {{- with .Values.global.imagePullSecrets }}
@@ -24,29 +24,23 @@ spec:
       {{- end }}
       containers:
         - name: minio
-          image: {{ include "echo.image" (dict "registry" .Values.global.imageRegistry "repository" .Values.minio.image.repository "tag" .Values.minio.image.tag) }}
-          imagePullPolicy: {{ .Values.minio.image.pullPolicy }}
+          image: {{ include "minio.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
             - server
             - /data
             - --console-address
-            - :{{ .Values.minio.service.consolePort }}
+            - :{{ .Values.service.consolePort }}
           env:
             - name: MINIO_ROOT_USER
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "echo.secretName" . }}
-                  key: minio-root-user
+              value: {{ .Values.rootUser | quote }}
             - name: MINIO_ROOT_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "echo.secretName" . }}
-                  key: minio-root-password
+              value: {{ .Values.rootPassword | quote }}
           ports:
             - name: api
-              containerPort: {{ .Values.minio.service.apiPort }}
+              containerPort: {{ .Values.service.apiPort }}
             - name: console
-              containerPort: {{ .Values.minio.service.consolePort }}
+              containerPort: {{ .Values.service.consolePort }}
           readinessProbe:
             httpGet:
               path: /minio/health/ready
@@ -63,12 +57,12 @@ spec:
             - name: data
               mountPath: /data
           resources:
-            {{- toYaml .Values.minio.resources | nindent 12 }}
+            {{- toYaml .Values.resources | nindent 12 }}
       volumes:
         - name: data
-          {{- if .Values.minio.persistence.enabled }}
+          {{- if .Values.persistence.enabled }}
           persistentVolumeClaim:
-            claimName: {{ include "echo.minioName" . }}-data
+            claimName: {{ include "minio.serviceName" . }}-data
           {{- else }}
           emptyDir: {}
           {{- end }}

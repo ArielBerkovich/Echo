@@ -48,6 +48,7 @@ const STEPS = [
 
 const CARD_W = 340;
 const GAP = 14;
+const CARD_PAD = 24;
 
 // Is a rect usable as a spotlight target (on-screen and non-trivial)?
 function onScreen(r) {
@@ -57,8 +58,14 @@ function onScreen(r) {
 
 function cardStyle(rect, placement) {
   const vw = window.innerWidth, vh = window.innerHeight;
+  const width = Math.min(CARD_W, vw - CARD_PAD);
   if (!rect) {
-    return { left: Math.max(12, (vw - CARD_W) / 2), top: Math.max(24, vh / 2 - 110), width: CARD_W };
+    return {
+      left: Math.max(12, (vw - width) / 2),
+      top: Math.max(24, vh / 2 - 110),
+      width,
+      maxHeight: vh - CARD_PAD,
+    };
   }
   let left, top, bottom;
   if (placement === "right") {
@@ -74,8 +81,8 @@ function cardStyle(rect, placement) {
     left = rect.left;
     top = rect.top + rect.height + GAP;
   }
-  left = Math.max(12, Math.min(left, vw - CARD_W - 12));
-  const style = { left, width: CARD_W };
+  left = Math.max(12, Math.min(left, vw - width - 12));
+  const style = { left, width, maxHeight: vh - CARD_PAD };
   if (bottom != null) style.bottom = Math.max(12, Math.min(bottom, vh - 120));
   else style.top = Math.max(12, Math.min(top, vh - 210));
   return style;

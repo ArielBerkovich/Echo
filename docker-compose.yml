@@ -20,9 +20,9 @@ services:
       - sh
       - -lc
       - |
-        for i in $(seq 1 60); do
+        for i in $$(seq 1 60); do
           if mongosh --host mongo --quiet --eval 'try { rs.status().ok } catch (e) { rs.initiate({_id:"rs0", members:[{_id:0, host:"mongo:27017"}]}) }' >/dev/null 2>&1; then
-            for j in $(seq 1 60); do
+            for j in $$(seq 1 60); do
               if mongosh --host mongo --quiet --eval 'db.hello().isWritablePrimary' | grep -q true; then
                 exit 0
               fi

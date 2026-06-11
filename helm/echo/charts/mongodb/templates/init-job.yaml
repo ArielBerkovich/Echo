@@ -1,0 +1,47 @@
+{{- if .Values.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "mongodb.serviceName" . }}-init
+  labels:
+    {{- include "mongodb.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mongodb
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 6
+  template:
+    metadata:
+      labels:
+        {{- include "mongodb.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: mongodb
+    spec:
+      restartPolicy: OnFailure
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: init
+          image: {{ include "mongodb.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - sh
+            - -ec
+            - |
+              host="{{ include "mongodb.podHost" . }}:{{ .Values.service.port }}"
+              for i in $(seq 1 60); do
+                if mongosh --host "{{ include "mongodb.podHost" . }}" --quiet --eval 'try { rs.status().ok } catch (e) { rs.initiate({_id:"{{ .Values.replicaSetName }}", members:[{_id:0, host:"'"$host"'"}]}) }' >/dev/null 2>&1; then
+                  for j in $(seq 1 60); do
+                    if mongosh --host "{{ include "mongodb.podHost" . }}" --quiet --eval 'db.hello().isWritablePrimary' | grep -q true; then
+                      exit 0
+                    fi
+                    sleep 1
+                  done
+                  exit 1
+                fi
+                sleep 2
+              done
+              exit 1
+{{- end }}

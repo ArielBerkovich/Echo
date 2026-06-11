@@ -77,7 +77,7 @@ spec:
             - -ec
             - |
               for i in $(seq 1 60); do
-                if mongosh "{{ include "echo.mongoUri" . }}" --quiet --eval 'db.hello().isWritablePrimary' | grep -q true; then
+                if mongosh "mongodb://{{ include "echo.mongodbName" . }}:{{ .Values.mongodb.service.port }}/admin" --quiet --eval 'db.hello().isWritablePrimary' | grep -q true; then
                   exit 0
                 fi
                 sleep 2

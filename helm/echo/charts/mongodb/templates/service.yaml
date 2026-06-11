@@ -1,35 +1,35 @@
-{{- if .Values.mongodb.enabled }}
+{{- if .Values.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "echo.mongodbHeadlessName" . }}
+  name: {{ include "mongodb.headlessName" . }}
   labels:
-    {{- include "echo.labels" . | nindent 4 }}
+    {{- include "mongodb.labels" . | nindent 4 }}
     app.kubernetes.io/component: mongodb
 spec:
   clusterIP: None
   ports:
     - name: mongodb
-      port: {{ .Values.mongodb.service.port }}
+      port: {{ .Values.service.port }}
       targetPort: mongodb
   selector:
-    {{- include "echo.selectorLabels" . | nindent 4 }}
+    {{- include "mongodb.selectorLabels" . | nindent 4 }}
     app.kubernetes.io/component: mongodb
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "echo.mongodbName" . }}
+  name: {{ include "mongodb.serviceName" . }}
   labels:
-    {{- include "echo.labels" . | nindent 4 }}
+    {{- include "mongodb.labels" . | nindent 4 }}
     app.kubernetes.io/component: mongodb
 spec:
   type: ClusterIP
   ports:
     - name: mongodb
-      port: {{ .Values.mongodb.service.port }}
+      port: {{ .Values.service.port }}
       targetPort: mongodb
   selector:
-    {{- include "echo.selectorLabels" . | nindent 4 }}
+    {{- include "mongodb.selectorLabels" . | nindent 4 }}
     app.kubernetes.io/component: mongodb
 {{- end }}

@@ -1,22 +1,22 @@
-{{- if .Values.mongodb.enabled }}
+{{- if .Values.enabled }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "echo.mongodbName" . }}
+  name: {{ include "mongodb.serviceName" . }}
   labels:
-    {{- include "echo.labels" . | nindent 4 }}
+    {{- include "mongodb.labels" . | nindent 4 }}
     app.kubernetes.io/component: mongodb
 spec:
-  serviceName: {{ include "echo.mongodbHeadlessName" . }}
+  serviceName: {{ include "mongodb.headlessName" . }}
   replicas: 1
   selector:
     matchLabels:
-      {{- include "echo.selectorLabels" . | nindent 6 }}
+      {{- include "mongodb.selectorLabels" . | nindent 6 }}
       app.kubernetes.io/component: mongodb
   template:
     metadata:
       labels:
-        {{- include "echo.selectorLabels" . | nindent 8 }}
+        {{- include "mongodb.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: mongodb
     spec:
       {{- with .Values.global.imagePullSecrets }}
@@ -25,16 +25,16 @@ spec:
       {{- end }}
       containers:
         - name: mongodb
-          image: {{ include "echo.image" (dict "registry" .Values.global.imageRegistry "repository" .Values.mongodb.image.repository "tag" .Values.mongodb.image.tag) }}
-          imagePullPolicy: {{ .Values.mongodb.image.pullPolicy }}
+          image: {{ include "mongodb.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
             - mongod
             - --replSet
-            - {{ .Values.mongodb.replicaSetName | quote }}
+            - {{ .Values.replicaSetName | quote }}
             - --bind_ip_all
           ports:
             - name: mongodb
-              containerPort: {{ .Values.mongodb.service.port }}
+              containerPort: {{ .Values.service.port }}
           readinessProbe:
             exec:
               command:
@@ -55,20 +55,20 @@ spec:
             - name: data
               mountPath: /data/db
           resources:
-            {{- toYaml .Values.mongodb.resources | nindent 12 }}
+            {{- toYaml .Values.resources | nindent 12 }}
   volumeClaimTemplates:
     - metadata:
         name: data
-        {{- with .Values.mongodb.persistence.annotations }}
+        {{- with .Values.persistence.annotations }}
         annotations:
           {{- toYaml . | nindent 10 }}
         {{- end }}
       spec:
         accessModes:
-          {{- toYaml .Values.mongodb.persistence.accessModes | nindent 10 }}
+          {{- toYaml .Values.persistence.accessModes | nindent 10 }}
         resources:
           requests:
-            storage: {{ .Values.mongodb.persistence.size }}
+            storage: {{ .Values.persistence.size }}
         {{- with .Values.global.storageClassName }}
         storageClassName: {{ . }}
         {{- end }}

@@ -534,6 +534,7 @@ input:focus {
   max-width: 940px;
   height: min(560px, calc(100vh - 32px));
   max-height: calc(100vh - 32px);
+  min-height: 0;
   border-radius: 24px;
   overflow: hidden;
   background: #fff;
@@ -685,6 +686,7 @@ input:focus {
     linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.99) 100%),
     var(--surface);
   border-left: 1px solid rgba(15, 39, 72, 0.06);
+  min-height: 0;
   overflow-y: auto;
 }
 .auth-card-head {
@@ -982,14 +984,23 @@ input:focus {
   .auth-shell {
     grid-template-columns: 1fr;
     max-width: 420px;
-    height: min(560px, calc(100vh - 24px));
+    height: auto;
+    min-height: calc(100vh - 24px);
     max-height: calc(100vh - 24px);
   }
   .auth-hero {
     display: none;
   }
   .auth-card {
-    padding: 26px 24px 22px;
+    padding: 22px 20px 20px;
+    gap: 10px;
+  }
+  .setup-callout {
+    font-size: 12.5px;
+    line-height: 1.45;
+  }
+  .subtitle {
+    max-width: 30ch;
   }
   .api-overview {
     grid-template-columns: 1fr;
@@ -5119,6 +5130,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 }
 .wt-card {
   position: fixed;
+  box-sizing: border-box;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -5126,6 +5138,9 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   padding: 18px 18px 14px;
   z-index: 1001;
   animation: popIn 0.2s ease both;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 .wt-step {
   font-size: 11px;
