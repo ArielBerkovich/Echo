@@ -80,52 +80,6 @@ export function openApiDocument() {
           },
         },
       },
-      "/api/webhooks": {
-        get: { summary: "List incoming webhooks", responses: { 200: { description: "Webhook list" } } },
-        post: {
-          summary: "Create an incoming webhook",
-          requestBody: {
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    name: { type: "string" },
-                    channelId: { type: "string" },
-                    channelName: { type: "string" },
-                  },
-                },
-              },
-            },
-          },
-          responses: { 201: { description: "Webhook created; token returned once" } },
-        },
-      },
-      "/api/webhooks/{token}": {
-        post: {
-          security: [],
-          summary: "Post to an incoming webhook",
-          parameters: [
-            { name: "token", in: "path", required: true, schema: { type: "string" } },
-            { name: "Idempotency-Key", in: "header", schema: { type: "string" } },
-          ],
-          requestBody: {
-            content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/AutomationMessage" },
-              },
-            },
-          },
-          responses: { 200: { description: "Message updated/deduped" }, 201: { description: "Message created" } },
-        },
-      },
-      "/api/webhooks/{id}": {
-        delete: {
-          summary: "Delete an incoming webhook",
-          parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
-          responses: { 200: { description: "Webhook deleted" } },
-        },
-      },
     },
   };
 }

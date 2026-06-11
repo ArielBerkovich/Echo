@@ -15,6 +15,39 @@ test("restores an authenticated session into the default channel", async ({ page
   await expect(page.getByText("Team updates")).toBeVisible();
 });
 
+test("sends a message to the active channel", async ({ page }) => {
+  const body = `E2E channel message ${Date.now()}`;
+
+  await page.goto("/");
+  await expect(page.locator(".composer-editor")).toBeVisible();
+
+  await page.locator(".composer-editor").fill(body);
+  await page.locator(".composer-editor").press("Enter");
+
+  await expect(page.locator(".message").filter({ hasText: body })).toBeVisible();
+});
+
+test("sends a file attachment with a message", async ({ page }) => {
+  const body = `E2E attachment message ${Date.now()}`;
+
+  await page.goto("/");
+  await page.getByTitle("Attach files").click();
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "e2e-note.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from("hello from e2e"),
+  });
+
+  await expect(page.getByText("e2e-note.txt")).toBeVisible();
+
+  await page.locator(".composer-editor").fill(body);
+  await page.locator(".composer-editor").press("Enter");
+
+  const message = page.locator(".message").filter({ hasText: body });
+  await expect(message).toBeVisible();
+  await expect(message.getByText("e2e-note.txt")).toBeVisible();
+});
+
 test("sign out clears the session and returns to login", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText("#general", { exact: true })).toBeVisible();
@@ -88,6 +121,152 @@ test("copies the raw markdown body from a message", async ({ page }) => {
     ].join("\n")
   );
   await expect(message.getByTitle("Copied message")).toBeVisible();
+});
+
+test("replies to a message in a thread", async ({ page }) => {
+  const root = `E2E thread root ${Date.now()}`;
+  const reply = `E2E thread reply ${Date.now()}`;
+
+  await page.goto("/");
+  await page.locator(".composer-editor").fill(root);
+  await page.locator(".composer-editor").press("Enter");
+
+  const rootMessage = page.locator(".message").filter({ hasText: root }).first();
+  await expect(rootMessage).toBeVisible();
+
+  await rootMessage.hover();
+  await rootMessage.getByTitle("Reply in thread").click();
+
+  const threadPanel = page.locator(".thread-panel");
+  await expect(threadPanel).toBeVisible();
+  await threadPanel.locator(".composer-editor").fill(reply);
+  await threadPanel.locator(".composer-editor").press("Enter");
+
+  await expect(threadPanel.locator(".message").filter({ hasText: reply })).toBeVisible();
+  await expect(page.locator(".thread-indicator").filter({ hasText: "1 reply" })).toBeVisible();
+});
+
+test("edits and deletes a message", async ({ page }) => {
+  const original = `E2E editable message ${Date.now()}`;
+  const updated = `${original} updated`;
+
+  await page.goto("/");
+  await page.locator(".composer-editor").fill(original);
+  await page.locator(".composer-editor").press("Enter");
+
+  const message = page.locator(".message").filter({ hasText: original }).first();
+  await expect(message).toBeVisible();
+
+  await message.hover();
+  await message.getByTitle("Edit message").click();
+  await expect(message.locator(".msg-edit-input")).toBeVisible();
+  await message.locator(".msg-edit-input").fill(updated);
+  await message.locator(".msg-edit-actions").getByRole("button", { name: "Save" }).click();
+
+  await expect(page.locator(".message").filter({ hasText: updated }).first()).toBeVisible();
+
+  await message.hover();
+  await message.getByTitle("Delete message").click();
+  await page.getByRole("button", { name: "Delete" }).click();
+
+  await expect(page.locator(".message").filter({ hasText: updated })).toHaveCount(0);
+});
+
+test("pins and unpins a message", async ({ page }) => {
+  const body = `E2E pinned message ${Date.now()}`;
+
+  await page.goto("/");
+  await page.locator(".composer-editor").fill(body);
+  await page.locator(".composer-editor").press("Enter");
+
+  const message = page.locator(".message").filter({ hasText: body }).first();
+  await expect(message).toBeVisible();
+
+  await message.hover();
+  await message.getByTitle("Pin message").click();
+  await expect(message.getByText("Pinned")).toBeVisible();
+
+  await page.getByRole("button", { name: "Pinned messages" }).click();
+  const pinnedPanel = page.locator(".pinned-panel");
+  await expect(pinnedPanel).toBeVisible();
+  await expect(pinnedPanel.getByText(body)).toBeVisible();
+
+  await pinnedPanel.getByTitle("Unpin").click();
+  await expect(pinnedPanel.getByText(body)).toHaveCount(0);
+});
+
+test("forwards a message to another channel", async ({ page }) => {
+  const body = `E2E forwarded message ${Date.now()}`;
+
+  await page.goto("/");
+  await page.locator(".composer-editor").fill(body);
+  await page.locator(".composer-editor").press("Enter");
+
+  const message = page.locator(".message").filter({ hasText: body }).first();
+  await expect(message).toBeVisible();
+
+  await message.hover();
+  await message.getByTitle("Forward message").click();
+
+  const forwardModal = page.locator(".modal").filter({ hasText: "Forward message" });
+  await expect(forwardModal).toBeVisible();
+  await forwardModal.getByPlaceholder("Search channels and people").fill("project-alpha");
+  await forwardModal.getByRole("button", { name: "Forward" }).click();
+
+  await expect(page.locator(".ch-name")).toHaveText("project-alpha");
+  await expect(page.getByText(/Forwarded from .* in #general/)).toBeVisible();
+});
+
+test("adds a reaction to a message", async ({ page }) => {
+  const body = `E2E reacted message ${Date.now()}`;
+
+  await page.goto("/");
+  await page.locator(".composer-editor").fill(body);
+  await page.locator(".composer-editor").press("Enter");
+
+  const message = page.locator(".message").filter({ hasText: body }).first();
+  await expect(message).toBeVisible();
+
+  await message.hover();
+  await message.getByTitle("Add reaction").first().click();
+
+  const picker = page.locator(".reaction-picker");
+  await expect(picker).toBeVisible();
+  await picker.locator('input[type="search"]').fill("thumbs up");
+  await picker.locator(".emoji-mart-emoji").first().click();
+
+  await expect(message.locator(".reaction-count")).toHaveText("1");
+  await expect(message.locator(".reaction-emoji")).toBeVisible();
+});
+
+test("creates a channel from the sidebar", async ({ page }) => {
+  const channelName = `e2e-${Date.now()}`;
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "Create channel" }).click();
+
+  const modal = page.locator(".modal").filter({ hasText: "Create a channel" });
+  await expect(modal).toBeVisible();
+  await modal.getByPlaceholder("e.g. marketing").fill(channelName);
+  await modal.getByRole("button", { name: "Create" }).click();
+
+  await expect(page.locator(".channel-item").filter({ hasText: channelName })).toBeVisible();
+  await expect(page.locator(".ch-name")).toContainText(channelName);
+});
+
+test("leaves and rejoins a public channel", async ({ page }) => {
+  await page.goto("/");
+  await page.getByText("project-alpha", { exact: true }).click();
+  await expect(page.locator(".ch-name")).toHaveText("project-alpha");
+
+  await page.getByRole("button", { name: "Leave channel" }).click();
+  const confirm = page.locator(".modal").filter({ hasText: "Leave #project-alpha?" });
+  await expect(confirm).toBeVisible();
+  await confirm.getByRole("button", { name: "Leave" }).click();
+
+  await expect(page.locator(".join-bar")).toBeVisible();
+  await page.getByRole("button", { name: "Join channel" }).click();
+  await expect(page.locator(".composer-editor")).toBeVisible();
 });
 
 test("pastes markdown into the composer as formatted content", async ({ page }) => {

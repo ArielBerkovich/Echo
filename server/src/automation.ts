@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import mongoose from "mongoose";
 import { Channel } from "./models/Channel.js";
 import { Message } from "./models/Message.js";
@@ -18,14 +17,6 @@ const STATUS_ICONS = {
   warning: "[WARNING]",
   skipped: "[SKIPPED]",
 };
-
-export function hashWebhookToken(token) {
-  return crypto.createHash("sha256").update(String(token)).digest("hex");
-}
-
-export function createWebhookToken() {
-  return crypto.randomBytes(32).toString("base64url");
-}
 
 export function normalizeChannelName(name) {
   return String(name || "")

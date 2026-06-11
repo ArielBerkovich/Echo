@@ -1,13 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import {
-  createWebhookToken,
-  hashWebhookToken,
-  normalizeChannelName,
-  normalizeFields,
-  renderAutomationBody,
-} from "./automation.js";
+import { normalizeChannelName, normalizeFields, renderAutomationBody } from "./automation.js";
 
 describe("automation helpers", () => {
   it("normalizes CI-friendly channel names", () => {
@@ -32,12 +26,5 @@ describe("automation helpers", () => {
   it("normalizes array and object fields", () => {
     assert.deepEqual(normalizeFields({ branch: "main" }), [{ name: "branch", value: "main" }]);
     assert.deepEqual(normalizeFields([{ label: "job", value: "test" }]), [{ name: "job", value: "test" }]);
-  });
-
-  it("creates opaque webhook tokens and hashes them deterministically", () => {
-    const token = createWebhookToken();
-    assert.ok(token.length >= 32);
-    assert.equal(hashWebhookToken(token), hashWebhookToken(token));
-    assert.notEqual(hashWebhookToken(token), token);
   });
 });

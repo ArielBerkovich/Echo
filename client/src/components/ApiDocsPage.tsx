@@ -133,44 +133,6 @@ function buildGroups(token) {
       ],
     },
     {
-      title: "Webhooks",
-      note: "Incoming webhook URLs are ideal for CI secret managers because the posting URL carries its own token and does not need a Bearer token.",
-      endpoints: [
-        {
-          method: "POST",
-          path: "/api/webhooks",
-          desc: "Create an incoming webhook for a channel. The response returns { token, path } once — store it as a CI secret.",
-          curl: `curl -X POST ${ORIGIN}/api/webhooks \\
-  ${auth} \\
-  ${json} \\
-  -d '{"name":"GitHub deploys","channelName":"deploys"}'`,
-        },
-        {
-          method: "GET",
-          path: "/api/webhooks",
-          desc: "List incoming webhooks you created.",
-          curl: `curl ${ORIGIN}/api/webhooks \\
-  ${auth}`,
-        },
-        {
-          method: "POST",
-          path: "/api/webhooks/:token",
-          desc: "Post a CI/CD message through an incoming webhook. No Authorization header is needed.",
-          curl: `curl -X POST ${ORIGIN}/api/webhooks/WEBHOOK_TOKEN \\
-  ${json} \\
-  -H "Idempotency-Key: github-run-123-attempt-1" \\
-  -d '{"externalKey":"github:repo:run-123","status":"failed","title":"Deploy failed","fields":{"branch":"main","sha":"abc123"}}'`,
-        },
-        {
-          method: "DELETE",
-          path: "/api/webhooks/:id",
-          desc: "Revoke a webhook by id.",
-          curl: `curl -X DELETE ${ORIGIN}/api/webhooks/WEBHOOK_ID \\
-  ${auth}`,
-        },
-      ],
-    },
-    {
       title: "OpenAPI",
       endpoints: [
         {
