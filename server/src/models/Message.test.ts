@@ -121,3 +121,32 @@ describe("Message.toPublicJSON", () => {
     assert.equal(json.attachments[0].height, null);
   });
 });
+
+describe("Message indexes", () => {
+  it("uses partial unique indexes for automation keys", () => {
+    const indexes = Message.schema.indexes();
+    const idemIndex = indexes.find(([fields]) => fields.idempotencyKey === 1);
+    const externalIndex = indexes.find(([fields]) => fields.externalKey === 1);
+
+    assert.deepEqual(idemIndex, [
+      { channel: 1, author: 1, idempotencyKey: 1 },
+      {
+        unique: true,
+        background: true,
+        partialFilterExpression: {
+          idempotencyKey: { $type: "string" },
+        },
+      },
+    ]);
+    assert.deepEqual(externalIndex, [
+      { channel: 1, author: 1, externalKey: 1 },
+      {
+        unique: true,
+        background: true,
+        partialFilterExpression: {
+          externalKey: { $type: "string" },
+        },
+      },
+    ]);
+  });
+});

@@ -6,11 +6,13 @@ import { attachSocket } from "./socket.js";
 import { startScheduler } from "./scheduler.js";
 import { ensureBucket } from "./storage.js";
 import { config } from "./config.js";
+import { Message } from "./models/Message.js";
 
 async function start() {
   await connectDb();
   await ensureDefaultChannel();
   await ensureBucket();
+  await Message.syncIndexes();
 
   const app = createApp();
   const httpServer = http.createServer(app);

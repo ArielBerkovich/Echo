@@ -97,11 +97,21 @@ messageSchema.index({ mentionsEveryone: 1, channel: 1, createdAt: -1 });
 messageSchema.index({ threadRootAuthor: 1, createdAt: -1 });
 messageSchema.index(
   { channel: 1, author: 1, idempotencyKey: 1 },
-  { unique: true, sparse: true }
+  {
+    unique: true,
+    partialFilterExpression: {
+      idempotencyKey: { $type: "string" },
+    },
+  }
 );
 messageSchema.index(
   { channel: 1, author: 1, externalKey: 1 },
-  { unique: true, sparse: true }
+  {
+    unique: true,
+    partialFilterExpression: {
+      externalKey: { $type: "string" },
+    },
+  }
 );
 
 messageSchema.methods.toPublicJSON = function () {
