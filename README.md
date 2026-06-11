@@ -74,10 +74,10 @@ Common service URLs:
 
 - Client: `http://localhost:8090`
 - Server API inside Compose: `http://server:4000`
-- MongoDB inside Compose: `mongodb://mongo:27017/echo`
+- MongoDB inside Compose: `mongodb://mongo:27017/echo?replicaSet=rs0`
 - MinIO inside Compose: `http://minio:9000`
 
-To point Echo at an external MongoDB replica set or cluster, set `MONGO_URI` to a standard MongoDB URI such as `mongodb://db1:27017,db2:27017/echo?replicaSet=rs0` or `mongodb+srv://user:pass@cluster.example/echo`. The server retries connections during startup, so it can wait for the database to become ready.
+The bundled Compose stack starts MongoDB as a single-node replica set so transactions and other replica-set features work out of the box. To point Echo at an external MongoDB replica set or cluster, set `MONGO_URI` to a standard MongoDB URI such as `mongodb://db1:27017,db2:27017/echo?replicaSet=rs0` or `mongodb+srv://user:pass@cluster.example/echo`. The server retries connections during startup, so it can wait for the database to become ready.
 
 ## Development
 
