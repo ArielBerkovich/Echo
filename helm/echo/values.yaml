@@ -6,7 +6,7 @@ global:
 
 server:
   image:
-    repository: echo-server
+    repository: arielber/echo-server
     tag: latest
     pullPolicy: IfNotPresent
   replicaCount: 1
@@ -27,7 +27,7 @@ server:
 
 client:
   image:
-    repository: echo-client
+    repository: arielber/echo-client
     tag: latest
     pullPolicy: IfNotPresent
   replicaCount: 1
