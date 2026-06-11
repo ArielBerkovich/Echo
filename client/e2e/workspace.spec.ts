@@ -138,6 +138,24 @@ test("pastes markdown into the composer as formatted content", async ({ page }) 
   await expect(editor.locator('a[href="https://example.com"]')).toHaveText("Echo link");
 });
 
+test("sends multiple messages from the same composer", async ({ page }) => {
+  await page.goto("/");
+
+  const composer = page.locator(".composer-editor");
+  await expect(composer).toBeVisible();
+
+  const first = `Multi-send regression 1 ${Date.now()}`;
+  const second = `Multi-send regression 2 ${Date.now()}`;
+
+  await composer.fill(first);
+  await composer.press("Enter");
+  await expect(page.locator(".message").filter({ hasText: first })).toBeVisible();
+
+  await composer.fill(second);
+  await composer.press("Enter");
+  await expect(page.locator(".message").filter({ hasText: second })).toBeVisible();
+});
+
 test("shows activity items and marks activity as read", async ({ page }) => {
   const markedRead = page.waitForResponse(
     (res) => res.url().includes("/api/activity/read") && res.request().method() === "POST"
