@@ -118,6 +118,22 @@ npm run build
 npx playwright test
 ```
 
+## Helm
+
+The repository also includes a self-contained Helm chart at [helm/echo](/home/ariel/repositories/Echo/helm/echo).
+
+By default it deploys Echo plus bundled MongoDB and MinIO workloads. You can disable either dependency and point the server at your own services by setting:
+
+- `mongodb.enabled=false`
+- `minio.enabled=false`
+- `server.mongoUri`
+- `server.s3.endpoint`
+- `server.s3.accessKey`
+- `server.s3.secretKey`
+- `server.clientOrigin`
+
+See [helm/echo/README.md](/home/ariel/repositories/Echo/helm/echo/README.md) for install examples and air-gapped registry configuration.
+
 ## API And Automation
 
 Echo includes an in-app API reference. Sign in, open the API page from the lower-left rail, generate an API token, and copy ready-to-run curl commands.
@@ -141,6 +157,7 @@ At runtime, Echo does not require external API calls for normal chat, API automa
 ```text
 client/             React client
 server/             Express and Socket.IO API server
+helm/echo/          Self-contained Helm chart
 docker-compose.yml  Local deployment stack
 docs/images/        README screenshots
 ```

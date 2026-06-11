@@ -1,0 +1,75 @@
+{{- if .Values.mongodb.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "echo.mongodbName" . }}
+  labels:
+    {{- include "echo.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mongodb
+spec:
+  serviceName: {{ include "echo.mongodbHeadlessName" . }}
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "echo.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: mongodb
+  template:
+    metadata:
+      labels:
+        {{- include "echo.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: mongodb
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: mongodb
+          image: {{ include "echo.image" (dict "registry" .Values.global.imageRegistry "repository" .Values.mongodb.image.repository "tag" .Values.mongodb.image.tag) }}
+          imagePullPolicy: {{ .Values.mongodb.image.pullPolicy }}
+          command:
+            - mongod
+            - --replSet
+            - {{ .Values.mongodb.replicaSetName | quote }}
+            - --bind_ip_all
+          ports:
+            - name: mongodb
+              containerPort: {{ .Values.mongodb.service.port }}
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -ec
+                - mongosh --quiet --eval 'db.hello().isWritablePrimary' | grep -q true
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -ec
+                - mongosh --quiet --eval 'db.hello().isWritablePrimary || db.hello().secondary' | grep -Eq 'true'
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          volumeMounts:
+            - name: data
+              mountPath: /data/db
+          resources:
+            {{- toYaml .Values.mongodb.resources | nindent 12 }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        {{- with .Values.mongodb.persistence.annotations }}
+        annotations:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      spec:
+        accessModes:
+          {{- toYaml .Values.mongodb.persistence.accessModes | nindent 10 }}
+        resources:
+          requests:
+            storage: {{ .Values.mongodb.persistence.size }}
+        {{- with .Values.global.storageClassName }}
+        storageClassName: {{ . }}
+        {{- end }}
+{{- end }}
