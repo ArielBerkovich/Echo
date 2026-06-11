@@ -1885,7 +1885,7 @@ html[data-mode="dark"] .sidebar {
 }
 .dm-rich {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 4px;
   padding: 4px 8px 4px 10px;
   border-radius: 8px;
@@ -1921,6 +1921,7 @@ html[data-mode="dark"] .sidebar {
   color: inherit;
   padding: 6px 0;
   min-width: 0;
+  align-self: stretch;
 }
 .dm-text {
   flex: 1;
