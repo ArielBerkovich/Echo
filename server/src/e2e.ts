@@ -21,7 +21,7 @@ export async function resetE2EAuthFixture() {
 export async function resetE2EWorkspaceFixture() {
   await clearDatabase();
 
-  const passwordHash = await bcrypt.hash("Password1", 10);
+  const passwordHash = await bcrypt.hash("Password2", 10);
   const system = await User.create({
     username: "system",
     displayName: "Echo",
