@@ -1,0 +1,17 @@
+enabled: true
+image:
+  repository: minio/minio
+  tag: latest
+  pullPolicy: IfNotPresent
+rootUser: echo
+rootPassword: echo-dev-secret
+service:
+  apiPort: 9000
+  consolePort: 9001
+persistence:
+  enabled: true
+  size: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  annotations: {}
+resources: {}

@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+*.log
+.DS_Store
+.claude/
+# Stray analysis screenshots in the repo root (not part of the app).
+/*.png

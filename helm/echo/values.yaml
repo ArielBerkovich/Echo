@@ -1,0 +1,84 @@
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClassName: ""
+  clusterDomain: cluster.local
+
+server:
+  image:
+    repository: arielber/echo-server
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  service:
+    type: ClusterIP
+    port: 4000
+  clientOrigin: ""
+  mongoUri: ""
+  jwtSecret: ""
+  s3:
+    endpoint: ""
+    accessKey: ""
+    secretKey: ""
+    bucket: echo-uploads
+    region: us-east-1
+  resources: {}
+  extraEnv: []
+
+client:
+  image:
+    repository: arielber/echo-client
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  service:
+    type: ClusterIP
+    port: 80
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: echo.local
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+  resources: {}
+  extraEnv: []
+
+mongodb:
+  enabled: true
+  image:
+    repository: mongo
+    tag: "7"
+    pullPolicy: IfNotPresent
+  replicaSetName: rs0
+  service:
+    port: 27017
+  persistence:
+    enabled: true
+    size: 8Gi
+    accessModes:
+      - ReadWriteOnce
+    annotations: {}
+  resources: {}
+
+minio:
+  enabled: true
+  image:
+    repository: minio/minio
+    tag: latest
+    pullPolicy: IfNotPresent
+  rootUser: echo
+  rootPassword: echo-dev-secret
+  service:
+    apiPort: 9000
+    consolePort: 9001
+  persistence:
+    enabled: true
+    size: 10Gi
+    accessModes:
+      - ReadWriteOnce
+    annotations: {}
+  resources: {}
