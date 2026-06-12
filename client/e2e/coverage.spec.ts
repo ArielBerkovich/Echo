@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { enableClipboardStub, seedWorkspaceFixture } from "./helpers.js";
+import { enableClipboardStub, seedWorkspaceFixture, slug } from "./helpers.js";
 
 const ONE_BY_ONE_PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAEklEQVR42mP8/5+hHgAHggJ/PFvdcQAAAABJRU5ErkJggg==",
@@ -400,18 +400,18 @@ test("opens a thread, replies, and jumps from Activity back to the thread", asyn
 test("covers search keyboard navigation and filter autocomplete", async ({ page }) => {
   await page.goto("/");
 
-  const search = page.getByPlaceholder("Search messages, people, and channels");
-  await search.fill(fixture.projectChannel.name);
-  await page.keyboard.press("Enter");
-  await expect(page.locator(".channel-header .ch-name")).toContainText(fixture.projectChannel.name);
+  const search = page.getByTestId("search-input");
+  await search.fill("pro");
+  await page.getByTestId(`search-channel-${slug(fixture.projectChannel.name)}`).click();
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
 
   await search.fill("");
-  await search.fill(`in:${fixture.projectChannel.name}`);
+  await search.fill(`in:pro`);
   await page.keyboard.press("Tab");
   await expect(search).toHaveValue(new RegExp(`in:${fixture.projectChannel.name}\\s`));
 
   await search.fill("");
-  await search.fill(`from:@${fixture.bob.username}`);
+  await search.fill(`from:@bo`);
   await page.keyboard.press("Tab");
   await expect(search).toHaveValue(new RegExp(`from:@${fixture.bob.username}\\s`));
 

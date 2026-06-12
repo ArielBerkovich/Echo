@@ -78,6 +78,7 @@ export async function requestAsToken(page, token, path, options = {}) {
 export async function seedWorkspaceFixture(page) {
   if (workspaceFixturePromise) {
     const fixture = await workspaceFixturePromise;
+    await restoreWorkspaceFixture(page, fixture);
     await seedToken(page, fixture.alice.token);
     return fixture;
   }
@@ -228,7 +229,7 @@ export async function seedWorkspaceFixture(page) {
       method: "POST",
     });
 
-    return {
+    const fixture = {
       suffix,
       alice: {
         ...alice,
@@ -255,11 +256,42 @@ export async function seedWorkspaceFixture(page) {
       },
       dmChannel: dm.channel,
     };
+
+    await restoreWorkspaceFixture(page, fixture);
+    return fixture;
   })();
 
   const fixture = await workspaceFixturePromise;
   await seedToken(page, fixture.alice.token);
   return fixture;
+}
+
+async function restoreWorkspaceFixture(page, fixture) {
+  await requestAsToken(page, fixture.alice.token, "/users/me", {
+    method: "PATCH",
+    body: {
+      displayName: fixture.alice.displayName,
+      avatarKey: null,
+    },
+  });
+  await requestAsToken(page, fixture.alice.token, "/users/me/onboarded", { method: "POST" });
+  await requestAsToken(page, fixture.bob.token, "/users/me/onboarded", { method: "POST" });
+  await requestAsToken(page, fixture.alice.token, `/channels/${fixture.projectChannel.id}`, {
+    method: "PATCH",
+    body: {
+      type: "public",
+      topic: "A very long planning topic that should truncate instead of pushing actions away",
+      description: "Internal planning",
+    },
+  });
+
+  const saved = await requestAsToken(page, fixture.alice.token, "/saved");
+  const hasFormatted = (saved.items || []).some((item) => item.id === fixture.messages.formatted.id);
+  if (!hasFormatted) {
+    await requestAsToken(page, fixture.alice.token, `/saved/${fixture.messages.formatted.id}`, {
+      method: "POST",
+    });
+  }
 }
 
 export async function enableClipboardStub(page) {

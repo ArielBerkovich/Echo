@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { enableClipboardStub, requestAsToken, seedWorkspaceFixture } from "./helpers.js";
+import { enableClipboardStub, messageByText, railItem, requestAsToken, seedWorkspaceFixture } from "./helpers.js";
 
 let fixture: Awaited<ReturnType<typeof seedWorkspaceFixture>>;
 
@@ -134,10 +134,10 @@ test("shows activity items and marks activity as read", async ({ page }) => {
       externalKey: `activity-${Date.now()}`,
     },
   });
-  await page.getByRole("button", { name: /Activity/ }).click();
+  await railItem(page, "activity").click();
 
-  await expect(page.getByText("Activity", { exact: true })).toBeVisible();
-  const activityItem = page.locator(".activity-item").first();
+  await expect(page.getByTestId("activity-header")).toContainText("Activity");
+  const activityItem = page.getByTestId("activity-item").first();
   await expect(activityItem).toBeVisible();
   await markedRead;
 });
@@ -151,30 +151,28 @@ test("shows saved messages and removes one from saved", async ({ page }) => {
   await requestAsToken(page, fixture.alice.token, `/saved/${fixture.messages.searchHit.id}`, {
     method: "POST",
   });
-  await page.locator(".rail-item").filter({ hasText: "Saved" }).click();
+  await railItem(page, "saved").click();
 
-  await expect(page.locator(".ch-name")).toHaveText("Saved");
-  const savedItem = page.locator(".activity-item").first();
+  await expect(page.getByTestId("saved-header")).toContainText("Saved");
+  const savedItem = page.getByTestId("saved-item").filter({ hasText: fixture.messages.searchHit.body });
   await expect(savedItem).toBeVisible();
 
-  await page.getByTitle("Remove from saved").click();
+  await savedItem.locator('[data-testid^="saved-remove-"]').click();
 
-  await expect(page.locator(".activity-item")).toHaveCount(0);
+  await expect(page.getByTestId("saved-item")).toHaveCount(0);
   await unsave;
 });
 
 test("opens a profile from an @mention in a message", async ({ page }) => {
   await page.goto("/");
-  const mention = page
-    .locator(".message")
-    .filter({ hasText: `Heads up @${fixture.alice.username}` });
+  const mention = messageByText(page, `Heads up @${fixture.alice.username}`).first();
   await expect(mention).toBeVisible();
 
   await mention.locator(".mention--me").click();
 
-  await expect(page.locator(".profile-modal")).toBeVisible();
-  await expect(page.locator(".profile-modal")).toContainText(fixture.alice.displayName);
-  await expect(page.locator(".profile-modal")).toContainText(`@${fixture.alice.username}`);
+  await expect(page.getByTestId("profile-modal")).toBeVisible();
+  await expect(page.getByTestId("profile-modal")).toContainText(fixture.alice.displayName);
+  await expect(page.getByTestId("profile-modal")).toContainText(`@${fixture.alice.username}`);
 });
 
 test("searches messages with filters and displays results", async ({ page }) => {
@@ -184,18 +182,16 @@ test("searches messages with filters and displays results", async ({ page }) => 
   });
 
   await page.goto("/");
-  await page
-    .getByPlaceholder("Search messages, people, and channels")
-    .fill(`Welcome in:general from:@${fixture.alice.username} has:link`);
+  await page.getByTestId("search-input").fill(`Welcome in:general from:@${fixture.alice.username} has:link`);
   await page.keyboard.press("Enter");
   await page.keyboard.press("Enter");
 
-  await expect(page.locator(".ch-name")).toHaveText("Search");
+  await expect(page.getByTestId("search-results-header")).toContainText("Search");
   await expect(page.getByText("in: #general")).toBeVisible();
   await expect(page.getByText(`from: @${fixture.alice.username}`)).toBeVisible();
   await expect(page.getByText("has: link")).toBeVisible();
-  await expect(page.locator(".search-result")).toContainText(fixture.messages.searchHit.body);
-  await expect(page.locator(".search-result mark")).toContainText("Welcome");
+  await expect(page.getByTestId("search-result")).toContainText(fixture.messages.searchHit.body);
+  await expect(page.getByTestId("search-result").locator("mark")).toContainText("Welcome");
   await expect.poll(() => decodeURIComponent(requestedUrl)).toContain(
     `q=Welcome in:general from:@${fixture.alice.username} has:link`
   );
