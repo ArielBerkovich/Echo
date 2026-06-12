@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../api.js";
 import { getSocket } from "../socket.js";
 import { notificationsActive, showNotification } from "./notify.js";
@@ -119,53 +119,51 @@ export function useRealtime({
       const inChannels = channelsRef.current.some((c) => c.id === msg.channelId);
       const inDms = dmsRef.current.some((d) => d.id === msg.channelId);
 
-      startTransition(() => {
-        // Channel sidebar: bump unread locally (no refetch).
-        if (inChannels && !mine && !viewingHere) {
-          setChannels((prev) =>
-            prev.map((c) => (c.id === msg.channelId ? { ...c, unread: (c.unread || 0) + 1 } : c))
-          );
-        }
+      // Channel sidebar: bump unread locally (no refetch).
+      if (inChannels && !mine && !viewingHere) {
+        setChannels((prev) =>
+          prev.map((c) => (c.id === msg.channelId ? { ...c, unread: (c.unread || 0) + 1 } : c))
+        );
+      }
 
-        // DM list: update preview, recency, and unread locally; move to the top.
-        if (inDms) {
-          setDms((prev) => {
-            const i = prev.findIndex((d) => d.id === msg.channelId);
-            if (i < 0) return prev;
-            const d = prev[i];
-            const updated = {
-              ...d,
-              lastAt: msg.createdAt,
-              lastBody: msg.body,
-              lastFromMe: mine,
-              unread: mine || viewingHere ? d.unread || 0 : (d.unread || 0) + 1,
-            };
-            return [updated, ...prev.filter((_, idx) => idx !== i)];
-          });
-        }
+      // DM list: update preview, recency, and unread locally; move to the top.
+      if (inDms) {
+        setDms((prev) => {
+          const i = prev.findIndex((d) => d.id === msg.channelId);
+          if (i < 0) return prev;
+          const d = prev[i];
+          const updated = {
+            ...d,
+            lastAt: msg.createdAt,
+            lastBody: msg.body,
+            lastFromMe: mine,
+            unread: mine || viewingHere ? d.unread || 0 : (d.unread || 0) + 1,
+          };
+          return [updated, ...prev.filter((_, idx) => idx !== i)];
+        });
+      }
 
-        // A conversation we don't track yet (new DM, or just added to a channel) —
-        // fetch once to pick it up. Rare, so no storm.
-        if (!mine && !viewingHere && !inChannels && !inDms) {
-          refreshDms();
-          refreshChannels();
-        }
+      // A conversation we don't track yet (new DM, or just added to a channel) —
+      // fetch once to pick it up. Rare, so no storm.
+      if (!mine && !viewingHere && !inChannels && !inDms) {
+        refreshDms();
+        refreshChannels();
+      }
 
-        const body = msg.body || "";
-        const personallyMentioned = mentionRe.test(body);
-        const broadcastsAll = inChannels && /@everyone\b/i.test(body);
-        const mentionsMe = personallyMentioned || broadcastsAll;
+      const body = msg.body || "";
+      const personallyMentioned = mentionRe.test(body);
+      const broadcastsAll = inChannels && /@everyone\b/i.test(body);
+      const mentionsMe = personallyMentioned || broadcastsAll;
 
-        // Activity badge: count @mentions and @everyone broadcasts you haven't
-        // seen yet. Thread replies are tracked by their thread; top-level by channel.
-        if (mentionsMe && !mine) {
-          if (msg.parentId) {
-            setActivityThreadUnread((prev) => ({ ...prev, [msg.parentId]: (prev[msg.parentId] || 0) + 1 }));
-          } else if (!viewingHere) {
-            setActivityUnread((prev) => ({ ...prev, [msg.channelId]: (prev[msg.channelId] || 0) + 1 }));
-          }
+      // Activity badge: count @mentions and @everyone broadcasts you haven't
+      // seen yet. Thread replies are tracked by their thread; top-level by channel.
+      if (mentionsMe && !mine) {
+        if (msg.parentId) {
+          setActivityThreadUnread((prev) => ({ ...prev, [msg.parentId]: (prev[msg.parentId] || 0) + 1 }));
+        } else if (!viewingHere) {
+          setActivityUnread((prev) => ({ ...prev, [msg.channelId]: (prev[msg.channelId] || 0) + 1 }));
         }
-      });
+      }
 
       // Desktop notification — DMs (with a VIP badge), and channel @mentions.
       // Skipped if you're already focused on that conversation.
