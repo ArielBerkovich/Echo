@@ -43,7 +43,7 @@ const EMOJI_RE = /\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic})*
 const HAS_EMOJI = /\p{Extended_Pictographic}/u;
 
 // Wrap emoji characters in styled spans so they render larger than body text.
-// Emoji-only messages get a "jumbo" size (Slack-style).
+// Emoji-only messages get a "jumbo" size.
 function wrapEmojis(html) {
   if (typeof document === "undefined") return html;
   const tpl = document.createElement("template");
@@ -87,7 +87,7 @@ function wrapEmojis(html) {
 export function createRenderer(knownUsernames, me, customEmojis = []) {
   const customMap = new Map(customEmojis.map((e) => [e.name.toLowerCase(), e.url]));
   const marked = new Marked({
-    breaks: true, // single newline => <br>, like Slack
+    breaks: true, // single newline => <br>
     gfm: true,
   });
 

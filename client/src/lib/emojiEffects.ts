@@ -1,4 +1,4 @@
-// Fun, Slack-style screen effects triggered by certain emojis in a message.
+// Screen effects triggered by certain emojis in a message.
 // First matching trigger wins. Effects are dispatched as a window event that
 // the <EmojiEffects/> overlay listens for, so any component can fire one.
 const TRIGGERS = [

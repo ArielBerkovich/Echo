@@ -13,8 +13,8 @@ function escapeRegex(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-// Pull Slack-style `in:<channel>`, `from:<@user>` and `has:<file|image|link>`
-// filters out of the raw query, returning them plus the leftover free text.
+// Pull `in:<channel>`, `from:<@user>` and `has:<file|image|link>` filters out
+// of the raw query, returning them plus the leftover free text.
 function parseQuery(raw) {
   let text = ` ${raw} `;
   let inName = null;

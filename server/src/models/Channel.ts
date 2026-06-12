@@ -10,7 +10,7 @@ const channelSchema = new mongoose.Schema(
       trim: true,
       minlength: 1,
       maxlength: 64,
-      // Slack-style channel names: lowercase, no spaces.
+      // Channel names are lowercase and contain no spaces.
       match: /^[a-z0-9_-]+$/,
     },
     type: { type: String, enum: ["public", "private", "dm"], default: "public" },

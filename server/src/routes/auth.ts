@@ -17,9 +17,7 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: "Too many attempts, please try again later" },
 });
-// E2E runs many auth flows against one live server instance; skip throttling
-// there so the suite exercises real auth without hitting artificial limits.
-const authRateLimit = process.env.E2E_RESET_TOKEN ? (_req, _res, next) => next() : authLimiter;
+const authRateLimit = authLimiter;
 
 // GET /api/auth/setup-status — public. Tells the login screen whether the
 // workspace still needs its first (admin) account created.

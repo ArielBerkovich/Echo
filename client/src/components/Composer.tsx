@@ -445,8 +445,8 @@ export default function Composer({ channel, parentId = null, users = [], customE
       }
     }
     if (e.key === "Enter") {
-      // Inside a code section (Slack-style): Shift+Enter adds a new line within
-      // the code; a plain Enter leaves the code section onto a fresh normal line.
+      // Inside a code section: Shift+Enter adds a new line within the code; a
+      // plain Enter leaves the code section onto a fresh normal line.
       const codeEl = findCodeAncestor(window.getSelection()?.anchorNode);
       if (codeEl) {
         e.preventDefault();

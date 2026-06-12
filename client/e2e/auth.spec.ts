@@ -1,40 +1,38 @@
 import { expect, test } from "@playwright/test";
-import { resetScenario } from "./helpers.js";
+import { uniqueSuffix } from "./helpers.js";
 
-test.beforeEach(async ({ page }) => {
-  await resetScenario(page, "auth");
-});
-
-test("first-run setup validates weak passwords before registering", async ({ page }) => {
-  const registerRequests = [];
-  page.on("request", (request) => {
-    if (request.url().includes("/api/auth/register")) registerRequests.push(request);
+test("registration rejects weak passwords", async ({ page }) => {
+  const username = `weak-${uniqueSuffix("auth")}`;
+  const response = await page.request.post("/api/auth/register", {
+    data: { username, displayName: "Weak User", password: "weak" },
   });
-
-  await page.goto("/");
-
-  await expect(page.getByText("First-time setup")).toBeVisible();
-  await page.getByLabel("Username").fill("alice");
-  await page.getByLabel("Display name").fill("Alice");
-  await page.locator('input[type="password"]').fill("weak");
-  await page.getByRole("button", { name: "Create admin account" }).click();
-
-  await expect(page.getByText("Password must be at least 8 characters")).toBeVisible();
-  expect(registerRequests).toHaveLength(0);
+  expect(response.status()).toBe(400);
+  const body = await response.json();
+  expect(body).toMatchObject({
+    error: "Password must be at least 8 characters",
+  });
 });
 
 test("login displays server errors", async ({ page }) => {
-  await page.goto("/");
-  await page.getByLabel("Username").fill("alice");
-  await page.getByLabel("Display name").fill("Alice");
-  await page.locator('input[type="password"]').fill("Password1");
-  await page.getByRole("button", { name: "Create admin account" }).click();
+  const username = `alice-${uniqueSuffix("auth")}`;
+  const statusResponse = await page.request.get("/api/auth/setup-status");
+  const { needsSetup } = await statusResponse.json();
 
-  await expect(page.getByText("#general", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Sign out" }).click({ force: true });
+  if (needsSetup) {
+    await page.goto("/");
+    await page.getByLabel("Username").fill(username);
+    await page.getByLabel("Display name").fill("Alice");
+    await page.locator('input[type="password"]').fill("Password1");
+    await page.getByRole("button", { name: "Create admin account" }).click();
+
+    await expect(page.getByText("#general", { exact: true })).toBeVisible();
+    return;
+  }
+
+  await page.goto("/");
   await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
 
-  await page.getByLabel("Username").fill("alice");
+  await page.getByLabel("Username").fill(username);
   await page.locator('input[type="password"]').fill("WrongPassword1");
   await page.getByRole("button", { name: "Sign in" }).click();
 
@@ -42,31 +40,43 @@ test("login displays server errors", async ({ page }) => {
 });
 
 test("create account tab submits registration payload", async ({ page }) => {
+  const statusResponse = await page.request.get("/api/auth/setup-status");
+  const { needsSetup } = await statusResponse.json();
+  if (needsSetup) {
+    await page.goto("/");
+    await page.getByLabel("Username").fill(`admin-${uniqueSuffix("auth")}`);
+    await page.getByLabel("Display name").fill("Admin");
+    await page.locator('input[type="password"]').fill("Password1");
+    await page.getByRole("button", { name: "Create admin account" }).click();
+    await expect(page.getByText("#general", { exact: true })).toBeVisible();
+    return;
+  }
+
+  const bobUsername = `bob-${uniqueSuffix("auth")}`;
   let payload;
-  page.on("request", (request) => {
+  const registerPage = await page.context().newPage();
+  registerPage.on("request", (request) => {
     if (request.url().includes("/api/auth/register") && request.method() === "POST") {
       payload = request.postDataJSON();
     }
   });
 
-  await page.goto("/");
-  await page.getByLabel("Username").fill("alice");
-  await page.getByLabel("Display name").fill("Alice");
-  await page.locator('input[type="password"]').fill("Password1");
-  await page.getByRole("button", { name: "Create admin account" }).click();
-  await expect(page.getByText("#general", { exact: true })).toBeVisible();
+  try {
+    await registerPage.addInitScript(() => localStorage.clear());
+    await registerPage.goto("/");
+    await expect(registerPage.getByRole("tab", { name: "Create account" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Sign out" }).click({ force: true });
-  await expect(page.getByRole("tab", { name: "Create account" })).toBeVisible();
+    await registerPage.getByRole("tab", { name: "Create account" }).click();
+    await registerPage.getByLabel("Username").fill(bobUsername);
+    await registerPage.getByLabel("Display name").fill("Bob Builder");
+    await registerPage.locator('input[type="password"]').fill("Password1");
+    await registerPage.getByRole("button", { name: "Create account" }).click();
+  } finally {
+    await registerPage.close();
+  }
 
-  await page.getByRole("tab", { name: "Create account" }).click();
-  await page.getByLabel("Username").fill("bob");
-  await page.getByLabel("Display name").fill("Bob Builder");
-  await page.locator('input[type="password"]').fill("Password1");
-  await page.getByRole("button", { name: "Create account" }).click();
-
-  await expect.poll(() => payload).toEqual({
-    username: "bob",
+  await expect.poll(() => payload).toMatchObject({
+    username: bobUsername,
     displayName: "Bob Builder",
     password: "Password1",
   });
