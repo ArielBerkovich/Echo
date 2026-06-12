@@ -42,11 +42,11 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
   return (
     <main className="channel-view">
       <div className="channel-main">
-      <header className="channel-header">
+      <header className="channel-header" data-testid="activity-header">
         <span className="ch-name">Activity</span>
         <span className="ch-meta">Mentions, replies & broadcasts · last 30 days</span>
       </header>
-      <div className="messages activity-list">
+      <div className="messages activity-list" data-testid="activity-list">
         {loading ? (
           <div className="empty-state"><p>Loading…</p></div>
         ) : items.length === 0 ? (
@@ -59,6 +59,7 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
             <button
               key={it.id}
               className={`activity-item ${it.unread ? "unread" : ""}`}
+              data-testid="activity-item"
               onClick={() => onJump(it)}
             >
               {it.unread && <span className="activity-unread-dot" aria-label="Unread" />}

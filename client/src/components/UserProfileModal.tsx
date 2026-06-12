@@ -8,8 +8,8 @@ export default function UserProfileModal({ user, currentUserId, online, isVip, o
 
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
-      <div className="modal profile-modal" onMouseDown={(e) => e.stopPropagation()}>
-        <button className="modal-close profile-close" onClick={onClose} aria-label="Close">
+      <div className="modal profile-modal" data-testid="profile-modal" onMouseDown={(e) => e.stopPropagation()}>
+        <button className="modal-close profile-close" data-testid="profile-close" onClick={onClose} aria-label="Close">
           ✕
         </button>
         <div className="profile-head">
@@ -23,12 +23,13 @@ export default function UserProfileModal({ user, currentUserId, online, isVip, o
         </div>
         {!isSelf && (
           <div className="profile-actions">
-            <button type="button" className="btn-primary profile-message" onClick={() => onMessage(user)}>
+            <button type="button" className="btn-primary profile-message" data-testid="profile-message" onClick={() => onMessage(user)}>
               Message
             </button>
             <button
               type="button"
               className={`profile-vip ${isVip ? "active" : ""}`}
+              data-testid="profile-vip"
               onClick={onToggleVip}
               title={isVip ? "Remove from VIP" : "Mark as VIP"}
             >

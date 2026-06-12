@@ -861,6 +861,7 @@ export default function Composer({ channel, parentId = null, users = [], customE
         <div
           ref={editorRef}
           className="composer-editor"
+          data-testid="composer-editor"
           contentEditable
           suppressContentEditableWarning
           role="textbox"
@@ -876,14 +877,14 @@ export default function Composer({ channel, parentId = null, users = [], customE
 
       <div className="composer-actions">
         <div className="left">
-          <input ref={fileInputRef} type="file" multiple hidden onChange={onPickFiles} />
+          <input ref={fileInputRef} type="file" multiple hidden data-testid="composer-attachments" onChange={onPickFiles} />
           <button type="button" className="icon-btn plus" title="Attach files" onMouseDown={keepFocus} onClick={() => fileInputRef.current?.click()}>
             <PlusIcon />
           </button>
           <button type="button" className={`icon-btn aa ${showFormatting ? "active" : ""}`} title="Formatting" onMouseDown={keepFocus} onClick={() => setShowFormatting((v) => !v)}>
             Aa
           </button>
-          <button type="button" className={`icon-btn emoji-toggle ${emojiOpen ? "active" : ""}`} title="Emoji" onMouseDown={keepFocus} onClick={() => setEmojiOpen((v) => !v)}>
+          <button type="button" className={`icon-btn emoji-toggle ${emojiOpen ? "active" : ""}`} data-testid="composer-emoji-toggle" title="Emoji" onMouseDown={keepFocus} onClick={() => setEmojiOpen((v) => !v)}>
             <SmileyIcon />
           </button>
         </div>
@@ -892,6 +893,7 @@ export default function Composer({ channel, parentId = null, users = [], customE
           <button
             type="submit"
             className={`icon-btn send-btn ${canSend || pending.length ? "ready" : ""}`}
+            data-testid="composer-send"
             disabled={(!canSend && pending.length === 0) || uploading}
             aria-label="Send"
           >
@@ -902,6 +904,7 @@ export default function Composer({ channel, parentId = null, users = [], customE
             <button
               type="button"
               className="icon-btn chevron-btn"
+              data-testid="composer-send-options"
               title="Send options"
               onMouseDown={keepFocus}
               onClick={() => setSendMenuOpen((v) => !v)}

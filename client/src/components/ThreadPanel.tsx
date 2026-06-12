@@ -136,10 +136,10 @@ export default function ThreadPanel({
   const messages = [rootMsg, ...replies];
 
   return (
-    <aside className="thread-panel">
+    <aside className="thread-panel" data-testid="thread-panel">
       <header className="thread-header">
         <span className="thread-title">Thread</span>
-        <button className="thread-close" onClick={onClose} aria-label="Close thread">✕</button>
+        <button className="thread-close" data-testid="thread-close" onClick={onClose} aria-label="Close thread">✕</button>
       </header>
 
       <div className="thread-body" onMouseLeave={() => { if (!menuFor) setActionsFor(null); }}>

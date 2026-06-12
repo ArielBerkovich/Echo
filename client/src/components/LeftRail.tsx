@@ -15,7 +15,12 @@ export default function LeftRail({ view, onSelect, badges = {} }) {
         {ITEMS.map(({ key, label, Icon }) => {
           const count = badges[key] || 0;
           return (
-            <button key={key} className={`rail-item ${view === key ? "active" : ""}`} onClick={() => onSelect(key)}>
+            <button
+              key={key}
+              className={`rail-item ${view === key ? "active" : ""}`}
+              data-testid={`rail-${key}`}
+              onClick={() => onSelect(key)}
+            >
               <span className="rail-icon">
                 <Icon />
                 {count > 0 && <span className="rail-badge">{count > 99 ? "99+" : count}</span>}

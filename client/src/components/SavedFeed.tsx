@@ -36,11 +36,11 @@ export default function SavedFeed({ user, users = [], customEmojis = [], onJump,
   return (
     <main className="channel-view">
       <div className="channel-main">
-        <header className="channel-header">
+        <header className="channel-header" data-testid="saved-header">
           <span className="ch-name">Saved</span>
           <span className="ch-meta">Messages you've saved for later</span>
         </header>
-        <div className="messages activity-list">
+        <div className="messages activity-list" data-testid="saved-list">
           {loading ? (
             <div className="empty-state"><p>Loading…</p></div>
           ) : items.length === 0 ? (
@@ -50,7 +50,7 @@ export default function SavedFeed({ user, users = [], customEmojis = [], onJump,
             </div>
           ) : (
             items.map((it) => (
-              <button key={it.id} className="activity-item" onClick={() => onJump(it)}>
+              <button key={it.id} className="activity-item" data-testid="saved-item" onClick={() => onJump(it)}>
                 <Avatar name={it.author?.displayName || "?"} src={it.author?.avatarUrl} size={36} />
                 <div className="content">
                   <div className="meta">
@@ -71,6 +71,7 @@ export default function SavedFeed({ user, users = [], customEmojis = [], onJump,
                 </div>
                 <span
                   className="saved-remove saved-active"
+                  data-testid={`saved-remove-${it.id}`}
                   title="Remove from saved"
                   role="button"
                   onClick={(e) => unsave(e, it)}

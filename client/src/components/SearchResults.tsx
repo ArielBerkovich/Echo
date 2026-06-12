@@ -91,7 +91,7 @@ export default function SearchResults({ query, onJump, onClose }) {
   return (
     <main className="channel-view">
       <div className="channel-main">
-        <header className="channel-header">
+        <header className="channel-header" data-testid="search-results-header">
           <span className="ch-name">Search</span>
           <div className="search-chips">
             {parsed.filters.map((f) => (
@@ -101,12 +101,12 @@ export default function SearchResults({ query, onJump, onClose }) {
             ))}
             {parsed.text && <span className="search-chip-text">“{parsed.text}”</span>}
           </div>
-          <button className="ch-meta ch-meta-btn search-close-btn" onClick={onClose}>
+          <button className="ch-meta ch-meta-btn search-close-btn" data-testid="search-results-clear" onClick={onClose}>
             Clear
           </button>
         </header>
 
-        <div className="messages search-results">
+        <div className="messages search-results" data-testid="search-results">
           {loading ? (
             <div className="empty-state"><p>Searching…</p></div>
           ) : error ? (
@@ -119,7 +119,7 @@ export default function SearchResults({ query, onJump, onClose }) {
           ) : (
             <>
               {results.map((r) => (
-                <button key={r.id} className="search-result" onClick={() => onJump(r)}>
+                <button key={r.id} className="search-result" data-testid="search-result" onClick={() => onJump(r)}>
                   <Avatar name={r.author?.displayName || "?"} src={r.author?.avatarUrl} size={36} />
                   <div className="content">
                     <div className="meta">

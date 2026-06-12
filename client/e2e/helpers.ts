@@ -274,3 +274,63 @@ export async function enableClipboardStub(page) {
     });
   });
 }
+
+export function slug(text) {
+  return String(text || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export function channelRow(page, name) {
+  return page.getByTestId(`channel-row-${slug(name)}`);
+}
+
+export function dmRow(page, name) {
+  return page.getByTestId(`dm-row-${slug(name)}`);
+}
+
+export function railItem(page, key) {
+  return page.getByTestId(`rail-${key}`);
+}
+
+export function messageById(page, id) {
+  return page.getByTestId(`message-${id}`);
+}
+
+export function messageByText(page, text) {
+  return page.locator('[data-testid^="message-"]').filter({ hasText: text });
+}
+
+export function composer(page) {
+  return page.getByTestId("composer-editor");
+}
+
+export function settingsPage(page) {
+  return page.getByTestId("settings-page");
+}
+
+export function profileModal(page) {
+  return page.getByTestId("profile-modal");
+}
+
+export function addEmojiModal(page) {
+  return page.getByTestId("add-emoji-modal");
+}
+
+export function activityItem(page) {
+  return page.getByTestId("activity-item");
+}
+
+export function searchResult(page) {
+  return page.getByTestId("search-result");
+}
+
+export function searchInput(page) {
+  return page.getByTestId("search-input");
+}
+
+export function threadPanel(page) {
+  return page.getByTestId("thread-panel");
+}
