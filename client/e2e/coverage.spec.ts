@@ -153,7 +153,7 @@ test("toggles reactions and pins messages", async ({ page }) => {
   const message = page.locator(`.message[data-mid="${formattedId}"]`);
   await expect(message).toBeVisible();
   await message.hover();
-  await expect(message.getByTitle("Add reaction")).toBeVisible();
+  await expect(message.locator(".msg-actions button[title='Add reaction']")).toBeVisible();
 
   await message.getByTitle("Pin message").click();
   await page.getByRole("button", { name: "Pinned messages" }).click();
