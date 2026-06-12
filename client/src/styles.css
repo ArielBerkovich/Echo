@@ -194,7 +194,7 @@ html[data-theme="sand"][data-mode="light"] {
 /* Rose — soft pink; signature pink surfaces in light mode. */
 
 /* ---- Theme-tinted dark surfaces so the chat panel stays on-brand in dark
-   mode without flattening into a Slack-like layout. ---- */
+   mode without flattening into a generic layout. ---- */
 html[data-theme="aubergine"][data-mode="dark"] {
   --bg: #120f14;
   --surface: #1d1820;
@@ -2171,7 +2171,7 @@ html[data-mode="dark"] .sidebar {
   border-bottom: 1px solid var(--border);
   background: var(--surface);
 }
-/* Inline search box (Slack-style dropdown) */
+/* Inline search box with a dropdown */
 .search-box {
   position: relative;
   width: 100%;
@@ -2591,7 +2591,7 @@ html[data-mode="dark"] .day-divider-label {
   background: var(--surface-2);
 }
 
-/* Slack-style floating message-options toolbar */
+/* Floating message-options toolbar */
 .msg-actions {
   position: absolute;
   top: 2px;
@@ -4349,7 +4349,7 @@ html[data-mode="dark"] .channel-header {
   font-size: 13px;
 }
 
-/* Composer (Slack-style single bordered box) */
+/* Composer: a single bordered box */
 .composer {
   position: relative;
   margin: 4px 20px 22px;
@@ -4753,7 +4753,7 @@ html[data-mode="dark"] .channel-header {
 .markdown strong {
   font-weight: 700;
 }
-/* Slack-style inline code: a subtle bordered chip with a red accent. */
+/* Inline code: a subtle bordered chip with a red accent. */
 .markdown code {
   background: var(--code-bg);
   border: 1px solid var(--code-border);
@@ -4763,8 +4763,8 @@ html[data-mode="dark"] .channel-header {
   font-size: 0.85em;
   font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
 }
-/* Slack-style code block: a neutral, theme-aware bordered surface (not a navy
-   box), monospace, with horizontal scroll for long lines. */
+/* Code block: a neutral, theme-aware bordered surface, monospace, with
+   horizontal scroll for long lines. */
 .markdown pre {
   background: var(--code-bg);
   border: 1px solid var(--code-border);
@@ -5501,7 +5501,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 }
 
 /* ============================================================
-   Reaction "who reacted" tooltip (Slack-style, on hover)
+   Reaction "who reacted" tooltip (on hover)
    ============================================================ */
 .reaction {
   position: relative;

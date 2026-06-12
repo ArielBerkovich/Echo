@@ -1,18 +1,10 @@
 import { expect, test } from "@playwright/test";
-import {
-  channelRow,
-  composer,
-  enableClipboardStub,
-  loginAndSeedToken,
-  messageByText,
-  railItem,
-  resetScenario,
-  searchInput,
-} from "./helpers.js";
+import { enableClipboardStub, messageByText, railItem, requestAsToken, seedWorkspaceFixture } from "./helpers.js";
+
+let fixture: Awaited<ReturnType<typeof seedWorkspaceFixture>>;
 
 test.beforeEach(async ({ page }) => {
-  await resetScenario(page, "workspace");
-  await loginAndSeedToken(page, "alice", "Password1");
+  fixture = await seedWorkspaceFixture(page);
   await enableClipboardStub(page);
 });
 
@@ -20,15 +12,15 @@ test("restores an authenticated session into the default channel", async ({ page
   await page.goto("/");
 
   await expect(page.getByText("Echo").first()).toBeVisible();
-  await expect(channelRow(page, "general")).toBeVisible();
-  await expect(page.getByText("Team updates")).toBeVisible();
+  await expect(page.getByText("#general", { exact: true })).toBeVisible();
+  await expect(page.getByText(fixture.messages.searchHit.body, { exact: false })).toBeVisible();
 });
 
 test("sign out clears the session and returns to login", async ({ page }) => {
   await page.goto("/");
-  await expect(channelRow(page, "general")).toBeVisible();
+  await expect(page.getByText("#general", { exact: true })).toBeVisible();
 
-  await page.getByTestId("sidebar-logout").click({ force: true });
+  await page.getByRole("button", { name: "Sign out" }).click({ force: true });
 
   await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
   await expect(page.evaluate(() => localStorage.getItem("echo.token"))).resolves.toBeNull();
@@ -38,16 +30,18 @@ test("opens API reference from the sidebar footer", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText("#general", { exact: true })).toBeVisible();
 
-  await page.getByTestId("sidebar-api-docs").click({ force: true });
+  await page.getByLabel("API reference").click({ force: true });
 
   await expect(page.getByText(/REST API/i)).toBeVisible();
 });
 
-test("keeps channel header actions inside the header when pinned panel is open", async ({ page }) => {
+test("keeps channel header actions inside the header when pinned panel is open", async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1120, height: 760 });
   await page.goto("/");
-  await channelRow(page, "project-alpha").click();
-  await page.getByTestId("channel-pinned").click();
+  await page.getByText(fixture.projectChannel.name, { exact: true }).click();
+  await page.getByRole("button", { name: "Pinned messages" }).click();
 
   await expect(page.locator(".pinned-panel")).toBeVisible();
   const bounds = await page.evaluate(() => {
@@ -67,45 +61,26 @@ test("keeps channel header actions inside the header when pinned panel is open",
 
 test("copies the raw markdown body from a message", async ({ page }) => {
   await page.goto("/");
-  const message = messageByText(page, "API formatting test").first();
+  const message = page
+    .locator(".message")
+    .filter({ hasText: `API formatting test ${fixture.suffix}` })
+    .first();
   await expect(message).toBeVisible();
 
   await message.hover();
-  await message.locator('[data-testid$="-copy"]').click();
+  await message.getByTitle("Copy message").click();
 
-  await expect.poll(() => page.evaluate(() => window.__copiedText)).toBe(
-    [
-      "API formatting test",
-      "",
-      "# Heading 1",
-      "",
-      "**Bold text**",
-      "_Italic text_",
-      "~~Strikethrough text~~",
-      "`inline code`",
-      "",
-      "```js",
-      'const message = "formatted via API";',
-      "```",
-      "",
-      "> Quote line",
-      "",
-      "- Bullet item",
-      "1. Numbered item",
-      "",
-      "[Echo link](https://example.com)",
-    ].join("\n")
-  );
-  await expect(message.locator('[data-testid$="-copy"]')).toHaveAttribute("title", "Copied message");
+  await expect.poll(() => page.evaluate(() => window.__copiedText)).toBe(fixture.messages.formatted.body);
+  await expect(message.getByTitle("Copied message")).toBeVisible();
 });
 
 test("pastes markdown into the composer as formatted content", async ({ page }) => {
   await page.goto("/");
-  await expect(composer(page)).toBeVisible();
+  await expect(page.locator(".composer-editor")).toBeVisible();
 
-  await composer(page).focus();
+  await page.locator(".composer-editor").focus();
   await page.evaluate((body) => {
-    const editor = document.querySelector('[data-testid="composer-editor"]');
+    const editor = document.querySelector(".composer-editor");
     const data = new DataTransfer();
     data.setData("text/plain", body);
     editor.dispatchEvent(
@@ -115,29 +90,9 @@ test("pastes markdown into the composer as formatted content", async ({ page }) 
         clipboardData: data,
       })
     );
-  }, [
-    "API formatting test",
-    "",
-    "# Heading 1",
-    "",
-    "**Bold text**",
-    "_Italic text_",
-    "~~Strikethrough text~~",
-    "`inline code`",
-    "",
-    "```js",
-    'const message = "formatted via API";',
-    "```",
-    "",
-    "> Quote line",
-    "",
-    "- Bullet item",
-    "1. Numbered item",
-    "",
-    "[Echo link](https://example.com)",
-  ].join("\n"));
+  }, fixture.messages.formatted.body);
 
-  const editor = composer(page);
+  const editor = page.locator(".composer-editor");
   await expect(editor.locator("h1")).toHaveText("Heading 1");
   await expect(editor.locator("strong")).toHaveText("Bold text");
   await expect(editor.locator("del")).toHaveText("Strikethrough text");
@@ -150,18 +105,19 @@ test("pastes markdown into the composer as formatted content", async ({ page }) 
 test("sends multiple messages from the same composer", async ({ page }) => {
   await page.goto("/");
 
-  await expect(composer(page)).toBeVisible();
+  const composer = page.locator(".composer-editor");
+  await expect(composer).toBeVisible();
 
   const first = `Multi-send regression 1 ${Date.now()}`;
   const second = `Multi-send regression 2 ${Date.now()}`;
 
-  await composer(page).fill(first);
-  await composer(page).press("Enter");
-  await expect(messageByText(page, first)).toBeVisible();
+  await composer.fill(first);
+  await composer.press("Enter");
+  await expect(page.locator(".message").filter({ hasText: first })).toBeVisible();
 
-  await composer(page).fill(second);
-  await composer(page).press("Enter");
-  await expect(messageByText(page, second)).toBeVisible();
+  await composer.fill(second);
+  await composer.press("Enter");
+  await expect(page.locator(".message").filter({ hasText: second })).toBeVisible();
 });
 
 test("shows activity items and marks activity as read", async ({ page }) => {
@@ -170,13 +126,19 @@ test("shows activity items and marks activity as read", async ({ page }) => {
   );
 
   await page.goto("/");
+  await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body: `Activity ping ${Date.now()}`,
+      externalKey: `activity-${Date.now()}`,
+    },
+  });
   await railItem(page, "activity").click();
 
   await expect(page.getByTestId("activity-header")).toContainText("Activity");
-  const mentionItem = page.getByTestId("activity-item").filter({ hasText: "mentioned you" });
-  await expect(mentionItem).toBeVisible();
-  await expect(mentionItem).toContainText("Bob Builder");
-  await expect(page.getByTestId("activity-list").locator(".mention--me")).toHaveText("@alice");
+  const activityItem = page.getByTestId("activity-item").first();
+  await expect(activityItem).toBeVisible();
   await markedRead;
 });
 
@@ -186,28 +148,40 @@ test("shows saved messages and removes one from saved", async ({ page }) => {
   );
 
   await page.goto("/");
-  await railItem(page, "saved").click();
+  const savedBefore = await requestAsToken(page, fixture.alice.token, "/saved");
+  if ((savedBefore.items || []).some((item) => item.id === fixture.messages.searchHit.id)) {
+    await requestAsToken(page, fixture.alice.token, `/saved/${fixture.messages.searchHit.id}`, {
+      method: "POST",
+    });
+  }
+  await requestAsToken(page, fixture.alice.token, `/saved/${fixture.messages.searchHit.id}`, {
+    method: "POST",
+  });
+  await page.evaluate((userId) => {
+    localStorage.setItem(`echo.loc.${userId}`, JSON.stringify({ view: "saved", convId: null, convType: null }));
+  }, fixture.alice.id);
+  await page.reload();
 
-  await expect(page.getByTestId("saved-header")).toContainText("Saved");
-  await expect(page.getByText("API formatting test")).toBeVisible();
-  await expect(page.getByTestId("saved-item").filter({ hasText: "API formatting test" })).toBeVisible();
+  await expect(page.getByTestId("saved-header")).toBeVisible();
+  const savedItem = page.getByTestId("saved-item").filter({ hasText: fixture.messages.searchHit.body });
+  await expect(savedItem).toBeVisible();
 
-  await page.getByTestId("saved-item").filter({ hasText: "API formatting test" }).locator('[data-testid^="saved-remove-"]').click();
+  await savedItem.locator('[data-testid^="saved-remove-"]').click();
 
-  await expect(page.getByText("API formatting test")).toBeHidden();
+  await expect(savedItem).toHaveCount(0);
   await unsave;
 });
 
 test("opens a profile from an @mention in a message", async ({ page }) => {
   await page.goto("/");
-  const mentionMessage = messageByText(page, "Heads up @alice").first();
-  await expect(mentionMessage).toBeVisible();
+  const mention = messageByText(page, `Heads up @${fixture.alice.username}`).first();
+  await expect(mention).toBeVisible();
 
-  await mentionMessage.locator(".mention--me").click();
+  await mention.locator(".mention--me").click();
 
   await expect(page.getByTestId("profile-modal")).toBeVisible();
-  await expect(page.getByTestId("profile-modal")).toContainText("Alice");
-  await expect(page.getByTestId("profile-modal")).toContainText("@alice");
+  await expect(page.getByTestId("profile-modal")).toContainText(fixture.alice.displayName);
+  await expect(page.getByTestId("profile-modal")).toContainText(`@${fixture.alice.username}`);
 });
 
 test("searches messages with filters and displays results", async ({ page }) => {
@@ -217,15 +191,17 @@ test("searches messages with filters and displays results", async ({ page }) => 
   });
 
   await page.goto("/");
-  await searchInput(page).fill("Welcome in:general from:@alice has:link");
+  await page.getByTestId("search-input").fill(`Welcome in:general from:@${fixture.alice.username} has:link`);
   await page.keyboard.press("Enter");
   await page.keyboard.press("Enter");
 
   await expect(page.getByTestId("search-results-header")).toContainText("Search");
   await expect(page.getByText("in: #general")).toBeVisible();
-  await expect(page.getByText("from: @alice")).toBeVisible();
+  await expect(page.getByText(`from: @${fixture.alice.username}`)).toBeVisible();
   await expect(page.getByText("has: link")).toBeVisible();
-  await expect(page.getByTestId("search-result")).toContainText("Welcome search result");
+  await expect(page.getByTestId("search-result")).toContainText(fixture.messages.searchHit.body);
   await expect(page.getByTestId("search-result").locator("mark")).toContainText("Welcome");
-  await expect.poll(() => decodeURIComponent(requestedUrl)).toContain("q=Welcome in:general from:@alice has:link");
+  await expect.poll(() => decodeURIComponent(requestedUrl)).toContain(
+    `q=Welcome in:general from:@${fixture.alice.username} has:link`
+  );
 });

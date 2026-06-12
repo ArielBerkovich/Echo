@@ -273,7 +273,7 @@ export default function Message({
   );
 }
 
-// Slack-style "who reacted" text, e.g. "Alice, Bob and you reacted with 🎉".
+// "Who reacted" text, e.g. "Alice, Bob and you reacted with 🎉".
 function reactionTip(userIds = [], usersById, currentUserId, emoji) {
   const byId = usersById || new Map();
   const others = [];
@@ -282,7 +282,7 @@ function reactionTip(userIds = [], usersById, currentUserId, emoji) {
     if (id === currentUserId) includesMe = true;
     else others.push(byId.get(id)?.displayName || "Someone");
   }
-  const names = includesMe ? [...others, "you"] : others; // "you" last, like Slack
+  const names = includesMe ? [...others, "you"] : others; // keep "you" last
   let who;
   if (names.length === 0) who = "Someone";
   else if (names.length === 1) who = names[0];

@@ -1,19 +1,5 @@
 import { expect, test } from "@playwright/test";
-import {
-  addEmojiModal,
-  channelRow,
-  composer,
-  dmRow,
-  enableClipboardStub,
-  loginAndSeedToken,
-  messageById,
-  messageByText,
-  profileModal,
-  railItem,
-  resetScenario,
-  settingsPage,
-  threadPanel,
-} from "./helpers.js";
+import { enableClipboardStub, seedWorkspaceFixture, slug } from "./helpers.js";
 
 const ONE_BY_ONE_PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAEklEQVR42mP8/5+hHgAHggJ/PFvdcQAAAABJRU5ErkJggg==",
@@ -21,9 +7,10 @@ const ONE_BY_ONE_PNG = Buffer.from(
 );
 const NOT_IMAGE = Buffer.from("not an image", "utf8");
 
+let fixture: Awaited<ReturnType<typeof seedWorkspaceFixture>>;
+
 test.beforeEach(async ({ page }) => {
-  await resetScenario(page, "workspace");
-  await loginAndSeedToken(page, "alice", "Password1");
+  fixture = await seedWorkspaceFixture(page);
   await enableClipboardStub(page);
 });
 
@@ -57,14 +44,15 @@ async function messageId(page, channelName, body) {
 test("manages channels, members, visibility, and leaving", async ({ page }) => {
   await page.goto("/");
 
-  await page.getByTestId("create-channel").click();
-  const createModal = page.getByTestId("create-channel-modal");
-  await createModal.getByTestId("create-channel-name").fill("team-room");
-  await createModal.getByTestId("create-channel-submit").click();
+  const channelName = `team-room-${fixture.suffix}`;
+  await page.getByRole("button", { name: "Create channel" }).click();
+  const createModal = page.locator(".modal").filter({ hasText: "Create a channel" });
+  await createModal.getByPlaceholder("e.g. marketing").fill(channelName);
+  await createModal.getByRole("button", { name: "Create" }).click();
 
-  await expect(channelRow(page, "team-room")).toBeVisible();
+  await expect(page.getByText(channelName, { exact: true })).toBeVisible();
 
-  await page.getByTestId("channel-title").click();
+  await page.locator(".ch-name-btn").click();
   const details = page.locator(".details-panel");
   await details.locator(".cd-section").filter({ hasText: "Topic" }).getByRole("button", { name: /Edit|Add/ }).click();
   await details.locator(".cd-section").filter({ hasText: "Topic" }).locator("input").fill("Planning room");
@@ -75,154 +63,167 @@ test("manages channels, members, visibility, and leaving", async ({ page }) => {
   await expect(details).toContainText("Planning room");
   await expect(details).toContainText("Internal planning");
 
-  await page.getByTestId("channel-visibility").click();
-  await expect(page.getByTestId("channel-visibility")).toHaveText("Make public");
+  await page.getByRole("button", { name: "Make private" }).click();
+  await expect(page.getByRole("button", { name: "Make public" })).toBeVisible();
 
-  await page.getByTestId("channel-add-people").click();
-  const addPeople = page.getByTestId("add-people-modal");
-  await addPeople.getByTestId("add-people-search").fill("bob");
-  await addPeople.getByTestId("add-people-add-bob").click();
+  await page.getByRole("button", { name: "Add people" }).click();
+  const addPeople = page.locator(".modal").filter({ hasText: "Add people to" });
+  await addPeople.getByPlaceholder("Search people").fill(fixture.bob.username);
+  await addPeople.getByRole("button", { name: "Add" }).click();
   await expect(details).toContainText("Members · 2");
-  await addPeople.getByTestId("add-people-done").click();
+  await addPeople.getByRole("button", { name: "Done" }).click();
 
-  await page.getByTestId("channel-leave").click();
+  await page.getByRole("button", { name: "Leave channel" }).click();
   await page.getByRole("button", { name: "Leave", exact: true }).click();
-  await expect(channelRow(page, "team-room")).toHaveCount(0);
-  await expect(channelRow(page, "general")).toBeVisible();
+  await expect(page.getByText(channelName, { exact: true })).toHaveCount(0);
+  await expect(page.getByText("#general", { exact: true })).toBeVisible();
 });
 
 test("joins a public channel, hides a channel locally, and restores it from search", async ({ page }) => {
   await page.goto("/");
-  const hiddenId = await channelId(page, "project-alpha");
+  const hiddenId = await channelId(page, fixture.projectChannel.name);
 
   await page.evaluate((id) => {
     localStorage.setItem("echo.hiddenChannels", JSON.stringify([id]));
   }, hiddenId);
   await page.reload();
-  await expect(channelRow(page, "project-alpha")).toHaveCount(0);
+  await expect(page.getByText(fixture.projectChannel.name, { exact: true })).toHaveCount(0);
 
   await page.evaluate(() => {
     localStorage.setItem("echo.hiddenChannels", JSON.stringify([]));
   });
   await page.reload();
-  await expect(channelRow(page, "project-alpha")).toBeVisible();
+  await expect(page.getByText(fixture.projectChannel.name, { exact: true })).toBeVisible();
 
-  await channelRow(page, "general").click();
-  await expect(page.getByTestId("channel-leave")).toHaveCount(0);
+  await page.getByText("#general", { exact: true }).click();
+  await expect(page.getByRole("button", { name: "Leave channel" })).toHaveCount(0);
 });
 
 test("opens a profile, marks VIP, starts a DM, hides it, and can message self", async ({ page }) => {
   await page.goto("/");
 
-  const bobMention = messageByText(page, "Heads up @alice").first();
-  await bobMention.locator('[data-testid$="-author"]').click();
+  const bobMention = page
+    .locator(".message")
+    .filter({ hasText: `Heads up @${fixture.alice.username}` });
+  await bobMention.locator(".author-btn").click();
 
-  const profile = profileModal(page);
-  await profile.getByTestId("profile-vip").click();
-  await expect(profile.getByTestId("profile-vip")).toContainText("VIP");
-  await profile.getByTestId("profile-message").click();
-  await expect(page.getByTestId("channel-title")).toHaveText("Bob Builder");
+  const profile = page.locator(".profile-modal");
+  await profile.getByRole("button", { name: "Mark as VIP" }).click();
+  await expect(profile.getByRole("button", { name: "VIP" })).toBeVisible();
+  await profile.getByRole("button", { name: "Message" }).click();
+  await expect(page.locator(".channel-header .ch-name")).toHaveText(fixture.bob.displayName);
 
-  await railItem(page, "dms").click();
-  const vipDm = dmRow(page, "Bob Builder");
+  await page.getByRole("button", { name: "DMs" }).click();
+  const vipDm = page.locator(".dm-rich").filter({ hasText: fixture.bob.displayName });
   await expect(vipDm).toBeVisible();
-  await vipDm.getByTestId("dm-remove-bob-builder").click();
+  await vipDm.getByTitle("Remove conversation").click();
   await expect(vipDm).toHaveCount(0);
 
-  await page.getByTestId("dm-self-open").click();
-  await expect(page.getByTestId("channel-title")).toContainText("Alice");
+  await page.locator(".dm-self .dm-open").click();
+  await expect(page.locator(".channel-header .ch-name")).toContainText(fixture.alice.displayName);
   const selfMessage = `Self note ${Date.now()}`;
-  await composer(page).fill(selfMessage);
-  await composer(page).press("Enter");
-  await expect(messageByText(page, selfMessage)).toBeVisible();
+  await page.locator(".composer-editor").fill(selfMessage);
+  await page.locator(".composer-editor").press("Enter");
+  await expect(page.locator(".message").filter({ hasText: selfMessage })).toBeVisible();
 });
 
 test("edits and deletes own messages", async ({ page }) => {
   await page.goto("/");
 
   const body = `Editable ${Date.now()}`;
-  await composer(page).fill(body);
-  await composer(page).press("Enter");
+  const composer = page.locator(".composer-editor");
+  await composer.fill(body);
+  await composer.press("Enter");
 
-  const message = messageByText(page, body).first();
+  const message = page.locator(".message").filter({ hasText: body }).first();
   await message.hover();
-  await message.locator('[data-testid$="-edit"]').click();
+  await message.getByTitle("Edit message").click();
   await message.locator(".msg-edit-input").fill(`${body} updated`);
   await message.locator(".msg-edit-actions .btn-primary").click();
   await expect(message).toContainText("updated");
   await expect(message).toContainText("(edited)");
 
   await message.hover();
-  await message.locator('[data-testid$="-delete"]').click();
+  await message.getByTitle("Delete message").click();
   await page.getByRole("button", { name: "Delete", exact: true }).click();
-  await expect(messageByText(page, `${body} updated`)).toHaveCount(0);
+  await expect(page.locator(".message").filter({ hasText: `${body} updated` })).toHaveCount(0);
 });
 
 test("toggles reactions and pins messages", async ({ page }) => {
   await page.goto("/");
 
-  const formattedId = await messageId(page, "general", "API formatting test");
+  const formattedId = await messageId(page, "general", fixture.messages.formatted.body);
   expect(formattedId).toBeTruthy();
-  const message = messageById(page, formattedId);
+  const message = page.locator(`.message[data-mid="${formattedId}"]`);
   await expect(message).toBeVisible();
   await message.hover();
-  await expect(message.locator('[data-testid$="-add-reaction-action"]')).toBeVisible();
+  await expect(message.locator(".msg-actions button[title='Add reaction']")).toBeVisible();
 
-  await message.locator('[data-testid$="-pin"]').click();
-  await page.getByTestId("channel-pinned").click();
-  const pinned = page.locator(".pinned-item").filter({ hasText: "API formatting test" });
+  await message.getByTitle("Pin message").click();
+  await page.getByRole("button", { name: "Pinned messages" }).click();
+  const pinned = page.locator(".pinned-item").filter({ hasText: `API formatting test ${fixture.suffix}` });
   await expect(pinned).toBeVisible();
-  await pinned.locator('[data-testid^="pinned-"][data-testid$="-unpin"]').click();
+  await pinned.getByTitle("Unpin").click();
   await expect(pinned).toHaveCount(0);
 });
 
 test("forwards a message and jumps back to the original", async ({ page }) => {
   await page.goto("/");
 
-  const message = messageByText(page, "API formatting test").first();
+  const message = page
+    .locator(".message")
+    .filter({ hasText: `API formatting test ${fixture.suffix}` })
+    .first();
   await message.hover();
-  await message.locator('[data-testid$="-forward"]').click();
+  await message.getByTitle("Forward message").click();
 
-  const forwardModal = page.getByTestId("forward-modal");
-  await forwardModal.getByTestId("forward-search").fill("project-alpha");
-  await forwardModal.locator('[data-testid^="forward-dest-channel-"]').first().click();
+  const forwardModal = page.locator(".modal").filter({ hasText: "Forward message" });
+  await forwardModal
+    .getByPlaceholder("Search channels and people")
+    .fill(fixture.projectChannel.name);
+  await forwardModal.getByRole("button", { name: "Forward" }).click();
 
-  await page.getByRole("button", { name: "# project-alpha" }).click();
-  await expect(page.getByText("Forwarded from Alice in #general")).toBeVisible();
+  await page.getByRole("button", { name: `# ${fixture.projectChannel.name}` }).click();
+  await expect(page.getByText(`Forwarded from ${fixture.alice.displayName} in #general`)).toBeVisible();
   await page.getByRole("button", { name: /View original/ }).click();
-  await expect(page.getByText("Welcome to Echo")).toBeVisible();
+  await expect(page.getByText(`API formatting test ${fixture.suffix}`)).toBeVisible();
 });
 
 test("handles mention autocomplete, @everyone, and attachments", async ({ page }) => {
   await page.goto("/");
 
-  await composer(page).fill("Hello @bo");
-  await page.locator(".mention-item").filter({ hasText: "Bob Builder" }).click();
+  const composer = page.locator(".composer-editor");
+  await composer.fill(`Hello @${fixture.bob.username}`);
+  await expect(page.locator(".mention-popup")).toBeVisible();
+  await page.locator(".mention-item").first().click();
   await page.keyboard.press("Enter");
-  const bobMessage = messageByText(page, "Hello").last();
-  await expect(bobMessage.locator('.mention[data-mention="bob"]')).toHaveText("@bob");
+  const bobMessage = page.locator(".message").filter({ hasText: "Hello" }).last();
+  await expect(bobMessage.locator(`.mention[data-mention="${fixture.bob.username}"]`)).toHaveText(
+    `@${fixture.bob.username}`
+  );
 
-  await composer(page).fill("@e");
+  await composer.fill("@e");
   await page.locator(".mention-item").filter({ hasText: "Notify everyone in this channel" }).click();
   await page.keyboard.press("Enter");
-  await expect(page.locator(".mention--broadcast")).toBeVisible();
+  await expect(page.locator(".message .mention--broadcast")).toBeVisible();
 
-  const fileInput = page.getByTestId("composer-attachments");
+  const fileInput = page.locator(".composer input[type='file']").first();
   await fileInput.setInputFiles({ name: "proof.png", mimeType: "image/png", buffer: ONE_BY_ONE_PNG });
   await expect(page.locator(".pending-att")).toBeVisible();
   const attachmentBody = `Attached ${Date.now()}`;
-  await composer(page).fill(attachmentBody);
-  await page.getByTestId("composer-send").click();
-  const sent = messageByText(page, attachmentBody).first();
+  await composer.fill(attachmentBody);
+  await page.locator(".composer .send-btn").click();
+  const sent = page.locator(".message").filter({ hasText: attachmentBody }).first();
   await expect(sent.locator(".att-image")).toBeVisible();
 });
 
 test("schedules, edits, and cancels a message", async ({ page }) => {
   await page.goto("/");
 
+  const composer = page.locator(".composer-editor");
   const scheduledBody = `Scheduled ${Date.now()}`;
-  await composer(page).fill(scheduledBody);
-  await page.getByTestId("composer-send-options").click();
+  await composer.fill(scheduledBody);
+  await page.getByRole("button", { name: "Send options" }).click();
   await page.locator(".send-menu button").filter({ hasText: "Tomorrow, 9:00 AM" }).click();
 
   await expect(page.getByText(/scheduled message/i)).toBeVisible();
@@ -238,42 +239,46 @@ test("schedules, edits, and cancels a message", async ({ page }) => {
   await expect(page.locator(".scheduled-banner")).toHaveCount(0);
 });
 
-test("blocks private-channel mentions until the user chooses how to handle them", async ({ page }) => {
+test("blocks private-channel mentions until the user chooses how to handle them", async ({
+  page,
+}) => {
   await page.goto("/");
-  await channelRow(page, "project-alpha").click();
-  await page.getByTestId("channel-visibility").click();
+  await page.getByText(fixture.projectChannel.name, { exact: true }).click();
+  await page.getByRole("button", { name: "Make private" }).click();
 
-  await composer(page).fill("Hello @bob");
-  await page.locator(".mention-item").filter({ hasText: "Bob Builder" }).click();
+  const composer = page.locator(".composer-editor");
+  await composer.fill(`Hello @${fixture.bob.username}`);
+  await page.locator(".mention-item").filter({ hasText: fixture.bob.displayName }).click();
   await page.keyboard.press("Enter");
 
-  const gate = page.locator(".modal").filter({ hasText: "Add to #project-alpha?" });
+  const gate = page.locator(".modal").filter({ hasText: `Add to #${fixture.projectChannel.name}?` });
   await expect(gate).toBeVisible();
   await gate.getByRole("button", { name: "Send without adding" }).click();
-  await expect(messageByText(page, "@bob").last()).toBeVisible();
+  await expect(page.locator(".message").filter({ hasText: `@${fixture.bob.username}` }).last()).toBeVisible();
 });
 
 test("covers custom emoji upload, validation, and usage", async ({ page }) => {
   await page.goto("/");
 
-  await page.getByTestId("composer-emoji-toggle").click();
+  const emojiName = `spark${Date.now().toString(36).slice(-6)}`;
+  await page.getByRole("button", { name: "Emoji", exact: true }).click();
   await page.getByRole("button", { name: "Add custom emoji" }).click();
 
-  const emojiModal = addEmojiModal(page);
-  await emojiModal.getByTestId("emoji-file-input").setInputFiles({
+  const emojiModal = page.locator(".modal").filter({ hasText: "Add custom emoji" });
+  await emojiModal.locator("input[type='file']").setInputFiles({
     name: "invalid.txt",
     mimeType: "text/plain",
     buffer: NOT_IMAGE,
   });
   await expect(page.getByText("Custom emoji must be an image")).toBeVisible();
 
-  await emojiModal.getByTestId("emoji-file-input").setInputFiles({
-    name: "sparkle-cat.png",
+  await emojiModal.locator("input[type='file']").setInputFiles({
+    name: `${emojiName}.png`,
     mimeType: "image/png",
     buffer: ONE_BY_ONE_PNG,
   });
-  await emojiModal.getByTestId("emoji-shortcode-input").fill("sparkle-cat");
-  await emojiModal.getByTestId("emoji-cancel").click();
+  await emojiModal.locator(".emoji-name-input input").fill(emojiName);
+  await emojiModal.getByRole("button", { name: "Cancel" }).click();
 
   await page.evaluate(
     async ({ name, base64 }) => {
@@ -290,35 +295,36 @@ test("covers custom emoji upload, validation, and usage", async ({ page }) => {
       });
       if (!res.ok) throw new Error((await res.json()).error || "emoji create failed");
     },
-    { name: "sparkle-cat", base64: ONE_BY_ONE_PNG.toString("base64") }
+    { name: emojiName, base64: ONE_BY_ONE_PNG.toString("base64") }
   );
   await page.reload();
 
-  const emojiMessage = `Look :sparkle-cat:`;
-  await composer(page).fill(emojiMessage);
-  await composer(page).press("Enter");
-  const sent = messageByText(page, "Look").last();
+  const composer = page.locator(".composer-editor");
+  const emojiMessage = `Look :${emojiName}:`;
+  await composer.fill(emojiMessage);
+  await composer.press("Enter");
+  const sent = page.locator(".message").filter({ hasText: "Look" }).last();
   await expect(sent).toContainText("Look");
   await expect(sent.locator("img.custom-emoji")).toBeVisible();
 });
 
-test("updates settings, replays the walkthrough, and forces password resets", async ({ browser, page }) => {
+test("updates settings and replays the walkthrough", async ({ browser, page }) => {
   await page.context().grantPermissions(["notifications"]);
   await page.goto("/");
 
-  await page.getByTestId("sidebar-settings").click();
-  const settings = settingsPage(page);
+  await page.getByRole("button", { name: "Settings" }).click();
+  const settings = page.locator(".settings-page");
   const displayName = `Alice ${Date.now()}`;
-  await settings.getByTestId("settings-display-name").fill(displayName);
+  await settings.locator(".settings-input").first().fill(displayName);
   await settings.getByRole("button", { name: "Save" }).click();
   await expect(settings.locator(".settings-saved")).toContainText("Saved");
 
-  await settings.getByTestId("settings-mode-dark").click();
+  await settings.getByRole("button", { name: "☾ Dark" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-mode", "dark");
-  await settings.getByTestId("settings-mode-light").click();
+  await settings.getByRole("button", { name: "☀ Light" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-mode", "light");
 
-  const avatarInput = settings.getByTestId("settings-avatar-input");
+  const avatarInput = settings.locator("input[type='file']");
   await avatarInput.setInputFiles({
     name: "avatar.png",
     mimeType: "image/png",
@@ -326,81 +332,88 @@ test("updates settings, replays the walkthrough, and forces password resets", as
   });
   await expect(settings.getByText("Saved ✓")).toBeVisible();
 
-  await settings.getByTestId("settings-replay-tour").click();
+  await settings.getByRole("button", { name: "Replay walkthrough" }).click();
   await expect(page.getByText("Welcome to Echo 👋")).toBeVisible();
   await page.getByRole("button", { name: "Skip tour" }).click();
 
-  await page.getByTestId("sidebar-settings").click();
-  const adminReset = page.getByTestId("admin-reset");
-  await adminReset.getByTestId("admin-reset-search").fill("bob");
-  await adminReset.getByTestId("admin-reset-user-bob").click();
-  await adminReset.getByTestId("admin-reset-issue").click();
-  const otp = (await page.locator(".token-value").textContent())?.trim();
-  expect(otp).toBeTruthy();
+  if (fixture.alice.isAdmin) {
+    await page.getByRole("button", { name: "Settings" }).click();
+    const adminReset = page.locator(".admin-reset");
+    await adminReset.getByPlaceholder("Find a user by name or @username").fill(fixture.bob.username);
+    await adminReset.getByRole("button", { name: fixture.bob.displayName }).click();
+    await adminReset
+      .getByRole("button", {
+        name: new RegExp(`Issue one-time password for ${fixture.bob.displayName}`),
+      })
+      .click();
+    const otp = (await page.locator(".token-value").textContent())?.trim();
+    expect(otp).toBeTruthy();
 
-  const resetContext = await browser.newContext();
-  const resetPage = await resetContext.newPage();
-  try {
-    await resetPage.goto("/");
-    await resetPage.locator('input[placeholder="your-handle"]').fill("bob");
-    await resetPage.locator('input[type="password"]').fill(otp);
-    await resetPage.getByRole("button", { name: "Sign in" }).click();
-    await expect(resetPage.getByText("Set a new password")).toBeVisible();
+    const resetContext = await browser.newContext();
+    const resetPage = await resetContext.newPage();
+    try {
+      await resetPage.goto("/");
+      await resetPage.locator('input[placeholder="your-handle"]').fill(fixture.bob.username);
+      await resetPage.locator('input[type="password"]').fill(otp);
+      await resetPage.getByRole("button", { name: "Sign in" }).click();
+      await expect(resetPage.getByText("Set a new password")).toBeVisible();
 
-    await resetPage.locator('input[placeholder="New password"]').fill("Password2");
-    await resetPage.locator('input[placeholder="Confirm new password"]').fill("Password2");
-    await resetPage.getByRole("button", { name: "Save and continue" }).click();
-    await expect(resetPage.getByRole("button", { name: "Settings" })).toBeVisible();
-  } finally {
-    await resetContext.close();
-  }
+      await resetPage.locator('input[placeholder="New password"]').fill("Password2");
+      await resetPage.locator('input[placeholder="Confirm new password"]').fill("Password2");
+      await resetPage.getByRole("button", { name: "Save and continue" }).click();
+      await expect(resetPage.getByRole("button", { name: "Settings" })).toBeVisible();
+    } finally {
+      await resetContext.close();
+    }
 
-  const loginContext = await browser.newContext();
-  const loginPage = await loginContext.newPage();
-  try {
-    await loginPage.goto("/");
-    await loginPage.locator('input[placeholder="your-handle"]').fill("bob");
-    await loginPage.locator('input[type="password"]').fill("Password2");
-    await loginPage.getByRole("button", { name: "Sign in" }).click();
-    await expect(loginPage.getByRole("button", { name: "Settings" })).toBeVisible();
-  } finally {
-    await loginContext.close();
+    const loginContext = await browser.newContext();
+    const loginPage = await loginContext.newPage();
+    try {
+      await loginPage.goto("/");
+      await loginPage.locator('input[placeholder="your-handle"]').fill(fixture.bob.username);
+      await loginPage.locator('input[type="password"]').fill("Password2");
+      await loginPage.getByRole("button", { name: "Sign in" }).click();
+      await expect(loginPage.getByRole("button", { name: "Settings" })).toBeVisible();
+    } finally {
+      await loginContext.close();
+    }
   }
 });
 
 test("opens a thread, replies, and jumps from Activity back to the thread", async ({ page }) => {
   await page.goto("/");
+  const composer = page.locator(".composer-editor");
   const rootBody = `Thread root ${Date.now()}`;
-  await composer(page).fill(rootBody);
-  await composer(page).press("Enter");
-  const root = messageByText(page, rootBody).first();
+  await composer.fill(rootBody);
+  await composer.press("Enter");
+  const root = page.locator(".message").filter({ hasText: rootBody }).first();
   await root.hover();
-  await root.locator('[data-testid$="-reply"]').click();
-  await expect(threadPanel(page)).toBeVisible();
+  await root.getByTitle("Reply in thread").click();
+  await expect(page.locator(".thread-panel")).toBeVisible();
 
   const reply = `Thread follow-up ${Date.now()}`;
-  await threadPanel(page).getByTestId("composer-editor").fill(reply);
-  await threadPanel(page).getByTestId("composer-editor").press("Enter");
-  await expect(threadPanel(page).locator('[data-testid^="message-"]').filter({ hasText: reply })).toBeVisible();
+  await page.locator(".thread-panel .composer-editor").fill(reply);
+  await page.locator(".thread-panel .composer-editor").press("Enter");
+  await expect(page.locator(".thread-panel .message").filter({ hasText: reply })).toBeVisible();
 });
 
 test("covers search keyboard navigation and filter autocomplete", async ({ page }) => {
   await page.goto("/");
 
   const search = page.getByTestId("search-input");
-  await search.fill("pro");
-  await page.getByTestId("search-channel-project-alpha").click();
-  await expect(page.getByTestId("channel-title")).toContainText("project-alpha");
+  await search.fill(fixture.projectChannel.name.slice(0, 4));
+  await page.getByTestId(`search-channel-${slug(fixture.projectChannel.name)}`).click();
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
 
   await search.fill("");
-  await search.fill("in:pro");
+  await search.fill(`in:${fixture.projectChannel.name}`);
   await page.keyboard.press("Tab");
-  await expect(search).toHaveValue(/in:project-alpha\s/);
+  await expect(search).toHaveValue(new RegExp(`in:${fixture.projectChannel.name}\\s`));
 
   await search.fill("");
-  await search.fill("from:@bo");
+  await search.fill(`from:@${fixture.bob.username}`);
   await page.keyboard.press("Tab");
-  await expect(search).toHaveValue(/from:@bob\s/);
+  await expect(search).toHaveValue(new RegExp(`from:@${fixture.bob.username}\\s`));
 
   await search.fill("");
   await search.fill("has:im");

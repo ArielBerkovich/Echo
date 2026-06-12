@@ -51,6 +51,11 @@ function activeFilterAt(value, caret) {
   return null;
 }
 
+// Inline search: an input in the top bar with a results dropdown directly
+// beneath it. Plain text navigates to channels/people; pressing Enter runs a
+// full-text message search. Typing `in:` or `from:@` opens an autocomplete for
+// scoping the search to a channel or sender. The whole dropdown is
+// arrow-key navigable, and channels you haven't joined are marked.
 function slug(text) {
   return String(text || "")
     .trim()
@@ -58,12 +63,6 @@ function slug(text) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
-
-// Slack-style inline search: an input in the top bar with a results dropdown
-// directly beneath it. Plain text navigates to channels/people; pressing Enter
-// runs a full-text message search. Typing `in:` or `from:@` opens an
-// autocomplete for scoping the search to a channel or sender. The whole
-// dropdown is arrow-key navigable, and channels you haven't joined are marked.
 const SearchBox = forwardRef(function SearchBox(
   { channels, users, recents, myChannelIds, onPickChannel, onPickUser, onSearchMessages },
   ref

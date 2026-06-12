@@ -18,9 +18,9 @@ activityRouter.post("/read", async (req, res) => {
 // Always surface a rolling 30-day window of activity.
 const ACTIVITY_WINDOW_DAYS = 30;
 
-// GET /api/activity — Slack-style: your @mentions, @channel/@everyone broadcasts
-// in channels you belong to, and replies in threads you started, from the last
-// 30 days. Each item is flagged `unread` until you've opened its conversation.
+// GET /api/activity — your @mentions, channel-wide broadcasts, and replies in
+// threads you started from the last 30 days. Each item is flagged `unread`
+// until you've opened its conversation.
 activityRouter.get("/", async (req, res) => {
   const me = req.user;
   const since = new Date(Date.now() - ACTIVITY_WINDOW_DAYS * 24 * 60 * 60 * 1000);
