@@ -286,6 +286,13 @@ async function restoreWorkspaceFixture(page, fixture) {
   });
 
   const saved = await requestAsToken(page, fixture.alice.token, "/saved");
+  for (const item of saved.items || []) {
+    if (item.id !== fixture.messages.formatted.id) {
+      await requestAsToken(page, fixture.alice.token, `/saved/${item.id}`, {
+        method: "POST",
+      });
+    }
+  }
   const hasFormatted = (saved.items || []).some((item) => item.id === fixture.messages.formatted.id);
   if (!hasFormatted) {
     await requestAsToken(page, fixture.alice.token, `/saved/${fixture.messages.formatted.id}`, {

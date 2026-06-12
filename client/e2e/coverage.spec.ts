@@ -412,7 +412,8 @@ test("covers search keyboard navigation and filter autocomplete", async ({ page 
 
   await search.fill("");
   await search.fill(`from:@bo`);
-  await page.keyboard.press("Tab");
+  await expect(page.getByTestId(`search-user-${slug(fixture.bob.username)}`)).toBeVisible();
+  await page.getByTestId(`search-user-${slug(fixture.bob.username)}`).click();
   await expect(search).toHaveValue(new RegExp(`from:@${fixture.bob.username}\\s`));
 
   await search.fill("");

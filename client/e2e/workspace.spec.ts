@@ -159,7 +159,7 @@ test("shows saved messages and removes one from saved", async ({ page }) => {
 
   await savedItem.locator('[data-testid^="saved-remove-"]').click();
 
-  await expect(page.getByTestId("saved-item")).toHaveCount(0);
+  await expect(savedItem).toHaveCount(0);
   await unsave;
 });
 
