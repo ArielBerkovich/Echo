@@ -51,6 +51,14 @@ function activeFilterAt(value, caret) {
   return null;
 }
 
+function slug(text) {
+  return String(text || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 // Slack-style inline search: an input in the top bar with a results dropdown
 // directly beneath it. Plain text navigates to channels/people; pressing Enter
 // runs a full-text message search. Typing `in:` or `from:@` opens an
@@ -257,6 +265,7 @@ const SearchBox = forwardRef(function SearchBox(
       <button
         key={`${kind}-${c.id}`}
         className={`search-row ${idx === activeIdx ? "active" : ""}`}
+        data-testid={`search-channel-${slug(c.name)}`}
         onMouseEnter={() => setActiveIdx(idx)}
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => (kind === "filter" ? applyFilter(c) : pickChannel(c))}
@@ -276,6 +285,7 @@ const SearchBox = forwardRef(function SearchBox(
     <button
       key={`${kind}-${u.id}`}
       className={`search-row ${idx === activeIdx ? "active" : ""}`}
+      data-testid={`search-user-${slug(u.username)}`}
       onMouseEnter={() => setActiveIdx(idx)}
       onMouseDown={(e) => e.preventDefault()}
       onClick={() => (kind === "filter" ? applyFilter(u) : pickUser(u))}
@@ -291,7 +301,7 @@ const SearchBox = forwardRef(function SearchBox(
   const peopleStart = 1 + channelHits.length;
 
   return (
-    <div className="search-box" ref={wrapRef}>
+    <div className="search-box" ref={wrapRef} data-testid="search-box">
       <div className="search-box-field">
         <SearchIcon size={15} strokeWidth={1.8} />
         <div className="search-input-wrap">
@@ -301,6 +311,7 @@ const SearchBox = forwardRef(function SearchBox(
           <input
             ref={inputRef}
             className="search-input"
+            data-testid="search-input"
             value={query}
             onFocus={() => setOpen(true)}
             onClick={syncCaret}
@@ -335,10 +346,11 @@ const SearchBox = forwardRef(function SearchBox(
                 filter.type === "in" ? (
                   channelRow(item, idx, "filter")
                 ) : filter.type === "has" ? (
-                  <button
-                    key={item.key}
-                    className={`search-row ${idx === activeIdx ? "active" : ""}`}
-                    onMouseEnter={() => setActiveIdx(idx)}
+                <button
+                  key={item.key}
+                  className={`search-row ${idx === activeIdx ? "active" : ""}`}
+                  data-testid={`search-has-${item.key}`}
+                  onMouseEnter={() => setActiveIdx(idx)}
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => applyFilter(item)}
                   >
@@ -355,7 +367,7 @@ const SearchBox = forwardRef(function SearchBox(
             <>
               {!q && (
                 <>
-                  <div className="search-hint">
+                  <div className="search-hint" data-testid="search-hint">
                     Press <b>Enter</b> to search messages. Filter with <code>in:channel</code>,{" "}
                     <code>from:@user</code>, and <code>has:file</code>.
                   </div>
@@ -368,6 +380,7 @@ const SearchBox = forwardRef(function SearchBox(
                           <button
                             key={`recent-${r.id}`}
                             className={`search-row ${idx === activeIdx ? "active" : ""}`}
+                            data-testid={`search-user-${slug(r.displayName)}`}
                             onMouseEnter={() => setActiveIdx(idx)}
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => pickUser(r)}
@@ -388,6 +401,7 @@ const SearchBox = forwardRef(function SearchBox(
               {q && (
                 <button
                   className={`search-row search-messages-row ${activeIdx === 0 ? "active" : ""}`}
+                  data-testid="search-messages-row"
                   onMouseEnter={() => setActiveIdx(0)}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={submitMessageSearch}

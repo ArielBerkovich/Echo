@@ -46,12 +46,13 @@ export default function CreateChannelModal({ onCreate, onClose }) {
 
   return (
     <Modal title="Create a channel" onClose={onClose}>
-      <form onSubmit={submit}>
+      <form data-testid="create-channel-modal" onSubmit={submit}>
         <label className="field">
           <span className="field-label">Name</span>
           <div className="name-input">
             <span className="name-prefix">{type === "private" ? "🔒" : "#"}</span>
             <input
+              data-testid="create-channel-name"
               {...nameField}
               ref={(el) => {
                 nameField.ref(el);
@@ -114,10 +115,10 @@ export default function CreateChannelModal({ onCreate, onClose }) {
         {error && <div className="error">{error}</div>}
 
         <div className="modal-actions">
-          <button type="button" className="btn-secondary" onClick={onClose}>
+          <button type="button" className="btn-secondary" data-testid="create-channel-cancel" onClick={onClose}>
             Cancel
           </button>
-          <button type="submit" className="btn-primary" disabled={isSubmitting}>
+          <button type="submit" className="btn-primary" data-testid="create-channel-submit" disabled={isSubmitting}>
             {isSubmitting ? "Creating…" : "Create"}
           </button>
         </div>

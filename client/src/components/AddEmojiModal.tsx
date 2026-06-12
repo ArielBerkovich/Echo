@@ -64,11 +64,17 @@ export default function AddEmojiModal({ existing = [], onCreated, onClose }) {
 
   return (
     <Modal title="Add custom emoji" onClose={onClose}>
-      <form onSubmit={submit}>
+      <form data-testid="add-emoji-modal" onSubmit={submit}>
         <div className="emoji-form-row">
           <label className="emoji-drop">
             {preview ? <img src={preview} alt="preview" /> : <span className="emoji-drop-hint">Choose image / GIF</span>}
-            <input type="file" accept="image/*" hidden onChange={pickFile} />
+            <input
+              type="file"
+              accept="image/*"
+              hidden
+              data-testid="emoji-file-input"
+              onChange={pickFile}
+            />
           </label>
 
           <div className="emoji-form-fields">
@@ -87,6 +93,7 @@ export default function AddEmojiModal({ existing = [], onCreated, onClose }) {
                 }}
                 onBlur={nameField.onBlur}
                 placeholder="party-parrot"
+                data-testid="emoji-shortcode-input"
                 autoFocus
                 maxLength={34}
               />
@@ -109,8 +116,10 @@ export default function AddEmojiModal({ existing = [], onCreated, onClose }) {
         {serverError && <div className="error">{serverError}</div>}
 
         <div className="modal-actions">
-          <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
-          <button type="submit" className="btn-primary" disabled={isSubmitting}>
+          <button type="button" className="btn-secondary" data-testid="emoji-cancel" onClick={onClose}>
+            Cancel
+          </button>
+          <button type="submit" className="btn-primary" data-testid="emoji-submit" disabled={isSubmitting}>
             {isSubmitting ? "Saving…" : "Add emoji"}
           </button>
         </div>

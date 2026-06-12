@@ -34,8 +34,10 @@ export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
 
   return (
     <Modal title={`Add people to ${channel.type === "private" ? "🔒" : "#"} ${channel.name}`} onClose={onClose}>
+      <div data-testid="add-people-modal">
       <input
         className="people-filter"
+        data-testid="add-people-search"
         value={filter}
         onChange={(e) => setFilter(e.target.value)}
         placeholder="Search people"
@@ -53,7 +55,7 @@ export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
                 <div className="person-name">{u.displayName}</div>
                 <div className="person-handle">@{u.username}</div>
               </div>
-              <button type="button" className="btn-secondary" disabled={adding === u.id} onClick={() => add(u)}>
+              <button type="button" className="btn-secondary" data-testid={`add-people-add-${u.username}`} disabled={adding === u.id} onClick={() => add(u)}>
                 {adding === u.id ? "Adding…" : "Add"}
               </button>
             </div>
@@ -64,9 +66,10 @@ export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
       {error && <div className="error">{error}</div>}
 
       <div className="modal-actions">
-        <button type="button" className="btn-primary" onClick={onClose}>
+        <button type="button" className="btn-primary" data-testid="add-people-done" onClick={onClose}>
           Done
         </button>
+      </div>
       </div>
     </Modal>
   );
