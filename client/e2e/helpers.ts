@@ -2,7 +2,7 @@ import { expect } from "@playwright/test";
 import crypto from "crypto";
 
 const DEFAULT_PASSWORD = "Password1";
-const FIXTURE_ID = "e2e-suite";
+const FIXTURE_ID = uniqueSuffix("e2e");
 let workspaceFixturePromise = null;
 
 export function uniqueSuffix(prefix = "e2e") {

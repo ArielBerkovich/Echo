@@ -1,3 +1,4 @@
+import { flushSync } from "react-dom";
 import { ActivityIcon, BookmarkIcon, HomeIcon, MessageSquareTextIcon } from "lucide-react";
 
 const icon = (Icon) => () => <Icon size={22} strokeWidth={2} />;
@@ -9,14 +10,22 @@ const ITEMS = [
 ];
 
 export default function LeftRail({ view, onSelect, badges = {} }) {
+  function selectFromEvent(e) {
+    const item = e.target.closest?.('button[data-testid^="rail-"]');
+    if (!item) return;
+    const key = item.dataset.testid?.slice("rail-".length);
+    if (key) flushSync(() => onSelect(key));
+  }
+
   return (
-    <nav className="rail">
+    <nav className="rail" onMouseDownCapture={selectFromEvent} onPointerDownCapture={selectFromEvent}>
       <div className="rail-top">
         {ITEMS.map(({ key, label, Icon }) => {
           const count = badges[key] || 0;
           return (
             <button
               key={key}
+              type="button"
               className={`rail-item ${view === key ? "active" : ""}`}
               data-testid={`rail-${key}`}
               onClick={() => onSelect(key)}

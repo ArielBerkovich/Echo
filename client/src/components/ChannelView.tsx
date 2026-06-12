@@ -1,4 +1,13 @@
-import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  Fragment,
+  startTransition,
+  useDeferredValue,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { api } from "../api.js";
 import { getSocket } from "../socket.js";
 import Avatar from "./Avatar.js";
@@ -80,6 +89,7 @@ export default function ChannelView({
   const [threadLightbox, setThreadLightbox] = useState(null); // { src, name } opened from thread
   const [loadingOlder, setLoadingOlder] = useState(false); // fetching older history (scroll-up)
   const [loading, setLoading] = useState(true); // initial history fetch for this channel in flight
+  const visibleMessages = useDeferredValue(messages);
 
   const bottomRef = useRef(null);
   const scrollerRef = useRef(null); // the scrollable messages container
@@ -174,68 +184,80 @@ export default function ChannelView({
     const onNew = (msg) => {
       if (msg.channelId !== channel.id) return;
       playEmojiEffectFor(msg.body); // fun screen effect for 🎉 / 🚀 / ❤️ / 🔥
-      if (msg.parentId) {
-        // A thread reply: bump the parent's reply count (don't add to main list).
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === msg.parentId
-              ? { ...m, replyCount: (m.replyCount || 0) + 1, lastReplyAt: msg.createdAt }
-              : m
-          )
-        );
-      } else {
-        setMessages((prev) => [...prev, msg]);
-      }
+      startTransition(() => {
+        if (msg.parentId) {
+          // A thread reply: bump the parent's reply count (don't add to main list).
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === msg.parentId
+                ? { ...m, replyCount: (m.replyCount || 0) + 1, lastReplyAt: msg.createdAt }
+                : m
+            )
+          );
+        } else {
+          setMessages((prev) => [...prev, msg]);
+        }
+      });
       // Stay read while viewing — but only for the main timeline. A thread
       // reply isn't visible here (it's behind the "N replies" link), so it
       // must not mark the channel read; it's read when its thread is opened.
-      if (!msg.parentId && msg.author?.id !== user.id) onRead?.(channel.id);
+      if (!msg.parentId && msg.author?.id !== user.id) {
+        window.setTimeout(() => onRead?.(channel.id), 0);
+      }
     };
     socket.on("message:new", onNew);
 
     const onReaction = ({ messageId, reactions }) => {
-      setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, reactions } : m)));
+      startTransition(() => {
+        setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, reactions } : m)));
+      });
     };
     socket.on("message:reaction", onReaction);
 
     const onUpdate = (u) => {
       if (u.channelId !== channel.id || u.parentId) return; // thread edits handled in panel
-      setMessages((prev) =>
-        prev.map((m) => (m.id === u.id ? { ...m, body: u.body, editedAt: u.editedAt } : m))
-      );
+      startTransition(() => {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === u.id ? { ...m, body: u.body, editedAt: u.editedAt } : m))
+        );
+      });
     };
     socket.on("message:update", onUpdate);
 
     const onPin = ({ messageId, channelId, pinnedAt, pinnedBy }) => {
       if (channelId !== channel.id) return;
-      setMessages((prev) =>
-        prev.map((m) => (m.id === messageId ? { ...m, pinnedAt, pinnedBy } : m))
-      );
-      setPinnedMessages((prev) => {
-        if (pinnedAt) {
-          // Add or update in pinned list
-          const exists = prev.some((m) => m.id === messageId);
-          if (exists) return prev.map((m) => (m.id === messageId ? { ...m, pinnedAt, pinnedBy } : m));
-          return prev; // full list will reload on next open
-        } else {
-          return prev.filter((m) => m.id !== messageId);
-        }
+      startTransition(() => {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === messageId ? { ...m, pinnedAt, pinnedBy } : m))
+        );
+        setPinnedMessages((prev) => {
+          if (pinnedAt) {
+            // Add or update in pinned list
+            const exists = prev.some((m) => m.id === messageId);
+            if (exists) return prev.map((m) => (m.id === messageId ? { ...m, pinnedAt, pinnedBy } : m));
+            return prev; // full list will reload on next open
+          } else {
+            return prev.filter((m) => m.id !== messageId);
+          }
+        });
       });
     };
     socket.on("message:pin", onPin);
 
     const onDeleted = ({ id, channelId, parentId }) => {
       if (channelId !== channel.id) return;
-      if (parentId) {
-        // A deleted thread reply: drop the parent's reply count.
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === parentId ? { ...m, replyCount: Math.max(0, (m.replyCount || 0) - 1) } : m
-          )
-        );
-      } else {
-        setMessages((prev) => prev.filter((m) => m.id !== id));
-      }
+      startTransition(() => {
+        if (parentId) {
+          // A deleted thread reply: drop the parent's reply count.
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === parentId ? { ...m, replyCount: Math.max(0, (m.replyCount || 0) - 1) } : m
+            )
+          );
+        } else {
+          setMessages((prev) => prev.filter((m) => m.id !== id));
+        }
+      });
     };
     socket.on("message:deleted", onDeleted);
 
@@ -253,7 +275,9 @@ export default function ChannelView({
       if (channelId !== channel.id || !user || user.id === myId) return;
       clearTimeout(timers[user.id]);
       if (typing) {
-        setTypingUsers((prev) => ({ ...prev, [user.id]: user.displayName }));
+        startTransition(() => {
+          setTypingUsers((prev) => ({ ...prev, [user.id]: user.displayName }));
+        });
         timers[user.id] = setTimeout(() => dropTyping(user.id), 5000);
       } else {
         dropTyping(user.id);
@@ -628,7 +652,7 @@ export default function ChannelView({
         {loadingOlder && <div className="older-loader">Loading earlier messages…</div>}
         {loading ? (
           <MessagesSkeleton />
-        ) : messages.length === 0 ? (
+        ) : visibleMessages.length === 0 ? (
           <div className="empty-state">
             {isDm ? (
               <>
@@ -645,8 +669,8 @@ export default function ChannelView({
             )}
           </div>
         ) : (
-          messages.map((m, i) => {
-            const prev = messages[i - 1];
+          visibleMessages.map((m, i) => {
+            const prev = visibleMessages[i - 1];
             // A day divider whenever the calendar day changes (and at the top).
             const isNewDay = !prev || isDifferentDay(prev.createdAt, m.createdAt);
             const dayDivider = isNewDay ? (
