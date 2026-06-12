@@ -1404,6 +1404,9 @@ html[data-theme="aubergine"] .chat-pane {
   font-size: 11px;
   font-weight: 600;
 }
+.rail-item > * {
+  pointer-events: none;
+}
 .rail-item:hover {
   color: #fff;
 }

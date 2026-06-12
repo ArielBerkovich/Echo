@@ -1,4 +1,11 @@
-import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  Fragment,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { api } from "../api.js";
 import { getSocket } from "../socket.js";
 import Avatar from "./Avatar.js";
@@ -189,7 +196,9 @@ export default function ChannelView({
       // Stay read while viewing — but only for the main timeline. A thread
       // reply isn't visible here (it's behind the "N replies" link), so it
       // must not mark the channel read; it's read when its thread is opened.
-      if (!msg.parentId && msg.author?.id !== user.id) onRead?.(channel.id);
+      if (!msg.parentId && msg.author?.id !== user.id) {
+        onRead?.(channel.id);
+      }
     };
     socket.on("message:new", onNew);
 

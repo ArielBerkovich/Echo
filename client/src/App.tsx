@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, getToken, setToken } from "./api.js";
 import { disconnectSocket } from "./socket.js";
 import { useRealtime } from "./lib/useRealtime.js";
@@ -96,6 +96,12 @@ export default function App() {
   const markReadAtRef = useRef({}); // channelId -> last markRead time (throttle)
   const restoredRef = useRef(false); // have we restored the saved location yet?
   const poppingRef = useRef(false); // applying a browser back/forward — don't re-push history
+
+  const visibleChannels = useMemo(
+    () => [...new Map([...channels, ...allChannels].map((c) => [c.id, c])).values()],
+    [channels, allChannels]
+  );
+  const myChannelIds = useMemo(() => channels.map((c) => c.id), [channels]);
 
   // Real-time layer: socket listeners + live Activity-badge counts.
   // (refreshChannels/refreshDms are hoisted declarations below.)
@@ -479,49 +485,55 @@ export default function App() {
   }
 
   // Whether the user can open a forwarded message's source channel.
-  function canJumpToForward(ref) {
-    if (!ref?.channelId || !ref?.messageId) return false;
-    // Only originals in public channels are linkable. A message forwarded out of
-    // a DM or a private channel is shared as a snapshot only — we never offer a
-    // jump back into a private conversation (even to people who'd have access).
-    if (ref.channelType !== "public") return false;
-    return (
-      channels.some((c) => c.id === ref.channelId) ||
-      allChannels.some((c) => c.id === ref.channelId)
-    );
-  }
+  const canJumpToForward = useCallback(
+    (ref) => {
+      if (!ref?.channelId || !ref?.messageId) return false;
+      // Only originals in public channels are linkable. A message forwarded out of
+      // a DM or a private channel is shared as a snapshot only — we never offer a
+      // jump back into a private conversation (even to people who'd have access).
+      if (ref.channelType !== "public") return false;
+      return (
+        channels.some((c) => c.id === ref.channelId) ||
+        allChannels.some((c) => c.id === ref.channelId)
+      );
+    },
+    [channels, allChannels]
+  );
 
   // Open the original of a forwarded message. If the user can't access its
   // channel, let them know instead of silently failing.
-  function handleJumpToMessage(ref) {
-    if (!ref?.channelId || !ref?.messageId) return;
-    const { channelId, messageId, channelType } = ref;
-    setSearchQuery(null);
+  const handleJumpToMessage = useCallback(
+    (ref) => {
+      if (!ref?.channelId || !ref?.messageId) return;
+      const { channelId, messageId, channelType } = ref;
+      setSearchQuery(null);
 
-    if (channelType === "dm") {
-      const conv = dms.find((d) => d.id === channelId);
-      if (!conv) return setToast("This was forwarded from a direct message you're not part of.");
-      setView("dms");
-      setActiveChannel({
-        id: conv.id,
-        type: "dm",
-        dmName: conv.withUser.displayName,
-        dmUserId: conv.withUser.id,
-      });
+      if (channelType === "dm") {
+        const conv = dms.find((d) => d.id === channelId);
+        if (!conv) return setToast("This was forwarded from a direct message you're not part of.");
+        setView("dms");
+        setActiveChannel({
+          id: conv.id,
+          type: "dm",
+          dmName: conv.withUser.displayName,
+          dmUserId: conv.withUser.id,
+        });
+        setJumpMessageId(messageId);
+        return;
+      }
+
+      // Public channels are browsable; private channels only if you're a member.
+      const channel =
+        channels.find((c) => c.id === channelId) || allChannels.find((c) => c.id === channelId);
+      if (!channel) {
+        return setToast("You don't have access to the channel this message was forwarded from.");
+      }
+      setView("home");
+      setActiveChannel(channel);
       setJumpMessageId(messageId);
-      return;
-    }
-
-    // Public channels are browsable; private channels only if you're a member.
-    const channel =
-      channels.find((c) => c.id === channelId) || allChannels.find((c) => c.id === channelId);
-    if (!channel) {
-      return setToast("You don't have access to the channel this message was forwarded from.");
-    }
-    setView("home");
-    setActiveChannel(channel);
-    setJumpMessageId(messageId);
-  }
+    },
+    [channels, dms, allChannels]
+  );
 
   // Toggle a message's saved ("save for later") state, optimistically.
   function handleToggleSave(messageId) {
@@ -673,8 +685,8 @@ export default function App() {
             </button>
             <SearchBox
               ref={searchRef}
-              channels={[...new Map([...channels, ...allChannels].map((c) => [c.id, c])).values()]}
-              myChannelIds={channels.map((c) => c.id)}
+              channels={visibleChannels}
+              myChannelIds={myChannelIds}
               users={users}
               recents={recents}
               onPickChannel={handlePickChannel}

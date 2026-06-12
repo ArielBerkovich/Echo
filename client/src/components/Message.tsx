@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import Avatar from "./Avatar.js";
 import Attachments from "./Attachments.js";
 import { formatTime } from "../lib/time.js";
@@ -21,7 +21,7 @@ export function SystemMessage({ m }) {
 // A single channel message: header, forwarded banner, body (or inline editor),
 // attachments, reactions, thread indicator, hover actions, and the edit/delete
 // menu. All behaviour is delegated to handlers passed by the parent.
-export default function Message({
+function Message({
   m,
   grouped,
   highlighted,
@@ -270,6 +270,26 @@ export default function Message({
         )}
       </div>
     </div>
+  );
+}
+
+export default memo(Message, areMessagePropsEqual);
+
+function areMessagePropsEqual(prev, next) {
+  return (
+    prev.m === next.m &&
+    prev.grouped === next.grouped &&
+    prev.highlighted === next.highlighted &&
+    prev.currentUserId === next.currentUserId &&
+    prev.usersById === next.usersById &&
+    prev.renderMarkdown === next.renderMarkdown &&
+    prev.emojiMap === next.emojiMap &&
+    prev.canJumpToForward === next.canJumpToForward &&
+    prev.inThread === next.inThread &&
+    prev.saved === next.saved &&
+    prev.editing === next.editing &&
+    prev.menuOpen === next.menuOpen &&
+    prev.showActions === next.showActions
   );
 }
 

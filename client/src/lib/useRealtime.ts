@@ -171,12 +171,13 @@ export function useRealtime({
         const focusedHere = !!active && msg.channelId === active.id && document.hasFocus();
         if (!focusedHere) {
           const sender = msg.author?.displayName || "Someone";
-          const text = body.replace(/\s+/g, " ").trim().slice(0, 140) || "Sent an attachment";
+          const text = msg.body || "";
+          const preview = text.replace(/\s+/g, " ").trim().slice(0, 140) || "Sent an attachment";
           if (inDms) {
             const dm = dmsRef.current.find((d) => d.id === msg.channelId);
             const vip = dm && vipRef.current.has(dm.withUser.id);
             showNotification(vip ? `⭐ ${sender} · VIP` : sender, {
-              body: text,
+              body: preview,
               tag: msg.channelId,
               onClick: () => {
                 setView("dms");
@@ -193,7 +194,7 @@ export function useRealtime({
           } else if (mentionsMe && inChannels) {
             const ch = channelsRef.current.find((c) => c.id === msg.channelId);
             showNotification(`${sender} in #${ch?.name || "channel"}`, {
-              body: text,
+              body: preview,
               tag: msg.channelId,
               onClick: () => {
                 setView("home");

@@ -1,11 +1,21 @@
-import { useEffect, useMemo, useRef } from "react";
-import data from "@emoji-mart/data";
-import Picker from "@emoji-mart/react";
+import { lazy, Suspense, useEffect, useMemo, useRef } from "react";
 
 // A people/group glyph for the avatar-emoji category tab — distinct from the
 // default smiley emoji-mart uses for custom categories.
 const PEOPLE_ICON =
   '<svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M16 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>';
+
+const EmojiMartPicker = lazy(async () => {
+  const [{ default: data }, { default: Picker }] = await Promise.all([
+    import("@emoji-mart/data/sets/15/all.json"),
+    import("@emoji-mart/react"),
+  ]);
+  return {
+    default: function EmojiMartLoaded(props) {
+      return <Picker data={data} {...props} />;
+    },
+  };
+});
 
 // Full emoji picker (all emojis + search) via emoji-mart, plus a "Custom"
 // category fed by workspace-uploaded emoji/GIFs. Closes on the toggle button or
@@ -48,18 +58,19 @@ export default function EmojiPicker({ onPick, onClose, customEmojis = [], onAddC
 
   return (
     <div className="emoji-popup-wrap" ref={ref}>
-      <Picker
-        // Remount when the custom set changes so new emoji appear immediately.
-        key={customEmojis.length}
-        data={data}
-        custom={custom}
-        theme="light"
-        previewPosition="bottom"
-        skinTonePosition="search"
-        navPosition="top"
-        // Native emoji return `.native`; custom ones return a `:shortcode:`.
-        onEmojiSelect={(emoji) => onPick(emoji.native || `:${emoji.id}:`)}
-      />
+      <Suspense fallback={<div className="emoji-picker-loading" aria-hidden="true" />}>
+        <EmojiMartPicker
+          // Remount when the custom set changes so new emoji appear immediately.
+          key={customEmojis.length}
+          custom={custom}
+          theme="light"
+          previewPosition="bottom"
+          skinTonePosition="search"
+          navPosition="top"
+          // Native emoji return `.native`; custom ones return a `:shortcode:`.
+          onEmojiSelect={(emoji) => onPick(emoji.native || `:${emoji.id}:`)}
+        />
+      </Suspense>
       {onAddCustom && (
         <button type="button" className="emoji-add-custom" onMouseDown={(e) => e.preventDefault()} onClick={onAddCustom}>
           <span className="eac-plus">＋</span> Add custom emoji
