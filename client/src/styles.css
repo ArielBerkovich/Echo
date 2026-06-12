@@ -455,7 +455,7 @@ input:focus {
 /* ============ Auth screen ============ */
 .auth-screen {
   position: relative;
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -531,8 +531,8 @@ input:focus {
   grid-template-columns: 1.05fr 1fr;
   width: 100%;
   max-width: 940px;
-  height: min(560px, calc(100vh - 32px));
-  max-height: calc(100vh - 32px);
+  height: min(560px, calc(100dvh - 32px));
+  max-height: calc(100dvh - 32px);
   min-height: 0;
   border-radius: 24px;
   overflow: hidden;
@@ -685,8 +685,29 @@ input:focus {
     linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.99) 100%),
     var(--surface);
   border-left: 1px solid rgba(15, 39, 72, 0.06);
+  height: 100%;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.auth-card.setup {
+  gap: 8px;
+  padding-top: 24px;
+  padding-bottom: 22px;
+}
+.auth-card.setup .subtitle {
+  max-width: 32ch;
+}
+.auth-card.setup .setup-badge {
+  padding: 4px 10px;
+}
+.auth-card.setup .setup-callout {
+  padding: 10px 12px;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.auth-card.setup .auth-submit {
+  margin-top: 2px;
 }
 .auth-card-head {
   display: flex;
@@ -984,8 +1005,8 @@ input:focus {
     grid-template-columns: 1fr;
     max-width: 420px;
     height: auto;
-    min-height: calc(100vh - 24px);
-    max-height: calc(100vh - 24px);
+    min-height: calc(100dvh - 24px);
+    max-height: calc(100dvh - 24px);
   }
   .auth-hero {
     display: none;
@@ -993,6 +1014,11 @@ input:focus {
   .auth-card {
     padding: 22px 20px 20px;
     gap: 10px;
+  }
+  .auth-card.setup {
+    gap: 8px;
+    padding-top: 20px;
+    padding-bottom: 18px;
   }
   .setup-callout {
     font-size: 12.5px;
