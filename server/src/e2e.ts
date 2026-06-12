@@ -55,6 +55,19 @@ export async function resetE2EWorkspaceFixture() {
     members: [alice._id],
     createdBy: alice._id,
   });
+  const marketing = await Channel.create({
+    name: "marketing",
+    type: "public",
+    topic: "Launch prep and announcements",
+    members: [bob._id],
+    createdBy: bob._id,
+  });
+  const dmAliceBob = await Channel.create({
+    name: `dm-${[alice._id.toString(), bob._id.toString()].sort().join("-")}`,
+    type: "dm",
+    members: [alice._id, bob._id],
+    createdBy: alice._id,
+  });
 
   const welcome = await Message.create({
     channel: general._id,
@@ -98,6 +111,7 @@ export async function resetE2EWorkspaceFixture() {
     mentionsEveryone: false,
     mentionedUserIds: [],
     threadRootAuthor: null,
+    reactions: [{ emoji: "👍", users: [bob._id] }],
   });
 
   const mention = await Message.create({
@@ -123,13 +137,50 @@ export async function resetE2EWorkspaceFixture() {
     threadRootAuthor: null,
   });
 
-  await User.updateOne({ _id: alice._id }, { $set: { savedMessages: [formatted._id] } });
   await Read.create({
     user: alice._id,
     channel: general._id,
     thread: null,
     lastReadAt: new Date("2026-06-01T09:00:00.000Z"),
   });
+
+  const threadRoot = await Message.create({
+    channel: projectAlpha._id,
+    author: alice._id,
+    body: "Thread root in project alpha",
+    kind: "user",
+    idempotencyKey: "e2e-thread-root",
+    externalKey: "e2e-thread-root",
+    mentionsEveryone: false,
+    mentionedUserIds: [],
+    threadRootAuthor: null,
+  });
+  const threadReply = await Message.create({
+    channel: projectAlpha._id,
+    author: bob._id,
+    body: "Thread reply for Alice",
+    kind: "user",
+    idempotencyKey: "e2e-thread-reply",
+    externalKey: "e2e-thread-reply",
+    parentId: threadRoot._id,
+    threadRootAuthor: alice._id,
+    mentionsEveryone: false,
+    mentionedUserIds: [],
+  });
+
+  const dmMessage = await Message.create({
+    channel: dmAliceBob._id,
+    author: bob._id,
+    body: "Bob's DM hello",
+    kind: "user",
+    idempotencyKey: "e2e-dm-hello",
+    externalKey: "e2e-dm-hello",
+    mentionsEveryone: false,
+    mentionedUserIds: [],
+    threadRootAuthor: null,
+  });
+
+  await User.updateOne({ _id: alice._id }, { $set: { savedMessages: [formatted._id] } });
 
   await ActivityEvent.create({
     recipient: alice._id,
@@ -157,10 +208,15 @@ export async function resetE2EWorkspaceFixture() {
       formatted: formatted.toPublicJSON(),
       mention: mention.toPublicJSON(),
       searchHit: searchHit.toPublicJSON(),
+      threadRoot: threadRoot.toPublicJSON(),
+      threadReply: threadReply.toPublicJSON(),
+      dmMessage: dmMessage.toPublicJSON(),
     },
     channels: {
       general: general.toPublicJSON(),
       projectAlpha: projectAlpha.toPublicJSON(),
+      marketing: marketing.toPublicJSON(),
+      dmAliceBob: dmAliceBob.toPublicJSON(),
     },
   };
 }
