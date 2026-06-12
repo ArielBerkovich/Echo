@@ -35,6 +35,7 @@ const THEMES = [
 ];
 const THEME_IDS = new Set(THEMES.map((t) => t.id));
 const DEFAULT_THEME = "nord";
+const LEGACY_DARK_THEMES = new Set(["azure", "midnight", "nord", "dracula"]);
 
 // Resolve the stored theme + mode, defaulting to Nord and migrating any older /
 // removed theme id (e.g. "default", "forest", "dark") to the default.
@@ -48,8 +49,7 @@ function readThemeMode() {
   // Legacy single-value migration.
   if (!storedTheme || storedTheme === "dark") return { theme: DEFAULT_THEME, mode: "dark" };
   if (storedTheme === "light") return { theme: DEFAULT_THEME, mode: "light" };
-  const LEGACY_DARK = new Set(["azure", "midnight", "nord", "dracula"]);
-  return { theme, mode: LEGACY_DARK.has(storedTheme) ? "dark" : "light" };
+  return { theme, mode: LEGACY_DARK_THEMES.has(storedTheme) ? "dark" : "light" };
 }
 
 const HIDDEN_KEY = "echo.hiddenChannels";
@@ -61,6 +61,25 @@ const RECENTS_KEY = "echo.recentSearches";
 
 function loadRecents() {
   return readJson(RECENTS_KEY, []);
+}
+
+function readLocationState(userId) {
+  return readJson(`echo.loc.${userId}`, null);
+}
+
+function createLocationState(view, activeChannel) {
+  return {
+    view,
+    convId: activeChannel?.id || null,
+    convType: activeChannel?.type || null,
+  };
+}
+
+function toggleSetValue(prev, value) {
+  const next = new Set(prev);
+  if (next.has(value)) next.delete(value);
+  else next.add(value);
+  return next;
 }
 
 export default function App() {
@@ -96,6 +115,7 @@ export default function App() {
   const markReadAtRef = useRef({}); // channelId -> last markRead time (throttle)
   const restoredRef = useRef(false); // have we restored the saved location yet?
   const poppingRef = useRef(false); // applying a browser back/forward — don't re-push history
+  const currentLocation = useMemo(() => createLocationState(view, activeChannel), [view, activeChannel]);
 
   // Real-time layer: socket listeners + live Activity-badge counts.
   // (refreshChannels/refreshDms are hoisted declarations below.)
@@ -188,7 +208,7 @@ export default function App() {
 
   // Restore the user's last view + conversation (or fall back to the first
   // channel) once channels & DMs are loaded.
-  function applyLocation(saved, chs, conversations) {
+  function restoreLocation(saved, chs, conversations) {
     let nextView = "home";
     let active = chs[0] || null;
     if (saved?.view === "activity" || saved?.view === "saved") {
@@ -224,7 +244,7 @@ export default function App() {
         const conversations = dmRes.conversations || [];
         setChannels(chs);
         setDms(conversations);
-        applyLocation(readJson(`echo.loc.${user.id}`, null), chs, conversations);
+        restoreLocation(readLocationState(user.id), chs, conversations);
         restoredRef.current = true;
       })
       .catch(() => {
@@ -246,7 +266,7 @@ export default function App() {
   // the back/forward buttons move through the in-app navigation.
   useEffect(() => {
     if (!user || !restoredRef.current) return;
-    const loc = { view, convId: activeChannel?.id || null, convType: activeChannel?.type || null };
+    const loc = currentLocation;
     writeJson(`echo.loc.${user.id}`, loc);
 
     // Don't push a new entry when we're applying a back/forward navigation.
@@ -263,7 +283,7 @@ export default function App() {
     } else {
       window.history.replaceState({ __echo: true, ...loc }, ""); // seed the first entry
     }
-  }, [user, view, activeChannel]);
+  }, [user, currentLocation]);
 
   // Browser back/forward: restore the in-app location from the history entry.
   useEffect(() => {
@@ -276,7 +296,7 @@ export default function App() {
       setProfileUser(null);
       setShowSettings(!!st.settings);
       setShowApiDocs(!!st.apiDocs);
-      applyLocation(st, channels, dms);
+      restoreLocation(st, channels, dms);
     }
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
@@ -350,7 +370,7 @@ export default function App() {
   // Settings opens as a history entry so the browser Back button (and the
   // in-app "Back to Echo") both close it.
   function openSettings() {
-    const loc = { view, convId: activeChannel?.id || null, convType: activeChannel?.type || null };
+    const loc = currentLocation;
     window.history.pushState({ __echo: true, ...loc, settings: true }, "");
     setShowSettings(true);
   }
@@ -360,7 +380,7 @@ export default function App() {
   }
   // API reference — same history-backed overlay pattern as Settings.
   function openApiDocs() {
-    const loc = { view, convId: activeChannel?.id || null, convType: activeChannel?.type || null };
+    const loc = currentLocation;
     window.history.pushState({ __echo: true, ...loc, apiDocs: true }, "");
     setShowApiDocs(true);
   }
@@ -526,18 +546,12 @@ export default function App() {
   // Toggle a message's saved ("save for later") state, optimistically.
   function handleToggleSave(messageId) {
     setSavedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(messageId)) next.delete(messageId);
-      else next.add(messageId);
-      return next;
+      return toggleSetValue(prev, messageId);
     });
     api.toggleSaved(messageId).catch(() => {
       // Roll back on failure.
       setSavedIds((prev) => {
-        const next = new Set(prev);
-        if (next.has(messageId)) next.delete(messageId);
-        else next.add(messageId);
-        return next;
+        return toggleSetValue(prev, messageId);
       });
     });
   }
@@ -545,15 +559,11 @@ export default function App() {
   // Toggle a user's VIP status, optimistically.
   function handleToggleVip(userId) {
     setVipIds((prev) => {
-      const next = new Set(prev);
-      next.has(userId) ? next.delete(userId) : next.add(userId);
-      return next;
+      return toggleSetValue(prev, userId);
     });
     api.toggleVip(userId).catch(() => {
       setVipIds((prev) => {
-        const next = new Set(prev);
-        next.has(userId) ? next.delete(userId) : next.add(userId);
-        return next;
+        return toggleSetValue(prev, userId);
       });
     });
   }

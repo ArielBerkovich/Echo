@@ -34,6 +34,13 @@ function MessagesSkeleton() {
   );
 }
 
+function getTypingText(names) {
+  if (names.length === 1) return `${names[0]} is typing…`;
+  if (names.length === 2) return `${names[0]} and ${names[1]} are typing…`;
+  if (names.length >= 3) return `${names[0]} and ${names.length - 1} others are typing…`;
+  return "";
+}
+
 export default function ChannelView({
   channel,
   cachedMessages = null,
@@ -93,6 +100,7 @@ export default function ChannelView({
   const justPrependedRef = useRef(false); // last growth was a prepend (don't follow to bottom)
   const jumpingRef = useRef(false); // a jump scroll is in flight — pause scroll-up pagination
   const jumpSettleRef = useRef(null); // timer that re-enables pagination after a jump lands
+  const jumpHandledRef = useRef(null); // guards against re-running after we load a window
 
   const renderMarkdown = useMarkdownRenderer(users, user.username, customEmojis);
   const emojiMap = useMemo(
@@ -101,12 +109,7 @@ export default function ChannelView({
   );
   const usersById = useMemo(() => new Map(users.map((u) => [u.id, u])), [users]);
 
-  // Load history + subscribe to live messages whenever the active channel changes.
-  useEffect(() => {
-    let cancelled = false;
-    const socket = getSocket();
-    const myId = user.id;
-
+  function resetConversationState() {
     setMessages([]);
     setLoading(true);
     setError(null);
@@ -132,6 +135,15 @@ export default function ChannelView({
     jumpingRef.current = false;
     clearTimeout(jumpSettleRef.current);
     setLoadingOlder(false);
+  }
+
+  // Load history + subscribe to live messages whenever the active channel changes.
+  useEffect(() => {
+    let cancelled = false;
+    const socket = getSocket();
+    const myId = user.id;
+
+    resetConversationState();
     if (cachedMessages?.length) {
       setMessages(cachedMessages);
       setLoading(false);
@@ -324,7 +336,8 @@ export default function ChannelView({
     setThread(null);
     setShowDetails(false);
     setShowPinned(true);
-    api.getPinned(channel.id)
+    api
+      .getPinned(channel.id)
       .then(({ messages }) => setPinnedMessages(messages))
       .catch(() => {});
   }
@@ -440,7 +453,6 @@ export default function ChannelView({
 
   // Scroll to + briefly highlight a jumped-to message (e.g. a forwarded
   // message's original), once it's present in the loaded history.
-  const jumpHandledRef = useRef(null); // guards against re-running after we load a window
   useEffect(() => {
     if (!jumpMessageId) return;
     // Wait until the loaded history actually belongs to this channel — avoids
@@ -534,14 +546,7 @@ export default function ChannelView({
   const isGeneral = (channel.name || "").toLowerCase() === "general";
 
   const typingNames = Object.values(typingUsers);
-  const typingText =
-    typingNames.length === 1
-      ? `${typingNames[0]} is typing…`
-      : typingNames.length === 2
-      ? `${typingNames[0]} and ${typingNames[1]} are typing…`
-      : typingNames.length >= 3
-      ? `${typingNames[0]} and ${typingNames.length - 1} others are typing…`
-      : "";
+  const typingText = getTypingText(typingNames);
 
   const hasSidePanel = !!thread || showPinned || showDetails;
 
