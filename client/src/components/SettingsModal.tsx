@@ -93,126 +93,146 @@ export default function SettingsModal({
   }
 
   return (
-    <div className="settings-page">
+    <div className="settings-page" data-testid="settings-page">
       <header className="settings-page-head">
         <h2>Settings</h2>
-        <button className="settings-close" onClick={onClose} aria-label="Close settings">
+        <button className="settings-close" data-testid="settings-close" onClick={onClose} aria-label="Close settings">
           ✕
         </button>
       </header>
       <div className="settings-page-body">
         <div className="settings-page-inner">
-        {/* Profile picture */}
-        <section className="settings-section">
-          <h3>Profile picture</h3>
-          <div className="settings-avatar-row">
-            <Avatar name={displayName} src={avatarUrl} size={72} />
-            <div className="settings-avatar-actions">
-              <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPickAvatar} />
-              <button type="button" className="btn-secondary" disabled={busy} onClick={() => fileRef.current?.click()}>
-                {avatarUrl ? "Change" : "Upload"}
-              </button>
-              {avatarUrl && (
-                <button type="button" className="link-danger" disabled={busy} onClick={removeAvatar}>
-                  Remove
-                </button>
-              )}
-            </div>
-          </div>
-        </section>
-
-        {/* Appearance / theme */}
-        {themes.length > 0 && (
           <section className="settings-section">
-            <h3>Appearance</h3>
-            <p className="settings-hint">Pick a colour theme — it works in both light and dark.</p>
-            <div className="mode-toggle" role="group" aria-label="Light or dark mode">
-              <button
-                type="button"
-                className={`mode-option${mode === "light" ? " active" : ""}`}
-                onClick={() => onSelectMode?.("light")}
-                aria-pressed={mode === "light"}
-              >
-                ☀ Light
-              </button>
-              <button
-                type="button"
-                className={`mode-option${mode === "dark" ? " active" : ""}`}
-                onClick={() => onSelectMode?.("dark")}
-                aria-pressed={mode === "dark"}
-              >
-                ☾ Dark
-              </button>
-            </div>
-            <div className="theme-grid">
-              {themes.map((t) => (
+            <h3>Profile picture</h3>
+            <div className="settings-avatar-row">
+              <Avatar name={displayName} src={avatarUrl} size={72} />
+              <div className="settings-avatar-actions">
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  data-testid="settings-avatar-input"
+                  onChange={onPickAvatar}
+                />
                 <button
-                  key={t.id}
                   type="button"
-                  className={`theme-card${theme === t.id ? " active" : ""}`}
-                  onClick={() => onSelectTheme?.(t.id)}
-                  aria-pressed={theme === t.id}
+                  className="btn-secondary"
+                  data-testid="settings-avatar-button"
+                  disabled={busy}
+                  onClick={() => fileRef.current?.click()}
                 >
-                  <span className="theme-swatch">
-                    {t.swatch.map((c, i) => (
-                      <span key={i} style={{ background: c }} />
-                    ))}
-                  </span>
-                  <span className="theme-name">{t.label}</span>
+                  {avatarUrl ? "Change" : "Upload"}
                 </button>
-              ))}
+                {avatarUrl && (
+                  <button
+                    type="button"
+                    className="link-danger"
+                    data-testid="settings-avatar-remove"
+                    disabled={busy}
+                    onClick={removeAvatar}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
             </div>
           </section>
-        )}
 
-        {/* Display name */}
-        <section className="settings-section">
-          <h3>Display name</h3>
-          <div className="settings-name-row">
-            <input
-              className="settings-input"
-              value={displayName}
-              maxLength={64}
-              dir="auto"
-              onChange={(e) => setDisplayName(e.target.value)}
-            />
-            <button type="button" className="btn-primary" disabled={!nameChanged || busy} onClick={saveName}>
-              Save
-            </button>
-          </div>
-          <div className="settings-handle">@{user.username}</div>
-        </section>
+          {themes.length > 0 && (
+            <section className="settings-section">
+              <h3>Appearance</h3>
+              <p className="settings-hint">Pick a colour theme — it works in both light and dark.</p>
+              <div className="mode-toggle" role="group" aria-label="Light or dark mode">
+                <button
+                  type="button"
+                  className={`mode-option${mode === "light" ? " active" : ""}`}
+                  data-testid="settings-mode-light"
+                  onClick={() => onSelectMode?.("light")}
+                  aria-pressed={mode === "light"}
+                >
+                  ☀ Light
+                </button>
+                <button
+                  type="button"
+                  className={`mode-option${mode === "dark" ? " active" : ""}`}
+                  data-testid="settings-mode-dark"
+                  onClick={() => onSelectMode?.("dark")}
+                  aria-pressed={mode === "dark"}
+                >
+                  ☾ Dark
+                </button>
+              </div>
+              <div className="theme-grid">
+                {themes.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    className={`theme-card${theme === t.id ? " active" : ""}`}
+                    data-testid={`settings-theme-${t.id}`}
+                    onClick={() => onSelectTheme?.(t.id)}
+                    aria-pressed={theme === t.id}
+                  >
+                    <span className="theme-swatch">
+                      {t.swatch.map((c, i) => (
+                        <span key={i} style={{ background: c }} />
+                      ))}
+                    </span>
+                    <span className="theme-name">{t.label}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
 
-        {/* Password (self-service) — not available to the admin account. */}
-        {!user.isAdmin && <ChangePassword />}
-
-        {/* Admin — reset another user's password */}
-        {user.isAdmin && <AdminPasswordReset users={users} currentUserId={user.id} />}
-
-        {/* Desktop notifications */}
-        <section className="settings-section">
-          <h3>Desktop notifications</h3>
-          <p className="settings-hint">
-            Get a desktop alert for direct messages, @mentions, and VIP messages when Echo isn't
-            focused.
-          </p>
-          <NotificationToggle />
-        </section>
-
-        {/* Walkthrough */}
-        {onReplayTour && (
           <section className="settings-section">
-            <h3>Walkthrough</h3>
-            <p className="settings-hint">New here, or want a refresher? Replay the quick product tour.</p>
-            <button type="button" className="btn-secondary replay-tour-btn" onClick={onReplayTour}>
-              Replay walkthrough
-            </button>
+            <h3>Display name</h3>
+            <div className="settings-name-row">
+              <input
+                className="settings-input"
+                data-testid="settings-display-name"
+                value={displayName}
+                maxLength={64}
+                dir="auto"
+                onChange={(e) => setDisplayName(e.target.value)}
+              />
+              <button type="button" className="btn-primary" disabled={!nameChanged || busy} onClick={saveName}>
+                Save
+              </button>
+            </div>
+            <div className="settings-handle">@{user.username}</div>
           </section>
-        )}
 
+          {!user.isAdmin && <ChangePassword />}
 
-        {error && <div className="error">{error}</div>}
-        {saved && <div className="settings-saved">Saved ✓</div>}
+          {user.isAdmin && <AdminPasswordReset users={users} currentUserId={user.id} />}
+
+          <section className="settings-section">
+            <h3>Desktop notifications</h3>
+            <p className="settings-hint">
+              Get a desktop alert for direct messages, @mentions, and VIP messages when Echo isn't
+              focused.
+            </p>
+            <NotificationToggle />
+          </section>
+
+          {onReplayTour && (
+            <section className="settings-section">
+              <h3>Walkthrough</h3>
+              <p className="settings-hint">New here, or want a refresher? Replay the quick product tour.</p>
+              <button
+                type="button"
+                className="btn-secondary replay-tour-btn"
+                data-testid="settings-replay-tour"
+                onClick={onReplayTour}
+              >
+                Replay walkthrough
+              </button>
+            </section>
+          )}
+
+          {error && <div className="error">{error}</div>}
+          {saved && <div className="settings-saved">Saved ✓</div>}
         </div>
       </div>
     </div>
@@ -416,10 +436,11 @@ function AdminPasswordReset({ users, currentUserId }) {
         prompted to set their own new password the next time they sign in.
       </p>
 
-      <div className="admin-reset">
+      <div className="admin-reset" data-testid="admin-reset">
         <div className="admin-user-pick">
           <input
             className="settings-input"
+            data-testid="admin-reset-search"
             placeholder="Find a user by name or @username"
             value={query}
             onChange={(e) => {
@@ -436,7 +457,7 @@ function AdminPasswordReset({ users, currentUserId }) {
           {candidates.length > 0 && (
             <div className="admin-user-results">
               {candidates.map((u) => (
-                <button key={u.id} type="button" className="search-row" onClick={() => pick(u)}>
+                <button key={u.id} type="button" className="search-row" data-testid={`admin-reset-user-${u.username}`} onClick={() => pick(u)}>
                   <Avatar name={u.displayName} src={u.avatarUrl} size={24} />
                   <span className="search-name">{u.displayName}</span>
                   <span className="search-handle">@{u.username}</span>
@@ -447,7 +468,7 @@ function AdminPasswordReset({ users, currentUserId }) {
         </div>
 
         {selected && !otp && (
-          <button type="button" className="btn-primary" disabled={busy} onClick={issue}>
+          <button type="button" className="btn-primary" data-testid="admin-reset-issue" disabled={busy} onClick={issue}>
             {busy ? "Issuing…" : `Issue one-time password for ${selected.displayName}`}
           </button>
         )}

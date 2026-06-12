@@ -56,6 +56,7 @@ export default function Message({
   const isMine = m.author?.id === currentUserId;
   const actionsVisible = showActions;
   const [copied, setCopied] = useState(false);
+  const mid = m.id;
 
   // Open a profile when an @mention pill in the rendered body is clicked.
   function onBodyClick(e) {
@@ -94,6 +95,7 @@ export default function Message({
     <div
       className={`message ${grouped ? "grouped" : ""} ${highlighted ? "flash" : ""}`}
       data-mid={m.id}
+      data-testid={`message-${mid}`}
       onMouseEnter={onActivate}
     >
       <div className="avatar-slot">
@@ -103,6 +105,7 @@ export default function Message({
           <button
             type="button"
             className="avatar-btn"
+            data-testid={`message-${mid}-avatar`}
             title={`View ${m.author?.displayName || "profile"}`}
             onClick={() => m.author?.id && onOpenProfile?.(m.author.id)}
           >
@@ -122,6 +125,7 @@ export default function Message({
             <button
               type="button"
               className="author author-btn"
+              data-testid={`message-${mid}-author`}
               dir="auto"
               onClick={() => m.author?.id && onOpenProfile?.(m.author.id)}
             >
@@ -194,6 +198,7 @@ export default function Message({
               <button
                 key={r.emoji}
                 className={`reaction ${r.users.includes(currentUserId) ? "mine" : ""}`}
+                data-testid={`message-${mid}-reaction-${String(r.emoji).replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`}
                 onClick={() => onToggleReaction(r.emoji)}
                 data-tip={reactionTip(r.users, usersById, currentUserId, r.emoji)}
               >
@@ -203,33 +208,34 @@ export default function Message({
                 <span className="reaction-count">{r.users.length}</span>
               </button>
             ))}
-            <button className="reaction add react-toggle" title="Add reaction" onClick={onReact}>
+            <button className="reaction add react-toggle" data-testid={`message-${mid}-add-reaction`} title="Add reaction" onClick={onReact}>
               <EmojiAddIcon />
             </button>
           </div>
         )}
 
         {!inThread && m.replyCount > 0 && (
-          <button className="thread-indicator" onClick={onOpenThread}>
+          <button className="thread-indicator" data-testid={`message-${mid}-reply-count`} onClick={onOpenThread}>
             <ReplyIcon />
             {m.replyCount} {m.replyCount === 1 ? "reply" : "replies"}
           </button>
         )}
       </div>
 
-      <div className={`msg-actions ${actionsVisible ? "visible" : ""}`}>
-        <button className="react-toggle" title="Add reaction" onClick={onReact}>
+      <div className={`msg-actions ${actionsVisible ? "visible" : ""}`} data-testid={`message-${mid}-actions`}>
+        <button className="react-toggle" data-testid={`message-${mid}-add-reaction-action`} title="Add reaction" onClick={onReact}>
           <EmojiAddIcon />
         </button>
         {!inThread && (
-          <button title="Reply in thread" onClick={onOpenThread}>
+          <button data-testid={`message-${mid}-reply`} title="Reply in thread" onClick={onOpenThread}>
             <ReplyIcon />
           </button>
         )}
-        <button title="Forward message" onClick={onForward}>
+        <button data-testid={`message-${mid}-forward`} title="Forward message" onClick={onForward}>
           <ShareIcon />
         </button>
         <button
+          data-testid={`message-${mid}-copy`}
           title={copied ? "Copied message" : "Copy message"}
           className={copied ? "copied-active" : ""}
           onClick={copyMessage}
@@ -237,6 +243,7 @@ export default function Message({
           <CopyIcon />
         </button>
         <button
+          data-testid={`message-${mid}-pin`}
           title={m.pinnedAt ? "Unpin message" : "Pin message"}
           className={m.pinnedAt ? "pin-active" : ""}
           onClick={onTogglePin}
@@ -244,6 +251,7 @@ export default function Message({
           <PinIcon />
         </button>
         <button
+          data-testid={`message-${mid}-save`}
           title={saved ? "Remove from saved" : "Save for later"}
           className={saved ? "saved-active" : ""}
           onClick={onToggleSave}
@@ -252,10 +260,10 @@ export default function Message({
         </button>
         {isMine && (
           <>
-            <button title="Edit message" onClick={onStartEdit}>
+            <button data-testid={`message-${mid}-edit`} title="Edit message" onClick={onStartEdit}>
               <PencilIcon />
             </button>
-            <button title="Delete message" className="act-danger" onClick={onDelete}>
+            <button data-testid={`message-${mid}-delete`} title="Delete message" className="act-danger" onClick={onDelete}>
               <TrashIcon />
             </button>
           </>

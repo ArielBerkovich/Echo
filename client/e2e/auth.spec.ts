@@ -31,7 +31,7 @@ test("login displays server errors", async ({ page }) => {
   await page.getByRole("button", { name: "Create admin account" }).click();
 
   await expect(page.getByText("#general", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Sign out" }).click({ force: true });
+  await page.getByTestId("sidebar-logout").click({ force: true });
   await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
 
   await page.getByLabel("Username").fill("alice");
@@ -56,7 +56,7 @@ test("create account tab submits registration payload", async ({ page }) => {
   await page.getByRole("button", { name: "Create admin account" }).click();
   await expect(page.getByText("#general", { exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "Sign out" }).click({ force: true });
+  await page.getByTestId("sidebar-logout").click({ force: true });
   await expect(page.getByRole("tab", { name: "Create account" })).toBeVisible();
 
   await page.getByRole("tab", { name: "Create account" }).click();

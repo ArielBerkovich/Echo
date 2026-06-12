@@ -555,36 +555,37 @@ export default function ChannelView({
           onClose={() => setThreadLightbox(null)}
         />
       )}
-      <header className="channel-header">
+      <header className="channel-header" data-testid="channel-header">
         {isDm ? (
           <>
             <Avatar name={dmAvatarName} src={dmAvatar} size={24} />
-            <span className="ch-name">{dmLabel}</span>
+            <span className="ch-name" data-testid="channel-title">{dmLabel}</span>
           </>
         ) : (
           <>
             <button
               className="ch-name ch-name-btn"
+              data-testid="channel-title"
               title="View channel details"
               onClick={() => { setThread(null); setShowDetails(true); }}
             >
               {channel.type === "private" ? "🔒" : "#"} {channel.name}
             </button>
             {channel.topic && (
-              <button className="ch-topic" title="View channel details" onClick={() => { setThread(null); setShowDetails(true); }}>
+              <button className="ch-topic" data-testid="channel-topic" title="View channel details" onClick={() => { setThread(null); setShowDetails(true); }}>
                 {channel.topic}
               </button>
             )}
-            <button className="ch-meta ch-meta-btn" title="View members" onClick={() => { setThread(null); setShowDetails(true); }}>
+            <button className="ch-meta ch-meta-btn" data-testid="channel-members" title="View members" onClick={() => { setThread(null); setShowDetails(true); }}>
               {channel.memberCount ?? 0} members
             </button>
             <div className="header-actions">
-              <button className="header-action header-action-icon" onClick={openPinnedPanel} title="Pinned messages" aria-label="Pinned messages">
+              <button className="header-action header-action-icon" data-testid="channel-pinned" onClick={openPinnedPanel} title="Pinned messages" aria-label="Pinned messages">
                 <PinIcon />
                 <span>Pinned</span>
               </button>
               {!isGeneral && (
-                <button className="header-action header-action-icon" onClick={onAddPeople} title="Add people" aria-label="Add people">
+                <button className="header-action header-action-icon" data-testid="channel-add-people" onClick={onAddPeople} title="Add people" aria-label="Add people">
                   <PersonAddIcon />
                   <span>Add people</span>
                 </button>
@@ -592,6 +593,7 @@ export default function ChannelView({
               {channel.createdBy === user.id && (
                 <button
                   className="header-action header-action-visibility"
+                  data-testid="channel-visibility"
                   title="Change who can join"
                   onClick={() =>
                     onChangeVisibility(channel, channel.type === "private" ? "public" : "private")
@@ -603,6 +605,7 @@ export default function ChannelView({
               {!isGeneral && (
                 <button
                   className="header-action header-action-icon leave"
+                  data-testid="channel-leave"
                   title="Leave channel"
                   aria-label="Leave channel"
                   onClick={() => setConfirmLeave(true)}
@@ -858,7 +861,7 @@ function PinnedPanel({ messages, renderMarkdown, emojiMap, onUnpin, onClose }) {
                 className="pinned-item-body markdown"
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(m.body || "") }}
               />
-              <button className="pinned-unpin" onClick={() => onUnpin(m)} title="Unpin">
+              <button className="pinned-unpin" data-testid={`pinned-${m.id}-unpin`} onClick={() => onUnpin(m)} title="Unpin">
                 Unpin
               </button>
             </div>

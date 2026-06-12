@@ -21,6 +21,14 @@ function PresenceAvatar({ name, src, size, online }) {
   );
 }
 
+function slug(text) {
+  return String(text || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 export default function Sidebar({
   user,
   channels,
@@ -101,12 +109,13 @@ export default function Sidebar({
 
       <div className="dm-find">
         <input
+          data-testid="sidebar-filter"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           placeholder={dmsOnly ? "Find a DM" : "Filter channels & DMs"}
         />
         {dmsOnly && (
-          <button className="add-channel" onClick={onNewMessage} title="New message" aria-label="New message">
+          <button className="add-channel" data-testid="sidebar-new-message" onClick={onNewMessage} title="New message" aria-label="New message">
             +
           </button>
         )}
@@ -115,8 +124,8 @@ export default function Sidebar({
       {dmsOnly ? (
         <div className="channel-list">
           {/* Message yourself — always pinned at the top */}
-          <div className={`dm-rich dm-self ${activeChannel?.type === "dm" && activeChannel?.dmUserId === user.id ? "active" : ""}`}>
-            <button className="dm-open" onClick={() => onOpenDm(user, true)}>
+          <div className={`dm-rich dm-self ${activeChannel?.type === "dm" && activeChannel?.dmUserId === user.id ? "active" : ""}`} data-testid="dm-self-row">
+            <button className="dm-open" data-testid="dm-self-open" onClick={() => onOpenDm(user, true)}>
               <PresenceAvatar name={user.displayName} src={user.avatarUrl} size={38} online />
               <div className="dm-text">
                 <div className="dm-row-top">
@@ -130,8 +139,8 @@ export default function Sidebar({
             const active = activeChannel?.type === "dm" && activeChannel?.dmUserId === conv.withUser.id;
             const unread = conv.unread > 0;
             return (
-              <div key={conv.id} className={`dm-rich ${active ? "active" : ""} ${unread ? "unread" : ""}`}>
-                <button className="dm-open" onClick={() => onOpenDm(conv.withUser)}>
+              <div key={conv.id} className={`dm-rich ${active ? "active" : ""} ${unread ? "unread" : ""}`} data-testid={`dm-row-${slug(conv.withUser.displayName)}`}>
+                <button className="dm-open" data-testid={`dm-open-${slug(conv.withUser.displayName)}`} onClick={() => onOpenDm(conv.withUser)}>
                   <PresenceAvatar
                     name={conv.withUser.displayName}
                     src={conv.withUser.avatarUrl}
@@ -150,7 +159,7 @@ export default function Sidebar({
                   </div>
                 </button>
                 {unread && <span className="unread-badge">{conv.unread > 99 ? "99+" : conv.unread}</span>}
-                <button className="dm-remove" title="Remove conversation" onClick={() => onHideDm(conv)}>
+                <button className="dm-remove" data-testid={`dm-remove-${slug(conv.withUser.displayName)}`} title="Remove conversation" onClick={() => onHideDm(conv)}>
                   ✕
                 </button>
               </div>
@@ -168,13 +177,14 @@ export default function Sidebar({
             <button
               type="button"
               className="sl-collapse"
+              data-testid="channels-toggle"
               onClick={() => setChCollapsed((v) => !v)}
               aria-expanded={!chCollapsed}
             >
               <Chevron collapsed={chCollapsed && !f} />
               <span>Channels</span>
             </button>
-            <button className="add-channel" onClick={onNewChannel} title="Create channel" aria-label="Create channel">
+            <button className="add-channel" data-testid="create-channel" onClick={onNewChannel} title="Create channel" aria-label="Create channel">
               +
             </button>
           </div>
@@ -184,6 +194,7 @@ export default function Sidebar({
                 key={c.id}
                 type="button"
                 className={`channel-item channel-row ${activeChannel?.id === c.id ? "active" : ""} ${c.unread ? "unread" : ""}`}
+                data-testid={`channel-row-${slug(c.name)}`}
                 onClick={() => onSelect(c)}
                 onMouseEnter={() => onPrefetchChannel?.(c.id)}
                 onFocus={() => onPrefetchChannel?.(c.id)}
@@ -203,6 +214,7 @@ export default function Sidebar({
                 <button
                   type="button"
                   className="sl-collapse"
+                  data-testid="vip-toggle"
                   onClick={() => setVipCollapsed((v) => !v)}
                   aria-expanded={!vipCollapsed}
                 >
@@ -218,6 +230,7 @@ export default function Sidebar({
             <button
               type="button"
               className="sl-collapse"
+              data-testid="dms-toggle"
               onClick={() => setDmCollapsed((v) => !v)}
               aria-expanded={!dmCollapsed}
             >
@@ -233,7 +246,7 @@ export default function Sidebar({
       )}
 
       <div className="sidebar-footer">
-        <button className="me-button" onClick={onOpenSettings} title="Settings">
+        <button className="me-button" data-testid="sidebar-settings" onClick={onOpenSettings} title="Settings">
           <Avatar name={user.displayName} src={user.avatarUrl} size={36} />
           <div className="who">
             <div className="me" dir="auto">{user.displayName}</div>
@@ -249,13 +262,13 @@ export default function Sidebar({
           >
             {themeMode === "dark" ? <SunIcon size={16} strokeWidth={1.5} /> : <MoonIcon size={16} strokeWidth={1.5} />}
           </button>
-          <button className="link" onClick={onOpenApiDocs} title="API reference" aria-label="API reference">
+          <button className="link" data-testid="sidebar-api-docs" onClick={onOpenApiDocs} title="API reference" aria-label="API reference">
             <ApiIcon />
           </button>
           <button className="link" onClick={onOpenSettings} title="Settings">
             <SettingsIcon size={17} strokeWidth={1.7} />
           </button>
-          <button className="link footer-signout" onClick={onLogout} title="Sign out" aria-label="Sign out">
+          <button className="link footer-signout" data-testid="sidebar-logout" onClick={onLogout} title="Sign out" aria-label="Sign out">
             <LeaveIcon />
             Sign out
           </button>
