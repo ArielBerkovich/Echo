@@ -164,7 +164,7 @@ test("shows activity items and marks activity as read", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: /Activity/ }).click();
 
-  await expect(page.locator(".ch-name")).toHaveText("Activity");
+  await expect(page.locator(".channel-view .channel-header .ch-name")).toHaveText("Activity");
   const mentionItem = page.locator(".activity-item").filter({ hasText: "mentioned you" });
   await expect(mentionItem).toBeVisible();
   await expect(mentionItem).toContainText("Bob Builder");
