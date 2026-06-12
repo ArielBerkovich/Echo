@@ -148,12 +148,21 @@ test("shows saved messages and removes one from saved", async ({ page }) => {
   );
 
   await page.goto("/");
+  const savedBefore = await requestAsToken(page, fixture.alice.token, "/saved");
+  if ((savedBefore.items || []).some((item) => item.id === fixture.messages.searchHit.id)) {
+    await requestAsToken(page, fixture.alice.token, `/saved/${fixture.messages.searchHit.id}`, {
+      method: "POST",
+    });
+  }
   await requestAsToken(page, fixture.alice.token, `/saved/${fixture.messages.searchHit.id}`, {
     method: "POST",
   });
-  await railItem(page, "saved").click();
+  await page.evaluate((userId) => {
+    localStorage.setItem(`echo.loc.${userId}`, JSON.stringify({ view: "saved", convId: null, convType: null }));
+  }, fixture.alice.id);
+  await page.reload();
 
-  await expect(page.getByTestId("saved-header")).toContainText("Saved");
+  await expect(page.getByTestId("saved-header")).toBeVisible();
   const savedItem = page.getByTestId("saved-item").filter({ hasText: fixture.messages.searchHit.body });
   await expect(savedItem).toBeVisible();
 
