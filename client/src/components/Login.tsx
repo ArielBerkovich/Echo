@@ -133,7 +133,7 @@ export default function Login({ onAuthed }) {
         </aside>
 
         {/* Auth form panel */}
-        <form className="auth-card" onSubmit={submit}>
+        <form className={`auth-card ${needsSetup ? "setup" : ""}`} onSubmit={submit}>
           <div className="auth-card-head">
             <div className="auth-logo-sm">
               <Logo size={44} />
