@@ -91,6 +91,7 @@ export default function App() {
   const [jumpMessageId, setJumpMessageId] = useState(null); // message to scroll to + highlight
   const [searchQuery, setSearchQuery] = useState(null); // active message-search query (results pane)
   const [openThreadReq, setOpenThreadReq] = useState(null); // { channelId, rootId } — thread to open after a jump
+  const [scrollToBottomRequest, setScrollToBottomRequest] = useState(0); // request id: open a channel pinned to latest
   const [toast, setToast] = useState(null); // transient notice (e.g. no access)
   const searchRef = useRef(null);
   const markReadAtRef = useRef({}); // channelId -> last markRead time (throttle)
@@ -506,10 +507,37 @@ export default function App() {
   // Open the original of a forwarded message. If the user can't access its
   // channel, let them know instead of silently failing.
   const handleJumpToMessage = useCallback(
-    (ref) => {
+    (ref, options = {}) => {
       if (!ref?.channelId || !ref?.messageId) return;
       const { channelId, messageId, channelType, threadId } = ref;
       setSearchQuery(null);
+
+      if (options.focus === "bottom") {
+        const channel =
+          channels.find((c) => c.id === channelId) || allChannels.find((c) => c.id === channelId);
+        const dm = dms.find((d) => d.id === channelId);
+        if (channel) {
+          setView("home");
+          setActiveChannel(channel);
+          setScrollToBottomRequest((n) => n + 1);
+          if (threadId) setOpenThreadReq({ channelId, rootId: threadId });
+          return;
+        }
+        if (dm) {
+          setView("dms");
+          setActiveChannel({
+            id: dm.id,
+            type: "dm",
+            dmName: dm.withUser.displayName,
+            dmUserId: dm.withUser.id,
+          });
+          setScrollToBottomRequest((n) => n + 1);
+          if (threadId) setOpenThreadReq({ channelId, rootId: threadId });
+          return;
+        }
+        setToast("You don't have access to that conversation.");
+        return;
+      }
 
       if (channelType === "dm") {
         const conv = dms.find((d) => d.id === channelId);
@@ -740,6 +768,7 @@ export default function App() {
               onCacheMessages={cacheMessages}
               onOpenProfile={openProfile}
               jumpMessageId={jumpMessageId}
+              scrollToBottomRequest={scrollToBottomRequest}
               canJumpToForward={canJumpToForward}
               onJumpToMessage={handleJumpToMessage}
               onJumpConsumed={() => setJumpMessageId(null)}

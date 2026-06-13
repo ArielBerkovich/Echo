@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { enableClipboardStub, seedWorkspaceFixture, slug } from "./helpers.js";
+import { enableClipboardStub, requestAsToken, seedWorkspaceFixture, slug } from "./helpers.js";
 
 const ONE_BY_ONE_PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAEklEQVR42mP8/5+hHgAHggJ/PFvdcQAAAABJRU5ErkJggg==",
@@ -216,6 +216,52 @@ test("handles mention autocomplete, @everyone, and attachments", async ({ page }
   await page.locator(".composer .send-btn").click();
   const sent = page.locator(".message").filter({ hasText: attachmentBody }).first();
   await expect(sent.locator(".att-image")).toBeVisible();
+});
+
+test("keeps the channel pinned to the bottom after sending an image attachment", async ({ page }) => {
+  await page.goto("/");
+
+  const generalId = await channelId(page, "general");
+  expect(generalId).toBeTruthy();
+
+  for (let i = 0; i < 18; i++) {
+    await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
+      method: "POST",
+      body: {
+        channelId: generalId,
+        body: `Scroll filler ${fixture.suffix} ${i}`,
+        externalKey: `scroll-filler-${fixture.suffix}-${i}`,
+      },
+    });
+  }
+
+  await requestAsToken(page, fixture.alice.token, `/channels/${generalId}/read`, { method: "POST" });
+
+  await page.reload();
+  await expect(page.getByText("#general", { exact: true })).toBeVisible();
+
+  const scroller = page.locator(".messages");
+  await scroller.evaluate((el) => {
+    el.scrollTop = el.scrollHeight;
+  });
+  await expect.poll(async () => {
+    return scroller.evaluate((el) => Math.round(el.scrollHeight - el.scrollTop - el.clientHeight));
+  }).toBeLessThanOrEqual(30);
+  const beforeGap = await scroller.evaluate((el) => Math.round(el.scrollHeight - el.scrollTop - el.clientHeight));
+
+  const fileInput = page.locator(".composer input[type='file']").first();
+  await fileInput.setInputFiles({ name: "proof.png", mimeType: "image/png", buffer: ONE_BY_ONE_PNG });
+
+  const body = `Scroll attach ${Date.now()}`;
+  const composer = page.locator(".composer-editor");
+  await composer.fill(body);
+  await page.locator(".composer .send-btn").click();
+
+  const sent = page.locator(".message").filter({ hasText: body }).last();
+  await expect(sent.locator(".att-image")).toBeVisible();
+  await expect.poll(async () => {
+    return scroller.evaluate((el) => Math.round(el.scrollHeight - el.scrollTop - el.clientHeight));
+  }).toBeLessThanOrEqual(beforeGap + 2);
 });
 
 test("schedules, edits, and cancels a message", async ({ page }) => {
