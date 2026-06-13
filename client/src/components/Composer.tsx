@@ -48,6 +48,7 @@ export default function Composer({ channel, parentId = null, users = [], customE
   const savedRange = useRef(null); // last caret position inside the editor
   const typingActiveRef = useRef(false); // are we currently flagged as typing?
   const typingStopRef = useRef(null); // timer that clears the typing flag
+  const pendingRef = useRef([]); // latest staged attachments, used for cleanup on unmount
 
   const isDm = channel.type === "dm";
 
@@ -69,6 +70,12 @@ export default function Composer({ channel, parentId = null, users = [], customE
   }
   // Stop signalling when the composer unmounts (e.g. switching channels).
   useEffect(() => stopTyping, []);
+  useEffect(() => {
+    pendingRef.current = pending;
+  }, [pending]);
+  useEffect(() => () => {
+    pendingRef.current.forEach(revokePreviewUrl);
+  }, []);
 
   // Load pending scheduled messages for this channel (for the banner + manager).
   function refreshScheduled() {
@@ -114,18 +121,52 @@ export default function Composer({ channel, parentId = null, users = [], customE
     });
   }
 
+  function makePendingAttachment(file) {
+    const isImage = file.type.startsWith("image/");
+    const tempId = crypto.randomUUID();
+    return {
+      key: tempId,
+      tempId,
+      name: file.name,
+      size: file.size,
+      contentType: file.type || "application/octet-stream",
+      isImage,
+      previewUrl: isImage ? URL.createObjectURL(file) : null,
+    };
+  }
+
+  function revokePreviewUrl(att) {
+    if (att?.previewUrl?.startsWith("blob:")) {
+      URL.revokeObjectURL(att.previewUrl);
+    }
+  }
+
   async function onPickFiles(e) {
     const files = Array.from(e.target.files || []);
     e.target.value = ""; // allow re-picking the same file later
     if (files.length === 0) return;
     onError?.(null);
+    const staged = files.map(makePendingAttachment);
+    setPending((prev) => [...prev, ...staged]);
     setUploading(true);
     try {
       const dims = await Promise.all(files.map(readImageSize));
       const { attachments } = await api.uploadFiles(files);
       const withDims = attachments.map((a, i) => ({ ...a, width: dims[i]?.width, height: dims[i]?.height }));
-      setPending((prev) => [...prev, ...withDims]);
+      const uploadedByTempId = new Map(
+        staged.map((a, i) => [
+          a.tempId,
+          {
+            ...(withDims[i] || {}),
+            previewUrl: a.previewUrl,
+            tempId: a.tempId,
+          },
+        ])
+      );
+      setPending((prev) => prev.map((a) => uploadedByTempId.get(a.tempId) || a));
     } catch (err) {
+      staged.forEach(revokePreviewUrl);
+      setPending((prev) => prev.filter((a) => !staged.some((s) => s.tempId === a.tempId)));
       onError?.(err.message);
     } finally {
       setUploading(false);
@@ -133,7 +174,11 @@ export default function Composer({ channel, parentId = null, users = [], customE
   }
 
   function removePending(key) {
-    setPending((prev) => prev.filter((a) => a.key !== key));
+    setPending((prev) => {
+      const removed = prev.find((a) => a.key === key);
+      revokePreviewUrl(removed);
+      return prev.filter((a) => a.key !== key);
+    });
   }
 
   // ---- editor: caret tracking, mentions, formatting ----
@@ -525,6 +570,7 @@ export default function Composer({ channel, parentId = null, users = [], customE
   }
 
   function resetComposer() {
+    pending.forEach(revokePreviewUrl);
     if (editorRef.current) editorRef.current.innerHTML = "";
     setEmpty(true);
     setCanSend(false);
@@ -840,7 +886,7 @@ export default function Composer({ channel, parentId = null, users = [], customE
           {pending.map((a) => (
             <div className={`pending-att ${a.isImage ? "is-image" : "is-file"}`} key={a.key}>
               {a.isImage ? (
-                <img src={a.url} alt={a.name} />
+                <img src={a.previewUrl || a.url} alt={a.name} />
               ) : (
                 <div className="pending-file">
                   <span className="pending-file-name">{a.name}</span>
