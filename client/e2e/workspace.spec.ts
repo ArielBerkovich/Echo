@@ -139,7 +139,7 @@ test("uses Shift+Enter for code newlines and Enter to exit the block", async ({ 
   await page.keyboard.type("After code");
 
   const html = await editor.evaluate((el) => el.innerHTML);
-  expect(html).toMatch(/<pre><code>[\s\S]*const value = 1;\nconsole\.log\(value\);[\s\S]*<\/code><\/pre>/);
+  expect(html).toMatch(/<pre><code>[\s\S]*const value = 1;<br>\u200b?console\.log\(value\);[\s\S]*<\/code><\/pre>/);
   expect(html).toMatch(/<\/pre><div[^>]*>After code<\/div>/);
 });
 
