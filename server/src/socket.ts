@@ -322,6 +322,7 @@ export function attachSocket(httpServer) {
             channelName: originLabel(sourceChannel),
             channelId: sourceChannel._id.toString(),
             messageId: source._id.toString(),
+            threadId: source.parentId ? source.parentId.toString() : null,
             channelType: sourceChannel.type,
           },
         });

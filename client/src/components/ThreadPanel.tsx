@@ -19,6 +19,7 @@ export default function ThreadPanel({
   canJumpToForward,
   onJumpToMessage,
   onForward,
+  onTogglePin,
   savedIds,
   onToggleSave,
   onOpenProfile,
@@ -75,10 +76,17 @@ export default function ThreadPanel({
       setRootMsg((prev) => (prev.id === messageId ? { ...prev, reactions } : prev));
       setReplies((prev) => prev.map((r) => (r.id === messageId ? { ...r, reactions } : r)));
     };
+    const onPin = ({ messageId, pinnedAt, pinnedBy }) => {
+      setRootMsg((prev) => (prev.id === messageId ? { ...prev, pinnedAt, pinnedBy } : prev));
+      setReplies((prev) =>
+        prev.map((r) => (r.id === messageId ? { ...r, pinnedAt, pinnedBy } : r))
+      );
+    };
     socket.on("message:new", onNew);
     socket.on("message:update", onUpdate);
     socket.on("message:deleted", onDeleted);
     socket.on("message:reaction", onReaction);
+    socket.on("message:pin", onPin);
 
     return () => {
       cancelled = true;
@@ -86,6 +94,7 @@ export default function ThreadPanel({
       socket.off("message:update", onUpdate);
       socket.off("message:deleted", onDeleted);
       socket.off("message:reaction", onReaction);
+      socket.off("message:pin", onPin);
     };
   }, [channel.id, root.id]);
 
@@ -174,6 +183,7 @@ export default function ThreadPanel({
             onEditSave={saveEdit}
             onEditCancel={() => setEditing(null)}
             onOpenLightbox={onOpenLightbox}
+            onTogglePin={() => onTogglePin?.(m)}
           />
         ))}
         <div ref={bottomRef} />

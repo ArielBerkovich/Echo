@@ -65,6 +65,7 @@ const messageSchema = new mongoose.Schema(
         channelName: String, // human-readable origin ("#general" or a DM name)
         channelId: String, // source channel id (for the "view original" link)
         messageId: String, // source message id (to jump to it)
+        threadId: String, // root thread id when the original was a reply
         channelType: String, // public | private | dm (helps the access hint)
       },
       default: null,
@@ -153,6 +154,7 @@ messageSchema.methods.toPublicJSON = function () {
           channelName: this.forwardedFrom.channelName,
           channelId: this.forwardedFrom.channelId || null,
           messageId: this.forwardedFrom.messageId || null,
+          threadId: this.forwardedFrom.threadId || null,
           channelType: this.forwardedFrom.channelType || null,
         }
       : null,

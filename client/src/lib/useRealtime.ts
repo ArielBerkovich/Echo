@@ -14,6 +14,7 @@ export function useRealtime({
   dms,
   vipIds,
   setChannels,
+  setAllChannels,
   setDms,
   setUsers,
   setCustomEmojis,
@@ -38,6 +39,10 @@ export function useRealtime({
   useEffect(() => void (channelsRef.current = channels), [channels]);
   useEffect(() => void (dmsRef.current = dms), [dms]);
   useEffect(() => void (vipRef.current = vipIds || new Set()), [vipIds]);
+
+  function mergeUser(userList, updated) {
+    return userList.map((u) => (u.id === updated.id ? { ...u, ...updated } : u));
+  }
 
   // Rebuild the badge counts from a fresh activity feed (server is the truth).
   function syncActivity(items) {
@@ -78,7 +83,27 @@ export function useRealtime({
       setCustomEmojis((prev) => (prev.some((e) => e.id === emoji.id) ? prev : [...prev, emoji]));
     const onNewUser = (u) =>
       setUsers((prev) => (prev.some((x) => x.id === u.id) ? prev : [...prev, u]));
+    const onUserUpdate = ({ user: updated } = {}) => {
+      if (!updated?.id) return;
+      setUsers((prev) => mergeUser(prev, updated));
+      setDms((prev) =>
+        prev.map((dm) =>
+          dm.withUser?.id === updated.id ? { ...dm, withUser: { ...dm.withUser, ...updated } } : dm
+        )
+      );
+      setActiveChannel((prev) =>
+        prev?.type === "dm" && prev.dmUserId === updated.id
+          ? { ...prev, dmName: updated.displayName }
+          : prev
+      );
+    };
     const onPresence = ({ online } = {}) => setOnlineIds(new Set(online || []));
+    const onChannelUpdate = ({ channel: updated } = {}) => {
+      if (!updated?.id) return;
+      setChannels((prev) => prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c)));
+      setAllChannels?.((prev) => prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c)));
+      setActiveChannel((prev) => (prev?.id === updated.id ? { ...prev, ...updated } : prev));
+    };
     // Added to a channel by someone else — pull it into the sidebar live.
     const onChannelAdded = () => refreshChannels();
     // Removed from a channel by its creator — drop it from the sidebar, and if
@@ -92,13 +117,17 @@ export function useRealtime({
     };
     socket.on("emoji:new", onEmoji);
     socket.on("user:new", onNewUser);
+    socket.on("user:update", onUserUpdate);
     socket.on("presence", onPresence);
+    socket.on("channel:update", onChannelUpdate);
     socket.on("channel:added", onChannelAdded);
     socket.on("channel:removed", onChannelRemoved);
     return () => {
       socket.off("emoji:new", onEmoji);
       socket.off("user:new", onNewUser);
+      socket.off("user:update", onUserUpdate);
       socket.off("presence", onPresence);
+      socket.off("channel:update", onChannelUpdate);
       socket.off("channel:added", onChannelAdded);
       socket.off("channel:removed", onChannelRemoved);
     };

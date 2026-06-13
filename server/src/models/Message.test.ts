@@ -42,6 +42,7 @@ describe("Message.toPublicJSON", () => {
         channelName: "#general",
         channelId: "c1",
         messageId: "m1",
+        threadId: "t1",
         channelType: "public",
       },
       pinnedAt,
@@ -81,6 +82,7 @@ describe("Message.toPublicJSON", () => {
       channelName: "#general",
       channelId: "c1",
       messageId: "m1",
+      threadId: "t1",
       channelType: "public",
     });
     assert.equal(json.pinnedAt.getTime(), pinnedAt.getTime());
