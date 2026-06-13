@@ -54,6 +54,7 @@ export default function ChannelView({
   onCacheMessages,
   onOpenProfile,
   jumpMessageId = null,
+  scrollToBottomRequest = 0,
   canJumpToForward,
   onJumpToMessage,
   onJumpConsumed,
@@ -90,6 +91,7 @@ export default function ChannelView({
 
   const bottomRef = useRef(null);
   const scrollerRef = useRef(null); // the scrollable messages container
+  const messagesInnerRef = useRef(null); // content wrapper used for resize-based auto-follow
   const typingTimersRef = useRef({}); // per-user safety timers to clear stale typing
   const firstUnreadRef = useRef(null); // the "New messages" divider, for initial scroll
   const initialScrolledRef = useRef(false); // did we position the initial scroll yet?
@@ -98,6 +100,8 @@ export default function ChannelView({
   const loadingOlderRef = useRef(false); // guard against overlapping older-history fetches
   const pendingPrependRef = useRef(null); // { prevHeight, prevTop } to restore scroll after a prepend
   const justPrependedRef = useRef(false); // last growth was a prepend (don't follow to bottom)
+  const stickToBottomRef = useRef(true); // should later height changes keep us pinned to the bottom?
+  const handledBottomScrollRequestRef = useRef(0); // last handled open-at-bottom request id
   const jumpingRef = useRef(false); // a jump scroll is in flight — pause scroll-up pagination
   const jumpSettleRef = useRef(null); // timer that re-enables pagination after a jump lands
 
@@ -132,6 +136,7 @@ export default function ChannelView({
     loadingOlderRef.current = false;
     pendingPrependRef.current = null;
     justPrependedRef.current = false;
+    handledBottomScrollRequestRef.current = 0;
     // A fresh channel means any in-flight jump is stale: clear the guards so the
     // pending jump for this channel is handled cleanly (and re-jumping to the
     // same message later isn't silently blocked by a leftover handled-id).
@@ -343,12 +348,14 @@ export default function ChannelView({
     return new Promise((resolve, reject) => {
       getSocket().emit("message:forward", { messageId: forwarding.id, channelId: dest.id }, (res) => {
         if (res?.error) return reject(new Error(res.error));
-        // Follow the forward into its destination, landing on the new message.
+        // Forwarding into a channel should land at the bottom so the new copy
+        // is visible in context; a "view original" jump still uses the message
+        // centering path elsewhere.
         onJumpToMessage?.({
           channelId: dest.id,
           messageId: res?.message?.id,
           channelType: dest.kind === "dm" ? "dm" : "public",
-        });
+        }, { focus: "bottom" });
         resolve();
       });
     });
@@ -390,8 +397,16 @@ export default function ChannelView({
   }
 
   function onMessagesScroll(e) {
+    const scroller = e.currentTarget;
+    stickToBottomRef.current = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120;
     if (jumpingRef.current) return; // don't paginate while a jump is settling
-    if (e.currentTarget.scrollTop < 150) loadOlder();
+    if (scroller.scrollTop < 150) loadOlder();
+  }
+
+  function scrollToExactBottom() {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    scroller.scrollTop = scroller.scrollHeight;
   }
 
   // After prepending older messages, keep the viewport anchored to what the user
@@ -406,12 +421,33 @@ export default function ChannelView({
   }, [messages]);
 
   useEffect(() => {
+    const el = messagesInnerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+
+    let raf = 0;
+    const ro = new ResizeObserver(() => {
+      if (!stickToBottomRef.current || loading || jumpingRef.current) return;
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        scrollToExactBottom();
+      });
+    });
+
+    ro.observe(el);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
+  }, [loading]);
+
+  useEffect(() => {
     // Wait until messages are actually rendered (not the loading skeleton),
     // otherwise bottomRef/firstUnreadRef don't exist yet and the initial scroll
     // is silently lost.
     if (loading || messages.length === 0) return;
     const grew = messages.length > prevLenRef.current;
     prevLenRef.current = messages.length;
+    const shouldForceBottom = scrollToBottomRequest > handledBottomScrollRequestRef.current;
 
     // A prepend (older history) grows the list but must not yank to the bottom.
     if (justPrependedRef.current) {
@@ -424,20 +460,38 @@ export default function ChannelView({
       // we left off), or at the bottom if everything's already been read.
       // A pending jump (e.g. "view original") takes over the scroll instead.
       initialScrolledRef.current = true;
-      if (jumpMessageId) return;
+      if (jumpMessageId) {
+        stickToBottomRef.current = false;
+        return;
+      }
+      if (shouldForceBottom) {
+        handledBottomScrollRequestRef.current = scrollToBottomRequest;
+        requestAnimationFrame(() => {
+          scrollToExactBottom();
+          stickToBottomRef.current = true;
+        });
+        return;
+      }
       requestAnimationFrame(() => {
         if (firstUnreadId && firstUnreadRef.current) {
           firstUnreadRef.current.scrollIntoView({ block: "start" });
+          stickToBottomRef.current = false;
         } else {
-          bottomRef.current?.scrollIntoView();
+          bottomRef.current?.scrollIntoView({ block: "end" });
+          stickToBottomRef.current = true;
         }
       });
+    } else if (shouldForceBottom && !jumpMessageId) {
+      handledBottomScrollRequestRef.current = scrollToBottomRequest;
+      scrollToExactBottom();
+      stickToBottomRef.current = true;
     } else if (grew && !jumpMessageId) {
       // A new message arrived while viewing — follow it to the bottom. (Skip
       // while a jump is pending so loading its window doesn't pull us away.)
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      scrollToExactBottom();
+      stickToBottomRef.current = true;
     }
-  }, [messages, firstUnreadId, jumpMessageId, loading]);
+  }, [messages, firstUnreadId, jumpMessageId, loading, scrollToBottomRequest]);
 
   // The "New" divider marks where you left off on open; once you've had a few
   // seconds to see it, drop it so it doesn't linger in the conversation.
@@ -634,87 +688,89 @@ export default function ChannelView({
         onScroll={onMessagesScroll}
         onMouseLeave={() => { if (!menuFor) setActionsFor(null); }}
       >
-        {loadingOlder && <div className="older-loader">Loading earlier messages…</div>}
-        {loading ? (
-          <MessagesSkeleton />
-        ) : messages.length === 0 ? (
-          <div className="empty-state">
-            {isDm ? (
-              <>
-                <Avatar name={dmAvatarName} src={dmAvatar} size={56} />
-                <h3>{dmLabel}</h3>
-                <p>This is the start of your direct message history. Say hello! 👋</p>
-              </>
-            ) : (
-              <>
-                <div className="empty-state-glyph">{channel.type === "private" ? "🔒" : "#"}</div>
-                <h3>{channel.name}</h3>
-                <p>This is the very beginning of the {channel.type === "private" ? "private " : ""}#{channel.name} channel. Say hello! 👋</p>
-              </>
-            )}
-          </div>
-        ) : (
-          messages.map((m, i) => {
-            const prev = messages[i - 1];
-            // A day divider whenever the calendar day changes (and at the top).
-            const isNewDay = !prev || isDifferentDay(prev.createdAt, m.createdAt);
-            const dayDivider = isNewDay ? (
-              <div className="day-divider">
-                <span className="day-divider-label">{formatDayDivider(m.createdAt)}</span>
-              </div>
-            ) : null;
+        <div ref={messagesInnerRef}>
+          {loadingOlder && <div className="older-loader">Loading earlier messages…</div>}
+          {loading ? (
+            <MessagesSkeleton />
+          ) : messages.length === 0 ? (
+            <div className="empty-state">
+              {isDm ? (
+                <>
+                  <Avatar name={dmAvatarName} src={dmAvatar} size={56} />
+                  <h3>{dmLabel}</h3>
+                  <p>This is the start of your direct message history. Say hello! 👋</p>
+                </>
+              ) : (
+                <>
+                  <div className="empty-state-glyph">{channel.type === "private" ? "🔒" : "#"}</div>
+                  <h3>{channel.name}</h3>
+                  <p>This is the very beginning of the {channel.type === "private" ? "private " : ""}#{channel.name} channel. Say hello! 👋</p>
+                </>
+              )}
+            </div>
+          ) : (
+            messages.map((m, i) => {
+              const prev = messages[i - 1];
+              // A day divider whenever the calendar day changes (and at the top).
+              const isNewDay = !prev || isDifferentDay(prev.createdAt, m.createdAt);
+              const dayDivider = isNewDay ? (
+                <div className="day-divider">
+                  <span className="day-divider-label">{formatDayDivider(m.createdAt)}</span>
+                </div>
+              ) : null;
 
-            if (m.kind === "system") {
+              if (m.kind === "system") {
+                return (
+                  <Fragment key={m.id}>
+                    {dayDivider}
+                    <SystemMessage m={m} />
+                  </Fragment>
+                );
+              }
               return (
                 <Fragment key={m.id}>
                   {dayDivider}
-                  <SystemMessage m={m} />
+                  {m.id === firstUnreadId && (
+                    <div className="new-divider" ref={firstUnreadRef}>
+                      <span className="new-divider-label">New</span>
+                    </div>
+                  )}
+                  <Message
+                    m={m}
+                    grouped={false}
+                    highlighted={highlightId === m.id}
+                    currentUserId={user.id}
+                    usersById={usersById}
+                    renderMarkdown={renderMarkdown}
+                    emojiMap={emojiMap}
+                    canJumpToForward={canJumpToForward}
+                    saved={savedIds?.has(m.id)}
+                    onToggleSave={() => onToggleSave?.(m.id)}
+                    onOpenProfile={onOpenProfile}
+                    showActions={actionsFor === m.id}
+                    onActivate={() => setActionsFor(m.id)}
+                    editing={editing?.id === m.id ? editing : null}
+                    menuOpen={menuFor === m.id}
+                    onReact={(e) => openReact(m.id, e)}
+                    onToggleReaction={(emoji) => toggleReaction(m.id, emoji)}
+                    onOpenThread={() => { setShowDetails(false); setThread(m); }}
+                    onForward={() => setForwarding(m)}
+                    onJump={onJumpToMessage}
+                    onToggleMenu={() => setMenuFor((id) => (id === m.id ? null : m.id))}
+                    onCloseMenu={() => setMenuFor(null)}
+                    onStartEdit={() => startEdit(m)}
+                    onDelete={() => deleteMessage(m)}
+                    onEditChange={(draft) => setEditing((e) => ({ ...e, draft }))}
+                    onEditSave={saveEdit}
+                    onEditCancel={() => setEditing(null)}
+                    onTogglePin={() => togglePin(m)}
+                  />
                 </Fragment>
               );
-            }
-            return (
-              <Fragment key={m.id}>
-                {dayDivider}
-                {m.id === firstUnreadId && (
-                  <div className="new-divider" ref={firstUnreadRef}>
-                    <span className="new-divider-label">New</span>
-                  </div>
-                )}
-                <Message
-                  m={m}
-                  grouped={false}
-                  highlighted={highlightId === m.id}
-                  currentUserId={user.id}
-                  usersById={usersById}
-                  renderMarkdown={renderMarkdown}
-                  emojiMap={emojiMap}
-                  canJumpToForward={canJumpToForward}
-                  saved={savedIds?.has(m.id)}
-                  onToggleSave={() => onToggleSave?.(m.id)}
-                  onOpenProfile={onOpenProfile}
-                  showActions={actionsFor === m.id}
-                  onActivate={() => setActionsFor(m.id)}
-                  editing={editing?.id === m.id ? editing : null}
-                  menuOpen={menuFor === m.id}
-                  onReact={(e) => openReact(m.id, e)}
-                  onToggleReaction={(emoji) => toggleReaction(m.id, emoji)}
-                  onOpenThread={() => { setShowDetails(false); setThread(m); }}
-                  onForward={() => setForwarding(m)}
-                  onJump={onJumpToMessage}
-                  onToggleMenu={() => setMenuFor((id) => (id === m.id ? null : m.id))}
-                  onCloseMenu={() => setMenuFor(null)}
-                  onStartEdit={() => startEdit(m)}
-                  onDelete={() => deleteMessage(m)}
-                  onEditChange={(draft) => setEditing((e) => ({ ...e, draft }))}
-                  onEditSave={saveEdit}
-                  onEditCancel={() => setEditing(null)}
-                  onTogglePin={() => togglePin(m)}
-                />
-              </Fragment>
-            );
-          })
-        )}
-        <div ref={bottomRef} />
+            })
+          )}
+          <div ref={bottomRef} />
+        </div>
       </div>
 
       {reactingTo &&

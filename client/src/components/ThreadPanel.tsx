@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api.js";
 import { getSocket } from "../socket.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
@@ -38,6 +38,10 @@ export default function ThreadPanel({
   const [confirmDelete, setConfirmDelete] = useState(null); // message pending delete confirmation
   const [error, setError] = useState(null);
   const bottomRef = useRef(null);
+  const bodyInnerRef = useRef(null); // content wrapper used to track height changes
+  const stickToBottomRef = useRef(true); // should later layout changes keep us pinned?
+  const initialScrolledRef = useRef(false); // has the panel been positioned yet?
+  const prevReplyCountRef = useRef(0); // reply count last render
 
   const renderMarkdown = useMarkdownRenderer(users, user.username, customEmojis);
   const emojiMap = useMemo(
@@ -47,7 +51,12 @@ export default function ThreadPanel({
   const usersById = useMemo(() => new Map(users.map((u) => [u.id, u])), [users]);
 
   // Reset the local root when a different thread is opened.
-  useEffect(() => setRootMsg(root), [root.id]);
+  useEffect(() => {
+    setRootMsg(root);
+    initialScrolledRef.current = false;
+    prevReplyCountRef.current = 0;
+    stickToBottomRef.current = true;
+  }, [root.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -98,9 +107,50 @@ export default function ThreadPanel({
     };
   }, [channel.id, root.id]);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  useLayoutEffect(() => {
+    if (!replies.length) {
+      prevReplyCountRef.current = 0;
+      return;
+    }
+    const grew = replies.length > prevReplyCountRef.current;
+    prevReplyCountRef.current = replies.length;
+
+    if (!initialScrolledRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+      initialScrolledRef.current = true;
+      stickToBottomRef.current = true;
+      return;
+    }
+
+    if (grew && stickToBottomRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
   }, [replies]);
+
+  useEffect(() => {
+    const el = bodyInnerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+
+    let raf = 0;
+    const ro = new ResizeObserver(() => {
+      if (!stickToBottomRef.current) return;
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        bottomRef.current?.scrollIntoView({ block: "end" });
+      });
+    });
+
+    ro.observe(el);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
+  }, []);
+
+  function onBodyScroll(e) {
+    const scroller = e.currentTarget;
+    stickToBottomRef.current = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120;
+  }
 
   // Opening the thread (and seeing any new reply while it's open) marks it read,
   // so thread mentions clear from Activity once you've actually seen them.
@@ -151,42 +201,44 @@ export default function ThreadPanel({
         <button className="thread-close" data-testid="thread-close" onClick={onClose} aria-label="Close thread">✕</button>
       </header>
 
-      <div className="thread-body" onMouseLeave={() => { if (!menuFor) setActionsFor(null); }}>
-        {messages.map((m) => (
-          <Message
-            key={m.id}
-            m={m}
-            grouped={false}
-            currentUserId={user.id}
-            usersById={usersById}
-            renderMarkdown={renderMarkdown}
-            emojiMap={emojiMap}
-            canJumpToForward={canJumpToForward}
-            inThread
-            saved={savedIds?.has(m.id)}
-            onToggleSave={() => onToggleSave?.(m.id)}
-            onOpenProfile={onOpenProfile}
-            showActions={actionsFor === m.id}
-            onActivate={() => setActionsFor(m.id)}
-            editing={editing?.id === m.id ? editing : null}
-            menuOpen={menuFor === m.id}
-            onReact={(e) => openReact(m.id, e)}
-            onToggleReaction={(emoji) => toggleReaction(m.id, emoji)}
-            onOpenThread={() => {}}
-            onForward={() => onForward?.(m)}
-            onJump={onJumpToMessage}
-            onToggleMenu={() => setMenuFor((id) => (id === m.id ? null : m.id))}
-            onCloseMenu={() => setMenuFor(null)}
-            onStartEdit={() => startEdit(m)}
-            onDelete={() => deleteMessage(m)}
-            onEditChange={(draft) => setEditing((e) => ({ ...e, draft }))}
-            onEditSave={saveEdit}
-            onEditCancel={() => setEditing(null)}
-            onOpenLightbox={onOpenLightbox}
-            onTogglePin={() => onTogglePin?.(m)}
-          />
-        ))}
-        <div ref={bottomRef} />
+      <div className="thread-body" onScroll={onBodyScroll} onMouseLeave={() => { if (!menuFor) setActionsFor(null); }}>
+        <div ref={bodyInnerRef}>
+          {messages.map((m) => (
+            <Message
+              key={m.id}
+              m={m}
+              grouped={false}
+              currentUserId={user.id}
+              usersById={usersById}
+              renderMarkdown={renderMarkdown}
+              emojiMap={emojiMap}
+              canJumpToForward={canJumpToForward}
+              inThread
+              saved={savedIds?.has(m.id)}
+              onToggleSave={() => onToggleSave?.(m.id)}
+              onOpenProfile={onOpenProfile}
+              showActions={actionsFor === m.id}
+              onActivate={() => setActionsFor(m.id)}
+              editing={editing?.id === m.id ? editing : null}
+              menuOpen={menuFor === m.id}
+              onReact={(e) => openReact(m.id, e)}
+              onToggleReaction={(emoji) => toggleReaction(m.id, emoji)}
+              onOpenThread={() => {}}
+              onForward={() => onForward?.(m)}
+              onJump={onJumpToMessage}
+              onToggleMenu={() => setMenuFor((id) => (id === m.id ? null : m.id))}
+              onCloseMenu={() => setMenuFor(null)}
+              onStartEdit={() => startEdit(m)}
+              onDelete={() => deleteMessage(m)}
+              onEditChange={(draft) => setEditing((e) => ({ ...e, draft }))}
+              onEditSave={saveEdit}
+              onEditCancel={() => setEditing(null)}
+              onOpenLightbox={onOpenLightbox}
+              onTogglePin={() => onTogglePin?.(m)}
+            />
+          ))}
+          <div ref={bottomRef} />
+        </div>
       </div>
 
       {reactingTo &&
