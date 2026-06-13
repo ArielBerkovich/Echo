@@ -8,6 +8,7 @@ import {
   getIO,
   joinUserToChannel,
   removeUserFromChannel,
+  syncUserSockets,
   setIO,
 } from "./realtime.js";
 
@@ -31,6 +32,10 @@ function createIO() {
         },
         socketsLeave(target) {
           calls.push(["socketsLeave", room, target]);
+        },
+        async fetchSockets() {
+          calls.push(["fetchSockets", room]);
+          return [];
         },
       };
     },
@@ -80,6 +85,44 @@ describe("realtime helpers", () => {
       ["in", "user:u1"],
       ["socketsLeave", "user:u1", "channel:c1"],
     ]);
+  });
+
+  it("syncs cached user data across connected sockets", async () => {
+    const socket = { user: { displayName: "Old Name", avatarKey: null, isAdmin: false, mustResetPassword: false, onboarded: false } };
+    const calls = [];
+    const io = {
+      calls,
+      in(room) {
+        calls.push(["in", room]);
+        return {
+          async fetchSockets() {
+            calls.push(["fetchSockets", room]);
+            return [socket];
+          },
+        };
+      },
+    };
+    setIO(io);
+
+    await syncUserSockets({
+      _id: { toString: () => "u1" },
+      displayName: "New Name",
+      avatarKey: "avatar.png",
+      isAdmin: true,
+      mustResetPassword: true,
+      onboarded: true,
+      activitySeenAt: new Date("2026-06-01T00:00:00Z"),
+    });
+
+    assert.deepEqual(calls, [
+      ["in", "user:u1"],
+      ["fetchSockets", "user:u1"],
+    ]);
+    assert.equal(socket.user.displayName, "New Name");
+    assert.equal(socket.user.avatarKey, "avatar.png");
+    assert.equal(socket.user.isAdmin, true);
+    assert.equal(socket.user.mustResetPassword, true);
+    assert.equal(socket.user.onboarded, true);
   });
 
   it("broadcasts to all sockets", () => {

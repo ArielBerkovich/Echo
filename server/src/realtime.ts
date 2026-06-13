@@ -32,6 +32,22 @@ export function removeUserFromChannel(userId, channelId) {
   io?.in(userRoom(userId)).socketsLeave(roomFor(channelId));
 }
 
+// Refresh the cached user document held by each of a user's connected sockets.
+export async function syncUserSockets(user) {
+  if (!io) return;
+  const sockets = await io.in(userRoom(user._id.toString())).fetchSockets().catch(() => []);
+  for (const socket of sockets) {
+    const live = socket;
+    if (!live.user) continue;
+    live.user.displayName = user.displayName;
+    live.user.avatarKey = user.avatarKey;
+    live.user.isAdmin = user.isAdmin;
+    live.user.mustResetPassword = user.mustResetPassword;
+    live.user.onboarded = user.onboarded;
+    live.user.activitySeenAt = user.activitySeenAt;
+  }
+}
+
 // Broadcast to every connected socket (e.g. a new workspace-wide custom emoji).
 export function emitAll(event, payload) {
   io?.emit(event, payload);

@@ -5,6 +5,7 @@ import { User } from "../models/User.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { signToken, signApiToken } from "../auth.js";
 import { setFileCategory, FILE_CATEGORY } from "../storage.js";
+import { emitAll, syncUserSockets } from "../realtime.js";
 import { passwordProblem } from "../password.js";
 
 export const usersRouter = Router();
@@ -82,7 +83,10 @@ usersRouter.patch("/me", async (req, res) => {
   }
 
   await req.user.save();
-  res.json({ user: req.user.toPublicJSON() });
+  await syncUserSockets(req.user);
+  const user = req.user.toPublicJSON();
+  emitAll("user:update", { user });
+  res.json({ user });
 });
 
 // PATCH /api/users/me/password { currentPassword?, newPassword }

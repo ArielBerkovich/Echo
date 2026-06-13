@@ -289,7 +289,9 @@ channelsRouter.patch("/:id", async (req, res) => {
   }
 
   await channel.save();
-  res.json({ channel: channel.toPublicJSON() });
+  const updated = channel.toPublicJSON();
+  emitToChannel(channel._id.toString(), "channel:update", { channel: updated });
+  res.json({ channel: updated });
 });
 
 // GET /api/channels/:id — a channel's info, with the creator and members

@@ -397,6 +397,68 @@ test("opens a thread, replies, and jumps from Activity back to the thread", asyn
   await expect(page.locator(".thread-panel .message").filter({ hasText: reply })).toBeVisible();
 });
 
+test("pins a message from inside a thread", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: `# ${fixture.projectChannel.name}` }).click();
+  const root = page
+    .locator(".message")
+    .filter({ hasText: fixture.messages.threadRoot.body })
+    .first();
+  await root.hover();
+  await root.getByTitle("Reply in thread").click();
+  await expect(page.locator(".thread-panel")).toBeVisible();
+
+  const reply = page
+    .locator(".thread-panel .message")
+    .filter({ hasText: fixture.messages.threadReply.body })
+    .first();
+  await reply.hover();
+  await reply.getByTitle("Pin message").click();
+  await expect(reply.getByTitle("Unpin message")).toBeVisible();
+
+  await page.getByRole("button", { name: "Pinned messages" }).click();
+  await expect(page.locator(".pinned-item").filter({ hasText: fixture.messages.threadReply.body })).toBeVisible();
+});
+
+test("opens the original thread when a thread reply is forwarded into the same channel", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: `# ${fixture.projectChannel.name}` }).click();
+
+  const root = page
+    .locator(".message")
+    .filter({ hasText: fixture.messages.threadRoot.body })
+    .first();
+  await root.hover();
+  await root.getByTitle("Reply in thread").click();
+  await expect(page.locator(".thread-panel")).toBeVisible();
+
+  const reply = page
+    .locator(".thread-panel .message")
+    .filter({ hasText: fixture.messages.threadReply.body })
+    .first();
+  await reply.hover();
+  await reply.getByTitle("Forward message").click();
+
+  const forwardModal = page.locator(".modal").filter({ hasText: "Forward message" });
+  await forwardModal
+    .getByPlaceholder("Search channels and people")
+    .fill(fixture.projectChannel.name);
+  await forwardModal.getByRole("button", { name: "Forward" }).click();
+
+  await page.getByTestId("thread-close").click();
+
+  const forwarded = page
+    .locator(".channel-main .messages .message")
+    .filter({ hasText: fixture.messages.threadReply.body })
+    .filter({ hasText: "Forwarded from" })
+    .last();
+  await forwarded.hover();
+  await forwarded.getByRole("button", { name: /View original/ }).click();
+
+  await expect(page.locator(".thread-panel")).toBeVisible();
+  await expect(page.locator(".thread-panel .message").filter({ hasText: fixture.messages.threadReply.body })).toBeVisible();
+});
+
 test("covers search keyboard navigation and filter autocomplete", async ({ page }) => {
   await page.goto("/");
 

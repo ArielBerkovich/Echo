@@ -112,10 +112,11 @@ export default function App() {
       channels,
       dms,
       vipIds,
-      setChannels,
-      setDms,
-      setUsers,
-      setCustomEmojis,
+    setChannels,
+    setAllChannels,
+    setDms,
+    setUsers,
+    setCustomEmojis,
       setView,
       setActiveChannel,
       refreshChannels,
@@ -488,16 +489,18 @@ export default function App() {
   const canJumpToForward = useCallback(
     (ref) => {
       if (!ref?.channelId || !ref?.messageId) return false;
-      // Only originals in public channels are linkable. A message forwarded out of
-      // a DM or a private channel is shared as a snapshot only — we never offer a
-      // jump back into a private conversation (even to people who'd have access).
+      // If the original lives in the currently open channel, we can always jump
+      // back to it, including thread replies inside private channels.
+      if (activeChannel?.id === ref.channelId) return true;
+      // Otherwise, only originals in public channels are linkable. A message
+      // forwarded out of a DM or a private channel is shared as a snapshot only.
       if (ref.channelType !== "public") return false;
       return (
         channels.some((c) => c.id === ref.channelId) ||
         allChannels.some((c) => c.id === ref.channelId)
       );
     },
-    [channels, allChannels]
+    [activeChannel, channels, allChannels]
   );
 
   // Open the original of a forwarded message. If the user can't access its
@@ -505,7 +508,7 @@ export default function App() {
   const handleJumpToMessage = useCallback(
     (ref) => {
       if (!ref?.channelId || !ref?.messageId) return;
-      const { channelId, messageId, channelType } = ref;
+      const { channelId, messageId, channelType, threadId } = ref;
       setSearchQuery(null);
 
       if (channelType === "dm") {
@@ -518,7 +521,8 @@ export default function App() {
           dmName: conv.withUser.displayName,
           dmUserId: conv.withUser.id,
         });
-        setJumpMessageId(messageId);
+        if (threadId) setOpenThreadReq({ channelId, rootId: threadId });
+        else setJumpMessageId(messageId);
         return;
       }
 
@@ -530,9 +534,10 @@ export default function App() {
       }
       setView("home");
       setActiveChannel(channel);
-      setJumpMessageId(messageId);
+      if (threadId) setOpenThreadReq({ channelId, rootId: threadId });
+      else setJumpMessageId(messageId);
     },
-    [channels, dms, allChannels]
+    [activeChannel, channels, dms, allChannels]
   );
 
   // Toggle a message's saved ("save for later") state, optimistically.

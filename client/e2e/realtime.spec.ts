@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { seedWorkspaceFixture } from "./helpers.js";
+import { requestAsToken, seedWorkspaceFixture } from "./helpers.js";
 
 let fixture;
 
@@ -12,20 +12,27 @@ async function newAuthedPage(browser, token) {
   return { context, page };
 }
 
-test.beforeEach(async ({ page }) => {
-  fixture = await seedWorkspaceFixture(page);
-});
-
-test("shows presence and typing across sessions", async ({ browser, page }) => {
+async function withAliceBobPages(browser, fn) {
   const { alice, bob } = fixture;
-
   const alicePage = await newAuthedPage(browser, alice.token);
   const bobPage = await newAuthedPage(browser, bob.token);
 
   try {
     await alicePage.page.goto("/");
     await bobPage.page.goto("/");
+    await fn({ alicePage, bobPage, alice, bob });
+  } finally {
+    await alicePage.context.close();
+    await bobPage.context.close();
+  }
+}
 
+test.beforeEach(async ({ page }) => {
+  fixture = await seedWorkspaceFixture(page);
+});
+
+test("shows presence and typing across sessions", async ({ browser, page }) => {
+  await withAliceBobPages(browser, async ({ alicePage, bobPage, alice, bob }) => {
     await alicePage.page
       .locator(".message")
       .filter({ hasText: `Heads up @${alice.username}` })
@@ -42,22 +49,12 @@ test("shows presence and typing across sessions", async ({ browser, page }) => {
     await expect(alicePage.page.locator(".typing-indicator")).toContainText(
       `${bob.displayName} is typing`
     );
-  } finally {
-    await alicePage.context.close();
-    await bobPage.context.close();
-  }
+  });
 });
 
 test("bumps unread counts and reflects live edits and deletes", async ({ browser, page }) => {
   const { alice, bob, projectChannel } = fixture;
-
-  const alicePage = await newAuthedPage(browser, alice.token);
-  const bobPage = await newAuthedPage(browser, bob.token);
-
-  try {
-    await alicePage.page.goto("/");
-    await bobPage.page.goto("/");
-
+  await withAliceBobPages(browser, async ({ alicePage, bobPage }) => {
     await alicePage.page.locator(".channel-row").filter({ hasText: projectChannel.name }).click();
     await bobPage.page.locator(".channel-row").filter({ hasText: "general" }).click();
 
@@ -84,8 +81,41 @@ test("bumps unread counts and reflects live edits and deletes", async ({ browser
     await bobPage.page.locator(".message").filter({ hasText: `${liveBody} updated` }).getByTitle("Delete message").click();
     await bobPage.page.getByRole("button", { name: "Delete", exact: true }).click();
     await expect(alicePage.page.locator(".message").filter({ hasText: `${liveBody} updated` })).toHaveCount(0);
-  } finally {
-    await alicePage.context.close();
-    await bobPage.context.close();
-  }
+  });
+});
+
+test("updates user search results after a display name change", async ({ browser, page }) => {
+  const { alice } = fixture;
+  await withAliceBobPages(browser, async ({ alicePage, bobPage }) => {
+    await bobPage.page.locator(".search-input").fill(alice.username);
+    const row = bobPage.page.getByTestId(`search-user-${alice.username}`);
+    await expect(row).toContainText(alice.displayName);
+
+    const updatedName = `${alice.displayName} Renamed`;
+    await requestAsToken(page, alice.token, "/users/me", {
+      method: "PATCH",
+      body: { displayName: updatedName },
+    });
+
+    await expect(row).toContainText(updatedName);
+  });
+});
+
+test("updates the typing indicator after a display name change", async ({ browser, page }) => {
+  const { alice } = fixture;
+  await withAliceBobPages(browser, async ({ alicePage, bobPage }) => {
+    await alicePage.page.locator(".channel-row").filter({ hasText: "general" }).click();
+    await bobPage.page.locator(".channel-row").filter({ hasText: "general" }).click();
+
+    const updatedName = `${alice.displayName} Renamed`;
+    await requestAsToken(page, alice.token, "/users/me", {
+      method: "PATCH",
+      body: { displayName: updatedName },
+    });
+
+    const typing = `Typing ${Date.now()}`;
+    await alicePage.page.locator(".composer-editor").fill(typing);
+
+    await expect(bobPage.page.locator(".typing-indicator")).toContainText(`${updatedName} is typing`);
+  });
 });

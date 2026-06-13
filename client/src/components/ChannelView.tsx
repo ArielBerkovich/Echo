@@ -784,6 +784,7 @@ export default function ChannelView({
             canJumpToForward={canJumpToForward}
             onJumpToMessage={onJumpToMessage}
             onForward={(m) => setForwarding(m)}
+            onTogglePin={togglePin}
             savedIds={savedIds}
             onToggleSave={onToggleSave}
             onOpenProfile={onOpenProfile}
