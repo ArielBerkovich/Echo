@@ -1,5 +1,12 @@
 import { expect, test } from "@playwright/test";
-import { enableClipboardStub, messageByText, railItem, requestAsToken, seedWorkspaceFixture } from "./helpers.js";
+import {
+  enableClipboardStub,
+  messageById,
+  messageByText,
+  railItem,
+  requestAsToken,
+  seedWorkspaceFixture,
+} from "./helpers.js";
 
 let fixture: Awaited<ReturnType<typeof seedWorkspaceFixture>>;
 
@@ -183,6 +190,22 @@ test("shows activity items and marks activity as read", async ({ page }) => {
   await markedRead;
 });
 
+test("opens the exact message from Activity", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate((userId) => {
+    localStorage.setItem(`echo.loc.${userId}`, JSON.stringify({ view: "activity", convId: null, convType: null }));
+  }, fixture.alice.id);
+  await page.reload();
+
+  await expect(page.getByTestId("activity-header")).toBeVisible();
+  const mentionText = page.getByText(fixture.messages.mention.body, { exact: false }).first();
+  await expect(mentionText).toBeVisible();
+  await mentionText.click();
+
+  await expect(page.getByTestId("channel-title")).toContainText("general");
+  await expect(messageById(page, fixture.messages.mention.id)).toBeInViewport();
+});
+
 test("shows saved messages and removes one from saved", async ({ page }) => {
   const unsave = page.waitForResponse(
     (res) => res.url().includes("/api/saved/") && res.request().method() === "POST"
@@ -206,8 +229,13 @@ test("shows saved messages and removes one from saved", async ({ page }) => {
   await expect(page.getByTestId("saved-header")).toBeVisible();
   const savedItem = page.getByTestId("saved-item").filter({ hasText: fixture.messages.searchHit.body });
   await expect(savedItem).toBeVisible();
+  await savedItem.click();
+  await expect(page.getByTestId("channel-title")).toContainText("general");
+  await expect(messageById(page, fixture.messages.searchHit.id)).toBeInViewport();
+  await page.goBack();
+  await expect(page.getByTestId("saved-header")).toBeVisible();
 
-  await savedItem.locator('[data-testid^="saved-remove-"]').click();
+  await page.getByTestId("saved-item").filter({ hasText: fixture.messages.searchHit.body }).locator('[data-testid^="saved-remove-"]').click();
 
   await expect(savedItem).toHaveCount(0);
   await unsave;
@@ -223,6 +251,37 @@ test("opens a profile from an @mention in a message", async ({ page }) => {
   await expect(page.getByTestId("profile-modal")).toBeVisible();
   await expect(page.getByTestId("profile-modal")).toContainText(fixture.alice.displayName);
   await expect(page.getByTestId("profile-modal")).toContainText(`@${fixture.alice.username}`);
+});
+
+test("opens a DM at the latest message when there is no unread history", async ({ page }) => {
+  const selfDm = await requestAsToken(page, fixture.alice.token, "/dms", {
+    method: "POST",
+    body: { userId: fixture.alice.id },
+  });
+  const selfChannelId = selfDm.channel.id;
+
+  for (let i = 0; i < 6; i += 1) {
+    await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
+      method: "POST",
+      body: {
+        channelId: selfChannelId,
+        body: `DM scroll seed ${i} ${Date.now()}`,
+        externalKey: `dm-scroll-${i}-${Date.now()}`,
+      },
+    });
+  }
+  await requestAsToken(page, fixture.alice.token, `/channels/${selfChannelId}/read`, {
+    method: "POST",
+  });
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "DMs" }).click();
+  await page.getByTestId("dm-self-open").click();
+
+  const scroller = page.locator(".channel-main .messages");
+  await expect.poll(async () => {
+    return scroller.evaluate((el) => Math.round(el.scrollHeight - el.scrollTop - el.clientHeight));
+  }).toBeLessThanOrEqual(2);
 });
 
 test("searches messages with filters and displays results", async ({ page }) => {

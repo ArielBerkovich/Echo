@@ -12,12 +12,15 @@ export const authRouter = Router();
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20,
+  max: Number(process.env.AUTH_RATE_LIMIT_MAX) || 1000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many attempts, please try again later" },
 });
-const authRateLimit = authLimiter;
+const authRateLimit =
+  process.env.NODE_ENV === "production"
+    ? authLimiter
+    : (_req, _res, next) => next();
 
 // GET /api/auth/setup-status — public. Tells the login screen whether the
 // workspace still needs its first (admin) account created.

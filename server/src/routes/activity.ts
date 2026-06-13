@@ -73,6 +73,7 @@ activityRouter.get("/", async (req, res) => {
       channelId: m.channel.toString(),
       channelName: c?.name,
       channelType: c?.type,
+      messageId: m._id.toString(),
       threadId,
       author: m.author?.toPublicJSON?.() || null,
       body: m.body,
@@ -106,11 +107,12 @@ activityRouter.get("/", async (req, res) => {
           channelId: e.channel.toString(),
           channelName: c.name,
           channelType: c.type,
+          messageId: null,
           threadId: null,
           author: e.actor?.toPublicJSON?.() || null, // who added me
           body: "",
-          createdAt: e.createdAt,
-          kind: "channel_add",
+        createdAt: e.createdAt,
+        kind: "channel_add",
           unread: !lastRead || new Date(e.createdAt) > new Date(lastRead),
         };
       }
@@ -122,6 +124,7 @@ activityRouter.get("/", async (req, res) => {
         channelId: m.channel.toString(),
         channelName: c.name,
         channelType: c.type,
+        messageId: m._id.toString(),
         threadId: m.parentId ? m.parentId.toString() : null,
         author: e.actor?.toPublicJSON?.() || null, // the person who reacted
         body: m.body,

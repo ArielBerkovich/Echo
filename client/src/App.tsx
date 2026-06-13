@@ -380,6 +380,7 @@ export default function App() {
   async function handleOpenDm(target, isSelf = false) {
     setSearchQuery(null);
     const { channel } = await api.openDm(target.id);
+    const existing = dms.find((d) => d.id === channel.id);
     setActiveChannel({
       ...channel,
       type: "dm",
@@ -387,6 +388,9 @@ export default function App() {
       dmUserId: target.id,
       isSelf,
     });
+    if (!existing || (existing.unread || 0) === 0) {
+      setScrollToBottomRequest((n) => n + 1);
+    }
     refreshDms();
   }
 
@@ -441,6 +445,7 @@ export default function App() {
   // thread mention stays unread until the thread itself is opened).
   function handleJump(item) {
     const channelId = typeof item === "string" ? item : item.channelId;
+    const messageId = typeof item === "string" ? null : item.messageId || item.id;
     const threadId = typeof item === "string" ? null : item.threadId;
     setSearchQuery(null);
 
@@ -468,6 +473,7 @@ export default function App() {
     })();
 
     if (opened && threadId) setOpenThreadReq({ channelId, rootId: threadId });
+    if (opened && messageId && !threadId) setJumpMessageId(messageId);
   }
 
   // Run a full-text message search (from the search bar, on Enter).

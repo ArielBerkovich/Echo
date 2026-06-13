@@ -2,7 +2,7 @@ import { ScheduledMessage } from "./models/ScheduledMessage.js";
 import { Channel } from "./models/Channel.js";
 import { deliverMessage } from "./deliver.js";
 
-const TICK_MS = 15000; // check for due messages every 15s
+const TICK_MS = Math.max(250, Number(process.env.SCHEDULER_TICK_MS) || 15000); // check for due messages on a fixed cadence
 
 async function dispatchDue() {
   const due = await ScheduledMessage.find({ scheduledFor: { $lte: new Date() } }).limit(50);
