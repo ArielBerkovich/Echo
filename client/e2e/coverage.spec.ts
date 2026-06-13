@@ -205,11 +205,12 @@ test("handles mention autocomplete, @everyone, and attachments", async ({ page }
   await composer.fill("@e");
   await page.locator(".mention-item").filter({ hasText: "Notify everyone in this channel" }).click();
   await page.keyboard.press("Enter");
-  await expect(page.locator(".message .mention--broadcast")).toBeVisible();
+  const everyoneMessage = page.locator(".message").filter({ hasText: "📣 @everyone" }).last();
+  await expect(everyoneMessage.locator(".mention--broadcast")).toHaveText("📣 @everyone");
 
   const fileInput = page.locator(".composer input[type='file']").first();
   await fileInput.setInputFiles({ name: "proof.png", mimeType: "image/png", buffer: ONE_BY_ONE_PNG });
-  await expect(page.locator(".pending-att")).toBeVisible();
+  await expect(page.locator(".pending-att.is-image")).toBeVisible();
   const attachmentBody = `Attached ${Date.now()}`;
   await composer.fill(attachmentBody);
   await page.locator(".composer .send-btn").click();
