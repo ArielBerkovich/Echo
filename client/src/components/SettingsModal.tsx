@@ -378,14 +378,18 @@ function AdminPasswordReset({ users, currentUserId }) {
   const [error, setError] = useState(null);
   const [otp, setOtp] = useState(null);
   const [copied, setCopied] = useState(false);
+  const trimmedQuery = query.trim();
+  const normalizedQuery = trimmedQuery.replace(/^@+/, "").toLowerCase();
 
   const candidates =
-    query.trim() && !selected
+    trimmedQuery && !selected
       ? users
           .filter((u) => u.id !== currentUserId)
           .filter((u) => {
-            const q = query.trim().toLowerCase();
-            return u.displayName.toLowerCase().includes(q) || u.username.toLowerCase().includes(q);
+            return (
+              u.displayName.toLowerCase().includes(normalizedQuery) ||
+              u.username.toLowerCase().includes(normalizedQuery)
+            );
           })
           .slice(0, 6)
       : [];
@@ -441,7 +445,7 @@ function AdminPasswordReset({ users, currentUserId }) {
           <input
             className="settings-input"
             data-testid="admin-reset-search"
-            placeholder="Find a user by name or @username"
+            placeholder="Find a user by name or username"
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);

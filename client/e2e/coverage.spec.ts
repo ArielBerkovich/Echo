@@ -340,7 +340,10 @@ test("updates settings and replays the walkthrough", async ({ browser, page }) =
   if (fixture.alice.isAdmin) {
     await page.getByRole("button", { name: "Settings" }).click();
     const adminReset = page.locator(".admin-reset");
-    await adminReset.getByPlaceholder("Find a user by name or @username").fill(fixture.bob.username);
+    const adminSearch = adminReset.getByPlaceholder("Find a user by name or username");
+    await adminSearch.fill("@");
+    await expect(adminReset.locator(".admin-user-results")).toBeVisible();
+    await adminSearch.fill(`@${fixture.bob.username}`);
     await adminReset.getByRole("button", { name: fixture.bob.displayName }).click();
     await adminReset
       .getByRole("button", {
