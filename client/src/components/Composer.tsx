@@ -233,16 +233,9 @@ export default function Composer({ channel, parentId = null, users = [], customE
     editorRef.current?.focus();
   }
 
-  // True when the caret sits inside a list item (so Enter should extend the list).
+  // True when the caret sits inside any list (ordered or bulleted).
   function caretInList() {
-    const sel = window.getSelection();
-    if (!sel || !sel.rangeCount) return false;
-    let node = sel.getRangeAt(0).startContainer;
-    while (node && node !== editorRef.current) {
-      if (node.nodeName === "LI") return true;
-      node = node.parentNode;
-    }
-    return false;
+    return !!findListAncestor(window.getSelection()?.anchorNode);
   }
 
   // ---- toolbar commands (operate on the live selection in the editor) ----
@@ -256,6 +249,14 @@ export default function Composer({ channel, parentId = null, users = [], customE
   function findCodeAncestor(node) {
     for (; node && node !== editorRef.current; node = node.parentNode) {
       if (node.nodeType === 1 && (node.tagName === "CODE" || node.tagName === "PRE")) return node;
+    }
+    return null;
+  }
+
+  // Walk up from a node to the enclosing <ul>/<ol>, if any (else null).
+  function findListAncestor(node) {
+    for (; node && node !== editorRef.current; node = node.parentNode) {
+      if (node.nodeType === 1 && (node.tagName === "UL" || node.tagName === "OL")) return node;
     }
     return null;
   }
@@ -293,16 +294,55 @@ export default function Composer({ channel, parentId = null, users = [], customE
     }
   }
 
-  // Insert a literal newline at the caret (renders as a line break inside <pre>).
-  function insertNewlineAtCaret() {
+  // Insert a visible line break at the caret (used inside list items).
+  function insertLineBreakAtCaret() {
     const sel = window.getSelection();
     if (!sel.rangeCount) return;
     const range = sel.getRangeAt(0);
     range.deleteContents();
-    const nl = document.createTextNode("\n");
-    range.insertNode(nl);
+    const br = document.createElement("br");
+    const spacer = document.createTextNode("​");
+    range.insertNode(br);
+    br.after(spacer);
     const after = document.createRange();
-    after.setStartAfter(nl);
+    after.setStartAfter(spacer);
+    after.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(after);
+    handleInput();
+  }
+
+  // Insert a visible line break inside code without letting contenteditable
+  // split the block into a new paragraph/pre wrapper.
+  function insertCodeNewlineAtCaret() {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    if (!range.collapsed) range.deleteContents();
+
+    const node = range.startContainer;
+    const offset = range.startOffset;
+    if (node.nodeType === Node.TEXT_NODE) {
+      const tail = node.splitText(offset);
+      const br = document.createElement("br");
+      const spacer = document.createTextNode("​");
+      node.parentNode.insertBefore(br, tail);
+      node.parentNode.insertBefore(spacer, tail);
+      const after = document.createRange();
+      after.setStartAfter(spacer);
+      after.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(after);
+      handleInput();
+      return;
+    }
+
+    const br = document.createElement("br");
+    const spacer = document.createTextNode("​");
+    range.insertNode(br);
+    br.after(spacer);
+    const after = document.createRange();
+    after.setStartAfter(spacer);
     after.collapse(true);
     sel.removeAllRanges();
     sel.addRange(after);
@@ -445,8 +485,6 @@ export default function Composer({ channel, parentId = null, users = [], customE
       }
     }
     if (e.key === "Enter") {
-      // Inside a code section: Shift+Enter adds a new line within the code; a
-      // plain Enter leaves the code section onto a fresh normal line.
       const codeEl = findCodeAncestor(window.getSelection()?.anchorNode);
       if (codeEl) {
         e.preventDefault();
@@ -454,17 +492,18 @@ export default function Composer({ channel, parentId = null, users = [], customE
           codeEl.tagName === "PRE"
             ? codeEl
             : codeEl.parentNode?.tagName === "PRE"
-            ? codeEl.parentNode
-            : null;
-        // Shift+Enter inside a code block = newline; everything else exits.
-        if (pre && e.shiftKey) insertNewlineAtCaret();
+              ? codeEl.parentNode
+              : null;
+        // Code blocks keep Shift+Enter for a literal new line; Enter exits.
+        if (pre && e.shiftKey) insertCodeNewlineAtCaret();
         else exitCode(pre || codeEl);
         return;
       }
-      if (caretInList()) {
-        // In a list: Shift+Enter adds a new list item; plain Enter continues natively.
-        if (e.shiftKey) {
-          e.preventDefault();
+      const listEl = findListAncestor(window.getSelection()?.anchorNode);
+      if (listEl) {
+        e.preventDefault();
+        if (e.shiftKey) insertLineBreakAtCaret();
+        else {
           document.execCommand("insertParagraph");
           handleInput();
         }

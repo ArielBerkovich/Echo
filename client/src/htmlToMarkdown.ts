@@ -9,6 +9,13 @@ const td = new TurndownService({
   strongDelimiter: "**",
 });
 
+function normalizeCodeBlockBreaks(html) {
+  return String(html || "").replace(
+    /(<pre\b[^>]*>\s*<code\b[^>]*>)([\s\S]*?)(<\/code>\s*<\/pre>)/gi,
+    (_, open, inner, close) => `${open}${inner.replace(/<br\s*\/?>/gi, "\n")}${close}`
+  );
+}
+
 // Turndown core has no strikethrough rule; messages use ~~text~~.
 td.addRule("strikethrough", {
   filter: ["s", "del", "strike"],
@@ -17,5 +24,5 @@ td.addRule("strikethrough", {
 
 export function htmlToMarkdown(html) {
   // Strip zero-width spaces (used as caret anchors inside empty code spans).
-  return td.turndown(html || "").replace(/​/g, "").trim();
+  return td.turndown(normalizeCodeBlockBreaks(html)).replace(/​/g, "").trim();
 }

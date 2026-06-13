@@ -18,6 +18,12 @@ describe("htmlToMarkdown", () => {
     assert.equal(htmlToMarkdown(html), "-   one\n-   two\n\n```\nconst x = 1;\n```\n\n~~old~~");
   });
 
+  it("keeps code block line breaks when the composer uses br tags", () => {
+    const html = "<pre><code>line one<br>line two</code></pre>";
+
+    assert.equal(htmlToMarkdown(html), "```\nline one\nline two\n```");
+  });
+
   it("strips zero-width caret anchors", () => {
     assert.equal(htmlToMarkdown("<p>he\u200bllo</p>"), "hello");
   });
