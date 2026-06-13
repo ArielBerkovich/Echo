@@ -102,6 +102,47 @@ test("pastes markdown into the composer as formatted content", async ({ page }) 
   await expect(editor.locator('a[href="https://example.com"]')).toHaveText("Echo link");
 });
 
+test("uses Enter for new list items and Shift+Enter for list line breaks", async ({ page }) => {
+  await page.goto("/");
+
+  const editor = page.locator(".composer-editor");
+  await expect(editor).toBeVisible();
+
+  await editor.click();
+  await page.getByTitle("Bulleted list").click();
+  await page.keyboard.type("List item one");
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("List item two");
+  await page.keyboard.down("Shift");
+  await page.keyboard.press("Enter");
+  await page.keyboard.up("Shift");
+  await page.keyboard.type("After list");
+
+  const html = await editor.evaluate((el) => el.innerHTML);
+  expect(html).toMatch(/<ul><li>List item one<\/li><li>List item two<br>\u200b?After list<\/li><\/ul>/);
+});
+
+test("uses Shift+Enter for code newlines and Enter to exit the block", async ({ page }) => {
+  await page.goto("/");
+
+  const editor = page.locator(".composer-editor");
+  await expect(editor).toBeVisible();
+
+  await editor.click();
+  await page.getByTitle("Code block").click();
+  await page.keyboard.type("const value = 1;");
+  await page.keyboard.down("Shift");
+  await page.keyboard.press("Enter");
+  await page.keyboard.up("Shift");
+  await page.keyboard.type("console.log(value);");
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("After code");
+
+  const html = await editor.evaluate((el) => el.innerHTML);
+  expect(html).toMatch(/<pre><code>[\s\S]*const value = 1;\nconsole\.log\(value\);[\s\S]*<\/code><\/pre>/);
+  expect(html).toMatch(/<\/pre><div[^>]*>After code<\/div>/);
+});
+
 test("sends multiple messages from the same composer", async ({ page }) => {
   await page.goto("/");
 
