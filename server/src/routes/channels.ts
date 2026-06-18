@@ -4,7 +4,13 @@ import { Channel } from "../models/Channel.js";
 import { Message } from "../models/Message.js";
 import { User } from "../models/User.js";
 import { Read } from "../models/Read.js";
-import { emitToChannel, emitToUser, joinUserToChannel, removeUserFromChannel } from "../realtime.js";
+import {
+  emitAll,
+  emitToChannel,
+  emitToUser,
+  joinUserToChannel,
+  removeUserFromChannel,
+} from "../realtime.js";
 import { deliverMessage, sanitizeAttachments } from "../deliver.js";
 import { normalizeChannelName } from "../automation.js";
 import { ActivityEvent } from "../models/ActivityEvent.js";
@@ -93,6 +99,10 @@ channelsRouter.post("/", async (req, res) => {
       createdBy: req.user._id,
     });
     await logSystem(channel._id, req.user._id, "created this channel");
+    joinUserToChannel(req.user._id.toString(), channel._id.toString());
+    if (channel.type === "public") {
+      emitAll("channel:catalog", { channel: channel.toPublicJSON() });
+    }
     res.status(201).json({ channel: channel.toPublicJSON() });
   } catch (err) {
     if (err.name === "ValidationError") {
@@ -118,6 +128,7 @@ channelsRouter.post("/:id/join", async (req, res) => {
   );
   if (!already) await logSystem(channel._id, req.user._id, "joined the channel");
   const updated = await Channel.findById(channel._id);
+  joinUserToChannel(req.user._id.toString(), channel._id.toString());
   res.json({ channel: updated.toPublicJSON() });
 });
 
@@ -291,6 +302,7 @@ channelsRouter.patch("/:id", async (req, res) => {
   await channel.save();
   const updated = channel.toPublicJSON();
   emitToChannel(channel._id.toString(), "channel:update", { channel: updated });
+  emitAll("channel:catalog", { channel: updated });
   res.json({ channel: updated });
 });
 

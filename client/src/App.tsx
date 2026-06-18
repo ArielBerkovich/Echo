@@ -57,6 +57,10 @@ function loadHidden() {
   return new Set(readJson(HIDDEN_KEY, []));
 }
 
+function loadScrollStates(userId) {
+  return readJson(`echo.scroll.${userId}`, {});
+}
+
 const RECENTS_KEY = "echo.recentSearches";
 
 function loadRecents() {
@@ -88,10 +92,11 @@ export default function App() {
   const [theme, setTheme] = useState(() => readThemeMode().theme); // colour identity
   const [mode, setMode] = useState(() => readThemeMode().mode); // "light" | "dark"
   const [messageCache, setMessageCache] = useState({}); // channel/DM history snapshots for instant revisits
+  const [scrollStates, setScrollStates] = useState({}); // channel/DM scroll anchors for revisits
   const [jumpMessageId, setJumpMessageId] = useState(null); // message to scroll to + highlight
   const [searchQuery, setSearchQuery] = useState(null); // active message-search query (results pane)
   const [openThreadReq, setOpenThreadReq] = useState(null); // { channelId, rootId, messageId } — thread to open after a jump
-  const [scrollToBottomRequest, setScrollToBottomRequest] = useState(0); // request id: open a channel pinned to latest
+  const [scrollToBottomTarget, setScrollToBottomTarget] = useState(null); // { id, channelId } pinned-open request
   const [toast, setToast] = useState(null); // transient notice (e.g. no access)
   const searchRef = useRef(null);
   const markReadAtRef = useRef({}); // channelId -> last markRead time (throttle)
@@ -169,6 +174,18 @@ export default function App() {
     });
   }
 
+  function rememberScrollState(channelId, state) {
+    setScrollStates((prev) => {
+      const next = { ...prev, [channelId]: state };
+      if (user?.id) writeJson(`echo.scroll.${user.id}`, next);
+      return next;
+    });
+  }
+
+  function clearScrollToBottomTarget() {
+    setScrollToBottomTarget(null);
+  }
+
   function prefetchMessages(channelId) {
     if (!channelId || messageCache[channelId]) return;
     api
@@ -224,6 +241,7 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
     restoredRef.current = false; // restore again for this (possibly new) account
+    setScrollStates(loadScrollStates(user.id));
     let cancelled = false;
     Promise.all([api.listChannels(), api.listDms()])
       .then(([chRes, dmRes]) => {
@@ -306,6 +324,8 @@ export default function App() {
     setChannels([]);
     setActiveChannel(null);
     setDms([]);
+    setScrollStates({});
+    setScrollToBottomTarget(null);
   }
 
   function rememberRecent(item) {
@@ -318,12 +338,28 @@ export default function App() {
 
   async function handleCreateChannel(name, type) {
     const { channel } = await api.createChannel(name, type);
-    setChannels((prev) => [...prev, channel].sort((a, b) => a.name.localeCompare(b.name)));
+    upsertChannel(channel);
     setActiveChannel(channel);
   }
 
   function upsertChannel(channel) {
-    setChannels((prev) => prev.map((c) => (c.id === channel.id ? channel : c)));
+    setChannels((prev) => {
+      const exists = prev.some((c) => c.id === channel.id);
+      const next = exists
+        ? prev.map((c) => (c.id === channel.id ? channel : c))
+        : [...prev, channel];
+      return next.sort((a, b) => a.name.localeCompare(b.name));
+    });
+    setAllChannels((prev) => {
+      if (channel.type !== "public") {
+        return prev.filter((c) => c.id !== channel.id);
+      }
+      const exists = prev.some((c) => c.id === channel.id);
+      const next = exists
+        ? prev.map((c) => (c.id === channel.id ? channel : c))
+        : [...prev, channel];
+      return next.sort((a, b) => a.name.localeCompare(b.name));
+    });
     setActiveChannel((prev) => (prev && prev.id === channel.id ? { ...prev, ...channel } : prev));
   }
 
@@ -388,8 +424,8 @@ export default function App() {
       dmUserId: target.id,
       isSelf,
     });
-    if (!existing || (existing.unread || 0) === 0) {
-      setScrollToBottomRequest((n) => n + 1);
+    if (!scrollStates[channel.id] && (!existing || (existing.unread || 0) === 0)) {
+      setScrollToBottomTarget((prev) => ({ id: (prev?.id || 0) + 1, channelId: channel.id }));
     }
     refreshDms();
   }
@@ -533,7 +569,7 @@ export default function App() {
         if (channel) {
           setView("home");
           setActiveChannel(channel);
-          setScrollToBottomRequest((n) => n + 1);
+          setScrollToBottomTarget((prev) => ({ id: (prev?.id || 0) + 1, channelId }));
           if (threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
           return;
         }
@@ -545,7 +581,7 @@ export default function App() {
             dmName: dm.withUser.displayName,
             dmUserId: dm.withUser.id,
           });
-          setScrollToBottomRequest((n) => n + 1);
+          setScrollToBottomTarget((prev) => ({ id: (prev?.id || 0) + 1, channelId }));
           if (threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
           return;
         }
@@ -771,6 +807,7 @@ export default function App() {
             <ChannelView
               channel={activeChannel}
               cachedMessages={messageCache[activeChannel.id] || null}
+              initialScrollState={scrollStates[activeChannel.id] || null}
               user={user}
               users={users}
               channels={channels}
@@ -779,9 +816,11 @@ export default function App() {
               savedIds={savedIds}
               onToggleSave={handleToggleSave}
               onCacheMessages={cacheMessages}
+              onRememberScroll={rememberScrollState}
+              onScrollToBottomTargetConsumed={clearScrollToBottomTarget}
               onOpenProfile={openProfile}
               jumpMessageId={jumpMessageId}
-              scrollToBottomRequest={scrollToBottomRequest}
+              scrollToBottomTarget={scrollToBottomTarget}
               canJumpToForward={canJumpToForward}
               onJumpToMessage={handleJumpToMessage}
               onJumpConsumed={() => setJumpMessageId(null)}

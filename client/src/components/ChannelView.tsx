@@ -44,6 +44,7 @@ function MessagesSkeleton() {
 export default function ChannelView({
   channel,
   cachedMessages = null,
+  initialScrollState = null,
   user,
   users = [],
   channels = [],
@@ -52,9 +53,11 @@ export default function ChannelView({
   savedIds,
   onToggleSave,
   onCacheMessages,
+  onRememberScroll,
+  onScrollToBottomTargetConsumed,
   onOpenProfile,
   jumpMessageId = null,
-  scrollToBottomRequest = 0,
+  scrollToBottomTarget = null,
   canJumpToForward,
   onJumpToMessage,
   onJumpConsumed,
@@ -84,6 +87,7 @@ export default function ChannelView({
   const [pinnedMessages, setPinnedMessages] = useState([]); // cached pinned list
   const [firstUnreadId, setFirstUnreadId] = useState(null); // first message not yet seen
   const [highlightId, setHighlightId] = useState(null); // message briefly highlighted after a jump
+  const [historyReady, setHistoryReady] = useState(false); // has the initial message payload resolved?
   const [typingUsers, setTypingUsers] = useState({}); // { userId: displayName } currently typing
   const [threadLightbox, setThreadLightbox] = useState(null); // { src, name } opened from thread
   const [loadingOlder, setLoadingOlder] = useState(false); // fetching older history (scroll-up)
@@ -129,6 +133,7 @@ export default function ChannelView({
     setShowPinned(false);
     setPinnedMessages([]);
     setFirstUnreadId(null);
+    setHistoryReady(false);
     setTypingUsers({});
     initialScrolledRef.current = false;
     prevLenRef.current = 0;
@@ -136,7 +141,6 @@ export default function ChannelView({
     loadingOlderRef.current = false;
     pendingPrependRef.current = null;
     justPrependedRef.current = false;
-    handledBottomScrollRequestRef.current = 0;
     // A fresh channel means any in-flight jump is stale: clear the guards so the
     // pending jump for this channel is handled cleanly (and re-jumping to the
     // same message later isn't silently blocked by a leftover handled-id).
@@ -174,7 +178,11 @@ export default function ChannelView({
         onRead?.(channel.id);
       })
       .catch((err) => !cancelled && setError(err.message))
-      .finally(() => !cancelled && setLoading(false));
+      .finally(() => {
+        if (cancelled) return;
+        setLoading(false);
+        setHistoryReady(true);
+      });
 
     socket.emit("channel:join", channel.id);
     // Members (and DM participants) stay in their conversation rooms for the
@@ -399,6 +407,7 @@ export default function ChannelView({
   function onMessagesScroll(e) {
     const scroller = e.currentTarget;
     stickToBottomRef.current = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120;
+    rememberCurrentScroll();
     if (jumpingRef.current) return; // don't paginate while a jump is settling
     if (scroller.scrollTop < 150) loadOlder();
   }
@@ -407,6 +416,15 @@ export default function ChannelView({
     const scroller = scrollerRef.current;
     if (!scroller) return;
     scroller.scrollTop = scroller.scrollHeight;
+  }
+
+  function rememberCurrentScroll() {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    onRememberScroll?.(channel.id, {
+      scrollTop: scroller.scrollTop,
+      atBottom: scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120,
+    });
   }
 
   // After prepending older messages, keep the viewport anchored to what the user
@@ -441,13 +459,21 @@ export default function ChannelView({
   }, [loading]);
 
   useEffect(() => {
+    return () => {
+      rememberCurrentScroll();
+    };
+  }, [channel.id]);
+
+  useEffect(() => {
     // Wait until messages are actually rendered (not the loading skeleton),
     // otherwise bottomRef/firstUnreadRef don't exist yet and the initial scroll
     // is silently lost.
-    if (loading || messages.length === 0) return;
+    if (loading || messages.length === 0 || !historyReady) return;
     const grew = messages.length > prevLenRef.current;
     prevLenRef.current = messages.length;
-    const shouldForceBottom = scrollToBottomRequest > handledBottomScrollRequestRef.current;
+    const shouldForceBottom =
+      scrollToBottomTarget?.channelId === channel.id &&
+      scrollToBottomTarget.id > handledBottomScrollRequestRef.current;
 
     // A prepend (older history) grows the list but must not yank to the bottom.
     if (justPrependedRef.current) {
@@ -465,24 +491,43 @@ export default function ChannelView({
         return;
       }
       if (shouldForceBottom) {
-        handledBottomScrollRequestRef.current = scrollToBottomRequest;
+        handledBottomScrollRequestRef.current = scrollToBottomTarget.id;
+        onScrollToBottomTargetConsumed?.();
         requestAnimationFrame(() => {
           scrollToExactBottom();
           stickToBottomRef.current = true;
         });
         return;
       }
-      requestAnimationFrame(() => {
-        if (firstUnreadId && firstUnreadRef.current) {
-          firstUnreadRef.current.scrollIntoView({ block: "start" });
+      if (firstUnreadId && firstUnreadRef.current) {
+        requestAnimationFrame(() => {
+          firstUnreadRef.current?.scrollIntoView({ block: "start" });
           stickToBottomRef.current = false;
-        } else {
-          bottomRef.current?.scrollIntoView({ block: "end" });
-          stickToBottomRef.current = true;
-        }
+        });
+        return;
+      }
+      if (initialScrollState) {
+        stickToBottomRef.current = !!initialScrollState.atBottom;
+        requestAnimationFrame(() => {
+          const scroller = scrollerRef.current;
+          if (!scroller) return;
+          if (initialScrollState.atBottom) {
+            scrollToExactBottom();
+            stickToBottomRef.current = true;
+          } else {
+            scroller.scrollTop = initialScrollState.scrollTop;
+            stickToBottomRef.current = false;
+          }
+        });
+        return;
+      }
+      requestAnimationFrame(() => {
+        bottomRef.current?.scrollIntoView({ block: "end" });
+        stickToBottomRef.current = true;
       });
     } else if (shouldForceBottom && !jumpMessageId) {
-      handledBottomScrollRequestRef.current = scrollToBottomRequest;
+      handledBottomScrollRequestRef.current = scrollToBottomTarget.id;
+      onScrollToBottomTargetConsumed?.();
       scrollToExactBottom();
       stickToBottomRef.current = true;
     } else if (grew && !jumpMessageId) {
@@ -491,7 +536,7 @@ export default function ChannelView({
       scrollToExactBottom();
       stickToBottomRef.current = true;
     }
-  }, [messages, firstUnreadId, jumpMessageId, loading, scrollToBottomRequest]);
+  }, [messages, firstUnreadId, jumpMessageId, loading, historyReady, initialScrollState, scrollToBottomTarget]);
 
   // The "New" divider marks where you left off on open; once you've had a few
   // seconds to see it, drop it so it doesn't linger in the conversation.
