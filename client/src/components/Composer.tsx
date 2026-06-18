@@ -87,6 +87,15 @@ export default function Composer({ channel, parentId = null, users = [], customE
   useEffect(() => {
     if (!isThread) refreshScheduled(); // scheduling is a channel-level feature
   }, [channel.id, isThread]);
+  useEffect(() => {
+    if (isThread) return;
+    const socket = getSocket();
+    const onNew = (msg) => {
+      if (msg.channelId === channel.id) refreshScheduled();
+    };
+    socket.on("message:new", onNew);
+    return () => socket.off("message:new", onNew);
+  }, [channel.id, isThread]);
 
   const suggestions = useMemo(() => {
     if (!mention) return [];
@@ -732,9 +741,16 @@ export default function Composer({ channel, parentId = null, users = [], customE
           <input
             className="settings-input schedule-input"
             type="datetime-local"
+            step={1}
             value={scheduleAt}
             min={toLocalInput(new Date(Date.now() + 60 * 1000))}
             onChange={(e) => setScheduleAt(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                confirmSchedule();
+              }
+            }}
           />
           <div className="modal-actions">
             <button type="button" className="btn-secondary" onClick={() => setScheduleAt(null)}>

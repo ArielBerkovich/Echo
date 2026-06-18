@@ -41,6 +41,11 @@ async function messageId(page, channelName, body) {
   );
 }
 
+function toLocalDatetimeInput(date) {
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
 test("manages channels, members, visibility, and leaving", async ({ page }) => {
   await page.goto("/");
 
@@ -264,7 +269,26 @@ test("keeps the channel pinned to the bottom after sending an image attachment",
   }).toBeLessThanOrEqual(beforeGap + 2);
 });
 
-test("schedules, edits, and cancels a message", async ({ page }) => {
+test("schedules a message and clears the banner after delivery", async ({ page }) => {
+  await page.goto("/");
+
+  const composer = page.locator(".composer-editor");
+  const scheduledBody = `Scheduled ${Date.now()}`;
+  await composer.fill(scheduledBody);
+  await page.getByRole("button", { name: "Send options" }).click();
+  await page.locator(".send-menu button").filter({ hasText: "Custom time…" }).click();
+  const scheduleInput = page.locator(".schedule-input");
+  await scheduleInput.fill(toLocalDatetimeInput(new Date(Date.now() + 5_000)));
+  await scheduleInput.press("Enter");
+
+  await expect(page.getByText(/scheduled message/i)).toBeVisible();
+  await expect(page.locator(".message").filter({ hasText: scheduledBody })).toHaveCount(0);
+  await expect(page.locator(".scheduled-banner")).toBeVisible();
+  await expect(page.locator(".scheduled-banner")).toHaveCount(0, { timeout: 20_000 });
+  await expect(page.locator(".message").filter({ hasText: scheduledBody })).toBeVisible();
+});
+
+test("edits and cancels a scheduled message", async ({ page }) => {
   await page.goto("/");
 
   const composer = page.locator(".composer-editor");
