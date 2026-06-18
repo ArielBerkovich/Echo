@@ -206,7 +206,7 @@ test("opens the exact message from Activity", async ({ page }) => {
   await expect(messageById(page, fixture.messages.mention.id)).toBeInViewport();
 });
 
-test("opens a public-channel mention even when the channel list is stale", async ({ page }) => {
+test("opens a public-channel mention even when the user is not in the channel", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText("#general", { exact: true })).toBeVisible();
 
@@ -226,12 +226,15 @@ test("opens a public-channel mention even when the channel list is stale", async
     },
   });
 
+  await expect(page.getByText(channelName, { exact: true })).toHaveCount(0);
   await railItem(page, "activity").click();
   const activityEntry = page.getByText(mentionBody, { exact: false }).first();
   await expect(activityEntry).toBeVisible();
   await activityEntry.click();
 
   await expect(page.getByTestId("channel-title")).toContainText(channelName);
+  await expect(page.getByText(`You're previewing #${channelName}`)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Join channel" })).toBeVisible();
   await expect(messageById(page, mention.message.id)).toBeInViewport();
 });
 
