@@ -206,6 +206,63 @@ test("opens the exact message from Activity", async ({ page }) => {
   await expect(messageById(page, fixture.messages.mention.id)).toBeInViewport();
 });
 
+test("opens a public-channel mention even when the channel list is stale", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByText("#general", { exact: true })).toBeVisible();
+
+  const stamp = Date.now();
+  const channelName = `public-activity-${stamp}`;
+  const publicChannel = await requestAsToken(page, fixture.bob.token, "/channels", {
+    method: "POST",
+    body: { name: channelName, type: "public" },
+  });
+  const mentionBody = `Public activity mention ${stamp} @${fixture.alice.username}`;
+  const mention = await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: publicChannel.channel.id,
+      body: mentionBody,
+      externalKey: `public-activity-mention-${stamp}`,
+    },
+  });
+
+  await railItem(page, "activity").click();
+  const activityEntry = page.getByText(mentionBody, { exact: false }).first();
+  await expect(activityEntry).toBeVisible();
+  await activityEntry.click();
+
+  await expect(page.getByTestId("channel-title")).toContainText(channelName);
+  await expect(messageById(page, mention.message.id)).toBeInViewport();
+});
+
+test("opens a thread activity item at the exact reply", async ({ page }) => {
+  const stamp = Date.now();
+  const threadMentionText = `Thread mention ${stamp}`;
+  const reply = await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.projectChannel.id,
+      parentId: fixture.messages.threadRoot.id,
+      body: `${threadMentionText} @${fixture.alice.username}`,
+      externalKey: `thread-mention-${stamp}`,
+    },
+  });
+
+  await page.goto("/");
+  await page.evaluate((userId) => {
+    localStorage.setItem(`echo.loc.${userId}`, JSON.stringify({ view: "activity", convId: null, convType: null }));
+  }, fixture.alice.id);
+  await page.reload();
+
+  await expect(page.getByTestId("activity-header")).toBeVisible();
+  const activityItem = page.getByText(threadMentionText, { exact: false }).first();
+  await expect(activityItem).toBeVisible();
+  await activityItem.click();
+
+  await expect(page.getByTestId("thread-panel")).toBeVisible();
+  await expect(messageById(page, reply.message.id)).toBeInViewport();
+});
+
 test("shows saved messages and removes one from saved", async ({ page }) => {
   const unsave = page.waitForResponse(
     (res) => res.url().includes("/api/saved/") && res.request().method() === "POST"

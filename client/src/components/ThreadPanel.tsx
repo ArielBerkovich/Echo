@@ -28,6 +28,7 @@ export default function ThreadPanel({
   onThreadRead,
   onChannelUpdated,
   onOpenLightbox,
+  openThreadJumpMessageId = null,
 }) {
   const [rootMsg, setRootMsg] = useState(root); // local copy so live edits/reactions apply
   const [replies, setReplies] = useState([]);
@@ -42,6 +43,7 @@ export default function ThreadPanel({
   const stickToBottomRef = useRef(true); // should later layout changes keep us pinned?
   const initialScrolledRef = useRef(false); // has the panel been positioned yet?
   const prevReplyCountRef = useRef(0); // reply count last render
+  const jumpHandledRef = useRef(null); // last reply id we attempted to reveal
 
   const renderMarkdown = useMarkdownRenderer(users, user.username, customEmojis);
   const emojiMap = useMemo(
@@ -56,6 +58,7 @@ export default function ThreadPanel({
     initialScrolledRef.current = false;
     prevReplyCountRef.current = 0;
     stickToBottomRef.current = true;
+    jumpHandledRef.current = null;
   }, [root.id]);
 
   useEffect(() => {
@@ -126,6 +129,15 @@ export default function ThreadPanel({
       bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
     }
   }, [replies]);
+
+  useEffect(() => {
+    if (!openThreadJumpMessageId) return;
+    if (jumpHandledRef.current === openThreadJumpMessageId) return;
+    const target = document.querySelector(`.thread-body [data-mid="${openThreadJumpMessageId}"]`);
+    if (!target) return;
+    jumpHandledRef.current = openThreadJumpMessageId;
+    target.scrollIntoView({ block: "center", behavior: "auto" });
+  }, [openThreadJumpMessageId, replies, rootMsg.id]);
 
   useEffect(() => {
     const el = bodyInnerRef.current;

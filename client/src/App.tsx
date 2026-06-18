@@ -90,7 +90,7 @@ export default function App() {
   const [messageCache, setMessageCache] = useState({}); // channel/DM history snapshots for instant revisits
   const [jumpMessageId, setJumpMessageId] = useState(null); // message to scroll to + highlight
   const [searchQuery, setSearchQuery] = useState(null); // active message-search query (results pane)
-  const [openThreadReq, setOpenThreadReq] = useState(null); // { channelId, rootId } — thread to open after a jump
+  const [openThreadReq, setOpenThreadReq] = useState(null); // { channelId, rootId, messageId } — thread to open after a jump
   const [scrollToBottomRequest, setScrollToBottomRequest] = useState(0); // request id: open a channel pinned to latest
   const [toast, setToast] = useState(null); // transient notice (e.g. no access)
   const searchRef = useRef(null);
@@ -438,6 +438,21 @@ export default function App() {
     rememberRecent({ type: "user", id: picked.id, displayName: picked.displayName, username: picked.username });
   }
 
+  function resolveJumpChannel({ channelId, channelType, channelName }) {
+    const knownChannel =
+      channels.find((c) => c.id === channelId) || allChannels.find((c) => c.id === channelId);
+    if (knownChannel) return knownChannel;
+    if (channelType === "public") {
+      return {
+        id: channelId,
+        type: "public",
+        name: channelName || "",
+        members: [],
+      };
+    }
+    return null;
+  }
+
   // Jump from the Activity feed to the conversation. The item may be a channel
   // you're in, a DM, or a public channel you haven't joined — handle all three
   // (previously only member channels opened, so DM activity did nothing). If the
@@ -447,10 +462,12 @@ export default function App() {
     const channelId = typeof item === "string" ? item : item.channelId;
     const messageId = typeof item === "string" ? null : item.messageId || item.id;
     const threadId = typeof item === "string" ? null : item.threadId;
+    const channelType = typeof item === "string" ? null : item.channelType;
+    const channelName = typeof item === "string" ? null : item.channelName;
     setSearchQuery(null);
 
     const opened = (() => {
-      const channel = channels.find((c) => c.id === channelId);
+      const channel = resolveJumpChannel({ channelId, channelType, channelName });
       if (channel) {
         setActiveChannel(channel);
         setView("home");
@@ -462,17 +479,11 @@ export default function App() {
         setActiveChannel({ id: dm.id, type: "dm", dmName: dm.withUser.displayName, dmUserId: dm.withUser.id });
         return true;
       }
-      const pub = allChannels.find((c) => c.id === channelId);
-      if (pub) {
-        setActiveChannel(pub);
-        setView("home");
-        return true;
-      }
       setToast("You don't have access to that conversation.");
       return false;
     })();
 
-    if (opened && threadId) setOpenThreadReq({ channelId, rootId: threadId });
+    if (opened && threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
     if (opened && messageId && !threadId) setJumpMessageId(messageId);
   }
 
@@ -489,6 +500,7 @@ export default function App() {
       channelId: result.channelId,
       messageId: result.parentId || result.id,
       channelType: result.channelType,
+      channelName: result.channelName,
     });
   }
 
@@ -502,12 +514,9 @@ export default function App() {
       // Otherwise, only originals in public channels are linkable. A message
       // forwarded out of a DM or a private channel is shared as a snapshot only.
       if (ref.channelType !== "public") return false;
-      return (
-        channels.some((c) => c.id === ref.channelId) ||
-        allChannels.some((c) => c.id === ref.channelId)
-      );
+      return true;
     },
-    [activeChannel, channels, allChannels]
+    [activeChannel]
   );
 
   // Open the original of a forwarded message. If the user can't access its
@@ -515,18 +524,17 @@ export default function App() {
   const handleJumpToMessage = useCallback(
     (ref, options = {}) => {
       if (!ref?.channelId || !ref?.messageId) return;
-      const { channelId, messageId, channelType, threadId } = ref;
+      const { channelId, messageId, channelType, channelName, threadId } = ref;
       setSearchQuery(null);
 
       if (options.focus === "bottom") {
-        const channel =
-          channels.find((c) => c.id === channelId) || allChannels.find((c) => c.id === channelId);
+        const channel = resolveJumpChannel({ channelId, channelType, channelName });
         const dm = dms.find((d) => d.id === channelId);
         if (channel) {
           setView("home");
           setActiveChannel(channel);
           setScrollToBottomRequest((n) => n + 1);
-          if (threadId) setOpenThreadReq({ channelId, rootId: threadId });
+          if (threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
           return;
         }
         if (dm) {
@@ -538,7 +546,7 @@ export default function App() {
             dmUserId: dm.withUser.id,
           });
           setScrollToBottomRequest((n) => n + 1);
-          if (threadId) setOpenThreadReq({ channelId, rootId: threadId });
+          if (threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
           return;
         }
         setToast("You don't have access to that conversation.");
@@ -555,20 +563,19 @@ export default function App() {
           dmName: conv.withUser.displayName,
           dmUserId: conv.withUser.id,
         });
-        if (threadId) setOpenThreadReq({ channelId, rootId: threadId });
+        if (threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
         else setJumpMessageId(messageId);
         return;
       }
 
       // Public channels are browsable; private channels only if you're a member.
-      const channel =
-        channels.find((c) => c.id === channelId) || allChannels.find((c) => c.id === channelId);
+      const channel = resolveJumpChannel({ channelId, channelType, channelName });
       if (!channel) {
         return setToast("You don't have access to the channel this message was forwarded from.");
       }
       setView("home");
       setActiveChannel(channel);
-      if (threadId) setOpenThreadReq({ channelId, rootId: threadId });
+      if (threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
       else setJumpMessageId(messageId);
     },
     [activeChannel, channels, dms, allChannels]
@@ -788,6 +795,9 @@ export default function App() {
               onThreadRead={clearThreadActivity}
               openThreadId={
                 openThreadReq && openThreadReq.channelId === activeChannel.id ? openThreadReq.rootId : null
+              }
+              openThreadJumpMessageId={
+                openThreadReq && openThreadReq.channelId === activeChannel.id ? openThreadReq.messageId : null
               }
               onThreadOpened={() => setOpenThreadReq(null)}
             />
