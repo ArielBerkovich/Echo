@@ -267,6 +267,16 @@ export async function seedWorkspaceFixture(page) {
 }
 
 async function restoreWorkspaceFixture(page, fixture) {
+  await page.evaluate(
+    ({ aliceId, bobId }) => {
+      localStorage.setItem("echo.hiddenChannels", JSON.stringify([]));
+      localStorage.removeItem(`echo.loc.${aliceId}`);
+      localStorage.removeItem(`echo.loc.${bobId}`);
+      localStorage.removeItem(`echo.scroll.${aliceId}`);
+      localStorage.removeItem(`echo.scroll.${bobId}`);
+    },
+    { aliceId: fixture.alice.id, bobId: fixture.bob.id }
+  );
   await requestAsToken(page, fixture.alice.token, "/users/me", {
     method: "PATCH",
     body: {
