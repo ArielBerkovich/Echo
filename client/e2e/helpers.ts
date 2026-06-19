@@ -267,7 +267,7 @@ export async function seedWorkspaceFixture(page) {
 }
 
 async function restoreWorkspaceFixture(page, fixture) {
-  await page.evaluate(
+  await page.addInitScript(
     ({ aliceId, bobId }) => {
       localStorage.setItem("echo.hiddenChannels", JSON.stringify([]));
       localStorage.removeItem(`echo.loc.${aliceId}`);
