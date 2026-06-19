@@ -288,6 +288,11 @@ async function restoreWorkspaceFixture(page, fixture) {
   });
   await requestAsToken(page, fixture.alice.token, "/users/me/onboarded", { method: "POST" });
   await requestAsToken(page, fixture.bob.token, "/users/me/onboarded", { method: "POST" });
+  const dm = await requestAsToken(page, fixture.alice.token, "/dms", {
+    method: "POST",
+    body: { userId: fixture.bob.id },
+  });
+  fixture.dmChannel = dm.channel;
   await requestAsToken(page, fixture.alice.token, `/channels/${fixture.projectChannel.id}`, {
     method: "PATCH",
     body: {
