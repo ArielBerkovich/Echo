@@ -94,7 +94,10 @@ dmsRouter.post("/", async (req, res) => {
 
   const channel = await Channel.findOneAndUpdate(
     { name },
-    { $setOnInsert: { name, type: "dm", members, createdBy: req.user._id } },
+    {
+      $setOnInsert: { name, type: "dm", members, createdBy: req.user._id },
+      $pull: { hiddenFor: req.user._id },
+    },
     { new: true, upsert: true }
   );
 
