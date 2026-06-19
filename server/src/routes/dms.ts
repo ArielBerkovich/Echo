@@ -92,14 +92,13 @@ dmsRouter.post("/", async (req, res) => {
   const name = isSelf ? `dm-self-${req.user._id}` : dmName(req.user._id, other._id);
   const members = isSelf ? [req.user._id] : [req.user._id, other._id];
 
-  const channel = await Channel.findOneAndUpdate(
-    { name },
-    {
-      $setOnInsert: { name, type: "dm", members, createdBy: req.user._id },
-      $pull: { hiddenFor: req.user._id },
-    },
-    { new: true, upsert: true }
-  );
+  let channel = await Channel.findOne({ name });
+  if (channel) {
+    await Channel.updateOne({ _id: channel._id }, { $pull: { hiddenFor: req.user._id } });
+    channel = await Channel.findById(channel._id);
+  } else {
+    channel = await Channel.create({ name, type: "dm", members, createdBy: req.user._id });
+  }
 
   res.json({ channel: channel.toPublicJSON(), withUser: other.toPublicJSON(), isSelf });
 });
