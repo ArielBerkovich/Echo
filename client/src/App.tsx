@@ -101,7 +101,17 @@ export default function App() {
   const searchRef = useRef(null);
   const markReadAtRef = useRef({}); // channelId -> last markRead time (throttle)
   const restoredRef = useRef(false); // have we restored the saved location yet?
+  const navDuringRestoreRef = useRef(false); // user navigated before the initial restore finished
+  const viewRef = useRef(view);
+  const activeChannelRef = useRef(activeChannel);
   const poppingRef = useRef(false); // applying a browser back/forward — don't re-push history
+
+  useEffect(() => void (viewRef.current = view), [view]);
+  useEffect(() => void (activeChannelRef.current = activeChannel), [activeChannel]);
+
+  function markNavDuringRestore() {
+    if (!restoredRef.current) navDuringRestoreRef.current = true;
+  }
 
   const visibleChannels = useMemo(
     () => [...new Map([...channels, ...allChannels].map((c) => [c.id, c])).values()],
@@ -182,6 +192,16 @@ export default function App() {
     });
   }
 
+  function clearScrollState(channelId) {
+    setScrollStates((prev) => {
+      if (!prev[channelId]) return prev;
+      const next = { ...prev };
+      delete next[channelId];
+      if (user?.id) writeJson(`echo.scroll.${user.id}`, next);
+      return next;
+    });
+  }
+
   function clearScrollToBottomTarget() {
     setScrollToBottomTarget(null);
   }
@@ -241,6 +261,7 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
     restoredRef.current = false; // restore again for this (possibly new) account
+    navDuringRestoreRef.current = false;
     setScrollStates(loadScrollStates(user.id));
     let cancelled = false;
     Promise.all([api.listChannels(), api.listDms()])
@@ -250,7 +271,11 @@ export default function App() {
         const conversations = dmRes.conversations || [];
         setChannels(chs);
         setDms(conversations);
-        applyLocation(readJson(`echo.loc.${user.id}`, null), chs, conversations);
+        if (!navDuringRestoreRef.current) {
+          applyLocation(readJson(`echo.loc.${user.id}`, null), chs, conversations);
+        } else {
+          writeCurrentLocation(user.id);
+        }
         restoredRef.current = true;
       })
       .catch(() => {
@@ -272,8 +297,16 @@ export default function App() {
   // the back/forward buttons move through the in-app navigation.
   useEffect(() => {
     if (!user || !restoredRef.current) return;
-    const loc = { view, convId: activeChannel?.id || null, convType: activeChannel?.type || null };
-    writeJson(`echo.loc.${user.id}`, loc);
+    writeCurrentLocation(user.id);
+  }, [user, view, activeChannel]);
+
+  function writeCurrentLocation(userId) {
+    const loc = {
+      view: viewRef.current,
+      convId: activeChannelRef.current?.id || null,
+      convType: activeChannelRef.current?.type || null,
+    };
+    writeJson(`echo.loc.${userId}`, loc);
 
     // Don't push a new entry when we're applying a back/forward navigation.
     if (poppingRef.current) {
@@ -289,7 +322,7 @@ export default function App() {
     } else {
       window.history.replaceState({ __echo: true, ...loc }, ""); // seed the first entry
     }
-  }, [user, view, activeChannel]);
+  }
 
   // Browser back/forward: restore the in-app location from the history entry.
   useEffect(() => {
@@ -414,6 +447,7 @@ export default function App() {
   }
 
   async function handleOpenDm(target, isSelf = false) {
+    markNavDuringRestore();
     setSearchQuery(null);
     const { channel } = await api.openDm(target.id);
     const existing = dms.find((d) => d.id === channel.id);
@@ -453,6 +487,7 @@ export default function App() {
   }
 
   function handlePickChannel(picked) {
+    markNavDuringRestore();
     setSearchQuery(null);
     unhideChannel(picked.id); // re-show if it was hidden
     // Open it (preview if you're not a member — a Join button will appear).
@@ -470,6 +505,7 @@ export default function App() {
   }
 
   function handlePickUser(picked) {
+    markNavDuringRestore();
     handleOpenDm(picked);
     rememberRecent({ type: "user", id: picked.id, displayName: picked.displayName, username: picked.username });
   }
@@ -495,12 +531,14 @@ export default function App() {
   // item is a thread reply, also open its thread so it gets marked read (a
   // thread mention stays unread until the thread itself is opened).
   function handleJump(item) {
+    markNavDuringRestore();
     const channelId = typeof item === "string" ? item : item.channelId;
     const messageId = typeof item === "string" ? null : item.messageId || item.id;
     const threadId = typeof item === "string" ? null : item.threadId;
     const channelType = typeof item === "string" ? null : item.channelType;
     const channelName = typeof item === "string" ? null : item.channelName;
     setSearchQuery(null);
+    if (messageId || threadId) clearScrollState(channelId);
 
     const opened = (() => {
       const channel = resolveJumpChannel({ channelId, channelType, channelName });
@@ -525,6 +563,7 @@ export default function App() {
 
   // Run a full-text message search (from the search bar, on Enter).
   function handleSearchMessages(q) {
+    markNavDuringRestore();
     setView("home");
     setSearchQuery(q);
   }
@@ -532,6 +571,7 @@ export default function App() {
   // Jump from a search result to the message in its conversation. Thread
   // replies aren't in the main timeline, so we jump to their thread root.
   function handleSearchJump(result) {
+    markNavDuringRestore();
     handleJumpToMessage({
       channelId: result.channelId,
       messageId: result.parentId || result.id,
@@ -562,6 +602,7 @@ export default function App() {
       if (!ref?.channelId || !ref?.messageId) return;
       const { channelId, messageId, channelType, channelName, threadId } = ref;
       setSearchQuery(null);
+      if (options.focus !== "bottom") clearScrollState(channelId);
 
       if (options.focus === "bottom") {
         const channel = resolveJumpChannel({ channelId, channelType, channelName });
@@ -683,6 +724,13 @@ export default function App() {
       .map((u) => ({ id: `user:${u.id}`, name: u.username, url: u.avatarUrl, isUser: true }));
     return [...userEmojis, ...customEmojis];
   }, [users, customEmojis]);
+  const activeUnreadCount = activeChannel
+    ? (activeChannel.type === "dm"
+        ? dms.find((d) => d.id === activeChannel.id)?.unread || 0
+        : channels.find((c) => c.id === activeChannel.id)?.unread || 0)
+    : 0;
+  const activeInitialScrollState =
+    activeChannel && activeUnreadCount === 0 ? scrollStates[activeChannel.id] || null : null;
 
   if (loading) return <div className="centered">Loading…</div>;
   if (!user) return <Login onAuthed={handleAuthed} />;
@@ -703,10 +751,11 @@ export default function App() {
         <div className="app-nav">
           <LeftRail
             view={view}
-            onSelect={(v) => {
-              setSearchQuery(null);
-              setView(v);
-              setNavOpen(false);
+              onSelect={(v) => {
+                markNavDuringRestore();
+                setSearchQuery(null);
+                setView(v);
+                setNavOpen(false);
             }}
             user={user}
             badges={{
@@ -727,6 +776,7 @@ export default function App() {
               activeChannel={activeChannel}
               mode={view === "dms" ? "dms" : "home"}
               onSelect={(c) => {
+                markNavDuringRestore();
                 setSearchQuery(null);
                 setActiveChannel(c);
                 setNavOpen(false);
@@ -735,6 +785,7 @@ export default function App() {
               onNewChannel={() => setShowCreate(true)}
               onNewMessage={() => searchRef.current?.focus()}
               onOpenDm={(u, isSelf) => {
+                markNavDuringRestore();
                 handleOpenDm(u, isSelf);
                 setNavOpen(false);
               }}
@@ -807,7 +858,7 @@ export default function App() {
             <ChannelView
               channel={activeChannel}
               cachedMessages={messageCache[activeChannel.id] || null}
-              initialScrollState={scrollStates[activeChannel.id] || null}
+              initialScrollState={activeInitialScrollState}
               user={user}
               users={users}
               channels={channels}

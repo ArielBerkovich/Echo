@@ -588,10 +588,10 @@ export default function Composer({ channel, parentId = null, users = [], customE
     setEmojiOpen(false);
   }
 
-  // Format a Date as a local "YYYY-MM-DDTHH:MM" string for <input datetime-local>.
+  // Format a Date as a local "YYYY-MM-DDTHH:MM:SS" string for <input datetime-local>.
   function toLocalInput(d) {
     const pad = (n) => String(n).padStart(2, "0");
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   }
 
   // Tomorrow at 9:00 AM (local), used by the quick "Tomorrow" send option.

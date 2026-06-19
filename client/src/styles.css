@@ -3807,12 +3807,15 @@ html[data-mode="dark"] .day-divider-label {
 /* "Forwarded from …" header above a forwarded message */
 .forwarded-label {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
+  padding-right: 160px;
   margin-bottom: 3px;
   color: var(--muted);
   font-size: 12px;
   font-weight: 600;
+  min-width: 0;
 }
 .forwarded-label svg {
   width: 13px;

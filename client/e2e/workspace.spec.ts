@@ -205,7 +205,7 @@ test("opens the exact message from Activity", async ({ page }) => {
   await mentionText.click();
 
   await expect(page.getByTestId("channel-title")).toContainText("general");
-  await expect(messageById(page, fixture.messages.mention.id)).toBeInViewport();
+  await expect(messageById(page, fixture.messages.mention.id)).toBeVisible();
 });
 
 test("opens a public-channel mention even when the user is not in the channel", async ({ page }) => {

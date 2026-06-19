@@ -271,11 +271,7 @@ async function restoreWorkspaceFixture(page, fixture) {
     ({ aliceId, bobId }) => {
       if (sessionStorage.getItem("echo.fixtureStateReset") === "1") return;
       sessionStorage.setItem("echo.fixtureStateReset", "1");
-      localStorage.setItem("echo.hiddenChannels", JSON.stringify([]));
-      localStorage.removeItem(`echo.loc.${aliceId}`);
-      localStorage.removeItem(`echo.loc.${bobId}`);
-      localStorage.removeItem(`echo.scroll.${aliceId}`);
-      localStorage.removeItem(`echo.scroll.${bobId}`);
+      localStorage.clear();
     },
     { aliceId: fixture.alice.id, bobId: fixture.bob.id }
   );

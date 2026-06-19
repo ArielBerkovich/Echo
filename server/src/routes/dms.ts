@@ -100,5 +100,14 @@ dmsRouter.post("/", async (req, res) => {
     channel = await Channel.create({ name, type: "dm", members, createdBy: req.user._id });
   }
 
-  res.json({ channel: channel.toPublicJSON(), withUser: other.toPublicJSON(), isSelf });
+  const read = await Read.findOne({ user: req.user._id, channel: channel._id, thread: null });
+  const unread = isSelf
+    ? 0
+    : await Message.countDocuments({
+        channel: channel._id,
+        author: { $ne: req.user._id },
+        createdAt: { $gt: read?.lastReadAt || new Date(0) },
+      });
+
+  res.json({ channel: { ...channel.toPublicJSON(), unread }, withUser: other.toPublicJSON(), isSelf });
 });
