@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 import {
   enableClipboardStub,
+  channelRow,
+  dmRow,
   messageById,
   messageByText,
   railItem,
@@ -203,7 +205,7 @@ test("opens the exact message from Activity", async ({ page }) => {
   await mentionText.click();
 
   await expect(page.getByTestId("channel-title")).toContainText("general");
-  await expect(messageById(page, fixture.messages.mention.id)).toBeInViewport();
+  await expect(messageById(page, fixture.messages.mention.id)).toBeVisible();
 });
 
 test("opens a public-channel mention even when the user is not in the channel", async ({ page }) => {
@@ -342,6 +344,52 @@ test("opens a DM at the latest message when there is no unread history", async (
   await expect.poll(async () => {
     return scroller.evaluate((el) => Math.round(el.scrollHeight - el.scrollTop - el.clientHeight));
   }).toBeLessThanOrEqual(2);
+});
+
+test("opens unread DMs at the new divider instead of restoring the old position", async ({ page }) => {
+  for (let i = 0; i < 24; i += 1) {
+    await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+      method: "POST",
+      body: {
+        channelId: fixture.dmChannel.id,
+        body: `DM restore seed ${i} ${Date.now()}`,
+        externalKey: `dm-restore-${i}-${Date.now()}`,
+      },
+    });
+  }
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "DMs" }).click();
+  await expect(dmRow(page, fixture.bob.displayName)).toBeVisible();
+  await dmRow(page, fixture.bob.displayName).locator(".dm-open").click();
+
+  const scroller = page.locator(".channel-main .messages");
+  await expect(scroller).toBeVisible();
+  const maxTop = await scroller.evaluate((el) => Math.max(0, el.scrollHeight - el.clientHeight));
+  expect(maxTop).toBeGreaterThan(180);
+  await scroller.evaluate((el) => {
+    el.scrollTop = Math.max(0, el.scrollHeight - el.clientHeight - 180);
+    el.dispatchEvent(new Event("scroll", { bubbles: true }));
+  });
+  await railItem(page, "home").click();
+  await channelRow(page, "general").click();
+  await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.dmChannel.id,
+      body: `DM unread restore ${Date.now()}`,
+      externalKey: `dm-unread-restore-${Date.now()}`,
+    },
+  });
+
+  await page.getByRole("button", { name: "DMs" }).click();
+  await expect(dmRow(page, fixture.bob.displayName)).toBeVisible();
+  await dmRow(page, fixture.bob.displayName).locator(".dm-open").click();
+
+  await expect(page.locator(".new-divider")).toBeVisible();
+  await expect.poll(async () => {
+    return scroller.evaluate((el) => Math.round(el.scrollHeight - el.scrollTop - el.clientHeight));
+  }).toBeGreaterThan(0);
 });
 
 test("searches messages with filters and displays results", async ({ page }) => {

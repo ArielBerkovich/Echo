@@ -267,6 +267,14 @@ export async function seedWorkspaceFixture(page) {
 }
 
 async function restoreWorkspaceFixture(page, fixture) {
+  await page.addInitScript(
+    ({ aliceId, bobId }) => {
+      if (sessionStorage.getItem("echo.fixtureStateReset") === "1") return;
+      sessionStorage.setItem("echo.fixtureStateReset", "1");
+      localStorage.clear();
+    },
+    { aliceId: fixture.alice.id, bobId: fixture.bob.id }
+  );
   await requestAsToken(page, fixture.alice.token, "/users/me", {
     method: "PATCH",
     body: {
@@ -276,6 +284,11 @@ async function restoreWorkspaceFixture(page, fixture) {
   });
   await requestAsToken(page, fixture.alice.token, "/users/me/onboarded", { method: "POST" });
   await requestAsToken(page, fixture.bob.token, "/users/me/onboarded", { method: "POST" });
+  const dm = await requestAsToken(page, fixture.alice.token, "/dms", {
+    method: "POST",
+    body: { userId: fixture.bob.id },
+  });
+  fixture.dmChannel = dm.channel;
   await requestAsToken(page, fixture.alice.token, `/channels/${fixture.projectChannel.id}`, {
     method: "PATCH",
     body: {

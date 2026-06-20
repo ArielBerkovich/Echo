@@ -1836,20 +1836,50 @@ html[data-mode="dark"] .sidebar {
 
 /* "+" button in the Channels section header */
 .add-channel {
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.08);
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   color: var(--on-navy-muted);
-  font-size: 17px;
-  line-height: 1;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+.add-channel-mark {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  display: block;
+}
+.add-channel-mark span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  background: currentColor;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+}
+.add-channel-mark span:first-child {
+  width: 10px;
+  height: 2px;
+}
+.add-channel-mark span:last-child {
+  width: 2px;
+  height: 10px;
 }
 .add-channel:hover {
   background: var(--active-bg);
   color: #fff;
+  border-color: transparent;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px var(--active-ring);
+}
+.add-channel:active {
+  transform: translateY(0);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 /* Direct Messages section */
@@ -1905,7 +1935,9 @@ html[data-mode="dark"] .sidebar {
 /* DMs view: "Find a DM" + rich conversation rows */
 .dm-find {
   display: flex;
+  align-items: center;
   gap: 6px;
+  margin-top: 10px;
   padding: 0 12px 8px;
 }
 .dm-find input {
@@ -3775,12 +3807,15 @@ html[data-mode="dark"] .day-divider-label {
 /* "Forwarded from …" header above a forwarded message */
 .forwarded-label {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
+  padding-right: 160px;
   margin-bottom: 3px;
   color: var(--muted);
   font-size: 12px;
   font-weight: 600;
+  min-width: 0;
 }
 .forwarded-label svg {
   width: 13px;

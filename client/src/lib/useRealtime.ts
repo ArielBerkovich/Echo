@@ -98,10 +98,25 @@ export function useRealtime({
       );
     };
     const onPresence = ({ online } = {}) => setOnlineIds(new Set(online || []));
+    const mergeChannel = (prev, updated) => {
+      const exists = prev.some((c) => c.id === updated.id);
+      if (updated.type !== "public") {
+        return prev.filter((c) => c.id !== updated.id);
+      }
+      const next = exists
+        ? prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c))
+        : [...prev, updated];
+      return next.sort((a, b) => a.name.localeCompare(b.name));
+    };
     const onChannelUpdate = ({ channel: updated } = {}) => {
       if (!updated?.id) return;
-      setChannels((prev) => prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c)));
-      setAllChannels?.((prev) => prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c)));
+      setChannels((prev) => mergeChannel(prev, updated));
+      setAllChannels?.((prev) => mergeChannel(prev, updated));
+      setActiveChannel((prev) => (prev?.id === updated.id ? { ...prev, ...updated } : prev));
+    };
+    const onChannelCatalog = ({ channel: updated } = {}) => {
+      if (!updated?.id) return;
+      setAllChannels?.((prev) => mergeChannel(prev, updated));
       setActiveChannel((prev) => (prev?.id === updated.id ? { ...prev, ...updated } : prev));
     };
     // Added to a channel by someone else — pull it into the sidebar live.
@@ -120,6 +135,7 @@ export function useRealtime({
     socket.on("user:update", onUserUpdate);
     socket.on("presence", onPresence);
     socket.on("channel:update", onChannelUpdate);
+    socket.on("channel:catalog", onChannelCatalog);
     socket.on("channel:added", onChannelAdded);
     socket.on("channel:removed", onChannelRemoved);
     return () => {
@@ -128,6 +144,7 @@ export function useRealtime({
       socket.off("user:update", onUserUpdate);
       socket.off("presence", onPresence);
       socket.off("channel:update", onChannelUpdate);
+      socket.off("channel:catalog", onChannelCatalog);
       socket.off("channel:added", onChannelAdded);
       socket.off("channel:removed", onChannelRemoved);
     };

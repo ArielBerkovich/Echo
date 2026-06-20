@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { requestAsToken, seedWorkspaceFixture } from "./helpers.js";
+import { requestAsToken, seedWorkspaceFixture, slug } from "./helpers.js";
 
 let fixture;
 
@@ -98,6 +98,25 @@ test("updates user search results after a display name change", async ({ browser
     });
 
     await expect(row).toContainText(updatedName);
+  });
+});
+
+test("shows newly created public channels in search without refresh", async ({ browser, page }) => {
+  const { alice } = fixture;
+  await withAliceBobPages(browser, async ({ bobPage }) => {
+    const channelName = `live-search-${Date.now()}`;
+    const input = bobPage.page.locator(".search-input");
+    await input.fill(channelName);
+
+    const row = bobPage.page.getByTestId(`search-channel-${slug(channelName)}`);
+    await expect(row).toHaveCount(0);
+
+    await requestAsToken(page, alice.token, "/channels", {
+      method: "POST",
+      body: { name: channelName, type: "public" },
+    });
+
+    await expect(row).toBeVisible();
   });
 });
 

@@ -116,7 +116,10 @@ export default function Sidebar({
         />
         {dmsOnly && (
           <button className="add-channel" data-testid="sidebar-new-message" onClick={onNewMessage} title="New message" aria-label="New message">
-            +
+            <span className="add-channel-mark" aria-hidden="true">
+              <span />
+              <span />
+            </span>
           </button>
         )}
       </div>
@@ -185,7 +188,10 @@ export default function Sidebar({
               <span>Channels</span>
             </button>
             <button className="add-channel" data-testid="create-channel" onClick={onNewChannel} title="Create channel" aria-label="Create channel">
-              +
+              <span className="add-channel-mark" aria-hidden="true">
+                <span />
+                <span />
+              </span>
             </button>
           </div>
           {showChannels &&
