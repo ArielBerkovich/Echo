@@ -6097,3 +6097,131 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     line-height: 1.45;
   }
 }
+
+/* Account area: give identity and actions a distinct, easy-to-scan footer. */
+.sidebar-footer {
+  gap: 10px;
+  padding: 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(0, 0, 0, 0.08));
+}
+.account-card {
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+.account-card:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+.account-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+}
+.account-copy .me {
+  font-size: 15px;
+  line-height: 1.25;
+}
+.account-copy .status {
+  font-size: 12px;
+  line-height: 1.2;
+  text-transform: capitalize;
+}
+.account-caret {
+  flex: none;
+  color: var(--on-navy-muted);
+  font-size: 25px;
+  font-weight: 300;
+  line-height: 1;
+  transform: translateY(-1px);
+}
+.account-actions {
+  gap: 4px;
+  padding: 2px 2px 0;
+}
+.account-actions .link {
+  width: 34px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.account-actions .footer-signout {
+  min-height: 32px;
+}
+
+@media (min-width: 1600px) {
+  .sidebar-footer {
+    gap: 12px;
+    padding: 18px;
+  }
+  .account-card {
+    gap: 14px;
+    padding: 13px;
+    border-radius: 14px;
+  }
+  .account-copy .me {
+    font-size: 17px;
+  }
+  .account-copy .status {
+    font-size: 14px;
+  }
+  .account-caret {
+    font-size: 29px;
+  }
+  .account-actions .link {
+    width: 38px;
+    height: 36px;
+  }
+.account-actions .footer-signout {
+  min-height: 36px;
+}
+}
+
+/* Quick VIP action for the active direct-message conversation. */
+.dm-vip-toggle {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+.dm-vip-toggle:hover {
+  color: var(--beam);
+  border-color: var(--beam);
+  background: color-mix(in srgb, var(--beam) 12%, var(--surface));
+}
+.dm-vip-toggle.active {
+  color: #fbbf24 !important;
+  border-color: #fbbf24 !important;
+  background: rgba(251, 191, 36, 0.2) !important;
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2), 0 3px 10px rgba(251, 191, 36, 0.18);
+}
+.dm-vip-toggle.active svg {
+  color: #fbbf24;
+  stroke: #fbbf24;
+  fill: #fbbf24;
+}
+
+@media (min-width: 1600px) {
+  .dm-vip-toggle {
+    width: 38px;
+    height: 38px;
+  }
+}
+
+@media (max-width: 420px) {
+  .dm-vip-toggle {
+    width: 30px;
+    height: 30px;
+  }
+}
