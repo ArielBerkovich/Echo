@@ -679,15 +679,24 @@ export default function App() {
 
   // Toggle a user's VIP status, optimistically.
   function handleToggleVip(userId) {
+    const wasVip = vipIds.has(userId);
     setVipIds((prev) => {
       const next = new Set(prev);
-      next.has(userId) ? next.delete(userId) : next.add(userId);
+      wasVip ? next.delete(userId) : next.add(userId);
       return next;
     });
-    api.toggleVip(userId).catch(() => {
+    api.toggleVip(userId).then(({ vip }) => {
       setVipIds((prev) => {
         const next = new Set(prev);
-        next.has(userId) ? next.delete(userId) : next.add(userId);
+        if (vip) next.add(userId);
+        else next.delete(userId);
+        return next;
+      });
+    }).catch(() => {
+      setVipIds((prev) => {
+        const next = new Set(prev);
+        if (wasVip) next.add(userId);
+        else next.delete(userId);
         return next;
       });
     });
@@ -870,6 +879,8 @@ export default function App() {
               onRememberScroll={rememberScrollState}
               onScrollToBottomTargetConsumed={clearScrollToBottomTarget}
               onOpenProfile={openProfile}
+              isVip={activeChannel.type === "dm" && vipIds.has(activeChannel.dmUserId)}
+              onToggleVip={handleToggleVip}
               jumpMessageId={jumpMessageId}
               scrollToBottomTarget={scrollToBottomTarget}
               canJumpToForward={canJumpToForward}

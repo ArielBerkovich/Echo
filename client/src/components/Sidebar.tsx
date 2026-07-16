@@ -252,14 +252,15 @@ export default function Sidebar({
       )}
 
       <div className="sidebar-footer">
-        <button className="me-button" data-testid="sidebar-settings" onClick={onOpenSettings} title="Settings">
-          <Avatar name={user.displayName} src={user.avatarUrl} size={36} />
-          <div className="who">
+        <button className="me-button account-card" data-testid="sidebar-settings" onClick={onOpenSettings} title="Open account settings">
+          <PresenceAvatar name={user.displayName} src={user.avatarUrl} size={42} online />
+          <div className="who account-copy">
             <div className="me" dir="auto">{user.displayName}</div>
-            <div className="status">active</div>
+            <div className="status">Active</div>
           </div>
+          <span className="account-caret" aria-hidden="true">›</span>
         </button>
-        <div className="footer-actions">
+        <div className="footer-actions account-actions">
           <button
             className="link"
             onClick={onToggleTheme}

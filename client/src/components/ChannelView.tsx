@@ -22,6 +22,7 @@ import { PersonAddIcon, LeaveIcon, PinIcon } from "./Icons.js";
 import { formatDayDivider, isDifferentDay } from "../lib/time.js";
 import { playEmojiEffectFor } from "../lib/emojiEffects.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
+import { StarIcon } from "lucide-react";
 
 // Shimmering placeholder rows shown while a channel's history loads, so the
 // pane has structure immediately instead of flashing an empty "say hello" state.
@@ -57,6 +58,8 @@ export default function ChannelView({
   onRememberScroll,
   onScrollToBottomTargetConsumed,
   onOpenProfile,
+  isVip = false,
+  onToggleVip,
   jumpMessageId = null,
   scrollToBottomTarget = null,
   canJumpToForward,
@@ -763,6 +766,17 @@ export default function ChannelView({
       <header className="channel-header" data-testid="channel-header">
         {isDm ? (
           <>
+            <button
+              type="button"
+              className={`dm-vip-toggle ${isVip ? "active" : ""}`}
+              data-testid="dm-vip-toggle"
+              aria-label={isVip ? `Remove ${dmLabel} from VIP` : `Mark ${dmLabel} as VIP`}
+              aria-pressed={isVip}
+              title={isVip ? "Remove from VIP" : "Mark as VIP"}
+              onClick={() => dmUser?.id && onToggleVip?.(dmUser.id)}
+            >
+              <StarIcon size={20} strokeWidth={1.9} fill={isVip ? "currentColor" : "none"} />
+            </button>
             <Avatar name={dmAvatarName} src={dmAvatar} size={24} />
             <span className="ch-name" data-testid="channel-title">{dmLabel}</span>
           </>
