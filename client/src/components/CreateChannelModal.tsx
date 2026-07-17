@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
+import { Check, Globe2, LockKeyhole } from "lucide-react";
 import Modal from "./Modal.js";
 import { channelSchema, normalizeChannelNameInput } from "../lib/formSchemas.js";
 
@@ -74,8 +75,8 @@ export default function CreateChannelModal({ onCreate, onClose }) {
           {errors.name && <span className="field-hint error small">{errors.name.message}</span>}
         </label>
 
-        <div className="field">
-          <span className="field-label">Visibility</span>
+        <fieldset className="field visibility-field">
+          <legend className="field-label">Who can access this channel?</legend>
           <div className="visibility">
             <label className={`visibility-option ${type === "public" ? "selected" : ""}`}>
               <input
@@ -88,10 +89,12 @@ export default function CreateChannelModal({ onCreate, onClose }) {
                   setValue("type", "public", { shouldDirty: true, shouldValidate: true });
                 }}
               />
+              <span className="vo-icon public"><Globe2 size={18} strokeWidth={1.8} /></span>
               <div className="vo-body">
-                <div className="vo-title"># Public</div>
-                <div className="vo-desc">Anyone in the workspace can find and join.</div>
+                <div className="vo-title">Public</div>
+                <div className="vo-desc">Everyone can discover and join this channel.</div>
               </div>
+              <span className="vo-check"><Check size={15} strokeWidth={2.5} /></span>
             </label>
             <label className={`visibility-option ${type === "private" ? "selected" : ""}`}>
               <input
@@ -104,13 +107,16 @@ export default function CreateChannelModal({ onCreate, onClose }) {
                   setValue("type", "private", { shouldDirty: true, shouldValidate: true });
                 }}
               />
+              <span className="vo-icon private"><LockKeyhole size={18} strokeWidth={1.8} /></span>
               <div className="vo-body">
-                <div className="vo-title">🔒 Private</div>
-                <div className="vo-desc">Only invited members can view and join.</div>
+                <div className="vo-title">Private</div>
+                <div className="vo-desc">Only people you invite can view and join.</div>
               </div>
+              <span className="vo-check"><Check size={15} strokeWidth={2.5} /></span>
             </label>
           </div>
-        </div>
+          <p className="visibility-note">You can make a private channel public later, but public channels can’t be made private.</p>
+        </fieldset>
 
         {error && <div className="error">{error}</div>}
 

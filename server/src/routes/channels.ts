@@ -276,6 +276,9 @@ channelsRouter.patch("/:id", async (req, res) => {
     if (!channel.createdBy.equals(req.user._id)) {
       return res.status(403).json({ error: "only the channel creator can change visibility" });
     }
+    if (channel.type === "public" && type === "private") {
+      return res.status(400).json({ error: "public channels cannot be made private" });
+    }
     channel.type = type;
   }
 
