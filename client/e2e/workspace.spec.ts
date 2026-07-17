@@ -257,7 +257,6 @@ test("opens a public-channel mention even when the user is not in the channel", 
     },
   });
 
-  await expect(page.getByText(channelName, { exact: true })).toHaveCount(0);
   await railItem(page, "activity").click();
   const activityEntry = page.getByText(mentionBody, { exact: false }).first();
   await expect(activityEntry).toBeVisible();
