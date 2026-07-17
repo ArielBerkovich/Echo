@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
+import { z } from "zod";
 import { api } from "../api.js";
 import Modal from "./Modal.js";
 import { emojiNameSchema, normalizeEmojiNameInput } from "../lib/formSchemas.js";
@@ -10,7 +11,7 @@ export default function AddEmojiModal({ existing = [], onCreated, onClose }) {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [serverError, setServerError] = useState(null);
-  const nameSchema = useMemo(() => emojiNameSchema(existing), [existing]);
+  const formSchema = useMemo(() => z.object({ name: emojiNameSchema(existing) }), [existing]);
   const {
     register,
     handleSubmit,
@@ -19,7 +20,7 @@ export default function AddEmojiModal({ existing = [], onCreated, onClose }) {
     formState: { errors, isSubmitting },
   } = useForm({
     mode: "onChange",
-    resolver: zodResolver(nameSchema),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
     },

@@ -78,17 +78,25 @@ test("manages channels, members, visibility, and leaving", async ({ page }) => {
 
   await page.locator(".ch-name-btn").click();
   details = page.locator(".details-panel");
-  await details.getByRole("button", { name: "Add members" }).click();
-  const addMembers = details.locator(".channel-details-add-box");
-  await addMembers.getByPlaceholder("Search people to add").fill(fixture.bob.username);
-  await addMembers.getByRole("button", { name: "Add" }).click();
+  await details.getByRole("button", { name: "Add people" }).click();
+  const addPeople = page.getByTestId("add-people-modal");
+  await addPeople.getByPlaceholder("Search people").fill(fixture.bob.username);
+  await addPeople.getByTestId(`add-people-add-${fixture.bob.username}`).click();
+  await addPeople.getByTestId("add-people-done").click();
   await expect(details).toContainText(/Members ·\s*2/);
-  await details.getByRole("button", { name: "Done" }).click();
 
   await details.getByRole("button", { name: "Close channel details" }).click();
   await page.getByRole("button", { name: "Leave channel" }).click();
-  await page.getByRole("button", { name: "Leave", exact: true }).click();
-  await expect(page.getByText(channelName, { exact: true })).toHaveCount(0);
+  const managerModal = page.locator(".manager-modal");
+  await managerModal.getByTestId("leave-manager-search").fill(fixture.bob.username);
+  await managerModal.locator(".manager-candidate").click();
+  const leaveResponse = page.waitForResponse(
+    (response) => response.url().includes("/api/channels/") && response.url().endsWith("/leave") && response.request().method() === "POST"
+  );
+  await managerModal.getByRole("button", { name: "Transfer & leave" }).click();
+  await expect((await leaveResponse).ok()).toBeTruthy();
+  await page.reload();
+  await expect(page.getByTestId(`channel-row-${slug(channelName)}`)).toHaveCount(0);
   await expect(page.getByTestId("channel-row-general")).toBeVisible();
 });
 
@@ -150,7 +158,7 @@ test("edits and deletes own messages", async ({ page }) => {
   const message = page.locator(".message").filter({ hasText: body }).first();
   await message.hover();
   await message.getByTitle("More message actions").click();
-  await message.getByRole("menuitem", { name: "Edit message" }).click();
+  await page.getByRole("menuitem", { name: "Edit message" }).click();
   await message.locator(".msg-edit-input").fill(`${body} updated`);
   await message.locator(".msg-edit-actions .btn-primary").click();
   await expect(message).toContainText("updated");
@@ -158,7 +166,7 @@ test("edits and deletes own messages", async ({ page }) => {
 
   await message.hover();
   await message.getByTitle("More message actions").click();
-  await message.getByRole("menuitem", { name: "Delete message" }).click();
+  await page.getByRole("menuitem", { name: "Delete message" }).click();
   await page.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(page.locator(".message").filter({ hasText: `${body} updated` })).toHaveCount(0);
 });
@@ -174,7 +182,7 @@ test("toggles reactions and pins messages", async ({ page }) => {
   await expect(message.locator(".msg-actions button[title='Add reaction']")).toBeVisible();
 
   await message.getByTitle("More message actions").click();
-  await message.getByRole("menuitem", { name: "Pin message" }).click();
+  await page.getByRole("menuitem", { name: "Pin message" }).click();
   await page.getByRole("button", { name: "Pinned messages" }).click();
   const pinned = page.locator(".pinned-item").filter({ hasText: `API formatting test ${fixture.suffix}` });
   await expect(pinned).toBeVisible();
@@ -196,10 +204,13 @@ test("forwards a message and jumps back to the original", async ({ page }) => {
   await forwardModal
     .getByPlaceholder("Search channels and people")
     .fill(fixture.projectChannel.name);
-  await forwardModal.getByRole("button", { name: "Forward" }).click();
+  await forwardModal
+    .getByTestId(`forward-dest-channel-${fixture.projectChannel.id}`)
+    .click();
+  await forwardModal.getByTestId("forward-send-selected").click();
 
-  await page.getByRole("button", { name: `# ${fixture.projectChannel.name}` }).click();
-  await expect(page.getByText(`Forwarded from ${fixture.alice.displayName} in #general`)).toBeVisible();
+  await page.getByTestId(`channel-row-${slug(fixture.projectChannel.name)}`).click();
+  await expect(page.locator(".forwarded-message-card")).toContainText("in #general");
   await page.getByRole("button", { name: /View original/ }).click();
   await expect(page.getByText(`API formatting test ${fixture.suffix}`)).toBeVisible();
 });
@@ -518,7 +529,7 @@ test("pins a message from inside a thread", async ({ page }) => {
     .first();
   await reply.hover();
   await reply.getByTitle("More message actions").click();
-  await reply.getByRole("menuitem", { name: "Pin message" }).click();
+  await page.getByRole("menuitem", { name: "Pin message" }).click();
 
   await page.getByRole("button", { name: "Pinned messages" }).click();
   await expect(page.locator(".pinned-item").filter({ hasText: fixture.messages.threadReply.body })).toBeVisible();
@@ -547,14 +558,17 @@ test("opens the original thread when a thread reply is forwarded into the same c
   await forwardModal
     .getByPlaceholder("Search channels and people")
     .fill(fixture.projectChannel.name);
-  await forwardModal.getByRole("button", { name: "Forward" }).click();
+  await forwardModal
+    .getByTestId(`forward-dest-channel-${fixture.projectChannel.id}`)
+    .click();
+  await forwardModal.getByTestId("forward-send-selected").click();
 
   await page.getByTestId("thread-close").click();
 
   const forwarded = page
     .locator(".channel-main .messages .message")
     .filter({ hasText: fixture.messages.threadReply.body })
-    .filter({ hasText: "Forwarded from" })
+    .filter({ has: page.locator(".forwarded-message-card") })
     .last();
   await forwarded.hover();
   await forwarded.getByRole("button", { name: /View original/ }).click();
@@ -567,7 +581,7 @@ test("covers search keyboard navigation and filter autocomplete", async ({ page 
   await page.goto("/");
 
   const search = page.getByTestId("search-input");
-  await search.fill(fixture.projectChannel.name.slice(0, 4));
+  await search.fill(fixture.projectChannel.name);
   await page.getByTestId(`search-channel-${slug(fixture.projectChannel.name)}`).click();
   await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
 

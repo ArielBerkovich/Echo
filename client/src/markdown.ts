@@ -36,7 +36,8 @@ for (const [alias, id] of Object.entries(emojiData.aliases || {})) {
   if (native) shortcodeToNative.set(alias, native);
 }
 
-// Build a Markdown renderer that also turns @mentions into highlighted pills.
+// Build a Markdown renderer that also turns @mentions and public #channel tags
+// into highlighted, clickable pills.
 // `knownUsernames` is a Set of lowercase handles; `me` is the current handle.
 // Matches an emoji incl. ZWJ sequences and variation selectors.
 const EMOJI_RE = /\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic})*/gu;
@@ -84,8 +85,11 @@ function wrapEmojis(html) {
 }
 
 // `customEmojis` is an array of { name, url } for workspace custom emoji/GIFs.
-export function createRenderer(knownUsernames, me, customEmojis = []) {
+export function createRenderer(knownUsernames, me, customEmojis = [], channels = []) {
   const customMap = new Map(customEmojis.map((e) => [e.name.toLowerCase(), e.url]));
+  const publicChannels = new Set(
+    channels.filter((channel) => channel.type === "public").map((channel) => channel.name.toLowerCase())
+  );
   const marked = new Marked({
     breaks: true, // single newline => <br>
     gfm: true,
@@ -135,6 +139,22 @@ export function createRenderer(knownUsernames, me, customEmojis = []) {
         },
       },
       {
+        name: "channelTag",
+        level: "inline",
+        start(src) {
+          const i = src.indexOf("#");
+          return i < 0 ? undefined : i;
+        },
+        tokenizer(src) {
+          const m = /^#([a-z0-9_-]+)/i.exec(src);
+          if (!m || !publicChannels.has(m[1].toLowerCase())) return undefined;
+          return { type: "channelTag", raw: m[0], name: m[1].toLowerCase() };
+        },
+        renderer(token) {
+          return `<span class="channel-tag" data-channel-tag="${token.name}">#${token.name}</span>`;
+        },
+      },
+      {
         // ":shortcode:" -> the emoji character (skips unknown codes).
         name: "emoji",
         level: "inline",
@@ -171,8 +191,19 @@ export function createRenderer(knownUsernames, me, customEmojis = []) {
         "p", "br", "strong", "em", "del", "code", "pre", "blockquote",
         "ul", "ol", "li", "a", "span", "h1", "h2", "h3", "hr", "img",
       ],
-      ALLOWED_ATTR: ["class", "href", "title", "target", "rel", "src", "alt"],
+      ALLOWED_ATTR: ["class", "href", "title", "target", "rel", "src", "alt", "data-channel-tag"],
+      // Authenticated custom emoji are rendered through local blob URLs before
+      // this HTML is inserted into the chat. Keep those URLs while retaining
+      // a narrow allowlist for markdown links and image sources.
+      ALLOWED_URI_REGEXP: /^(?:(?:https?|blob):|\/|#)/i,
     });
-    return wrapEmojis(safe).trim();
+    // Markdown links should never replace the conversation tab. Add the
+    // attributes after sanitizing so every generated link gets the same safe
+    // browser behavior, regardless of which marked token path produced it.
+    const linksOpenSafely = safe.replace(
+      /<a\b(?![^>]*\btarget=)/gi,
+      '<a target="_blank" rel="noopener noreferrer"'
+    );
+    return wrapEmojis(linksOpenSafely).trim();
   };
 }

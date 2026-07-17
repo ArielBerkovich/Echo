@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { SearchIcon, UsersRoundIcon, XIcon } from "lucide-react";
 import Avatar from "./Avatar.js";
+import ConfirmDialog from "./ConfirmDialog.js";
 
-export default function MembersPanel({ channel, users = [], onOpenProfile, onAddPeople, onClose }) {
+export default function MembersPanel({ channel, users = [], onOpenProfile, onAddPeople, onRemoveMember, onClose }) {
   const [query, setQuery] = useState("");
+  const [removeTarget, setRemoveTarget] = useState(null);
+  const [removeError, setRemoveError] = useState(null);
+  const [removing, setRemoving] = useState(false);
 
   useEffect(() => {
     function onKeyDown(event) {
@@ -29,6 +33,31 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
       )
     : members;
   const isMember = (channel.members || []).includes(channel.currentUserId);
+  const isManager = (channel.managers || []).includes(channel.currentUserId);
+  const canRemoveMembers =
+    !!onRemoveMember &&
+    (channel.createdBy === channel.currentUserId || isManager) &&
+    channel.type !== "dm" &&
+    channel.name?.toLowerCase() !== "general";
+  const canAddPeople =
+    !!onAddPeople &&
+    isMember &&
+    channel.type !== "dm" &&
+    channel.name?.toLowerCase() !== "general";
+
+  async function confirmRemove() {
+    if (!removeTarget) return;
+    setRemoving(true);
+    setRemoveError(null);
+    try {
+      await onRemoveMember(removeTarget.id);
+      setRemoveTarget(null);
+    } catch (error) {
+      setRemoveError(error.message || "Could not remove member");
+    } finally {
+      setRemoving(false);
+    }
+  }
 
   return (
     <aside className="details-panel members-panel" role="dialog" aria-labelledby="members-panel-title">
@@ -58,11 +87,13 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
           />
         </div>
 
-        {onAddPeople && isMember && (
+        {canAddPeople && (
           <button type="button" className="members-panel-add" onClick={onAddPeople}>
             + Add people
           </button>
         )}
+
+        {removeError && <div className="error members-panel-error">{removeError}</div>}
 
         <div className="members-panel-list">
           {members.length === 0 ? (
@@ -81,14 +112,38 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
                   >
                     {member.displayName}
                     {member.id === channel.createdBy && <span className="channel-details-creator">Creator</span>}
+                    {member.id !== channel.createdBy && (channel.managers || []).includes(member.id) && (
+                      <span className="channel-details-creator">Manager</span>
+                    )}
                   </button>
                   <span className="channel-details-person-handle">@{member.username}</span>
                 </div>
+                {canRemoveMembers && member.id !== channel.currentUserId && (
+                  <button
+                    type="button"
+                    className="members-panel-remove"
+                    onClick={() => setRemoveTarget(member)}
+                    aria-label={`Remove ${member.displayName}`}
+                  >
+                    Remove
+                  </button>
+                )}
               </div>
             ))
           )}
         </div>
       </div>
+      {removeTarget && (
+        <ConfirmDialog
+          title={`Remove ${removeTarget.displayName}?`}
+          message={`They will lose access to #${channel.name}.`}
+          confirmLabel="Remove"
+          danger
+          closeDisabled={removing}
+          onConfirm={confirmRemove}
+          onCancel={() => !removing && setRemoveTarget(null)}
+        />
+      )}
     </aside>
   );
 }

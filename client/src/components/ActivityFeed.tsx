@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Trash2Icon } from "lucide-react";
 import { api } from "../api.js";
 import { getSocket } from "../socket.js";
 import { formatDateTime } from "../lib/time.js";
@@ -11,6 +12,15 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
   const [loading, setLoading] = useState(true);
 
   const renderMarkdown = useMarkdownRenderer(users, user.username, customEmojis);
+
+  async function dismiss(item) {
+    await api.deleteActivity(item.id);
+    setItems((previous) => {
+      const next = previous.filter((candidate) => candidate.id !== item.id);
+      onLoaded?.(next);
+      return next;
+    });
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -56,11 +66,19 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
           </div>
         ) : (
           items.map((it) => (
-            <button
+            <div
               key={it.id}
               className={`activity-item ${it.unread ? "unread" : ""}`}
               data-testid="activity-item"
+              role="button"
+              tabIndex={0}
               onClick={() => onJump(it)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onJump(it);
+                }
+              }}
             >
               {it.unread && <span className="activity-unread-dot" aria-label="Unread" />}
               <Avatar name={it.author?.displayName || "?"} src={it.author?.avatarUrl} size={36} />
@@ -84,7 +102,19 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
                   />
                 )}
               </div>
-            </button>
+              <button
+                type="button"
+                className="activity-dismiss"
+                title="Delete activity"
+                aria-label="Delete activity"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  dismiss(it).catch(() => {});
+                }}
+              >
+                <Trash2Icon size={15} strokeWidth={1.8} />
+              </button>
+            </div>
           ))
         )}
       </div>

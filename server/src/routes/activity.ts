@@ -1,8 +1,10 @@
 import { Router } from "express";
+import mongoose from "mongoose";
 import { Channel } from "../models/Channel.js";
 import { Message } from "../models/Message.js";
 import { Read } from "../models/Read.js";
 import { ActivityEvent } from "../models/ActivityEvent.js";
+import { User } from "../models/User.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 
 export const activityRouter = Router();
@@ -12,6 +14,26 @@ activityRouter.use(requireAuth);
 activityRouter.post("/read", async (req, res) => {
   req.user.activitySeenAt = new Date();
   await req.user.save();
+  res.json({ ok: true });
+});
+
+// DELETE /api/activity/:id — dismiss one activity item for the current user.
+// Stored events can be removed directly; message-derived activity is hidden
+// with a per-user dismissal so the source message remains untouched.
+activityRouter.delete("/:id", async (req, res) => {
+  const rawId = String(req.params.id || "");
+  const eventMatch = rawId.match(/^(?:rx|ca|cr)-([a-f\d]{24})$/i);
+  if (eventMatch) {
+    await ActivityEvent.deleteOne({ _id: eventMatch[1], recipient: req.user._id });
+    return res.json({ ok: true });
+  }
+  if (!mongoose.isValidObjectId(rawId)) {
+    return res.status(400).json({ error: "invalid activity id" });
+  }
+  await User.updateOne(
+    { _id: req.user._id },
+    { $addToSet: { dismissedActivityIds: `message:${rawId}` } }
+  );
   res.json({ ok: true });
 });
 
@@ -26,7 +48,7 @@ activityRouter.get("/", async (req, res) => {
   const since = new Date(Date.now() - ACTIVITY_WINDOW_DAYS * 24 * 60 * 60 * 1000);
 
   const visible = await Channel.find(
-    { $or: [{ type: "public" }, { members: me._id }] },
+    { isArchived: { $ne: true }, $or: [{ type: "public" }, { members: me._id }] },
     { _id: 1, name: 1, type: 1, members: 1 }
   );
   const chanMap = new Map(visible.map((c) => [c._id.toString(), c]));
@@ -34,12 +56,18 @@ activityRouter.get("/", async (req, res) => {
     .filter((c) => c.members.some((m) => m.equals(me._id)))
     .map((c) => c._id);
   const visibleChanIds = visible.map((c) => c._id);
+  const dismissedMessageIds = (me.dismissedActivityIds || [])
+    .filter((key) => key.startsWith("message:"))
+    .map((key) => key.slice("message:".length))
+    .filter((id) => mongoose.isValidObjectId(id));
 
   const docs = await Message.find({
     author: { $ne: me._id },
     createdAt: { $gte: since }, // rolling 30-day window
+    channel: { $in: visibleChanIds },
+    _id: { $nin: dismissedMessageIds },
     $or: [
-      { channel: { $in: visibleChanIds }, mentionedUserIds: me._id },
+      { mentionedUserIds: me._id },
       { channel: { $in: memberChanIds }, mentionsEveryone: true },
       { threadRootAuthor: me._id },
     ],
@@ -86,6 +114,14 @@ activityRouter.get("/", async (req, res) => {
   // Stored activity events: reactions to my messages and channels I was added
   // to. Reactions are unread until I open the Activity panel; channel-adds are
   // unread until I open the channel (like a mention).
+  // Remove stale persisted activity as soon as access is lost. Removal notices
+  // are intentionally kept so the user can still understand why the channel
+  // disappeared; they contain no channel message content.
+  await ActivityEvent.deleteMany({
+    recipient: me._id,
+    channel: { $nin: visibleChanIds },
+    type: { $ne: "channel_remove" },
+  }).catch(() => {});
   const events = await ActivityEvent.find({ recipient: me._id, createdAt: { $gte: since } })
     .sort({ createdAt: -1 })
     .limit(100)

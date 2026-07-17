@@ -19,7 +19,8 @@ import Message, { SystemMessage } from "./Message.js";
 import { LightboxImage } from "./Attachments.js";
 import Composer from "./Composer.js";
 import ConfirmDialog from "./ConfirmDialog.js";
-import { PersonAddIcon, LeaveIcon, PinIcon } from "./Icons.js";
+import Modal from "./Modal.js";
+import { LeaveIcon, PinIcon } from "./Icons.js";
 import { formatDayDivider, isDifferentDay } from "../lib/time.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
 import { StarIcon, UsersRoundIcon } from "lucide-react";
@@ -58,6 +59,7 @@ export default function ChannelView({
   onRememberScroll,
   onScrollToBottomTargetConsumed,
   onOpenProfile,
+  onOpenChannel,
   isVip = false,
   onToggleVip,
   jumpMessageId = null,
@@ -67,19 +69,23 @@ export default function ChannelView({
   onJumpConsumed,
   onAddCustomEmoji,
   onAddPeople,
+  onRemoveMember,
   onLeave,
+  onDeleteChannel,
   onChangeVisibility,
   onChannelUpdated,
   onJoin,
   onRead,
   onThreadRead,
   openThreadId = null,
+  openThreadJumpMessageId = null,
   onThreadOpened,
   mode = "light",
 }) {
   const [messages, setMessages] = useState([]);
   const [error, setError] = useState(null);
   const [thread, setThread] = useState(null); // open thread root message, or null
+  const [threadJumpTargetId, setThreadJumpTargetId] = useState(null);
   const [reactingTo, setReactingTo] = useState(null); // message id with the react picker open
   const [menuFor, setMenuFor] = useState(null); // message id with the "more" menu open
   const [actionsFor, setActionsFor] = useState(null); // message whose hover toolbar is shown (only one)
@@ -87,12 +93,14 @@ export default function ChannelView({
   const [forwarding, setForwarding] = useState(null); // message being forwarded, or null
   const [confirmDelete, setConfirmDelete] = useState(null); // message pending delete confirmation
   const [confirmLeave, setConfirmLeave] = useState(false); // leave-channel confirmation open?
+  const [leaveManagerId, setLeaveManagerId] = useState("");
+  const [leaveManagerQuery, setLeaveManagerQuery] = useState("");
   const [showDetails, setShowDetails] = useState(false); // channel details panel open?
   const [showMembers, setShowMembers] = useState(false); // members side panel open?
   const [showPinned, setShowPinned] = useState(false); // pinned messages panel open?
   const [pinnedMessages, setPinnedMessages] = useState([]); // cached pinned list
   const [firstUnreadId, setFirstUnreadId] = useState(null); // first message not yet seen
-  const [highlightId, setHighlightId] = useState(null); // message briefly highlighted after a jump
+  const [highlightId, setHighlightId] = useState(null); // message highlighted after a jump
   const [historyReady, setHistoryReady] = useState(false); // has the initial message payload resolved?
   const [typingUsers, setTypingUsers] = useState({}); // { userId: displayName } currently typing
   const [threadLightbox, setThreadLightbox] = useState(null); // { src, name } opened from thread
@@ -117,7 +125,7 @@ export default function ChannelView({
   const unreadScrollAppliedRef = useRef(false); // did we already anchor the current unread divider?
   const suppressGrowFollowRef = useRef(false); // while true, don't auto-follow "grew" renders to the bottom
 
-  const renderMarkdown = useMarkdownRenderer(users, user.username, customEmojis);
+  const renderMarkdown = useMarkdownRenderer(users, user.username, customEmojis, channels);
   const emojiMap = useMemo(
     () => new Map(customEmojis.map((e) => [e.name.toLowerCase(), e.url])),
     [customEmojis]
@@ -173,6 +181,7 @@ export default function ChannelView({
     setLoading(true);
     setError(null);
     setThread(null);
+    setThreadJumpTargetId(null);
     setMenuFor(null);
     setEditing(null);
     setForwarding(null);
@@ -181,6 +190,7 @@ export default function ChannelView({
     setShowPinned(false);
     setPinnedMessages([]);
     setFirstUnreadId(null);
+    setHighlightId(null);
     setHistoryReady(false);
     setTypingUsers({});
     initialScrolledRef.current = false;
@@ -195,6 +205,7 @@ export default function ChannelView({
     // pending jump for this channel is handled cleanly (and re-jumping to the
     // same message later isn't silently blocked by a leftover handled-id).
     jumpHandledRef.current = null;
+    jumpLoadingRef.current = null;
     jumpingRef.current = false;
     clearTimeout(jumpSettleRef.current);
     setLoadingOlder(false);
@@ -393,6 +404,7 @@ export default function ChannelView({
 
   function openPinnedPanel() {
     setThread(null);
+    setThreadJumpTargetId(null);
     setShowDetails(false);
     setShowMembers(false);
     setShowPinned(true);
@@ -402,18 +414,29 @@ export default function ChannelView({
   }
 
   // Returns a promise so the ForwardModal can show per-destination progress.
-  function forwardTo(dest) {
+  async function forwardTo(dest, options = {}) {
+    let targetId = dest.id;
+    let targetType = dest.kind === "dm" || dest.kind === "user" ? "dm" : "public";
+    if (dest.kind === "user") {
+      const { channel } = await api.openDm(dest.id);
+      targetId = channel.id;
+    }
+
     return new Promise((resolve, reject) => {
-      getSocket().emit("message:forward", { messageId: forwarding.id, channelId: dest.id }, (res) => {
+      getSocket().emit("message:forward", { messageId: forwarding.id, channelId: targetId, note: options.note || "" }, (res) => {
         if (res?.error) return reject(new Error(res.error));
         // Forwarding into a channel should land at the bottom so the new copy
         // is visible in context; a "view original" jump still uses the message
         // centering path elsewhere.
-        onJumpToMessage?.({
-          channelId: dest.id,
-          messageId: res?.message?.id,
-          channelType: dest.kind === "dm" ? "dm" : "public",
-        }, { focus: "bottom" });
+        // A newly-created DM is not in the current sidebar snapshot yet, so
+        // let the modal close without trying to navigate to a stale list item.
+        if (dest.kind !== "user") {
+          onJumpToMessage?.({
+            channelId: targetId,
+            messageId: res?.message?.id,
+            channelType: targetType,
+          }, { focus: "bottom" });
+        }
         resolve();
       });
     });
@@ -649,14 +672,20 @@ export default function ChannelView({
     };
   }, [firstUnreadId]);
 
-  // Scroll to + briefly highlight a jumped-to message (e.g. a forwarded
-  // message's original), once it's present in the loaded history.
-  const jumpHandledRef = useRef(null); // guards against re-running after we load a window
+  // Keep a jumped-to message highlighted until the user starts another action.
   useEffect(() => {
-    if (!jumpMessageId) return;
-    // Wait until the loaded history actually belongs to this channel — avoids
-    // a false "not found" while a cross-channel jump is still loading.
-    if (messages.length === 0 || messages[0]?.channelId !== channel.id) return;
+    if (!highlightId) return undefined;
+    const clearHighlight = () => setHighlightId(null);
+    document.addEventListener("pointerdown", clearHighlight);
+    return () => document.removeEventListener("pointerdown", clearHighlight);
+  }, [highlightId]);
+
+  // Scroll to + highlight a jumped-to message (e.g. a forwarded
+  // message's original), once it's present in the loaded history.
+  const jumpHandledRef = useRef(null); // guards against re-running after the target lands
+  const jumpLoadingRef = useRef(null); // guards against duplicate around-message requests
+  useEffect(() => {
+    if (!jumpMessageId || loading || !historyReady) return;
     if (jumpHandledRef.current === jumpMessageId) return;
 
     // While a jump is settling, suppress the scroll-up pagination: the pane
@@ -674,52 +703,61 @@ export default function ChannelView({
     const scrollToTarget = () => {
       const el = document.querySelector(`.messages [data-mid="${jumpMessageId}"]`);
       if (!el) return false;
-      el.scrollIntoView({ block: "center", behavior: "auto" });
+      const behavior = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+      el.scrollIntoView({ block: "center", behavior });
       setHighlightId(jumpMessageId);
-      setTimeout(() => setHighlightId(null), 3000);
       return true;
     };
 
+    if (!messages.some((message) => message.id === jumpMessageId)) {
+      if (jumpLoadingRef.current === jumpMessageId) return;
+      jumpLoadingRef.current = jumpMessageId;
+      jumpingRef.current = true;
+      api
+        .getMessages(channel.id, { around: jumpMessageId })
+        .then(({ messages: windowed }) => {
+          if (!windowed.some((message) => message.id === jumpMessageId)) {
+            setError("Couldn't locate that message.");
+            onJumpConsumed?.();
+            jumpingRef.current = false;
+            return;
+          }
+          setMessages(windowed);
+          onCacheMessages?.(channel.id, windowed);
+        })
+        .catch(() => {
+          setError("Couldn't load that message.");
+          onJumpConsumed?.();
+          jumpingRef.current = false;
+        });
+      return;
+    }
+
     jumpHandledRef.current = jumpMessageId;
+    jumpLoadingRef.current = null;
     jumpingRef.current = true;
     if (scrollToTarget()) {
       onJumpConsumed?.();
       settleJump();
-      return;
-    }
-
-    // Not in the loaded page (e.g. an old search hit) — fetch a window
-    // centered on the message, then scroll once it's rendered.
-    let cancelled = false;
-    api
-      .getMessages(channel.id, { around: jumpMessageId })
-      .then(({ messages: windowed }) => {
-        if (cancelled) return;
-        setMessages(windowed);
-        onCacheMessages?.(channel.id, windowed);
-        requestAnimationFrame(() =>
-          requestAnimationFrame(() => {
-            if (!scrollToTarget()) setError("Couldn't locate that message.");
-            onJumpConsumed?.();
-            settleJump();
-          })
-        );
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setError("Couldn't load that message.");
-        onJumpConsumed?.();
-        jumpingRef.current = false;
+    } else {
+      requestAnimationFrame(() => {
+        if (scrollToTarget()) {
+          onJumpConsumed?.();
+          settleJump();
+        } else {
+          setError("Couldn't locate that message.");
+          onJumpConsumed?.();
+          jumpingRef.current = false;
+        }
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [jumpMessageId, messages, channel.id]);
+    }
+  }, [jumpMessageId, messages, channel.id, loading, historyReady]);
 
   // Open a specific thread on request (e.g. clicking a thread reply in Activity).
   // Mounting ThreadPanel marks the thread read, clearing it from Activity.
   useEffect(() => {
     if (!openThreadId) return;
+    if (openThreadJumpMessageId) setThreadJumpTargetId(openThreadJumpMessageId);
     let cancelled = false;
     api
       .getThread(channel.id, openThreadId)
@@ -741,6 +779,19 @@ export default function ChannelView({
   const dmLabel = channel.dmName || dmAvatarName;
   const dmAvatar = dmUser?.avatarUrl || null;
   const isMember = isDm || (channel.members || []).includes(user.id);
+  const isCreator = !isDm && channel.createdBy === user.id;
+  const remainingMembers = (channel.members || []).filter((memberId) => memberId !== user.id);
+  const leaveCandidates = users
+    .filter((candidate) => remainingMembers.includes(candidate.id))
+    .sort((a, b) => a.displayName.localeCompare(b.displayName));
+  const managerQuery = leaveManagerQuery.trim().toLowerCase();
+  const visibleLeaveCandidates = leaveCandidates.filter(
+    (candidate) =>
+      !managerQuery ||
+      candidate.displayName.toLowerCase().includes(managerQuery) ||
+      candidate.username.toLowerCase().includes(managerQuery)
+  );
+  const canToggleVip = isDm && !!dmUser?.id && dmUser.id !== user.id;
   // #general is the default channel — everyone stays in it, so no Leave action.
   const isGeneral = (channel.name || "").toLowerCase() === "general";
 
@@ -775,8 +826,9 @@ export default function ChannelView({
               data-testid="dm-vip-toggle"
               aria-label={isVip ? `Remove ${dmLabel} from VIP` : `Mark ${dmLabel} as VIP`}
               aria-pressed={isVip}
-              title={isVip ? "Remove from VIP" : "Mark as VIP"}
-              onClick={() => dmUser?.id && onToggleVip?.(dmUser.id)}
+              title={canToggleVip ? (isVip ? "Remove from VIP" : "Mark as VIP") : "You can't mark yourself as VIP"}
+              disabled={!canToggleVip}
+              onClick={() => canToggleVip && onToggleVip?.(dmUser.id)}
             >
               <StarIcon size={20} strokeWidth={1.9} fill={isVip ? "currentColor" : "none"} />
             </button>
@@ -789,30 +841,22 @@ export default function ChannelView({
               className="ch-name ch-name-btn"
               data-testid="channel-title"
               title="View channel details"
-              onClick={() => { setThread(null); setShowMembers(false); setShowDetails(true); }}
+              onClick={() => { setThread(null); setThreadJumpTargetId(null); setShowMembers(false); setShowDetails(true); }}
             >
               {channel.type === "private" ? "🔒" : "#"} {channel.name}
             </button>
             {channel.topic && (
-              <button className="ch-topic" data-testid="channel-topic" title="View channel details" onClick={() => { setThread(null); setShowMembers(false); setShowDetails(true); }}>
+              <button className="ch-topic" data-testid="channel-topic" title="View channel details" onClick={() => { setThread(null); setThreadJumpTargetId(null); setShowMembers(false); setShowDetails(true); }}>
                 {channel.topic}
               </button>
             )}
             <div className="header-actions">
               <button className="header-action header-action-icon" data-testid="channel-pinned" onClick={openPinnedPanel} title="Pinned messages" aria-label="Pinned messages">
                 <PinIcon />
-                <span>Pinned</span>
               </button>
-              <button className="header-action header-action-icon" data-testid="channel-members" title="View members" onClick={() => { setThread(null); setShowDetails(false); setShowMembers(true); }}>
+              <button className="header-action header-action-icon" data-testid="channel-members" title="View members" onClick={() => { setThread(null); setThreadJumpTargetId(null); setShowDetails(false); setShowMembers(true); }}>
                 <UsersRoundIcon size={16} strokeWidth={1.8} />
-                <span>{channel.memberCount ?? 0} members</span>
               </button>
-              {!isGeneral && (
-                <button className="header-action header-action-icon" data-testid="channel-add-people" onClick={onAddPeople} title="Add people" aria-label="Add people">
-                  <PersonAddIcon />
-                  <span>Add people</span>
-                </button>
-              )}
               {channel.createdBy === user.id && channel.type === "private" && (
                 <button
                   className="header-action header-action-visibility"
@@ -905,6 +949,7 @@ export default function ChannelView({
                     saved={savedIds?.has(m.id)}
                     onToggleSave={() => onToggleSave?.(m.id)}
                     onOpenProfile={onOpenProfile}
+                    onOpenChannel={onOpenChannel}
                     showActions={actionsFor === m.id}
                     onActivate={() => {
                       setActionsFor(m.id);
@@ -914,7 +959,7 @@ export default function ChannelView({
                     menuOpen={menuFor === m.id}
                     onReact={(e) => openReact(m.id, e)}
                     onToggleReaction={(emoji) => toggleReaction(m.id, emoji)}
-                    onOpenThread={() => { setShowDetails(false); setThread(m); }}
+                    onOpenThread={() => { setShowDetails(false); setThreadJumpTargetId(null); setThread(m); }}
                     onForward={() => setForwarding(m)}
                     onJump={onJumpToMessage}
                     onToggleMenu={() => setMenuFor((id) => (id === m.id ? null : m.id))}
@@ -984,6 +1029,7 @@ export default function ChannelView({
           key={channel.id}
           channel={channel}
           users={users}
+          channels={channels}
           customEmojis={customEmojis}
           mode={mode}
           onAddCustomEmoji={onAddCustomEmoji}
@@ -1000,6 +1046,7 @@ export default function ChannelView({
             root={thread}
             user={user}
             users={users}
+            channels={channels}
             customEmojis={customEmojis}
             canJumpToForward={canJumpToForward}
             onJumpToMessage={onJumpToMessage}
@@ -1008,11 +1055,13 @@ export default function ChannelView({
             savedIds={savedIds}
             onToggleSave={onToggleSave}
             onOpenProfile={onOpenProfile}
+            onOpenChannel={onOpenChannel}
             onAddCustomEmoji={onAddCustomEmoji}
-            onClose={() => { setThread(null); setThreadLightbox(null); }}
+            onClose={() => { setThread(null); setThreadJumpTargetId(null); setThreadLightbox(null); }}
             onThreadRead={onThreadRead}
             onChannelUpdated={onChannelUpdated}
             onOpenLightbox={(src, name) => setThreadLightbox({ src, name })}
+            openThreadJumpMessageId={threadJumpTargetId || openThreadJumpMessageId}
           />
         </>
       ) : showMembers ? (
@@ -1021,6 +1070,7 @@ export default function ChannelView({
           users={users}
           onOpenProfile={onOpenProfile}
           onAddPeople={onAddPeople}
+          onRemoveMember={onRemoveMember}
           onClose={() => setShowMembers(false)}
         />
       ) : showPinned ? (
@@ -1035,7 +1085,9 @@ export default function ChannelView({
         <ChannelDetailsPanel
           channel={channel}
           users={users}
+          channels={channels}
           user={user}
+          onAddPeople={onAddPeople}
           onUpdated={(updated) => onChannelUpdated?.(updated)}
           onClose={() => setShowDetails(false)}
         />
@@ -1046,6 +1098,7 @@ export default function ChannelView({
           message={forwarding}
           channels={channels}
           dms={dms}
+          users={users}
           onForward={forwardTo}
           onClose={() => setForwarding(null)}
         />
@@ -1062,7 +1115,84 @@ export default function ChannelView({
         />
       )}
 
-      {confirmLeave && (
+      {confirmLeave && isCreator && remainingMembers.length > 0 ? (
+        <Modal title="Choose a manager before leaving" className="manager-modal" onClose={() => setConfirmLeave(false)}>
+          <p className="settings-hint manager-modal-hint">
+            Choose someone to manage members after you leave #{channel.name}.
+          </p>
+          <label className="manager-select-field">
+            <span>New manager</span>
+            <input
+              className="people-filter"
+              data-testid="leave-manager-search"
+              value={leaveManagerQuery}
+              onChange={(event) => setLeaveManagerQuery(event.target.value)}
+              placeholder="Search people"
+              autoFocus
+            />
+          </label>
+          <div className="people-list manager-picker-list">
+            {visibleLeaveCandidates.length === 0 ? (
+              <div className="people-empty">No matching members.</div>
+            ) : (
+              visibleLeaveCandidates.map((candidate) => {
+                const selected = leaveManagerId === candidate.id;
+                return (
+                  <div
+                    className={`person-row manager-candidate ${selected ? "selected" : ""}`}
+                    key={candidate.id}
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={selected}
+                    onClick={() => setLeaveManagerId(candidate.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setLeaveManagerId(candidate.id);
+                      }
+                    }}
+                  >
+                    <Avatar name={candidate.displayName} src={candidate.avatarUrl} size={32} />
+                    <div className="person-info">
+                      <div className="person-name">{candidate.displayName}</div>
+                      <div className="person-handle">@{candidate.username}</div>
+                    </div>
+                    {selected && (
+                      <span className="manager-selected-check" aria-label="Selected manager">✓</span>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+          <div className="modal-actions">
+            <button type="button" className="btn-secondary" onClick={() => setConfirmLeave(false)}>Cancel</button>
+            <button
+              type="button"
+              className="btn-danger"
+              disabled={!leaveManagerId}
+              onClick={() => {
+                setConfirmLeave(false);
+                onLeave(channel, leaveManagerId);
+              }}
+            >
+              Transfer & leave
+            </button>
+          </div>
+        </Modal>
+      ) : confirmLeave && isCreator && remainingMembers.length === 0 ? (
+        <ConfirmDialog
+          title={`Delete #${channel.name}?`}
+          message="This channel has no other members. Deleting it will archive its history."
+          confirmLabel="Delete channel"
+          danger
+          onConfirm={() => {
+            setConfirmLeave(false);
+            onDeleteChannel?.(channel);
+          }}
+          onCancel={() => setConfirmLeave(false)}
+        />
+      ) : confirmLeave && (
         <ConfirmDialog
           title={`Leave #${channel.name}?`}
           message="You'll stop receiving messages from this channel. You can rejoin later if it's public."

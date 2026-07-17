@@ -62,6 +62,7 @@ const messageSchema = new mongoose.Schema(
       type: {
         _id: false,
         authorName: String, // original author's display name
+        authorAvatarUrl: String, // snapshot of the original author's avatar
         channelName: String, // human-readable origin ("#general" or a DM name)
         channelId: String, // source channel id (for the "view original" link)
         messageId: String, // source message id (to jump to it)
@@ -70,6 +71,8 @@ const messageSchema = new mongoose.Schema(
       },
       default: null,
     },
+    // Optional note written alongside a forwarded message.
+    forwardNote: { type: String, default: "", trim: true, maxlength: 4000 },
     // Set when a channel member pins the message.
     pinnedAt: { type: Date, default: null },
     pinnedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
@@ -151,6 +154,9 @@ messageSchema.methods.toPublicJSON = function () {
     forwardedFrom: this.forwardedFrom
       ? {
           authorName: this.forwardedFrom.authorName,
+          ...(this.forwardedFrom.authorAvatarUrl
+            ? { authorAvatarUrl: this.forwardedFrom.authorAvatarUrl }
+            : {}),
           channelName: this.forwardedFrom.channelName,
           channelId: this.forwardedFrom.channelId || null,
           messageId: this.forwardedFrom.messageId || null,
@@ -158,6 +164,7 @@ messageSchema.methods.toPublicJSON = function () {
           channelType: this.forwardedFrom.channelType || null,
         }
       : null,
+    forwardNote: this.forwardNote || "",
     pinnedAt: this.pinnedAt || null,
     pinnedBy: this.pinnedBy ? this.pinnedBy.toString() : null,
     reactions: (this.reactions || []).map((r) => ({

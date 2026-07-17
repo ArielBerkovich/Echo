@@ -23,7 +23,7 @@ const SCHEDULE_PRESETS = [
 // Rich-text message composer: @mention autocomplete, a formatting toolbar,
 // emoji, and file attachments. Owns all of its own editor state — mount it with
 // a `key={channel.id}` so switching channels yields a fresh, empty composer.
-export default function Composer({ channel, parentId = null, users = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, mode = "light" }) {
+export default function Composer({ channel, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, mode = "light" }) {
   const isThread = !!parentId; // a thread reply composer (hides channel-level scheduling)
   const [empty, setEmpty] = useState(true); // editor blank? (controls placeholder)
   const [canSend, setCanSend] = useState(false); // has real text? (controls send)
@@ -101,6 +101,13 @@ export default function Composer({ channel, parentId = null, users = [], customE
   const suggestions = useMemo(() => {
     if (!mention) return [];
     const q = mention.query.toLowerCase();
+    if (mention.trigger === "#") {
+      return channels
+        .filter((item) => item.type === "public")
+        .filter((item) => item.name.toLowerCase().includes(q))
+        .slice(0, 8)
+        .map((item) => ({ ...item, channelTag: true }));
+    }
     // @everyone broadcast option (channels only, not DMs).
     const specials = !isDm
       ? [
@@ -111,7 +118,7 @@ export default function Composer({ channel, parentId = null, users = [], customE
       .filter((u) => u.username.toLowerCase().includes(q) || u.displayName.toLowerCase().includes(q))
       .slice(0, 6);
     return [...specials, ...people].slice(0, 8);
-  }, [mention, users, isDm]);
+  }, [mention, users, channels, isDm]);
 
   // ---- file attachments ----
   function readImageSize(file) {
@@ -221,7 +228,7 @@ export default function Composer({ channel, parentId = null, users = [], customE
     }
   }
 
-  // Find the "@mention" being typed in the caret's text node, if any.
+  // Find a person mention or public channel tag being typed at the caret.
   function getMentionContext() {
     const sel = window.getSelection();
     if (!sel || !sel.rangeCount) return null;
@@ -229,9 +236,14 @@ export default function Composer({ channel, parentId = null, users = [], customE
     const node = range.startContainer;
     if (node.nodeType !== Node.TEXT_NODE) return null;
     const before = node.textContent.slice(0, range.startOffset);
-    const m = before.match(/(?:^|\s)@([\w.-]*)$/);
+    const m = before.match(/(?:^|\s)([@#])([\w.-]*)$/);
     if (!m) return null;
-    return { query: m[1], node, start: range.startOffset - m[1].length - 1 };
+    return {
+      trigger: m[1],
+      query: m[2],
+      node,
+      start: range.startOffset - m[2].length - 1,
+    };
   }
 
   // Blank only when there's no text AND no structural content (lists, code,
@@ -273,9 +285,10 @@ export default function Composer({ channel, parentId = null, users = [], customE
     const full = node.textContent;
     const before = full.slice(0, start);
     const after = full.slice(start + 1 + query.length);
-    node.textContent = `${before}@${picked.username} ${after}`;
+    const value = mention.trigger === "#" ? `#${picked.name}` : `@${picked.username}`;
+    node.textContent = `${before}${value} ${after}`;
 
-    const pos = before.length + picked.username.length + 2;
+    const pos = before.length + value.length + 1;
     const range = document.createRange();
     range.setStart(node, Math.min(pos, node.textContent.length));
     range.collapse(true);
@@ -922,7 +935,7 @@ export default function Composer({ channel, parentId = null, users = [], customE
 
       {mention && suggestions.length > 0 && (
         <div className="mention-popup">
-          <div className="mention-popup-head">People</div>
+          <div className="mention-popup-head">{mention.trigger === "#" ? "Public channels" : "People"}</div>
           {suggestions.map((u, idx) => (
             <button
               type="button"
@@ -932,13 +945,15 @@ export default function Composer({ channel, parentId = null, users = [], customE
               onMouseDown={keepFocus}
               onClick={() => applyMention(u)}
             >
-              {u.broadcast ? (
+              {u.channelTag ? (
+                <span className="mention-channel-mark">#</span>
+              ) : u.broadcast ? (
                 <span className="mention-mega">📣</span>
               ) : (
                 <Avatar name={u.displayName} src={u.avatarUrl} size={26} />
               )}
-              <span className="mi-name">{u.broadcast ? `@${u.username}` : u.displayName}</span>
-              <span className="mi-handle">{u.broadcast ? u.displayName : `@${u.username}`}</span>
+              <span className="mi-name">{u.channelTag ? `#${u.name}` : u.broadcast ? `@${u.username}` : u.displayName}</span>
+              <span className="mi-handle">{u.channelTag ? "Public channel" : u.broadcast ? u.displayName : `@${u.username}`}</span>
             </button>
           ))}
         </div>

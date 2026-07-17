@@ -15,6 +15,7 @@ export default function ThreadPanel({
   root,
   user,
   users = [],
+  channels = [],
   customEmojis = [],
   canJumpToForward,
   onJumpToMessage,
@@ -23,6 +24,7 @@ export default function ThreadPanel({
   savedIds,
   onToggleSave,
   onOpenProfile,
+  onOpenChannel,
   onAddCustomEmoji,
   onClose,
   onThreadRead,
@@ -38,14 +40,16 @@ export default function ThreadPanel({
   const [editing, setEditing] = useState(null); // { id, draft } being edited
   const [confirmDelete, setConfirmDelete] = useState(null); // message pending delete confirmation
   const [error, setError] = useState(null);
+  const [highlightId, setHighlightId] = useState(null);
   const bottomRef = useRef(null);
   const bodyInnerRef = useRef(null); // content wrapper used to track height changes
   const stickToBottomRef = useRef(true); // should later layout changes keep us pinned?
   const initialScrolledRef = useRef(false); // has the panel been positioned yet?
   const prevReplyCountRef = useRef(0); // reply count last render
   const jumpHandledRef = useRef(null); // last reply id we attempted to reveal
+  const jumpTargetRef = useRef(openThreadJumpMessageId);
 
-  const renderMarkdown = useMarkdownRenderer(users, user.username, customEmojis);
+  const renderMarkdown = useMarkdownRenderer(users, user.username, customEmojis, channels);
   const emojiMap = useMemo(
     () => new Map(customEmojis.map((e) => [e.name.toLowerCase(), e.url])),
     [customEmojis]
@@ -59,7 +63,13 @@ export default function ThreadPanel({
     prevReplyCountRef.current = 0;
     stickToBottomRef.current = true;
     jumpHandledRef.current = null;
+    jumpTargetRef.current = openThreadJumpMessageId || null;
+    setHighlightId(null);
   }, [root.id]);
+
+  useEffect(() => {
+    if (openThreadJumpMessageId) jumpTargetRef.current = openThreadJumpMessageId;
+  }, [openThreadJumpMessageId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -131,13 +141,22 @@ export default function ThreadPanel({
   }, [replies]);
 
   useEffect(() => {
-    if (!openThreadJumpMessageId) return;
-    if (jumpHandledRef.current === openThreadJumpMessageId) return;
-    const target = document.querySelector(`.thread-body [data-mid="${openThreadJumpMessageId}"]`);
+    const targetId = openThreadJumpMessageId || jumpTargetRef.current;
+    if (!targetId) return;
+    if (jumpHandledRef.current === targetId) return;
+    const target = document.querySelector(`.thread-body [data-mid="${targetId}"]`);
     if (!target) return;
-    jumpHandledRef.current = openThreadJumpMessageId;
+    jumpHandledRef.current = targetId;
     target.scrollIntoView({ block: "center", behavior: "auto" });
+    setHighlightId(targetId);
   }, [openThreadJumpMessageId, replies, rootMsg.id]);
+
+  useEffect(() => {
+    if (!highlightId) return undefined;
+    const clearHighlight = () => setHighlightId(null);
+    document.addEventListener("pointerdown", clearHighlight);
+    return () => document.removeEventListener("pointerdown", clearHighlight);
+  }, [highlightId]);
 
   useEffect(() => {
     const el = bodyInnerRef.current;
@@ -220,6 +239,7 @@ export default function ThreadPanel({
               key={m.id}
               m={m}
               grouped={false}
+              highlighted={highlightId === m.id}
               currentUserId={user.id}
               usersById={usersById}
               renderMarkdown={renderMarkdown}
@@ -229,6 +249,7 @@ export default function ThreadPanel({
               saved={savedIds?.has(m.id)}
               onToggleSave={() => onToggleSave?.(m.id)}
               onOpenProfile={onOpenProfile}
+              onOpenChannel={onOpenChannel}
               showActions={actionsFor === m.id}
               onActivate={() => {
                 setActionsFor(m.id);
@@ -288,6 +309,7 @@ export default function ThreadPanel({
         channel={channel}
         parentId={root.id}
         users={users}
+        channels={channels}
         customEmojis={customEmojis}
         onAddCustomEmoji={onAddCustomEmoji}
         onError={setError}
