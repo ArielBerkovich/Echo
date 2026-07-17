@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useRef } from "react";
+import { useAuthUrls } from "../lib/useAuthUrl.js";
 
 // A people/group glyph for the avatar-emoji category tab — distinct from the
 // default smiley emoji-mart uses for custom categories.
@@ -20,8 +21,9 @@ const EmojiMartPicker = lazy(async () => {
 // Full emoji picker (all emojis + search) via emoji-mart, plus a "Custom"
 // category fed by workspace-uploaded emoji/GIFs. Closes on the toggle button or
 // any outside click — never on hover-out.
-export default function EmojiPicker({ onPick, onClose, customEmojis = [], onAddCustom }) {
+export default function EmojiPicker({ onPick, onClose, customEmojis = [], onAddCustom, mode = "light" }) {
   const ref = useRef(null);
+  const authUrls = useAuthUrls(customEmojis.map((e) => e.url));
 
   useEffect(() => {
     function onDown(e) {
@@ -43,10 +45,10 @@ export default function EmojiPicker({ onPick, onClose, customEmojis = [], onAddC
       name: e.name,
       // Split on -/_ so "branch"/"pull"/"merge" find :git-branch: etc.
       keywords: [e.name, ...e.name.split(/[-_]+/)],
-      skins: [{ src: e.url }],
+      skins: [{ src: authUrls.get(e.url) }],
     });
-    const uploaded = customEmojis.filter((e) => !e.isUser);
-    const people = customEmojis.filter((e) => e.isUser);
+    const uploaded = customEmojis.filter((e) => !e.isUser && authUrls.get(e.url));
+    const people = customEmojis.filter((e) => e.isUser && authUrls.get(e.url));
     const cats = [];
     if (uploaded.length) cats.push({ id: "custom", name: "Custom", emojis: uploaded.map(toEmoji) });
     // id must NOT be a built-in category id ("people" would inherit the smiley
@@ -54,25 +56,33 @@ export default function EmojiPicker({ onPick, onClose, customEmojis = [], onAddC
     if (people.length)
       cats.push({ id: "members", name: "People", icon: { svg: PEOPLE_ICON }, emojis: people.map(toEmoji) });
     return cats.length ? cats : undefined;
-  }, [customEmojis]);
+  }, [customEmojis, authUrls]);
 
   return (
     <div className="emoji-popup-wrap" ref={ref}>
       <Suspense fallback={<div className="emoji-picker-loading" aria-hidden="true" />}>
         <EmojiMartPicker
           // Remount when the custom set changes so new emoji appear immediately.
-          key={customEmojis.length}
+          key={`${customEmojis.length}:${[...authUrls.values()].join(",")}`}
           custom={custom}
-          theme="light"
-          previewPosition="bottom"
+          theme={mode === "dark" ? "dark" : "light"}
+          previewPosition="none"
           skinTonePosition="search"
           navPosition="top"
+          dynamicWidth
           // Native emoji return `.native`; custom ones return a `:shortcode:`.
           onEmojiSelect={(emoji) => onPick(emoji.native || `:${emoji.id}:`)}
         />
       </Suspense>
       {onAddCustom && (
-        <button type="button" className="emoji-add-custom" onMouseDown={(e) => e.preventDefault()} onClick={onAddCustom}>
+        <button
+          type="button"
+          className="emoji-add-custom"
+          // Keep the composer focused while the picker is open. Otherwise the
+          // contenteditable blur/focus cycle can swallow the modal-opening click.
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={onAddCustom}
+        >
           <span className="eac-plus">＋</span> Add custom emoji
         </button>
       )}

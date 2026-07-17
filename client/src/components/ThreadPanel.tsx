@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api.js";
 import { getSocket } from "../socket.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
-import EmojiPicker from "./EmojiPicker.js";
+import ReactionPicker from "./ReactionPicker.js";
 import Message from "./Message.js";
 import Composer from "./Composer.js";
 import ConfirmDialog from "./ConfirmDialog.js";
@@ -176,7 +176,7 @@ export default function ThreadPanel({
     setReactingTo(null);
   }
   function openReact(messageId, e) {
-    setReactingTo({ id: messageId, rect: e.currentTarget.getBoundingClientRect() });
+    setReactingTo({ id: messageId, rect: e.currentTarget.getBoundingClientRect(), expanded: false });
   }
   function startEdit(m) {
     setMenuFor(null);
@@ -230,7 +230,10 @@ export default function ThreadPanel({
               onToggleSave={() => onToggleSave?.(m.id)}
               onOpenProfile={onOpenProfile}
               showActions={actionsFor === m.id}
-              onActivate={() => setActionsFor(m.id)}
+              onActivate={() => {
+                setActionsFor(m.id);
+                setMenuFor((openId) => (openId && openId !== m.id ? null : openId));
+              }}
               editing={editing?.id === m.id ? editing : null}
               menuOpen={menuFor === m.id}
               onReact={(e) => openReact(m.id, e)}
@@ -256,16 +259,18 @@ export default function ThreadPanel({
       {reactingTo &&
         (() => {
           const r = reactingTo.rect;
-          const PW = 352;
-          const PH = 435;
+          const PW = Math.min(reactingTo.expanded ? 352 : 252, window.innerWidth - 16);
+          const PH = Math.min(reactingTo.expanded ? 435 : 132, window.innerHeight - 24);
           const left = Math.max(8, Math.min(r.left, window.innerWidth - PW - 8));
           let top = r.bottom + 6;
           if (top + PH > window.innerHeight) top = Math.max(8, r.top - PH - 6);
+          top = Math.max(8, Math.min(top, window.innerHeight - PH - 8));
           return (
             <div className="reaction-picker" style={{ top, left }}>
-              <EmojiPicker
+              <ReactionPicker
                 onPick={(value) => toggleReaction(reactingTo.id, value)}
                 onClose={() => setReactingTo(null)}
+                onExpand={() => setReactingTo((current) => current && { ...current, expanded: true })}
                 customEmojis={customEmojis}
                 onAddCustom={() => {
                   setReactingTo(null);

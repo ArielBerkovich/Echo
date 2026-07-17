@@ -12,10 +12,11 @@ export function formatTime(iso) {
   }
 }
 
-// "Jun 4, 3:42 PM" — used in the activity feed.
-export function formatDateTime(iso) {
+// "Jun 4, 3:42 PM" — used in activity/search feeds. Pass a locale when a
+// screen needs stable wording instead of the device's locale.
+export function formatDateTime(iso, locale = []) {
   try {
-    return new Date(iso).toLocaleString([], { month: "short", day: "numeric", ...TIME });
+    return new Date(iso).toLocaleString(locale, { month: "short", day: "numeric", ...TIME });
   } catch {
     return "";
   }

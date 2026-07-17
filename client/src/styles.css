@@ -2519,6 +2519,89 @@ html[data-mode="dark"] .sidebar {
 .details-body .cd-section:first-child {
   border-top: none;
 }
+.members-panel {
+  overflow: hidden;
+}
+.members-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.members-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+.members-panel-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 10px;
+  color: var(--active-fg);
+  background: var(--active-bg);
+}
+.members-panel-title h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 18px;
+}
+.members-panel-title > div > span {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.members-panel-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 16px 20px;
+}
+.members-panel-search {
+  margin-bottom: 12px;
+}
+.members-panel-add {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--accent);
+  font-weight: 700;
+  text-align: left;
+}
+.members-panel-add:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+.members-panel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.members-panel-person {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 4px;
+  border-radius: 9px;
+}
+.members-panel-person:hover {
+  background: var(--surface-2);
+}
+.members-panel-person-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
 .thread-header {
   display: flex;
   align-items: center;
@@ -2774,6 +2857,9 @@ html[data-mode="dark"] .day-divider-label {
   pointer-events: auto;
   transform: translateY(0);
 }
+.message.menu-open .msg-actions {
+  z-index: 81;
+}
 .msg-actions button {
   width: 30px;
   height: 30px;
@@ -2783,6 +2869,10 @@ html[data-mode="dark"] .day-divider-label {
   background: none;
   border-radius: 6px;
   color: var(--muted);
+}
+.msg-actions button svg {
+  width: 18px;
+  height: 18px;
 }
 .msg-actions button:hover,
 .msg-actions button.active {
@@ -2802,10 +2892,11 @@ html[data-mode="dark"] .day-divider-label {
 }
 .msg-menu {
   position: absolute;
-  top: 18px;
+  top: 42px;
   right: 18px;
-  z-index: 31;
+  z-index: 70;
   min-width: 180px;
+  max-width: calc(100vw - 16px);
   padding: 6px;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -2828,11 +2919,21 @@ html[data-mode="dark"] .day-divider-label {
 .msg-menu button:hover {
   background: var(--surface-2);
 }
+.msg-menu button.active {
+  color: var(--accent);
+}
 .msg-menu button.danger {
   color: var(--danger);
 }
 .msg-menu button.danger:hover {
   background: rgba(225, 29, 72, 0.1);
+}
+
+@media (max-width: 760px) {
+  .msg-menu {
+    right: 8px;
+    min-width: 190px;
+  }
 }
 
 /* "(edited)" marker after a message body */
@@ -3745,20 +3846,24 @@ html[data-mode="dark"] .day-divider-label {
   justify-content: center;
   gap: 6px;
   width: 100%;
-  margin-top: 6px;
-  padding: 9px;
-  border: 1px dashed var(--border);
-  border-radius: 10px;
-  background: var(--surface);
-  color: var(--blue-500);
+  box-sizing: border-box;
+  margin-top: 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--muted);
   font-size: 13px;
   font-weight: 600;
+  text-align: center;
 }
 .emoji-add-custom:hover {
-  background: var(--surface-2);
-  border-color: #cdd8e8;
+  background: var(--surface);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 .emoji-add-custom .eac-plus {
+  color: var(--accent);
   font-size: 15px;
 }
 
@@ -4289,6 +4394,60 @@ html[data-mode="dark"] .day-divider-label {
   position: static;
   animation: none;
 }
+.reaction-picker-quick {
+  width: min(252px, calc(100vw - 16px));
+  box-sizing: border-box;
+  padding: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  animation: fadeInUp 0.14s ease both;
+}
+.reaction-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 3px;
+}
+.reaction-quick-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  width: 100%;
+  height: 36px;
+  padding: 0;
+  background: none;
+  border-radius: 8px;
+  font-size: 21px;
+  line-height: 1;
+}
+.reaction-quick-button:hover,
+.reaction-quick-button:focus-visible {
+  background: var(--active-soft);
+}
+.reaction-more-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 30px;
+  margin-top: 5px;
+  border-top: 1px solid var(--border);
+  padding: 7px 4px 2px;
+  background: none;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+.reaction-more-button:hover {
+  color: var(--text);
+}
+.reaction-picker-full {
+  width: min(352px, calc(100vw - 16px));
+  max-width: calc(100vw - 16px);
+}
 
 /* Quick-reaction popover */
 .reaction-popover {
@@ -4588,6 +4747,9 @@ html[data-mode="dark"] .channel-header {
   background: var(--surface-2);
   box-shadow: inset 2px 0 0 var(--blue-400);
 }
+.message.menu-open {
+  z-index: 80;
+}
 .message.grouped {
   padding-top: 2px;
   padding-bottom: 2px;
@@ -4853,7 +5015,11 @@ html[data-mode="dark"] .channel-header {
 .composer-editor ul,
 .composer-editor ol {
   margin: 2px 0;
-  padding-left: 24px;
+  /* Match the editor's normal left anchor; keep the marker in the line so it
+     does not float at the far edge of an RTL text box. */
+  text-align: left;
+  list-style-position: inside;
+  padding-inline-start: 0;
 }
 .composer-editor li { margin: 1px 0; }
 .composer-editor blockquote {
@@ -5079,6 +5245,51 @@ html[data-mode="dark"] .channel-header {
   z-index: 20;
   animation: fadeInUp 0.16s ease both;
 }
+.emoji-popup-wrap em-emoji-picker {
+  width: min(352px, calc(100vw - 16px));
+  max-width: calc(100vw - 16px);
+  --rgb-background: 255, 255, 255;
+  --rgb-input: 248, 250, 252;
+  --rgb-color: 15, 31, 58;
+  --rgb-accent: 37, 99, 235;
+}
+
+/* Keep the picker usable when the composer is opened on a phone. The native
+   picker is 435px tall on desktop, which can extend beneath browser chrome or
+   the on-screen keyboard on a short viewport. */
+@media (max-width: 760px) {
+  .emoji-popup-wrap {
+    left: 8px;
+    right: 8px;
+  }
+  .emoji-popup-wrap em-emoji-picker {
+    width: 100%;
+    max-width: none;
+    height: min(435px, calc(100dvh - 24px));
+    max-height: calc(100dvh - 24px);
+  }
+  .reaction-picker .emoji-popup-wrap {
+    width: min(352px, calc(100vw - 16px));
+  }
+  .reaction-picker .emoji-popup-wrap em-emoji-picker {
+    width: 100%;
+  }
+}
+html[data-mode="dark"] .emoji-popup-wrap em-emoji-picker {
+  --rgb-background: 16, 23, 38;
+  --rgb-input: 26, 34, 54;
+  --rgb-color: 234, 239, 251;
+  --rgb-accent: 59, 130, 246;
+}
+html[data-theme="midnight"] .emoji-popup-wrap em-emoji-picker {
+  --rgb-accent: 139, 92, 246;
+}
+html[data-theme="dracula"] .emoji-popup-wrap em-emoji-picker {
+  --rgb-accent: 189, 147, 249;
+}
+html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
+  --rgb-accent: 194, 104, 42;
+}
 
 /* Add-people modal list */
 .people-list {
@@ -5254,7 +5465,12 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 .markdown ul,
 .markdown ol {
   margin: 4px 0;
-  padding-left: 22px;
+  /* Lists follow the content direction; the surrounding message body stays
+     left-aligned for mixed-language messages. */
+  text-align: start;
+  /* Logical indentation keeps markers beside Hebrew text on the right while
+     remaining correct for left-to-right messages. */
+  padding-inline-start: 22px;
 }
 .markdown li {
   margin: 2px 0;
@@ -5437,8 +5653,8 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   }
 }
 
-/* Narrow / mobile: rail + sidebar become an off-canvas drawer; the chat pane
-   takes the full width. A menu button reveals the drawer; a backdrop dismisses it. */
+/* Narrow / mobile: the sidebar is an off-canvas drawer and the rail becomes a
+   fixed bottom navigation bar. */
 @media (max-width: 760px) {
   .pane-search {
     display: flex;
@@ -5453,18 +5669,65 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     display: inline-flex;
   }
   .app-nav {
+    position: static;
+    display: block;
+    width: 0;
+    min-width: 0;
+    transform: none;
+    transition: none;
+    box-shadow: none;
+  }
+
+  .app-nav .sidebar {
     position: fixed;
     top: 0;
     left: 0;
     bottom: 0;
-    z-index: 60;
+    z-index: 61;
     transform: translateX(-100%);
     transition: transform 0.24s ease;
     box-shadow: var(--shadow-lg);
   }
-  .app.nav-open .app-nav {
+  .app.nav-open .app-nav .sidebar {
     transform: none;
   }
+
+  .app-nav .rail {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 70;
+    width: auto;
+    height: 64px;
+    box-sizing: border-box;
+    flex-direction: row;
+    justify-content: center;
+    padding: 4px 8px calc(4px + env(safe-area-inset-bottom));
+    border-top: 1px solid color-mix(in srgb, var(--on-navy-muted) 22%, transparent);
+    background: var(--rail-bg);
+  }
+  .app-nav .rail-top {
+    flex: 1;
+    flex-direction: row;
+    justify-content: space-around;
+    gap: 4px;
+    max-width: 420px;
+  }
+  .app-nav .rail-item {
+    width: auto;
+    min-width: 0;
+    flex: 1;
+    max-width: 88px;
+    gap: 1px;
+    padding: 3px 0;
+    font-size: 10px;
+  }
+  .app-nav .rail-icon {
+    width: 36px;
+    height: 32px;
+  }
+
   .app.nav-open .nav-backdrop {
     display: block;
     position: fixed;
@@ -5655,228 +5918,6 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 }
 .force-reset-card .link {
   align-self: center;
-}
-
-/* ============================================================
-   Fun emoji screen effects (confetti / rocket / floaters)
-   ============================================================ */
-.fx-layer {
-  position: fixed;
-  inset: 0;
-  z-index: 1500;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-/* Confetti rains down from the top with drift + spin. */
-.confetti-piece {
-  position: absolute;
-  top: -28px;
-  border-radius: 2px;
-  opacity: 0.95;
-  animation-name: fx-fall;
-  animation-timing-function: ease-in;
-  animation-fill-mode: both;
-}
-@keyframes fx-fall {
-  0% {
-    transform: translate(0, -10vh) rotate(0deg);
-    opacity: 1;
-  }
-  100% {
-    transform: translate(var(--drift), 112vh) rotate(var(--rot));
-    opacity: 0.9;
-  }
-}
-
-/* Hearts float up (with a little drift) while the glyph beats like a pulse. */
-.fx-hearts .heart-rise {
-  position: absolute;
-  bottom: -12vh;
-  animation-name: heart-rise;
-  animation-timing-function: ease-out;
-  animation-fill-mode: both;
-}
-@keyframes heart-rise {
-  0% {
-    transform: translate(0, 0);
-    opacity: 0;
-  }
-  12% {
-    opacity: 1;
-  }
-  100% {
-    transform: translate(var(--drift), -122vh);
-    opacity: 0;
-  }
-}
-.heart-beat {
-  display: inline-block;
-  animation-name: heart-beat;
-  animation-timing-function: ease-in-out;
-  animation-iteration-count: infinite;
-  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.25));
-}
-@keyframes heart-beat {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  30% {
-    transform: scale(1.3);
-  }
-  45% {
-    transform: scale(1.05);
-  }
-  60% {
-    transform: scale(1.22);
-  }
-}
-
-/* A single rocket streaks from the bottom-left to the top-right, trailing
-   a wake of dissipating smoke puffs that follow the same path. */
-.fx-rocket-wrap {
-  position: absolute;
-  inset: 0;
-}
-.fx-rocket {
-  position: absolute;
-  left: -70px;
-  bottom: -70px;
-  font-size: 56px;
-  line-height: 1;
-  filter: drop-shadow(0 0 12px rgba(255, 170, 70, 0.6));
-  animation: fx-rocket 1.6s cubic-bezier(0.45, 0, 0.5, 1) forwards;
-}
-.rocket-puff {
-  position: absolute;
-  left: -46px;
-  bottom: -46px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 230, 190, 0.85), rgba(180, 180, 190, 0.5) 55%, rgba(150, 150, 160, 0) 75%);
-  animation: rocket-puff 1.6s cubic-bezier(0.45, 0, 0.5, 1) both;
-}
-@keyframes rocket-puff {
-  0% {
-    transform: translate(0, 0) scale(0.4);
-    opacity: 0;
-  }
-  8% {
-    opacity: 0.6;
-  }
-  100% {
-    transform: translate(calc(116vw + var(--jitter)), -116vh) scale(2);
-    opacity: 0;
-  }
-}
-@keyframes fx-rocket {
-  0% {
-    transform: translate(0, 0) scale(0.8);
-    opacity: 0;
-  }
-  12% {
-    opacity: 1;
-  }
-  100% {
-    transform: translate(116vw, -116vh) scale(1.25);
-    opacity: 1;
-  }
-}
-
-/* Flames: a pulsing heat glow + flames that climb and flicker + rising embers. */
-.fx-fire {
-  position: absolute;
-  inset: 0;
-}
-.fire-glow {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 34vh;
-  background: linear-gradient(to top, rgba(255, 120, 25, 0.5), rgba(255, 80, 0, 0.18) 45%, transparent);
-  mix-blend-mode: screen;
-  animation: fire-glow 0.45s ease-in-out infinite alternate;
-}
-@keyframes fire-glow {
-  from {
-    opacity: 0.45;
-  }
-  to {
-    opacity: 0.85;
-  }
-}
-/* Outer wrapper climbs and fades; inner glyph flickers — separate transforms. */
-.flame-rise {
-  position: absolute;
-  bottom: -10vh;
-  animation-name: flame-climb;
-  animation-timing-function: ease-out;
-  animation-fill-mode: both;
-}
-@keyframes flame-climb {
-  0% {
-    transform: translateY(0);
-    opacity: 0;
-  }
-  12% {
-    opacity: 1;
-  }
-  85% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(-100vh);
-    opacity: 0;
-  }
-}
-.flame-flicker {
-  display: inline-block;
-  transform-origin: bottom center;
-  animation-name: flame-flicker;
-  animation-timing-function: ease-in-out;
-  animation-iteration-count: infinite;
-  filter: drop-shadow(0 0 8px rgba(255, 150, 40, 0.7));
-}
-@keyframes flame-flicker {
-  0% {
-    transform: scale(1, 1) rotate(-3deg);
-  }
-  25% {
-    transform: scale(0.9, 1.14) rotate(2deg);
-  }
-  50% {
-    transform: scale(1.08, 0.92) rotate(-2deg);
-  }
-  75% {
-    transform: scale(0.95, 1.1) rotate(3deg);
-  }
-  100% {
-    transform: scale(1, 1) rotate(-3deg);
-  }
-}
-.ember {
-  position: absolute;
-  bottom: 2vh;
-  border-radius: 50%;
-  background: radial-gradient(circle, #fff3b0 0%, #ffae34 45%, #ff5a1f 100%);
-  box-shadow: 0 0 8px 2px rgba(255, 140, 40, 0.7);
-  animation-name: ember-rise;
-  animation-timing-function: ease-out;
-  animation-fill-mode: both;
-}
-@keyframes ember-rise {
-  0% {
-    transform: translate(0, 0) scale(1);
-    opacity: 0;
-  }
-  15% {
-    opacity: 1;
-  }
-  100% {
-    transform: translate(var(--drift), -85vh) scale(0.3);
-    opacity: 0;
-  }
 }
 
 /* ============================================================
@@ -6522,15 +6563,19 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 /* Quick VIP action for the active direct-message conversation. */
 .dm-vip-toggle {
   flex: none;
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--surface-2);
   color: var(--muted);
+}
+.dm-vip-toggle svg {
+  width: 16px;
+  height: 16px;
 }
 .dm-vip-toggle:hover {
   color: var(--beam);
@@ -6540,8 +6585,8 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 .dm-vip-toggle.active {
   color: #fbbf24 !important;
   border-color: #fbbf24 !important;
-  background: rgba(251, 191, 36, 0.2) !important;
-  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2), 0 3px 10px rgba(251, 191, 36, 0.18);
+  background: rgba(251, 191, 36, 0.12) !important;
+  box-shadow: none;
 }
 .dm-vip-toggle.active svg {
   color: #fbbf24;
@@ -6551,14 +6596,14 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 
 @media (min-width: 1600px) {
   .dm-vip-toggle {
-    width: 38px;
-    height: 38px;
+    width: 30px;
+    height: 30px;
   }
 }
 
 @media (max-width: 420px) {
   .dm-vip-toggle {
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
   }
 }

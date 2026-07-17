@@ -23,7 +23,7 @@ const SCHEDULE_PRESETS = [
 // Rich-text message composer: @mention autocomplete, a formatting toolbar,
 // emoji, and file attachments. Owns all of its own editor state — mount it with
 // a `key={channel.id}` so switching channels yields a fresh, empty composer.
-export default function Composer({ channel, parentId = null, users = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated }) {
+export default function Composer({ channel, parentId = null, users = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, mode = "light" }) {
   const isThread = !!parentId; // a thread reply composer (hides channel-level scheduling)
   const [empty, setEmpty] = useState(true); // editor blank? (controls placeholder)
   const [canSend, setCanSend] = useState(false); // has real text? (controls send)
@@ -593,6 +593,10 @@ export default function Composer({ channel, parentId = null, users = [], customE
   function resetComposer() {
     pending.forEach(revokePreviewUrl);
     if (editorRef.current) editorRef.current.innerHTML = "";
+    // A new message must not inherit the previous message's toolbar state or
+    // caret context (especially list, bold, and italic formatting).
+    savedRange.current = null;
+    setActive({});
     setEmpty(true);
     setCanSend(false);
     setPending([]);
@@ -945,6 +949,7 @@ export default function Composer({ channel, parentId = null, users = [], customE
           onPick={insertEmoji}
           onClose={() => setEmojiOpen(false)}
           customEmojis={customEmojis}
+          mode={mode}
           onAddCustom={() => {
             setEmojiOpen(false);
             onAddCustomEmoji?.();

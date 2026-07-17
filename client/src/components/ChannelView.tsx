@@ -10,17 +10,17 @@ import {
 import { api } from "../api.js";
 import { getSocket } from "../socket.js";
 import Avatar from "./Avatar.js";
-import EmojiPicker from "./EmojiPicker.js";
+import ReactionPicker from "./ReactionPicker.js";
 import ThreadPanel from "./ThreadPanel.js";
 import ForwardModal from "./ForwardModal.js";
 import ChannelDetailsPanel from "./ChannelDetailsPanel.js";
+import MembersPanel from "./MembersPanel.js";
 import Message, { SystemMessage } from "./Message.js";
 import { LightboxImage } from "./Attachments.js";
 import Composer from "./Composer.js";
 import ConfirmDialog from "./ConfirmDialog.js";
 import { PersonAddIcon, LeaveIcon, PinIcon } from "./Icons.js";
 import { formatDayDivider, isDifferentDay } from "../lib/time.js";
-import { playEmojiEffectFor } from "../lib/emojiEffects.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
 import { StarIcon, UsersRoundIcon } from "lucide-react";
 
@@ -75,6 +75,7 @@ export default function ChannelView({
   onThreadRead,
   openThreadId = null,
   onThreadOpened,
+  mode = "light",
 }) {
   const [messages, setMessages] = useState([]);
   const [error, setError] = useState(null);
@@ -87,6 +88,7 @@ export default function ChannelView({
   const [confirmDelete, setConfirmDelete] = useState(null); // message pending delete confirmation
   const [confirmLeave, setConfirmLeave] = useState(false); // leave-channel confirmation open?
   const [showDetails, setShowDetails] = useState(false); // channel details panel open?
+  const [showMembers, setShowMembers] = useState(false); // members side panel open?
   const [showPinned, setShowPinned] = useState(false); // pinned messages panel open?
   const [pinnedMessages, setPinnedMessages] = useState([]); // cached pinned list
   const [firstUnreadId, setFirstUnreadId] = useState(null); // first message not yet seen
@@ -175,6 +177,7 @@ export default function ChannelView({
     setEditing(null);
     setForwarding(null);
     setShowDetails(false);
+    setShowMembers(false);
     setShowPinned(false);
     setPinnedMessages([]);
     setFirstUnreadId(null);
@@ -240,7 +243,6 @@ export default function ChannelView({
 
     const onNew = (msg) => {
       if (msg.channelId !== channel.id) return;
-      playEmojiEffectFor(msg.body); // fun screen effect for 🎉 / 🚀 / ❤️ / 🔥
       if (msg.parentId) {
         // A thread reply: bump the parent's reply count (don't add to main list).
         setMessages((prev) =>
@@ -350,7 +352,7 @@ export default function ChannelView({
 
   // Open the reaction picker anchored to the clicked button.
   function openReact(messageId, e) {
-    setReactingTo({ id: messageId, rect: e.currentTarget.getBoundingClientRect() });
+    setReactingTo({ id: messageId, rect: e.currentTarget.getBoundingClientRect(), expanded: false });
   }
 
   // ---- Edit / delete / forward ----
@@ -392,6 +394,7 @@ export default function ChannelView({
   function openPinnedPanel() {
     setThread(null);
     setShowDetails(false);
+    setShowMembers(false);
     setShowPinned(true);
     api.getPinned(channel.id)
       .then(({ messages }) => setPinnedMessages(messages))
@@ -786,12 +789,12 @@ export default function ChannelView({
               className="ch-name ch-name-btn"
               data-testid="channel-title"
               title="View channel details"
-              onClick={() => { setThread(null); setShowDetails(true); }}
+              onClick={() => { setThread(null); setShowMembers(false); setShowDetails(true); }}
             >
               {channel.type === "private" ? "🔒" : "#"} {channel.name}
             </button>
             {channel.topic && (
-              <button className="ch-topic" data-testid="channel-topic" title="View channel details" onClick={() => { setThread(null); setShowDetails(true); }}>
+              <button className="ch-topic" data-testid="channel-topic" title="View channel details" onClick={() => { setThread(null); setShowMembers(false); setShowDetails(true); }}>
                 {channel.topic}
               </button>
             )}
@@ -800,7 +803,7 @@ export default function ChannelView({
                 <PinIcon />
                 <span>Pinned</span>
               </button>
-              <button className="header-action header-action-icon" data-testid="channel-members" title="View members" onClick={() => { setThread(null); setShowDetails(true); }}>
+              <button className="header-action header-action-icon" data-testid="channel-members" title="View members" onClick={() => { setThread(null); setShowDetails(false); setShowMembers(true); }}>
                 <UsersRoundIcon size={16} strokeWidth={1.8} />
                 <span>{channel.memberCount ?? 0} members</span>
               </button>
@@ -903,7 +906,10 @@ export default function ChannelView({
                     onToggleSave={() => onToggleSave?.(m.id)}
                     onOpenProfile={onOpenProfile}
                     showActions={actionsFor === m.id}
-                    onActivate={() => setActionsFor(m.id)}
+                    onActivate={() => {
+                      setActionsFor(m.id);
+                      setMenuFor((openId) => (openId && openId !== m.id ? null : openId));
+                    }}
                     editing={editing?.id === m.id ? editing : null}
                     menuOpen={menuFor === m.id}
                     onReact={(e) => openReact(m.id, e)}
@@ -931,16 +937,18 @@ export default function ChannelView({
       {reactingTo &&
         (() => {
           const r = reactingTo.rect;
-          const PW = 352;
-          const PH = 435;
+          const PW = Math.min(reactingTo.expanded ? 352 : 252, window.innerWidth - 16);
+          const PH = Math.min(reactingTo.expanded ? 435 : 132, window.innerHeight - 24);
           let left = Math.max(8, Math.min(r.left, window.innerWidth - PW - 8));
           let top = r.bottom + 6;
           if (top + PH > window.innerHeight) top = Math.max(8, r.top - PH - 6);
+          top = Math.max(8, Math.min(top, window.innerHeight - PH - 8));
           return (
             <div className="reaction-picker" style={{ top, left }}>
-              <EmojiPicker
+              <ReactionPicker
                 onPick={(value) => toggleReaction(reactingTo.id, value)}
                 onClose={() => setReactingTo(null)}
+                onExpand={() => setReactingTo((current) => current && { ...current, expanded: true })}
                 customEmojis={customEmojis}
                 onAddCustom={() => {
                   setReactingTo(null);
@@ -977,6 +985,7 @@ export default function ChannelView({
           channel={channel}
           users={users}
           customEmojis={customEmojis}
+          mode={mode}
           onAddCustomEmoji={onAddCustomEmoji}
           onError={setError}
           onChannelUpdated={onChannelUpdated}
@@ -1006,6 +1015,14 @@ export default function ChannelView({
             onOpenLightbox={(src, name) => setThreadLightbox({ src, name })}
           />
         </>
+      ) : showMembers ? (
+        <MembersPanel
+          channel={{ ...channel, currentUserId: user.id }}
+          users={users}
+          onOpenProfile={onOpenProfile}
+          onAddPeople={onAddPeople}
+          onClose={() => setShowMembers(false)}
+        />
       ) : showPinned ? (
         <PinnedPanel
           messages={pinnedMessages}
