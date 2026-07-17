@@ -1,4 +1,5 @@
 import { flushSync } from "react-dom";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIcon, BookmarkIcon, HomeIcon, MessageSquareTextIcon } from "lucide-react";
 
 const icon = (Icon) => () => <Icon size={22} strokeWidth={2} />;
@@ -10,11 +11,25 @@ const ITEMS = [
 ];
 
 export default function LeftRail({ view, onSelect, badges = {} }) {
+  const [clicked, setClicked] = useState(null);
+  const clickTimerRef = useRef(null);
+
+  useEffect(() => () => clearTimeout(clickTimerRef.current), []);
+
+  function pulse(key) {
+    clearTimeout(clickTimerRef.current);
+    setClicked(key);
+    clickTimerRef.current = setTimeout(() => setClicked(null), 650);
+  }
+
   function selectFromEvent(e) {
     const item = e.target.closest?.('button[data-testid^="rail-"]');
     if (!item) return;
     const key = item.dataset.testid?.slice("rail-".length);
-    if (key) flushSync(() => onSelect(key));
+    if (key) flushSync(() => {
+      pulse(key);
+      onSelect(key);
+    });
   }
 
   return (
@@ -26,9 +41,12 @@ export default function LeftRail({ view, onSelect, badges = {} }) {
             <button
               key={key}
               type="button"
-              className={`rail-item ${view === key ? "active" : ""}`}
+              className={`rail-item rail-item-${key} ${view === key ? "active" : ""} ${clicked === key ? "clicked" : ""}`}
               data-testid={`rail-${key}`}
-              onClick={() => onSelect(key)}
+              onClick={() => {
+                pulse(key);
+                onSelect(key);
+              }}
             >
               <span className="rail-icon">
                 <Icon />

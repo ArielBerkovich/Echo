@@ -4,6 +4,10 @@ import { htmlToMarkdown } from "./htmlToMarkdown.js";
 import { markdownTextToComposerHtml } from "./markdownPaste.js";
 
 describe("markdownTextToComposerHtml", () => {
+  it("keeps a simple pasted message inline", () => {
+    assert.equal(markdownTextToComposerHtml("Plain message"), "Plain message");
+  });
+
   it("renders pasted markdown into composer HTML", () => {
     const html = markdownTextToComposerHtml([
       "# Heading 1",

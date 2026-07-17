@@ -9,9 +9,10 @@ const TRIGGERS = [
 ];
 
 function effectForText(text) {
-  if (!text) return null;
+  const emoji = String(text || "").trim();
+  if (!emoji) return null;
   for (const t of TRIGGERS) {
-    if (t.emojis.some((e) => text.includes(e))) return t.type;
+    if (t.emojis.includes(emoji)) return t.type;
   }
   return null;
 }

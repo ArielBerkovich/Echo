@@ -39,6 +39,7 @@ export default function Composer({ channel, parentId = null, users = [], customE
   const { gate, mentionModal } = useMentionGate({ channel, users, onChannelUpdated });
   const [sendMenuOpen, setSendMenuOpen] = useState(false); // "Send options" popover
   const [scheduleAt, setScheduleAt] = useState(null); // datetime-local string while the schedule dialog is open
+  const [scheduleError, setScheduleError] = useState(null); // validation/API error for the custom schedule dialog
   const [scheduledMsgs, setScheduledMsgs] = useState([]); // pending scheduled messages for this channel
   const [showScheduled, setShowScheduled] = useState(false); // manage-scheduled modal
   const [editingSched, setEditingSched] = useState(null); // { id, body, at } being edited
@@ -615,20 +616,25 @@ export default function Composer({ channel, parentId = null, users = [], customE
 
   // Schedule the composed message for a given Date (shared by the quick option
   // and the custom dialog).
-  async function scheduleFor(when) {
+  async function scheduleFor(when, inScheduleModal = false) {
+    const reportError = (message) => {
+      if (inScheduleModal) setScheduleError(message);
+      else onError?.(message);
+    };
     if (!(when instanceof Date) || Number.isNaN(when.getTime()) || when.getTime() <= Date.now()) {
-      onError?.("Pick a time in the future.");
+      reportError("Pick a time in the future.");
       return;
     }
     const el = editorRef.current;
     const hasText = !!el && el.textContent.trim() !== "";
     if (!hasText && pending.length === 0) {
-      onError?.("Write a message before scheduling it.");
+      reportError("Write a message before scheduling it.");
       return;
     }
     const body = hasText ? htmlToMarkdown(el.innerHTML || "") : "";
     try {
-      onError?.(null);
+      if (inScheduleModal) setScheduleError(null);
+      else onError?.(null);
       await api.scheduleMessage(channel.id, {
         body,
         attachments: pending,
@@ -638,12 +644,14 @@ export default function Composer({ channel, parentId = null, users = [], customE
       resetComposer();
       refreshScheduled();
     } catch (err) {
-      onError?.(err.message);
+      reportError(err.message);
     }
   }
 
   // Open the custom schedule dialog (default: one hour from now).
   function openSchedule() {
+    onError?.(null);
+    setScheduleError(null);
     setSendMenuOpen(false);
     const el = editorRef.current;
     const hasText = !!el && el.textContent.trim() !== "";
@@ -660,7 +668,7 @@ export default function Composer({ channel, parentId = null, users = [], customE
   }
 
   function confirmSchedule() {
-    scheduleFor(new Date(scheduleAt));
+    scheduleFor(new Date(scheduleAt), true);
   }
 
   async function cancelScheduled(id) {
@@ -673,6 +681,7 @@ export default function Composer({ channel, parentId = null, users = [], customE
   }
 
   function startSchedEdit(s) {
+    setScheduleError(null);
     setEditingSched({ id: s.id, body: s.body, at: toLocalInput(new Date(s.scheduledFor)) });
   }
 
@@ -680,16 +689,16 @@ export default function Composer({ channel, parentId = null, users = [], customE
     const { id, body, at } = editingSched;
     const when = new Date(at);
     if (Number.isNaN(when.getTime()) || when.getTime() <= Date.now()) {
-      onError?.("Pick a time in the future.");
+      setScheduleError("Pick a time in the future.");
       return;
     }
     const orig = scheduledMsgs.find((s) => s.id === id);
     if (!body.trim() && (orig?.attachments?.length || 0) === 0) {
-      onError?.("Message can't be empty.");
+      setScheduleError("Message can't be empty.");
       return;
     }
     try {
-      onError?.(null);
+      setScheduleError(null);
       const { scheduled } = await api.updateScheduled(id, {
         body: body.trim(),
         scheduledFor: when.toISOString(),
@@ -701,7 +710,7 @@ export default function Composer({ channel, parentId = null, users = [], customE
       );
       setEditingSched(null);
     } catch (err) {
-      onError?.(err.message);
+      setScheduleError(err.message);
     }
   }
 
@@ -741,11 +750,25 @@ export default function Composer({ channel, parentId = null, users = [], customE
       )}
 
       {scheduleAt !== null && (
-        <Modal title="Schedule message" className="schedule-modal" onClose={() => setScheduleAt(null)}>
+        <Modal
+          title="Schedule message"
+          className="schedule-modal"
+          onClose={() => {
+            setScheduleAt(null);
+            setScheduleError(null);
+          }}
+        >
           <p className="settings-hint">Choose when this message should be sent.</p>
           <div className="schedule-presets">
             {SCHEDULE_PRESETS.map(({ label, minutes }) => (
-              <button type="button" key={label} onClick={() => setScheduleAt(toLocalInput(new Date(Date.now() + minutes * 60 * 1000)))}>
+              <button
+                type="button"
+                key={label}
+                onClick={() => {
+                  setScheduleError(null);
+                  setScheduleAt(toLocalInput(new Date(Date.now() + minutes * 60 * 1000)));
+                }}
+              >
                 {label}
               </button>
             ))}
@@ -756,7 +779,10 @@ export default function Composer({ channel, parentId = null, users = [], customE
             step={1}
             value={scheduleAt}
             min={toLocalInput(new Date(Date.now() + 60 * 1000))}
-            onChange={(e) => setScheduleAt(e.target.value)}
+            onChange={(e) => {
+              setScheduleError(null);
+              setScheduleAt(e.target.value);
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
@@ -764,8 +790,16 @@ export default function Composer({ channel, parentId = null, users = [], customE
               }
             }}
           />
+          {scheduleError && <div className="error schedule-error" role="alert">{scheduleError}</div>}
           <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={() => setScheduleAt(null)}>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => {
+                setScheduleAt(null);
+                setScheduleError(null);
+              }}
+            >
               Cancel
             </button>
             <button type="button" className="btn-primary" onClick={confirmSchedule}>
@@ -776,7 +810,16 @@ export default function Composer({ channel, parentId = null, users = [], customE
       )}
 
       {showScheduled && (
-        <Modal title="Scheduled messages" className="scheduled-modal" onClose={() => setShowScheduled(false)}>
+        <Modal
+          title="Scheduled messages"
+          className="scheduled-modal"
+          onClose={() => {
+            setShowScheduled(false);
+            setEditingSched(null);
+            setScheduleError(null);
+          }}
+        >
+          {scheduleError && <div className="error schedule-error" role="alert">{scheduleError}</div>}
           {scheduledMsgs.length === 0 ? (
             <p className="settings-hint">No scheduled messages for this channel.</p>
           ) : (
@@ -986,6 +1029,11 @@ export default function Composer({ channel, parentId = null, users = [], customE
           onKeyUp={syncActive}
           onMouseUp={syncActive}
         />
+        {(active.ul || active.ol) && (
+          <div className="list-exit-hint" role="status">
+            Press Enter on an empty item to finish the list.
+          </div>
+        )}
       </div>
 
       <div className="composer-actions">

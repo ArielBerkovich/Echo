@@ -26,6 +26,7 @@ async function logSystem(channelId, authorId, body) {
     replyCount: 0,
     lastReplyAt: null,
   });
+  return msg;
 }
 
 // Attach an `unread` count (messages from others since the user last read) to
@@ -213,7 +214,21 @@ channelsRouter.delete("/:id/members/:userId", async (req, res) => {
   if (wasMember) {
     removeUserFromChannel(userId, channel._id.toString());
     emitToUser(userId, "channel:removed", { channelId: channel._id.toString() });
-    await logSystem(channel._id, userId, "was removed from the channel");
+    const systemMessage = await logSystem(channel._id, userId, "was removed from the channel");
+    // Removing someone is useful activity even though they can no longer see
+    // a private channel in the normal channel listing.
+    await ActivityEvent.updateOne(
+      { recipient: userId, actor: req.user._id, message: systemMessage._id, emoji: "" },
+      {
+        $set: {
+          type: "channel_remove",
+          channel: channel._id,
+          createdAt: new Date(),
+        },
+      },
+      { upsert: true }
+    ).catch(() => {});
+    emitToUser(userId, "activity:bump");
   }
   const updated = await Channel.findById(channel._id);
   res.json({ channel: updated.toPublicJSON() });

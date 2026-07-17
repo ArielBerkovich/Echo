@@ -1,5 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { requestAsToken, seedWorkspaceFixture, slug } from "./helpers.js";
+import { requestAsToken, seedWorkspaceFixture, slug, uploadAsToken, railItem } from "./helpers.js";
+
+const ONE_BY_ONE_PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAEklEQVR42mP8/5+hHgAHggJ/PFvdcQAAAABJRU5ErkJggg==",
+  "base64"
+);
 
 let fixture;
 
@@ -136,5 +141,50 @@ test("updates the typing indicator after a display name change", async ({ browse
     await alicePage.page.locator(".composer-editor").fill(typing);
 
     await expect(bobPage.page.locator(".typing-indicator")).toContainText(`${updatedName} is typing`);
+  });
+});
+
+test("updates an open channel message avatar after a profile picture change", async ({ browser, page }) => {
+  const { alice, bob } = fixture;
+  await withAliceBobPages(browser, async ({ bobPage }) => {
+    const message = bobPage.page.getByTestId(`message-${fixture.messages.formatted.id}`);
+    await expect(message.locator(".avatar-img")).toHaveCount(0);
+
+    const { attachments } = await uploadAsToken(page, alice.token, {
+      name: "live-avatar.png",
+      mimeType: "image/png",
+      buffer: ONE_BY_ONE_PNG,
+    });
+    await requestAsToken(page, alice.token, "/users/me", {
+      method: "PATCH",
+      body: { avatarKey: attachments[0].key },
+    });
+
+    await expect(message.locator(".avatar-img")).toBeVisible();
+    await expect(message.locator(".avatar-img")).toHaveAttribute("src", /^blob:/);
+  });
+});
+
+test("shows a private-channel removal in Activity", async ({ browser, page }) => {
+  const { alice, bob } = fixture;
+  const channelName = `private-removal-${Date.now()}`;
+  const created = await requestAsToken(page, alice.token, "/channels", {
+    method: "POST",
+    body: { name: channelName, type: "private" },
+  });
+  await requestAsToken(page, alice.token, `/channels/${created.channel.id}/members`, {
+    method: "POST",
+    body: { userId: bob.id },
+  });
+
+  await withAliceBobPages(browser, async ({ bobPage }) => {
+    await requestAsToken(page, alice.token, `/channels/${created.channel.id}/members/${bob.id}`, {
+      method: "DELETE",
+    });
+
+    await railItem(bobPage.page, "activity").click();
+    await expect(
+      bobPage.page.getByTestId("activity-item").filter({ hasText: `removed you from #${channelName}` })
+    ).toBeVisible();
   });
 });
