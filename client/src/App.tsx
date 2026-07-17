@@ -20,14 +20,15 @@ import Walkthrough from "./components/Walkthrough.js";
 import ForcePasswordReset from "./components/ForcePasswordReset.js";
 import EmojiEffects from "./components/EmojiEffects.js";
 import { readJson, readString, writeJson, writeString } from "./lib/storage.js";
+import { notifyPermission, notifySupported, requestNotifyPermission, setNotifyPref } from "./lib/notify.js";
 
 // Colour themes — each is an *identity* (accent + sidebar/rail) that works in
 // both light and dark mode. The light/dark mode is chosen independently, so the
 // quick toggle darkens/lightens whatever theme you're on. `swatch` = [sidebar,
 // surface, accent] preview for the picker.
 const THEMES = [
-  { id: "nord", label: "Nord", swatch: ["#3b4252", "#2e3440", "#88c0d0"] },
-  { id: "aubergine", label: "Aubergine", swatch: ["#34173a", "#fbf7f9", "#c66a2d"] },
+  { id: "nord", label: "Nord", swatch: ["#3b4252", "#2b303b", "#81a1c1"] },
+  { id: "aubergine", label: "Aubergine", swatch: ["#4a154b", "#ffffff", "#7a3e83"] },
   { id: "azure", label: "Azure", swatch: ["#0d2444", "#08182e", "#2f81f7"] },
   { id: "midnight", label: "Midnight", swatch: ["#1a1640", "#15132e", "#8b5cf6"] },
   { id: "dracula", label: "Dracula", swatch: ["#343746", "#282a36", "#bd93f9"] },
@@ -743,6 +744,19 @@ export default function App() {
     setShowTour(false);
     setUser((prev) => (prev ? { ...prev, onboarded: true } : prev));
     api.markOnboarded().catch(() => {});
+
+    // The tour's final/skip button is a user gesture, so request permission
+    // here while browsers still allow the prompt. A grant also opts the user
+    // into notifications by default; blocked or unsupported browsers stay
+    // unchanged and can be revisited from Settings.
+    if (!notifySupported()) return;
+    if (notifyPermission() === "granted") {
+      setNotifyPref(true);
+    } else if (notifyPermission() === "default") {
+      requestNotifyPermission()
+        .then((permission) => permission === "granted" && setNotifyPref(true))
+        .catch(() => {});
+    }
   }
 
   // Emoji set used everywhere: workspace-uploaded emoji plus an avatar emoji
