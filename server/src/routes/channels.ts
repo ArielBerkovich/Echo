@@ -180,7 +180,15 @@ channelsRouter.post("/:id/members", async (req, res) => {
     await logSystem(channel._id, target._id, "joined the channel");
   }
   const updated = await Channel.findById(channel._id);
-  res.json({ channel: updated.toPublicJSON() });
+  const updatedPayload = updated.toPublicJSON();
+  // Keep open channel headers in sync when membership changes elsewhere. The
+  // existing members are already in this room; the newly added user was
+  // joined above before this event is emitted.
+  emitToChannel(channel._id.toString(), "channel:update", { channel: updatedPayload });
+  if (channel.type === "public") {
+    emitAll("channel:catalog", { channel: updatedPayload });
+  }
+  res.json({ channel: updatedPayload });
 });
 
 // DELETE /api/channels/:id/members/:userId — the channel creator removes

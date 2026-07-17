@@ -37,7 +37,7 @@ const STEPS = [
     title: "Your account & password",
     body: "Open Settings here to edit your profile or change your password. Forget your password and can't sign in? Your workspace admin can issue you a one-time password to set a new one.",
     target: ".sidebar-footer",
-    placement: "right",
+    placement: "top",
   },
   {
     title: "You're all set! 🎉",
@@ -88,6 +88,17 @@ function cardStyle(rect, placement) {
   return style;
 }
 
+function spotlightStyle(rect) {
+  const top = Math.max(2, rect.top - 6);
+  const left = Math.max(2, rect.left - 6);
+  return {
+    top,
+    left,
+    width: Math.max(0, Math.min(rect.width + 12, window.innerWidth - left - 2)),
+    height: Math.max(0, Math.min(rect.height + 12, window.innerHeight - top - 2)),
+  };
+}
+
 export default function Walkthrough({ onClose }) {
   const [i, setI] = useState(0);
   const [rect, setRect] = useState(null);
@@ -122,12 +133,7 @@ export default function Walkthrough({ onClose }) {
       {rect && (
         <div
           className="wt-spotlight"
-          style={{
-            top: rect.top - 6,
-            left: rect.left - 6,
-            width: rect.width + 12,
-            height: rect.height + 12,
-          }}
+          style={spotlightStyle(rect)}
         />
       )}
       <div className="wt-card" style={cardStyle(rect, step.placement)}>

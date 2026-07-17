@@ -22,7 +22,7 @@ import { PersonAddIcon, LeaveIcon, PinIcon } from "./Icons.js";
 import { formatDayDivider, isDifferentDay } from "../lib/time.js";
 import { playEmojiEffectFor } from "../lib/emojiEffects.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
-import { StarIcon } from "lucide-react";
+import { StarIcon, UsersRoundIcon } from "lucide-react";
 
 // Shimmering placeholder rows shown while a channel's history loads, so the
 // pane has structure immediately instead of flashing an empty "say hello" state.
@@ -751,7 +751,7 @@ export default function ChannelView({
       ? `${typingNames[0]} and ${typingNames.length - 1} others are typing…`
       : "";
 
-  const hasSidePanel = !!thread || showPinned || showDetails;
+  const hasSidePanel = !!thread || showPinned;
 
   return (
     <main className={`channel-view ${hasSidePanel ? "has-side-panel" : ""}`}>
@@ -795,13 +795,14 @@ export default function ChannelView({
                 {channel.topic}
               </button>
             )}
-            <button className="ch-meta ch-meta-btn" data-testid="channel-members" title="View members" onClick={() => { setThread(null); setShowDetails(true); }}>
-              {channel.memberCount ?? 0} members
-            </button>
             <div className="header-actions">
               <button className="header-action header-action-icon" data-testid="channel-pinned" onClick={openPinnedPanel} title="Pinned messages" aria-label="Pinned messages">
                 <PinIcon />
                 <span>Pinned</span>
+              </button>
+              <button className="header-action header-action-icon" data-testid="channel-members" title="View members" onClick={() => { setThread(null); setShowDetails(true); }}>
+                <UsersRoundIcon size={16} strokeWidth={1.8} />
+                <span>{channel.memberCount ?? 0} members</span>
               </button>
               {!isGeneral && (
                 <button className="header-action header-action-icon" data-testid="channel-add-people" onClick={onAddPeople} title="Add people" aria-label="Add people">
