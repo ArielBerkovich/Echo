@@ -2,10 +2,11 @@ import { useState } from "react";
 import { api } from "../api.js";
 import { formatDate } from "../lib/time.js";
 import Avatar from "./Avatar.js";
+import { FileTextIcon, InfoIcon, UsersRoundIcon } from "lucide-react";
 
 // Right-hand channel details panel: topic, description, creator, and members.
 // Members can edit the topic & description inline.
-export default function ChannelDetailsPanel({ channel, users = [], user, onUpdated, onClose }) {
+export default function ChannelDetailsPanel({ channel, users = [], user, mode = "channel", onUpdated, onOpenProfile, onClose }) {
   const [error, setError] = useState(null);
   const [memberQuery, setMemberQuery] = useState("");
 
@@ -17,6 +18,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
     .sort((a, b) => a.displayName.localeCompare(b.displayName));
   const isMember = (channel.members || []).includes(user.id);
   const isCreator = channel.createdBy === user.id;
+  const membersOnly = mode === "members";
 
   async function removeMember(m) {
     setError(null);
@@ -48,42 +50,72 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
 
   return (
     <aside className="details-panel">
-      <header className="thread-header">
-        <span className="thread-title">
-          {channel.type === "private" ? "🔒" : "#"} {channel.name}
-        </span>
-        <button className="thread-close" onClick={onClose} aria-label="Close details">✕</button>
+      <header className="thread-header panel-shell-header">
+        <div className="panel-heading">
+          <span className="panel-heading-icon">
+            {membersOnly ? <UsersRoundIcon size={18} strokeWidth={1.9} /> : <InfoIcon size={18} strokeWidth={1.9} />}
+          </span>
+          <div>
+            <span className="thread-title">{membersOnly ? "Members" : "Channel details"}</span>
+            <span className="panel-subtitle">
+              {membersOnly
+                ? `${channel.memberCount ?? members.length} people in ${channel.name}`
+                : `${channel.type === "private" ? "Private" : "Public"} · ${channel.name}`}
+            </span>
+          </div>
+        </div>
+        <button className="thread-close" onClick={onClose} aria-label={membersOnly ? "Close members" : "Close details"}>✕</button>
       </header>
 
       <div className="details-body">
-        <EditableField
-          label="Topic"
-          value={channel.topic}
-          placeholder="Add a topic"
-          editable={isMember}
-          onSave={(v) => save({ topic: v })}
-        />
+        {!membersOnly && (
+          <>
+            <EditableField
+              label="Topic"
+              icon={<FileTextIcon size={14} strokeWidth={1.9} />}
+              value={channel.topic}
+              placeholder="Add a topic"
+              editable={isMember}
+              onSave={(v) => save({ topic: v })}
+            />
 
-        <EditableField
-          label="Description"
-          value={channel.description}
-          placeholder="Add a description"
-          editable={isMember}
-          multiline
-          onSave={(v) => save({ description: v })}
-        />
+            <EditableField
+              label="Description"
+              value={channel.description}
+              placeholder="Add a description"
+              editable={isMember}
+              multiline
+              icon={<FileTextIcon size={14} strokeWidth={1.9} />}
+              onSave={(v) => save({ description: v })}
+            />
+
+            <div className="cd-section">
+              <div className="cd-label">Created by</div>
+              <div className="cd-created">
+                <Avatar name={creator?.displayName || "Echo"} src={creator?.avatarUrl} size={28} />
+                {creator ? (
+                  <button
+                    type="button"
+                    className="cd-created-name cd-profile-name"
+                    onClick={() => onOpenProfile?.(creator.id)}
+                    title={`View ${creator.displayName}'s profile`}
+                  >
+                    {creator.displayName}
+                  </button>
+                ) : (
+                  <span className="cd-created-name">Echo</span>
+                )}
+                {channel.createdAt && <span className="cd-created-on">on {formatDate(channel.createdAt)}</span>}
+              </div>
+            </div>
+          </>
+        )}
 
         <div className="cd-section">
-          <div className="cd-label">Created by</div>
-          <div className="cd-created">
-            <Avatar name={creator?.displayName || "Echo"} src={creator?.avatarUrl} size={28} />
-            <span className="cd-created-name">{creator?.displayName || "Echo"}</span>
-            {channel.createdAt && <span className="cd-created-on">on {formatDate(channel.createdAt)}</span>}
+          <div className="cd-label cd-members-label">
+            <UsersRoundIcon size={14} strokeWidth={1.9} aria-hidden="true" />
+            <span>Members · {channel.memberCount ?? members.length}</span>
           </div>
-        </div>
-
-        <div className="cd-section">
-          <div className="cd-label">Members · {channel.memberCount ?? members.length}</div>
           {members.length > 8 && (
             <input
               className="settings-input cd-member-search"
@@ -102,10 +134,15 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
                 <div className="cd-member" key={m.id}>
                   <Avatar name={m.displayName} src={m.avatarUrl} size={32} />
                   <div className="cd-member-info">
-                    <span className="cd-member-name">
+                    <button
+                      type="button"
+                      className="cd-member-name cd-profile-name"
+                      onClick={() => onOpenProfile?.(m.id)}
+                      title={`View ${m.displayName}'s profile`}
+                    >
                       {m.displayName}
                       {m.id === channel.createdBy && <span className="cd-creator-badge">creator</span>}
-                    </span>
+                    </button>
                     <span className="cd-member-handle">@{m.username}</span>
                   </div>
                   {isCreator && m.id !== channel.createdBy && (
@@ -131,7 +168,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
 }
 
 // A read/edit field. Members see an "Edit" affordance; others see read-only text.
-function EditableField({ label, value, placeholder, editable, multiline, onSave }) {
+function EditableField({ label, value, placeholder, editable, multiline, onSave, icon }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value || "");
   const [saving, setSaving] = useState(false);
@@ -160,7 +197,7 @@ function EditableField({ label, value, placeholder, editable, multiline, onSave 
   return (
     <div className="cd-section">
       <div className="cd-label-row">
-        <span className="cd-label">{label}</span>
+        <span className="cd-label"><span className="cd-label-icon">{icon}</span>{label}</span>
         {editable && !editing && (
           <button type="button" className="cd-edit" onClick={start}>
             {value ? "Edit" : "Add"}
