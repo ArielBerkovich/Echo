@@ -18,7 +18,6 @@ import AddEmojiModal from "./components/AddEmojiModal.js";
 import SettingsModal from "./components/SettingsModal.js";
 import Walkthrough from "./components/Walkthrough.js";
 import ForcePasswordReset from "./components/ForcePasswordReset.js";
-import EmojiEffects from "./components/EmojiEffects.js";
 import { readJson, readString, writeJson, writeString } from "./lib/storage.js";
 import { notifyPermission, notifySupported, requestNotifyPermission, setNotifyPref } from "./lib/notify.js";
 
@@ -594,6 +593,7 @@ export default function App() {
   // replies aren't in the main timeline, so we jump to their thread root.
   function handleSearchJump(result) {
     markNavDuringRestore();
+    searchRef.current?.clear();
     handleJumpToMessage({
       channelId: result.channelId,
       messageId: result.parentId || result.id,
@@ -798,13 +798,12 @@ export default function App() {
             onSelect={(v) => {
                 markNavDuringRestore();
                 clearNavigationTarget();
+                searchRef.current?.clear();
                 setSearchQuery(null);
                 setView(v);
-                // Keep the complete navigation unit open after every rail
-                // selection on mobile. Home and DMs expose their sidebar;
-                // Activity and Saved still intentionally render rail-only
-                // content inside the drawer.
-                setNavOpen(window.matchMedia("(max-width: 760px)").matches);
+                // The mobile rail is always available at the bottom; selecting
+                // a destination should dismiss the separate sidebar drawer.
+                setNavOpen(false);
             }}
             user={user}
             badges={{
@@ -833,7 +832,6 @@ export default function App() {
               }}
               onPrefetchChannel={prefetchMessages}
               onNewChannel={() => setShowCreate(true)}
-              onNewMessage={() => searchRef.current?.focus()}
               onOpenDm={(u, isSelf) => {
                 markNavDuringRestore();
                 handleOpenDm(u, isSelf);
@@ -882,7 +880,10 @@ export default function App() {
             <SearchResults
               query={searchQuery}
               onJump={handleSearchJump}
-              onClose={() => setSearchQuery(null)}
+              onClose={() => {
+                searchRef.current?.clear();
+                setSearchQuery(null);
+              }}
             />
           ) : view === "activity" ? (
             <ActivityFeed
@@ -914,6 +915,7 @@ export default function App() {
               channels={channels}
               dms={dms}
               customEmojis={emojis}
+              mode={mode}
               savedIds={savedIds}
               onToggleSave={handleToggleSave}
               onCacheMessages={cacheMessages}
@@ -1003,7 +1005,6 @@ export default function App() {
         />
       )}
       {showTour && <Walkthrough onClose={finishTour} />}
-      <EmojiEffects />
       {toast && (
         <div className="toast" role="status" onClick={() => setToast(null)}>
           {toast}

@@ -6,12 +6,19 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   server: {
+    // Bind to all interfaces so phones and other devices on the LAN can
+    // reach the Vite dev server.
+    host: true,
     // The default is for a locally running API. When the API remains in
     // Docker, set ECHO_API_PROXY_TARGET to the server container's address.
     proxy: {
-      "/api": process.env.ECHO_API_PROXY_TARGET || "http://localhost:4000",
+      "/api": {
+        target: process.env.ECHO_API_PROXY_TARGET || "http://localhost:4000",
+        changeOrigin: true,
+      },
       "/socket.io": {
         target: process.env.ECHO_API_PROXY_TARGET || "http://localhost:4000",
+        changeOrigin: true,
         ws: true,
       },
     },

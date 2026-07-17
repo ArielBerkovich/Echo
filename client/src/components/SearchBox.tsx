@@ -93,6 +93,12 @@ const SearchBox = forwardRef(function SearchBox(
       inputRef.current?.focus();
       setOpen(true);
     },
+    clear() {
+      setOpen(false);
+      setQuery("");
+      setCaret(0);
+      setActiveIdx(0);
+    },
   }));
 
   useEffect(() => {

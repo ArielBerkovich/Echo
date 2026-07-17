@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getToken } from "../api.js";
 
 // Fetches a /api/files/* URL with the Authorization header and returns a
@@ -33,4 +33,43 @@ export function useAuthUrl(url) {
   }, [url]);
 
   return blobUrl;
+}
+
+// Resolve several protected file URLs together (used by custom emoji lists).
+// Keeping this here makes all authenticated media follow the same lifecycle
+// and ensures blob URLs are revoked when the source set changes.
+export function useAuthUrls(urls = []) {
+  const sourceUrls = useMemo(() => urls.filter(Boolean), [urls]);
+  const signature = sourceUrls.join("\u0000");
+  const [resolved, setResolved] = useState(() => new Map());
+
+  useEffect(() => {
+    let cancelled = false;
+    const objectUrls = [];
+    const token = getToken();
+
+    Promise.all(
+      sourceUrls.map(async (url) => {
+        if (!url.startsWith("/api/files/")) return [url, url];
+        const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+        if (!res.ok) throw new Error("fetch failed");
+        const objectUrl = URL.createObjectURL(await res.blob());
+        objectUrls.push(objectUrl);
+        return [url, objectUrl];
+      })
+    )
+      .then((entries) => {
+        if (!cancelled) setResolved(new Map(entries));
+      })
+      .catch(() => {
+        if (!cancelled) setResolved(new Map());
+      });
+
+    return () => {
+      cancelled = true;
+      objectUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [signature]);
+
+  return resolved;
 }

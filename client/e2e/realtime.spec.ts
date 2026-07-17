@@ -75,15 +75,22 @@ test("bumps unread counts and reflects live edits and deletes", async ({ browser
     const liveMessage = alicePage.page.locator(".message").filter({ hasText: liveBody }).first();
     await expect(liveMessage).toBeVisible();
 
-    await bobPage.page.locator(".message").filter({ hasText: liveBody }).hover();
-    await bobPage.page.locator(".message").filter({ hasText: liveBody }).getByTitle("Edit message").click();
+    const liveMessageOnBob = bobPage.page.locator(".message").filter({ hasText: liveBody }).first();
+    await liveMessageOnBob.hover();
+    await liveMessageOnBob.getByTitle("More message actions").click();
+    await liveMessageOnBob.getByRole("menuitem", { name: "Edit message" }).click();
     await bobPage.page.locator(".msg-edit-input").fill(`${liveBody} updated`);
     await bobPage.page.locator(".msg-edit-actions .btn-primary").click();
     await expect(liveMessage).toContainText("updated");
     await expect(liveMessage).toContainText("(edited)");
 
-    await bobPage.page.locator(".message").filter({ hasText: `${liveBody} updated` }).hover();
-    await bobPage.page.locator(".message").filter({ hasText: `${liveBody} updated` }).getByTitle("Delete message").click();
+    const updatedLiveMessageOnBob = bobPage.page
+      .locator(".message")
+      .filter({ hasText: `${liveBody} updated` })
+      .first();
+    await updatedLiveMessageOnBob.hover();
+    await updatedLiveMessageOnBob.getByTitle("More message actions").click();
+    await updatedLiveMessageOnBob.getByRole("menuitem", { name: "Delete message" }).click();
     await bobPage.page.getByRole("button", { name: "Delete", exact: true }).click();
     await expect(alicePage.page.locator(".message").filter({ hasText: `${liveBody} updated` })).toHaveCount(0);
   });

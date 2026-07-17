@@ -77,10 +77,10 @@ test("copies the raw markdown body from a message", async ({ page }) => {
   await expect(message).toBeVisible();
 
   await message.hover();
-  await message.getByTitle("Copy message").click();
+  await message.getByTitle("More message actions").click();
+  await message.getByRole("menuitem", { name: "Copy message" }).click();
 
   await expect.poll(() => page.evaluate(() => window.__copiedText)).toBe(fixture.messages.formatted.body);
-  await expect(message.getByTitle("Copied message")).toBeVisible();
 });
 
 test("pastes markdown into the composer as formatted content", async ({ page }) => {
@@ -118,7 +118,8 @@ test("keeps copy-and-paste message paragraphs flush with the composer", async ({
     .filter({ hasText: fixture.messages.searchHit.body })
     .first();
   await source.hover();
-  await source.getByTitle("Copy message").click();
+  await source.getByTitle("More message actions").click();
+  await source.getByRole("menuitem", { name: "Copy message" }).click();
 
   const editor = page.locator(".composer-editor");
   await editor.focus();

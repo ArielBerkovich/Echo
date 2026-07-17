@@ -3,7 +3,8 @@ import {
   Copy,
   ExternalLink,
   LogOut,
-  MessageCircleReply,
+  MessagesSquare,
+  MoreHorizontal,
   Pencil,
   Pin,
   SmilePlus,
@@ -15,7 +16,8 @@ const icon = (Icon, size = 16) => () => <Icon size={size} strokeWidth={1.7} />;
 
 export const PencilIcon = icon(Pencil, 15);
 export const TrashIcon = icon(Trash2, 15);
-export const ReplyIcon = icon(MessageCircleReply);
+export const ReplyIcon = icon(MessagesSquare);
+export const MoreIcon = icon(MoreHorizontal);
 export const EmojiAddIcon = icon(SmilePlus);
 export const ShareIcon = icon(ExternalLink);
 export const CopyIcon = icon(Copy);

@@ -1,9 +1,10 @@
 import { memo, useState } from "react";
 import Avatar from "./Avatar.js";
 import Attachments from "./Attachments.js";
+import { useAuthUrl } from "../lib/useAuthUrl.js";
 import { formatTime } from "../lib/time.js";
 import {
-  ShareIcon, EmojiAddIcon, ReplyIcon, BookmarkIcon, PencilIcon, TrashIcon, PinIcon, CopyIcon,
+  ShareIcon, EmojiAddIcon, ReplyIcon, BookmarkIcon, PencilIcon, TrashIcon, PinIcon, CopyIcon, MoreIcon,
 } from "./Icons.js";
 
 // A "joined the channel" / "created this channel" log line.
@@ -97,7 +98,7 @@ function Message({
 
   return (
     <div
-      className={`message ${grouped ? "grouped" : ""} ${highlighted ? "flash" : ""}`}
+      className={`message ${grouped ? "grouped" : ""} ${highlighted ? "flash" : ""} ${menuOpen ? "menu-open" : ""}`}
       data-mid={m.id}
       data-testid={`message-${mid}`}
       onMouseEnter={onActivate}
@@ -239,40 +240,56 @@ function Message({
           <ShareIcon />
         </button>
         <button
-          data-testid={`message-${mid}-copy`}
-          title={copied ? "Copied message" : "Copy message"}
-          className={copied ? "copied-active" : ""}
-          onClick={copyMessage}
+          type="button"
+          data-testid={`message-${mid}-more`}
+          title="More message actions"
+          aria-label="More message actions"
+          aria-expanded={menuOpen}
+          className={menuOpen ? "active" : ""}
+          onClick={onToggleMenu}
         >
-          <CopyIcon />
+          <MoreIcon />
         </button>
-        <button
-          data-testid={`message-${mid}-pin`}
-          title={m.pinnedAt ? "Unpin message" : "Pin message"}
-          className={m.pinnedAt ? "pin-active" : ""}
-          onClick={onTogglePin}
-        >
-          <PinIcon />
-        </button>
-        <button
-          data-testid={`message-${mid}-save`}
-          title={saved ? "Remove from saved" : "Save for later"}
-          className={saved ? "saved-active" : ""}
-          onClick={onToggleSave}
-        >
-          <BookmarkIcon />
-        </button>
-        {isMine && (
-          <>
-            <button data-testid={`message-${mid}-edit`} title="Edit message" onClick={onStartEdit}>
-              <PencilIcon />
-            </button>
-            <button data-testid={`message-${mid}-delete`} title="Delete message" className="act-danger" onClick={onDelete}>
-              <TrashIcon />
-            </button>
-          </>
-        )}
       </div>
+
+      {menuOpen && (
+        <>
+          <div className="menu-overlay" onMouseDown={onCloseMenu} />
+          <div className="msg-menu" role="menu" aria-label="Message actions" onMouseDown={(e) => e.stopPropagation()}>
+            <button type="button" role="menuitem" data-testid={`message-${mid}-copy`} onClick={() => { copyMessage(); onCloseMenu(); }}>
+              <CopyIcon /> Copy message
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              data-testid={`message-${mid}-save`}
+              className={saved ? "active" : ""}
+              onClick={() => { onToggleSave(); onCloseMenu(); }}
+            >
+              <BookmarkIcon /> {saved ? "Remove from saved" : "Save for later"}
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              data-testid={`message-${mid}-pin`}
+              className={m.pinnedAt ? "active" : ""}
+              onClick={() => { onTogglePin(); onCloseMenu(); }}
+            >
+              <PinIcon /> {m.pinnedAt ? "Unpin message" : "Pin message"}
+            </button>
+            {isMine && (
+              <>
+                <button type="button" role="menuitem" data-testid={`message-${mid}-edit`} onClick={() => { onStartEdit(); onCloseMenu(); }}>
+                  <PencilIcon /> Edit message
+                </button>
+                <button type="button" role="menuitem" data-testid={`message-${mid}-delete`} className="danger" onClick={() => { onDelete(); onCloseMenu(); }}>
+                  <TrashIcon /> Delete message
+                </button>
+              </>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -320,6 +337,7 @@ function reactionTip(userIds = [], usersById, currentUserId, emoji) {
 function EmojiValue({ value, emojiMap }) {
   const m = /^:([a-z0-9_+.-]+):$/i.exec(value || "");
   const url = m && emojiMap.get(m[1].toLowerCase());
-  if (url) return <img className="custom-emoji" src={url} alt={value} />;
+  const authUrl = useAuthUrl(url);
+  if (authUrl) return <img className="custom-emoji" src={authUrl} alt={value} />;
   return value;
 }
