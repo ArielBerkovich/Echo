@@ -53,9 +53,10 @@ test("manages channels, members, visibility, and leaving", async ({ page }) => {
   await page.getByRole("button", { name: "Create channel" }).click();
   const createModal = page.locator(".modal").filter({ hasText: "Create a channel" });
   await createModal.getByPlaceholder("e.g. marketing").fill(channelName);
+  await createModal.getByText("Private", { exact: true }).click();
   await createModal.getByRole("button", { name: "Create" }).click();
 
-  await expect(page.getByText(channelName, { exact: true })).toBeVisible();
+  await expect(page.getByTestId(`channel-row-${slug(channelName)}`)).toBeVisible();
 
   await page.locator(".ch-name-btn").click();
   const details = page.locator(".details-panel");
@@ -68,8 +69,11 @@ test("manages channels, members, visibility, and leaving", async ({ page }) => {
   await expect(details).toContainText("Planning room");
   await expect(details).toContainText("Internal planning");
 
-  await page.getByRole("button", { name: "Make private" }).click();
   await expect(page.getByRole("button", { name: "Make public" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Make private" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Make public" }).click();
+  await expect(page.getByRole("button", { name: "Make public" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Make private" })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Add people" }).click();
   const addPeople = page.locator(".modal").filter({ hasText: "Add people to" });
@@ -81,7 +85,7 @@ test("manages channels, members, visibility, and leaving", async ({ page }) => {
   await page.getByRole("button", { name: "Leave channel" }).click();
   await page.getByRole("button", { name: "Leave", exact: true }).click();
   await expect(page.getByText(channelName, { exact: true })).toHaveCount(0);
-  await expect(page.getByText("#general", { exact: true })).toBeVisible();
+  await expect(page.getByTestId("channel-row-general")).toBeVisible();
 });
 
 test("joins a public channel, hides a channel locally, and restores it from search", async ({ page }) => {

@@ -1168,36 +1168,97 @@ input:focus {
   flex-direction: column;
   gap: 10px;
 }
+.visibility-field {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
 .visibility-option {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 12px;
   border: 1.5px solid var(--border);
-  border-radius: 12px;
-  padding: 12px 14px;
+  border-radius: 14px;
+  padding: 14px;
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  position: relative;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
 .visibility-option:hover {
   background: var(--surface-2);
 }
+.visibility-option:focus-within {
+  outline: 3px solid rgba(59, 130, 246, 0.28);
+  outline-offset: 2px;
+}
 .visibility-option.selected {
-  border-color: var(--blue-500);
-  background: rgba(37, 99, 235, 0.05);
+  border-color: var(--active-bg);
+  background: linear-gradient(135deg, var(--active-bg-2), var(--active-bg));
+  color: var(--active-fg);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--active-bg) 28%, transparent);
 }
 .visibility-option input {
-  width: auto;
-  margin-top: 3px;
-  accent-color: var(--blue-500);
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.vo-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+.vo-icon.public {
+  color: var(--blue-600, #2563eb);
+  background: rgba(37, 99, 235, 0.12);
+}
+.vo-icon.private {
+  color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.12);
+}
+.visibility-option.selected .vo-icon {
+  color: var(--active-fg);
+  background: color-mix(in srgb, var(--active-fg) 16%, transparent);
+}
+.vo-body {
+  min-width: 0;
+  padding-top: 1px;
 }
 .vo-title {
   font-weight: 700;
   font-size: 14.5px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
 }
 .vo-desc {
   font-size: 12.5px;
-  color: var(--muted);
+  color: var(--text);
+  opacity: 0.72;
   margin-top: 2px;
+}
+.visibility-option.selected .vo-desc {
+  color: var(--active-fg);
+  opacity: 0.9;
+}
+.vo-check {
+  color: var(--active-bg);
+  background: var(--active-fg);
+  border-radius: 999px;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  opacity: 0;
+  flex: 0 0 auto;
+}
+.visibility-option.selected .vo-check {
+  opacity: 1;
 }
 .modal-actions {
   display: flex;
@@ -1208,6 +1269,7 @@ input:focus {
 .btn-secondary {
   padding: 11px 18px;
   border-radius: 10px;
+  border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--text);
   font-size: 14px;
@@ -1219,6 +1281,10 @@ input:focus {
 }
 .modal-actions .btn-primary {
   padding: 11px 20px;
+}
+.modal-actions .btn-primary,
+.modal-actions .btn-secondary {
+  min-height: 44px;
 }
 .btn-danger {
   padding: 11px 20px;
