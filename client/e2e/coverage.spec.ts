@@ -108,7 +108,7 @@ test("joins a public channel, hides a channel locally, and restores it from sear
   await expect(page.getByRole("button", { name: "Leave channel" })).toHaveCount(0);
 });
 
-test("opens a profile, marks VIP, starts a DM, hides it, and can message self", async ({ page }) => {
+test("opens a profile, marks VIP, starts a DM, protects it, and can message self", async ({ page }) => {
   await page.goto("/");
 
   const bobMention = page
@@ -125,8 +125,7 @@ test("opens a profile, marks VIP, starts a DM, hides it, and can message self", 
   await page.getByRole("button", { name: "DMs" }).click();
   const vipDm = page.locator(".dm-rich").filter({ hasText: fixture.bob.displayName });
   await expect(vipDm).toBeVisible();
-  await vipDm.getByTitle("Remove conversation").click();
-  await expect(vipDm).toHaveCount(0);
+  await expect(vipDm.getByTitle("Remove conversation")).toHaveCount(0);
 
   await page.locator(".dm-self .dm-open").click();
   await expect(page.locator(".channel-header .ch-name")).toContainText(fixture.alice.displayName);
