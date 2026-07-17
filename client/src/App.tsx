@@ -465,6 +465,7 @@ export default function App() {
   }
 
   async function handleHideDm(conv) {
+    if (vipIds.has(conv.withUser.id)) return;
     await api.hideDm(conv.id);
     setDms((prev) => prev.filter((d) => d.id !== conv.id));
     setActiveChannel((prev) => (prev?.id === conv.id ? channels[0] || null : prev));
@@ -760,11 +761,15 @@ export default function App() {
         <div className="app-nav">
           <LeftRail
             view={view}
-              onSelect={(v) => {
+            onSelect={(v) => {
                 markNavDuringRestore();
                 setSearchQuery(null);
                 setView(v);
-                setNavOpen(false);
+                // Keep the complete navigation unit open after every rail
+                // selection on mobile. Home and DMs expose their sidebar;
+                // Activity and Saved still intentionally render rail-only
+                // content inside the drawer.
+                setNavOpen(window.matchMedia("(max-width: 760px)").matches);
             }}
             user={user}
             badges={{
