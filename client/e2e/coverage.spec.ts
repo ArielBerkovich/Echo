@@ -318,15 +318,20 @@ test("blocks private-channel mentions until the user chooses how to handle them"
   page,
 }) => {
   await page.goto("/");
-  await page.getByText(fixture.projectChannel.name, { exact: true }).click();
-  await page.getByRole("button", { name: "Make private" }).click();
+  const privateChannelName = `private-mentions-${fixture.suffix}`;
+  await requestAsToken(page, fixture.alice.token, "/channels", {
+    method: "POST",
+    body: { name: privateChannelName, type: "private" },
+  });
+  await page.reload();
+  await page.getByTestId(`channel-row-${slug(privateChannelName)}`).click();
 
   const composer = page.locator(".composer-editor");
   await composer.fill(`Hello @${fixture.bob.username}`);
   await page.locator(".mention-item").filter({ hasText: fixture.bob.displayName }).click();
   await page.keyboard.press("Enter");
 
-  const gate = page.locator(".modal").filter({ hasText: `Add to #${fixture.projectChannel.name}?` });
+  const gate = page.locator(".modal").filter({ hasText: `Add to #${privateChannelName}?` });
   await expect(gate).toBeVisible();
   await gate.getByRole("button", { name: "Send without adding" }).click();
   await expect(page.locator(".message").filter({ hasText: `@${fixture.bob.username}` }).last()).toBeVisible();
