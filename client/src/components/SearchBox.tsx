@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { SearchIcon } from "lucide-react";
+import { SearchIcon, UserPlusIcon } from "lucide-react";
 import Avatar from "./Avatar.js";
 
 // Things "has:" can filter on, suggested as you type the token.
@@ -64,7 +64,18 @@ function slug(text) {
     .replace(/^-+|-+$/g, "");
 }
 const SearchBox = forwardRef(function SearchBox(
-  { channels, users, recents, myChannelIds, onPickChannel, onPickUser, onSearchMessages },
+  {
+    channels,
+    users,
+    recents,
+    myChannelIds,
+    addPeopleChannel = null,
+    onPickChannel,
+    onPickUser,
+    onAddPeople,
+    onSearchMessages,
+    variant = "default",
+  },
   ref
 ) {
   const [open, setOpen] = useState(false);
@@ -112,6 +123,7 @@ const SearchBox = forwardRef(function SearchBox(
   const publicChannels = useMemo(() => channels.filter((c) => c.type === "public"), [channels]);
   const q = query.trim().toLowerCase();
   const hasFilterTokens = /(?:^|\s)(in:|from:|has:)/i.test(query);
+  const peoplePicker = variant === "people-picker";
 
   const filter = activeFilterAt(query, caret);
 
@@ -152,6 +164,9 @@ const SearchBox = forwardRef(function SearchBox(
       return filterSuggestions.map((item) => ({ kind: "filter", item }));
     }
     if (q && !hasFilterTokens) {
+      if (peoplePicker) {
+        return peopleHits.map((item) => ({ kind: "people", item }));
+      }
       return [
         { kind: "search" },
         ...channelHits.map((item) => ({ kind: "channel", item })),
@@ -159,14 +174,17 @@ const SearchBox = forwardRef(function SearchBox(
       ];
     }
     if (!q) {
-      return recents.map((r) =>
+      return [
+        ...(addPeopleChannel ? [{ kind: "add-people" }] : []),
+        ...recents.map((r) =>
         r.type === "channel"
           ? { kind: "recent-channel", item: r }
           : { kind: "recent-user", item: r }
-      );
+        ),
+      ];
     }
     return [];
-  }, [filter, filterSuggestions, q, hasFilterTokens, channelHits, peopleHits, recents]);
+  }, [filter, filterSuggestions, q, hasFilterTokens, channelHits, peopleHits, recents, addPeopleChannel, peoplePicker]);
 
   // Reset/clamp the highlight whenever the navigable set changes.
   useEffect(() => {
@@ -225,6 +243,9 @@ const SearchBox = forwardRef(function SearchBox(
       case "people":
       case "recent-user":
         return pickUser(it.item);
+      case "add-people":
+        close();
+        return onAddPeople?.();
       default:
         return undefined;
     }
@@ -376,17 +397,34 @@ const SearchBox = forwardRef(function SearchBox(
                     Press <b>Enter</b> to search messages. Filter with <code>in:channel</code>,{" "}
                     <code>from:@user</code>, and <code>has:file</code>.
                   </div>
+                  {addPeopleChannel && (
+                    <>
+                      <div className="search-section">Actions</div>
+                      <button
+                        type="button"
+                        className={`search-row search-action-row ${activeIdx === 0 ? "active" : ""}`}
+                        data-testid="search-add-people"
+                        onMouseEnter={() => setActiveIdx(0)}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => activate({ kind: "add-people" })}
+                      >
+                        <UserPlusIcon size={17} strokeWidth={1.9} />
+                        <span className="search-name">Add people</span>
+                        <span className="search-kind">to #{addPeopleChannel.name}</span>
+                      </button>
+                    </>
+                  )}
                   <div className="search-section">Recent</div>
                   {recents.length === 0 && <div className="people-empty">No recent searches.</div>}
                   {recents.map((r, idx) =>
                     r.type === "channel"
-                      ? channelRow(r, idx, "recent")
+                      ? channelRow(r, idx + (addPeopleChannel ? 1 : 0), "recent")
                       : (
                           <button
                             key={`recent-${r.id}`}
-                            className={`search-row ${idx === activeIdx ? "active" : ""}`}
+                            className={`search-row ${idx + (addPeopleChannel ? 1 : 0) === activeIdx ? "active" : ""}`}
                             data-testid={`search-user-${slug(r.displayName)}`}
-                            onMouseEnter={() => setActiveIdx(idx)}
+                            onMouseEnter={() => setActiveIdx(idx + (addPeopleChannel ? 1 : 0))}
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => pickUser(r)}
                           >
@@ -403,7 +441,7 @@ const SearchBox = forwardRef(function SearchBox(
                 </>
               )}
 
-              {q && (
+              {q && !peoplePicker && (
                 <button
                   className={`search-row search-messages-row ${activeIdx === 0 ? "active" : ""}`}
                   data-testid="search-messages-row"
@@ -417,14 +455,14 @@ const SearchBox = forwardRef(function SearchBox(
                 </button>
               )}
 
-              {channelHits.length > 0 && <div className="search-section">Channels</div>}
-              {channelHits.map((c, i) => channelRow(c, channelStart + i, "hit"))}
+              {!peoplePicker && channelHits.length > 0 && <div className="search-section">Channels</div>}
+              {!peoplePicker && channelHits.map((c, i) => channelRow(c, channelStart + i, "hit"))}
 
-              {peopleHits.length > 0 && <div className="search-section">People</div>}
+              {peopleHits.length > 0 && <div className="search-section">{peoplePicker ? "People in this channel" : "People"}</div>}
               {peopleHits.map((u, i) => personRow(u, peopleStart + i, "hit"))}
 
               {q && !hasFilterTokens && channelHits.length === 0 && peopleHits.length === 0 && (
-                <div className="people-empty">No channels or people match — press Enter to search messages.</div>
+                <div className="people-empty">No people in this channel match.</div>
               )}
             </>
           )}

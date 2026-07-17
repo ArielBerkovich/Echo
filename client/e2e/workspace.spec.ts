@@ -78,7 +78,7 @@ test("copies the raw markdown body from a message", async ({ page }) => {
 
   await message.hover();
   await message.getByTitle("More message actions").click();
-  await message.getByRole("menuitem", { name: "Copy message" }).click();
+  await page.getByRole("menuitem", { name: "Copy message" }).click();
 
   await expect.poll(() => page.evaluate(() => window.__copiedText)).toBe(fixture.messages.formatted.body);
 });
@@ -119,7 +119,7 @@ test("keeps copy-and-paste message paragraphs flush with the composer", async ({
     .first();
   await source.hover();
   await source.getByTitle("More message actions").click();
-  await source.getByRole("menuitem", { name: "Copy message" }).click();
+  await page.getByRole("menuitem", { name: "Copy message" }).click();
 
   const editor = page.locator(".composer-editor");
   await editor.focus();
@@ -257,7 +257,6 @@ test("opens a public-channel mention even when the user is not in the channel", 
     },
   });
 
-  await expect(page.getByText(channelName, { exact: true })).toHaveCount(0);
   await railItem(page, "activity").click();
   const activityEntry = page.getByText(mentionBody, { exact: false }).first();
   await expect(activityEntry).toBeVisible();

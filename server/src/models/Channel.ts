@@ -21,6 +21,7 @@ const channelSchema = new mongoose.Schema(
     // Users who have removed this DM from their sidebar (re-shown on a new message).
     hiddenFor: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    managers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     isArchived: { type: Boolean, default: false },
   },
   { timestamps: true }
@@ -36,6 +37,7 @@ channelSchema.methods.toPublicJSON = function () {
     memberCount: this.members.length,
     members: this.members.map((m) => m.toString()),
     createdBy: this.createdBy.toString(),
+    managers: (this.managers || []).map((m) => m.toString()),
     createdAt: this.createdAt,
     isArchived: this.isArchived,
   };

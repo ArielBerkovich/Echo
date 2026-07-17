@@ -208,18 +208,24 @@ channelsRouter.delete("/:id/members/:userId", async (req, res) => {
   if ((channel.name || "").toLowerCase() === "general") {
     return res.status(400).json({ error: "everyone is a member of #general" });
   }
-  // Only the creator can remove others.
-  if (!channel.createdBy.equals(req.user._id)) {
-    return res.status(403).json({ error: "only the channel creator can remove members" });
+  // The creator and delegated managers can remove others.
+  const isManager = (channel.managers || []).some((memberId) => memberId.equals(req.user._id));
+  if (!channel.createdBy.equals(req.user._id) && !isManager) {
+    return res.status(403).json({ error: "only the channel creator or a manager can remove members" });
   }
   // The creator can't remove themselves this way (they'd leave instead).
   if (channel.createdBy.equals(userId)) {
     return res.status(400).json({ error: "the creator can't be removed from the channel" });
   }
   const wasMember = channel.members.some((m) => m.equals(userId));
-  await Channel.updateOne({ _id: channel._id }, { $pull: { members: userId } });
+  await Channel.updateOne({ _id: channel._id }, { $pull: { members: userId, managers: userId } });
 
   if (wasMember) {
+    await ActivityEvent.deleteMany({
+      recipient: userId,
+      channel: channel._id,
+      type: { $ne: "channel_remove" },
+    }).catch(() => {});
     removeUserFromChannel(userId, channel._id.toString());
     emitToUser(userId, "channel:removed", { channelId: channel._id.toString() });
     const systemMessage = await logSystem(channel._id, userId, "was removed from the channel");
@@ -252,11 +258,63 @@ channelsRouter.post("/:id/leave", async (req, res) => {
   if (channel.type === "dm") {
     return res.status(400).json({ error: "cannot leave a direct message" });
   }
+  if (!channel.members.some((memberId) => memberId.equals(req.user._id))) {
+    return res.status(403).json({ error: "you are not a member of this channel" });
+  }
   // #general is the workspace's default channel — everyone stays in it.
   if ((channel.name || "").toLowerCase() === "general") {
     return res.status(400).json({ error: "#general is the default channel and can't be left" });
   }
-  await Channel.updateOne({ _id: channel._id }, { $pull: { members: req.user._id } });
+  const isCreator = channel.createdBy.equals(req.user._id);
+  const remainingMembers = channel.members.filter((memberId) => !memberId.equals(req.user._id));
+  const managerId = req.body?.managerId;
+  if (isCreator && remainingMembers.length > 0) {
+    if (!mongoose.isValidObjectId(managerId)) {
+      return res.status(400).json({ error: "choose a manager before leaving" });
+    }
+    if (!remainingMembers.some((memberId) => memberId.equals(managerId))) {
+      return res.status(400).json({ error: "manager must be a member of the channel" });
+    }
+    channel.managers = [...new Set([...(channel.managers || []).map(String), String(managerId)])];
+  }
+  if (isCreator && remainingMembers.length === 0) {
+    return res.status(400).json({ error: "empty channels must be deleted instead" });
+  }
+  channel.members = remainingMembers;
+  channel.managers = (channel.managers || []).filter((memberId) => String(memberId) !== String(req.user._id));
+  await ActivityEvent.deleteMany({
+    recipient: req.user._id,
+    channel: channel._id,
+    type: { $ne: "channel_remove" },
+  }).catch(() => {});
+  await channel.save();
+  const updated = channel.toPublicJSON();
+  emitToChannel(channel._id.toString(), "channel:update", { channel: updated });
+  removeUserFromChannel(req.user._id.toString(), channel._id.toString());
+  res.json({ channel: updated });
+});
+
+// DELETE /api/channels/:id — archive an empty channel owned by the creator.
+channelsRouter.delete("/:id", async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(404).json({ error: "channel not found" });
+  }
+  const channel = await Channel.findById(req.params.id);
+  if (!channel || channel.isArchived) return res.status(404).json({ error: "channel not found" });
+  if (channel.type === "dm") return res.status(400).json({ error: "cannot delete a direct message" });
+  if (!channel.createdBy.equals(req.user._id)) {
+    return res.status(403).json({ error: "only the channel creator can delete it" });
+  }
+  if (channel.members.some((memberId) => !memberId.equals(req.user._id))) {
+    return res.status(400).json({ error: "remove all other members before deleting the channel" });
+  }
+  await ActivityEvent.deleteMany({ channel: channel._id }).catch(() => {});
+  channel.isArchived = true;
+  channel.members = [];
+  channel.managers = [];
+  await channel.save();
+  emitAll("channel:catalog", { channel: channel.toPublicJSON() });
+  removeUserFromChannel(req.user._id.toString(), channel._id.toString());
   res.json({ ok: true });
 });
 

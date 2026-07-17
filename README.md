@@ -81,7 +81,18 @@ The bundled Compose stack starts MongoDB as a single-node replica set so transac
 
 ## Development
 
-Install and run each package separately when developing outside Docker.
+To run the UI locally against the Docker Compose services, set `JWT_SECRET` (or
+put it in `.env`) and run this from the repository root:
+
+```bash
+JWT_SECRET=change-me ./scripts/dev-ui.sh
+```
+
+Then open `http://localhost:5173`. The script starts MongoDB, MinIO, and the
+API server, while Vite proxies `/api` and `/socket.io` to the server on port
+4000. It leaves the containers stopped when the Vite process exits.
+
+Install and run each package separately when developing outside Docker:
 
 Server:
 

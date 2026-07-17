@@ -123,7 +123,7 @@ export default function App() {
   }
 
   const visibleChannels = useMemo(
-    () => [...new Map([...channels, ...allChannels].map((c) => [c.id, c])).values()],
+    () => [...new Map([...allChannels, ...channels].map((c) => [c.id, c])).values()],
     [channels, allChannels]
   );
   const myChannelIds = useMemo(() => channels.map((c) => c.id), [channels]);
@@ -273,14 +273,22 @@ export default function App() {
     navDuringRestoreRef.current = false;
     setScrollStates(loadScrollStates(user.id));
     let cancelled = false;
-    Promise.all([api.listChannels(), api.listDms()])
-      .then(([chRes, dmRes]) => {
+    Promise.all([api.listChannels(), api.listDms(), api.listAllChannels().catch(() => ({ channels: [] }))])
+      .then(([chRes, dmRes, allChRes]) => {
         if (cancelled) return;
         const chs = chRes.channels || [];
+        const allChs = allChRes.channels || [];
         const conversations = dmRes.conversations || [];
         setChannels(chs);
         setDms(conversations);
-        if (!navDuringRestoreRef.current) {
+        setAllChannels(allChs);
+        const inviteId = new URLSearchParams(window.location.search).get("invite");
+        const invitedChannel = inviteId && [...chs, ...allChs].find((channel) => channel.id === inviteId);
+        if (invitedChannel) {
+          setActiveChannel(invitedChannel);
+          setView("home");
+          window.history.replaceState(window.history.state, "", window.location.pathname);
+        } else if (!navDuringRestoreRef.current) {
           applyLocation(readJson(`echo.loc.${user.id}`, null), chs, conversations);
         } else {
           writeCurrentLocation(user.id);
@@ -290,7 +298,7 @@ export default function App() {
       .catch(() => {
         restoredRef.current = true;
       });
-    api.listAllChannels().then(({ channels }) => setAllChannels(channels)).catch(() => {});
+    // Public channels were loaded with the initial restore above.
     api.listUsers().then(({ users }) => setUsers(users)).catch(() => {});
     api.listEmojis().then(({ emojis }) => setCustomEmojis(emojis)).catch(() => {});
     api.getActivity().then(({ items }) => syncActivity(items)).catch(() => {});
@@ -410,17 +418,31 @@ export default function App() {
     upsertChannel(channel);
   }
 
+  async function handleRemoveMember(userId) {
+    if (!activeChannel) return;
+    const { channel } = await api.removeChannelMember(activeChannel.id, userId);
+    upsertChannel(channel);
+  }
+
   async function handleChangeVisibility(channel, type) {
     const { channel: updated } = await api.setChannelVisibility(channel.id, type);
     upsertChannel(updated);
   }
 
-  async function handleLeaveChannel(channel) {
+  async function handleLeaveChannel(channel, managerId) {
     // #general is the default channel — leaving it isn't allowed.
     if ((channel.name || "").toLowerCase() === "general") return;
-    await api.leaveChannel(channel.id);
+    await api.leaveChannel(channel.id, managerId);
     const { channels } = await api.listChannels();
     setChannels(channels);
+    setActiveChannel((prev) => (prev?.id === channel.id ? channels[0] || null : prev));
+  }
+
+  async function handleDeleteChannel(channel) {
+    await api.deleteChannel(channel.id);
+    const { channels } = await api.listChannels();
+    setChannels(channels);
+    setAllChannels((prev) => prev.filter((candidate) => candidate.id !== channel.id));
     setActiveChannel((prev) => (prev?.id === channel.id ? channels[0] || null : prev));
   }
 
@@ -506,6 +528,11 @@ export default function App() {
     const full = channels.find((c) => c.id === picked.id) || allChannels.find((c) => c.id === picked.id) || picked;
     setActiveChannel(full);
     rememberRecent({ type: "channel", id: picked.id, name: picked.name });
+  }
+
+  function handleOpenChannelTag(name) {
+    const picked = visibleChannels.find((channel) => channel.type === "public" && channel.name === name);
+    if (picked) handlePickChannel(picked);
   }
 
   async function handleJoinChannel(channel) {
@@ -816,7 +843,7 @@ export default function App() {
           {((view !== "activity" && view !== "saved") || searchQuery) && (
             <Sidebar
               user={user}
-              channels={channels}
+              channels={visibleChannels}
               dms={dms}
               hidden={hidden}
               vipIds={vipIds}
@@ -870,8 +897,17 @@ export default function App() {
               myChannelIds={myChannelIds}
               users={users}
               recents={recents}
+              addPeopleChannel={
+                activeChannel &&
+                activeChannel.type !== "dm" &&
+                activeChannel.name?.toLowerCase() !== "general" &&
+                (activeChannel.members || []).includes(user.id)
+                  ? activeChannel
+                  : null
+              }
               onPickChannel={handlePickChannel}
               onPickUser={handlePickUser}
+              onAddPeople={() => setShowAddPeople(true)}
               onSearchMessages={handleSearchMessages}
             />
           </div>
@@ -912,7 +948,7 @@ export default function App() {
               initialScrollState={activeInitialScrollState}
               user={user}
               users={users}
-              channels={channels}
+              channels={visibleChannels}
               dms={dms}
               customEmojis={emojis}
               mode={mode}
@@ -922,6 +958,7 @@ export default function App() {
               onRememberScroll={rememberScrollState}
               onScrollToBottomTargetConsumed={clearScrollToBottomTarget}
               onOpenProfile={openProfile}
+              onOpenChannel={handleOpenChannelTag}
               isVip={activeChannel.type === "dm" && vipIds.has(activeChannel.dmUserId)}
               onToggleVip={handleToggleVip}
               jumpMessageId={jumpMessageId}
@@ -931,7 +968,9 @@ export default function App() {
               onJumpConsumed={() => setJumpMessageId(null)}
               onAddCustomEmoji={() => setShowAddEmoji(true)}
               onAddPeople={() => setShowAddPeople(true)}
+              onRemoveMember={handleRemoveMember}
               onLeave={handleLeaveChannel}
+              onDeleteChannel={handleDeleteChannel}
               onChangeVisibility={handleChangeVisibility}
               onChannelUpdated={upsertChannel}
               onJoin={handleJoinChannel}

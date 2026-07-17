@@ -289,7 +289,7 @@ export function attachSocket(httpServer) {
     });
 
     // Forward an existing message into another channel/DM you can access.
-    socket.on("message:forward", async ({ messageId, channelId } = {}, ack) => {
+    socket.on("message:forward", async ({ messageId, channelId, note = "" } = {}, ack) => {
       try {
         if (!messageId || !channelId) {
           return ack?.({ error: "messageId and channelId are required" });
@@ -311,14 +311,25 @@ export function attachSocket(httpServer) {
         }
 
         const author = await User.findById(source.author);
+        const sourceAttachments = (source.attachments || []).map((a) => ({
+          key: a.key,
+          name: a.name,
+          size: a.size,
+          contentType: a.contentType,
+          isImage: a.isImage,
+          width: a.width,
+          height: a.height,
+        }));
         const message = await Message.create({
           channel: target._id,
           author: socket.user._id,
           body: source.body,
-          attachments: source.attachments || [],
+          attachments: sourceAttachments,
           ...(await buildMessageActivityMetadata({ body: source.body, parentId: null })),
+          forwardNote: String(note || "").trim(),
           forwardedFrom: {
             authorName: author?.displayName || "unknown",
+            ...(author?.avatarKey ? { authorAvatarUrl: `/api/files/${author.avatarKey}` } : {}),
             channelName: originLabel(sourceChannel),
             channelId: sourceChannel._id.toString(),
             messageId: source._id.toString(),

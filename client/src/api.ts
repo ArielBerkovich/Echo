@@ -81,7 +81,9 @@ export const api = {
     request(`/channels/${id}/members`, { method: "POST", body: { userId } }),
   removeChannelMember: (id, userId) =>
     request(`/channels/${id}/members/${userId}`, { method: "DELETE" }),
-  leaveChannel: (id) => request(`/channels/${id}/leave`, { method: "POST" }),
+  leaveChannel: (id, managerId) =>
+    request(`/channels/${id}/leave`, { method: "POST", body: managerId ? { managerId } : {} }),
+  deleteChannel: (id) => request(`/channels/${id}`, { method: "DELETE" }),
   setChannelVisibility: (id, type) =>
     request(`/channels/${id}`, { method: "PATCH", body: { type } }),
   setChannelInfo: (id, patch) =>
@@ -106,6 +108,7 @@ export const api = {
   hideDm: (id) => request(`/dms/${id}`, { method: "DELETE" }),
   getActivity: () => request("/activity"),
   markActivityRead: () => request("/activity/read", { method: "POST" }),
+  deleteActivity: (id) => request(`/activity/${encodeURIComponent(id)}`, { method: "DELETE" }),
   getSaved: () => request("/saved"),
   toggleSaved: (messageId) => request(`/saved/${messageId}`, { method: "POST" }),
   getVips: () => request("/users/vips"),

@@ -14,12 +14,9 @@ import {
 
 // Centered channel information dialog. Members can edit the channel metadata,
 // add people, and manage existing members without leaving the conversation.
-export default function ChannelDetailsPanel({ channel, users = [], user, onUpdated, onOpenProfile, onClose }) {
+export default function ChannelDetailsPanel({ channel, users = [], user, onUpdated, onOpenProfile, onAddPeople, onClose }) {
   const [error, setError] = useState(null);
   const [memberQuery, setMemberQuery] = useState("");
-  const [addMemberQuery, setAddMemberQuery] = useState("");
-  const [showAddMembers, setShowAddMembers] = useState(false);
-  const [addingMember, setAddingMember] = useState(null);
 
   useEffect(() => {
     function onKeyDown(event) {
@@ -38,21 +35,15 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
     .sort((a, b) => a.displayName.localeCompare(b.displayName));
   const isMember = memberIds.has(user.id);
   const isCreator = channel.createdBy === user.id;
+  const isManager = (channel.managers || []).includes(user.id);
+  const canManageMembers = isCreator || isManager;
+  const canAddPeople = isMember && channel.type !== "dm" && channel.name?.toLowerCase() !== "general";
   const q = memberQuery.trim().toLowerCase();
-  const addQuery = addMemberQuery.trim().toLowerCase();
   const shownMembers = q
     ? members.filter(
         (m) => m.displayName.toLowerCase().includes(q) || m.username.toLowerCase().includes(q)
       )
     : members;
-  const availableMembers = users
-    .filter((u) => !memberIds.has(u.id))
-    .filter(
-      (u) =>
-        !addQuery ||
-        u.displayName.toLowerCase().includes(addQuery) ||
-        u.username.toLowerCase().includes(addQuery)
-    );
 
   async function removeMember(member) {
     setError(null);
@@ -61,19 +52,6 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
       onUpdated?.(updated);
     } catch (err) {
       setError(err.message);
-    }
-  }
-
-  async function addMember(member) {
-    setAddingMember(member.id);
-    setError(null);
-    try {
-      const { channel: updated } = await api.addChannelMember(channel.id, member.id);
-      onUpdated?.(updated);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setAddingMember(null);
     }
   }
 
@@ -153,17 +131,14 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
                 </div>
                 <p className="channel-details-section-hint">People who can see and participate in this channel.</p>
               </div>
-              {isMember && (
-                <button
-                  type="button"
-                  className={`channel-details-add${showAddMembers ? " active" : ""}`}
-                  onClick={() => setShowAddMembers((open) => !open)}
-                  aria-expanded={showAddMembers}
-                >
-                  <PlusIcon size={15} strokeWidth={2} />
-                  {showAddMembers ? "Done" : "Add members"}
-                </button>
-              )}
+              <div className="channel-details-section-actions">
+                {canAddPeople && (
+                  <button type="button" className="channel-details-add" onClick={onAddPeople}>
+                    <PlusIcon size={15} strokeWidth={2} />
+                    Add people
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="channel-details-search channel-details-member-filter">
@@ -175,44 +150,6 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
                 aria-label="Search members"
               />
             </div>
-
-            {showAddMembers && (
-              <div className="channel-details-add-box">
-                <div className="channel-details-search">
-                  <SearchIcon size={16} strokeWidth={1.8} aria-hidden="true" />
-                  <input
-                    value={addMemberQuery}
-                    onChange={(event) => setAddMemberQuery(event.target.value)}
-                    placeholder="Search people to add"
-                    autoFocus
-                    aria-label="Search people to add"
-                  />
-                </div>
-                <div className="channel-details-add-list">
-                  {availableMembers.length === 0 ? (
-                    <div className="channel-details-empty">Everyone in the workspace is already here.</div>
-                  ) : (
-                    availableMembers.map((member) => (
-                      <div className="channel-details-person" key={member.id}>
-                        <Avatar name={member.displayName} src={member.avatarUrl} size={32} />
-                        <div className="channel-details-person-copy">
-                          <span className="channel-details-person-name">{member.displayName}</span>
-                          <span className="channel-details-person-handle">@{member.username}</span>
-                        </div>
-                        <button
-                          type="button"
-                          className="channel-details-person-add"
-                          disabled={addingMember === member.id}
-                          onClick={() => addMember(member)}
-                        >
-                          {addingMember === member.id ? "Adding…" : "Add"}
-                        </button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
 
             <div className="channel-details-member-list">
               {members.length === 0 ? (
@@ -231,10 +168,13 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
                       >
                         {member.displayName}
                         {member.id === channel.createdBy && <span className="channel-details-creator">Creator</span>}
+                        {member.id !== channel.createdBy && (channel.managers || []).includes(member.id) && (
+                          <span className="channel-details-creator">Manager</span>
+                        )}
                       </button>
                       <span className="channel-details-person-handle">@{member.username}</span>
                     </div>
-                    {isCreator && member.id !== channel.createdBy && (
+                    {canManageMembers && member.id !== channel.createdBy && (
                       <button
                         type="button"
                         className="channel-details-person-remove"

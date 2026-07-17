@@ -41,7 +41,6 @@ export default function Sidebar({
   onSelect,
   onPrefetchChannel,
   onNewChannel,
-  onNewMessage,
   onOpenDm,
   onPrefetchDm,
   onHideDm,
@@ -117,14 +116,6 @@ export default function Sidebar({
           onChange={(e) => setFilter(e.target.value)}
           placeholder={dmsOnly ? "Find a DM" : "Filter channels & DMs"}
         />
-        {dmsOnly && (
-          <button className="add-channel" data-testid="sidebar-new-message" onClick={onNewMessage} title="New message" aria-label="New message">
-            <span className="add-channel-mark" aria-hidden="true">
-              <span />
-              <span />
-            </span>
-          </button>
-        )}
       </div>
 
       {dmsOnly ? (

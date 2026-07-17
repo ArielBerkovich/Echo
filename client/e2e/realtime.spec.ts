@@ -78,7 +78,7 @@ test("bumps unread counts and reflects live edits and deletes", async ({ browser
     const liveMessageOnBob = bobPage.page.locator(".message").filter({ hasText: liveBody }).first();
     await liveMessageOnBob.hover();
     await liveMessageOnBob.getByTitle("More message actions").click();
-    await liveMessageOnBob.getByRole("menuitem", { name: "Edit message" }).click();
+    await bobPage.page.getByRole("menuitem", { name: "Edit message" }).click();
     await bobPage.page.locator(".msg-edit-input").fill(`${liveBody} updated`);
     await bobPage.page.locator(".msg-edit-actions .btn-primary").click();
     await expect(liveMessage).toContainText("updated");
@@ -90,7 +90,7 @@ test("bumps unread counts and reflects live edits and deletes", async ({ browser
       .first();
     await updatedLiveMessageOnBob.hover();
     await updatedLiveMessageOnBob.getByTitle("More message actions").click();
-    await updatedLiveMessageOnBob.getByRole("menuitem", { name: "Delete message" }).click();
+    await bobPage.page.getByRole("menuitem", { name: "Delete message" }).click();
     await bobPage.page.getByRole("button", { name: "Delete", exact: true }).click();
     await expect(alicePage.page.locator(".message").filter({ hasText: `${liveBody} updated` })).toHaveCount(0);
   });

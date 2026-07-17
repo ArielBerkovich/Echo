@@ -1,0 +1,9 @@
+# Development override for running the React UI with Vite on the host.
+# Start only the backend services when using this override; the client
+# container from docker-compose.yml is not needed.
+services:
+  server:
+    ports:
+      - "4000:4000"
+    environment:
+      - CLIENT_ORIGIN=http://localhost:5173
