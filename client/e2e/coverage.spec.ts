@@ -53,9 +53,10 @@ test("manages channels, members, visibility, and leaving", async ({ page }) => {
   await page.getByRole("button", { name: "Create channel" }).click();
   const createModal = page.locator(".modal").filter({ hasText: "Create a channel" });
   await createModal.getByPlaceholder("e.g. marketing").fill(channelName);
+  await createModal.getByText("Private", { exact: true }).click();
   await createModal.getByRole("button", { name: "Create" }).click();
 
-  await expect(page.getByText(channelName, { exact: true })).toBeVisible();
+  await expect(page.getByTestId(`channel-row-${slug(channelName)}`)).toBeVisible();
 
   await page.locator(".ch-name-btn").click();
   const details = page.locator(".details-panel");
@@ -68,8 +69,11 @@ test("manages channels, members, visibility, and leaving", async ({ page }) => {
   await expect(details).toContainText("Planning room");
   await expect(details).toContainText("Internal planning");
 
-  await page.getByRole("button", { name: "Make private" }).click();
   await expect(page.getByRole("button", { name: "Make public" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Make private" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Make public" }).click();
+  await expect(page.getByRole("button", { name: "Make public" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Make private" })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Add people" }).click();
   const addPeople = page.locator(".modal").filter({ hasText: "Add people to" });
@@ -81,7 +85,7 @@ test("manages channels, members, visibility, and leaving", async ({ page }) => {
   await page.getByRole("button", { name: "Leave channel" }).click();
   await page.getByRole("button", { name: "Leave", exact: true }).click();
   await expect(page.getByText(channelName, { exact: true })).toHaveCount(0);
-  await expect(page.getByText("#general", { exact: true })).toBeVisible();
+  await expect(page.getByTestId("channel-row-general")).toBeVisible();
 });
 
 test("joins a public channel, hides a channel locally, and restores it from search", async ({ page }) => {
@@ -104,7 +108,7 @@ test("joins a public channel, hides a channel locally, and restores it from sear
   await expect(page.getByRole("button", { name: "Leave channel" })).toHaveCount(0);
 });
 
-test("opens a profile, marks VIP, starts a DM, hides it, and can message self", async ({ page }) => {
+test("opens a profile, marks VIP, starts a DM, protects it, and can message self", async ({ page }) => {
   await page.goto("/");
 
   const bobMention = page
@@ -121,8 +125,7 @@ test("opens a profile, marks VIP, starts a DM, hides it, and can message self", 
   await page.getByRole("button", { name: "DMs" }).click();
   const vipDm = page.locator(".dm-rich").filter({ hasText: fixture.bob.displayName });
   await expect(vipDm).toBeVisible();
-  await vipDm.getByTitle("Remove conversation").click();
-  await expect(vipDm).toHaveCount(0);
+  await expect(vipDm.getByTitle("Remove conversation")).toHaveCount(0);
 
   await page.locator(".dm-self .dm-open").click();
   await expect(page.locator(".channel-header .ch-name")).toContainText(fixture.alice.displayName);
@@ -329,15 +332,20 @@ test("blocks private-channel mentions until the user chooses how to handle them"
   page,
 }) => {
   await page.goto("/");
-  await page.getByText(fixture.projectChannel.name, { exact: true }).click();
-  await page.getByRole("button", { name: "Make private" }).click();
+  const privateChannelName = `private-mentions-${fixture.suffix}`;
+  await requestAsToken(page, fixture.alice.token, "/channels", {
+    method: "POST",
+    body: { name: privateChannelName, type: "private" },
+  });
+  await page.reload();
+  await page.getByTestId(`channel-row-${slug(privateChannelName)}`).click();
 
   const composer = page.locator(".composer-editor");
   await composer.fill(`Hello @${fixture.bob.username}`);
   await page.locator(".mention-item").filter({ hasText: fixture.bob.displayName }).click();
   await page.keyboard.press("Enter");
 
-  const gate = page.locator(".modal").filter({ hasText: `Add to #${fixture.projectChannel.name}?` });
+  const gate = page.locator(".modal").filter({ hasText: `Add to #${privateChannelName}?` });
   await expect(gate).toBeVisible();
   await gate.getByRole("button", { name: "Send without adding" }).click();
   await expect(page.locator(".message").filter({ hasText: `@${fixture.bob.username}` }).last()).toBeVisible();

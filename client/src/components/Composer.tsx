@@ -579,6 +579,17 @@ export default function Composer({ channel, parentId = null, users = [], customE
     resetComposer();
   }
 
+  // On phones, keeping focus after sending leaves the virtual keyboard open and
+  // hides the newly sent message. Desktop users keep the normal focused editor.
+  function dismissMobileKeyboard() {
+    if (!window.matchMedia("(max-width: 760px)").matches) return;
+    requestAnimationFrame(() => {
+      editorRef.current?.blur();
+      const active = document.activeElement;
+      if (active instanceof HTMLElement) active.blur();
+    });
+  }
+
   function resetComposer() {
     pending.forEach(revokePreviewUrl);
     if (editorRef.current) editorRef.current.innerHTML = "";
@@ -714,6 +725,7 @@ export default function Composer({ channel, parentId = null, users = [], customE
     const proceed = () => {
       stopTyping();
       doSend(body, attachments);
+      dismissMobileKeyboard();
     };
     // Hold the send if it @-mentions non-members of a private channel.
     if (gate(body, proceed)) return;

@@ -809,16 +809,14 @@ export default function ChannelView({
                   <span>Add people</span>
                 </button>
               )}
-              {channel.createdBy === user.id && (
+              {channel.createdBy === user.id && channel.type === "private" && (
                 <button
                   className="header-action header-action-visibility"
                   data-testid="channel-visibility"
                   title="Change who can join"
-                  onClick={() =>
-                    onChangeVisibility(channel, channel.type === "private" ? "public" : "private")
-                  }
+                  onClick={() => onChangeVisibility(channel, "public")}
                 >
-                  {channel.type === "private" ? "Make public" : "Make private"}
+                  Make public
                 </button>
               )}
               {!isGeneral && (

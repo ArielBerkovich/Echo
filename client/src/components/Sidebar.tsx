@@ -75,6 +75,7 @@ export default function Sidebar({
   const renderDmRow = (conv) => {
     const active = activeChannel?.type === "dm" && activeChannel?.dmUserId === conv.withUser.id;
     const unread = conv.unread > 0;
+    const isVip = vipIds.has(conv.withUser.id);
     const label = conv.isSelf ? `${conv.withUser.displayName} (you)` : conv.withUser.displayName;
     return (
       <div key={conv.id} className={`channel-item dm-item ${active ? "active" : ""} ${unread ? "unread" : ""}`}>
@@ -93,9 +94,11 @@ export default function Sidebar({
           <span className="dm-name">{label}</span>
         </button>
         {unread && <span className="unread-badge">{conv.unread > 99 ? "99+" : conv.unread}</span>}
-        <button className="dm-remove" title="Remove conversation" onClick={() => onHideDm(conv)}>
-          ✕
-        </button>
+        {!isVip && (
+          <button className="dm-remove" title="Remove conversation" onClick={() => onHideDm(conv)}>
+            ✕
+          </button>
+        )}
       </div>
     );
   };
@@ -141,6 +144,7 @@ export default function Sidebar({
           {shownDms.filter((c) => !c.isSelf).map((conv) => {
             const active = activeChannel?.type === "dm" && activeChannel?.dmUserId === conv.withUser.id;
             const unread = conv.unread > 0;
+            const isVip = vipIds.has(conv.withUser.id);
             return (
               <div key={conv.id} className={`dm-rich ${active ? "active" : ""} ${unread ? "unread" : ""}`} data-testid={`dm-row-${slug(conv.withUser.displayName)}`}>
                 <button className="dm-open" data-testid={`dm-open-${slug(conv.withUser.displayName)}`} onClick={() => onOpenDm(conv.withUser)}>
@@ -162,9 +166,11 @@ export default function Sidebar({
                   </div>
                 </button>
                 {unread && <span className="unread-badge">{conv.unread > 99 ? "99+" : conv.unread}</span>}
-                <button className="dm-remove" data-testid={`dm-remove-${slug(conv.withUser.displayName)}`} title="Remove conversation" onClick={() => onHideDm(conv)}>
-                  ✕
-                </button>
+                {!isVip && (
+                  <button className="dm-remove" data-testid={`dm-remove-${slug(conv.withUser.displayName)}`} title="Remove conversation" onClick={() => onHideDm(conv)}>
+                    ✕
+                  </button>
+                )}
               </div>
             );
           })}
