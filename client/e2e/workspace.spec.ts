@@ -111,6 +111,34 @@ test("pastes markdown into the composer as formatted content", async ({ page }) 
   await expect(editor.locator('a[href="https://example.com"]')).toHaveText("Echo link");
 });
 
+test("keeps copy-and-paste message paragraphs flush with the composer", async ({ page }) => {
+  await page.goto("/");
+  const source = page
+    .locator(".message")
+    .filter({ hasText: fixture.messages.searchHit.body })
+    .first();
+  await source.hover();
+  await source.getByTitle("Copy message").click();
+
+  const editor = page.locator(".composer-editor");
+  await editor.focus();
+  await page.evaluate(() => {
+    const target = document.querySelector(".composer-editor");
+    const data = new DataTransfer();
+    data.setData("text/plain", window.__copiedText || "");
+    target.dispatchEvent(
+      new ClipboardEvent("paste", {
+        bubbles: true,
+        cancelable: true,
+        clipboardData: data,
+      })
+    );
+  });
+
+  await expect(editor.locator("p")).toHaveCount(0);
+  await expect(editor).toContainText(fixture.messages.searchHit.body);
+});
+
 test("uses Enter for new list items and Shift+Enter for list line breaks", async ({ page }) => {
   await page.goto("/");
 

@@ -253,7 +253,7 @@ export default function Sidebar({
 
       <div className="sidebar-footer">
         <button className="me-button account-card" data-testid="sidebar-settings" onClick={onOpenSettings} title="Open account settings">
-          <PresenceAvatar name={user.displayName} src={user.avatarUrl} size={42} online />
+          <Avatar name={user.displayName} src={user.avatarUrl} size={42} />
           <div className="who account-copy">
             <div className="me" dir="auto">{user.displayName}</div>
             <div className="status">Active</div>

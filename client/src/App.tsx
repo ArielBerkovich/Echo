@@ -113,6 +113,15 @@ export default function App() {
     if (!restoredRef.current) navDuringRestoreRef.current = true;
   }
 
+  // Jump targets belong to the conversation that created them. Clear them
+  // before ordinary navigation so a failed/stale target cannot be retried in
+  // the next channel.
+  function clearNavigationTarget() {
+    setJumpMessageId(null);
+    setOpenThreadReq(null);
+    setScrollToBottomTarget(null);
+  }
+
   const visibleChannels = useMemo(
     () => [...new Map([...channels, ...allChannels].map((c) => [c.id, c])).values()],
     [channels, allChannels]
@@ -448,6 +457,7 @@ export default function App() {
 
   async function handleOpenDm(target, isSelf = false) {
     markNavDuringRestore();
+    clearNavigationTarget();
     setSearchQuery(null);
     const { channel } = await api.openDm(target.id);
     const existing = dms.find((d) => d.id === channel.id);
@@ -488,6 +498,7 @@ export default function App() {
 
   function handlePickChannel(picked) {
     markNavDuringRestore();
+    clearNavigationTarget();
     setSearchQuery(null);
     unhideChannel(picked.id); // re-show if it was hidden
     // Open it (preview if you're not a member — a Join button will appear).
@@ -533,10 +544,19 @@ export default function App() {
   function handleJump(item) {
     markNavDuringRestore();
     const channelId = typeof item === "string" ? item : item.channelId;
-    const messageId = typeof item === "string" ? null : item.messageId || item.id;
+    // Channel add/remove activity entries are navigation events, not
+    // messages. Their `id` is a synthetic activity-event id and must not be
+    // sent to the message-centering endpoint.
+    const messageId =
+      typeof item === "string"
+        ? null
+        : item.kind === "channel_add" || item.kind === "channel_remove"
+        ? null
+        : item.messageId || item.id;
     const threadId = typeof item === "string" ? null : item.threadId;
     const channelType = typeof item === "string" ? null : item.channelType;
     const channelName = typeof item === "string" ? null : item.channelName;
+    clearNavigationTarget();
     setSearchQuery(null);
     if (messageId || threadId) clearScrollState(channelId);
 
@@ -762,6 +782,7 @@ export default function App() {
             view={view}
               onSelect={(v) => {
                 markNavDuringRestore();
+                clearNavigationTarget();
                 setSearchQuery(null);
                 setView(v);
                 setNavOpen(false);
@@ -786,6 +807,7 @@ export default function App() {
               mode={view === "dms" ? "dms" : "home"}
               onSelect={(c) => {
                 markNavDuringRestore();
+                clearNavigationTarget();
                 setSearchQuery(null);
                 setActiveChannel(c);
                 setNavOpen(false);

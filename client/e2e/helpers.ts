@@ -75,6 +75,16 @@ export async function requestAsToken(page, token, path, options = {}) {
   return data;
 }
 
+export async function uploadAsToken(page, token, file) {
+  const response = await page.request.post("/api/uploads", {
+    headers: { Authorization: `Bearer ${token}` },
+    multipart: { files: file },
+  });
+  const data = await response.json().catch(() => ({}));
+  expect(response.ok(), data.error || "upload failed").toBeTruthy();
+  return data;
+}
+
 export async function seedWorkspaceFixture(page) {
   if (workspaceFixturePromise) {
     const fixture = await workspaceFixturePromise;

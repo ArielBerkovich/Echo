@@ -288,6 +288,21 @@ test("schedules a message and clears the banner after delivery", async ({ page }
   await expect(page.locator(".message").filter({ hasText: scheduledBody })).toBeVisible();
 });
 
+test("shows invalid schedule times inside the schedule dialog", async ({ page }) => {
+  await page.goto("/");
+
+  await page.locator(".composer-editor").fill(`Invalid schedule ${Date.now()}`);
+  await page.getByRole("button", { name: "Send options" }).click();
+  await page.locator(".send-menu button").filter({ hasText: "Custom time…" }).click();
+
+  const scheduleModal = page.locator(".modal").filter({ hasText: "Schedule message" });
+  await scheduleModal.locator(".schedule-input").fill(toLocalDatetimeInput(new Date(Date.now() - 60_000)));
+  await scheduleModal.getByRole("button", { name: "Schedule" }).click();
+
+  await expect(scheduleModal.locator(".schedule-error")).toHaveText("Pick a time in the future.");
+  await expect(page.locator(".channel-main > .error")).toHaveCount(0);
+});
+
 test("edits and cancels a scheduled message", async ({ page }) => {
   await page.goto("/");
 

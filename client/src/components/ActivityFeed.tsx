@@ -70,6 +70,8 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
                   <span className="activity-where">
                     {it.kind === "channel_add"
                       ? `added you to #${it.channelName}`
+                      : it.kind === "channel_remove"
+                      ? `removed you from #${it.channelName}`
                       : `${kindLabel(it)} ${it.channelType === "dm" ? "in a DM" : `in #${it.channelName}`}`}
                   </span>
                   <span className="time">{formatDateTime(it.createdAt)}</span>

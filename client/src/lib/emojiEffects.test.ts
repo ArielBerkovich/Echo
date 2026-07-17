@@ -31,12 +31,21 @@ describe("playEmojiEffectFor", () => {
     };
   });
 
-  it("dispatches the first matching effect type", () => {
-    playEmojiEffectFor("ship it 🚀 🎉");
+  it("dispatches an effect for a standalone trigger emoji", () => {
+    playEmojiEffectFor("🎉");
 
     assert.equal(events.length, 1);
     assert.equal(events[0].type, "echo:effect");
     assert.deepEqual(events[0].detail, { type: "confetti" });
+  });
+
+
+  it("ignores trigger emojis mixed with text or other emojis", () => {
+    playEmojiEffectFor("ship it 🚀");
+    playEmojiEffectFor("❤️ thanks");
+    playEmojiEffectFor("🚀 🎉");
+
+    assert.deepEqual(events, []);
   });
 
   it("does nothing when text has no trigger emoji", () => {
@@ -46,17 +55,17 @@ describe("playEmojiEffectFor", () => {
   });
 
   it("throttles repeated effects for short bursts", () => {
-    playEmojiEffectFor("first 🚀");
-    playEmojiEffectFor("second 🔥");
+    playEmojiEffectFor("🚀");
+    playEmojiEffectFor("🔥");
     now += 1500;
-    playEmojiEffectFor("third 🔥");
+    playEmojiEffectFor("🔥");
 
     assert.deepEqual(events.map((event) => event.detail.type), ["rocket", "fire"]);
   });
 
   it("treats common heart variants as heart effects", () => {
     now += 2000;
-    playEmojiEffectFor("thanks ❤️");
+    playEmojiEffectFor("❤️");
 
     assert.deepEqual(events.map((event) => event.detail.type), ["hearts"]);
   });

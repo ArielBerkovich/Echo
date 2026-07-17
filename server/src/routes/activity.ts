@@ -90,6 +90,19 @@ activityRouter.get("/", async (req, res) => {
     .sort({ createdAt: -1 })
     .limit(100)
     .populate("actor");
+  // A removal from a private channel means the channel is no longer in the
+  // normal visible set, but the removal event itself must remain readable.
+  const eventChannelIds = events
+    .filter((e) => e.type === "channel_remove")
+    .map((e) => e.channel)
+    .filter(Boolean);
+  if (eventChannelIds.length) {
+    const eventChannels = await Channel.find(
+      { _id: { $in: eventChannelIds } },
+      { _id: 1, name: 1, type: 1, members: 1 }
+    );
+    for (const c of eventChannels) chanMap.set(c._id.toString(), c);
+  }
   const reactedMsgs = await Message.find(
     { _id: { $in: events.filter((e) => e.type === "reaction").map((e) => e.message) } },
     { body: 1, channel: 1, parentId: 1 }
@@ -114,6 +127,21 @@ activityRouter.get("/", async (req, res) => {
         createdAt: e.createdAt,
         kind: "channel_add",
           unread: !lastRead || new Date(e.createdAt) > new Date(lastRead),
+        };
+      }
+      if (e.type === "channel_remove") {
+        return {
+          id: `cr-${e._id.toString()}`,
+          channelId: e.channel.toString(),
+          channelName: c.name,
+          channelType: c.type,
+          messageId: null,
+          threadId: null,
+          author: e.actor?.toPublicJSON?.() || null,
+          body: "",
+          createdAt: e.createdAt,
+          kind: "channel_remove",
+          unread: !seenAt || new Date(e.createdAt) > seenAt,
         };
       }
       // reaction

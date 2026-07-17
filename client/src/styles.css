@@ -1458,6 +1458,39 @@ html[data-theme="aubergine"] .chat-pane {
   color: var(--active-fg);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--active-fg) 16%, transparent) inset;
 }
+.rail-item.clicked .rail-icon {
+  animation-duration: 0.62s;
+  animation-timing-function: cubic-bezier(0.2, 0.85, 0.35, 1.25);
+  animation-fill-mode: both;
+}
+.rail-item-home.clicked .rail-icon { animation-name: rail-home-pop; }
+.rail-item-dms.clicked .rail-icon { animation-name: rail-dm-wiggle; }
+.rail-item-activity.clicked .rail-icon { animation-name: rail-activity-spark; }
+.rail-item-saved.clicked .rail-icon { animation-name: rail-saved-pop; }
+@keyframes rail-home-pop {
+  0%, 100% { transform: scale(1); }
+  35% { transform: scale(1.16) rotate(-5deg); }
+  68% { transform: scale(0.94) rotate(3deg); }
+}
+@keyframes rail-dm-wiggle {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(-10deg) translateX(-2px); }
+  45% { transform: rotate(9deg) translateX(2px); }
+  70% { transform: rotate(-5deg); }
+}
+@keyframes rail-activity-spark {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  35% { transform: scale(1.12) rotate(8deg); filter: brightness(1.45) drop-shadow(0 0 7px var(--cyan)); }
+  65% { transform: scale(0.96) rotate(-5deg); }
+}
+@keyframes rail-saved-pop {
+  0%, 100% { transform: scale(1); }
+  40% { transform: scale(1.2) translateY(-2px); }
+  72% { transform: scale(0.94) translateY(1px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rail-item.clicked .rail-icon { animation: none; }
+}
 .rail-badge {
   position: absolute;
   top: -3px;
@@ -4507,12 +4540,28 @@ html[data-mode="dark"] .channel-header {
   overflow-y: auto;
   white-space: pre-wrap;
   word-break: break-word;
+  /* Keep RTL character ordering from dir="auto", while anchoring the text
+     block to the left side of the composer. */
+  text-align: left;
+}
+.composer-editor p {
+  margin: 0 0 4px;
+}
+.composer-editor p:last-child {
+  margin-bottom: 0;
 }
 .editor-placeholder {
   position: absolute;
   top: 9px;
   left: 12px;
   color: #8d8d8d;
+  pointer-events: none;
+}
+.list-exit-hint {
+  margin-top: 6px;
+  color: #7a7a7a;
+  font-size: 12px;
+  line-height: 1.3;
   pointer-events: none;
 }
 

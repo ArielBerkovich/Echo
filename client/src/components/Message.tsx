@@ -57,6 +57,10 @@ function Message({
   const actionsVisible = showActions;
   const [copied, setCopied] = useState(false);
   const mid = m.id;
+  // Messages carry an author snapshot, but profile changes arrive separately
+  // over the realtime user:update event. Resolve the latest directory entry so
+  // an already-open conversation updates without waiting for a new message.
+  const author = usersById?.get(m.author?.id) || m.author;
 
   // Open a profile when an @mention pill in the rendered body is clicked.
   function onBodyClick(e) {
@@ -106,10 +110,10 @@ function Message({
             type="button"
             className="avatar-btn"
             data-testid={`message-${mid}-avatar`}
-            title={`View ${m.author?.displayName || "profile"}`}
+            title={`View ${author?.displayName || "profile"}`}
             onClick={() => m.author?.id && onOpenProfile?.(m.author.id)}
           >
-            <Avatar name={m.author?.displayName || "?"} src={m.author?.avatarUrl} size={36} />
+            <Avatar name={author?.displayName || "?"} src={author?.avatarUrl} size={36} />
           </button>
         )}
       </div>
@@ -129,7 +133,7 @@ function Message({
               dir="auto"
               onClick={() => m.author?.id && onOpenProfile?.(m.author.id)}
             >
-              {m.author?.displayName || "unknown"}
+              {author?.displayName || "unknown"}
             </button>
             <span className="time">{formatTime(m.createdAt)}</span>
           </div>
