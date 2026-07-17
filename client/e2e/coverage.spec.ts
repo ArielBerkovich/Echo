@@ -149,14 +149,16 @@ test("edits and deletes own messages", async ({ page }) => {
 
   const message = page.locator(".message").filter({ hasText: body }).first();
   await message.hover();
-  await message.getByTitle("Edit message").click();
+  await message.getByTitle("More message actions").click();
+  await message.getByRole("menuitem", { name: "Edit message" }).click();
   await message.locator(".msg-edit-input").fill(`${body} updated`);
   await message.locator(".msg-edit-actions .btn-primary").click();
   await expect(message).toContainText("updated");
   await expect(message).toContainText("(edited)");
 
   await message.hover();
-  await message.getByTitle("Delete message").click();
+  await message.getByTitle("More message actions").click();
+  await message.getByRole("menuitem", { name: "Delete message" }).click();
   await page.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(page.locator(".message").filter({ hasText: `${body} updated` })).toHaveCount(0);
 });
@@ -171,7 +173,8 @@ test("toggles reactions and pins messages", async ({ page }) => {
   await message.hover();
   await expect(message.locator(".msg-actions button[title='Add reaction']")).toBeVisible();
 
-  await message.getByTitle("Pin message").click();
+  await message.getByTitle("More message actions").click();
+  await message.getByRole("menuitem", { name: "Pin message" }).click();
   await page.getByRole("button", { name: "Pinned messages" }).click();
   const pinned = page.locator(".pinned-item").filter({ hasText: `API formatting test ${fixture.suffix}` });
   await expect(pinned).toBeVisible();
@@ -514,8 +517,8 @@ test("pins a message from inside a thread", async ({ page }) => {
     .filter({ hasText: fixture.messages.threadReply.body })
     .first();
   await reply.hover();
-  await reply.getByTitle("Pin message").click();
-  await expect(reply.getByTitle("Unpin message")).toBeVisible();
+  await reply.getByTitle("More message actions").click();
+  await reply.getByRole("menuitem", { name: "Pin message" }).click();
 
   await page.getByRole("button", { name: "Pinned messages" }).click();
   await expect(page.locator(".pinned-item").filter({ hasText: fixture.messages.threadReply.body })).toBeVisible();
