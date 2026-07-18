@@ -18,10 +18,30 @@ function authHeaders(extra = {}) {
   return headers;
 }
 
-async function parseResponse(res, errorLabel) {
+function friendlyErrorMessage(status, serverMessage, path, errorLabel) {
+  if (status >= 500) {
+    if (path === "/auth/login") return "We couldn't sign you in right now. Please try again in a moment.";
+    if (path === "/auth/register") return "We couldn't create your account right now. Please try again in a moment.";
+    return "Something went wrong on our end. Please try again in a moment.";
+  }
+  if (status === 401) {
+    return path === "/auth/login"
+      ? "That username or password doesn't look right."
+      : "Your session may have expired. Please sign in again.";
+  }
+  if (status === 403) return "You don't have permission to do that.";
+  if (status === 404) return "We couldn't find what you were looking for.";
+  if (status === 408 || status === 429) return "That took a little too long. Please try again.";
+  return serverMessage || `${errorLabel} couldn't be completed. Please try again.`;
+}
+
+async function parseResponse(res, errorLabel, path) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(data.error || `${errorLabel} failed (${res.status})`);
+    const error = new Error(friendlyErrorMessage(res.status, data.error, path, errorLabel));
+    error.status = res.status;
+    Object.assign(error, data);
+    throw error;
   }
   return data;
 }
@@ -29,23 +49,33 @@ async function parseResponse(res, errorLabel) {
 async function request(path, { method = "GET", body } = {}) {
   const hasBody = body !== undefined;
 
-  const res = await fetch(`/api${path}`, {
-    method,
-    headers: authHeaders(hasBody ? { "Content-Type": "application/json" } : {}),
-    body: hasBody ? JSON.stringify(body) : undefined,
-  });
+  try {
+    const res = await fetch(`/api${path}`, {
+      method,
+      headers: authHeaders(hasBody ? { "Content-Type": "application/json" } : {}),
+      body: hasBody ? JSON.stringify(body) : undefined,
+    });
 
-  return parseResponse(res, "Request");
+    return parseResponse(res, "Request", path);
+  } catch (error) {
+    if (error.status) throw error;
+    throw new Error("We couldn't reach Echo right now. Check your connection and try again.");
+  }
 }
 
 async function requestMultipart(path, form, errorLabel) {
-  const res = await fetch(`/api${path}`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: form,
-  });
+  try {
+    const res = await fetch(`/api${path}`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: form,
+    });
 
-  return parseResponse(res, errorLabel);
+    return parseResponse(res, errorLabel, path);
+  } catch (error) {
+    if (error.status) throw error;
+    throw new Error("We couldn't reach Echo right now. Check your connection and try again.");
+  }
 }
 
 // Multipart upload (kept separate from `request` so the browser sets the
@@ -70,6 +100,8 @@ export const api = {
   register: (payload) => request("/auth/register", { method: "POST", body: payload }),
   login: (payload) => request("/auth/login", { method: "POST", body: payload }),
   setupStatus: () => request("/auth/setup-status"),
+  usernameOptions: (firstName, lastName, username) =>
+    request(`/auth/username-options?firstName=${encodeURIComponent(firstName)}&lastName=${encodeURIComponent(lastName)}&username=${encodeURIComponent(username)}`),
   me: () => request("/auth/me"),
   listUsers: () => request("/users"),
   listChannels: () => request("/channels"),
@@ -79,6 +111,8 @@ export const api = {
   joinChannel: (id) => request(`/channels/${id}/join`, { method: "POST" }),
   addChannelMember: (id, userId) =>
     request(`/channels/${id}/members`, { method: "POST", body: { userId } }),
+  promoteChannelManager: (id, userId) =>
+    request(`/channels/${id}/managers`, { method: "POST", body: { userId } }),
   removeChannelMember: (id, userId) =>
     request(`/channels/${id}/members/${userId}`, { method: "DELETE" }),
   leaveChannel: (id, managerId) =>

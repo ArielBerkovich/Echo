@@ -21,6 +21,7 @@ export default function ThreadPanel({
   onJumpToMessage,
   onForward,
   onTogglePin,
+  canPin = true,
   savedIds,
   onToggleSave,
   onOpenProfile,
@@ -271,6 +272,7 @@ export default function ThreadPanel({
               onEditCancel={() => setEditing(null)}
               onOpenLightbox={onOpenLightbox}
               onTogglePin={() => onTogglePin?.(m)}
+              canPin={canPin}
             />
           ))}
           <div ref={bottomRef} />

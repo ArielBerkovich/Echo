@@ -93,17 +93,22 @@ export default function Sidebar({
           <span className="dm-name">{label}</span>
         </button>
         {unread && <span className="unread-badge">{conv.unread > 99 ? "99+" : conv.unread}</span>}
-        {!isVip && (
-          <button className="dm-remove" title="Remove conversation" onClick={() => onHideDm(conv)}>
-            ✕
-          </button>
-        )}
+        <button
+          className={`dm-remove ${isVip ? "reserved" : ""}`}
+          title={isVip ? undefined : "Remove conversation"}
+          onClick={() => onHideDm(conv)}
+          disabled={isVip}
+          aria-hidden={isVip}
+          tabIndex={isVip ? -1 : 0}
+        >
+          {dmsOnly ? "Remove" : "✕"}
+        </button>
       </div>
     );
   };
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${dmsOnly ? "dms-view" : ""}`}>
       <div className="sidebar-header">
         <Logo size={40} />
         <span className="brand-sm">{dmsOnly ? "Direct messages" : "Echo"}</span>
@@ -148,6 +153,7 @@ export default function Sidebar({
                   <div className="dm-text">
                     <div className="dm-row-top">
                       <span className="dm-name" dir="auto">{conv.withUser.displayName}</span>
+                      {unread && <span className="unread-badge">{conv.unread > 99 ? "99+" : conv.unread}</span>}
                       <span className="dm-time">{relativeTime(conv.lastAt)}</span>
                     </div>
                     <div className="dm-preview" dir="auto">
@@ -156,12 +162,6 @@ export default function Sidebar({
                     </div>
                   </div>
                 </button>
-                {unread && <span className="unread-badge">{conv.unread > 99 ? "99+" : conv.unread}</span>}
-                {!isVip && (
-                  <button className="dm-remove" data-testid={`dm-remove-${slug(conv.withUser.displayName)}`} title="Remove conversation" onClick={() => onHideDm(conv)}>
-                    ✕
-                  </button>
-                )}
               </div>
             );
           })}

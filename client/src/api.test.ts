@@ -70,14 +70,30 @@ describe("api request helpers", () => {
     assert.equal(path, "/api/search/messages?q=hello%20%23general&page=2&sort=relevance");
   });
 
-  it("throws server-provided error messages", async () => {
+  it("softens authentication errors while preserving server details", async () => {
     globalThis.fetch = async () => ({
       ok: false,
       status: 401,
       json: async () => ({ error: "nope" }),
     });
 
-    await assert.rejects(api.me(), /nope/);
+    await assert.rejects(
+      api.me(),
+      (error) => error.message === "Your session may have expired. Please sign in again." && error.error === "nope"
+    );
+  });
+
+  it("does not expose internal server errors to the UI", async () => {
+    globalThis.fetch = async () => ({
+      ok: false,
+      status: 500,
+      json: async () => ({ error: "Mongo connection details" }),
+    });
+
+    await assert.rejects(
+      api.login({ username: "a", password: "b" }),
+      /We couldn't sign you in right now\. Please try again in a moment\./
+    );
   });
 
   it("uploads multipart files without setting a content-type header", async () => {

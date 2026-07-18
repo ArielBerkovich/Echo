@@ -80,7 +80,7 @@ channelsRouter.get("/by-name/:name", async (req, res) => {
   res.json({ channel: channel.toPublicJSON() });
 });
 
-// POST /api/channels — create a public channel; creator becomes the first member.
+// POST /api/channels — create a channel; creator becomes the first member and manager.
 channelsRouter.post("/", async (req, res) => {
   const { name, type } = req.body || {};
   if (!name) return res.status(400).json({ error: "channel name is required" });
@@ -98,6 +98,7 @@ channelsRouter.post("/", async (req, res) => {
       type: visibility,
       members: [req.user._id],
       createdBy: req.user._id,
+      managers: [req.user._id],
     });
     await logSystem(channel._id, req.user._id, "created this channel");
     joinUserToChannel(req.user._id.toString(), channel._id.toString());
@@ -188,6 +189,37 @@ channelsRouter.post("/:id/members", async (req, res) => {
   if (channel.type === "public") {
     emitAll("channel:catalog", { channel: updatedPayload });
   }
+  res.json({ channel: updatedPayload });
+});
+
+// POST /api/channels/:id/managers { userId } — promote a channel member.
+channelsRouter.post("/:id/managers", async (req, res) => {
+  const { userId } = req.body || {};
+  if (!mongoose.isValidObjectId(req.params.id) || !mongoose.isValidObjectId(userId)) {
+    return res.status(400).json({ error: "valid channel id and userId are required" });
+  }
+  const channel = await Channel.findById(req.params.id);
+  if (!channel || channel.isArchived) return res.status(404).json({ error: "channel not found" });
+  if (channel.type === "dm") return res.status(400).json({ error: "direct messages do not have managers" });
+  if ((channel.name || "").toLowerCase() === "general") {
+    return res.status(400).json({ error: "#general does not have delegated managers" });
+  }
+  const requesterIsManager = (channel.managers || []).some((memberId) => memberId.equals(req.user._id));
+  if (!channel.createdBy.equals(req.user._id) && !requesterIsManager) {
+    return res.status(403).json({ error: "only the channel creator or a manager can add managers" });
+  }
+  if (!channel.members.some((memberId) => memberId.equals(userId))) {
+    return res.status(400).json({ error: "managers must be members of the channel" });
+  }
+  if (channel.createdBy.equals(userId)) {
+    return res.status(400).json({ error: "the channel creator is already the owner" });
+  }
+
+  await Channel.updateOne({ _id: channel._id }, { $addToSet: { managers: userId } });
+  const updated = await Channel.findById(channel._id);
+  const updatedPayload = updated.toPublicJSON();
+  emitToChannel(channel._id.toString(), "channel:update", { channel: updatedPayload });
+  if (channel.type === "public") emitAll("channel:catalog", { channel: updatedPayload });
   res.json({ channel: updatedPayload });
 });
 

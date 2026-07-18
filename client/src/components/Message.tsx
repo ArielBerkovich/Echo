@@ -55,6 +55,7 @@ function Message({
   onActivate, // mark this message as the active one (mouse entered it)
   onOpenLightbox, // (src, name) => open image in a side panel (when in thread)
   onTogglePin,
+  canPin = true,
 }) {
   const isMine = m.author?.id === currentUserId;
   const actionsVisible = showActions;
@@ -330,15 +331,17 @@ function Message({
             >
               <BookmarkIcon /> {saved ? "Remove from saved" : "Save for later"}
             </button>
-            <button
-              type="button"
-              role="menuitem"
-              data-testid={`message-${mid}-pin`}
-              className={m.pinnedAt ? "active" : ""}
-              onClick={() => { onTogglePin(); onCloseMenu(); }}
-            >
-              <PinIcon /> {m.pinnedAt ? "Unpin message" : "Pin message"}
-            </button>
+            {canPin && (
+              <button
+                type="button"
+                role="menuitem"
+                data-testid={`message-${mid}-pin`}
+                className={m.pinnedAt ? "active" : ""}
+                onClick={() => { onTogglePin(); onCloseMenu(); }}
+              >
+                <PinIcon /> {m.pinnedAt ? "Unpin message" : "Pin message"}
+              </button>
+            )}
             {isMine && (
               <>
                 <button type="button" role="menuitem" data-testid={`message-${mid}-edit`} onClick={() => { onStartEdit(); onCloseMenu(); }}>
