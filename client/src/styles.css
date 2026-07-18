@@ -4858,12 +4858,28 @@ html[data-mode="dark"] .day-divider-label {
 .forward-source-card > p {
   margin: 10px 0 0 43px;
   max-height: 74px;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
   overflow: hidden;
   color: var(--text);
   font-size: 13.5px;
   line-height: 1.45;
   white-space: pre-wrap;
   word-break: break-word;
+}
+.forward-attachment-strip {
+  display: flex;
+  gap: 6px;
+  margin: 10px 0 0 43px;
+}
+.forward-attachment-thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
 }
 .forward-search-picker {
   position: relative;
@@ -4908,6 +4924,47 @@ html[data-mode="dark"] .day-divider-label {
 }
 .forward-destination-search {
   flex: none;
+}
+.forward-selected-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 8px;
+}
+.forward-chip {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 4px 6px 4px 9px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 650;
+}
+.forward-chip > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.forward-chip button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border-radius: 50%;
+  color: var(--muted);
+}
+.forward-chip button:hover,
+.forward-chip button:focus-visible {
+  background: var(--active-soft);
+  color: var(--text);
 }
 .forward-search-picker .people-filter {
   position: relative;
@@ -4975,6 +5032,11 @@ html[data-mode="dark"] .day-divider-label {
 .forward-destination-row:hover:not(:disabled) {
   background: var(--active-soft);
 }
+.forward-destination-row.keyboard-active {
+  background: var(--active-soft);
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: -2px;
+}
 .forward-destination-row.selected {
   background: color-mix(in srgb, var(--accent) 13%, var(--surface));
   box-shadow: inset 3px 0 0 var(--accent);
@@ -4997,6 +5059,19 @@ html[data-mode="dark"] .day-divider-label {
   border: 1px solid var(--border);
   border-radius: 11px;
   background: var(--surface-2);
+}
+.forward-result-group + .forward-result-group {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+.forward-result-group-label {
+  padding: 5px 8px 4px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
 }
 .forward-destination-icon {
   display: inline-flex;
@@ -5063,6 +5138,9 @@ html[data-mode="dark"] .day-divider-label {
 }
 .forward-error {
   margin-top: 12px;
+}
+.forward-live-region {
+  min-height: 0;
 }
 .forward-destination-results .person-row:hover {
   background: var(--active-soft);
@@ -7005,6 +7083,23 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 @media (max-width: 760px) {
   .messages {
     padding: 1rem 0.75rem;
+  }
+  .modal-backdrop:has(.forward-modal) {
+    align-items: flex-end;
+  }
+  .modal.forward-modal {
+    width: 100%;
+    max-width: none;
+    max-height: min(92dvh, 760px);
+    margin: 0;
+    padding: 18px 16px 14px;
+    border-radius: 18px 18px 0 0;
+  }
+  .forward-destination-list {
+    max-height: 30dvh;
+  }
+  .forward-actions {
+    padding-bottom: env(safe-area-inset-bottom);
   }
   .new-messages-button {
     right: 12px;

@@ -149,6 +149,7 @@ test("opens a profile, marks VIP, starts a DM, protects it, and can message self
 
 test("edits and deletes own messages", async ({ page }) => {
   await page.goto("/");
+  await page.getByTestId(`channel-row-${slug(fixture.generalChannel.name)}`).click();
 
   const body = `Editable ${Date.now()}`;
   const composer = page.locator(".composer-editor");
@@ -205,7 +206,9 @@ test("forwards a message and jumps back to the original", async ({ page }) => {
     .getByPlaceholder("Search channels and people")
     .fill(fixture.projectChannel.name);
   await forwardModal
-    .getByTestId(`forward-dest-channel-${fixture.projectChannel.id}`)
+    .locator(".forward-destination-row")
+    .filter({ hasText: fixture.projectChannel.name })
+    .first()
     .click();
   await forwardModal.getByTestId("forward-send-selected").click();
 
@@ -559,7 +562,9 @@ test("opens the original thread when a thread reply is forwarded into the same c
     .getByPlaceholder("Search channels and people")
     .fill(fixture.projectChannel.name);
   await forwardModal
-    .getByTestId(`forward-dest-channel-${fixture.projectChannel.id}`)
+    .locator(".forward-destination-row")
+    .filter({ hasText: fixture.projectChannel.name })
+    .first()
     .click();
   await forwardModal.getByTestId("forward-send-selected").click();
 

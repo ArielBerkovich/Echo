@@ -988,6 +988,7 @@ export default function App() {
               onScrollToBottomTargetConsumed={clearScrollToBottomTarget}
               onOpenProfile={openProfile}
               onOpenChannel={handleOpenChannelTag}
+              onToast={setToast}
               isVip={activeChannel.type === "dm" && vipIds.has(activeChannel.dmUserId)}
               onToggleVip={handleToggleVip}
               jumpMessageId={jumpMessageId}

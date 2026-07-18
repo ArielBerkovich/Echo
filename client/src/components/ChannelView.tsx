@@ -75,6 +75,7 @@ export default function ChannelView({
   onDeleteChannel,
   onChangeVisibility,
   onChannelUpdated,
+  onToast,
   onJoin,
   onRead,
   onThreadRead,
@@ -1164,6 +1165,12 @@ export default function ChannelView({
           dms={dms}
           users={users}
           onForward={forwardTo}
+          onSuccess={(destinations) => {
+            const first = destinations[0];
+            const firstLabel = first?.kind === "channel" ? `#${first.label}` : first?.label;
+            const remainder = destinations.length - 1;
+            onToast?.(`Forwarded to ${firstLabel}${remainder > 0 ? ` and ${remainder} other${remainder === 1 ? "" : "s"}` : ""}`);
+          }}
           onClose={() => setForwarding(null)}
         />
       )}

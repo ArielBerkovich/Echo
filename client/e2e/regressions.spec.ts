@@ -173,6 +173,7 @@ test("preserves the reading position and offers new messages when scrolled up", 
   await page.getByTestId(`channel-row-${slug(channelName)}`).click();
   const scroller = page.locator(".channel-main .messages");
   await expect(scroller).toBeVisible();
+  await expect(page.getByText("Scroll seed 27", { exact: false })).toBeVisible();
   await scroller.evaluate((el) => {
     el.scrollTop = Math.max(0, el.scrollHeight - el.clientHeight - 220);
     el.dispatchEvent(new Event("scroll", { bubbles: true }));

@@ -206,6 +206,12 @@ function Message({
       data-mid={m.id}
       data-testid={`message-${mid}`}
       onMouseEnter={onActivate}
+      onContextMenu={(event) => {
+        if (window.matchMedia("(max-width: 760px)").matches) {
+          event.preventDefault();
+          onForward?.();
+        }
+      }}
       onMouseLeave={(event) => {
         const related = event.relatedTarget;
         if (!(related instanceof Node) || !actionsRef.current?.contains(related)) {
@@ -383,9 +389,12 @@ function Message({
               role="menuitem"
               data-testid={`message-${mid}-save`}
               className={saved ? "active" : ""}
-              onClick={() => { onToggleSave(); onCloseMenu(); }}
+                onClick={() => { onToggleSave(); onCloseMenu(); }}
             >
               <BookmarkIcon /> {saved ? "Remove from saved" : "Save for later"}
+            </button>
+            <button type="button" role="menuitem" data-testid={`message-${mid}-forward-menu`} onClick={() => { onForward(); onCloseMenu(); }}>
+              <ShareIcon /> Forward message
             </button>
             {canPin && (
               <button
