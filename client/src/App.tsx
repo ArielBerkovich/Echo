@@ -439,6 +439,9 @@ export default function App() {
     // #general is the default channel — leaving it isn't allowed.
     if ((channel.name || "").toLowerCase() === "general") return;
     await api.leaveChannel(channel.id, managerId);
+    if (channel.type === "private") {
+      api.getSaved().then(({ items }) => setSavedIds(new Set(items.map((item) => item.id)))).catch(() => {});
+    }
     const { channels } = await api.listChannels();
     setChannels(channels);
     setActiveChannel((prev) => (prev?.id === channel.id ? channels[0] || null : prev));
@@ -446,6 +449,9 @@ export default function App() {
 
   async function handleDeleteChannel(channel) {
     await api.deleteChannel(channel.id);
+    if (channel.type === "private") {
+      api.getSaved().then(({ items }) => setSavedIds(new Set(items.map((item) => item.id)))).catch(() => {});
+    }
     const { channels } = await api.listChannels();
     setChannels(channels);
     setAllChannels((prev) => prev.filter((candidate) => candidate.id !== channel.id));
@@ -577,7 +583,7 @@ export default function App() {
   // (previously only member channels opened, so DM activity did nothing). If the
   // item is a thread reply, also open its thread so it gets marked read (a
   // thread mention stays unread until the thread itself is opened).
-  function handleJump(item) {
+  async function handleJump(item) {
     markNavDuringRestore();
     const channelId = typeof item === "string" ? item : item.channelId;
     // Channel add/remove activity entries are navigation events, not
@@ -596,22 +602,35 @@ export default function App() {
     setSearchQuery(null);
     if (messageId || threadId) clearScrollState(channelId);
 
-    const opened = (() => {
-      const channel = resolveJumpChannel({ channelId, channelType, channelName });
-      if (channel) {
-        setActiveChannel(channel);
-        setView("home");
-        return true;
+    let opened = false;
+    const channel = resolveJumpChannel({ channelId, channelType, channelName });
+    if (channel) {
+      setActiveChannel(channel);
+      setView("home");
+      opened = true;
+    } else {
+      let dm = dms.find((d) => d.id === channelId);
+      // Hidden DMs are omitted from /dms, but the current user remains a
+      // member and can still access the conversation and its messages.
+      if (!dm && channelType === "dm") {
+        try {
+          const result = await api.getChannel(channelId);
+          const other = (result.members || []).find((member) => member.id !== user.id)
+            || (result.channel?.members?.length === 1 ? user : null);
+          if (result.channel?.type === "dm" && other) {
+            dm = { id: result.channel.id, withUser: other };
+          }
+        } catch {
+          /* fall through to the access error below */
+        }
       }
-      const dm = dms.find((d) => d.id === channelId);
       if (dm) {
         setView("dms");
         setActiveChannel({ id: dm.id, type: "dm", dmName: dm.withUser.displayName, dmUserId: dm.withUser.id });
-        return true;
+        opened = true;
       }
-      setToast("You don't have access to that conversation.");
-      return false;
-    })();
+    }
+    if (!opened) setToast("You don't have access to that conversation.");
 
     if (opened && threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
     if (opened && messageId && !threadId) setJumpMessageId(messageId);
@@ -749,6 +768,7 @@ export default function App() {
         else next.delete(userId);
         return next;
       });
+      refreshDms();
     }).catch(() => {
       setVipIds((prev) => {
         const next = new Set(prev);

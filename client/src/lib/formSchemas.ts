@@ -41,15 +41,30 @@ export function authSchema(mode) {
   }
 
   if (mode === "admin") {
-    return z.object({ username: z.literal("admin"), password: passwordSchema });
+    return z
+      .object({
+        username: z.literal("admin"),
+        password: passwordSchema,
+        confirmPassword: z.string().min(1, "Please confirm your password"),
+      })
+      .refine((values) => values.password === values.confirmPassword, {
+        path: ["confirmPassword"],
+        message: "Passwords don't match",
+      });
   }
 
-  return z.object({
-    firstName: personNameInput,
-    lastName: personNameInput,
-    username: usernameInput,
-    password: passwordSchema,
-  });
+  return z
+    .object({
+      firstName: personNameInput,
+      lastName: personNameInput,
+      username: usernameInput,
+      password: passwordSchema,
+      confirmPassword: z.string().min(1, "Please confirm your password"),
+    })
+    .refine((values) => values.password === values.confirmPassword, {
+      path: ["confirmPassword"],
+      message: "Passwords don't match",
+    });
 }
 
 export const channelSchema = z.object({

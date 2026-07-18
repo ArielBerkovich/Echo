@@ -53,6 +53,7 @@ function Message({
   onOpenChannel, // (channelName) => open a public channel from a #tag
   showActions, // is this message's hover toolbar the active (only) one?
   onActivate, // mark this message as the active one (mouse entered it)
+  onDeactivate, // hide the toolbar when leaving both the message and its portal
   onOpenLightbox, // (src, name) => open image in a side panel (when in thread)
   onTogglePin,
   canPin = true,
@@ -61,6 +62,9 @@ function Message({
   const actionsVisible = showActions;
   const [copied, setCopied] = useState(false);
   const [menuPosition, setMenuPosition] = useState(null);
+  const [actionsPosition, setActionsPosition] = useState(null);
+  const messageRef = useRef(null);
+  const actionsRef = useRef(null);
   const menuRef = useRef(null);
   const menuTriggerRef = useRef(null);
   const mid = m.id;
@@ -100,6 +104,31 @@ function Message({
   const messageAttachments = m.attachments?.length > 0
     ? <Attachments attachments={m.attachments} onOpenLightbox={onOpenLightbox} />
     : null;
+
+  useLayoutEffect(() => {
+    if (!actionsVisible) {
+      setActionsPosition(null);
+      return undefined;
+    }
+    const measure = () => {
+      const message = messageRef.current;
+      if (!message) return;
+      const rect = message.getBoundingClientRect();
+      setActionsPosition({
+        top: rect.top + 2,
+        right: window.innerWidth - rect.right + 18,
+      });
+    };
+    const frame = requestAnimationFrame(measure);
+    const scrollViewport = messageRef.current?.closest(".messages, .thread-body");
+    window.addEventListener("resize", measure);
+    scrollViewport?.addEventListener("scroll", measure, { passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", measure);
+      scrollViewport?.removeEventListener("scroll", measure);
+    };
+  }, [actionsVisible]);
 
   useLayoutEffect(() => {
     if (!menuOpen) {
@@ -173,9 +202,16 @@ function Message({
   return (
     <div
       className={`message ${grouped ? "grouped" : ""} ${highlighted ? "flash" : ""} ${menuOpen ? "menu-open" : ""}`}
+      ref={messageRef}
       data-mid={m.id}
       data-testid={`message-${mid}`}
       onMouseEnter={onActivate}
+      onMouseLeave={(event) => {
+        const related = event.relatedTarget;
+        if (!(related instanceof Node) || !actionsRef.current?.contains(related)) {
+          onDeactivate?.();
+        }
+      }}
     >
       <div className="avatar-slot">
         {grouped ? (
@@ -282,31 +318,51 @@ function Message({
         )}
       </div>
 
-      <div className={`msg-actions ${actionsVisible ? "visible" : ""}`} data-testid={`message-${mid}-actions`}>
-        <button className="react-toggle" data-testid={`message-${mid}-add-reaction-action`} title="Add reaction" onClick={onReact}>
-          <EmojiAddIcon />
-        </button>
-        {!inThread && (
-          <button data-testid={`message-${mid}-reply`} title="Reply in thread" onClick={onOpenThread}>
-            <ReplyIcon />
-          </button>
-        )}
-        <button data-testid={`message-${mid}-forward`} title="Forward message" onClick={onForward}>
-          <ShareIcon />
-        </button>
-        <button
-          type="button"
-          data-testid={`message-${mid}-more`}
-          title="More message actions"
-          aria-label="More message actions"
-          aria-expanded={menuOpen}
-          className={menuOpen ? "active" : ""}
-          onClick={onToggleMenu}
-          ref={menuTriggerRef}
+      {actionsVisible && createPortal(
+        <div
+          ref={actionsRef}
+          className="msg-actions visible"
+          data-message-actions="true"
+          data-testid={`message-${mid}-actions`}
+          style={actionsPosition ? {
+            position: "fixed",
+            top: actionsPosition.top,
+            right: actionsPosition.right,
+          } : { visibility: "hidden" }}
+          onMouseEnter={onActivate}
+          onMouseLeave={(event) => {
+            const related = event.relatedTarget;
+            if (!(related instanceof Node) || !messageRef.current?.contains(related)) {
+              onDeactivate?.();
+            }
+          }}
         >
-          <MoreIcon />
-        </button>
-      </div>
+          <button className="react-toggle" data-testid={`message-${mid}-add-reaction-action`} title="Add reaction" onClick={onReact}>
+            <EmojiAddIcon />
+          </button>
+          {!inThread && (
+            <button data-testid={`message-${mid}-reply`} title="Reply in thread" onClick={onOpenThread}>
+              <ReplyIcon />
+            </button>
+          )}
+          <button data-testid={`message-${mid}-forward`} title="Forward message" onClick={onForward}>
+            <ShareIcon />
+          </button>
+          <button
+            type="button"
+            data-testid={`message-${mid}-more`}
+            title="More message actions"
+            aria-label="More message actions"
+            aria-expanded={menuOpen}
+            className={menuOpen ? "active" : ""}
+            onClick={onToggleMenu}
+            ref={menuTriggerRef}
+          >
+            <MoreIcon />
+          </button>
+        </div>,
+        document.body
+      )}
 
       {menuOpen && createPortal(
         <>

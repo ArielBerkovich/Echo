@@ -257,7 +257,11 @@ export default function Composer({ channel, parentId = null, users = [], channel
   function handleInput() {
     const el = editorRef.current;
     const hasText = !!el && el.textContent.trim() !== "";
-    setEmpty(isEditorEmpty(el));
+    const emptyNow = isEditorEmpty(el);
+    if (emptyNow && el) {
+      el.replaceChildren();
+    }
+    setEmpty(emptyNow);
     setCanSend(hasText);
     if (hasText) signalTyping();
     else stopTyping();
@@ -1029,15 +1033,11 @@ export default function Composer({ channel, parentId = null, users = [], channel
       )}
 
       <div className="composer-input">
-        {empty && (
-          <div className="editor-placeholder">
-            {isDm ? `Message ${channel.dmName}` : `Message #${channel.name}`}
-          </div>
-        )}
         <div
           ref={editorRef}
-          className="composer-editor"
+          className={`composer-editor ${empty ? "is-empty" : ""}`}
           data-testid="composer-editor"
+          data-placeholder={isDm ? `Message ${channel.dmName}` : `Message #${channel.name}`}
           contentEditable
           suppressContentEditableWarning
           role="textbox"

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { EyeIcon, EyeOffIcon, IdCardIcon, LockIcon, MailIcon, NotebookTextIcon, UserIcon } from "lucide-react";
+import { ArrowLeftIcon, EyeIcon, EyeOffIcon, IdCardIcon, InfoIcon, LockIcon, MailIcon, NotebookTextIcon, UserIcon } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { api } from "../api.js";
@@ -72,6 +72,7 @@ export default function Login({ onAuthed }) {
       firstName: "",
       lastName: "",
       password: "",
+      confirmPassword: "",
     },
   });
   const firstName = watch("firstName");
@@ -146,34 +147,48 @@ export default function Login({ onAuthed }) {
     }
   }
 
-  const submit = handleSubmit(async (values) => {
-    setServerError(null);
-    try {
-      const payload = isRegister
-        ? {
-            username: values.username,
-            password: values.password,
-            ...(needsSetup ? {} : { firstName: values.firstName, lastName: values.lastName }),
-          }
-        : { username: values.username, password: values.password };
-      const result = isRegister ? await api.register(payload) : await api.login(payload);
-      // Play the ripple-burst welcome, then hand off to the app.
-      setSuccess(true);
-      setTimeout(() => onAuthed(result), 1150);
-    } catch (err) {
-      setServerError(err.message);
-      if (err.usernameTaken && err.suggestions) {
-        setUsernameTaken(true);
-        setUsernameSuggestions(err.suggestions);
+  const submit = handleSubmit(
+    async (values) => {
+      setServerError(null);
+      try {
+        const payload = isRegister
+          ? {
+              username: values.username,
+              password: values.password,
+              ...(needsSetup ? {} : { firstName: values.firstName, lastName: values.lastName }),
+            }
+          : { username: values.username, password: values.password };
+        const result = isRegister ? await api.register(payload) : await api.login(payload);
+        // Play the ripple-burst welcome, then hand off to the app.
+        setSuccess(true);
+        setTimeout(() => onAuthed(result), 1150);
+      } catch (err) {
+        setServerError(err.message);
+        if (err.usernameTaken && err.suggestions) {
+          setUsernameTaken(true);
+          setUsernameSuggestions(err.suggestions);
+        }
+      }
+    },
+    (validationErrors) => {
+      if (validationErrors.confirmPassword) {
+        setServerError(validationErrors.confirmPassword.message || "Please confirm your password.");
+      } else if (validationErrors.password) {
+        setServerError(validationErrors.password.message || "Please enter a valid password.");
+      } else {
+        const firstError = Object.values(validationErrors)[0];
+        setServerError(firstError?.message || "Please complete all required fields.");
       }
     }
-  });
+  );
 
   async function continueRegistration() {
     const valid = await trigger(["firstName", "lastName"]);
     if (valid) {
       setServerError(null);
       setRegisterStep(2);
+    } else {
+      setServerError("Please enter your first and last name to continue.");
     }
   }
 
@@ -269,13 +284,26 @@ export default function Login({ onAuthed }) {
 
           {needsSetup && <div className="setup-badge">🛡 First-time setup</div>}
 
-          <p className="subtitle">
-            {needsSetup
-              ? "Welcome to Echo! Create the admin account to set up your workspace."
-              : isRegister
-              ? "Create your account to get started."
-              : "Welcome back — sign in to continue."}
-          </p>
+          <div className="auth-subtitle-row">
+            {isRegister && !needsSetup && registerStep === 2 && (
+              <button
+                type="button"
+                className="auth-back"
+                onClick={() => setRegisterStep(1)}
+                title="Back to names"
+                aria-label="Back to names"
+              >
+                <ArrowLeftIcon size={14} strokeWidth={2} />
+              </button>
+            )}
+            <p className="subtitle">
+              {needsSetup
+                ? "Welcome to Echo! Create the admin account to set up your workspace."
+                : isRegister
+                ? "Create your account to get started."
+                : "Welcome back — sign in to continue."}
+            </p>
+          </div>
 
           {needsSetup && (
             <div className="setup-callout">
@@ -350,7 +378,10 @@ export default function Login({ onAuthed }) {
                 <span className="auth-username-prefix">{usernameBase}</span>
                 <input
                   {...usernameField}
-                  type="hidden"
+                  type="text"
+                  className="auth-username-credential"
+                  autoComplete="username"
+                  aria-hidden="true"
                   value={`${usernameBase}${usernameSuffix}`}
                   readOnly
                 />
@@ -415,14 +446,20 @@ export default function Login({ onAuthed }) {
             </div>
           )}
 
-          {isRegister && !needsSetup && (
-            <button type="button" className="auth-back link" onClick={() => setRegisterStep(1)}>
-              ← Back to names
-            </button>
-          )}
-
           <label className="field">
-            <span>Password</span>
+            <span className="field-label-row">
+              <span>Password</span>
+              {isRegister && (
+                <button
+                  type="button"
+                  className="password-info"
+                  title={PASSWORD_RULE}
+                  aria-label={PASSWORD_RULE}
+                >
+                  <InfoIcon size={14} strokeWidth={2} />
+                </button>
+              )}
+            </span>
             <div className="input-wrap">
               <LockIcon size={17} strokeWidth={1.6} />
               <input
@@ -447,11 +484,27 @@ export default function Login({ onAuthed }) {
                 {showPw ? <EyeOffIcon size={17} strokeWidth={1.6} /> : <EyeIcon size={17} strokeWidth={1.6} />}
               </button>
             </div>
-            {isRegister && <span className="field-hint">{PASSWORD_RULE}</span>}
             {errors.password && <span className="field-hint error small">{errors.password.message}</span>}
           </label>
 
-          {serverError && <div className="error">{serverError}</div>}
+          {isRegister && (
+            <label className="field confirm-password-field">
+              <span>Confirm password</span>
+              <div className="input-wrap">
+                <LockIcon size={17} strokeWidth={1.6} />
+                <input
+                  {...register("confirmPassword")}
+                  type="password"
+                  autoComplete="off"
+                  placeholder="Re-enter your password"
+                  onPaste={(event) => event.preventDefault()}
+                  onCopy={(event) => event.preventDefault()}
+                  onCut={(event) => event.preventDefault()}
+                />
+              </div>
+              {errors.confirmPassword && <span className="field-hint error small">{errors.confirmPassword.message}</span>}
+            </label>
+          )}
 
           <button type="submit" className="btn-primary auth-submit" disabled={isSubmitting}>
             {isSubmitting ? (
@@ -466,15 +519,15 @@ export default function Login({ onAuthed }) {
           </button>
           </>}
 
-          {!needsSetup && (
+          {!needsSetup && !isRegister && (
             <p className="auth-switch">
-              {isRegister ? "Already have an account? " : "New to Echo? "}
+              New to Echo?{" "}
               <button
                 type="button"
                 className="link"
-                onClick={() => switchMode(isRegister ? "login" : "register")}
+                onClick={() => switchMode("register")}
               >
-                {isRegister ? "Sign in" : "Create one"}
+                Create one
               </button>
             </p>
           )}

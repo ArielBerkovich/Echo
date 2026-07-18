@@ -19,7 +19,12 @@ dmsRouter.get("/", async (req, res) => {
   const dms = await Channel.find({
     type: "dm",
     members: req.user._id,
-    hiddenFor: { $ne: req.user._id }, // not removed from this user's sidebar
+    // VIP conversations stay visible even if they were hidden before the
+    // user was marked VIP.
+    $or: [
+      { hiddenFor: { $ne: req.user._id } },
+      { members: { $in: req.user.vips || [] } },
+    ],
   }).populate("members");
 
   const ids = dms.map((c) => c._id);
