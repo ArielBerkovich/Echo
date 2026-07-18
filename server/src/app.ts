@@ -25,7 +25,10 @@ export function createApp() {
       crossOriginResourcePolicy: { policy: "same-site" },
     })
   );
-  app.use(cors({ origin: config.clientOrigin, credentials: true }));
+  app.use(cors({
+    origin: (origin, callback) => callback(null, !origin || origin === "null" || origin === config.clientOrigin),
+    credentials: true,
+  }));
   app.use(express.json({ limit: "50kb" }));
 
   app.get("/api/health", (_req, res) => res.json({ status: "ok" }));

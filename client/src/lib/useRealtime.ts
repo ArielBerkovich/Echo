@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api.js";
 import { getSocket } from "../socket.js";
-import { notificationsActive, showNotification } from "./notify.js";
+import { notificationPreview, notificationsActive, showNotification } from "./notify.js";
 
 // Owns the real-time layer: socket listeners (message:new, activity:bump,
 // reconnect, emoji:new, user:new, presence), the live Activity-badge counts,
@@ -217,12 +217,11 @@ export function useRealtime({
         const focusedHere = !!active && msg.channelId === active.id && document.hasFocus();
         if (!focusedHere) {
           const sender = msg.author?.displayName || "Someone";
-          const text = msg.body || "";
-          const preview = text.replace(/\s+/g, " ").trim().slice(0, 140) || "Sent an attachment";
+          const preview = notificationPreview(msg.body) || "Sent an attachment";
           if (inDms) {
             const dm = dmsRef.current.find((d) => d.id === msg.channelId);
             const vip = dm && vipRef.current.has(dm.withUser.id);
-            showNotification(vip ? `⭐ ${sender} · VIP` : sender, {
+            showNotification(vip ? `⭐ ${sender} · VIP message` : `Message from ${sender}`, {
               body: preview,
               tag: msg.channelId,
               onClick: () => {
@@ -239,8 +238,8 @@ export function useRealtime({
             });
           } else if (mentionsMe && inChannels) {
             const ch = channelsRef.current.find((c) => c.id === msg.channelId);
-            showNotification(`${sender} in #${ch?.name || "channel"}`, {
-              body: preview,
+            showNotification(`Mention from ${sender}`, {
+              body: `${ch?.name ? `#${ch.name} · ` : ""}${preview}`,
               tag: msg.channelId,
               onClick: () => {
                 setView("home");

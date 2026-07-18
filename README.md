@@ -166,8 +166,31 @@ At runtime, Echo does not require external API calls for normal chat, API automa
 
 ```text
 client/             React client
+electron/           Electron desktop shell
 server/             Express and Socket.IO API server
 helm/echo/          Self-contained Helm chart
 docker-compose.yml  Local deployment stack
 docs/images/        README screenshots
 ```
+
+## Desktop app
+
+Install the Electron shell dependencies, then start the desktop client. On
+first launch it asks for the URL of the Echo backend and remembers it for later
+launches:
+
+```bash
+cd electron
+npm install
+npm start
+```
+
+Build installers with `npm run dist` after installing the Electron
+dependencies.
+
+For local UI development, run Vite and use `npm run start:dev` instead. The
+desktop app loads the bundled React UI and sends API/WebSocket traffic to the
+backend URL. A managed deployment can skip the prompt with
+`--echo-server-url=https://echo.example.com` or `ELECTRON_START_URL`. Desktop
+notifications are handled by Electron, are suppressed while the window is
+focused, and close automatically after five seconds.

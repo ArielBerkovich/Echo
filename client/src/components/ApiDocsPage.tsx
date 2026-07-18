@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { ChevronDownIcon } from "lucide-react";
-import { api } from "../api.js";
+import { api, getBackendUrl } from "../api.js";
 import { apiEndpointKey } from "../lib/apiDocs.js";
 
-const ORIGIN = typeof window !== "undefined" ? window.location.origin : "https://your-echo-host";
+const ORIGIN = getBackendUrl() || (typeof window !== "undefined" ? window.location.origin : "https://your-echo-host");
 
 // The REST endpoints for creating channels and sending messages. Each carries a
 // ready-to-paste curl that embeds the token generated on this page.

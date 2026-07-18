@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Echo — Connect to backend</title>
+    <style>
+      :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+      body { margin: 0; padding: 34px; background: #20242c; color: #f3f4f6; }
+      h1 { margin: 0 0 10px; font-size: 24px; }
+      p { color: #b9c0cc; line-height: 1.45; }
+      label { display: block; margin: 24px 0 7px; font-weight: 600; }
+      input { box-sizing: border-box; width: 100%; padding: 11px 12px; border: 1px solid #586273; border-radius: 6px; background: #151820; color: inherit; font-size: 14px; }
+      button { margin-top: 18px; padding: 10px 16px; border: 0; border-radius: 6px; background: #81a1c1; color: #17202b; font-weight: 700; cursor: pointer; }
+      #error { min-height: 20px; margin-top: 12px; color: #ff9b9b; font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <h1>Connect to Echo</h1>
+    <p>Enter the URL of the Echo backend you want this desktop app to use.</p>
+    <form id="form">
+      <label for="url">Backend URL</label>
+      <input id="url" type="url" placeholder="https://echo.example.com" autofocus required />
+      <button type="submit">Connect</button>
+      <div id="error" role="alert"></div>
+    </form>
+    <script>
+      const form = document.getElementById("form");
+      const input = document.getElementById("url");
+      const error = document.getElementById("error");
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        error.textContent = "";
+        const result = await window.echoDesktopConfig.saveBackendUrl(input.value);
+        if (!result.ok) error.textContent = result.error;
+      });
+    </script>
+  </body>
+</html>
