@@ -1,0 +1,51 @@
+{
+  "name": "echo-desktop",
+  "productName": "Echo",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Electron desktop shell for Echo",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "start:dev": "ELECTRON_START_URL=http://localhost:5173 electron .",
+    "dist": "ELECTRON_BUILD=1 npm --prefix ../client run build && electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^37.2.6",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.echo.desktop",
+    "productName": "Echo",
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "setup.html"
+    ],
+    "extraResources": [
+      {
+        "from": "../client/dist",
+        "to": "client-dist"
+      },
+      {
+        "from": "../client/src/assets/echo-logo.png",
+        "to": "echo-logo.png"
+      }
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "../client/src/assets/echo-logo.png"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "../client/src/assets/echo-logo.png"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "../client/src/assets/echo-logo.png"
+    }
+  }
+}

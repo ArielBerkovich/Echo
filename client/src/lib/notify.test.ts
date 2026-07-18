@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 
 import {
+  notificationPreview,
   notificationsActive,
   notifyPermission,
   notifyPref,
@@ -51,6 +52,10 @@ describe("notification preferences", () => {
     assert.equal(notifyPref(), true);
     setNotifyPref(false);
     assert.equal(notifyPref(), false);
+  });
+
+  it("cleans Markdown from notification previews", () => {
+    assert.equal(notificationPreview("**Build** finished with [logs](https://example.test)"), "Build finished with logs");
   });
 
   it("requests permission only when permission is default", async () => {

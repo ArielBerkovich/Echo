@@ -18,6 +18,15 @@ function authHeaders(extra = {}) {
   return headers;
 }
 
+export function getBackendUrl() {
+  const configured = typeof window !== "undefined" ? window.echoDesktopConfig?.backendUrl : "";
+  return configured ? configured.replace(/\/+$/, "") : "";
+}
+
+function apiUrl(path) {
+  return `${getBackendUrl()}/api${path}`;
+}
+
 function friendlyErrorMessage(status, serverMessage, path, errorLabel) {
   if (status >= 500) {
     if (path === "/auth/login") return "We couldn't sign you in right now. Please try again in a moment.";
@@ -50,7 +59,7 @@ async function request(path, { method = "GET", body } = {}) {
   const hasBody = body !== undefined;
 
   try {
-    const res = await fetch(`/api${path}`, {
+    const res = await fetch(apiUrl(path), {
       method,
       headers: authHeaders(hasBody ? { "Content-Type": "application/json" } : {}),
       body: hasBody ? JSON.stringify(body) : undefined,
@@ -65,7 +74,7 @@ async function request(path, { method = "GET", body } = {}) {
 
 async function requestMultipart(path, form, errorLabel) {
   try {
-    const res = await fetch(`/api${path}`, {
+    const res = await fetch(apiUrl(path), {
       method: "POST",
       headers: authHeaders(),
       body: form,

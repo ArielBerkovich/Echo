@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { config } from "./config.js";
 
-const TOKEN_TTL = "7d";
+const TOKEN_TTL = "30d";
 const API_TOKEN_TTL = "365d"; // long-lived token for programmatic API access
 
 export function signToken(user) {

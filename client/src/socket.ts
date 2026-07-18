@@ -1,12 +1,12 @@
 import { io } from "socket.io-client";
-import { getToken } from "./api.js";
+import { getBackendUrl, getToken } from "./api.js";
 
 let socket = null;
 
 // Lazily create a single shared socket connection, authenticated with the JWT.
 export function getSocket() {
   if (socket) return socket;
-  socket = io({
+  socket = io(getBackendUrl() || undefined, {
     auth: { token: getToken() },
     autoConnect: true,
   });
