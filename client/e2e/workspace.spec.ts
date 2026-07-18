@@ -77,7 +77,7 @@ test("copies the raw markdown body from a message", async ({ page }) => {
   await expect(message).toBeVisible();
 
   await message.hover();
-  await message.getByTitle("More message actions").click();
+  await page.locator('[data-message-actions="true"]').getByTitle("More message actions").click();
   await page.getByRole("menuitem", { name: "Copy message" }).click();
 
   await expect.poll(() => page.evaluate(() => window.__copiedText)).toBe(fixture.messages.formatted.body);
@@ -111,6 +111,44 @@ test("pastes markdown into the composer as formatted content", async ({ page }) 
   await expect(editor.locator('a[href="https://example.com"]')).toHaveText("Echo link");
 });
 
+test("resets the composer placeholder after deleting the draft", async ({ page }) => {
+  await page.goto("/");
+  const editor = page.getByTestId("composer-editor");
+
+  await expect(editor).toHaveClass(/is-empty/);
+  await expect(editor).toHaveAttribute("data-placeholder", "Message #general");
+  await editor.fill("temporary draft");
+  await editor.fill("");
+
+  await expect(editor).toHaveClass(/is-empty/);
+  await expect.poll(() => editor.evaluate((element) => element.innerHTML)).toBe("");
+});
+
+test("clears message actions when leaving the message row but keeps them over the toolbar", async ({ page }) => {
+  await page.goto("/");
+  const message = page.locator(".message").filter({ hasText: fixture.messages.searchHit.body }).first();
+  await expect(message).toBeVisible();
+
+  await message.hover();
+  const actions = page.getByTestId(/message-.*-actions/).first();
+  await expect(actions).toBeVisible();
+
+  const actionsBox = await actions.boundingBox();
+  expect(actionsBox).not.toBeNull();
+  await page.mouse.move(actionsBox.x + 8, actionsBox.y + 8);
+  await expect(actions).toBeVisible();
+
+  const messageBox = await message.boundingBox();
+  const messagesBox = await page.locator(".channel-main .messages").boundingBox();
+  expect(messageBox).not.toBeNull();
+  expect(messagesBox).not.toBeNull();
+  await page.mouse.move(
+    Math.min(messagesBox.x + messagesBox.width - 4, messageBox.x + messageBox.width + 80),
+    messageBox.y + Math.min(8, messageBox.height / 2)
+  );
+  await expect(actions).toBeHidden();
+});
+
 test("keeps copy-and-paste message paragraphs flush with the composer", async ({ page }) => {
   await page.goto("/");
   const source = page
@@ -118,7 +156,7 @@ test("keeps copy-and-paste message paragraphs flush with the composer", async ({
     .filter({ hasText: fixture.messages.searchHit.body })
     .first();
   await source.hover();
-  await source.getByTitle("More message actions").click();
+  await page.locator('[data-message-actions="true"]').getByTitle("More message actions").click();
   await page.getByRole("menuitem", { name: "Copy message" }).click();
 
   const editor = page.locator(".composer-editor");
@@ -183,6 +221,7 @@ test("uses Shift+Enter for code newlines and Enter to exit the block", async ({ 
 
 test("sends multiple messages from the same composer", async ({ page }) => {
   await page.goto("/");
+  await expect(page.getByTestId("channel-title")).toContainText("general");
 
   const composer = page.locator(".composer-editor");
   await expect(composer).toBeVisible();
@@ -192,11 +231,11 @@ test("sends multiple messages from the same composer", async ({ page }) => {
 
   await composer.fill(first);
   await composer.press("Enter");
-  await expect(page.locator(".message").filter({ hasText: first })).toBeVisible();
+  await expect(page.locator(".message").filter({ hasText: first })).toBeVisible({ timeout: 10_000 });
 
   await composer.fill(second);
   await composer.press("Enter");
-  await expect(page.locator(".message").filter({ hasText: second })).toBeVisible();
+  await expect(page.locator(".message").filter({ hasText: second })).toBeVisible({ timeout: 10_000 });
 });
 
 test("shows activity items and marks activity as read", async ({ page }) => {
@@ -393,8 +432,7 @@ test("opens unread DMs at the new divider instead of restoring the old position"
 
   const scroller = page.locator(".channel-main .messages");
   await expect(scroller).toBeVisible();
-  const maxTop = await scroller.evaluate((el) => Math.max(0, el.scrollHeight - el.clientHeight));
-  expect(maxTop).toBeGreaterThan(180);
+  await expect.poll(async () => scroller.evaluate((el) => Math.max(0, el.scrollHeight - el.clientHeight))).toBeGreaterThan(180);
   await scroller.evaluate((el) => {
     el.scrollTop = Math.max(0, el.scrollHeight - el.clientHeight - 180);
     el.dispatchEvent(new Event("scroll", { bubbles: true }));

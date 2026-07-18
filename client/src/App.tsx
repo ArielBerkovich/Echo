@@ -439,6 +439,7 @@ export default function App() {
     // #general is the default channel — leaving it isn't allowed.
     if ((channel.name || "").toLowerCase() === "general") return;
     await api.leaveChannel(channel.id, managerId);
+    setHidden((prev) => persistHidden(new Set(prev).add(channel.id)));
     if (channel.type === "private") {
       api.getSaved().then(({ items }) => setSavedIds(new Set(items.map((item) => item.id)))).catch(() => {});
     }

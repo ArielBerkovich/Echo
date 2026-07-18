@@ -68,7 +68,8 @@ test("create account tab submits registration payload", async ({ page }) => {
     await registerPage.getByLabel("First name").fill("Bob");
     await registerPage.getByLabel("Last name").fill("Builder");
     await registerPage.getByRole("button", { name: "Continue" }).click();
-    await registerPage.locator('input[type="password"]').fill("Password1");
+    await registerPage.locator('input[name="password"]').fill("Password1");
+    await registerPage.getByLabel("Confirm password").fill("Password1");
     await registerPage.getByRole("button", { name: "Create account" }).click();
   } finally {
     await registerPage.close();
@@ -79,4 +80,39 @@ test("create account tab submits registration payload", async ({ page }) => {
     lastName: "Builder",
     password: "Password1",
   });
+});
+
+test("signup keeps password confirmation errors on the fields", async ({ page }) => {
+  const statusResponse = await page.request.get("/api/auth/setup-status");
+  const { needsSetup } = await statusResponse.json();
+
+  await page.goto("/");
+  if (needsSetup) {
+    await expect(page.getByLabel("Admin username")).toBeVisible();
+  } else {
+    await page.getByRole("tab", { name: "Create account" }).click();
+    await page.getByLabel("First name").fill("Signup");
+    await page.getByLabel("Last name").fill("Tester");
+    await page.getByRole("button", { name: "Continue" }).click();
+  }
+
+  const password = page.locator('input[name="password"]');
+  const confirmation = page.getByLabel("Confirm password");
+  await password.fill("Password1");
+  await page.getByRole("button", { name: needsSetup ? "Create admin account" : "Create account" }).click();
+  await expect(confirmation.locator("xpath=../.."))
+    .toContainText("Please confirm your password");
+
+  await confirmation.fill("Password2");
+  await page.getByRole("button", { name: needsSetup ? "Create admin account" : "Create account" }).click();
+  await expect(confirmation.locator("xpath=../.."))
+    .toContainText("Passwords don't match");
+  await expect(page.locator(".auth-card > .error")).toHaveCount(0);
+
+  const pasteWasPrevented = await confirmation.evaluate((input) => {
+    const event = new ClipboardEvent("paste", { bubbles: true, cancelable: true });
+    input.dispatchEvent(event);
+    return event.defaultPrevented;
+  });
+  expect(pasteWasPrevented).toBeTruthy();
 });

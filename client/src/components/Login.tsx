@@ -485,6 +485,7 @@ export default function Login({ onAuthed }) {
               </button>
             </div>
             {errors.password && <span className="field-hint error small">{errors.password.message}</span>}
+            {!isRegister && serverError && <span className="field-hint error small">{serverError}</span>}
           </label>
 
           {isRegister && (

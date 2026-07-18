@@ -110,6 +110,31 @@ test("creates the channel creator as a manager and lets them promote a member", 
   await expect(bobRow).toContainText("Manager");
 });
 
+test("removes a channel from the sidebar after leaving it", async ({ page }) => {
+  const channelName = `leave-sidebar-${fixture.suffix}`;
+  const created = await requestAsToken(page, fixture.alice.token, "/channels", {
+    method: "POST",
+    body: { name: channelName, type: "public" },
+  });
+  await requestAsToken(page, fixture.alice.token, `/channels/${created.channel.id}/members`, {
+    method: "POST",
+    body: { userId: fixture.bob.id },
+  });
+  await requestAsToken(page, fixture.alice.token, `/channels/${created.channel.id}/managers`, {
+    method: "POST",
+    body: { userId: fixture.bob.id },
+  });
+
+  await page.goto("/");
+  const row = page.getByTestId(`channel-row-${slug(channelName)}`);
+  await expect(row).toBeVisible();
+  await row.click();
+  await page.getByTestId("channel-leave").click();
+  await page.getByRole("button", { name: "Leave", exact: true }).click();
+
+  await expect(row).toHaveCount(0);
+});
+
 test("preserves the reading position and offers new messages when scrolled up", async ({ page }) => {
   const channelName = `scroll-regression-${fixture.suffix}`;
   const created = await requestAsToken(page, fixture.alice.token, "/channels", {
@@ -151,6 +176,85 @@ test("preserves the reading position and offers new messages when scrolled up", 
   await expect.poll(() => scroller.evaluate((el) => el.scrollTop)).toBeGreaterThanOrEqual(position - 2);
   await page.getByTestId("new-messages-button").click();
   await expect.poll(async () => scroller.evaluate((el) => el.scrollHeight - el.scrollTop - el.clientHeight)).toBeLessThanOrEqual(2);
+});
+
+test("scrolls to the bottom after sending while reading older messages", async ({ page }) => {
+  const channelName = `own-send-scroll-${fixture.suffix}`;
+  const created = await requestAsToken(page, fixture.alice.token, "/channels", {
+    method: "POST",
+    body: { name: channelName, type: "public" },
+  });
+  for (let i = 0; i < 28; i += 1) {
+    await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+      method: "POST",
+      body: {
+        channelId: created.channel.id,
+        body: `Own send seed ${i} ${Date.now()}`,
+        externalKey: `own-send-seed-${fixture.suffix}-${i}`,
+      },
+    });
+  }
+
+  await page.goto("/");
+  await page.getByTestId(`channel-row-${slug(channelName)}`).click();
+  const scroller = page.locator(".channel-main .messages");
+  await expect(scroller).toBeVisible();
+  await scroller.evaluate((el) => {
+    el.scrollTop = Math.max(0, el.scrollHeight - el.clientHeight - 220);
+    el.dispatchEvent(new Event("scroll", { bubbles: true }));
+  });
+
+  const body = `Own send scroll ${Date.now()}`;
+  await page.getByTestId("composer-editor").fill(body);
+  await page.getByTestId("composer-editor").press("Enter");
+
+  await expect(page.locator(".message").filter({ hasText: body })).toBeVisible();
+  await expect.poll(async () => scroller.evaluate((el) => el.scrollHeight - el.scrollTop - el.clientHeight)).toBeLessThanOrEqual(2);
+  await expect(page.getByTestId("new-messages-button")).toHaveCount(0);
+});
+
+test("opens a saved message from a hidden DM", async ({ page }) => {
+  const dmMessage = await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.dmChannel.id,
+      body: `Hidden DM saved ${fixture.suffix}`,
+      externalKey: `hidden-dm-saved-${fixture.suffix}`,
+    },
+  });
+  await requestAsToken(page, fixture.alice.token, `/saved/${dmMessage.message.id}`, { method: "POST" });
+  await requestAsToken(page, fixture.alice.token, `/dms/${fixture.dmChannel.id}`, { method: "DELETE" });
+
+  await page.goto("/");
+  await page.getByTestId("rail-saved").click();
+  const savedItem = page.getByTestId("saved-item").filter({ hasText: dmMessage.message.body });
+  await expect(savedItem).toBeVisible();
+  await savedItem.click();
+
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.bob.displayName);
+  await expect(page.getByTestId(`message-${dmMessage.message.id}`)).toBeVisible();
+});
+
+test("keeps a hidden DM visible after marking the other user VIP", async ({ page }) => {
+  await requestAsToken(page, fixture.alice.token, `/dms/${fixture.dmChannel.id}`, { method: "DELETE" });
+  const vips = await requestAsToken(page, fixture.alice.token, "/users/vips");
+  if (vips.vipIds.includes(fixture.bob.id)) {
+    await requestAsToken(page, fixture.alice.token, `/users/${fixture.bob.id}/vip`, { method: "POST" });
+  }
+  const vipResult = await requestAsToken(page, fixture.alice.token, `/users/${fixture.bob.id}/vip`, { method: "POST" });
+  expect(vipResult.vip).toBeTruthy();
+
+  const visibleDms = await requestAsToken(page, fixture.alice.token, "/dms");
+  expect(
+    visibleDms.conversations.some((conversation) => conversation.id === fixture.dmChannel.id),
+    `expected visible DM ${fixture.dmChannel.id}`
+  ).toBeTruthy();
+  await page.goto("/");
+  const vipDm = page.locator(".dm-item").filter({ hasText: fixture.bob.displayName });
+  await expect(vipDm).toBeVisible();
+  await expect(page.getByTestId("vip-toggle")).toBeVisible();
+
+  await requestAsToken(page, fixture.alice.token, `/users/${fixture.bob.id}/vip`, { method: "POST" });
 });
 
 test("shows a friendly message when login returns a server error", async ({ page }) => {
