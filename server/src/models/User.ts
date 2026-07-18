@@ -12,6 +12,8 @@ const userSchema = new mongoose.Schema(
       maxlength: 32,
       match: /^[a-z0-9_.-]+$/,
     },
+    firstName: { type: String, trim: true, maxlength: 64 },
+    lastName: { type: String, trim: true, maxlength: 64 },
     displayName: { type: String, required: true, trim: true, maxlength: 64 },
     passwordHash: { type: String, required: true },
     // Object-storage key for the user's uploaded profile picture (optional).

@@ -3,11 +3,12 @@ import { SearchIcon, UsersRoundIcon, XIcon } from "lucide-react";
 import Avatar from "./Avatar.js";
 import ConfirmDialog from "./ConfirmDialog.js";
 
-export default function MembersPanel({ channel, users = [], onOpenProfile, onAddPeople, onRemoveMember, onClose }) {
+export default function MembersPanel({ channel, users = [], onOpenProfile, onAddPeople, onRemoveMember, onPromoteManager, onClose }) {
   const [query, setQuery] = useState("");
   const [removeTarget, setRemoveTarget] = useState(null);
   const [removeError, setRemoveError] = useState(null);
   const [removing, setRemoving] = useState(false);
+  const [promotingId, setPromotingId] = useState(null);
 
   useEffect(() => {
     function onKeyDown(event) {
@@ -56,6 +57,19 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
       setRemoveError(error.message || "Could not remove member");
     } finally {
       setRemoving(false);
+    }
+  }
+
+  async function promoteManager(member) {
+    if (!onPromoteManager) return;
+    setRemoveError(null);
+    setPromotingId(member.id);
+    try {
+      await onPromoteManager(member.id);
+    } catch (error) {
+      setRemoveError(error.message || "Could not make member a manager");
+    } finally {
+      setPromotingId(null);
     }
   }
 
@@ -119,14 +133,28 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
                   <span className="channel-details-person-handle">@{member.username}</span>
                 </div>
                 {canRemoveMembers && member.id !== channel.currentUserId && (
-                  <button
-                    type="button"
-                    className="members-panel-remove"
-                    onClick={() => setRemoveTarget(member)}
-                    aria-label={`Remove ${member.displayName}`}
-                  >
-                    Remove
-                  </button>
+                  <div className="members-panel-actions">
+                    {onPromoteManager &&
+                      member.id !== channel.createdBy &&
+                      !(channel.managers || []).includes(member.id) && (
+                        <button
+                          type="button"
+                          className="members-panel-promote"
+                          onClick={() => promoteManager(member)}
+                          disabled={promotingId === member.id}
+                        >
+                          {promotingId === member.id ? "Saving…" : "Make manager"}
+                        </button>
+                      )}
+                    <button
+                      type="button"
+                      className="members-panel-remove"
+                      onClick={() => setRemoveTarget(member)}
+                      aria-label={`Remove ${member.displayName}`}
+                    >
+                      Remove
+                    </button>
+                  </div>
                 )}
               </div>
             ))

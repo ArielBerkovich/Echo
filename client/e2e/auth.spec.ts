@@ -2,9 +2,9 @@ import { expect, test } from "@playwright/test";
 import { uniqueSuffix } from "./helpers.js";
 
 test("registration rejects weak passwords", async ({ page }) => {
-  const username = `weak-${uniqueSuffix("auth")}`;
+  const username = `weak.user${uniqueSuffix("auth").replace(/[^a-z0-9]/gi, "").slice(0, 16)}`;
   const response = await page.request.post("/api/auth/register", {
-    data: { username, displayName: "Weak User", password: "weak" },
+    data: { username, firstName: "Weak", lastName: "User", password: "weak" },
   });
   expect(response.status()).toBe(400);
   const body = await response.json();
@@ -36,7 +36,7 @@ test("login displays server errors", async ({ page }) => {
   await page.locator('input[type="password"]').fill("WrongPassword1");
   await page.getByRole("button", { name: "Sign in" }).click();
 
-  await expect(page.getByText("Invalid username or password")).toBeVisible();
+  await expect(page.getByText("That username or password doesn't look right.")).toBeVisible();
 });
 
 test("create account tab submits registration payload", async ({ page }) => {
@@ -52,7 +52,7 @@ test("create account tab submits registration payload", async ({ page }) => {
     return;
   }
 
-  const bobUsername = `bob-${uniqueSuffix("auth")}`;
+  const bobUsername = `bob.builder${uniqueSuffix("auth").replace(/[^a-z0-9]/gi, "").slice(0, 16)}`;
   let payload;
   const registerPage = await page.context().newPage();
   registerPage.on("request", (request) => {
@@ -67,8 +67,9 @@ test("create account tab submits registration payload", async ({ page }) => {
     await expect(registerPage.getByRole("tab", { name: "Create account" })).toBeVisible();
 
     await registerPage.getByRole("tab", { name: "Create account" }).click();
-    await registerPage.getByLabel("Username").fill(bobUsername);
-    await registerPage.getByLabel("Display name").fill("Bob Builder");
+    await registerPage.getByLabel("First name").fill("Bob");
+    await registerPage.getByLabel("Last name").fill("Builder");
+    await registerPage.getByRole("button", { name: "Continue" }).click();
     await registerPage.locator('input[type="password"]').fill("Password1");
     await registerPage.getByRole("button", { name: "Create account" }).click();
   } finally {
@@ -76,8 +77,8 @@ test("create account tab submits registration payload", async ({ page }) => {
   }
 
   await expect.poll(() => payload).toMatchObject({
-    username: bobUsername,
-    displayName: "Bob Builder",
+    firstName: "Bob",
+    lastName: "Builder",
     password: "Password1",
   });
 });

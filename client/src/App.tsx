@@ -424,6 +424,12 @@ export default function App() {
     upsertChannel(channel);
   }
 
+  async function handlePromoteManager(userId) {
+    if (!activeChannel) return;
+    const { channel } = await api.promoteChannelManager(activeChannel.id, userId);
+    upsertChannel(channel);
+  }
+
   async function handleChangeVisibility(channel, type) {
     const { channel: updated } = await api.setChannelVisibility(channel.id, type);
     upsertChannel(updated);
@@ -480,6 +486,7 @@ export default function App() {
   async function handleOpenDm(target, isSelf = false) {
     markNavDuringRestore();
     clearNavigationTarget();
+    setView("dms");
     setSearchQuery(null);
     const { channel } = await api.openDm(target.id);
     const existing = dms.find((d) => d.id === channel.id);
@@ -522,6 +529,7 @@ export default function App() {
   function handlePickChannel(picked) {
     markNavDuringRestore();
     clearNavigationTarget();
+    setView("home");
     setSearchQuery(null);
     unhideChannel(picked.id); // re-show if it was hidden
     // Open it (preview if you're not a member — a Join button will appear).
@@ -968,6 +976,7 @@ export default function App() {
               onJumpConsumed={() => setJumpMessageId(null)}
               onAddCustomEmoji={() => setShowAddEmoji(true)}
               onAddPeople={() => setShowAddPeople(true)}
+              onPromoteManager={handlePromoteManager}
               onRemoveMember={handleRemoveMember}
               onLeave={handleLeaveChannel}
               onDeleteChannel={handleDeleteChannel}

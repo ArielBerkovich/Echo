@@ -50,7 +50,11 @@ export default function LeftRail({ view, onSelect, badges = {} }) {
             >
               <span className="rail-icon">
                 <Icon />
-                {count > 0 && <span className="rail-badge">{count > 99 ? "99+" : count}</span>}
+                {count > 0 && (
+                  <span className={`rail-badge ${key === "home" ? "dot" : ""}`} aria-hidden="true">
+                    {key === "home" ? null : count > 99 ? "99+" : count}
+                  </span>
+                )}
               </span>
               <span className="rail-label">{label}</span>
             </button>

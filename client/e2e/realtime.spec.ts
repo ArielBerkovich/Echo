@@ -100,7 +100,7 @@ test("updates user search results after a display name change", async ({ browser
   const { alice } = fixture;
   await withAliceBobPages(browser, async ({ alicePage, bobPage }) => {
     await bobPage.page.locator(".search-input").fill(alice.username);
-    const row = bobPage.page.getByTestId(`search-user-${alice.username}`);
+    const row = bobPage.page.getByTestId(`search-user-${slug(alice.username)}`);
     await expect(row).toContainText(alice.displayName);
 
     const updatedName = `${alice.displayName} Renamed`;

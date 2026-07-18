@@ -10,8 +10,9 @@ export function uniqueSuffix(prefix = "e2e") {
 }
 
 export async function registerUser(page, { username, password = DEFAULT_PASSWORD, displayName }) {
+  const [firstName, ...lastParts] = String(displayName || "Test User").split(/\s+/);
   const response = await page.request.post("/api/auth/register", {
-    data: { username, password, displayName },
+    data: { username, password, firstName, lastName: lastParts.join(" ") || "User" },
   });
   expect(response.ok(), `failed to register ${username}`).toBeTruthy();
   return response.json();
@@ -26,7 +27,12 @@ async function loginOrRegisterUser(page, user) {
   }
 
   const registerResponse = await page.request.post("/api/auth/register", {
-    data: { username: user.username, password: user.password, displayName: user.displayName },
+    data: {
+      username: user.username,
+      password: user.password,
+      firstName: String(user.displayName).split(/\s+/)[0],
+      lastName: String(user.displayName).split(/\s+/).slice(1).join(" ") || "User",
+    },
   });
   if (!registerResponse.ok() && registerResponse.status() !== 409) {
     const body = await registerResponse.json().catch(() => ({}));
@@ -95,14 +101,15 @@ export async function seedWorkspaceFixture(page) {
 
   workspaceFixturePromise = (async () => {
     const suffix = FIXTURE_ID;
+    const usernameSuffix = suffix.replace(/[^a-z0-9]/gi, "").slice(0, 16);
     const alice = {
-      username: `alice-${suffix}`,
-      displayName: `Alice ${suffix}`,
+      username: `alice.test${usernameSuffix}`,
+      displayName: "Alice Test",
       password: DEFAULT_PASSWORD,
     };
     const bob = {
-      username: `bob-${suffix}`,
-      displayName: `Bob Builder ${suffix}`,
+      username: `bob.builder${usernameSuffix}`,
+      displayName: "Bob Builder",
       password: DEFAULT_PASSWORD,
     };
 

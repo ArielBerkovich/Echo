@@ -14,9 +14,10 @@ import {
 
 // Centered channel information dialog. Members can edit the channel metadata,
 // add people, and manage existing members without leaving the conversation.
-export default function ChannelDetailsPanel({ channel, users = [], user, onUpdated, onOpenProfile, onAddPeople, onClose }) {
+export default function ChannelDetailsPanel({ channel, users = [], user, onUpdated, onOpenProfile, onAddPeople, onPromoteManager, onClose }) {
   const [error, setError] = useState(null);
   const [memberQuery, setMemberQuery] = useState("");
+  const [promotingId, setPromotingId] = useState(null);
 
   useEffect(() => {
     function onKeyDown(event) {
@@ -33,6 +34,8 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
     .map((id) => byId.get(id))
     .filter(Boolean)
     .sort((a, b) => a.displayName.localeCompare(b.displayName));
+  const managerIds = new Set(channel.managers || []);
+  const managerMembers = members.filter((member) => managerIds.has(member.id));
   const isMember = memberIds.has(user.id);
   const isCreator = channel.createdBy === user.id;
   const isManager = (channel.managers || []).includes(user.id);
@@ -52,6 +55,19 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
       onUpdated?.(updated);
     } catch (err) {
       setError(err.message);
+    }
+  }
+
+  async function promoteManager(member) {
+    if (!onPromoteManager) return;
+    setError(null);
+    setPromotingId(member.id);
+    try {
+      await onPromoteManager(member.id);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setPromotingId(null);
     }
   }
 
@@ -151,6 +167,24 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
               />
             </div>
 
+            <div className="channel-details-managers" aria-label="Channel managers">
+              <span className="channel-details-managers-label">Managers</span>
+              {managerMembers.length > 0 ? (
+                managerMembers.map((manager) => (
+                  <button
+                    type="button"
+                    className="channel-details-manager-chip"
+                    key={manager.id}
+                    onClick={() => onOpenProfile?.(manager.id)}
+                  >
+                    {manager.displayName}
+                  </button>
+                ))
+              ) : (
+                <span className="channel-details-no-managers">None assigned</span>
+              )}
+            </div>
+
             <div className="channel-details-member-list">
               {members.length === 0 ? (
                 <div className="channel-details-empty">No members yet.</div>
@@ -175,14 +209,27 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
                       <span className="channel-details-person-handle">@{member.username}</span>
                     </div>
                     {canManageMembers && member.id !== channel.createdBy && (
-                      <button
-                        type="button"
-                        className="channel-details-person-remove"
-                        onClick={() => removeMember(member)}
-                        title={`Remove ${member.displayName} from the channel`}
-                      >
-                        Remove
-                      </button>
+                      <div className="channel-details-person-actions">
+                        {!managerIds.has(member.id) && onPromoteManager && (
+                          <button
+                            type="button"
+                            className="channel-details-person-promote"
+                            onClick={() => promoteManager(member)}
+                            disabled={promotingId === member.id}
+                            title={`Make ${member.displayName} a manager`}
+                          >
+                            {promotingId === member.id ? "Saving…" : "Make manager"}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="channel-details-person-remove"
+                          onClick={() => removeMember(member)}
+                          title={`Remove ${member.displayName} from the channel`}
+                        >
+                          Remove
+                        </button>
+                      </div>
                     )}
                   </div>
                 ))

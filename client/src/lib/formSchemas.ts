@@ -21,6 +21,12 @@ const usernameInput = z
   );
 
 const displayNameInput = z.string().trim().max(64, "Display name must be 64 characters or fewer");
+const personNameInput = z
+  .string()
+  .trim()
+  .min(1, "Name is required")
+  .max(64, "Name must be 64 characters or fewer")
+  .regex(/^[A-Za-z]+$/, "Name can only contain English letters");
 
 export const passwordSchema = z.string().superRefine((value, ctx) => {
   const problem = passwordProblem(value);
@@ -34,7 +40,16 @@ export function authSchema(mode) {
     return z.object({ username: usernameInput, password: z.string().min(1, "Password is required") });
   }
 
-  return z.object({ username: usernameInput, displayName: displayNameInput.optional(), password: passwordSchema });
+  if (mode === "admin") {
+    return z.object({ username: z.literal("admin"), password: passwordSchema });
+  }
+
+  return z.object({
+    firstName: personNameInput,
+    lastName: personNameInput,
+    username: usernameInput,
+    password: passwordSchema,
+  });
 }
 
 export const channelSchema = z.object({

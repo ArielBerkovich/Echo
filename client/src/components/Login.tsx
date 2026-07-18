@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { EyeIcon, EyeOffIcon, IdCardIcon, LockIcon, MailIcon, NotebookTextIcon, UserIcon } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -6,6 +6,25 @@ import { api } from "../api.js";
 import Logo from "./Logo.js";
 import { PASSWORD_RULE } from "../lib/password.js";
 import { authSchema } from "../lib/formSchemas.js";
+
+function usernameFromName(firstName, lastName) {
+  return `${firstName} ${lastName}`
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ".")
+    .replace(/^\.+|\.+$/g, "")
+    .slice(0, 32)
+    .replace(/\.+$/g, "") || "user";
+}
+
+function lettersOnly(value) {
+  return String(value || "").replace(/[^A-Za-z]/g, "");
+}
+
+function usernameSuffixOnly(value) {
+  return String(value || "").replace(/[^A-Za-z0-9]/g, "").toLowerCase();
+}
 
 // Little postal letters that drift gently around the hero panel — each with its
 // own position, size, drift vector and timing for an organic "floating" feel.
@@ -27,23 +46,70 @@ export default function Login({ onAuthed }) {
   const [serverError, setServerError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [needsSetup, setNeedsSetup] = useState(false); // no users yet → create the admin
+  const [registerStep, setRegisterStep] = useState(1);
+  const [usernameSuggestions, setUsernameSuggestions] = useState([]);
+  const [usernameTaken, setUsernameTaken] = useState(false);
+  const [usernameSuffix, setUsernameSuffix] = useState("");
 
   const isRegister = needsSetup || mode === "register";
-  const resolver = useMemo(() => zodResolver(authSchema(isRegister ? "register" : "login")), [isRegister]);
+  const resolver = useMemo(
+    () => zodResolver(authSchema(needsSetup ? "admin" : isRegister ? "register" : "login")),
+    [isRegister, needsSetup]
+  );
   const {
     register,
     handleSubmit,
     clearErrors,
+    setValue,
+    trigger,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm({
     mode: "onChange",
     resolver,
     defaultValues: {
       username: "",
-      displayName: "",
+      firstName: "",
+      lastName: "",
       password: "",
     },
   });
+  const firstName = watch("firstName");
+  const lastName = watch("lastName");
+  const username = watch("username");
+  const usernameBase = usernameFromName(firstName || "", lastName || "");
+  const usernameField = register("username");
+  const firstNameField = register("firstName");
+  const lastNameField = register("lastName");
+  const usernameEdited = useRef(false);
+
+  useEffect(() => {
+    if (!isRegister || usernameEdited.current) return;
+    setValue("username", usernameFromName(firstName || "", lastName || ""), { shouldValidate: true });
+    setUsernameSuffix("");
+    setUsernameTaken(false);
+    setUsernameSuggestions([]);
+  }, [firstName, lastName, isRegister, setValue, usernameEdited]);
+
+  // Check the generated/custom handle while the user is filling out step two.
+  useEffect(() => {
+    if (!isRegister || needsSetup || registerStep !== 2 || !firstName || !lastName || !username) return undefined;
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      api
+        .usernameOptions(firstName, lastName, username)
+        .then(({ available, suggestions }) => {
+          if (cancelled) return;
+          if (username === usernameBase) setUsernameTaken(!available);
+          setUsernameSuggestions(available ? [] : suggestions || []);
+        })
+        .catch(() => {});
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [firstName, lastName, username, usernameBase, isRegister, needsSetup, registerStep]);
 
   // First-run: if the workspace has no accounts, show the "create admin" screen.
   useEffect(() => {
@@ -54,6 +120,10 @@ export default function Login({ onAuthed }) {
         if (cancelled || !needsSetup) return;
         setNeedsSetup(true);
         setMode("register");
+        setRegisterStep(2);
+        setValue("username", "admin", { shouldValidate: true });
+        setUsernameSuffix("");
+        usernameEdited.current = true;
       })
       .catch(() => {});
     return () => {
@@ -63,8 +133,17 @@ export default function Login({ onAuthed }) {
 
   function switchMode(next) {
     setServerError(null);
+    setUsernameSuggestions([]);
+    setUsernameTaken(false);
+    setUsernameSuffix("");
     clearErrors();
     setMode(next);
+    setRegisterStep(1);
+    if (next === "register") {
+      usernameEdited.current = false;
+      setValue("password", "", { shouldValidate: false });
+      setShowPw(false);
+    }
   }
 
   const submit = handleSubmit(async (values) => {
@@ -74,7 +153,7 @@ export default function Login({ onAuthed }) {
         ? {
             username: values.username,
             password: values.password,
-            displayName: values.displayName?.trim() || undefined,
+            ...(needsSetup ? {} : { firstName: values.firstName, lastName: values.lastName }),
           }
         : { username: values.username, password: values.password };
       const result = isRegister ? await api.register(payload) : await api.login(payload);
@@ -83,8 +162,20 @@ export default function Login({ onAuthed }) {
       setTimeout(() => onAuthed(result), 1150);
     } catch (err) {
       setServerError(err.message);
+      if (err.usernameTaken && err.suggestions) {
+        setUsernameTaken(true);
+        setUsernameSuggestions(err.suggestions);
+      }
     }
   });
+
+  async function continueRegistration() {
+    const valid = await trigger(["firstName", "lastName"]);
+    if (valid) {
+      setServerError(null);
+      setRegisterStep(2);
+    }
+  }
 
   return (
     <div className="auth-screen">
@@ -133,7 +224,17 @@ export default function Login({ onAuthed }) {
         </aside>
 
         {/* Auth form panel */}
-        <form className={`auth-card ${needsSetup ? "setup" : ""}`} onSubmit={submit}>
+        <form
+          className={`auth-card ${needsSetup ? "setup" : ""}`}
+          onSubmit={(event) => {
+            if (isRegister && !needsSetup && registerStep === 1) {
+              event.preventDefault();
+              continueRegistration();
+              return;
+            }
+            submit(event);
+          }}
+        >
           <div className="auth-card-head">
             <div className="auth-logo-sm">
               <Logo size={44} />
@@ -183,31 +284,141 @@ export default function Login({ onAuthed }) {
             </div>
           )}
 
-          <label className="field">
-            <span>Username</span>
-            <div className="input-wrap">
-              <UserIcon size={17} strokeWidth={1.6} />
-              <input
-                {...register("username")}
-                autoComplete="username"
-                placeholder="your-handle"
-              />
-            </div>
-            {errors.username && <span className="field-hint error small">{errors.username.message}</span>}
-          </label>
+          {isRegister && !needsSetup && registerStep === 1 && (
+            <>
+              <label className="field">
+                <span>First name</span>
+                <div className="input-wrap">
+                  <IdCardIcon size={17} strokeWidth={1.6} />
+                  <input
+                    {...firstNameField}
+                    autoComplete="given-name"
+                    placeholder="First name"
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        continueRegistration();
+                      }
+                    }}
+                    onBeforeInput={(event) => {
+                      if (event.data && /[^A-Za-z]/.test(event.data)) event.preventDefault();
+                    }}
+                    onChange={(event) => firstNameField.onChange({
+                      target: { name: firstNameField.name, value: lettersOnly(event.target.value) },
+                    })}
+                  />
+                </div>
+                {errors.firstName && <span className="field-hint error small">{errors.firstName.message}</span>}
+              </label>
+              <label className="field">
+                <span>Last name</span>
+                <div className="input-wrap">
+                  <IdCardIcon size={17} strokeWidth={1.6} />
+                  <input
+                    {...lastNameField}
+                    autoComplete="family-name"
+                    placeholder="Last name"
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        continueRegistration();
+                      }
+                    }}
+                    onBeforeInput={(event) => {
+                      if (event.data && /[^A-Za-z]/.test(event.data)) event.preventDefault();
+                    }}
+                    onChange={(event) => lastNameField.onChange({
+                      target: { name: lastNameField.name, value: lettersOnly(event.target.value) },
+                    })}
+                  />
+                </div>
+                {errors.lastName && <span className="field-hint error small">{errors.lastName.message}</span>}
+              </label>
+            </>
+          )}
 
-          {isRegister && (
-            <label className="field">
-              <span>Display name</span>
-              <div className="input-wrap">
-                <IdCardIcon size={17} strokeWidth={1.6} />
+          {isRegister && !needsSetup && registerStep === 1 ? (
+            <button type="button" className="btn-primary auth-submit" onClick={continueRegistration}>
+              Continue
+            </button>
+          ) : <>
+          <label className="field">
+            <span>{needsSetup ? "Admin username" : "Username"}</span>
+            {isRegister && !needsSetup ? (
+              <div className="input-wrap username-composed">
+                <UserIcon size={17} strokeWidth={1.6} />
+                <span className="auth-username-prefix">{usernameBase}</span>
                 <input
-                  {...register("displayName")}
-                  placeholder="How others see you"
+                  {...usernameField}
+                  type="hidden"
+                  value={`${usernameBase}${usernameSuffix}`}
+                  readOnly
+                />
+                {usernameTaken && (
+                  <input
+                    name="username-suffix"
+                    value={usernameSuffix}
+                    onBeforeInput={(event) => {
+                      if (event.data && /[^A-Za-z0-9]/.test(event.data)) event.preventDefault();
+                    }}
+                    onChange={(event) => {
+                      usernameEdited.current = true;
+                      const suffix = usernameSuffixOnly(event.target.value);
+                    setUsernameSuffix(suffix);
+                    setServerError(null);
+                    setUsernameSuggestions([]);
+                    setValue("username", `${usernameBase}${suffix}`, { shouldValidate: true });
+                  }}
+                    autoComplete="off"
+                    placeholder="add letters or numbers"
+                  />
+                )}
+              </div>
+            ) : (
+              <div className="input-wrap">
+                <UserIcon size={17} strokeWidth={1.6} />
+                <input
+                  {...usernameField}
+                  autoComplete="username"
+                  placeholder={needsSetup ? "admin" : "Username"}
+                  readOnly={needsSetup}
                 />
               </div>
-              {errors.displayName && <span className="field-hint error small">{errors.displayName.message}</span>}
-            </label>
+            )}
+            {errors.username && <span className="field-hint error small">{errors.username.message}</span>}
+          </label>
+          {needsSetup ? (
+            <span className="field-hint">The workspace administrator always uses @admin.</span>
+          ) : null}
+
+          {isRegister && !needsSetup && usernameSuggestions.length > 0 && (
+            <div className="auth-username-options">
+              <span className="field-hint">That username is taken. Try one of these:</span>
+              <div className="auth-username-suggestions">
+                {usernameSuggestions.map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    className="link"
+                    onClick={() => {
+                      setValue("username", suggestion, { shouldValidate: true });
+                      setUsernameSuffix(suggestion.slice(usernameBase.length));
+                      setServerError(null);
+                      setUsernameSuggestions([]);
+                      usernameEdited.current = true;
+                    }}
+                  >
+                    @{suggestion}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {isRegister && !needsSetup && (
+            <button type="button" className="auth-back link" onClick={() => setRegisterStep(1)}>
+              ← Back to names
+            </button>
           )}
 
           <label className="field">
@@ -218,7 +429,13 @@ export default function Login({ onAuthed }) {
                 {...register("password")}
                 type={showPw ? "text" : "password"}
                 autoComplete={isRegister ? "new-password" : "current-password"}
-                placeholder="••••••••"
+                placeholder={isRegister ? "Create a password" : "Enter your password"}
+                onKeyDown={needsSetup ? (event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    submit();
+                  }
+                } : undefined}
               />
               <button
                 type="button"
@@ -247,6 +464,7 @@ export default function Login({ onAuthed }) {
               "Sign in"
             )}
           </button>
+          </>}
 
           {!needsSetup && (
             <p className="auth-switch">

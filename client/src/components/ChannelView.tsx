@@ -70,6 +70,7 @@ export default function ChannelView({
   onAddCustomEmoji,
   onAddPeople,
   onRemoveMember,
+  onPromoteManager,
   onLeave,
   onDeleteChannel,
   onChangeVisibility,
@@ -99,6 +100,7 @@ export default function ChannelView({
   const [showMembers, setShowMembers] = useState(false); // members side panel open?
   const [showPinned, setShowPinned] = useState(false); // pinned messages panel open?
   const [pinnedMessages, setPinnedMessages] = useState([]); // cached pinned list
+  const showPinnedRef = useRef(false);
   const [firstUnreadId, setFirstUnreadId] = useState(null); // first message not yet seen
   const [highlightId, setHighlightId] = useState(null); // message highlighted after a jump
   const [historyReady, setHistoryReady] = useState(false); // has the initial message payload resolved?
@@ -106,6 +108,7 @@ export default function ChannelView({
   const [threadLightbox, setThreadLightbox] = useState(null); // { src, name } opened from thread
   const [loadingOlder, setLoadingOlder] = useState(false); // fetching older history (scroll-up)
   const [loading, setLoading] = useState(true); // initial history fetch for this channel in flight
+  const [newMessageCount, setNewMessageCount] = useState(0);
 
   const bottomRef = useRef(null);
   const scrollerRef = useRef(null); // the scrollable messages container
@@ -193,6 +196,7 @@ export default function ChannelView({
     setHighlightId(null);
     setHistoryReady(false);
     setTypingUsers({});
+    setNewMessageCount(0);
     initialScrolledRef.current = false;
     prevLenRef.current = 0;
     hasMoreOlderRef.current = true;
@@ -264,6 +268,9 @@ export default function ChannelView({
           )
         );
       } else {
+        if (!stickToBottomRef.current) {
+          setNewMessageCount((count) => count + 1);
+        }
         setMessages((prev) => [...prev, msg]);
       }
       // Stay read while viewing — but only for the main timeline. A thread
@@ -290,6 +297,9 @@ export default function ChannelView({
 
     const onPin = ({ messageId, channelId, pinnedAt, pinnedBy }) => {
       if (channelId !== channel.id) return;
+      if (pinnedAt && showPinnedRef.current) {
+        api.getPinned(channel.id).then(({ messages }) => setPinnedMessages(messages)).catch(() => {});
+      }
       setMessages((prev) =>
         prev.map((m) => (m.id === messageId ? { ...m, pinnedAt, pinnedBy } : m))
       );
@@ -298,7 +308,7 @@ export default function ChannelView({
           // Add or update in pinned list
           const exists = prev.some((m) => m.id === messageId);
           if (exists) return prev.map((m) => (m.id === messageId ? { ...m, pinnedAt, pinnedBy } : m));
-          return prev; // full list will reload on next open
+          return prev;
         } else {
           return prev.filter((m) => m.id !== messageId);
         }
@@ -355,6 +365,10 @@ export default function ChannelView({
       Object.values(timers).forEach(clearTimeout);
     };
   }, [channel.id]);
+
+  useEffect(() => {
+    showPinnedRef.current = showPinned;
+  }, [showPinned]);
 
   function toggleReaction(messageId, emoji) {
     getSocket().emit("reaction:toggle", { messageId, emoji }, () => {});
@@ -482,6 +496,7 @@ export default function ChannelView({
     const atBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120;
     if (!jumpingRef.current && !(firstUnreadId && unreadScrollAppliedRef.current)) {
       stickToBottomRef.current = atBottom;
+      if (atBottom) setNewMessageCount(0);
     } else {
       stickToBottomRef.current = false;
     }
@@ -494,6 +509,12 @@ export default function ChannelView({
     const scroller = scrollerRef.current;
     if (!scroller) return;
     scroller.scrollTop = scroller.scrollHeight;
+  }
+
+  function scrollToNewMessages() {
+    setNewMessageCount(0);
+    stickToBottomRef.current = true;
+    requestAnimationFrame(scrollToExactBottom);
   }
 
   function rememberCurrentScroll() {
@@ -628,9 +649,15 @@ export default function ChannelView({
       scrollToExactBottom();
       stickToBottomRef.current = true;
       suppressGrowFollowRef.current = false;
-    } else if (grew && !jumpMessageId && !firstUnreadId && !unreadScrollAppliedRef.current) {
-      // A new message arrived while viewing — follow it to the bottom. (Skip
-      // while a jump is pending so loading its window doesn't pull us away.)
+    } else if (
+      grew &&
+      stickToBottomRef.current &&
+      !jumpMessageId &&
+      !firstUnreadId &&
+      !unreadScrollAppliedRef.current
+    ) {
+      // Follow new messages only when the user was already following the live
+      // edge. If they are reading older messages, preserve their viewport.
       scrollToExactBottom();
       stickToBottomRef.current = true;
     }
@@ -820,18 +847,19 @@ export default function ChannelView({
       <header className="channel-header" data-testid="channel-header">
         {isDm ? (
           <>
-            <button
-              type="button"
-              className={`dm-vip-toggle ${isVip ? "active" : ""}`}
-              data-testid="dm-vip-toggle"
-              aria-label={isVip ? `Remove ${dmLabel} from VIP` : `Mark ${dmLabel} as VIP`}
-              aria-pressed={isVip}
-              title={canToggleVip ? (isVip ? "Remove from VIP" : "Mark as VIP") : "You can't mark yourself as VIP"}
-              disabled={!canToggleVip}
-              onClick={() => canToggleVip && onToggleVip?.(dmUser.id)}
-            >
-              <StarIcon size={20} strokeWidth={1.9} fill={isVip ? "currentColor" : "none"} />
-            </button>
+            {canToggleVip && (
+              <button
+                type="button"
+                className={`dm-vip-toggle ${isVip ? "active" : ""}`}
+                data-testid="dm-vip-toggle"
+                aria-label={isVip ? `Remove ${dmLabel} from VIP` : `Mark ${dmLabel} as VIP`}
+                aria-pressed={isVip}
+                title={isVip ? "Remove from VIP" : "Mark as VIP"}
+                onClick={() => onToggleVip?.(dmUser.id)}
+              >
+                <StarIcon size={20} strokeWidth={1.9} fill={isVip ? "currentColor" : "none"} />
+              </button>
+            )}
             <Avatar name={dmAvatarName} src={dmAvatar} size={24} />
             <span className="ch-name" data-testid="channel-title">{dmLabel}</span>
           </>
@@ -970,6 +998,7 @@ export default function ChannelView({
                     onEditSave={saveEdit}
                     onEditCancel={() => setEditing(null)}
                     onTogglePin={() => togglePin(m)}
+                    canPin={!isDm}
                   />
                 </Fragment>
               );
@@ -977,6 +1006,16 @@ export default function ChannelView({
           )}
           <div ref={bottomRef} />
         </div>
+        {newMessageCount > 0 && (
+          <button
+            type="button"
+            className="new-messages-button"
+            data-testid="new-messages-button"
+            onClick={scrollToNewMessages}
+          >
+            {newMessageCount === 1 ? "1 new message" : `${newMessageCount} new messages`} ↓
+          </button>
+        )}
       </div>
 
       {reactingTo &&
@@ -1052,6 +1091,7 @@ export default function ChannelView({
             onJumpToMessage={onJumpToMessage}
             onForward={(m) => setForwarding(m)}
             onTogglePin={togglePin}
+            canPin={!isDm}
             savedIds={savedIds}
             onToggleSave={onToggleSave}
             onOpenProfile={onOpenProfile}
@@ -1071,6 +1111,7 @@ export default function ChannelView({
           onOpenProfile={onOpenProfile}
           onAddPeople={onAddPeople}
           onRemoveMember={onRemoveMember}
+          onPromoteManager={onPromoteManager}
           onClose={() => setShowMembers(false)}
         />
       ) : showPinned ? (
@@ -1088,7 +1129,9 @@ export default function ChannelView({
           channels={channels}
           user={user}
           onAddPeople={onAddPeople}
+          onPromoteManager={onPromoteManager}
           onUpdated={(updated) => onChannelUpdated?.(updated)}
+          onOpenProfile={onOpenProfile}
           onClose={() => setShowDetails(false)}
         />
       ) : null}
