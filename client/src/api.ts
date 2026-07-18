@@ -52,9 +52,8 @@ export function getTokenExpiryMs() {
   }
 }
 
-function authHeaders(extra = {}) {
+function authHeaders(extra = {}, token = getToken()) {
   const headers = { ...extra };
-  const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
   return headers;
 }
@@ -76,10 +75,12 @@ function friendlyErrorMessage(status, serverMessage, path, errorLabel) {
   return serverMessage || `${errorLabel} couldn't be completed. Please try again.`;
 }
 
-async function parseResponse(res, errorLabel, path) {
+async function parseResponse(res, errorLabel, path, tokenUsed = null) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    if (res.status === 401 && getToken() && path !== "/auth/login") {
+    // Ignore a late response from a token that has already been replaced by a
+    // successful login/registration in the meantime.
+    if (res.status === 401 && tokenUsed && getToken() === tokenUsed && path !== "/auth/login") {
       window.dispatchEvent(new CustomEvent("echo:auth-expired"));
     }
     const error = new Error(friendlyErrorMessage(res.status, data.error, path, errorLabel));
@@ -93,15 +94,16 @@ async function parseResponse(res, errorLabel, path) {
 async function request(path, { method = "GET", body } = {}) {
   const hasBody = body !== undefined;
   const base = getBackendUrl();
+  const tokenUsed = getToken();
 
   try {
     const res = await fetch(`${base}/api${path}`, {
       method,
-      headers: authHeaders(hasBody ? { "Content-Type": "application/json" } : {}),
+      headers: authHeaders(hasBody ? { "Content-Type": "application/json" } : {}, tokenUsed),
       body: hasBody ? JSON.stringify(body) : undefined,
     });
 
-    return parseResponse(res, "Request", path);
+    return parseResponse(res, "Request", path, tokenUsed);
   } catch (error) {
     if (error.status) throw error;
     throw new Error("We couldn't reach Echo right now. Check your connection and try again.");
@@ -110,14 +112,15 @@ async function request(path, { method = "GET", body } = {}) {
 
 async function requestMultipart(path, form, errorLabel) {
   const base = getBackendUrl();
+  const tokenUsed = getToken();
   try {
     const res = await fetch(`${base}/api${path}`, {
       method: "POST",
-      headers: authHeaders(),
+      headers: authHeaders({}, tokenUsed),
       body: form,
     });
 
-    return parseResponse(res, errorLabel, path);
+    return parseResponse(res, errorLabel, path, tokenUsed);
   } catch (error) {
     if (error.status) throw error;
     throw new Error("We couldn't reach Echo right now. Check your connection and try again.");
