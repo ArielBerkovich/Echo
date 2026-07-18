@@ -268,7 +268,16 @@ export default function ChannelView({
           )
         );
       } else {
-        if (!stickToBottomRef.current) {
+        // The scroll event that updates stickToBottomRef can be delivered a
+        // tick after a programmatic scroll (and after a layout change). Read
+        // the actual gap here as well so a message arriving at the visible
+        // bottom is never treated as an off-screen message.
+        const scroller = scrollerRef.current;
+        const atBottom = scroller
+          ? scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120
+          : stickToBottomRef.current;
+        if (atBottom) stickToBottomRef.current = true;
+        if (!atBottom && !stickToBottomRef.current) {
           setNewMessageCount((count) => count + 1);
         }
         setMessages((prev) => [...prev, msg]);
