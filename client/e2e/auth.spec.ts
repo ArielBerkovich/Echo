@@ -21,7 +21,7 @@ test("login displays server errors", async ({ page }) => {
   if (needsSetup) {
     await page.goto("/");
     await expect(page.getByLabel("Admin username")).toHaveValue("admin");
-    await page.locator('input[type="password"]').fill("Password1");
+    await page.locator('input[name="password"]').fill("Password1");
     await page.getByRole("button", { name: "Create admin account" }).click();
 
     await expect(page.getByText("#general", { exact: true })).toBeVisible();
@@ -32,7 +32,7 @@ test("login displays server errors", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
 
   await page.getByLabel("Username").fill(username);
-  await page.locator('input[type="password"]').fill("WrongPassword1");
+  await page.locator('input[name="password"]').fill("WrongPassword1");
   await page.getByRole("button", { name: "Sign in" }).click();
 
   await expect(page.getByText("That username or password doesn't look right.")).toBeVisible();
@@ -44,7 +44,7 @@ test("create account tab submits registration payload", async ({ page }) => {
   if (needsSetup) {
     await page.goto("/");
     await expect(page.getByLabel("Admin username")).toHaveValue("admin");
-    await page.locator('input[type="password"]').fill("Password1");
+    await page.locator('input[name="password"]').fill("Password1");
     await page.getByRole("button", { name: "Create admin account" }).click();
     await expect(page.getByText("#general", { exact: true })).toBeVisible();
     return;
