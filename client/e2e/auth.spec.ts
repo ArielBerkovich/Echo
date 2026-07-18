@@ -20,8 +20,7 @@ test("login displays server errors", async ({ page }) => {
 
   if (needsSetup) {
     await page.goto("/");
-    await page.getByLabel("Username").fill(username);
-    await page.getByLabel("Display name").fill("Alice");
+    await expect(page.getByLabel("Admin username")).toHaveValue("admin");
     await page.locator('input[type="password"]').fill("Password1");
     await page.getByRole("button", { name: "Create admin account" }).click();
 
@@ -44,8 +43,7 @@ test("create account tab submits registration payload", async ({ page }) => {
   const { needsSetup } = await statusResponse.json();
   if (needsSetup) {
     await page.goto("/");
-    await page.getByLabel("Username").fill(`admin-${uniqueSuffix("auth")}`);
-    await page.getByLabel("Display name").fill("Admin");
+    await expect(page.getByLabel("Admin username")).toHaveValue("admin");
     await page.locator('input[type="password"]').fill("Password1");
     await page.getByRole("button", { name: "Create admin account" }).click();
     await expect(page.getByText("#general", { exact: true })).toBeVisible();

@@ -46,6 +46,16 @@ async function loginOrRegisterUser(page, user) {
   return retryResponse.json();
 }
 
+async function ensureWorkspaceAdmin(page) {
+  const statusResponse = await page.request.get("/api/auth/setup-status");
+  const { needsSetup } = await statusResponse.json();
+  if (!needsSetup) return;
+  const response = await page.request.post("/api/auth/register", {
+    data: { username: "admin", password: DEFAULT_PASSWORD },
+  });
+  expect(response.ok(), "failed to bootstrap workspace admin").toBeTruthy();
+}
+
 export async function loginAndSeedToken(page, username, password) {
   const response = await page.request.post("/api/auth/login", {
     data: { username, password },
@@ -113,6 +123,7 @@ export async function seedWorkspaceFixture(page) {
       password: DEFAULT_PASSWORD,
     };
 
+    await ensureWorkspaceAdmin(page);
     const aliceAuth = await loginOrRegisterUser(page, alice);
     const bobAuth = await loginOrRegisterUser(page, bob);
     await requestAsToken(page, aliceAuth.token, "/users/me/onboarded", { method: "POST" });
