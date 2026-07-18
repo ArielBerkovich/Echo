@@ -110,15 +110,18 @@ export default function App() {
   const navDuringRestoreRef = useRef(false); // user navigated before the initial restore finished
   const viewRef = useRef(view);
   const activeChannelRef = useRef(activeChannel);
+  const userRef = useRef(user);
   const poppingRef = useRef(false); // applying a browser back/forward — don't re-push history
 
   useEffect(() => void (viewRef.current = view), [view]);
   useEffect(() => void (activeChannelRef.current = activeChannel), [activeChannel]);
+  useEffect(() => void (userRef.current = user), [user]);
 
   // A 401 from any authenticated request means the short-lived session token
   // is no longer usable. Return to sign-in and explain what happened.
   useEffect(() => {
     function onAuthExpired() {
+      const hadActiveSession = Boolean(userRef.current);
       setToken(null);
       disconnectSocket();
       setUser(null);
@@ -126,7 +129,10 @@ export default function App() {
       setAllChannels([]);
       setDms([]);
       setActiveChannel(null);
-      setSessionExpired(true);
+      // An invalid token found while restoring the app is stale local state,
+      // not an active session expiring. Only interrupt a user who was already
+      // authenticated.
+      if (hadActiveSession) setSessionExpired(true);
     }
     window.addEventListener("echo:auth-expired", onAuthExpired);
     return () => window.removeEventListener("echo:auth-expired", onAuthExpired);
