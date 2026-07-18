@@ -3,6 +3,12 @@ import { readString, writeString } from "./lib/storage.js";
 // Thin fetch wrapper that attaches the auth token and unwraps JSON / errors.
 const TOKEN_KEY = "echo.token";
 const BACKEND_URL_KEY = "echo.backendUrl";
+const PUBLIC_AUTH_PATHS = new Set([
+  "/auth/login",
+  "/auth/register",
+  "/auth/setup-status",
+  "/auth/username-options",
+]);
 
 function normalizeBackendUrl(value) {
   const trimmed = String(value || "").trim();
@@ -80,7 +86,7 @@ async function parseResponse(res, errorLabel, path, tokenUsed = null) {
   if (!res.ok) {
     // Ignore a late response from a token that has already been replaced by a
     // successful login/registration in the meantime.
-    if (res.status === 401 && tokenUsed && getToken() === tokenUsed && path !== "/auth/login") {
+    if (res.status === 401 && tokenUsed && getToken() === tokenUsed && !PUBLIC_AUTH_PATHS.has(path)) {
       window.dispatchEvent(new CustomEvent("echo:auth-expired"));
     }
     const error = new Error(friendlyErrorMessage(res.status, data.error, path, errorLabel));
