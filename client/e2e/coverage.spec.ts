@@ -149,6 +149,7 @@ test("opens a profile, marks VIP, starts a DM, protects it, and can message self
 
 test("edits and deletes own messages", async ({ page }) => {
   await page.goto("/");
+  await page.getByTestId(`channel-row-${slug(fixture.generalChannel.name)}`).click();
 
   const body = `Editable ${Date.now()}`;
   const composer = page.locator(".composer-editor");
@@ -157,7 +158,7 @@ test("edits and deletes own messages", async ({ page }) => {
 
   const message = page.locator(".message").filter({ hasText: body }).first();
   await message.hover();
-  await message.getByTitle("More message actions").click();
+  await page.locator('[data-message-actions="true"]').getByTitle("More message actions").click();
   await page.getByRole("menuitem", { name: "Edit message" }).click();
   await message.locator(".msg-edit-input").fill(`${body} updated`);
   await message.locator(".msg-edit-actions .btn-primary").click();
@@ -165,7 +166,7 @@ test("edits and deletes own messages", async ({ page }) => {
   await expect(message).toContainText("(edited)");
 
   await message.hover();
-  await message.getByTitle("More message actions").click();
+  await page.locator('[data-message-actions="true"]').getByTitle("More message actions").click();
   await page.getByRole("menuitem", { name: "Delete message" }).click();
   await page.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(page.locator(".message").filter({ hasText: `${body} updated` })).toHaveCount(0);
@@ -179,9 +180,9 @@ test("toggles reactions and pins messages", async ({ page }) => {
   const message = page.locator(`.message[data-mid="${formattedId}"]`);
   await expect(message).toBeVisible();
   await message.hover();
-  await expect(message.locator(".msg-actions button[title='Add reaction']")).toBeVisible();
+  await expect(page.locator('[data-message-actions="true"] button[title="Add reaction"]')).toBeVisible();
 
-  await message.getByTitle("More message actions").click();
+  await page.locator('[data-message-actions="true"]').getByTitle("More message actions").click();
   await page.getByRole("menuitem", { name: "Pin message" }).click();
   await page.getByRole("button", { name: "Pinned messages" }).click();
   const pinned = page.locator(".pinned-item").filter({ hasText: `API formatting test ${fixture.suffix}` });
@@ -198,14 +199,16 @@ test("forwards a message and jumps back to the original", async ({ page }) => {
     .filter({ hasText: `API formatting test ${fixture.suffix}` })
     .first();
   await message.hover();
-  await message.getByTitle("Forward message").click();
+  await page.locator('[data-message-actions="true"]').getByTitle("Forward message").click();
 
   const forwardModal = page.locator(".modal").filter({ hasText: "Forward message" });
   await forwardModal
     .getByPlaceholder("Search channels and people")
     .fill(fixture.projectChannel.name);
   await forwardModal
-    .getByTestId(`forward-dest-channel-${fixture.projectChannel.id}`)
+    .locator(".forward-destination-row")
+    .filter({ hasText: fixture.projectChannel.name })
+    .first()
     .click();
   await forwardModal.getByTestId("forward-send-selected").click();
 
@@ -503,7 +506,7 @@ test("opens a thread, replies, and jumps from Activity back to the thread", asyn
   await composer.press("Enter");
   const root = page.locator(".message").filter({ hasText: rootBody }).first();
   await root.hover();
-  await root.getByTitle("Reply in thread").click();
+  await page.locator('[data-message-actions="true"]').getByTitle("Reply in thread").click();
   await expect(page.locator(".thread-panel")).toBeVisible();
 
   const reply = `Thread follow-up ${Date.now()}`;
@@ -520,7 +523,7 @@ test("pins a message from inside a thread", async ({ page }) => {
     .filter({ hasText: fixture.messages.threadRoot.body })
     .first();
   await root.hover();
-  await root.getByTitle("Reply in thread").click();
+  await page.locator('[data-message-actions="true"]').getByTitle("Reply in thread").click();
   await expect(page.locator(".thread-panel")).toBeVisible();
 
   const reply = page
@@ -528,7 +531,7 @@ test("pins a message from inside a thread", async ({ page }) => {
     .filter({ hasText: fixture.messages.threadReply.body })
     .first();
   await reply.hover();
-  await reply.getByTitle("More message actions").click();
+  await page.locator('[data-message-actions="true"]').getByTitle("More message actions").click();
   await page.getByRole("menuitem", { name: "Pin message" }).click();
 
   await page.getByRole("button", { name: "Pinned messages" }).click();
@@ -544,7 +547,7 @@ test("opens the original thread when a thread reply is forwarded into the same c
     .filter({ hasText: fixture.messages.threadRoot.body })
     .first();
   await root.hover();
-  await root.getByTitle("Reply in thread").click();
+  await page.locator('[data-message-actions="true"]').getByTitle("Reply in thread").click();
   await expect(page.locator(".thread-panel")).toBeVisible();
 
   const reply = page
@@ -552,14 +555,16 @@ test("opens the original thread when a thread reply is forwarded into the same c
     .filter({ hasText: fixture.messages.threadReply.body })
     .first();
   await reply.hover();
-  await reply.getByTitle("Forward message").click();
+  await page.locator('[data-message-actions="true"]').getByTitle("Forward message").click();
 
   const forwardModal = page.locator(".modal").filter({ hasText: "Forward message" });
   await forwardModal
     .getByPlaceholder("Search channels and people")
     .fill(fixture.projectChannel.name);
   await forwardModal
-    .getByTestId(`forward-dest-channel-${fixture.projectChannel.id}`)
+    .locator(".forward-destination-row")
+    .filter({ hasText: fixture.projectChannel.name })
+    .first()
     .click();
   await forwardModal.getByTestId("forward-send-selected").click();
 

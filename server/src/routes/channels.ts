@@ -299,8 +299,11 @@ channelsRouter.post("/:id/leave", async (req, res) => {
   }
   const isCreator = channel.createdBy.equals(req.user._id);
   const remainingMembers = channel.members.filter((memberId) => !memberId.equals(req.user._id));
+  const hasRemainingManager = (channel.managers || []).some(
+    (managerId) => remainingMembers.some((memberId) => memberId.equals(managerId))
+  );
   const managerId = req.body?.managerId;
-  if (isCreator && remainingMembers.length > 0) {
+  if (isCreator && remainingMembers.length > 0 && !hasRemainingManager) {
     if (!mongoose.isValidObjectId(managerId)) {
       return res.status(400).json({ error: "choose a manager before leaving" });
     }
@@ -311,6 +314,15 @@ channelsRouter.post("/:id/leave", async (req, res) => {
   }
   if (isCreator && remainingMembers.length === 0) {
     return res.status(400).json({ error: "empty channels must be deleted instead" });
+  }
+  if (channel.type === "private") {
+    const savedMessageIds = await Message.find({ channel: channel._id }, { _id: 1 }).lean();
+    if (savedMessageIds.length) {
+      await User.updateOne(
+        { _id: req.user._id },
+        { $pull: { savedMessages: { $in: savedMessageIds.map((message) => message._id) } } }
+      );
+    }
   }
   channel.members = remainingMembers;
   channel.managers = (channel.managers || []).filter((memberId) => String(memberId) !== String(req.user._id));
@@ -339,6 +351,15 @@ channelsRouter.delete("/:id", async (req, res) => {
   }
   if (channel.members.some((memberId) => !memberId.equals(req.user._id))) {
     return res.status(400).json({ error: "remove all other members before deleting the channel" });
+  }
+  if (channel.type === "private") {
+    const savedMessageIds = await Message.find({ channel: channel._id }, { _id: 1 }).lean();
+    if (savedMessageIds.length) {
+      await User.updateOne(
+        { _id: req.user._id },
+        { $pull: { savedMessages: { $in: savedMessageIds.map((message) => message._id) } } }
+      );
+    }
   }
   await ActivityEvent.deleteMany({ channel: channel._id }).catch(() => {});
   channel.isArchived = true;

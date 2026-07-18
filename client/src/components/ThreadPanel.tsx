@@ -256,6 +256,7 @@ export default function ThreadPanel({
                 setActionsFor(m.id);
                 setMenuFor((openId) => (openId && openId !== m.id ? null : openId));
               }}
+              onDeactivate={() => setActionsFor((activeId) => (activeId === m.id ? null : activeId))}
               editing={editing?.id === m.id ? editing : null}
               menuOpen={menuFor === m.id}
               onReact={(e) => openReact(m.id, e)}

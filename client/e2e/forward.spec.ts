@@ -7,8 +7,8 @@ function forwardModal(page: Page) {
   return page.getByTestId("forward-modal");
 }
 
-function forwardTarget(modal: Locator, kind: string, id: string) {
-  return modal.getByTestId(`forward-dest-${kind}-${id}`);
+function destinationByLabel(modal: Locator, label: string) {
+  return modal.locator(".forward-destination-row").filter({ hasText: label }).first();
 }
 
 async function openForwardDialog(page: Page) {
@@ -16,7 +16,7 @@ async function openForwardDialog(page: Page) {
   const source = messageById(page, fixture.messages.searchHit.id);
   await expect(source).toBeVisible();
   await source.hover();
-  await source.getByTestId(`message-${fixture.messages.searchHit.id}-forward`).click();
+  await page.getByTestId(`message-${fixture.messages.searchHit.id}-forward`).click();
   await expect(forwardModal(page)).toBeVisible();
 }
 
@@ -57,13 +57,17 @@ test.describe("forwarding", () => {
     await search.fill(fixture.bob.displayName);
 
     await expect(modal).toContainText("Search everyone");
-    const bobTarget = forwardTarget(modal, "dm", fixture.dmChannel.id);
+    await expect(modal.locator('.forward-destination-copy strong').first()).toBeVisible();
+    await expect(modal.locator(".forward-destination-row").filter({ hasText: fixture.projectChannel.name })).toHaveCount(0);
+    const bobTarget = destinationByLabel(modal, fixture.bob.displayName);
+    await expect(bobTarget.locator(".avatar")).toBeVisible();
     await expect(bobTarget).toBeVisible();
     await bobTarget.click();
     await expect(send).toHaveText("Forward to 1");
 
     await search.fill("");
-    await expect(bobTarget).toHaveAttribute("aria-pressed", "true");
+    await expect(modal.locator(".forward-destination-list")).toHaveCount(0);
+    await expect(modal.locator(".forward-chip")).toContainText(fixture.bob.displayName);
     await expect(send).toHaveText("Forward to 1");
   });
 
@@ -76,10 +80,10 @@ test.describe("forwarding", () => {
     await modal.locator("textarea").fill(note);
 
     await search.fill(fixture.bob.displayName);
-    await forwardTarget(modal, "dm", fixture.dmChannel.id).click();
+    await destinationByLabel(modal, fixture.bob.displayName).click();
 
     await search.fill(fixture.projectChannel.name);
-    const projectTarget = forwardTarget(modal, "channel", fixture.projectChannel.id);
+    const projectTarget = destinationByLabel(modal, fixture.projectChannel.name);
     await expect(projectTarget).toBeVisible();
     await projectTarget.click();
 
@@ -99,6 +103,7 @@ test.describe("forwarding", () => {
     const modal = forwardModal(page);
     const list = modal.locator(".forward-destination-list");
     const actions = modal.locator(".forward-actions");
+    await modal.getByTestId("forward-search").fill(fixture.bob.displayName);
     await expect(list).toBeVisible();
     await expect(actions).toBeVisible();
 

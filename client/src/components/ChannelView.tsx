@@ -75,6 +75,7 @@ export default function ChannelView({
   onDeleteChannel,
   onChangeVisibility,
   onChannelUpdated,
+  onToast,
   onJoin,
   onRead,
   onThreadRead,
@@ -273,11 +274,16 @@ export default function ChannelView({
         // the actual gap here as well so a message arriving at the visible
         // bottom is never treated as an off-screen message.
         const scroller = scrollerRef.current;
-        const atBottom = scroller
+        // Your own send should always bring the timeline into view, even when
+        // you were reading older messages. Messages from other people still
+        // preserve the current viewport and use the new-message counter.
+        const authoredByMe = msg.author?.id === user.id;
+        const atBottom = authoredByMe || (scroller
           ? scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120
-          : stickToBottomRef.current;
+          : stickToBottomRef.current);
         if (atBottom) stickToBottomRef.current = true;
-        if (!atBottom && !stickToBottomRef.current) {
+        else {
+          stickToBottomRef.current = false;
           setNewMessageCount((count) => count + 1);
         }
         setMessages((prev) => [...prev, msg]);
@@ -817,6 +823,10 @@ export default function ChannelView({
   const isMember = isDm || (channel.members || []).includes(user.id);
   const isCreator = !isDm && channel.createdBy === user.id;
   const remainingMembers = (channel.members || []).filter((memberId) => memberId !== user.id);
+  const hasRemainingManager = (channel.managers || []).some(
+    (managerId) => managerId !== user.id && remainingMembers.includes(managerId)
+  );
+  const needsManagerTransfer = isCreator && remainingMembers.length > 0 && !hasRemainingManager;
   const leaveCandidates = users
     .filter((candidate) => remainingMembers.includes(candidate.id))
     .sort((a, b) => a.displayName.localeCompare(b.displayName));
@@ -869,7 +879,7 @@ export default function ChannelView({
                 <StarIcon size={20} strokeWidth={1.9} fill={isVip ? "currentColor" : "none"} />
               </button>
             )}
-            <Avatar name={dmAvatarName} src={dmAvatar} size={24} />
+            <Avatar name={dmAvatarName} src={dmAvatar} size={48} />
             <span className="ch-name" data-testid="channel-title">{dmLabel}</span>
           </>
         ) : (
@@ -904,7 +914,7 @@ export default function ChannelView({
                   Make public
                 </button>
               )}
-              {!isGeneral && (
+              {!isGeneral && isMember && (
                 <button
                   className="header-action header-action-icon leave"
                   data-testid="channel-leave"
@@ -925,7 +935,9 @@ export default function ChannelView({
         className="messages"
         ref={scrollerRef}
         onScroll={onMessagesScroll}
-        onMouseLeave={() => { if (!menuFor) setActionsFor(null); }}
+        onMouseLeave={(event) => {
+          if (!menuFor && !event.relatedTarget?.closest?.("[data-message-actions]")) setActionsFor(null);
+        }}
       >
         <div ref={messagesInnerRef}>
           {loadingOlder && <div className="older-loader">Loading earlier messages…</div>}
@@ -992,6 +1004,7 @@ export default function ChannelView({
                       setActionsFor(m.id);
                       setMenuFor((openId) => (openId && openId !== m.id ? null : openId));
                     }}
+                    onDeactivate={() => setActionsFor((activeId) => (activeId === m.id ? null : activeId))}
                     editing={editing?.id === m.id ? editing : null}
                     menuOpen={menuFor === m.id}
                     onReact={(e) => openReact(m.id, e)}
@@ -1152,6 +1165,12 @@ export default function ChannelView({
           dms={dms}
           users={users}
           onForward={forwardTo}
+          onSuccess={(destinations) => {
+            const first = destinations[0];
+            const firstLabel = first?.kind === "channel" ? `#${first.label}` : first?.label;
+            const remainder = destinations.length - 1;
+            onToast?.(`Forwarded to ${firstLabel}${remainder > 0 ? ` and ${remainder} other${remainder === 1 ? "" : "s"}` : ""}`);
+          }}
           onClose={() => setForwarding(null)}
         />
       )}
@@ -1167,11 +1186,16 @@ export default function ChannelView({
         />
       )}
 
-      {confirmLeave && isCreator && remainingMembers.length > 0 ? (
+      {confirmLeave && needsManagerTransfer ? (
         <Modal title="Choose a manager before leaving" className="manager-modal" onClose={() => setConfirmLeave(false)}>
           <p className="settings-hint manager-modal-hint">
             Choose someone to manage members after you leave #{channel.name}.
           </p>
+          {channel.type === "private" && (
+            <p className="settings-hint leave-saved-warning">
+              All messages you saved from this private channel will be removed from Saved.
+            </p>
+          )}
           <label className="manager-select-field">
             <span>New manager</span>
             <input
@@ -1235,7 +1259,9 @@ export default function ChannelView({
       ) : confirmLeave && isCreator && remainingMembers.length === 0 ? (
         <ConfirmDialog
           title={`Delete #${channel.name}?`}
-          message="This channel has no other members. Deleting it will archive its history."
+          message={channel.type === "private"
+            ? "This channel has no other members. Deleting it will archive its history and remove all messages you saved from it."
+            : "This channel has no other members. Deleting it will archive its history."}
           confirmLabel="Delete channel"
           danger
           onConfirm={() => {
@@ -1247,7 +1273,9 @@ export default function ChannelView({
       ) : confirmLeave && (
         <ConfirmDialog
           title={`Leave #${channel.name}?`}
-          message="You'll stop receiving messages from this channel. You can rejoin later if it's public."
+          message={channel.type === "private"
+            ? "You'll stop receiving messages from this channel. All messages you saved from it will be removed from Saved."
+            : "You'll stop receiving messages from this channel. You can rejoin later if it's public."}
           confirmLabel="Leave"
           danger
           onConfirm={() => {

@@ -106,6 +106,7 @@ export const api = {
   listUsers: () => request("/users"),
   listChannels: () => request("/channels"),
   listAllChannels: () => request("/channels?scope=all"),
+  getChannel: (id) => request(`/channels/${id}`),
   createChannel: (name, type = "public") =>
     request("/channels", { method: "POST", body: { name, type } }),
   joinChannel: (id) => request(`/channels/${id}/join`, { method: "POST" }),
