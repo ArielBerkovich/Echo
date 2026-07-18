@@ -872,7 +872,7 @@ export default function App() {
           {((view !== "activity" && view !== "saved") || searchQuery) && (
             <Sidebar
               user={user}
-              channels={visibleChannels}
+              channels={channels}
               dms={dms}
               hidden={hidden}
               vipIds={vipIds}

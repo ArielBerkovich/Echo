@@ -135,6 +135,19 @@ test("removes a channel from the sidebar after leaving it", async ({ page }) => 
   await expect(row).toHaveCount(0);
 });
 
+test("shows only joined channels in the Channels section", async ({ page }) => {
+  const channelName = `not-joined-${fixture.suffix}`;
+  await requestAsToken(page, fixture.bob.token, "/channels", {
+    method: "POST",
+    body: { name: channelName, type: "public" },
+  });
+
+  await page.goto("/");
+  await expect(page.getByTestId(`channel-row-${slug(channelName)}`)).toHaveCount(0);
+  await page.getByTestId("search-input").fill(channelName);
+  await expect(page.getByTestId(`search-channel-${slug(channelName)}`)).toBeVisible();
+});
+
 test("preserves the reading position and offers new messages when scrolled up", async ({ page }) => {
   const channelName = `scroll-regression-${fixture.suffix}`;
   const created = await requestAsToken(page, fixture.alice.token, "/channels", {
