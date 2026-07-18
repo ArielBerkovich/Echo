@@ -1,0 +1,86 @@
+# Complete disconnected OpenShift profile. Replace the example registry,
+# repository paths, immutable tags/digests, Route host, and StorageClass before
+# installation. No chart template changes are required.
+global:
+  imageRegistry: artifactory.example.com
+  imagePullSecrets:
+    - artifactory-pull
+  defaultStorageClass: openshift-storage-class
+  security:
+    # Mirrored Bitnami images have a different repository path.
+    allowInsecureImages: true
+  compatibility:
+    openshift:
+      adaptSecurityContext: force
+
+openshift:
+  enabled: true
+
+server:
+  image:
+    repository: docker-local/echo/echo-server
+    tag: "0.4.0"
+    digest: ""
+    pullPolicy: IfNotPresent
+
+client:
+  image:
+    repository: docker-local/echo/echo-client
+    tag: "0.4.0"
+    digest: ""
+    pullPolicy: IfNotPresent
+  ingress:
+    enabled: false
+  route:
+    enabled: true
+    host: echo.apps.example.com
+    annotations: {}
+    tls:
+      termination: edge
+      insecureEdgeTerminationPolicy: Redirect
+
+mongodb:
+  image:
+    # global.imageRegistry supplies the registry hostname.
+    repository: docker-local/bitnami/mongodb
+    tag: "8.3.4"
+    digest: ""
+    pullPolicy: IfNotPresent
+  persistence:
+    storageClass: openshift-storage-class
+
+minio:
+  image:
+    repository: artifactory.example.com/docker-local/minio/minio
+    tag: "RELEASE.2024-12-18T13-15-44Z"
+    pullPolicy: IfNotPresent
+  mcImage:
+    repository: artifactory.example.com/docker-local/minio/mc
+    tag: "RELEASE.2024-11-21T17-21-54Z"
+    pullPolicy: IfNotPresent
+  imagePullSecrets:
+    - name: artifactory-pull
+  persistence:
+    storageClass: openshift-storage-class
+  # The official MinIO chart pins UID/GID 1000 when these contexts are enabled.
+  # restricted-v2 supplies safe namespace-scoped values when they are disabled.
+  securityContext:
+    enabled: false
+  makeBucketJob:
+    securityContext:
+      enabled: false
+  makePolicyJob:
+    securityContext:
+      enabled: false
+  makeUserJob:
+    securityContext:
+      enabled: false
+  makeServiceAccountJob:
+    securityContext:
+      enabled: false
+  customCommandJob:
+    securityContext:
+      enabled: false
+  postJob:
+    securityContext:
+      enabled: false

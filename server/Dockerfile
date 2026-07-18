@@ -18,6 +18,13 @@ RUN npm ci --omit=dev
 
 COPY --from=build /app/dist ./dist
 
+# Keep UID 1000 as the local default while allowing OpenShift to assign any
+# non-root UID. Runtime files are readable through group 0; HOME is writable.
+RUN chgrp -R 0 /app \
+ && chmod -R g=u /app
+
 EXPOSE 4000
 
-CMD ["npm", "start"]
+USER node
+ENV HOME=/tmp
+CMD ["node", "dist/index.js"]

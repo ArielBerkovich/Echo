@@ -1,13 +1,43 @@
 global:
+  # Prefix for Echo and Bitnami images. For Artifactory, keep the hostname here
+  # and put the Artifactory repository path in each image.repository value.
   imageRegistry: ""
+  # Secret names (not objects). Echo converts these to Kubernetes
+  # imagePullSecrets entries and the Bitnami MongoDB chart consumes them too.
   imagePullSecrets: []
+  # Used by the Bitnami MongoDB chart.
+  defaultStorageClass: ""
+  # Kept for backwards compatibility with earlier Echo chart values.
   storageClassName: ""
-  clusterDomain: cluster.local
+  security:
+    # Set true only when mirrored Bitnami images use a different repository
+    # name. This disables Bitnami's image-name verification, not TLS.
+    allowInsecureImages: false
+  compatibility:
+    openshift:
+      # auto detects OpenShift; force is useful when rendering manifests away
+      # from the target cluster. MongoDB removes fixed UID/GID values.
+      adaptSecurityContext: auto
+
+# Echo workload security profile. Enabling it removes fixed UID/GID values and
+# lets OpenShift restricted-v2 assign IDs from the namespace's allowed ranges.
+openshift:
+  enabled: false
+  podSecurityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  containerSecurityContext:
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: [ALL]
 
 server:
   image:
     repository: arielber/echo-server
-    tag: latest
+    tag: "latest"
+    digest: ""
     pullPolicy: IfNotPresent
   replicaCount: 1
   service:
@@ -23,12 +53,24 @@ server:
     bucket: echo-uploads
     region: us-east-1
   resources: {}
+  podSecurityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    runAsNonRoot: true
+  containerSecurityContext:
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: [ALL]
+    seccompProfile:
+      type: RuntimeDefault
   extraEnv: []
 
 client:
   image:
     repository: arielber/echo-client
-    tag: latest
+    tag: "latest"
+    digest: ""
     pullPolicy: IfNotPresent
   replicaCount: 1
   service:
@@ -44,41 +86,154 @@ client:
           - path: /
             pathType: Prefix
     tls: []
+  # OpenShift Route. Leave disabled for ordinary Kubernetes. The host is
+  # required when enabled because Echo uses it as its CORS client origin.
+  route:
+    enabled: false
+    host: ""
+    annotations: {}
+    tls:
+      termination: edge
+      insecureEdgeTerminationPolicy: Redirect
   resources: {}
+  podSecurityContext:
+    runAsUser: 101
+    runAsGroup: 101
+    runAsNonRoot: true
+  containerSecurityContext:
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: [ALL]
+    seccompProfile:
+      type: RuntimeDefault
   extraEnv: []
 
 mongodb:
   enabled: true
   image:
-    repository: mongo
-    tag: "7"
+    registry: registry-1.docker.io
+    repository: bitnami/mongodb
+    tag: "latest"
+    digest: ""
     pullPolicy: IfNotPresent
+    pullSecrets: []
+  architecture: replicaset
+  replicaCount: 1
   replicaSetName: rs0
-  service:
-    port: 27017
+  auth:
+    enabled: true
+    rootUser: echo
+    rootPassword: ""
   persistence:
     enabled: true
     size: 8Gi
-    accessModes:
-      - ReadWriteOnce
-    annotations: {}
+    storageClass: ""
   resources: {}
 
 minio:
   enabled: true
   image:
-    repository: minio/minio
-    tag: latest
+    repository: quay.io/minio/minio
+    tag: "RELEASE.2024-12-18T13-15-44Z"
     pullPolicy: IfNotPresent
+  mcImage:
+    repository: quay.io/minio/mc
+    tag: "RELEASE.2024-11-21T17-21-54Z"
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  mode: standalone
   rootUser: echo
-  rootPassword: echo-dev-secret
-  service:
-    apiPort: 9000
-    consolePort: 9001
+  rootPassword: ""
   persistence:
     enabled: true
     size: 10Gi
-    accessModes:
-      - ReadWriteOnce
-    annotations: {}
-  resources: {}
+    storageClass: ""
+  buckets:
+    - name: echo-uploads
+      policy: none
+      purge: false
+  # The upstream chart defaults to a 16Gi memory request. These values are
+  # suitable for a small development cluster; increase them for production.
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 1
+      memory: 1Gi
+  securityContext:
+    # For OpenShift restricted-v2 set enabled=false. The SCC then injects an
+    # allowed UID, GID, fsGroup, seccomp profile, and capability restrictions.
+    enabled: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch
+    runAsNonRoot: true
+  containerSecurityContext:
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: [ALL]
+    readOnlyRootFilesystem: false
+  makeBucketJob:
+    securityContext:
+      # Set enabled=false on OpenShift so the setup container gets SCC defaults.
+      enabled: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+    containerSecurityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      runAsNonRoot: true
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: [ALL]
+  makePolicyJob:
+    securityContext:
+      enabled: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+    containerSecurityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      runAsNonRoot: true
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: [ALL]
+  makeUserJob:
+    securityContext:
+      enabled: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+    containerSecurityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      runAsNonRoot: true
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: [ALL]
+  makeServiceAccountJob:
+    securityContext:
+      enabled: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+    containerSecurityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      runAsNonRoot: true
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: [ALL]
+  postJob:
+    securityContext:
+      # Set enabled=false on OpenShift.
+      enabled: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000

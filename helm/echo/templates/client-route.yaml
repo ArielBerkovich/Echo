@@ -1,0 +1,26 @@
+{{- if .Values.client.route.enabled }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "echo.clientServiceName" . }}
+  labels:
+    {{- include "echo.labels" . | nindent 4 }}
+    app.kubernetes.io/component: client
+  {{- with .Values.client.route.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  host: {{ required "client.route.host is required when client.route.enabled is true" .Values.client.route.host | quote }}
+  to:
+    kind: Service
+    name: {{ include "echo.clientServiceName" . }}
+    weight: 100
+  port:
+    targetPort: http
+  {{- with .Values.client.route.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  wildcardPolicy: None
+{{- end }}

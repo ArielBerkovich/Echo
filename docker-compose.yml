@@ -77,7 +77,7 @@ services:
     container_name: echo-client
     restart: unless-stopped
     ports:
-      - "8090:80"
+      - "8090:8080"
     depends_on:
       - server
 

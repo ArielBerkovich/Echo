@@ -11,6 +11,24 @@ RUN npm run build
 FROM nginx:alpine
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
-EXPOSE 80
-ENV SERVER_HOST=server
+
+# Prepare writable paths for both the image's default UID 101 and OpenShift's
+# arbitrary non-root UID. OpenShift-assigned users are members of group 0.
+RUN mkdir -p /var/cache/nginx/client_temp \
+    /var/cache/nginx/proxy_temp \
+    /var/cache/nginx/fastcgi_temp \
+    /var/cache/nginx/uwsgi_temp \
+    /var/cache/nginx/scgi_temp \
+    /var/run/nginx \
+    /etc/nginx/conf.d \
+ && chown -R 101:0 /var/cache/nginx /var/run/nginx /var/log/nginx \
+    /etc/nginx/conf.d /etc/nginx/templates /usr/share/nginx/html \
+ && sed -i 's#^pid[[:space:]].*;#pid /tmp/nginx.pid;#' /etc/nginx/nginx.conf \
+ && chmod -R g=u /var/cache/nginx /var/run/nginx /var/log/nginx \
+    /etc/nginx/conf.d /etc/nginx/templates /usr/share/nginx/html
+
+USER 101
+EXPOSE 8080
+ENV SERVER_HOST=server \
+    HOME=/tmp
 CMD ["nginx", "-g", "daemon off;"]

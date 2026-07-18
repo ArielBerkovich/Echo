@@ -5,10 +5,8 @@ metadata:
   name: {{ include "echo.clientServiceName" . }}
   labels:
     {{- include "echo.labels" . | nindent 4 }}
-    app.kubernetes.io/component: client
   {{- with .Values.client.ingress.annotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
+  annotations: {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
   {{- with .Values.client.ingress.className }}
@@ -25,12 +23,10 @@ spec:
             backend:
               service:
                 name: {{ include "echo.clientServiceName" $ }}
-                port:
-                  number: {{ $.Values.client.service.port }}
+                port: { number: {{ $.Values.client.service.port }} }
           {{- end }}
     {{- end }}
   {{- with .Values.client.ingress.tls }}
-  tls:
-    {{- toYaml . | nindent 4 }}
+  tls: {{- toYaml . | nindent 4 }}
   {{- end }}
 {{- end }}

@@ -17,34 +17,39 @@ spec:
         {{- include "echo.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: client
     spec:
+      securityContext:
+        {{- if .Values.openshift.enabled }}
+        {{- toYaml .Values.openshift.podSecurityContext | nindent 8 }}
+        {{- else }}
+        {{- toYaml .Values.client.podSecurityContext | nindent 8 }}
+        {{- end }}
       {{- with .Values.global.imagePullSecrets }}
       imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
+        {{- include "echo.imagePullSecrets" . | nindent 8 }}
       {{- end }}
       containers:
         - name: client
-          image: {{ include "echo.image" (dict "registry" .Values.global.imageRegistry "repository" .Values.client.image.repository "tag" .Values.client.image.tag) }}
+          image: {{ include "echo.image" (dict "registry" .Values.global.imageRegistry "repository" .Values.client.image.repository "tag" .Values.client.image.tag "digest" .Values.client.image.digest) }}
           imagePullPolicy: {{ .Values.client.image.pullPolicy }}
+          securityContext:
+            {{- if .Values.openshift.enabled }}
+            {{- toYaml .Values.openshift.containerSecurityContext | nindent 12 }}
+            {{- else }}
+            {{- toYaml .Values.client.containerSecurityContext | nindent 12 }}
+            {{- end }}
           ports:
             - name: http
-              containerPort: 80
+              containerPort: 8080
           env:
             - name: SERVER_HOST
               value: {{ include "echo.serverServiceName" . | quote }}
-            {{- with .Values.client.extraEnv }}
-            {{- toYaml . | nindent 12 }}
-            {{- end }}
+            {{- with .Values.client.extraEnv }}{{ toYaml . | nindent 12 }}{{- end }}
           readinessProbe:
-            httpGet:
-              path: /
-              port: http
+            httpGet: { path: /, port: http }
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
-            httpGet:
-              path: /
-              port: http
+            httpGet: { path: /, port: http }
             initialDelaySeconds: 10
             periodSeconds: 20
-          resources:
-            {{- toYaml .Values.client.resources | nindent 12 }}
+          resources: {{- toYaml .Values.client.resources | nindent 12 }}

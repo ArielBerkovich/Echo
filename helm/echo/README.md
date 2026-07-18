@@ -1,57 +1,63 @@
 # Echo Helm Chart
 
-This chart deploys the Echo client, server, and optional bundled MongoDB and MinIO workloads.
+This chart deploys Echo and its dependencies using external vendor charts:
 
-## Default install
+- MongoDB: Bitnami MongoDB chart, configured as an authenticated single-member replica set.
+- MinIO: official MinIO chart, configured as an authenticated standalone object store.
 
-The default values deploy:
+The same chart supports ordinary Kubernetes and disconnected OpenShift. Local
+Kubernetes remains the default. All platform, image registry, storage, Route,
+and security settings are values-driven.
 
-- the Echo client
-- the Echo API server
-- a single-node MongoDB replica set
-- a MinIO instance with persistent storage
-
-The client talks to the server through the in-cluster `SERVER_HOST` service name, and the server seeds its own bucket and database on startup.
-
-## Install
+Install; all runtime images are declared in `values.yaml`, and MongoDB and MinIO generate their own credentials and persist them in
+their dependency Secrets. Echo generates and persists its JWT secret.
 
 ```bash
-helm install echo ./helm/echo \
-  --set server.jwtSecret=change-me
+helm install echo ./helm/echo
 ```
 
-For production, also set:
+## Disconnected OpenShift with Artifactory
 
-- `server.clientOrigin`
-- `global.imageRegistry` or the individual image repositories/tags
-- stronger MinIO credentials
-
-## Use external MongoDB or MinIO
-
-Disable the bundled workloads and provide your own endpoints:
+`values-openshift.yaml` is a complete profile. Replace its example Artifactory
+host/repository paths, immutable image tags or digests, Route host, and
+StorageClass, then install it without changing chart templates:
 
 ```bash
+oc new-project echo
+oc create secret docker-registry artifactory-pull \
+  --docker-server=artifactory.example.com \
+  --docker-username='<read-only-user>' \
+  --docker-password='<password>'
+
 helm install echo ./helm/echo \
-  --set server.jwtSecret=change-me \
-  --set mongodb.enabled=false \
-  --set minio.enabled=false \
-  --set server.mongoUri='mongodb://db1:27017,db2:27017/echo?replicaSet=rs0' \
-  --set server.s3.endpoint='https://minio.example.com' \
-  --set server.s3.accessKey='echo' \
-  --set server.s3.secretKey='change-me' \
-  --set server.clientOrigin='https://echo.example.com'
+  --namespace echo \
+  --values ./helm/echo/values-openshift.yaml
 ```
 
-## Air-gapped deployments
+Mirror these runtime images into Artifactory before installation:
 
-Mirror or preload the container images in your own registry, then point the chart at that registry:
+- Echo server and client images built from this repository
+- `bitnami/mongodb`
+- `quay.io/minio/minio`
+- `quay.io/minio/mc`
 
-```bash
-helm install echo ./helm/echo \
-  --set global.imageRegistry=registry.local/echo \
-  --set server.image.repository=server \
-  --set client.image.repository=client \
-  --set server.jwtSecret=change-me
-```
+The dependency archives are vendored under `charts/`, so installation does not
+contact public Helm repositories. The Echo images support both their local
+non-root users and OpenShift arbitrary UIDs. MongoDB uses Bitnami's
+`adaptSecurityContext` support. The OpenShift profile disables the official
+MinIO chart's fixed UID/GID contexts and lets `restricted-v2` assign them.
 
-If you disable MongoDB or MinIO, the chart stays valid, but you must provide the external connection settings above.
+If Artifactory uses a private CA, configure that CA in OpenShift's cluster image
+configuration; an image pull Secret supplies credentials but does not establish
+TLS trust.
+
+The MongoDB and MinIO charts create and use `echo-mongodb` and `echo-minio`
+Kubernetes Secrets. Echo reads those Secrets directly. The generated secrets
+are preserved across upgrades; do not commit production secrets in a values
+file.
+
+Set `client.ingress.enabled=true` for Kubernetes Ingress, or
+`client.route.enabled=true` and `client.route.host` for an OpenShift Route. For
+external databases/storage, disable the dependencies and provide
+`server.mongoUri`, `server.s3.endpoint`, `server.s3.accessKey`, and
+`server.s3.secretKey`.

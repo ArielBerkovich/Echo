@@ -17,14 +17,26 @@ spec:
         {{- include "echo.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: server
     spec:
+      securityContext:
+        {{- if .Values.openshift.enabled }}
+        {{- toYaml .Values.openshift.podSecurityContext | nindent 8 }}
+        {{- else }}
+        {{- toYaml .Values.server.podSecurityContext | nindent 8 }}
+        {{- end }}
       {{- with .Values.global.imagePullSecrets }}
       imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
+        {{- include "echo.imagePullSecrets" . | nindent 8 }}
       {{- end }}
       containers:
         - name: server
-          image: {{ include "echo.image" (dict "registry" .Values.global.imageRegistry "repository" .Values.server.image.repository "tag" .Values.server.image.tag) }}
+          image: {{ include "echo.image" (dict "registry" .Values.global.imageRegistry "repository" .Values.server.image.repository "tag" .Values.server.image.tag "digest" .Values.server.image.digest) }}
           imagePullPolicy: {{ .Values.server.image.pullPolicy }}
+          securityContext:
+            {{- if .Values.openshift.enabled }}
+            {{- toYaml .Values.openshift.containerSecurityContext | nindent 12 }}
+            {{- else }}
+            {{- toYaml .Values.server.containerSecurityContext | nindent 12 }}
+            {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.server.service.port }}
@@ -32,15 +44,46 @@ spec:
             - name: PORT
               value: {{ .Values.server.service.port | quote }}
             - name: MONGO_URI
-              value: {{ include "echo.mongoUri" . | quote }}
+              {{- if or .Values.server.mongoUri (not .Values.mongodb.enabled) }}
+              value: {{ required "server.mongoUri is required when mongodb.enabled is false" .Values.server.mongoUri | quote }}
+              {{- else }}
+              value: ""
+              {{- end }}
+            {{- if and .Values.mongodb.enabled (not .Values.server.mongoUri) }}
+            - name: MONGO_HOST
+              value: {{ printf "%s-0.%s-headless" (include "echo.mongodbName" .) (include "echo.mongodbName" .) | quote }}
+            - name: MONGO_USER
+              value: {{ .Values.mongodb.auth.rootUser | quote }}
+            - name: MONGO_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "echo.mongodbName" . }}
+                  key: mongodb-root-password
+            - name: MONGO_REPLICA_SET
+              value: {{ .Values.mongodb.replicaSetName | quote }}
+            {{- end }}
             - name: CLIENT_ORIGIN
               value: {{ include "echo.clientOrigin" . | quote }}
             - name: S3_ENDPOINT
               value: {{ include "echo.s3Endpoint" . | quote }}
             - name: S3_ACCESS_KEY
-              value: {{ include "echo.s3AccessKey" . | quote }}
+              {{- if .Values.minio.enabled }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "echo.minioName" . }}
+                  key: rootUser
+              {{- else }}
+              value: {{ required "server.s3.accessKey is required when minio.enabled is false" .Values.server.s3.accessKey | quote }}
+              {{- end }}
             - name: S3_SECRET_KEY
-              value: {{ include "echo.s3SecretKey" . | quote }}
+              {{- if .Values.minio.enabled }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "echo.minioName" . }}
+                  key: rootPassword
+              {{- else }}
+              value: {{ required "server.s3.secretKey is required when minio.enabled is false" .Values.server.s3.secretKey | quote }}
+              {{- end }}
             - name: S3_BUCKET
               value: {{ .Values.server.s3.bucket | quote }}
             - name: S3_REGION
@@ -50,37 +93,13 @@ spec:
                 secretKeyRef:
                   name: {{ include "echo.secretName" . }}
                   key: jwt-secret
-            {{- with .Values.server.extraEnv }}
-            {{- toYaml . | nindent 12 }}
-            {{- end }}
+            {{- with .Values.server.extraEnv }}{{ toYaml . | nindent 12 }}{{- end }}
           readinessProbe:
-            httpGet:
-              path: /api/health
-              port: http
+            httpGet: { path: /api/health, port: http }
             initialDelaySeconds: 10
             periodSeconds: 10
           livenessProbe:
-            httpGet:
-              path: /api/health
-              port: http
+            httpGet: { path: /api/health, port: http }
             initialDelaySeconds: 30
             periodSeconds: 20
-          resources:
-            {{- toYaml .Values.server.resources | nindent 12 }}
-      {{- if .Values.mongodb.enabled }}
-      initContainers:
-        - name: wait-for-mongo
-          image: {{ include "echo.image" (dict "registry" .Values.global.imageRegistry "repository" .Values.mongodb.image.repository "tag" .Values.mongodb.image.tag) }}
-          imagePullPolicy: {{ .Values.mongodb.image.pullPolicy }}
-          command:
-            - sh
-            - -ec
-            - |
-              for i in $(seq 1 60); do
-                if mongosh "mongodb://{{ include "echo.mongodbName" . }}:{{ .Values.mongodb.service.port }}/admin" --quiet --eval 'db.hello().isWritablePrimary' | grep -q true; then
-                  exit 0
-                fi
-                sleep 2
-              done
-              exit 1
-      {{- end }}
+          resources: {{- toYaml .Values.server.resources | nindent 12 }}
