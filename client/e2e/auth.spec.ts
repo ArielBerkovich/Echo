@@ -24,7 +24,7 @@ test("login displays server errors", async ({ page }) => {
     await page.locator('input[name="password"]').fill("Password1");
     await page.getByRole("button", { name: "Create admin account" }).click();
 
-    await expect(page.getByText("#general", { exact: true })).toBeVisible();
+    await expect(page.getByTestId("channel-row-general")).toBeVisible();
     return;
   }
 
@@ -46,7 +46,7 @@ test("create account tab submits registration payload", async ({ page }) => {
     await expect(page.getByLabel("Admin username")).toHaveValue("admin");
     await page.locator('input[name="password"]').fill("Password1");
     await page.getByRole("button", { name: "Create admin account" }).click();
-    await expect(page.getByText("#general", { exact: true })).toBeVisible();
+    await expect(page.getByTestId("channel-row-general")).toBeVisible();
     return;
   }
 
