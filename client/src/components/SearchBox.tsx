@@ -212,10 +212,16 @@ const SearchBox = forwardRef(function SearchBox(
 
   // Replace the active filter token's query part with the chosen value.
   function applyFilter(item) {
-    if (!filter || !item) return;
-    const value = filter.type === "in" ? item.name : filter.type === "has" ? item.key : item.username;
-    const before = query.slice(0, filter.start);
-    const after = query.slice(caret);
+    if (!item) return;
+    // Keyboard input can arrive before the controlled caret state has flushed
+    // (notably after programmatic fills in E2E tests). Read the live selection
+    // so replacement always targets the current filter token.
+    const currentCaret = inputRef.current?.selectionStart ?? caret;
+    const currentFilter = activeFilterAt(query, currentCaret);
+    if (!currentFilter) return;
+    const value = currentFilter.type === "in" ? item.name : currentFilter.type === "has" ? item.key : item.username;
+    const before = query.slice(0, currentFilter.start);
+    const after = query.slice(currentCaret);
     const next = `${before}${value} ${after}`;
     const pos = before.length + value.length + 1;
     setQuery(next);
