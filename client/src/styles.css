@@ -789,13 +789,21 @@ input:focus {
   align-self: center;
 }
 .auth-subtitle-row {
+  position: relative;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   min-width: 0;
 }
 .auth-subtitle-row .subtitle {
-  flex: 1;
+  flex: none;
+  max-width: none;
+  white-space: nowrap;
+}
+.auth-subtitle-row .auth-back {
+  position: absolute;
+  left: 0;
 }
 /* Password-requirements hint under the signup field. */
 .field-hint {
