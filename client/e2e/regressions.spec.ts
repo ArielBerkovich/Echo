@@ -146,6 +146,9 @@ test("shows only joined channels in the Channels section", async ({ page }) => {
   await expect(page.getByTestId(`channel-row-${slug(channelName)}`)).toHaveCount(0);
   await page.getByTestId("search-input").fill(channelName);
   await expect(page.getByTestId(`search-channel-${slug(channelName)}`)).toBeVisible();
+  await page.getByTestId(`search-channel-${slug(channelName)}`).click();
+  await expect(page.getByRole("button", { name: "Join channel" })).toBeVisible();
+  await expect(page.getByTestId("channel-leave")).toHaveCount(0);
 });
 
 test("preserves the reading position and offers new messages when scrolled up", async ({ page }) => {

@@ -913,7 +913,7 @@ export default function ChannelView({
                   Make public
                 </button>
               )}
-              {!isGeneral && (
+              {!isGeneral && isMember && (
                 <button
                   className="header-action header-action-icon leave"
                   data-testid="channel-leave"
