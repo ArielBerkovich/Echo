@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { api, getToken, setToken } from "./api.js";
+import { api, getToken, getTokenExpiryMs, setToken } from "./api.js";
 import { disconnectSocket } from "./socket.js";
 import { useRealtime } from "./lib/useRealtime.js";
 import Login from "./components/Login.js";
@@ -18,8 +18,12 @@ import AddEmojiModal from "./components/AddEmojiModal.js";
 import SettingsModal from "./components/SettingsModal.js";
 import Walkthrough from "./components/Walkthrough.js";
 import ForcePasswordReset from "./components/ForcePasswordReset.js";
+import ConnectionSetup from "./components/ConnectionSetup.js";
 import { readJson, readString, writeJson, writeString } from "./lib/storage.js";
 import { notifyPermission, notifySupported, requestNotifyPermission, setNotifyPref } from "./lib/notify.js";
+import { getBackendUrl } from "./api.js";
+import { isDesktopApp } from "./lib/runtime.js";
+import ConfirmDialog from "./components/ConfirmDialog.js";
 
 // Colour themes — each is an *identity* (accent + sidebar/rail) that works in
 // both light and dark mode. The light/dark mode is chosen independently, so the
@@ -68,6 +72,8 @@ function loadRecents() {
 }
 
 export default function App() {
+  const [backendConfigured, setBackendConfigured] = useState(() => !isDesktopApp() || Boolean(getBackendUrl()));
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [channels, setChannels] = useState([]); // channels you belong to (sidebar)
@@ -108,6 +114,36 @@ export default function App() {
 
   useEffect(() => void (viewRef.current = view), [view]);
   useEffect(() => void (activeChannelRef.current = activeChannel), [activeChannel]);
+
+  // A 401 from any authenticated request means the short-lived session token
+  // is no longer usable. Return to sign-in and explain what happened.
+  useEffect(() => {
+    function onAuthExpired() {
+      setToken(null);
+      disconnectSocket();
+      setUser(null);
+      setChannels([]);
+      setAllChannels([]);
+      setDms([]);
+      setActiveChannel(null);
+      setSessionExpired(true);
+    }
+    window.addEventListener("echo:auth-expired", onAuthExpired);
+    return () => window.removeEventListener("echo:auth-expired", onAuthExpired);
+  }, []);
+
+  // Schedule the same expiry flow even when the user is idle and makes no
+  // request after the JWT expires.
+  useEffect(() => {
+    if (!user) return undefined;
+    const expiryMs = getTokenExpiryMs();
+    if (!expiryMs) return undefined;
+    const delay = Math.max(0, expiryMs - Date.now());
+    const timer = window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("echo:auth-expired"));
+    }, delay);
+    return () => window.clearTimeout(timer);
+  }, [user]);
 
   function markNavDuringRestore() {
     if (!restoredRef.current) navDuringRestoreRef.current = true;
@@ -832,8 +868,25 @@ export default function App() {
   const activeInitialScrollState =
     activeChannel && activeUnreadCount === 0 ? scrollStates[activeChannel.id] || null : null;
 
+  if (!backendConfigured) return <ConnectionSetup onConfigured={() => setBackendConfigured(true)} />;
   if (loading) return <div className="centered">Loading…</div>;
-  if (!user) return <Login onAuthed={handleAuthed} />;
+  if (!user) {
+    return (
+      <>
+        <Login onAuthed={handleAuthed} />
+        {sessionExpired && (
+          <ConfirmDialog
+            title="Session expired"
+            message="Your Echo session is no longer valid. Please sign in again."
+            confirmLabel="Continue to sign in"
+            cancelLabel="Close"
+            onConfirm={() => setSessionExpired(false)}
+            onCancel={() => setSessionExpired(false)}
+          />
+        )}
+      </>
+    );
+  }
   // Account is on an admin-issued one-time password — force a new one first.
   if (user.mustResetPassword) {
     return (

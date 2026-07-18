@@ -6658,6 +6658,76 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   }
 }
 
+/* Desktop first-run backend connection screen. */
+.connection-screen {
+  min-height: 100vh;
+}
+.connection-card {
+  position: relative;
+  z-index: 1;
+  width: min(420px, calc(100vw - 40px));
+  padding: 42px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: #ffffff;
+  color: #0f1f3a;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .22);
+  text-align: center;
+}
+.connection-card .echo-logo {
+  margin-bottom: 18px;
+}
+.connection-card h1 {
+  margin: 0 0 8px;
+}
+.connection-card p {
+  margin: 0 0 26px;
+  color: #475569;
+}
+.connection-card form {
+  display: grid;
+  gap: 10px;
+  text-align: left;
+}
+.connection-card label {
+  font-size: 13px;
+  font-weight: 700;
+}
+.connection-card input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 13px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #ffffff;
+  color: #0f1f3a;
+  font: inherit;
+}
+.connection-card .primary-button {
+  margin-top: 8px;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 9px;
+  background: #1746b8;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.connection-card input:focus-visible,
+.connection-card .primary-button:focus-visible {
+  outline: 3px solid rgba(23, 70, 184, .28);
+  outline-offset: 2px;
+}
+.connection-card .primary-button:disabled {
+  opacity: .65;
+  cursor: wait;
+}
+.connection-card .form-error {
+  color: #d95d5d;
+  font-size: 13px;
+}
+
 /* ============================================================
    First-run walkthrough (guided tour)
    ============================================================ */

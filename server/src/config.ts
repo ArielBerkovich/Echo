@@ -10,6 +10,12 @@ export const config = {
   mongoUri: process.env.MONGO_URI || "mongodb://localhost:27017/echo",
   jwtSecret: required("JWT_SECRET"),
   clientOrigin: process.env.CLIENT_ORIGIN || "http://localhost:8080",
+  // Comma-separated origins allow the web client and the Tauri webview to use
+  // the same backend. Keep clientOrigin for existing integrations.
+  clientOrigins: (process.env.CLIENT_ORIGIN || "http://localhost:8080")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean),
   // How many messages to return per history page.
   messagePageSize: 50,
   // S3-compatible object storage (MinIO locally) for file uploads.

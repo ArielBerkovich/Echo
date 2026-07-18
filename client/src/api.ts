@@ -2,6 +2,34 @@ import { readString, writeString } from "./lib/storage.js";
 
 // Thin fetch wrapper that attaches the auth token and unwraps JSON / errors.
 const TOKEN_KEY = "echo.token";
+const BACKEND_URL_KEY = "echo.backendUrl";
+
+function normalizeBackendUrl(value) {
+  const trimmed = String(value || "").trim();
+  if (!trimmed) return "";
+  let parsed;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    throw new Error("Enter a complete backend URL, for example https://echo.example.com");
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new Error("The backend URL must start with http:// or https://");
+  }
+  return parsed.toString().replace(/\/$/, "");
+}
+
+// An empty URL deliberately preserves the normal web deployment behavior,
+// where nginx proxies /api and /socket.io on the same origin.
+export function getBackendUrl() {
+  return readString(BACKEND_URL_KEY, "");
+}
+
+export function setBackendUrl(value) {
+  const normalized = normalizeBackendUrl(value);
+  writeString(BACKEND_URL_KEY, normalized || null);
+  return normalized;
+}
 
 export function getToken() {
   return readString(TOKEN_KEY);
@@ -9,6 +37,19 @@ export function getToken() {
 
 export function setToken(token) {
   writeString(TOKEN_KEY, token || null);
+}
+
+// Read only the expiry claim locally so the UI can notify the user at expiry;
+// the server remains the authority and still validates every request.
+export function getTokenExpiryMs() {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    return Number.isFinite(payload.exp) ? payload.exp * 1000 : null;
+  } catch {
+    return null;
+  }
 }
 
 function authHeaders(extra = {}) {
@@ -38,6 +79,9 @@ function friendlyErrorMessage(status, serverMessage, path, errorLabel) {
 async function parseResponse(res, errorLabel, path) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
+    if (res.status === 401 && getToken() && path !== "/auth/login") {
+      window.dispatchEvent(new CustomEvent("echo:auth-expired"));
+    }
     const error = new Error(friendlyErrorMessage(res.status, data.error, path, errorLabel));
     error.status = res.status;
     Object.assign(error, data);
@@ -48,9 +92,10 @@ async function parseResponse(res, errorLabel, path) {
 
 async function request(path, { method = "GET", body } = {}) {
   const hasBody = body !== undefined;
+  const base = getBackendUrl();
 
   try {
-    const res = await fetch(`/api${path}`, {
+    const res = await fetch(`${base}/api${path}`, {
       method,
       headers: authHeaders(hasBody ? { "Content-Type": "application/json" } : {}),
       body: hasBody ? JSON.stringify(body) : undefined,
@@ -64,8 +109,9 @@ async function request(path, { method = "GET", body } = {}) {
 }
 
 async function requestMultipart(path, form, errorLabel) {
+  const base = getBackendUrl();
   try {
-    const res = await fetch(`/api${path}`, {
+    const res = await fetch(`${base}/api${path}`, {
       method: "POST",
       headers: authHeaders(),
       body: form,
@@ -97,6 +143,7 @@ async function createEmoji(name, file) {
 }
 
 export const api = {
+  health: () => request("/health"),
   register: (payload) => request("/auth/register", { method: "POST", body: payload }),
   login: (payload) => request("/auth/login", { method: "POST", body: payload }),
   setupStatus: () => request("/auth/setup-status"),

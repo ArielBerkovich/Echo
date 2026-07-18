@@ -212,13 +212,20 @@ export function useRealtime({
       }
 
       // Desktop notification — DMs (with a VIP badge), and channel @mentions.
-      // Skipped if you're already focused on that conversation.
+      // Skip all desktop notifications while Echo is focused; the in-app
+      // unread indicators still communicate activity without interrupting the
+      // user while they are actively working in the app.
       if (!mine && notificationsActive()) {
-        const focusedHere = !!active && msg.channelId === active.id && document.hasFocus();
-        if (!focusedHere) {
+        if (!document.hasFocus()) {
           const sender = msg.author?.displayName || "Someone";
           const text = msg.body || "";
-          const preview = text.replace(/\s+/g, " ").trim().slice(0, 140) || "Sent an attachment";
+          const previewText = text
+            .replace(/[*_~`]/g, "")
+            .replace(/\s+/g, " ")
+            .trim();
+          const preview = previewText
+            ? `${previewText.slice(0, 80)}${previewText.length > 80 ? "…" : ""}`
+            : "Sent an attachment";
           if (inDms) {
             const dm = dmsRef.current.find((d) => d.id === msg.channelId);
             const vip = dm && vipRef.current.has(dm.withUser.id);

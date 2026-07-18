@@ -6,4 +6,4 @@ services:
     ports:
       - "4000:4000"
     environment:
-      - CLIENT_ORIGIN=http://localhost:5173
+      - CLIENT_ORIGIN=http://localhost:5173,null

@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { getToken } from "../api.js";
+import { getBackendUrl, getToken } from "../api.js";
+
+function resolveApiUrl(url) {
+  if (!url) return url;
+  if (url.startsWith("/api/")) return `${getBackendUrl()}${url}`;
+  return url;
+}
 
 // Fetches a /api/files/* URL with the Authorization header and returns a
 // local blob URL so <img> and <a> elements work without exposing the JWT.
@@ -16,7 +22,7 @@ export function useAuthUrl(url) {
 
     let objectUrl;
     const token = getToken();
-    fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    fetch(resolveApiUrl(url), { headers: token ? { Authorization: `Bearer ${token}` } : {} })
       .then((res) => {
         if (!res.ok) throw new Error("fetch failed");
         return res.blob();
@@ -51,7 +57,7 @@ export function useAuthUrls(urls = []) {
     Promise.all(
       sourceUrls.map(async (url) => {
         if (!url.startsWith("/api/files/")) return [url, url];
-        const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+        const res = await fetch(resolveApiUrl(url), { headers: token ? { Authorization: `Bearer ${token}` } : {} });
         if (!res.ok) throw new Error("fetch failed");
         const objectUrl = URL.createObjectURL(await res.blob());
         objectUrls.push(objectUrl);

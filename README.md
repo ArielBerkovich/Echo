@@ -110,6 +110,31 @@ npm install
 npm run dev
 ```
 
+### Windows desktop client
+
+The desktop client wraps the React UI in Electron. On first launch it asks for the
+Echo backend URL, then uses that URL for REST, Socket.IO, uploads, and native
+Windows toast notifications.
+
+To build the Windows installer locally, install Node.js and the Windows WebView2
+runtime, then run:
+
+```bash
+cd client
+npm install
+npm run desktop:build
+```
+
+The generated `.exe` installer is under `client/release/`. The repository also includes a
+Windows GitHub Actions workflow at `.github/workflows/windows-installer.yml`.
+
+For a backend used by the desktop client, set `CLIENT_ORIGIN` to the web origin
+used by your deployment plus Electron's local `null` origin:
+
+```bash
+CLIENT_ORIGIN=https://echo.example.com,null
+```
+
 ## Tests
 
 Server:

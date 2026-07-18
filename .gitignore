@@ -1,5 +1,6 @@
 node_modules/
 dist/
+client/release/
 test-results/
 .env
 *.log

@@ -13,7 +13,7 @@ import { roomFor, userRoom } from "./lib/rooms.js";
 // Wire up the real-time messaging layer on top of the HTTP server.
 export function attachSocket(httpServer) {
   const io = new Server(httpServer, {
-    cors: { origin: config.clientOrigin, credentials: true },
+    cors: { origin: true, credentials: true },
   });
   setIO(io); // let REST routes emit real-time events too
 

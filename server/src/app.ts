@@ -25,7 +25,10 @@ export function createApp() {
       crossOriginResourcePolicy: { policy: "same-site" },
     })
   );
-  app.use(cors({ origin: config.clientOrigin, credentials: true }));
+  // Echo authenticates requests with bearer tokens, so the API can safely
+  // reflect any requesting origin. This also supports Electron's file://
+  // renderer and self-hosted clients on arbitrary internal hostnames.
+  app.use(cors({ origin: true, credentials: true }));
   app.use(express.json({ limit: "50kb" }));
 
   app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
