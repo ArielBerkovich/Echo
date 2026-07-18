@@ -400,6 +400,7 @@ export default function App() {
 
   function handleAuthed({ token, user }) {
     setToken(token);
+    setSessionExpired(false);
     setUser(user);
   }
 
