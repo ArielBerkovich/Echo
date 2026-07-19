@@ -6571,8 +6571,8 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   }
 }
 
-/* Narrow / mobile: the sidebar is an off-canvas drawer and the rail becomes a
-   fixed bottom navigation bar. */
+/* Narrow screens: rail + sidebar become an off-canvas drawer; the chat pane
+   takes the full width. A menu button reveals the drawer; a backdrop dismisses it. */
 @media (max-width: 760px) {
   .pane-search {
     display: flex;
@@ -6587,63 +6587,17 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     display: inline-flex;
   }
   .app-nav {
-    position: static;
-    display: block;
-    width: 0;
-    min-width: 0;
-    transform: none;
-    transition: none;
-    box-shadow: none;
-  }
-
-  .app-nav .sidebar {
     position: fixed;
     top: 0;
     left: 0;
     bottom: 0;
-    z-index: 61;
+    z-index: 60;
     transform: translateX(-100%);
     transition: transform 0.24s ease;
     box-shadow: var(--shadow-lg);
   }
-  .app.nav-open .app-nav .sidebar {
+  .app.nav-open .app-nav {
     transform: none;
-  }
-
-  .app-nav .rail {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 70;
-    width: auto;
-    height: 64px;
-    box-sizing: border-box;
-    flex-direction: row;
-    justify-content: center;
-    padding: 4px 8px calc(4px + env(safe-area-inset-bottom));
-    border-top: 1px solid color-mix(in srgb, var(--on-navy-muted) 22%, transparent);
-    background: var(--rail-bg);
-  }
-  .app-nav .rail-top {
-    flex: 1;
-    flex-direction: row;
-    justify-content: space-around;
-    gap: 4px;
-    max-width: 420px;
-  }
-  .app-nav .rail-item {
-    width: auto;
-    min-width: 0;
-    flex: 1;
-    max-width: 88px;
-    gap: 1px;
-    padding: 3px 0;
-    font-size: 10px;
-  }
-  .app-nav .rail-icon {
-    width: 36px;
-    height: 32px;
   }
 
   .app.nav-open .nav-backdrop {

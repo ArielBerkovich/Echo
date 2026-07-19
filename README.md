@@ -188,6 +188,13 @@ npm start
 Build installers with `npm run dist` after installing the Electron
 dependencies.
 
+Tagged releases are built by `.github/workflows/release.yml`. Push a semantic
+version tag such as `v0.2.0` to create a GitHub release containing the Windows
+installer, Linux AppImage, and Debian package. The same workflow publishes
+`echo-client` and `echo-server` images to Docker Hub with versioned tags and,
+for stable releases, `latest`. Configure a `DOCKERHUB_USERNAME` repository
+variable and a `DOCKERHUB_TOKEN` repository secret before tagging a release.
+
 For local UI development, run Vite and use `npm run start:dev` instead. The
 desktop app loads the bundled React UI and sends API/WebSocket traffic to the
 backend URL. A managed deployment can skip the prompt with

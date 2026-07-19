@@ -496,11 +496,8 @@ export default function Login({ onAuthed }) {
                 <input
                   {...register("confirmPassword")}
                   type="password"
-                  autoComplete="off"
+                  autoComplete="new-password"
                   placeholder="Re-enter your password"
-                  onPaste={(event) => event.preventDefault()}
-                  onCopy={(event) => event.preventDefault()}
-                  onCut={(event) => event.preventDefault()}
                 />
               </div>
               {errors.confirmPassword && <span className="field-hint error small">{errors.confirmPassword.message}</span>}

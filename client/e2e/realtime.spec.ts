@@ -155,6 +155,7 @@ test("updates an open channel message avatar after a profile picture change", as
   const { alice, bob } = fixture;
   await withAliceBobPages(browser, async ({ bobPage }) => {
     const message = bobPage.page.getByTestId(`message-${fixture.messages.formatted.id}`);
+    await expect(message).toBeVisible();
     await expect(message.locator(".avatar-img")).toHaveCount(0);
 
     const { attachments } = await uploadAsToken(page, alice.token, {

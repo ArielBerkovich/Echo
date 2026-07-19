@@ -42,7 +42,9 @@ export default function ThreadPanel({
   const [confirmDelete, setConfirmDelete] = useState(null); // message pending delete confirmation
   const [error, setError] = useState(null);
   const [highlightId, setHighlightId] = useState(null);
+  const [newMessageCount, setNewMessageCount] = useState(0);
   const bottomRef = useRef(null);
+  const scrollerRef = useRef(null);
   const bodyInnerRef = useRef(null); // content wrapper used to track height changes
   const stickToBottomRef = useRef(true); // should later layout changes keep us pinned?
   const initialScrolledRef = useRef(false); // has the panel been positioned yet?
@@ -66,6 +68,7 @@ export default function ThreadPanel({
     jumpHandledRef.current = null;
     jumpTargetRef.current = openThreadJumpMessageId || null;
     setHighlightId(null);
+    setNewMessageCount(0);
   }, [root.id]);
 
   useEffect(() => {
@@ -84,6 +87,18 @@ export default function ThreadPanel({
     const socket = getSocket();
     const onNew = (msg) => {
       if (msg.parentId === root.id) {
+        const authoredByMe = msg.author?.id === user.id;
+        const scroller = scrollerRef.current;
+        const atBottom = authoredByMe || (scroller
+          ? scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120
+          : stickToBottomRef.current);
+        if (atBottom) {
+          stickToBottomRef.current = true;
+          if (authoredByMe) setNewMessageCount(0);
+        } else {
+          stickToBottomRef.current = false;
+          setNewMessageCount((count) => count + 1);
+        }
         setReplies((prev) => (prev.some((r) => r.id === msg.id) ? prev : [...prev, msg]));
       }
     };
@@ -119,7 +134,7 @@ export default function ThreadPanel({
       socket.off("message:reaction", onReaction);
       socket.off("message:pin", onPin);
     };
-  }, [channel.id, root.id]);
+  }, [channel.id, root.id, user.id]);
 
   useLayoutEffect(() => {
     if (!replies.length) {
@@ -137,7 +152,7 @@ export default function ThreadPanel({
     }
 
     if (grew && stickToBottomRef.current) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+      scrollToExactBottom();
     }
   }, [replies]);
 
@@ -168,7 +183,7 @@ export default function ThreadPanel({
       if (!stickToBottomRef.current) return;
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
-        bottomRef.current?.scrollIntoView({ block: "end" });
+        scrollToExactBottom();
       });
     });
 
@@ -181,7 +196,20 @@ export default function ThreadPanel({
 
   function onBodyScroll(e) {
     const scroller = e.currentTarget;
-    stickToBottomRef.current = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120;
+    const atBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120;
+    stickToBottomRef.current = atBottom;
+    if (atBottom) setNewMessageCount(0);
+  }
+
+  function scrollToExactBottom() {
+    const scroller = scrollerRef.current;
+    if (scroller) scroller.scrollTop = scroller.scrollHeight;
+  }
+
+  function scrollToNewMessages() {
+    setNewMessageCount(0);
+    stickToBottomRef.current = true;
+    requestAnimationFrame(scrollToExactBottom);
   }
 
   // Opening the thread (and seeing any new reply while it's open) marks it read,
@@ -233,7 +261,7 @@ export default function ThreadPanel({
         <button className="thread-close" data-testid="thread-close" onClick={onClose} aria-label="Close thread">✕</button>
       </header>
 
-      <div className="thread-body" onScroll={onBodyScroll} onMouseLeave={() => { if (!menuFor) setActionsFor(null); }}>
+      <div ref={scrollerRef} className="thread-body" onScroll={onBodyScroll} onMouseLeave={() => { if (!menuFor) setActionsFor(null); }}>
         <div ref={bodyInnerRef}>
           {messages.map((m) => (
             <Message
@@ -278,6 +306,16 @@ export default function ThreadPanel({
           ))}
           <div ref={bottomRef} />
         </div>
+        {newMessageCount > 0 && (
+          <button
+            type="button"
+            className="new-messages-button"
+            data-testid="thread-new-messages-button"
+            onClick={scrollToNewMessages}
+          >
+            {newMessageCount === 1 ? "1 new message" : `${newMessageCount} new messages`} ↓
+          </button>
+        )}
       </div>
 
       {reactingTo &&
