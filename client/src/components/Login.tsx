@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeftIcon, EyeIcon, EyeOffIcon, IdCardIcon, InfoIcon, LockIcon, MailIcon, NotebookTextIcon, UserIcon } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { api } from "../api.js";
+import { api, rhssoLoginUrl } from "../api.js";
 import Logo from "./Logo.js";
 import { PASSWORD_RULE } from "../lib/password.js";
 import { authSchema } from "../lib/formSchemas.js";
@@ -40,16 +40,17 @@ const FLOATERS = [
 ];
 
 // Combined login / register screen — split hero + auth form.
-export default function Login({ onAuthed }) {
+export default function Login({ onAuthed, initialError = "" }) {
   const [mode, setMode] = useState("login");
   const [showPw, setShowPw] = useState(false);
-  const [serverError, setServerError] = useState(null);
+  const [serverError, setServerError] = useState(initialError || null);
   const [success, setSuccess] = useState(false);
   const [needsSetup, setNeedsSetup] = useState(false); // no users yet → create the admin
   const [registerStep, setRegisterStep] = useState(1);
   const [usernameSuggestions, setUsernameSuggestions] = useState([]);
   const [usernameTaken, setUsernameTaken] = useState(false);
   const [usernameSuffix, setUsernameSuffix] = useState("");
+  const [rhssoEnabled, setRhssoEnabled] = useState(false);
 
   const isRegister = needsSetup || mode === "register";
   const resolver = useMemo(
@@ -117,8 +118,10 @@ export default function Login({ onAuthed }) {
     let cancelled = false;
     api
       .setupStatus()
-      .then(({ needsSetup }) => {
-        if (cancelled || !needsSetup) return;
+      .then(({ needsSetup, rhssoEnabled }) => {
+        if (cancelled) return;
+        setRhssoEnabled(!!rhssoEnabled);
+        if (!needsSetup) return;
         setNeedsSetup(true);
         setMode("register");
         setRegisterStep(2);
@@ -515,6 +518,19 @@ export default function Login({ onAuthed }) {
               "Sign in"
             )}
           </button>
+
+          {!needsSetup && !isRegister && rhssoEnabled && (
+            <>
+              <div className="auth-divider"><span>or</span></div>
+              <button
+                type="button"
+                className="auth-sso"
+                onClick={() => window.location.assign(rhssoLoginUrl())}
+              >
+                Sign in with RHSSO
+              </button>
+            </>
+          )}
           </>}
 
           {!needsSetup && !isRegister && (

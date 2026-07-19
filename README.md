@@ -60,6 +60,31 @@ http://localhost:8090
 
 The first account created becomes the workspace admin.
 
+### RHSSO demo
+
+The separate RHSSO demo stack runs alongside the ordinary stack and includes
+an imported Keycloak realm and test user:
+
+```bash
+docker compose -p echo-rhsso-demo -f docker-compose.rhsso.yml up -d --build
+```
+
+For the legacy Compose binary, replace `docker compose` with `docker-compose`.
+Open `http://localhost:8091` and create the local `admin` account first. Log
+out, choose **Sign in with RHSSO**, and use:
+
+```text
+Username: jane.doe
+Password: UserPassword1
+```
+
+The Keycloak administration console is available at `http://localhost:8180`
+with `admin` / `AdminPassword1`. Stop and remove the isolated demo data with:
+
+```bash
+docker compose -p echo-rhsso-demo -f docker-compose.rhsso.yml down -v
+```
+
 ## Configuration
 
 The Compose file includes local defaults for development. For production or shared environments, set strong secrets before deploying:

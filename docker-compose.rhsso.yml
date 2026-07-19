@@ -1,0 +1,101 @@
+services:
+  mongo:
+    image: mongo:7
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    restart: unless-stopped
+    volumes:
+      - rhsso-mongo-data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval 'db.adminCommand({ ping: 1 }).ok' | grep -q 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  mongo-init:
+    image: mongo:7
+    restart: "no"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    command:
+      - sh
+      - -lc
+      - |
+        mongosh --host mongo --quiet --eval '
+          try { rs.status().ok }
+          catch (e) { rs.initiate({_id:"rs0", members:[{_id:0, host:"mongo:27017"}]}) }
+        '
+        for i in $$(seq 1 60); do
+          mongosh --host mongo --quiet --eval 'db.hello().isWritablePrimary' | grep -q true && exit 0
+          sleep 1
+        done
+        exit 1
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: echo
+      MINIO_ROOT_PASSWORD: echo-dev-secret
+    volumes:
+      - rhsso-minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  rhsso:
+    image: quay.io/keycloak/keycloak:26.7.0
+    restart: unless-stopped
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: AdminPassword1
+      KC_HOSTNAME: http://localhost:8180
+    ports:
+      - "8180:8080"
+    volumes:
+      - ./docker/rhsso/echo-realm.json:/opt/keycloak/data/import/echo-realm.json:ro
+      - rhsso-keycloak-data:/opt/keycloak/data
+
+  server:
+    build: ./server
+    restart: unless-stopped
+    environment:
+      PORT: 4000
+      MONGO_URI: mongodb://mongo:27017/echo?replicaSet=rs0
+      JWT_SECRET: echo-rhsso-local-demo-secret
+      CLIENT_ORIGIN: http://localhost:8091
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: echo
+      S3_SECRET_KEY: echo-dev-secret
+      S3_BUCKET: echo-uploads
+      RHSSO_ENABLED: "true"
+      RHSSO_URL: http://localhost:8180
+      RHSSO_BACKCHANNEL_URL: http://rhsso:8080
+      RHSSO_REALM: echo
+      RHSSO_CLIENT_ID: echo
+      RHSSO_USERNAME_CLAIM: preferred_username
+      RHSSO_DISPLAY_NAME_CLAIM: name
+    depends_on:
+      mongo-init:
+        condition: service_completed_successfully
+      minio:
+        condition: service_healthy
+      rhsso:
+        condition: service_started
+
+  client:
+    build: ./client
+    restart: unless-stopped
+    ports:
+      - "8091:8080"
+    depends_on:
+      - server
+
+volumes:
+  rhsso-mongo-data:
+  rhsso-minio-data:
+  rhsso-keycloak-data:

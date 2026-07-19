@@ -93,6 +93,35 @@ spec:
                 secretKeyRef:
                   name: {{ include "echo.secretName" . }}
                   key: jwt-secret
+            - name: RHSSO_ENABLED
+              value: {{ .Values.rhsso.enabled | quote }}
+            {{- if .Values.rhsso.enabled }}
+            - name: RHSSO_URL
+              value: {{ required "rhsso.url is required when RHSSO is enabled" .Values.rhsso.url | quote }}
+            {{- if .Values.rhsso.backchannelUrl }}
+            - name: RHSSO_BACKCHANNEL_URL
+              value: {{ .Values.rhsso.backchannelUrl | quote }}
+            {{- end }}
+            - name: RHSSO_REALM
+              value: {{ required "rhsso.realm is required when RHSSO is enabled" .Values.rhsso.realm | quote }}
+            - name: RHSSO_CLIENT_ID
+              value: {{ required "rhsso.clientId is required when RHSSO is enabled" .Values.rhsso.clientId | quote }}
+            {{- if .Values.rhsso.clientSecret }}
+            - name: RHSSO_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "echo.secretName" . }}
+                  key: rhsso-client-secret
+            {{- end }}
+            - name: RHSSO_USERNAME_CLAIM
+              value: {{ .Values.rhsso.usernameClaim | quote }}
+            - name: RHSSO_DISPLAY_NAME_CLAIM
+              value: {{ .Values.rhsso.displayNameClaim | quote }}
+            {{- if .Values.rhsso.redirectUri }}
+            - name: RHSSO_REDIRECT_URI
+              value: {{ .Values.rhsso.redirectUri | quote }}
+            {{- end }}
+            {{- end }}
             {{- with .Values.server.extraEnv }}{{ toYaml . | nindent 12 }}{{- end }}
           readinessProbe:
             httpGet: { path: /api/health, port: http }

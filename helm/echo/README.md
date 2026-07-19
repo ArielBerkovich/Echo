@@ -71,3 +71,35 @@ Set `client.ingress.enabled=true` for Kubernetes Ingress, or
 external databases/storage, disable the dependencies and provide
 `server.mongoUri`, `server.s3.endpoint`, `server.s3.accessKey`, and
 `server.s3.secretKey`.
+
+## RHSSO login
+
+Echo supports RHSSO/Keycloak through OpenID Connect authorization code flow
+with PKCE. Create the local `admin` account first; that bootstrap account can
+only use local password login and is never linked to an RHSSO identity.
+
+Configure an RHSSO client with Standard Flow enabled and allow this redirect
+URI:
+
+```text
+https://echo.example.com/api/auth/rhsso/callback
+```
+
+Then set:
+
+```yaml
+rhsso:
+  enabled: true
+  url: https://sso.example.com/auth # omit /auth on newer installations
+  backchannelUrl: ""               # optional internal cluster URL
+  realm: example
+  clientId: echo
+  clientSecret: ""                 # empty for a public PKCE client
+  usernameClaim: preferred_username
+  displayNameClaim: name
+```
+
+The claim mappings accept dot-separated paths. RHSSO users are linked only by
+the OIDC issuer and immutable `sub` claim; a matching Echo username does not
+link or replace a local account. If the generated username is already used,
+Echo assigns a numeric suffix.

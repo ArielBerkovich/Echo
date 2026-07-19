@@ -1033,6 +1033,33 @@ input:focus {
   padding: 0;
 }
 
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: var(--border);
+}
+.auth-sso {
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 650;
+  cursor: pointer;
+}
+.auth-sso:hover {
+  border-color: var(--accent);
+}
+
 .spinner {
   width: 18px;
   height: 18px;

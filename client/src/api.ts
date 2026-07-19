@@ -23,6 +23,23 @@ export function getBackendUrl() {
   return configured ? configured.replace(/\/+$/, "") : "";
 }
 
+export function rhssoLoginUrl() {
+  return `${getBackendUrl()}/api/auth/rhsso/login`;
+}
+
+// The backend returns the Echo session in the URL fragment so it is never
+// sent in an HTTP request or proxy access log. Consume and erase it promptly.
+export function consumeRhssoCallback() {
+  if (typeof window === "undefined") return "";
+  const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const token = params.get("rhsso_token");
+  const error = params.get("rhsso_error") || "";
+  if (!token && !error) return "";
+  if (token) setToken(token);
+  window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+  return error;
+}
+
 function apiUrl(path) {
   return `${getBackendUrl()}/api${path}`;
 }

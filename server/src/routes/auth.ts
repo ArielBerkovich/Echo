@@ -1,4 +1,5 @@
 import { Router } from "express";
+import crypto from "node:crypto";
 import rateLimit from "express-rate-limit";
 import bcrypt from "bcryptjs";
 import { User } from "../models/User.js";
@@ -8,6 +9,14 @@ import { requireAuth } from "../middleware/requireAuth.js";
 import { emitAll } from "../realtime.js";
 import { passwordProblem } from "../password.js";
 import { usernameCandidate, usernameFromName } from "../lib/usernames.js";
+import { config } from "../config.js";
+import {
+  beginRhssoLogin,
+  clearRhssoCookie,
+  cookieValue,
+  finishRhssoLogin,
+  rhssoCookie,
+} from "../rhsso.js";
 
 export const authRouter = Router();
 
@@ -36,7 +45,95 @@ async function usernameSuggestions(base) {
 // workspace still needs its first (admin) account created.
 authRouter.get("/setup-status", async (_req, res) => {
   const count = await User.countDocuments({ username: { $ne: "system" } });
-  res.json({ needsSetup: count === 0 });
+  res.json({ needsSetup: count === 0, rhssoEnabled: config.rhsso.enabled && count > 0 });
+});
+
+function rhssoClientRedirect(res, error, token = "") {
+  const fragment = new URLSearchParams();
+  if (token) fragment.set("rhsso_token", token);
+  if (error) fragment.set("rhsso_error", error);
+  return res.redirect(302, `${config.clientOrigin.replace(/\/+$/, "")}/#${fragment}`);
+}
+
+function externalUsername(value) {
+  const normalized = String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9_.-]+/g, ".")
+    .replace(/^[._-]+|[._-]+$/g, "")
+    .slice(0, 32)
+    .replace(/[._-]+$/g, "");
+  return normalized.length >= 2 ? normalized : `user.${normalized || "rhsso"}`.slice(0, 32);
+}
+
+async function availableExternalUsername(value) {
+  const base = externalUsername(value);
+  if (!(await User.exists({ username: base }))) return base;
+  for (let suffix = 1; suffix < 10000; suffix += 1) {
+    const text = String(suffix);
+    const candidate = `${base.slice(0, 32 - text.length)}${text}`;
+    if (!(await User.exists({ username: candidate }))) return candidate;
+  }
+  throw new Error("Could not allocate an Echo username for this RHSSO identity");
+}
+
+// GET /api/auth/rhsso/login — starts an OIDC authorization-code + PKCE flow.
+authRouter.get("/rhsso/login", async (_req, res) => {
+  try {
+    if (!(await User.exists({ isAdmin: true }))) {
+      return rhssoClientRedirect(res, "Create the local admin account before using RHSSO.");
+    }
+    const { authorizationUrl, flowToken } = await beginRhssoLogin();
+    res.setHeader("Set-Cookie", rhssoCookie(flowToken));
+    return res.redirect(302, authorizationUrl);
+  } catch (error) {
+    return rhssoClientRedirect(res, error?.message || "Could not start RHSSO login.");
+  }
+});
+
+// GET /api/auth/rhsso/callback — validates RHSSO's ID token, provisions the
+// identity without linking by username, and returns an ordinary Echo session.
+authRouter.get("/rhsso/callback", async (req, res) => {
+  res.setHeader("Set-Cookie", clearRhssoCookie());
+  try {
+    if (req.query.error) {
+      return rhssoClientRedirect(res, String(req.query.error_description || req.query.error));
+    }
+    const identity = await finishRhssoLogin({
+      code: String(req.query.code || ""),
+      state: String(req.query.state || ""),
+      flowToken: cookieValue(req.headers.cookie, "echo_rhsso_flow"),
+    });
+
+    let user = await User.findOne({ rhssoIssuer: identity.issuer, rhssoSubject: identity.subject });
+    if (user?.isAdmin) return rhssoClientRedirect(res, "The bootstrap admin account only supports local login.");
+    if (!user) {
+      const username = await availableExternalUsername(identity.username);
+      const passwordHash = await bcrypt.hash(crypto.randomBytes(32).toString("base64url"), 10);
+      try {
+        user = await User.create({
+          username,
+          displayName: String(identity.displayName).trim().slice(0, 64) || username,
+          passwordHash,
+          rhssoIssuer: identity.issuer,
+          rhssoSubject: identity.subject,
+          isAdmin: false,
+        });
+      } catch (error) {
+        if (error?.code === 11000) {
+          user = await User.findOne({ rhssoIssuer: identity.issuer, rhssoSubject: identity.subject });
+        }
+        if (!user) throw error;
+      }
+      await Channel.updateOne({ name: "general" }, { $addToSet: { members: user._id } });
+      emitAll("user:new", user.toPublicJSON());
+    }
+    return rhssoClientRedirect(res, "", signToken(user));
+  } catch (error) {
+    console.error("RHSSO login failed:", error);
+    return rhssoClientRedirect(res, error?.message || "RHSSO login failed.");
+  }
 });
 
 // GET /api/auth/username-options — public availability check for signup.

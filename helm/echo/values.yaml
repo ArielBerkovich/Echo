@@ -68,6 +68,23 @@ server:
       type: RuntimeDefault
   extraEnv: []
 
+# Red Hat SSO / Keycloak OpenID Connect login. The client may be public
+# (recommended with PKCE; leave clientSecret empty) or confidential.
+rhsso:
+  enabled: false
+  # Base server URL, including /auth on older RHSSO releases when applicable.
+  url: ""
+  # Optional server-only URL when RHSSO is reached differently inside the cluster.
+  backchannelUrl: ""
+  realm: ""
+  clientId: ""
+  clientSecret: ""
+  # Standard OIDC defaults. Dot-separated nested claim paths are supported.
+  usernameClaim: preferred_username
+  displayNameClaim: name
+  # Normally derived as <Echo public URL>/api/auth/rhsso/callback.
+  redirectUri: ""
+
 client:
   image:
     repository: arielber/echo-client

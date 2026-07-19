@@ -16,6 +16,11 @@ const userSchema = new mongoose.Schema(
     lastName: { type: String, trim: true, maxlength: 64 },
     displayName: { type: String, required: true, trim: true, maxlength: 64 },
     passwordHash: { type: String, required: true },
+    // RHSSO identities are keyed by issuer + subject. Local accounts have
+    // neither field, so an SSO login can never take over an existing account
+    // merely by presenting the same username.
+    rhssoIssuer: { type: String, default: undefined },
+    rhssoSubject: { type: String, default: undefined },
     // Object-storage key for the user's uploaded profile picture (optional).
     avatarKey: { type: String, default: null },
     // The first registered user becomes the workspace admin.
@@ -40,6 +45,8 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+userSchema.index({ rhssoIssuer: 1, rhssoSubject: 1 }, { unique: true, sparse: true });
 
 // Never leak the password hash to clients.
 userSchema.methods.toPublicJSON = function () {
