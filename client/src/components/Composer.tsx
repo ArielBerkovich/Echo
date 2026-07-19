@@ -1037,7 +1037,13 @@ export default function Composer({ channel, parentId = null, users = [], channel
           ref={editorRef}
           className={`composer-editor ${empty ? "is-empty" : ""}`}
           data-testid="composer-editor"
-          data-placeholder={isDm ? `Message ${channel.dmName}` : `Message #${channel.name}`}
+          data-placeholder={
+            isThread
+              ? "Reply to thread…"
+              : isDm
+                ? `Message ${channel.dmName}`
+                : `Message #${channel.name}`
+          }
           contentEditable
           suppressContentEditableWarning
           role="textbox"

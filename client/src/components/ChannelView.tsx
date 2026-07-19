@@ -894,7 +894,7 @@ export default function ChannelView({
                 <StarIcon size={20} strokeWidth={1.9} fill={isVip ? "currentColor" : "none"} />
               </button>
             )}
-            <Avatar name={dmAvatarName} src={dmAvatar} size={48} />
+            <Avatar name={dmAvatarName} src={dmAvatar} size={36} />
             <span className="ch-name" data-testid="channel-title">{dmLabel}</span>
           </>
         ) : (

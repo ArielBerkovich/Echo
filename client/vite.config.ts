@@ -7,6 +7,9 @@ export default defineConfig({
   // Electron loads the production bundle from a local file, so its assets
   // must be relative instead of rooted at `/`.
   base: process.env.ELECTRON_BUILD ? "./" : "/",
+  // Keep the built-in emoji as cacheable files instead of embedding SVG data
+  // URLs in the main JavaScript bundle.
+  build: { assetsInlineLimit: 0 },
   plugins: [react()],
   server: {
     // Bind to all interfaces so phones and other devices on the LAN can

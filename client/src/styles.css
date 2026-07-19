@@ -2967,9 +2967,32 @@ html[data-mode="dark"] .sidebar {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+  height: 64px;
+  flex: none;
   padding: 14px 16px;
   border-bottom: 1px solid var(--border);
   font-weight: 800;
+}
+.thread-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+}
+.thread-title {
+  flex: none;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+}
+.thread-context {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .thread-close {
   background: none;
@@ -2991,11 +3014,19 @@ html[data-mode="dark"] .sidebar {
   gap: 6px;
 }
 .thread-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   color: var(--muted);
   font-size: 12px;
   font-weight: 600;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--border);
+  padding: 10px 8px 8px;
+}
+.thread-divider::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: var(--border);
 }
 /* Pinned messages panel */
 .panel-header {
@@ -3060,7 +3091,7 @@ html[data-mode="dark"] .sidebar {
 /* The thread panel reuses the full composer; tighten its margins for the
    narrower column and give it a clean seam from the replies above. */
 .thread-panel .composer {
-  margin: 8px 12px 12px;
+  margin: 4px 12px 22px;
 }
 
 /* Thread indicator + hover reply on messages */
@@ -5415,6 +5446,8 @@ html[data-mode="dark"] .day-divider-label {
   display: flex;
   align-items: center;
   gap: 10px;
+  height: 64px;
+  flex: none;
   padding: 14px 24px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
@@ -6166,6 +6199,7 @@ html[data-mode="dark"] .channel-header {
 .emoji-popup-wrap em-emoji-picker {
   width: min(352px, calc(100vw - 16px));
   max-width: calc(100vw - 16px);
+  height: 390px;
   --rgb-background: 255, 255, 255;
   --rgb-input: 248, 250, 252;
   --rgb-color: 15, 31, 58;
@@ -6183,7 +6217,7 @@ html[data-mode="dark"] .channel-header {
   .emoji-popup-wrap em-emoji-picker {
     width: 100%;
     max-width: none;
-    height: min(435px, calc(100dvh - 24px));
+    height: min(390px, calc(100dvh - 24px));
     max-height: calc(100dvh - 24px);
   }
   .reaction-picker .emoji-popup-wrap {
@@ -6920,6 +6954,9 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   .composer {
     margin: 4px 10px 12px;
   }
+  .thread-panel .composer {
+    margin: 4px 10px 12px;
+  }
   .composer-actions {
     gap: 8px;
   }
@@ -7079,6 +7116,10 @@ html[data-mode="dark"] .hljs-class .hljs-title {
    width is not physical screen size, so use a conservative breakpoint and
    enlarge the reading surfaces selectively rather than scaling the whole UI. */
 @media (min-width: 1600px) {
+  .channel-header,
+  .thread-header {
+    height: 72px;
+  }
   .messages {
     padding: 2rem clamp(2.5rem, 3.5vw, 4rem);
     gap: 6px;
@@ -7172,6 +7213,9 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 
   .composer {
     margin: 6px clamp(24px, 2.5vw, 36px) 28px;
+  }
+  .thread-panel .composer {
+    margin: 6px 20px 28px;
   }
   .composer-editor {
     font-size: 16px;

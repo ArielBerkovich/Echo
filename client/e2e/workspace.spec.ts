@@ -68,6 +68,39 @@ test("keeps channel header actions inside the header when pinned panel is open",
   expect(bounds.documentWidth).toBeLessThanOrEqual(bounds.viewportWidth + 1);
 });
 
+test("aligns thread chrome with the conversation and labels replies clearly", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+  await page.getByRole("button", { name: `# ${fixture.projectChannel.name}` }).click();
+
+  const root = messageById(page, fixture.messages.threadRoot.id);
+  await root.hover();
+  await page.locator('[data-message-actions="true"]').getByTitle("Reply in thread").click();
+
+  const thread = page.getByTestId("thread-panel");
+  await expect(thread).toBeVisible();
+  await expect(thread.locator(".thread-context")).toHaveText(`in #${fixture.projectChannel.name}`);
+  await expect(thread.getByTestId("composer-editor")).toHaveAttribute(
+    "data-placeholder",
+    "Reply to thread…"
+  );
+  await expect(thread.getByTestId("thread-reply-count")).toHaveText(/\d+ (?:reply|replies)/);
+
+  const offsets = await page.evaluate(() => {
+    const channelHeader = document.querySelector(".channel-header").getBoundingClientRect();
+    const threadHeader = document.querySelector(".thread-header").getBoundingClientRect();
+    const mainComposer = document.querySelector(".channel-main > .composer").getBoundingClientRect();
+    const threadComposer = document.querySelector(".thread-panel > .composer").getBoundingClientRect();
+    return {
+      headerBottom: Math.abs(channelHeader.bottom - threadHeader.bottom),
+      composerBottom: Math.abs(mainComposer.bottom - threadComposer.bottom),
+    };
+  });
+
+  expect(offsets.headerBottom).toBeLessThanOrEqual(1);
+  expect(offsets.composerBottom).toBeLessThanOrEqual(1);
+});
+
 test("copies the raw markdown body from a message", async ({ page }) => {
   await page.goto("/");
   const message = page

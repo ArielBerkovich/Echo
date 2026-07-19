@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api.js";
 import { getSocket } from "../socket.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
@@ -253,56 +253,68 @@ export default function ThreadPanel({
   }
 
   const messages = [rootMsg, ...replies];
+  const conversationLabel = channel.type === "dm"
+    ? channel.dmName || channel.name || "Direct message"
+    : `#${channel.name}`;
 
   return (
     <aside className="thread-panel" data-testid="thread-panel">
       <header className="thread-header">
-        <span className="thread-title">Thread</span>
+        <div className="thread-heading">
+          <span className="thread-title">Thread</span>
+          <span className="thread-context" title={conversationLabel}>in {conversationLabel}</span>
+        </div>
         <button className="thread-close" data-testid="thread-close" onClick={onClose} aria-label="Close thread">✕</button>
       </header>
 
       <div ref={scrollerRef} className="thread-body" onScroll={onBodyScroll} onMouseLeave={() => { if (!menuFor) setActionsFor(null); }}>
         <div ref={bodyInnerRef}>
-          {messages.map((m) => (
-            <Message
-              key={m.id}
-              m={m}
-              grouped={false}
-              highlighted={highlightId === m.id}
-              currentUserId={user.id}
-              usersById={usersById}
-              renderMarkdown={renderMarkdown}
-              emojiMap={emojiMap}
-              canJumpToForward={canJumpToForward}
-              inThread
-              saved={savedIds?.has(m.id)}
-              onToggleSave={() => onToggleSave?.(m.id)}
-              onOpenProfile={onOpenProfile}
-              onOpenChannel={onOpenChannel}
-              showActions={actionsFor === m.id}
-              onActivate={() => {
-                setActionsFor(m.id);
-                setMenuFor((openId) => (openId && openId !== m.id ? null : openId));
-              }}
-              onDeactivate={() => setActionsFor((activeId) => (activeId === m.id ? null : activeId))}
-              editing={editing?.id === m.id ? editing : null}
-              menuOpen={menuFor === m.id}
-              onReact={(e) => openReact(m.id, e)}
-              onToggleReaction={(emoji) => toggleReaction(m.id, emoji)}
-              onOpenThread={() => {}}
-              onForward={() => onForward?.(m)}
-              onJump={onJumpToMessage}
-              onToggleMenu={() => setMenuFor((id) => (id === m.id ? null : m.id))}
-              onCloseMenu={() => setMenuFor(null)}
-              onStartEdit={() => startEdit(m)}
-              onDelete={() => deleteMessage(m)}
-              onEditChange={(draft) => setEditing((e) => ({ ...e, draft }))}
-              onEditSave={saveEdit}
-              onEditCancel={() => setEditing(null)}
-              onOpenLightbox={onOpenLightbox}
-              onTogglePin={() => onTogglePin?.(m)}
-              canPin={canPin}
-            />
+          {messages.map((m, index) => (
+            <Fragment key={m.id}>
+              <Message
+                m={m}
+                grouped={false}
+                highlighted={highlightId === m.id}
+                currentUserId={user.id}
+                usersById={usersById}
+                renderMarkdown={renderMarkdown}
+                emojiMap={emojiMap}
+                canJumpToForward={canJumpToForward}
+                inThread
+                saved={savedIds?.has(m.id)}
+                onToggleSave={() => onToggleSave?.(m.id)}
+                onOpenProfile={onOpenProfile}
+                onOpenChannel={onOpenChannel}
+                showActions={actionsFor === m.id}
+                onActivate={() => {
+                  setActionsFor(m.id);
+                  setMenuFor((openId) => (openId && openId !== m.id ? null : openId));
+                }}
+                onDeactivate={() => setActionsFor((activeId) => (activeId === m.id ? null : activeId))}
+                editing={editing?.id === m.id ? editing : null}
+                menuOpen={menuFor === m.id}
+                onReact={(e) => openReact(m.id, e)}
+                onToggleReaction={(emoji) => toggleReaction(m.id, emoji)}
+                onOpenThread={() => {}}
+                onForward={() => onForward?.(m)}
+                onJump={onJumpToMessage}
+                onToggleMenu={() => setMenuFor((id) => (id === m.id ? null : m.id))}
+                onCloseMenu={() => setMenuFor(null)}
+                onStartEdit={() => startEdit(m)}
+                onDelete={() => deleteMessage(m)}
+                onEditChange={(draft) => setEditing((e) => ({ ...e, draft }))}
+                onEditSave={saveEdit}
+                onEditCancel={() => setEditing(null)}
+                onOpenLightbox={onOpenLightbox}
+                onTogglePin={() => onTogglePin?.(m)}
+                canPin={canPin}
+              />
+              {index === 0 && (
+                <div className="thread-divider" data-testid="thread-reply-count">
+                  <span>{replies.length === 1 ? "1 reply" : `${replies.length} replies`}</span>
+                </div>
+              )}
+            </Fragment>
           ))}
           <div ref={bottomRef} />
         </div>
