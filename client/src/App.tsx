@@ -991,6 +991,7 @@ export default function App() {
               onOpenProfile={openProfile}
               onOpenChannel={handleOpenChannelTag}
               onToast={setToast}
+              onDmsChanged={refreshDms}
               isVip={activeChannel.type === "dm" && vipIds.has(activeChannel.dmUserId)}
               onToggleVip={handleToggleVip}
               jumpMessageId={jumpMessageId}

@@ -76,6 +76,7 @@ export default function ChannelView({
   onChangeVisibility,
   onChannelUpdated,
   onToast,
+  onDmsChanged,
   onJoin,
   onRead,
   onThreadRead,
@@ -1166,6 +1167,9 @@ export default function ChannelView({
           users={users}
           onForward={forwardTo}
           onSuccess={(destinations) => {
+            if (destinations.some((destination) => destination.kind === "user")) {
+              onDmsChanged?.();
+            }
             const first = destinations[0];
             const firstLabel = first?.kind === "channel" ? `#${first.label}` : first?.label;
             const remainder = destinations.length - 1;
