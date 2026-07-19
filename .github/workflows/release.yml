@@ -137,4 +137,5 @@ jobs:
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: gh release create "${GITHUB_REF_NAME}" release-assets/* --verify-tag --generate-notes --title "Echo ${GITHUB_REF_NAME}"
