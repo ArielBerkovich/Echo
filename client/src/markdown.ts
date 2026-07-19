@@ -195,7 +195,7 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
       // Authenticated custom emoji are rendered through local blob URLs before
       // this HTML is inserted into the chat. Keep those URLs while retaining
       // a narrow allowlist for markdown links and image sources.
-      ALLOWED_URI_REGEXP: /^(?:(?:https?|blob):|\/|#)/i,
+      ALLOWED_URI_REGEXP: /^(?:(?:https?|blob):|(?:\.{0,2}\/)|#)/i,
     });
     // Markdown links should never replace the conversation tab. Add the
     // attributes after sanitizing so every generated link gets the same safe

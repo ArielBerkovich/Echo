@@ -20,6 +20,7 @@ import Walkthrough from "./components/Walkthrough.js";
 import ForcePasswordReset from "./components/ForcePasswordReset.js";
 import { readJson, readString, writeJson, writeString } from "./lib/storage.js";
 import { notifyPermission, notifySupported, requestNotifyPermission, setNotifyPref } from "./lib/notify.js";
+import { BUILT_IN_GIT_EMOJIS } from "./lib/gitEmojis.js";
 
 // Colour themes — each is an *identity* (accent + sidebar/rail) that works in
 // both light and dark mode. The light/dark mode is chosen independently, so the
@@ -815,14 +816,14 @@ export default function App() {
     }
   }
 
-  // Emoji set used everywhere: workspace-uploaded emoji plus an avatar emoji
-  // (:username:) for every user who has a profile picture. Uploaded emoji come
-  // last so they win on any name clash.
+  // Emoji set used everywhere: built-in Git workflow emoji, avatar emoji for
+  // users with profile pictures, and workspace uploads. Uploads come last so
+  // an intentional workspace customization wins on any name clash.
   const emojis = useMemo(() => {
     const userEmojis = users
       .filter((u) => u.avatarUrl)
       .map((u) => ({ id: `user:${u.id}`, name: u.username, url: u.avatarUrl, isUser: true }));
-    return [...userEmojis, ...customEmojis];
+    return [...BUILT_IN_GIT_EMOJIS, ...userEmojis, ...customEmojis];
   }, [users, customEmojis]);
   const activeUnreadCount = activeChannel
     ? (activeChannel.type === "dm"
@@ -1040,7 +1041,7 @@ export default function App() {
       )}
       {showAddEmoji && (
         <AddEmojiModal
-          existing={customEmojis}
+          existing={[...BUILT_IN_GIT_EMOJIS, ...customEmojis]}
           onCreated={handleEmojiCreated}
           onClose={() => setShowAddEmoji(false)}
         />

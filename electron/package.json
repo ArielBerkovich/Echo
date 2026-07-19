@@ -4,6 +4,11 @@
   "version": "0.2.0",
   "private": true,
   "description": "Electron desktop shell for Echo",
+  "homepage": "https://github.com/ArielBerkovich/Echo",
+  "author": {
+    "name": "ArielBerkovich",
+    "email": "34457341+ArielBerkovich@users.noreply.github.com"
+  },
   "main": "main.cjs",
   "scripts": {
     "start": "electron .",
