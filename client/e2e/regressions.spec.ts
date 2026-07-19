@@ -42,6 +42,20 @@ test("does not offer DM removal in the dedicated DMs view", async ({ page }) => 
   await expect(row.locator(".dm-remove")).toHaveCount(0);
 });
 
+test("opens a Home sidebar DM without switching to the DMs view", async ({ page }) => {
+  await page.goto("/");
+
+  const homeDm = page.locator(".dm-item").filter({ hasText: fixture.bob.displayName });
+  await expect(homeDm).toBeVisible();
+  await homeDm.locator(".dm-open").click();
+
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.bob.displayName);
+  await expect(railItem(page, "home")).toHaveClass(/active/);
+  await expect(railItem(page, "dms")).not.toHaveClass(/active/);
+  await expect(page.locator(".sidebar")).not.toHaveClass(/dms-view/);
+  await expect(page.getByTestId("channel-row-general")).toBeVisible();
+});
+
 test("keeps the DM preview width stable when toggling VIP", async ({ page }) => {
   await page.goto("/");
   await railItem(page, "dms").click();

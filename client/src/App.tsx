@@ -490,10 +490,10 @@ export default function App() {
     else setShowApiDocs(false);
   }
 
-  async function handleOpenDm(target, isSelf = false) {
+  async function handleOpenDm(target, isSelf = false, destination = "dms") {
     markNavDuringRestore();
     clearNavigationTarget();
-    setView("dms");
+    setView(destination);
     setSearchQuery(null);
     const { channel } = await api.openDm(target.id);
     const existing = dms.find((d) => d.id === channel.id);
@@ -890,7 +890,7 @@ export default function App() {
               onNewChannel={() => setShowCreate(true)}
               onOpenDm={(u, isSelf) => {
                 markNavDuringRestore();
-                handleOpenDm(u, isSelf);
+                handleOpenDm(u, isSelf, view === "home" ? "home" : "dms");
                 setNavOpen(false);
               }}
               onPrefetchDm={prefetchMessages}
