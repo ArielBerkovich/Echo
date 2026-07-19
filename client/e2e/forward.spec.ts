@@ -100,7 +100,7 @@ test.describe("forwarding", () => {
   });
 
   test("adds newly contacted recipients to the DM list after forwarding", async ({ page }) => {
-    const suffix = uniqueSuffix("forward-dms").replace(/[^a-z0-9]/gi, "").slice(0, 16);
+    const suffix = uniqueSuffix("forward-dms").replace(/[^a-z0-9]/gi, "").slice(-16);
     const recipients = await Promise.all([
       registerUser(page, { username: `forward.one${suffix}`, displayName: "Forward One" }),
       registerUser(page, { username: `forward.two${suffix}`, displayName: "Forward Two" }),
@@ -125,7 +125,7 @@ test.describe("forwarding", () => {
   });
 
   test("opens a newly contacted recipient after a single forward", async ({ page }) => {
-    const suffix = uniqueSuffix("forward-single").replace(/[^a-z0-9]/gi, "").slice(0, 16);
+    const suffix = uniqueSuffix("forward-single").replace(/[^a-z0-9]/gi, "").slice(-16);
     const recipient = await registerUser(page, {
       username: `forward.single${suffix}`,
       displayName: "Forward Solo",
