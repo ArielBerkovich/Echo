@@ -7,7 +7,11 @@ function required(name) {
 // Central configuration, sourced from environment with sensible local defaults.
 export const config = {
   port: Number(process.env.PORT) || 4000,
-  mongoUri: process.env.MONGO_URI || "mongodb://localhost:27017/echo",
+  mongoUri:
+    process.env.MONGO_URI ||
+    (process.env.MONGO_HOST && process.env.MONGO_USER && process.env.MONGO_PASSWORD
+      ? `mongodb://${encodeURIComponent(process.env.MONGO_USER)}:${encodeURIComponent(process.env.MONGO_PASSWORD)}@${process.env.MONGO_HOST}/echo?authSource=admin&replicaSet=${encodeURIComponent(process.env.MONGO_REPLICA_SET || "rs0")}`
+      : "mongodb://localhost:27017/echo"),
   jwtSecret: required("JWT_SECRET"),
   clientOrigin: process.env.CLIENT_ORIGIN || "http://localhost:8080",
   // How many messages to return per history page.

@@ -1,22 +1,14 @@
 Echo is deployed.
 
-Client service:
-  {{ include "echo.clientServiceName" . }}:{{ .Values.client.service.port }}
+Client service: {{ include "echo.clientServiceName" . }}:{{ .Values.client.service.port }}
+Server service: {{ include "echo.serverServiceName" . }}:{{ .Values.server.service.port }}
 
-Server service:
-  {{ include "echo.serverServiceName" . }}:{{ .Values.server.service.port }}
-
-{{- if .Values.client.ingress.enabled }}
-Ingress hosts:
-{{- range .Values.client.ingress.hosts }}
-  - {{ .host }}
+{{- if not .Values.client.ingress.enabled }}
+{{- if not .Values.client.route.enabled }}
+Enable `client.ingress.enabled`, enable `client.route.enabled` on OpenShift, or port-forward the client service for external access.
 {{- end }}
-{{- else }}
-If you want external access, enable `client.ingress.enabled` or port-forward the client service.
 {{- end }}
 
-If you disable the bundled MongoDB or MinIO workloads, make sure to provide:
-  - `server.mongoUri`
-  - `server.s3.endpoint`
-  - `server.s3.accessKey`
-  - `server.s3.secretKey`
+{{- if .Values.client.route.enabled }}
+OpenShift route: https://{{ .Values.client.route.host }}
+{{- end }}

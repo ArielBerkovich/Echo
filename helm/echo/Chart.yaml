@@ -1,20 +1,22 @@
 apiVersion: v2
 name: echo
-description: Echo is a self-hosted team chat platform for secure and air-gapped environments.
+description: Echo self-hosted team chat platform.
 type: application
-version: 0.2.0
-appVersion: "0.2.0"
+version: 0.4.0
+appVersion: "0.4.0"
 keywords:
   - chat
   - collaboration
   - mongodb
   - minio
 dependencies:
+  # MongoDB's vendor-maintained database chart is the Bitnami MongoDB chart.
   - name: mongodb
-    version: 0.1.0
-    repository: file://charts/mongodb
+    version: 19.1.17
+    repository: https://charts.bitnami.com/bitnami
     condition: mongodb.enabled
+  # Official MinIO chart repository.
   - name: minio
-    version: 0.1.0
-    repository: file://charts/minio
+    version: 5.4.0
+    repository: https://charts.min.io
     condition: minio.enabled
