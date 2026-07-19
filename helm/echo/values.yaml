@@ -133,7 +133,7 @@ mongodb:
     replicaSetKey: ""
   persistence:
     enabled: true
-    size: 80Gi
+    size: 8Gi
     storageClass: ""
   resources: {}
 
@@ -156,7 +156,7 @@ minio:
   rootPassword: ""
   persistence:
     enabled: true
-    size: 50Gi
+    size: 8Gi
     storageClass: ""
   buckets:
     - name: echo-uploads
