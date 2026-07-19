@@ -154,7 +154,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
     setError(null);
     try {
       for (const destination of selected) {
-        await onForward(destination, { note: note.trim() });
+        await onForward(destination, { note: note.trim(), destinationCount: selected.length });
       }
       setStatus("success");
       onSuccess?.(selected);

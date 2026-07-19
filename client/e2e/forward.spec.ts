@@ -77,6 +77,7 @@ test.describe("forwarding", () => {
     const modal = forwardModal(page);
     const search = modal.getByTestId("forward-search");
     const note = `Forward note ${Date.now()}`;
+    const sourceTitle = await page.getByTestId("channel-title").innerText();
     await modal.locator("textarea").fill(note);
 
     await search.fill(fixture.bob.displayName);
@@ -95,6 +96,7 @@ test.describe("forwarding", () => {
 
     await expectForwardedWithNote(page, fixture.projectChannel.id, note);
     await expectForwardedWithNote(page, fixture.dmChannel.id, note);
+    await expect(page.getByTestId("channel-title")).toHaveText(sourceTitle);
   });
 
   test("adds newly contacted recipients to the DM list after forwarding", async ({ page }) => {
@@ -120,6 +122,24 @@ test.describe("forwarding", () => {
     for (const recipient of recipients) {
       await expect(dmRow(page, recipient.user.displayName)).toBeVisible();
     }
+  });
+
+  test("opens a newly contacted recipient after a single forward", async ({ page }) => {
+    const suffix = uniqueSuffix("forward-single").replace(/[^a-z0-9]/gi, "").slice(0, 16);
+    const recipient = await registerUser(page, {
+      username: `forward.single${suffix}`,
+      displayName: "Forward Solo",
+    });
+
+    await openForwardDialog(page);
+    const modal = forwardModal(page);
+    await modal.getByTestId("forward-search").fill(recipient.user.username);
+    await destinationByLabel(modal, recipient.user.displayName).click();
+    await modal.getByTestId("forward-send-selected").click();
+
+    await expect(modal).toBeHidden();
+    await expect(page.getByTestId("channel-title")).toContainText(recipient.user.displayName);
+    await expect(dmRow(page, recipient.user.displayName)).toBeVisible();
   });
 
   test("keeps the send action visible while the recipient list owns scrolling", async ({ page }) => {

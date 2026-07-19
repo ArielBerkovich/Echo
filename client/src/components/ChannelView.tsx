@@ -60,6 +60,7 @@ export default function ChannelView({
   onScrollToBottomTargetConsumed,
   onOpenProfile,
   onOpenChannel,
+  onOpenForwardedDm,
   isVip = false,
   onToggleVip,
   jumpMessageId = null,
@@ -447,25 +448,38 @@ export default function ChannelView({
   async function forwardTo(dest, options = {}) {
     let targetId = dest.id;
     let targetType = dest.kind === "dm" || dest.kind === "user" ? "dm" : "public";
+    let targetChannel = null;
     if (dest.kind === "user") {
       const { channel } = await api.openDm(dest.id);
+      targetChannel = channel;
       targetId = channel.id;
     }
 
     return new Promise((resolve, reject) => {
-      getSocket().emit("message:forward", { messageId: forwarding.id, channelId: targetId, note: options.note || "" }, (res) => {
+      getSocket().emit("message:forward", { messageId: forwarding.id, channelId: targetId, note: options.note || "" }, async (res) => {
         if (res?.error) return reject(new Error(res.error));
-        // Forwarding into a channel should land at the bottom so the new copy
-        // is visible in context; a "view original" jump still uses the message
-        // centering path elsewhere.
-        // A newly-created DM is not in the current sidebar snapshot yet, so
-        // let the modal close without trying to navigate to a stale list item.
-        if (dest.kind !== "user") {
-          onJumpToMessage?.({
-            channelId: targetId,
-            messageId: res?.message?.id,
-            channelType: targetType,
-          }, { focus: "bottom" });
+        // A single-destination forward opens the copy in context. Multi-forward
+        // keeps the source conversation open instead of ending on whichever
+        // destination happened to be processed last.
+        if ((options.destinationCount ?? 1) === 1) {
+          try {
+            if (dest.kind === "user") {
+              await onOpenForwardedDm?.({
+                id: dest.id,
+                displayName: dest.label,
+                username: dest.handle?.replace(/^@/, ""),
+                avatarUrl: dest.avatarUrl || null,
+              }, targetChannel);
+            } else {
+              onJumpToMessage?.({
+                channelId: targetId,
+                messageId: res?.message?.id,
+                channelType: targetType,
+              }, { focus: "bottom" });
+            }
+          } catch (err) {
+            return reject(err);
+          }
         }
         resolve();
       });
@@ -1167,7 +1181,7 @@ export default function ChannelView({
           users={users}
           onForward={forwardTo}
           onSuccess={(destinations) => {
-            if (destinations.some((destination) => destination.kind === "user")) {
+            if (destinations.length > 1 && destinations.some((destination) => destination.kind === "user")) {
               onDmsChanged?.();
             }
             const first = destinations[0];
