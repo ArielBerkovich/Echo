@@ -100,6 +100,8 @@ test("signup keeps password confirmation errors on the fields", async ({ page })
 
   const password = page.locator('input[name="password"]');
   const confirmation = page.getByLabel("Confirm password");
+  await expect(password).toHaveAttribute("autocomplete", "new-password");
+  await expect(confirmation).toHaveAttribute("autocomplete", "new-password");
   await password.fill("Password1");
   await page.getByRole("button", { name: needsSetup ? "Create admin account" : "Create account" }).click();
   await expect(confirmation.locator("xpath=../.."))
@@ -116,5 +118,5 @@ test("signup keeps password confirmation errors on the fields", async ({ page })
     input.dispatchEvent(event);
     return event.defaultPrevented;
   });
-  expect(pasteWasPrevented).toBeTruthy();
+  expect(pasteWasPrevented).toBeFalsy();
 });
