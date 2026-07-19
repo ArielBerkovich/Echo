@@ -290,6 +290,63 @@ test("scrolls to the bottom after sending while reading older messages", async (
   await expect(page.getByTestId("new-messages-button")).toHaveCount(0);
 });
 
+test("threads offer new replies while scrolled up and follow your own reply", async ({ page }) => {
+  for (let i = 0; i < 24; i += 1) {
+    await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+      method: "POST",
+      body: {
+        channelId: fixture.projectChannel.id,
+        parentId: fixture.messages.threadRoot.id,
+        body: `Thread scroll seed ${i} ${Date.now()}`,
+        externalKey: `thread-scroll-seed-${fixture.suffix}-${i}`,
+      },
+    });
+  }
+
+  await page.goto("/");
+  await page.getByTestId(`channel-row-${slug(fixture.projectChannel.name)}`).click();
+  await page.getByTestId(`message-${fixture.messages.threadRoot.id}-reply-count`).click();
+
+  const scroller = page.locator(".thread-body");
+  await expect(scroller).toBeVisible();
+  await expect(page.getByText("Thread scroll seed 23", { exact: false })).toBeVisible();
+  await scroller.evaluate((el) => {
+    el.scrollTop = 0;
+    el.dispatchEvent(new Event("scroll", { bubbles: true }));
+  });
+  const position = await scroller.evaluate((el) => el.scrollTop);
+
+  const incomingBody = `Thread reply while reading ${Date.now()}`;
+  await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.projectChannel.id,
+      parentId: fixture.messages.threadRoot.id,
+      body: incomingBody,
+      externalKey: `thread-scroll-live-${fixture.suffix}`,
+    },
+  });
+
+  const newRepliesButton = page.getByTestId("thread-new-messages-button");
+  await expect(newRepliesButton).toHaveText("1 new message ↓");
+  await expect.poll(() => scroller.evaluate((el) => el.scrollTop)).toBeGreaterThanOrEqual(position - 2);
+  await newRepliesButton.click();
+  await expect.poll(async () => scroller.evaluate((el) => el.scrollHeight - el.scrollTop - el.clientHeight)).toBeLessThanOrEqual(2);
+
+  await scroller.evaluate((el) => {
+    el.scrollTop = 0;
+    el.dispatchEvent(new Event("scroll", { bubbles: true }));
+  });
+  const ownBody = `Own thread reply ${Date.now()}`;
+  const composer = page.locator(".thread-panel .composer-editor");
+  await composer.fill(ownBody);
+  await composer.press("Enter");
+
+  await expect(page.locator(".thread-panel .message").filter({ hasText: ownBody })).toBeVisible();
+  await expect.poll(async () => scroller.evaluate((el) => el.scrollHeight - el.scrollTop - el.clientHeight)).toBeLessThanOrEqual(2);
+  await expect(newRepliesButton).toHaveCount(0);
+});
+
 test("opens a saved message from a hidden DM", async ({ page }) => {
   const dmMessage = await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
     method: "POST",
