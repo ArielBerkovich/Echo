@@ -14,8 +14,12 @@ export async function registerUser(page, { username, password = DEFAULT_PASSWORD
   const response = await page.request.post("/api/auth/register", {
     data: { username, password, firstName, lastName: lastParts.join(" ") || "User" },
   });
-  expect(response.ok(), `failed to register ${username}`).toBeTruthy();
-  return response.json();
+  const body = await response.json().catch(() => ({}));
+  expect(
+    response.ok(),
+    `failed to register ${username} (${response.status()}): ${body.error || "unknown error"}`
+  ).toBeTruthy();
+  return body;
 }
 
 async function loginOrRegisterUser(page, user) {

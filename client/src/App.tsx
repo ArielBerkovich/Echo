@@ -490,12 +490,12 @@ export default function App() {
     else setShowApiDocs(false);
   }
 
-  async function handleOpenDm(target, isSelf = false, destination = "dms") {
+  async function handleOpenDm(target, isSelf = false, destination = "dms", existingChannel = null) {
     markNavDuringRestore();
     clearNavigationTarget();
     setView(destination);
     setSearchQuery(null);
-    const { channel } = await api.openDm(target.id);
+    const channel = existingChannel || (await api.openDm(target.id)).channel;
     const existing = dms.find((d) => d.id === channel.id);
     setActiveChannel({
       ...channel,
@@ -990,7 +990,9 @@ export default function App() {
               onScrollToBottomTargetConsumed={clearScrollToBottomTarget}
               onOpenProfile={openProfile}
               onOpenChannel={handleOpenChannelTag}
+              onOpenForwardedDm={(target, channel) => handleOpenDm(target, false, "dms", channel)}
               onToast={setToast}
+              onDmsChanged={refreshDms}
               isVip={activeChannel.type === "dm" && vipIds.has(activeChannel.dmUserId)}
               onToggleVip={handleToggleVip}
               jumpMessageId={jumpMessageId}
