@@ -14,6 +14,17 @@ export const config = {
       : "mongodb://localhost:27017/echo"),
   jwtSecret: required("JWT_SECRET"),
   clientOrigin: process.env.CLIENT_ORIGIN || "http://localhost:8080",
+  rhsso: {
+    enabled: process.env.RHSSO_ENABLED === "true",
+    url: String(process.env.RHSSO_URL || "").replace(/\/+$/, ""),
+    backchannelUrl: String(process.env.RHSSO_BACKCHANNEL_URL || "").replace(/\/+$/, ""),
+    realm: process.env.RHSSO_REALM || "",
+    clientId: process.env.RHSSO_CLIENT_ID || "",
+    clientSecret: process.env.RHSSO_CLIENT_SECRET || "",
+    usernameClaim: process.env.RHSSO_USERNAME_CLAIM || "preferred_username",
+    displayNameClaim: process.env.RHSSO_DISPLAY_NAME_CLAIM || "name",
+    redirectUri: process.env.RHSSO_REDIRECT_URI || "",
+  },
   // How many messages to return per history page.
   messagePageSize: 50,
   // S3-compatible object storage (MinIO locally) for file uploads.

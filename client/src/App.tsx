@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { api, getToken, setToken } from "./api.js";
+import { api, consumeRhssoCallback, getToken, setToken } from "./api.js";
 import { disconnectSocket } from "./socket.js";
 import { useRealtime } from "./lib/useRealtime.js";
 import Login from "./components/Login.js";
@@ -69,6 +69,7 @@ function loadRecents() {
 }
 
 export default function App() {
+  const [rhssoError] = useState(() => consumeRhssoCallback());
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [channels, setChannels] = useState([]); // channels you belong to (sidebar)
@@ -834,7 +835,7 @@ export default function App() {
     activeChannel && activeUnreadCount === 0 ? scrollStates[activeChannel.id] || null : null;
 
   if (loading) return <div className="centered">Loading…</div>;
-  if (!user) return <Login onAuthed={handleAuthed} />;
+  if (!user) return <Login onAuthed={handleAuthed} initialError={rhssoError} />;
   // Account is on an admin-issued one-time password — force a new one first.
   if (user.mustResetPassword) {
     return (

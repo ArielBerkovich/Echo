@@ -1,0 +1,40 @@
+{
+  "realm": "echo",
+  "enabled": true,
+  "displayName": "Echo RHSSO Demo",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "clients": [
+    {
+      "clientId": "echo",
+      "name": "Echo local demo",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["http://localhost:8091/api/auth/rhsso/callback"],
+      "webOrigins": ["http://localhost:8091"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "jane.doe",
+      "enabled": true,
+      "email": "jane.doe@example.com",
+      "emailVerified": true,
+      "firstName": "Jane",
+      "lastName": "Doe",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "UserPassword1",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}
