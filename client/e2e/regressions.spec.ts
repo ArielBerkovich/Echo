@@ -1,5 +1,13 @@
 import { expect, test } from "@playwright/test";
-import { dmRow, railItem, requestAsToken, seedWorkspaceFixture, slug } from "./helpers.js";
+import {
+  dmRow,
+  railItem,
+  registerUser,
+  requestAsToken,
+  seedWorkspaceFixture,
+  slug,
+  uniqueSuffix,
+} from "./helpers.js";
 
 let fixture: Awaited<ReturnType<typeof seedWorkspaceFixture>>;
 
@@ -34,6 +42,20 @@ test("does not offer DM removal in the dedicated DMs view", async ({ page }) => 
   await expect(row.locator(".dm-remove")).toHaveCount(0);
 });
 
+test("opens a Home sidebar DM without switching to the DMs view", async ({ page }) => {
+  await page.goto("/");
+
+  const homeDm = page.locator(".dm-item").filter({ hasText: fixture.bob.displayName });
+  await expect(homeDm).toBeVisible();
+  await homeDm.locator(".dm-open").click();
+
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.bob.displayName);
+  await expect(railItem(page, "home")).toHaveClass(/active/);
+  await expect(railItem(page, "dms")).not.toHaveClass(/active/);
+  await expect(page.locator(".sidebar")).not.toHaveClass(/dms-view/);
+  await expect(page.getByTestId("channel-row-general")).toBeVisible();
+});
+
 test("keeps the DM preview width stable when toggling VIP", async ({ page }) => {
   await page.goto("/");
   await railItem(page, "dms").click();
@@ -60,6 +82,44 @@ test("keeps the DM preview width stable when toggling VIP", async ({ page }) => 
   if (((await cleanupToggle.getAttribute("aria-pressed")) === "true") !== wasVip) {
     await cleanupToggle.click();
   }
+});
+
+test("adds a channel-message author to VIPs without opening a DM first", async ({ page }) => {
+  const candidateSuffix = uniqueSuffix("vip").replace(/[^a-z0-9]/gi, "").slice(0, 16);
+  const candidate = await registerUser(page, {
+    username: `victor.profile${candidateSuffix}`,
+    displayName: "Victor Profile",
+  });
+  await requestAsToken(page, candidate.token, "/users/me/onboarded", { method: "POST" });
+
+  const body = `VIP profile regression ${candidateSuffix}`;
+  const { message } = await requestAsToken(page, candidate.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body,
+      externalKey: `vip-profile-${candidateSuffix}`,
+    },
+  });
+
+  const before = await requestAsToken(page, fixture.alice.token, "/dms");
+  expect(before.conversations.some((conversation) => conversation.withUser.id === candidate.user.id)).toBeFalsy();
+
+  await page.goto("/");
+  await page.getByTestId(`message-${message.id}-author`).click();
+
+  const profile = page.getByTestId("profile-modal");
+  await profile.getByRole("button", { name: "Mark as VIP" }).click();
+  await expect(profile.getByRole("button", { name: "VIP" })).toBeVisible();
+  await profile.getByTestId("profile-close").click();
+
+  await expect(page.getByTestId("vip-toggle")).toBeVisible();
+  await expect(page.locator(".dm-item").filter({ hasText: candidate.user.displayName })).toBeVisible();
+
+  const after = await requestAsToken(page, fixture.alice.token, "/dms");
+  expect(after.conversations.some((conversation) => conversation.withUser.id === candidate.user.id)).toBeTruthy();
+
+  await requestAsToken(page, fixture.alice.token, `/users/${candidate.user.id}/vip`, { method: "POST" });
 });
 
 test("opens people and channels searched from Activity and Saved", async ({ page }) => {

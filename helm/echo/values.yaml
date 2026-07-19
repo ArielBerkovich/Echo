@@ -45,6 +45,8 @@ server:
     port: 4000
   clientOrigin: ""
   mongoUri: ""
+  # Pre-install hook Secret consumed by the Echo server.
+  existingSecret: echo-secret
   jwtSecret: ""
   s3:
     endpoint: ""
@@ -124,7 +126,11 @@ mongodb:
   auth:
     enabled: true
     rootUser: echo
+    # Created by the parent chart's pre-install hook. Setting this also stops
+    # the MongoDB subchart from generating its own credentials Secret.
+    existingSecret: echo-mongodb-secret
     rootPassword: ""
+    replicaSetKey: ""
   persistence:
     enabled: true
     size: 8Gi
@@ -143,11 +149,14 @@ minio:
     pullPolicy: IfNotPresent
   imagePullSecrets: []
   mode: standalone
-  rootUser: echo
+  # Created by the parent chart's pre-install hook. The MinIO subchart reads
+  # rootUser and rootPassword from this Secret instead of creating its own.
+  existingSecret: echo-minio-secret
+  rootUser: ""
   rootPassword: ""
   persistence:
     enabled: true
-    size: 10Gi
+    size: 8Gi
     storageClass: ""
   buckets:
     - name: echo-uploads

@@ -31,7 +31,7 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- define "echo.serverServiceName" -}}{{ printf "%s-server" (include "echo.fullname" .) }}{{- end -}}
 {{- define "echo.mongodbName" -}}{{ printf "%s-mongodb" .Release.Name }}{{- end -}}
 {{- define "echo.minioName" -}}{{ printf "%s-minio" .Release.Name }}{{- end -}}
-{{- define "echo.secretName" -}}{{ printf "%s-secrets" (include "echo.fullname" .) }}{{- end -}}
+{{- define "echo.secretName" -}}{{ required "server.existingSecret is required" .Values.server.existingSecret }}{{- end -}}
 
 {{- define "echo.s3Endpoint" -}}
 {{- if .Values.server.s3.endpoint }}{{ .Values.server.s3.endpoint }}

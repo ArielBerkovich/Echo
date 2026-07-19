@@ -9,8 +9,18 @@ The same chart supports ordinary Kubernetes and disconnected OpenShift. Local
 Kubernetes remains the default. All platform, image registry, storage, Route,
 and security settings are values-driven.
 
-Install; all runtime images are declared in `values.yaml`, and MongoDB and MinIO generate their own credentials and persist them in
-their dependency Secrets. Echo generates and persists its JWT secret.
+Before installation, the parent chart creates the MongoDB, MinIO, and Echo
+credential Secrets as Helm `pre-install` hooks. The dependency charts consume
+the MongoDB and MinIO Secrets through their `existingSecret` settings. Hook
+Secrets are retained after a successful installation so the running workloads
+can continue to use them; they are replaced before a later fresh installation
+of the same release. Set `mongodb.auth.rootPassword`,
+`mongodb.auth.replicaSetKey`, `minio.rootUser`, `minio.rootPassword`, or
+`server.jwtSecret` to supply credentials instead of generating them.
+
+Install; all runtime images are declared in `values.yaml`. The parent chart
+generates and persists the MongoDB, MinIO, and Echo credentials in the
+pre-install hook Secrets described above.
 
 ```bash
 helm install echo ./helm/echo

@@ -7,6 +7,7 @@ import { signToken, signApiToken } from "../auth.js";
 import { setFileCategory, FILE_CATEGORY } from "../storage.js";
 import { emitAll, syncUserSockets } from "../realtime.js";
 import { passwordProblem } from "../password.js";
+import { ensureDmChannel } from "../lib/dms.js";
 
 export const usersRouter = Router();
 usersRouter.use(requireAuth);
@@ -40,6 +41,10 @@ usersRouter.post("/:id/vip", async (req, res) => {
     req.user.vips.splice(idx, 1);
     vip = false;
   } else {
+    if (!(await User.exists({ _id: id }))) {
+      return res.status(404).json({ error: "user not found" });
+    }
+    await ensureDmChannel(req.user._id, id);
     req.user.vips.push(id);
     vip = true;
   }

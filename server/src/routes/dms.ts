@@ -5,14 +5,10 @@ import { User } from "../models/User.js";
 import { Message } from "../models/Message.js";
 import { Read } from "../models/Read.js";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { ensureDmChannel } from "../lib/dms.js";
 
 export const dmsRouter = Router();
 dmsRouter.use(requireAuth);
-
-// Deterministic channel name for the DM between two users, regardless of order.
-function dmName(a, b) {
-  return `dm-${[String(a), String(b)].sort().join("-")}`;
-}
 
 // GET /api/dms — the user's visible DM conversations, most-recent first.
 dmsRouter.get("/", async (req, res) => {
@@ -94,15 +90,18 @@ dmsRouter.post("/", async (req, res) => {
   const other = isSelf ? req.user : await User.findById(userId);
   if (!other) return res.status(404).json({ error: "user not found" });
 
-  const name = isSelf ? `dm-self-${req.user._id}` : dmName(req.user._id, other._id);
-  const members = isSelf ? [req.user._id] : [req.user._id, other._id];
-
-  let channel = await Channel.findOne({ name });
-  if (channel) {
-    await Channel.updateOne({ _id: channel._id }, { $pull: { hiddenFor: req.user._id } });
-    channel = await Channel.findById(channel._id);
+  let channel;
+  if (isSelf) {
+    const name = `dm-self-${req.user._id}`;
+    channel = await Channel.findOne({ name });
+    if (channel) {
+      await Channel.updateOne({ _id: channel._id }, { $pull: { hiddenFor: req.user._id } });
+      channel = await Channel.findById(channel._id);
+    } else {
+      channel = await Channel.create({ name, type: "dm", members: [req.user._id], createdBy: req.user._id });
+    }
   } else {
-    channel = await Channel.create({ name, type: "dm", members, createdBy: req.user._id });
+    channel = await ensureDmChannel(req.user._id, other._id);
   }
 
   const read = await Read.findOne({ user: req.user._id, channel: channel._id, thread: null });

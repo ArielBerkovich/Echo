@@ -57,7 +57,7 @@ spec:
             - name: MONGO_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "echo.mongodbName" . }}
+                  name: {{ required "mongodb.auth.existingSecret is required when mongodb.enabled is true" .Values.mongodb.auth.existingSecret }}
                   key: mongodb-root-password
             - name: MONGO_REPLICA_SET
               value: {{ .Values.mongodb.replicaSetName | quote }}
@@ -70,7 +70,7 @@ spec:
               {{- if .Values.minio.enabled }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "echo.minioName" . }}
+                  name: {{ required "minio.existingSecret is required when minio.enabled is true" .Values.minio.existingSecret }}
                   key: rootUser
               {{- else }}
               value: {{ required "server.s3.accessKey is required when minio.enabled is false" .Values.server.s3.accessKey | quote }}
@@ -79,7 +79,7 @@ spec:
               {{- if .Values.minio.enabled }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "echo.minioName" . }}
+                  name: {{ required "minio.existingSecret is required when minio.enabled is true" .Values.minio.existingSecret }}
                   key: rootPassword
               {{- else }}
               value: {{ required "server.s3.secretKey is required when minio.enabled is false" .Values.server.s3.secretKey | quote }}
