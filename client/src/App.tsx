@@ -857,9 +857,11 @@ export default function App() {
                 searchRef.current?.clear();
                 setSearchQuery(null);
                 setView(v);
-                // The mobile rail is always available at the bottom; selecting
-                // a destination should dismiss the separate sidebar drawer.
-                setNavOpen(false);
+                // Keep the complete navigation unit open after every rail
+                // selection on mobile. Home and DMs expose their sidebar;
+                // Activity and Saved still intentionally render rail-only
+                // content inside the drawer.
+                setNavOpen(window.matchMedia("(max-width: 760px)").matches);
             }}
             user={user}
             badges={{

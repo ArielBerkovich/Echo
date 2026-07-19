@@ -455,7 +455,7 @@ input:focus {
 /* ============ Auth screen ============ */
 .auth-screen {
   position: relative;
-  min-height: 100dvh;
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -531,8 +531,8 @@ input:focus {
   grid-template-columns: 1.05fr 1fr;
   width: 100%;
   max-width: 940px;
-  height: min(560px, calc(100dvh - 32px));
-  max-height: calc(100dvh - 32px);
+  height: min(560px, calc(100vh - 32px));
+  max-height: calc(100vh - 32px);
   min-height: 0;
   border-radius: 24px;
   overflow: hidden;
@@ -1121,94 +1121,8 @@ input:focus {
   to { transform: rotate(360deg); }
 }
 
-/* Narrow screens: drop the hero, center the form */
-@media (max-width: 760px) {
-  .auth-screen {
-    align-items: flex-start;
-    overflow-y: auto;
-    overflow-x: hidden;
-  }
-  .auth-shell {
-    grid-template-columns: 1fr;
-    min-width: 0;
-    max-width: 420px;
-    height: auto;
-    min-height: calc(100dvh - 24px);
-    max-height: none;
-  }
-  .auth-hero {
-    display: none;
-  }
-  .auth-card {
-    min-width: 0;
-    padding: 14px 16px 15px;
-    gap: 6px;
-    height: auto;
-    max-height: none;
-    overflow: visible;
-  }
-  .auth-card-head {
-    gap: 3px;
-    margin-bottom: 0;
-  }
-  .auth-card-sub,
-  .subtitle {
-    font-size: 12px;
-    line-height: 1.3;
-  }
-  .auth-tabs button {
-    padding-block: 7px 8px;
-  }
-  .field {
-    gap: 3px;
-  }
-  .input-wrap input {
-    padding-top: 8px;
-    padding-bottom: 8px;
-  }
-  .auth-username-options {
-    gap: 2px;
-    margin-top: -7px;
-    padding-block: 4px;
-  }
-  .auth-username-suggestions {
-    gap: 4px 10px;
-  }
-  .auth-back {
-    font-size: 11px;
-  }
-  .auth-submit {
-    min-height: 40px;
-  }
-  .field-hint.error.small {
-    margin-top: -2px;
-    font-size: 10px;
-    line-height: 1.1;
-  }
-  .auth-card.setup {
-    gap: 8px;
-    padding-top: 20px;
-    padding-bottom: 18px;
-  }
-  .setup-callout {
-    font-size: 12.5px;
-    line-height: 1.45;
-  }
-  .subtitle {
-    max-width: 30ch;
-  }
-  .api-overview {
-    grid-template-columns: 1fr;
-  }
-  .api-groups {
-    column-width: 100%;
-    column-gap: 0;
-  }
-}
-@media (min-width: 761px) {
-  .auth-card-head {
-    display: none; /* the hero panel already carries the brand */
-  }
+.auth-card-head {
+  display: none; /* the hero panel already carries the brand */
 }
 
 .btn-primary {
@@ -3296,13 +3210,6 @@ html[data-mode="dark"] .day-divider-label {
   background: rgba(225, 29, 72, 0.1);
 }
 
-@media (max-width: 760px) {
-  .msg-menu {
-    right: 8px;
-    min-width: 190px;
-  }
-}
-
 /* "(edited)" marker after a message body */
 .edited-label {
   color: var(--muted);
@@ -5007,7 +4914,7 @@ html[data-mode="dark"] .day-divider-label {
   top: calc(100% - 18px);
   left: 0;
   right: 0;
-  max-height: min(310px, calc(100dvh - 190px));
+  max-height: min(310px, calc(100vh - 190px));
   margin: 0;
   padding: 7px;
   overflow-y: auto;
@@ -6172,27 +6079,6 @@ html[data-mode="dark"] .channel-header {
   --rgb-accent: 37, 99, 235;
 }
 
-/* Keep the picker usable when the composer is opened on a phone. The native
-   picker is 435px tall on desktop, which can extend beneath browser chrome or
-   the on-screen keyboard on a short viewport. */
-@media (max-width: 760px) {
-  .emoji-popup-wrap {
-    left: 8px;
-    right: 8px;
-  }
-  .emoji-popup-wrap em-emoji-picker {
-    width: 100%;
-    max-width: none;
-    height: min(435px, calc(100dvh - 24px));
-    max-height: calc(100dvh - 24px);
-  }
-  .reaction-picker .emoji-popup-wrap {
-    width: min(352px, calc(100vw - 16px));
-  }
-  .reaction-picker .emoji-popup-wrap em-emoji-picker {
-    width: 100%;
-  }
-}
 html[data-mode="dark"] .emoji-popup-wrap em-emoji-picker {
   --rgb-background: 16, 23, 38;
   --rgb-input: 26, 34, 54;
@@ -6551,28 +6437,8 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   display: none;
 }
 
-/* Medium screens: a thread / details panel overlays the conversation from the
-   right rather than taking layout width, so the messages stay readable. */
-@media (max-width: 980px) {
-  .channel-view {
-    position: relative;
-  }
-  .thread-panel,
-  .details-panel:not(.channel-details-dialog),
-  .pinned-panel {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 18;
-    width: min(440px, 94%);
-    max-width: 94%;
-    box-shadow: var(--shadow-lg);
-  }
-}
-
-/* Narrow / mobile: the sidebar is an off-canvas drawer and the rail becomes a
-   fixed bottom navigation bar. */
+/* Narrow screens: rail + sidebar become an off-canvas drawer; the chat pane
+   takes the full width. A menu button reveals the drawer; a backdrop dismisses it. */
 @media (max-width: 760px) {
   .pane-search {
     display: flex;
@@ -6587,63 +6453,17 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     display: inline-flex;
   }
   .app-nav {
-    position: static;
-    display: block;
-    width: 0;
-    min-width: 0;
-    transform: none;
-    transition: none;
-    box-shadow: none;
-  }
-
-  .app-nav .sidebar {
     position: fixed;
     top: 0;
     left: 0;
     bottom: 0;
-    z-index: 61;
+    z-index: 60;
     transform: translateX(-100%);
     transition: transform 0.24s ease;
     box-shadow: var(--shadow-lg);
   }
-  .app.nav-open .app-nav .sidebar {
+  .app.nav-open .app-nav {
     transform: none;
-  }
-
-  .app-nav .rail {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 70;
-    width: auto;
-    height: 64px;
-    box-sizing: border-box;
-    flex-direction: row;
-    justify-content: center;
-    padding: 4px 8px calc(4px + env(safe-area-inset-bottom));
-    border-top: 1px solid color-mix(in srgb, var(--on-navy-muted) 22%, transparent);
-    background: var(--rail-bg);
-  }
-  .app-nav .rail-top {
-    flex: 1;
-    flex-direction: row;
-    justify-content: space-around;
-    gap: 4px;
-    max-width: 420px;
-  }
-  .app-nav .rail-item {
-    width: auto;
-    min-width: 0;
-    flex: 1;
-    max-width: 88px;
-    gap: 1px;
-    padding: 3px 0;
-    font-size: 10px;
-  }
-  .app-nav .rail-icon {
-    width: 36px;
-    height: 32px;
   }
 
   .app.nav-open .nav-backdrop {
@@ -6655,14 +6475,6 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   }
   .chat-pane {
     margin: 8px;
-  }
-}
-
-/* Very narrow: trim the drawer so it doesn't cover the whole screen. */
-@media (max-width: 420px) {
-  .sidebar {
-    width: calc(100vw - 72px - 36px);
-    max-width: 260px;
   }
 }
 
@@ -6880,152 +6692,6 @@ html[data-mode="dark"] .hljs-class .hljs-title {
    Responsive hardening
    ============================================================ */
 
-/* The visible mobile viewport changes as browser chrome opens/closes. */
-@supports (height: 100dvh) {
-  .app-shell {
-    height: 100dvh;
-  }
-  .centered {
-    height: 100dvh;
-  }
-}
-
-/* Keep long toolbars usable without forcing the composer wider than the chat. */
-.composer-toolbar {
-  min-width: 0;
-  max-width: 100%;
-  overflow-x: auto;
-  overscroll-behavior-inline: contain;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-}
-.composer-toolbar .icon-btn,
-.composer-toolbar .tb-sep {
-  flex: 0 0 auto;
-}
-
-/* The image lightbox should use the whole viewport when the thread panel is
-   overlaid rather than reserving its desktop width. */
-@media (max-width: 980px) {
-  .lightbox-panel {
-    right: 0;
-  }
-}
-
-@media (max-width: 760px) {
-  .chat-pane {
-    margin: 4px;
-    border-radius: 12px;
-  }
-
-  .channel-header {
-    gap: 5px;
-    padding: 10px 12px;
-  }
-  .channel-header .ch-name {
-    font-size: 16px;
-    flex: 1 1 auto;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .channel-header .ch-topic {
-    display: none;
-  }
-  .channel-header .ch-meta {
-    display: none;
-  }
-  .header-actions {
-    flex: 0 0 auto;
-    gap: 2px;
-  }
-  .header-action {
-    width: 34px;
-    height: 34px;
-    padding: 0;
-    justify-content: center;
-  }
-  .header-action-icon span,
-  .header-action-visibility {
-    display: none;
-  }
-
-  .join-bar {
-    flex-wrap: wrap;
-    margin-inline: 10px;
-    padding: 12px;
-  }
-  .join-text {
-    flex: 1 1 180px;
-    min-width: 0;
-  }
-  .join-btn {
-    flex: 0 0 auto;
-  }
-
-  .composer {
-    margin: 4px 10px 12px;
-  }
-  .composer-actions {
-    gap: 8px;
-  }
-  .composer-actions .left,
-  .composer-actions .right {
-    min-width: 0;
-  }
-  .send-menu {
-    max-width: calc(100vw - 32px);
-  }
-
-  .lightbox-toolbar {
-    max-width: calc(100vw - 24px);
-    overflow-x: auto;
-  }
-}
-
-@media (max-width: 420px) {
-  .pane-search {
-    padding: 8px;
-  }
-  .channel-header {
-    padding-inline: 8px;
-  }
-  .header-actions .header-action {
-    width: 32px;
-    height: 32px;
-  }
-  .composer-toolbar {
-    gap: 1px;
-    padding-inline: 5px;
-  }
-  .composer-toolbar .icon-btn {
-    min-width: 32px;
-    width: 32px;
-    padding-inline: 4px;
-  }
-  .composer-actions {
-    padding-inline: 5px;
-  }
-}
-
-/* On short phones, allow the auth page itself to scroll instead of clipping
-   the form inside a viewport-sized rounded shell. */
-@media (max-width: 760px) and (max-height: 620px) {
-  .auth-screen {
-    align-items: flex-start;
-    overflow-y: auto;
-  }
-  .auth-shell {
-    height: auto;
-    min-height: 0;
-    max-height: none;
-  }
-  .auth-card {
-    height: auto;
-    max-height: none;
-  }
-}
-
 /* Fluid desktop scale: grow typography and breathing room within bounded
    ranges, while keeping message lines and controls readable. */
 :root {
@@ -7084,40 +6750,6 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   .details-panel:not(.channel-details-dialog),
   .pinned-panel {
     width: clamp(460px, 26vw, 560px);
-  }
-}
-
-/* Re-apply narrow-screen geometry after the fluid desktop rules above. */
-@media (max-width: 760px) {
-  .messages {
-    padding: 1rem 0.75rem;
-  }
-  .modal-backdrop:has(.forward-modal) {
-    align-items: flex-end;
-  }
-  .modal.forward-modal {
-    width: 100%;
-    max-width: none;
-    max-height: min(92dvh, 760px);
-    margin: 0;
-    padding: 18px 16px 14px;
-    border-radius: 18px 18px 0 0;
-  }
-  .forward-destination-list {
-    max-height: 30dvh;
-  }
-  .forward-actions {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-  .new-messages-button {
-    right: 12px;
-    margin-right: 12px;
-  }
-  .channel-header {
-    padding: 0.625rem 0.75rem;
-  }
-  .settings-page-body {
-    padding-inline: 1rem;
   }
 }
 
@@ -7228,34 +6860,6 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   }
   .composer-actions {
     padding: 6px 10px 9px;
-  }
-}
-
-@media (max-width: 640px) {
-  .channel-details-backdrop {
-    align-items: flex-end;
-    padding: 10px;
-  }
-  .channel-details-dialog {
-    width: 100%;
-    height: calc(100vh - 20px);
-    max-height: calc(100vh - 20px);
-    border-radius: 18px 18px 0 0;
-  }
-  .channel-details-header {
-    padding: 19px 18px 17px;
-  }
-  .channel-details-content {
-    padding: 16px 18px 20px;
-  }
-  .channel-details-fields {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .channel-details-field {
-    min-height: 0;
-  }
-  .channel-details-created-date {
-    display: none;
   }
 }
 
@@ -7566,12 +7170,5 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   .dm-vip-toggle {
     width: 30px;
     height: 30px;
-  }
-}
-
-@media (max-width: 420px) {
-  .dm-vip-toggle {
-    width: 28px;
-    height: 28px;
   }
 }
