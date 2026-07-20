@@ -118,12 +118,41 @@ jobs:
           provenance: true
           sbom: true
 
+  helm:
+    name: Helm chart
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Lint and package chart
+        env:
+          RELEASE_VERSION: ${{ github.ref_name }}
+        run: |
+          version="${RELEASE_VERSION#v}"
+          helm lint ./helm/echo
+          helm package ./helm/echo \
+            --destination release-assets \
+            --version "${version}" \
+            --app-version "${version}"
+
+      - name: Upload Helm chart
+        uses: actions/upload-artifact@v4
+        with:
+          name: echo-helm
+          path: release-assets/*.tgz
+          if-no-files-found: error
+
   release:
     name: GitHub Release
     runs-on: ubuntu-latest
     needs:
       - desktop
       - docker
+      - helm
     permissions:
       contents: write
     steps:
