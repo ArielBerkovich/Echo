@@ -15,6 +15,7 @@ import { adminRouter } from "./routes/admin.js";
 import { savedRouter } from "./routes/saved.js";
 import { messagesRouter } from "./routes/messages.js";
 import { webhooksRouter } from "./routes/webhooks.js";
+import { azureDevOpsRouter } from "./routes/azureDevOps.js";
 import { openApiDocument } from "./openapi.js";
 
 export function createApp() {
@@ -47,6 +48,7 @@ export function createApp() {
   app.use("/api/saved", savedRouter);
   app.use("/api/messages", messagesRouter);
   app.use("/api/webhooks", webhooksRouter);
+  app.use("/api/azure-devops", azureDevOpsRouter);
 
   // Keep the process alive and return a consistent JSON payload on crashes.
   app.use((err, _req, res, _next) => {
