@@ -72,6 +72,7 @@ export default function App() {
   const [rhssoError] = useState(() => consumeRhssoCallback());
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [startupUnavailable, setStartupUnavailable] = useState(false);
   const [channels, setChannels] = useState([]); // channels you belong to (sidebar)
   const [allChannels, setAllChannels] = useState([]); // public channels (search/browse)
   const [activeChannel, setActiveChannel] = useState(null);
@@ -132,22 +133,33 @@ export default function App() {
 
   // Real-time layer: socket listeners + live Activity-badge counts.
   // (refreshChannels/refreshDms are hoisted declarations below.)
-  const { activityBadge, onlineIds, syncActivity, clearChannelActivity, clearThreadActivity } =
+  const {
+    activityBadge,
+    onlineIds,
+    connectionStatus,
+    recoveryEpoch,
+    syncActivity,
+    clearChannelActivity,
+    clearThreadActivity,
+  } =
     useRealtime({
       user,
       activeChannel,
       channels,
       dms,
       vipIds,
-    setChannels,
-    setAllChannels,
-    setDms,
-    setUsers,
-    setCustomEmojis,
+      setChannels,
+      setAllChannels,
+      setDms,
+      setUsers,
+      setCustomEmojis,
+      setSavedIds,
+      setVipIds,
       setView,
       setActiveChannel,
       refreshChannels,
       refreshDms,
+      onAuthInvalid: handleLogout,
     });
 
   // Apply + persist theme (colour identity) and mode (light/dark) independently.
@@ -169,11 +181,38 @@ export default function App() {
       setLoading(false);
       return;
     }
-    api
-      .me()
-      .then(({ user }) => setUser(user))
-      .catch(() => setToken(null))
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    let retryTimer = null;
+    let retryDelay = 1000;
+
+    const restore = async () => {
+      try {
+        const { user } = await api.me();
+        if (cancelled) return;
+        setUser(user);
+        setStartupUnavailable(false);
+        setLoading(false);
+      } catch (error) {
+        if (cancelled) return;
+        if (error?.status === 401) {
+          // Only a confirmed authentication rejection should destroy a stored
+          // session. Network/server failures are temporary and retried below.
+          setToken(null);
+          setStartupUnavailable(false);
+          setLoading(false);
+          return;
+        }
+        setStartupUnavailable(true);
+        retryTimer = setTimeout(restore, retryDelay);
+        retryDelay = Math.min(retryDelay * 2, 10000);
+      }
+    };
+
+    restore();
+    return () => {
+      cancelled = true;
+      clearTimeout(retryTimer);
+    };
   }, []);
 
   function refreshDms() {
@@ -834,7 +873,13 @@ export default function App() {
   const activeInitialScrollState =
     activeChannel && activeUnreadCount === 0 ? scrollStates[activeChannel.id] || null : null;
 
-  if (loading) return <div className="centered">Loading…</div>;
+  if (loading) {
+    return (
+      <div className="centered" role="status">
+        {startupUnavailable ? "Echo is restarting… reconnecting automatically." : "Loading…"}
+      </div>
+    );
+  }
   if (!user) return <Login onAuthed={handleAuthed} initialError={rhssoError} />;
   // Account is on an admin-issued one-time password — force a new one first.
   if (user.mustResetPassword) {
@@ -849,6 +894,13 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      {connectionStatus !== "online" && connectionStatus !== "auth-error" && (
+        <div className="connection-banner" role="status" aria-live="polite">
+          {connectionStatus === "recovering"
+            ? "Connected. Catching up on anything you missed…"
+            : "Echo is reconnecting… Your session is safe."}
+        </div>
+      )}
       <div className={`app ${navOpen ? "nav-open" : ""}`}>
         <div className="app-nav">
           <LeftRail
@@ -977,6 +1029,7 @@ export default function App() {
           ) : activeChannel && (view === "home" || activeChannel.type === "dm") ? (
             <ChannelView
               channel={activeChannel}
+              recoveryEpoch={recoveryEpoch}
               cachedMessages={messageCache[activeChannel.id] || null}
               initialScrollState={activeInitialScrollState}
               user={user}

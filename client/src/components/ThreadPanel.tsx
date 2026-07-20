@@ -12,6 +12,7 @@ import ConfirmDialog from "./ConfirmDialog.js";
 // code, attachments) components so threads have parity with the main timeline.
 export default function ThreadPanel({
   channel,
+  recoveryEpoch = 0,
   root,
   user,
   users = [],
@@ -78,11 +79,17 @@ export default function ThreadPanel({
   useEffect(() => {
     let cancelled = false;
     setReplies([]);
-    api.getThread(channel.id, root.id).then(({ replies, parent }) => {
-      if (cancelled) return;
-      setReplies(replies);
-      if (parent) setRootMsg((prev) => ({ ...prev, ...parent }));
-    });
+    api
+      .getThread(channel.id, root.id)
+      .then(({ replies, parent }) => {
+        if (cancelled) return;
+        setReplies(replies);
+        if (parent) setRootMsg((prev) => ({ ...prev, ...parent }));
+        setError(null);
+      })
+      .catch((error) => {
+        if (!cancelled) setError(error.message);
+      });
 
     const socket = getSocket();
     const onNew = (msg) => {
@@ -134,7 +141,7 @@ export default function ThreadPanel({
       socket.off("message:reaction", onReaction);
       socket.off("message:pin", onPin);
     };
-  }, [channel.id, root.id, user.id]);
+  }, [channel.id, root.id, user.id, recoveryEpoch]);
 
   useLayoutEffect(() => {
     if (!replies.length) {

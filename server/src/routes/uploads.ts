@@ -4,6 +4,7 @@ import { fileTypeFromBuffer } from "file-type";
 import { config } from "../config.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { putObject, getObject } from "../storage.js";
+import { decodeMultipartFilename } from "../lib/filenames.js";
 
 export const uploadsRouter = Router();
 
@@ -38,11 +39,12 @@ uploadsRouter.post("/", requireAuth, upload.array("files"), async (req, res) => 
   try {
     const attachments = await Promise.all(
       files.map(async (f) => {
+        const name = decodeMultipartFilename(f.originalname);
         const contentType = await safeContentType(f.buffer, f.mimetype);
-        const key = await putObject({ buffer: f.buffer, name: f.originalname, contentType });
+        const key = await putObject({ buffer: f.buffer, name, contentType });
         return {
           key,
-          name: f.originalname,
+          name,
           size: f.size,
           contentType,
           isImage: isImage(contentType),
@@ -61,7 +63,7 @@ uploadsRouter.post("/", requireAuth, upload.array("files"), async (req, res) => 
 uploadsRouter.use((err, _req, res, next) => {
   if (err?.code === "LIMIT_FILE_SIZE") {
     const mb = Math.round(config.maxUploadBytes / (1024 * 1024));
-    return res.status(413).json({ error: `each file must be ${mb} MB or smaller` });
+    return res.status(413).json({ error: `File is too large. Files are limited to ${mb} MB each.` });
   }
   if (err?.code === "LIMIT_FILE_COUNT") {
     return res.status(413).json({ error: `at most ${config.maxFilesPerMessage} files per message` });

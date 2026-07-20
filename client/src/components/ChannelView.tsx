@@ -46,6 +46,7 @@ function MessagesSkeleton() {
 
 export default function ChannelView({
   channel,
+  recoveryEpoch = 0,
   cachedMessages = null,
   initialScrollState = null,
   user,
@@ -382,6 +383,30 @@ export default function ChannelView({
       Object.values(timers).forEach(clearTimeout);
     };
   }, [channel.id]);
+
+  // Reconcile the active timeline after the socket has reconnected. Keeping
+  // this separate from the channel-change effect preserves the open panels and
+  // scroll state while filling any gap left by events missed during downtime.
+  useEffect(() => {
+    if (!recoveryEpoch) return;
+    let cancelled = false;
+    const socket = getSocket();
+    socket.emit("channel:join", channel.id);
+    api
+      .getMessages(channel.id)
+      .then(({ messages }) => {
+        if (cancelled) return;
+        setMessages(messages);
+        onCacheMessages?.(channel.id, messages);
+        setError(null);
+      })
+      .catch((error) => {
+        if (!cancelled) setError(error.message);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [channel.id, recoveryEpoch]);
 
   useEffect(() => {
     showPinnedRef.current = showPinned;
@@ -1119,6 +1144,7 @@ export default function ChannelView({
         <>
           <ThreadPanel
             channel={channel}
+            recoveryEpoch={recoveryEpoch}
             root={thread}
             user={user}
             users={users}

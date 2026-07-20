@@ -40,18 +40,34 @@ export function attachSocket(httpServer) {
     }
   }
 
+  function connectionError(message, code) {
+    const error = new Error(message);
+    error.data = { code };
+    return error;
+  }
+
   // Authenticate every socket from the handshake before it can do anything.
   io.use(async (socket, next) => {
+    let payload;
     try {
       const token = socket.handshake.auth?.token;
-      if (!token) return next(new Error("Missing token"));
-      const payload = verifyToken(token);
+      if (!token) return next(connectionError("Missing token", "AUTH_INVALID"));
+      payload = verifyToken(token);
+    } catch {
+      return next(connectionError("Authentication failed", "AUTH_INVALID"));
+    }
+
+    try {
       const user = await User.findById(payload.sub);
-      if (!user) return next(new Error("Unknown user"));
+      if (!user || (payload.tv ?? 0) !== (user.tokenVersion ?? 0)) {
+        return next(connectionError("Authentication failed", "AUTH_INVALID"));
+      }
       socket.user = user;
       next();
     } catch {
-      next(new Error("Authentication failed"));
+      // A database/server startup failure is recoverable and must not be
+      // presented to the client as an expired login.
+      next(connectionError("Echo is temporarily unavailable", "TEMPORARY_UNAVAILABLE"));
     }
   });
 

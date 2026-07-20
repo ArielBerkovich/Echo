@@ -5,6 +5,7 @@ import { htmlToMarkdown } from "../htmlToMarkdown.js";
 import { markdownTextToComposerHtml } from "../markdownPaste.js";
 import { formatSize } from "../lib/format.js";
 import { formatDateTime } from "../lib/time.js";
+import { uploadSizeError } from "../lib/uploads.js";
 import Avatar from "./Avatar.js";
 import EmojiPicker from "./EmojiPicker.js";
 import Modal from "./Modal.js";
@@ -163,6 +164,11 @@ export default function Composer({ channel, parentId = null, users = [], channel
     e.target.value = ""; // allow re-picking the same file later
     if (files.length === 0) return;
     onError?.(null);
+    const sizeError = uploadSizeError(files);
+    if (sizeError) {
+      onError?.(sizeError);
+      return;
+    }
     const staged = files.map(makePendingAttachment);
     setPending((prev) => [...prev, ...staged]);
     setUploading(true);
@@ -590,10 +596,16 @@ export default function Composer({ channel, parentId = null, users = [], channel
   // Actually emit the message and reset the composer.
   function doSend(body, attachments) {
     onError?.(null);
-    getSocket().emit("message:send", { channelId: channel.id, body, attachments, parentId }, (res) => {
+    const socket = getSocket();
+    if (!socket.connected) {
+      onError?.("Echo is reconnecting. Your draft is still here — send it when the connection returns.");
+      return false;
+    }
+    socket.emit("message:send", { channelId: channel.id, body, attachments, parentId }, (res) => {
       if (res?.error) onError?.(res.error);
     });
     resetComposer();
+    return true;
   }
 
   // On phones, keeping focus after sending leaves the virtual keyboard open and
@@ -745,8 +757,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
     const attachments = pending;
     const proceed = () => {
       stopTyping();
-      doSend(body, attachments);
-      dismissMobileKeyboard();
+      if (doSend(body, attachments)) dismissMobileKeyboard();
     };
     // Hold the send if it @-mentions non-members of a private channel.
     if (gate(body, proceed)) return;

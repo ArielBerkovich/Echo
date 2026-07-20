@@ -1703,6 +1703,16 @@ input:focus {
   flex-direction: column;
   height: 100vh;
 }
+.connection-banner {
+  flex: none;
+  padding: 7px 16px;
+  background: #9a6700;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 650;
+  text-align: center;
+  letter-spacing: 0.01em;
+}
 .app {
   flex: 1;
   display: flex;

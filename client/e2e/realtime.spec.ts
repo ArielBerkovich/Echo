@@ -96,6 +96,34 @@ test("bumps unread counts and reflects live edits and deletes", async ({ browser
   });
 });
 
+test("recovers missed messages after a temporary server outage", async ({ browser, page }) => {
+  const { alice, bob, generalChannel } = fixture;
+  const alicePage = await newAuthedPage(browser, alice.token);
+
+  try {
+    await alicePage.page.goto("/");
+    await alicePage.page.locator(".channel-row").filter({ hasText: generalChannel.name }).click();
+    await expect(alicePage.page.locator(".channel-view")).toBeVisible();
+
+    await alicePage.context.setOffline(true);
+    await expect(alicePage.page.locator(".connection-banner")).toContainText("reconnecting");
+
+    const missedBody = `Missed during restart ${Date.now()}`;
+    await requestAsToken(page, bob.token, `/channels/${generalChannel.id}/messages`, {
+      method: "POST",
+      body: { body: missedBody },
+    });
+
+    await alicePage.context.setOffline(false);
+    await expect(alicePage.page.locator(".connection-banner")).toHaveCount(0, { timeout: 20_000 });
+    await expect(alicePage.page.locator(".message").filter({ hasText: missedBody })).toBeVisible();
+    await expect.poll(() => alicePage.page.evaluate(() => localStorage.getItem("echo.token"))).toBe(alice.token);
+  } finally {
+    await alicePage.context.setOffline(false).catch(() => {});
+    await alicePage.context.close();
+  }
+});
+
 test("updates user search results after a display name change", async ({ browser, page }) => {
   const { alice } = fixture;
   await withAliceBobPages(browser, async ({ alicePage, bobPage }) => {
