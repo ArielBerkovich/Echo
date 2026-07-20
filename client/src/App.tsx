@@ -404,11 +404,13 @@ export default function App() {
   }
 
   function handleAuthed({ token, user }) {
+    sessionStorage.removeItem("echo.ssoBypass");
     setToken(token);
     setUser(user);
   }
 
   function handleLogout() {
+    sessionStorage.setItem("echo.ssoBypass", "true");
     setToken(null);
     disconnectSocket();
     setUser(null);

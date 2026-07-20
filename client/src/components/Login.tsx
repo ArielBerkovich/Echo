@@ -121,19 +121,35 @@ export default function Login({ onAuthed, initialError = "" }) {
       .then(({ needsSetup, rhssoEnabled }) => {
         if (cancelled) return;
         setRhssoEnabled(!!rhssoEnabled);
-        if (!needsSetup) return;
-        setNeedsSetup(true);
-        setMode("register");
-        setRegisterStep(2);
-        setValue("username", "admin", { shouldValidate: true });
-        setUsernameSuffix("");
-        usernameEdited.current = true;
+        if (needsSetup) {
+          setNeedsSetup(true);
+          setMode("register");
+          setRegisterStep(2);
+          setValue("username", "admin", { shouldValidate: true });
+          setUsernameSuffix("");
+          usernameEdited.current = true;
+          return;
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+        const isBypassed =
+          !!initialError ||
+          params.has("local") ||
+          params.get("local") === "true" ||
+          hashParams.has("local") ||
+          hashParams.get("local") === "true" ||
+          sessionStorage.getItem("echo.ssoBypass") === "true";
+
+        if (rhssoEnabled && !isBypassed) {
+          window.location.assign(rhssoLoginUrl());
+        }
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [initialError, setValue]);
 
   function switchMode(next) {
     setServerError(null);
