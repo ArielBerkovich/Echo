@@ -67,6 +67,13 @@ The parent chart creates the `echo-mongodb-secret`, `echo-minio-secret`, and
 generated values are preserved across upgrades and uninstall/reinstall cycles
 in the same namespace; do not commit production secrets in a values file.
 
+MongoDB's StatefulSet explicitly retains its PVC when it is deleted or scaled
+down. The standalone MinIO PVC has the `helm.sh/resource-policy: keep`
+annotation, so `helm uninstall` leaves both data volumes in the namespace. A
+later install with the same release name and namespace reuses them. Deleting the
+namespace or manually deleting the PVCs still deletes or releases the storage
+according to the cluster StorageClass and persistent-volume reclaim policy.
+
 Set `client.ingress.enabled=true` for Kubernetes Ingress, or
 `client.route.enabled=true` and `client.route.host` for an OpenShift Route. For
 external databases/storage, disable the dependencies and provide

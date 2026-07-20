@@ -16,7 +16,9 @@ templates for environment-specific configuration; change values only.
 5. Use immutable application and dependency tags or digests. Do not promote
    `latest` into an air-gapped environment.
 6. On upgrades, preserve the existing release Secrets. Generated credentials
-   must continue to match data on retained MongoDB and MinIO PVCs.
+   must continue to match data on retained MongoDB and MinIO PVCs. The chart
+   retains both PVCs during `helm uninstall`; do not delete them unless the
+   stored application data should also be removed.
 
 ## Preflight
 
