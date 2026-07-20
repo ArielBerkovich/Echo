@@ -152,6 +152,11 @@ mongodb:
     enabled: true
     size: 8Gi
     storageClass: ""
+  # Be explicit instead of relying on the Kubernetes StatefulSet default.
+  persistentVolumeClaimRetentionPolicy:
+    enabled: true
+    whenDeleted: Retain
+    whenScaled: Retain
   resources: {}
 
 minio:
@@ -175,6 +180,10 @@ minio:
     enabled: true
     size: 8Gi
     storageClass: ""
+    # The standalone MinIO chart creates a Helm-managed PVC. Keep it when the
+    # release is uninstalled so a later install can reuse the stored objects.
+    annotations:
+      helm.sh/resource-policy: keep
   buckets:
     - name: echo-uploads
       policy: none

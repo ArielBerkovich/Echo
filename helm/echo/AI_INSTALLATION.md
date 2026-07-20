@@ -16,7 +16,9 @@ templates for environment-specific configuration; change values only.
 5. Use immutable application and dependency tags or digests. Do not promote
    `latest` into an air-gapped environment.
 6. On upgrades, preserve the existing release Secrets. Generated credentials
-   must continue to match data on retained MongoDB and MinIO PVCs.
+   must continue to match data on retained MongoDB and MinIO PVCs. The chart
+   retains both PVCs during `helm uninstall`; do not delete them unless the
+   stored application data should also be removed.
 
 ## Preflight
 
@@ -166,9 +168,10 @@ Common causes:
 - Pending PVC: the configured StorageClass is absent or cannot provision RWO
   storage.
 - Route unavailable: wrong host/domain or the Route was not admitted.
-- MongoDB authentication failure after reinstall: retained PVCs are paired with
-  credentials from a previous release. Recover the original Secret instead of
-  generating a new password for existing data.
+- MongoDB authentication failure after reinstall with chart versions before
+  0.4.2: retained PVCs may be paired with newly generated credentials. Recover
+  the original Secret instead of generating a new password for existing data,
+  then upgrade to a chart version that preserves existing Secret values.
 
 Do not uninstall a production release merely to troubleshoot it. If an upgrade
 fails and the previous revision was healthy, inspect `helm history echo -n echo`

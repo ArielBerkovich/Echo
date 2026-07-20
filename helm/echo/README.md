@@ -13,8 +13,9 @@ Before installation, the parent chart creates the MongoDB, MinIO, and Echo
 credential Secrets as Helm `pre-install` hooks. The dependency charts consume
 the MongoDB and MinIO Secrets through their `existingSecret` settings. Hook
 Secrets are retained after a successful installation so the running workloads
-can continue to use them; they are replaced before a later fresh installation
-of the same release. Set `mongodb.auth.rootPassword`,
+can continue to use them. A later fresh installation of the same release and
+namespace reuses their existing values, keeping retained MongoDB and MinIO
+volumes accessible. Set `mongodb.auth.rootPassword`,
 `mongodb.auth.replicaSetKey`, `minio.rootUser`, `minio.rootPassword`, or
 `server.jwtSecret` to supply credentials instead of generating them.
 
@@ -61,10 +62,17 @@ If Artifactory uses a private CA, configure that CA in OpenShift's cluster image
 configuration; an image pull Secret supplies credentials but does not establish
 TLS trust.
 
-The MongoDB and MinIO charts create and use `echo-mongodb` and `echo-minio`
-Kubernetes Secrets. Echo reads those Secrets directly. The generated secrets
-are preserved across upgrades; do not commit production secrets in a values
-file.
+The parent chart creates the `echo-mongodb-secret`, `echo-minio-secret`, and
+`echo-secret` Kubernetes Secrets, and the workloads read them directly. The
+generated values are preserved across upgrades and uninstall/reinstall cycles
+in the same namespace; do not commit production secrets in a values file.
+
+MongoDB's StatefulSet explicitly retains its PVC when it is deleted or scaled
+down. The standalone MinIO PVC has the `helm.sh/resource-policy: keep`
+annotation, so `helm uninstall` leaves both data volumes in the namespace. A
+later install with the same release name and namespace reuses them. Deleting the
+namespace or manually deleting the PVCs still deletes or releases the storage
+according to the cluster StorageClass and persistent-volume reclaim policy.
 
 Set `client.ingress.enabled=true` for Kubernetes Ingress, or
 `client.route.enabled=true` and `client.route.host` for an OpenShift Route. For
