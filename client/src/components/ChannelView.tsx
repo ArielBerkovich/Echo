@@ -694,7 +694,7 @@ export default function ChannelView({
         return;
       }
       requestAnimationFrame(() => {
-        bottomRef.current?.scrollIntoView({ block: "end" });
+        scrollToExactBottom();
         stickToBottomRef.current = true;
         suppressGrowFollowRef.current = false;
       });
