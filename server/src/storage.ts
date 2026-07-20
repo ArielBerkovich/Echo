@@ -47,6 +47,10 @@ async function ensureLifecycleRules() {
     await s3.send(
       new PutBucketLifecycleConfigurationCommand({
         Bucket: BUCKET,
+        // Some S3-compatible stores (including MinIO deployments commonly
+        // used on OpenShift) require the traditional Content-MD5 header for
+        // lifecycle configuration requests instead of the SDK's CRC32 default.
+        ChecksumAlgorithm: "MD5",
         LifecycleConfiguration: {
           Rules: [
             {
