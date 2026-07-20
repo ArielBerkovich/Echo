@@ -18,10 +18,13 @@ export function useRealtime({
   setDms,
   setUsers,
   setCustomEmojis,
+  setSavedIds,
+  setVipIds,
   setView,
   setActiveChannel,
   refreshChannels,
   refreshDms,
+  onAuthInvalid,
 }) {
   // Activity badge counts (live). Top-level mentions keyed by channel (cleared
   // when you open the channel); thread mentions keyed by their root (cleared
@@ -29,6 +32,8 @@ export function useRealtime({
   const [activityUnread, setActivityUnread] = useState({});
   const [activityThreadUnread, setActivityThreadUnread] = useState({});
   const [onlineIds, setOnlineIds] = useState(() => new Set()); // ids of users currently connected
+  const [connectionStatus, setConnectionStatus] = useState("online");
+  const [recoveryEpoch, setRecoveryEpoch] = useState(0);
 
   // Mirror state into refs so the stable socket listeners read current values.
   const activeRef = useRef(null);
@@ -73,6 +78,124 @@ export function useRealtime({
       return next;
     });
   }
+
+  // Socket.IO restores the transport after a server restart, but transport
+  // recovery alone is not enough: events may have been missed and public
+  // channel previews are not among the rooms the server automatically rejoins.
+  // Reconcile server-backed state before declaring the app healthy again.
+  useEffect(() => {
+    if (!user) return;
+    const socket = getSocket();
+    let cancelled = false;
+    let retryTimer = null;
+    let retryDelay = 1000;
+    let needsRecovery = false;
+    let recoveryRun = 0;
+
+    const scheduleReconnect = () => {
+      clearTimeout(retryTimer);
+      retryTimer = setTimeout(() => {
+        if (!cancelled && !socket.connected) socket.connect();
+      }, retryDelay);
+      retryDelay = Math.min(retryDelay * 2, 10000);
+    };
+
+    const recover = async () => {
+      const run = ++recoveryRun;
+      setConnectionStatus("recovering");
+
+      // Explicitly rejoin the active room. This is required for previews of
+      // public channels and harmless for channels joined during server setup.
+      if (activeRef.current?.id) socket.emit("channel:join", activeRef.current.id);
+
+      const results = await Promise.allSettled([
+        api.listUsers(),
+        api.listChannels(),
+        api.listAllChannels(),
+        api.listDms(),
+        api.listEmojis(),
+        api.getActivity(),
+        api.getSaved(),
+        api.getVips(),
+      ]);
+      if (cancelled || run !== recoveryRun) return;
+
+      if (results[0].status === "fulfilled") setUsers(results[0].value.users || []);
+      if (results[1].status === "fulfilled") setChannels(results[1].value.channels || []);
+      if (results[2].status === "fulfilled") setAllChannels?.(results[2].value.channels || []);
+      if (results[3].status === "fulfilled") setDms(results[3].value.conversations || []);
+      if (results[4].status === "fulfilled") setCustomEmojis(results[4].value.emojis || []);
+      if (results[5].status === "fulfilled") syncActivity(results[5].value.items || []);
+      if (results[6].status === "fulfilled") {
+        setSavedIds?.(new Set((results[6].value.items || []).map((item) => item.id)));
+      }
+      if (results[7].status === "fulfilled") setVipIds?.(new Set(results[7].value.vipIds || []));
+
+      // Consumers use this to reconcile data local to the active view, such as
+      // message history and an open thread.
+      setRecoveryEpoch((epoch) => epoch + 1);
+      const authFailure = results.some(
+        (result) => result.status === "rejected" && result.reason?.status === 401
+      );
+      if (authFailure) {
+        setConnectionStatus("auth-error");
+        onAuthInvalid?.();
+      } else if (!socket.connected) {
+        setConnectionStatus("reconnecting");
+      } else if (results.every((result) => result.status === "fulfilled")) {
+        setConnectionStatus("online");
+      } else {
+        // The socket can come up slightly before every HTTP dependency/proxy is
+        // ready. Stay in recovery and try the reconciliation again.
+        setConnectionStatus("recovering");
+        clearTimeout(retryTimer);
+        retryTimer = setTimeout(recover, retryDelay);
+        retryDelay = Math.min(retryDelay * 2, 10000);
+      }
+    };
+
+    const onConnect = () => {
+      clearTimeout(retryTimer);
+      retryDelay = 1000;
+      if (needsRecovery) {
+        needsRecovery = false;
+        recover();
+      } else {
+        setConnectionStatus("online");
+      }
+    };
+    const onDisconnect = () => {
+      needsRecovery = true;
+      setOnlineIds(new Set());
+      setConnectionStatus("reconnecting");
+    };
+    const onConnectError = (error) => {
+      if (error?.data?.code === "AUTH_INVALID") {
+        setConnectionStatus("auth-error");
+        onAuthInvalid?.();
+        return;
+      }
+      needsRecovery = true;
+      setConnectionStatus("reconnecting");
+      // Socket.IO does not automatically retry when middleware rejects a
+      // handshake, so retry temporary startup/database failures ourselves.
+      scheduleReconnect();
+    };
+
+    socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
+    socket.on("connect_error", onConnectError);
+    if (socket.connected) setConnectionStatus("online");
+
+    return () => {
+      cancelled = true;
+      recoveryRun += 1;
+      clearTimeout(retryTimer);
+      socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
+      socket.off("connect_error", onConnectError);
+    };
+  }, [user]);
 
   // Live-append workspace-wide additions: custom emoji and newly registered
   // users (so they're searchable / @mentionable without a refresh).
@@ -259,19 +382,9 @@ export function useRealtime({
     };
     socket.on("activity:bump", onActivityBump);
 
-    // On reconnect, re-fetch the lists so we recover anything missed while down.
-    const onReconnect = () => {
-      api.listUsers().then(({ users }) => setUsers(users)).catch(() => {});
-      refreshChannels();
-      refreshDms();
-      onActivityBump();
-    };
-    socket.io.on("reconnect", onReconnect);
-
     return () => {
       socket.off("message:new", onMessage);
       socket.off("activity:bump", onActivityBump);
-      socket.io.off("reconnect", onReconnect);
     };
   }, [user]);
 
@@ -279,5 +392,13 @@ export function useRealtime({
     Object.values(activityUnread).reduce((s, n) => s + n, 0) +
     Object.values(activityThreadUnread).reduce((s, n) => s + n, 0);
 
-  return { activityBadge, onlineIds, syncActivity, clearChannelActivity, clearThreadActivity };
+  return {
+    activityBadge,
+    onlineIds,
+    connectionStatus,
+    recoveryEpoch,
+    syncActivity,
+    clearChannelActivity,
+    clearThreadActivity,
+  };
 }

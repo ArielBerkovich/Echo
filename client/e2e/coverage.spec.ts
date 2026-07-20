@@ -245,6 +245,33 @@ test("handles mention autocomplete, @everyone, and attachments", async ({ page }
   await page.locator(".composer .send-btn").click();
   const sent = page.locator(".message").filter({ hasText: attachmentBody }).first();
   await expect(sent.locator(".att-image")).toBeVisible();
+
+  const hebrewFilename = "מסמך בדיקה.txt";
+  await fileInput.setInputFiles({
+    name: hebrewFilename,
+    mimeType: "text/plain",
+    buffer: Buffer.from("בדיקה", "utf8"),
+  });
+  await expect(page.locator(".pending-file-name")).toHaveText(hebrewFilename);
+  const hebrewAttachmentBody = `Hebrew filename ${Date.now()}`;
+  await composer.fill(hebrewAttachmentBody);
+  await page.locator(".composer .send-btn").click();
+  const hebrewAttachment = page.locator(".message").filter({ hasText: hebrewAttachmentBody }).first();
+  await expect(hebrewAttachment.locator(".att-file-name")).toHaveText(hebrewFilename);
+});
+
+test("explains the 10 MB attachment limit before uploading", async ({ page }) => {
+  await page.goto("/");
+  await page.getByTestId("composer-attachments").setInputFiles({
+    name: "oversized.zip",
+    mimeType: "application/zip",
+    buffer: Buffer.alloc(10 * 1024 * 1024 + 1),
+  });
+
+  await expect(page.locator(".channel-view .error")).toContainText(
+    "“oversized.zip” is too large. Files are limited to 10 MB each."
+  );
+  await expect(page.locator(".pending-att.uploading")).toHaveCount(0);
 });
 
 test("keeps the channel pinned to the bottom after sending an image attachment", async ({ page }) => {

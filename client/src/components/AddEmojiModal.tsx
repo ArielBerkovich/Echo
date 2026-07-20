@@ -5,6 +5,9 @@ import { z } from "zod";
 import { api } from "../api.js";
 import Modal from "./Modal.js";
 import { emojiNameSchema, normalizeEmojiNameInput } from "../lib/formSchemas.js";
+import { uploadSizeError } from "../lib/uploads.js";
+
+const MAX_EMOJI_BYTES = 5 * 1024 * 1024;
 
 // Upload an image/GIF and register it as a :shortcode: custom emoji.
 export default function AddEmojiModal({ existing = [], onCreated, onClose }) {
@@ -42,6 +45,12 @@ export default function AddEmojiModal({ existing = [], onCreated, onClose }) {
     const f = e.target.files?.[0];
     if (f && !f.type.startsWith("image/")) {
       setServerError("Custom emoji must be an image (PNG, GIF, etc.)");
+      return;
+    }
+    const sizeError = uploadSizeError(f ? [f] : [], MAX_EMOJI_BYTES, "Emoji images");
+    if (sizeError) {
+      setServerError(sizeError);
+      setFile(null);
       return;
     }
     setServerError(null);

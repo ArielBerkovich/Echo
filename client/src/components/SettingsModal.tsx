@@ -5,6 +5,7 @@ import { api } from "../api.js";
 import Avatar from "./Avatar.js";
 import { PASSWORD_RULE } from "../lib/password.js";
 import { passwordPairSchema } from "../lib/formSchemas.js";
+import { uploadSizeError } from "../lib/uploads.js";
 import {
   notifySupported,
   notifyPermission,
@@ -41,6 +42,8 @@ export default function SettingsModal({
     e.target.value = "";
     if (!file) return;
     if (!file.type.startsWith("image/")) return setError("Profile picture must be an image");
+    const sizeError = uploadSizeError([file], undefined, "Profile pictures");
+    if (sizeError) return setError(sizeError);
     setError(null);
     setBusy(true);
     try {

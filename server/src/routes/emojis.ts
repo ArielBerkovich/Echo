@@ -5,6 +5,7 @@ import { CustomEmoji } from "../models/CustomEmoji.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { putObject, FILE_CATEGORY } from "../storage.js";
 import { emitAll } from "../realtime.js";
+import { decodeMultipartFilename } from "../lib/filenames.js";
 
 export const emojisRouter = Router();
 emojisRouter.use(requireAuth);
@@ -42,9 +43,10 @@ emojisRouter.post("/", upload.single("file"), async (req, res) => {
   if (existing) return res.status(409).json({ error: `":${name}:" already exists` });
 
   try {
+    const filename = decodeMultipartFilename(req.file.originalname);
     const key = await putObject({
       buffer: req.file.buffer,
-      name: req.file.originalname,
+      name: filename,
       contentType,
       category: FILE_CATEGORY.EMOJI,
     });
