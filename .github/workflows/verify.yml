@@ -7,6 +7,37 @@ on:
   workflow_dispatch:
 
 jobs:
+  helm:
+    name: Helm chart
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Validate chart
+        run: |
+          helm dependency list ./helm/echo
+          helm lint ./helm/echo --strict
+          helm lint ./helm/echo --strict \
+            --values ./helm/echo/values-openshift.yaml
+
+          helm template echo ./helm/echo \
+            --namespace echo \
+            --kube-version 1.30.0 \
+            > /tmp/echo-kubernetes.yaml
+          helm template echo ./helm/echo \
+            --namespace echo \
+            --kube-version 1.30.0 \
+            --api-versions route.openshift.io/v1/Route \
+            --values ./helm/echo/values-openshift.yaml \
+            > /tmp/echo-openshift.yaml
+
+          test -s /tmp/echo-kubernetes.yaml
+          test -s /tmp/echo-openshift.yaml
+
   unit:
     name: Unit
     runs-on: ubuntu-latest
