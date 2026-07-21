@@ -288,7 +288,7 @@ test("pastes a clipboard image into the composer as an attachment", async ({ pag
   await expect(page.locator('.message .att-image img[alt="clipboard.png"]').last()).toBeVisible();
 });
 
-test("drags an image and a file into the composer as attachments", async ({ page }) => {
+test("drags an image and a file anywhere on screen as composer attachments", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator(".composer")).toBeVisible();
   await page.evaluate(
@@ -298,7 +298,7 @@ test("drags an image and a file into the composer as attachments", async ({ page
       transfer.items.add(new File([bytes(imageBase64)], "dragged.png", { type: "image/png" }));
       transfer.items.add(new File([bytes(textBase64)], "dragged.txt", { type: "text/plain" }));
       window.__composerDragTransfer = transfer;
-      document.querySelector(".composer").dispatchEvent(
+      document.querySelector(".sidebar").dispatchEvent(
         new DragEvent("dragenter", { bubbles: true, cancelable: true, dataTransfer: transfer })
       );
     },
@@ -309,8 +309,11 @@ test("drags an image and a file into the composer as attachments", async ({ page
   );
 
   await expect(page.getByTestId("composer-drop-overlay")).toHaveText("Drop files to attach");
+  const overlayBounds = await page.getByTestId("composer-drop-overlay").boundingBox();
+  const viewport = page.viewportSize();
+  expect(overlayBounds).toMatchObject({ x: 0, y: 0, width: viewport.width, height: viewport.height });
   await page.evaluate(() => {
-    document.querySelector(".composer").dispatchEvent(
+    document.querySelector(".sidebar").dispatchEvent(
       new DragEvent("drop", {
         bubbles: true,
         cancelable: true,

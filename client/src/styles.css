@@ -5931,6 +5931,15 @@ html[data-mode="dark"] .channel-header {
   font-weight: 750;
   pointer-events: none;
 }
+.composer-drop-overlay.screen-drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  border: 3px dashed color-mix(in srgb, var(--blue-500) 72%, transparent);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  font-size: 18px;
+}
 
 .composer-toolbar {
   display: flex;
