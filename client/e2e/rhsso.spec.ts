@@ -71,7 +71,7 @@ test.describe("RHSSO login flows (Mocked, runs in every test run)", () => {
     await page.goto("/");
 
     // 3. Verify we stay on the login screen with normal credentials.
-    await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
     await expect(page.locator("button:has-text('Sign in with RHSSO')")).toHaveCount(0);
   });
 
@@ -101,7 +101,7 @@ test.describe("RHSSO login flows (Mocked, runs in every test run)", () => {
     await page.goto("/");
 
     // 5. Verify it shows the local login card instead of auto-redirecting.
-    await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
 
     await page.waitForTimeout(1000);
     expect(redirectAttempted).toBe(false);
@@ -183,7 +183,7 @@ test.describe("RHSSO login flows (Real integration, runs only when Keycloak is u
     await expect(page.getByTestId("sidebar-logout")).toBeVisible({ timeout: 15_000 });
     await page.getByTestId("sidebar-logout").click();
 
-    await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible({ timeout: 10_000 });
 
     await page.waitForTimeout(3_000);
 

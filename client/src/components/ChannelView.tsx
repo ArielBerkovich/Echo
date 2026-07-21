@@ -1146,6 +1146,7 @@ export default function ChannelView({
           onAddCustomEmoji={onAddCustomEmoji}
           onError={setError}
           onChannelUpdated={onChannelUpdated}
+          captureScreenDrops={!thread}
         />
       )}
       </div>

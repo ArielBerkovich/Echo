@@ -1,11 +1,13 @@
 import { expect, test } from "@playwright/test";
 import { registerUser, requestAsToken, uniqueSuffix } from "./helpers.js";
 
+const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD || "Password1";
+
 async function workspaceAdminAuth(page) {
   const statusResponse = await page.request.get("/api/auth/setup-status");
   const { needsSetup } = await statusResponse.json();
   const response = await page.request.post(needsSetup ? "/api/auth/register" : "/api/auth/login", {
-    data: { username: "admin", password: "Password1" },
+    data: { username: "admin", password: ADMIN_PASSWORD },
   });
   const body = await response.json().catch(() => ({}));
   expect(response.ok(), body.error || "failed to authenticate workspace admin").toBeTruthy();
