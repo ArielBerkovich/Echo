@@ -374,6 +374,7 @@ export default function ThreadPanel({
         onAddCustomEmoji={onAddCustomEmoji}
         onError={setError}
         onChannelUpdated={onChannelUpdated}
+        captureScreenDrops
       />
 
       {confirmDelete && (

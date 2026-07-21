@@ -24,7 +24,7 @@ const SCHEDULE_PRESETS = [
 // Rich-text message composer: @mention autocomplete, a formatting toolbar,
 // emoji, and file attachments. Owns all of its own editor state — mount it with
 // a `key={channel.id}` so switching channels yields a fresh, empty composer.
-export default function Composer({ channel, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, mode = "light" }) {
+export default function Composer({ channel, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, mode = "light", captureScreenDrops = false }) {
   const isThread = !!parentId; // a thread reply composer (hides channel-level scheduling)
   const [empty, setEmpty] = useState(true); // editor blank? (controls placeholder)
   const [canSend, setCanSend] = useState(false); // has real text? (controls send)
@@ -35,6 +35,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
   const [active, setActive] = useState({}); // which inline formats are on at the caret
   const [pending, setPending] = useState([]); // uploaded attachments staged for the next send
   const [uploading, setUploading] = useState(false);
+  const [draggingFiles, setDraggingFiles] = useState(false);
   const [linkDraft, setLinkDraft] = useState(null); // { text, url } for the link dialog
   // Guards sends that @-mention non-members of a private channel.
   const { gate, mentionModal } = useMentionGate({ channel, users, onChannelUpdated });
@@ -51,6 +52,8 @@ export default function Composer({ channel, parentId = null, users = [], channel
   const typingActiveRef = useRef(false); // are we currently flagged as typing?
   const typingStopRef = useRef(null); // timer that clears the typing flag
   const pendingRef = useRef([]); // latest staged attachments, used for cleanup on unmount
+  const dragDepthRef = useRef(0); // nested dragenter/leaves across the window
+  const stageFilesRef = useRef(null); // current upload callback for stable window listeners
 
   const isDm = channel.type === "dm";
 
@@ -159,9 +162,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
     }
   }
 
-  async function onPickFiles(e) {
-    const files = Array.from(e.target.files || []);
-    e.target.value = ""; // allow re-picking the same file later
+  async function stageFiles(files) {
     if (files.length === 0) return;
     onError?.(null);
     const sizeError = uploadSizeError(files);
@@ -195,6 +196,65 @@ export default function Composer({ channel, parentId = null, users = [], channel
       setUploading(false);
     }
   }
+  stageFilesRef.current = stageFiles;
+
+  function onPickFiles(e) {
+    const files = Array.from(e.target.files || []);
+    e.target.value = ""; // allow re-picking the same file later
+    stageFiles(files);
+  }
+
+  useEffect(() => {
+    if (!captureScreenDrops) {
+      dragDepthRef.current = 0;
+      setDraggingFiles(false);
+      return undefined;
+    }
+
+    const hasFiles = (event) => Array.from(event.dataTransfer?.types || []).includes("Files");
+    const onDragEnter = (event) => {
+      if (!hasFiles(event)) return;
+      event.preventDefault();
+      dragDepthRef.current += 1;
+      setDraggingFiles(true);
+    };
+    const onDragOver = (event) => {
+      if (!hasFiles(event)) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "copy";
+    };
+    const clearDrag = () => {
+      dragDepthRef.current = 0;
+      setDraggingFiles(false);
+    };
+    const onDragLeave = (event) => {
+      if (!hasFiles(event) || dragDepthRef.current === 0) return;
+      event.preventDefault();
+      dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+      if (dragDepthRef.current === 0) setDraggingFiles(false);
+    };
+    const onDrop = (event) => {
+      if (!hasFiles(event)) return;
+      event.preventDefault();
+      const files = Array.from(event.dataTransfer.files || []);
+      clearDrag();
+      stageFilesRef.current?.(files);
+    };
+
+    window.addEventListener("dragenter", onDragEnter, true);
+    window.addEventListener("dragover", onDragOver, true);
+    window.addEventListener("dragleave", onDragLeave, true);
+    window.addEventListener("drop", onDrop, true);
+    window.addEventListener("dragend", clearDrag, true);
+    return () => {
+      dragDepthRef.current = 0;
+      window.removeEventListener("dragenter", onDragEnter, true);
+      window.removeEventListener("dragover", onDragOver, true);
+      window.removeEventListener("dragleave", onDragLeave, true);
+      window.removeEventListener("drop", onDrop, true);
+      window.removeEventListener("dragend", clearDrag, true);
+    };
+  }, [captureScreenDrops]);
 
   function removePending(key) {
     setPending((prev) => {
@@ -282,6 +342,16 @@ export default function Composer({ channel, parentId = null, users = [], channel
   }
 
   function handlePaste(e) {
+    const images = Array.from(e.clipboardData?.items || [])
+      .filter((item) => item.kind === "file" && item.type.startsWith("image/"))
+      .map((item) => item.getAsFile())
+      .filter(Boolean);
+    if (images.length > 0) {
+      e.preventDefault();
+      stageFiles(images);
+      return;
+    }
+
     const text = e.clipboardData?.getData("text/plain");
     if (!text) return;
     e.preventDefault();
@@ -767,7 +837,15 @@ export default function Composer({ channel, parentId = null, users = [], channel
   const keepFocus = (e) => e.preventDefault();
 
   return (
-    <form className="composer" onSubmit={handleSend}>
+    <form
+      className={`composer${draggingFiles ? " dragging-files" : ""}`}
+      onSubmit={handleSend}
+    >
+      {draggingFiles && (
+        <div className="composer-drop-overlay screen-drop-overlay" data-testid="composer-drop-overlay" aria-hidden="true">
+          Drop files to attach
+        </div>
+      )}
       {!isThread && scheduledMsgs.length > 0 && (
         <button
           type="button"
