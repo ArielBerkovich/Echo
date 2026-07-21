@@ -7,6 +7,8 @@ import { Channel } from "../models/Channel.js";
 import { signToken } from "../auth.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { emitAll } from "../realtime.js";
+import { deliverMessage } from "../deliver.js";
+import { ensureDmChannel } from "../lib/dms.js";
 import { passwordProblem } from "../password.js";
 import { usernameCandidate, usernameFromName } from "../lib/usernames.js";
 import { config } from "../config.js";
@@ -30,6 +32,18 @@ const authLimiter = rateLimit({
 const authRateLimit =
   process.env.NODE_ENV === "production"
     ? authLimiter
+    : (_req, _res, next) => next();
+
+const passwordHelpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: Number(process.env.PASSWORD_HELP_RATE_LIMIT_MAX) || 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many password-help requests. Please try again later." },
+});
+const passwordHelpRateLimit =
+  process.env.NODE_ENV === "production"
+    ? passwordHelpLimiter
     : (_req, _res, next) => next();
 
 async function usernameSuggestions(base) {
@@ -148,6 +162,53 @@ authRouter.get("/username-options", async (req, res) => {
   return res.json({
     available: !taken,
     suggestions: taken ? await usernameSuggestions(base) : [],
+  });
+});
+
+// POST /api/auth/forgot-password — public. A locked-out local user can ask the
+// workspace admin for help without needing a session. The response is always
+// the same whether the username exists or not, so this cannot be used to find
+// valid accounts.
+authRouter.post("/forgot-password", passwordHelpRateLimit, async (req, res) => {
+  const username = String(req.body?.username || "").trim().toLowerCase();
+
+  if (username) {
+    try {
+      const [user, system, admins] = await Promise.all([
+        User.findOne({ username, rhssoSubject: { $exists: false }, isAdmin: false }),
+        User.findOne({ username: "system" }),
+        User.find({ isAdmin: true }),
+      ]);
+
+      if (user && system && admins.length > 0) {
+        await Promise.all(
+          admins.map(async (admin) => {
+            const channel = await ensureDmChannel(system._id, admin._id);
+            await deliverMessage({
+              channel,
+              authorId: system._id,
+              body:
+                `Password help requested for @${user.username}. ` +
+                `Use the button below to issue a one-time password and post it as your reply.`,
+              passwordHelpRequest: {
+                user: user._id,
+                username: user.username,
+                status: "pending",
+              },
+            });
+          })
+        );
+      }
+    } catch (error) {
+      // Keep the public response enumeration-safe while leaving an actionable
+      // server-side record if notification delivery fails.
+      console.error("Could not deliver password-help request:", error);
+    }
+  }
+
+  res.status(202).json({
+    ok: true,
+    message: "If that username belongs to a local account, the workspace admin has been notified.",
   });
 });
 

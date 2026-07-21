@@ -55,6 +55,20 @@ const messageSchema = new mongoose.Schema(
       },
       default: null,
     },
+    // Structured admin action attached to Echo's locked-out-user DM. Keeping
+    // the target id out of the body lets the server validate one-click OTP
+    // issuance without trusting client-supplied user ids.
+    passwordHelpRequest: {
+      type: {
+        _id: false,
+        user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+        username: { type: String, required: true },
+        status: { type: String, enum: ["pending", "issuing", "issued"], default: "pending" },
+        issuedAt: { type: Date, default: null },
+        issuedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+      },
+      default: null,
+    },
     // Set when the author edits the message; drives the "(edited)" label.
     editedAt: { type: Date, default: null },
     // Snapshot of the source when this message was forwarded from elsewhere.
@@ -139,6 +153,17 @@ messageSchema.methods.toPublicJSON = function () {
             name: f.name,
             value: f.value,
           })),
+        }
+      : null,
+    passwordHelpRequest: this.passwordHelpRequest
+      ? {
+          userId: this.passwordHelpRequest.user.toString(),
+          username: this.passwordHelpRequest.username,
+          status: this.passwordHelpRequest.status || "pending",
+          issuedAt: this.passwordHelpRequest.issuedAt || null,
+          issuedBy: this.passwordHelpRequest.issuedBy
+            ? this.passwordHelpRequest.issuedBy.toString()
+            : null,
         }
       : null,
     attachments: (this.attachments || []).map((a) => ({

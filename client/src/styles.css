@@ -906,6 +906,33 @@ input:focus {
   align-items: center;
   gap: 5px;
 }
+.field-heading {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.login-password-label {
+  justify-content: space-between;
+}
+.auth-forgot {
+  padding: 0;
+  background: none;
+  color: var(--blue-500);
+  font-size: 12px;
+  font-weight: 600;
+}
+.auth-forgot:hover:not(:disabled) {
+  color: var(--navy-600);
+  text-decoration: underline;
+}
+.auth-forgot:disabled {
+  opacity: 0.7;
+}
+.auth-help-success {
+  color: var(--success, #15803d);
+  font-weight: 600;
+  user-select: text;
+}
 .input-wrap {
   position: relative;
   display: flex;
@@ -5775,6 +5802,23 @@ html[data-mode="dark"] .channel-header {
      (Hebrew/Arabic) content. dir="auto" still orders the characters correctly;
      this just stops short RTL text from jumping to the far right of the column. */
   text-align: left;
+}
+.password-help-action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 9px;
+}
+.password-help-action .btn-primary {
+  min-height: 36px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+.password-help-issued {
+  color: var(--success, #15803d);
+  font-size: 12px;
+  font-weight: 650;
 }
 
 .avatar {

@@ -125,6 +125,8 @@ async function createEmoji(name, file) {
 export const api = {
   register: (payload) => request("/auth/register", { method: "POST", body: payload }),
   login: (payload) => request("/auth/login", { method: "POST", body: payload }),
+  requestPasswordHelp: (username) =>
+    request("/auth/forgot-password", { method: "POST", body: { username } }),
   setupStatus: () => request("/auth/setup-status"),
   usernameOptions: (firstName, lastName, username) =>
     request(`/auth/username-options?firstName=${encodeURIComponent(firstName)}&lastName=${encodeURIComponent(lastName)}&username=${encodeURIComponent(username)}`),
@@ -193,4 +195,6 @@ export const api = {
   // Admin: issue a one-time password for a user. Returns { tempPassword }.
   adminResetPassword: (userId) =>
     request(`/admin/users/${userId}/reset-password`, { method: "POST" }),
+  adminIssuePasswordHelp: (messageId) =>
+    request(`/admin/password-help/${messageId}/issue`, { method: "POST" }),
 };

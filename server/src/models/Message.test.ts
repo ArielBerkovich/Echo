@@ -17,6 +17,7 @@ describe("Message.toPublicJSON", () => {
     const createdAt = new Date("2026-06-04T12:00:00Z");
     const editedAt = new Date("2026-06-04T12:05:00Z");
     const pinnedAt = new Date("2026-06-04T12:10:00Z");
+    const passwordHelpUser = new mongoose.Types.ObjectId();
 
     const message = new Message({
       channel,
@@ -56,6 +57,13 @@ describe("Message.toPublicJSON", () => {
         fields: [{ name: "branch", value: "main" }],
       },
       reactions: [{ emoji: "🚀", users: [reactedBy] }],
+      passwordHelpRequest: {
+        user: passwordHelpUser,
+        username: "locked.user",
+        status: "issued",
+        issuedAt: pinnedAt,
+        issuedBy: pinnedBy,
+      },
     });
     Object.defineProperty(message, "author", { value: author });
 
@@ -97,6 +105,13 @@ describe("Message.toPublicJSON", () => {
       threadKey: "github:run:123",
       fields: [{ name: "branch", value: "main" }],
     });
+    assert.deepEqual(json.passwordHelpRequest, {
+      userId: passwordHelpUser.toString(),
+      username: "locked.user",
+      status: "issued",
+      issuedAt: pinnedAt,
+      issuedBy: pinnedBy.toString(),
+    });
   });
 
   it("serializes fallback author ids and nullable optional fields", () => {
@@ -117,6 +132,7 @@ describe("Message.toPublicJSON", () => {
     assert.equal(json.forwardedFrom, null);
     assert.equal(json.externalKey, null);
     assert.equal(json.automation, null);
+    assert.equal(json.passwordHelpRequest, null);
     assert.equal(json.pinnedAt, null);
     assert.equal(json.pinnedBy, null);
     assert.equal(json.attachments[0].width, null);
