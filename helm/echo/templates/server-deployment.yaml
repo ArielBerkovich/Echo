@@ -122,9 +122,9 @@ spec:
               value: {{ .Values.rhsso.redirectUri | quote }}
             {{- end }}
             {{- end }}
-            {{- with .Values.server.outboundTls.extraCaCertsPath }}
+            {{- if .Values.server.outboundTls.extraCaCertsPath }}
             - name: NODE_EXTRA_CA_CERTS
-              value: {{ . | quote }}
+              value: {{ .Values.server.outboundTls.extraCaCertsPath | quote }}
             {{- end }}
             {{- if eq .Values.server.outboundTls.rejectUnauthorized false }}
             - name: NODE_TLS_REJECT_UNAUTHORIZED
@@ -140,11 +140,11 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 20
           resources: {{- toYaml .Values.server.resources | nindent 12 }}
-          {{- with .Values.server.extraVolumeMounts }}
+          {{- if .Values.server.extraVolumeMounts }}
           volumeMounts:
-            {{- toYaml . | nindent 12 }}
+            {{- toYaml .Values.server.extraVolumeMounts | nindent 12 }}
           {{- end }}
-      {{- with .Values.server.extraVolumes }}
+      {{- if .Values.server.extraVolumes }}
       volumes:
-        {{- toYaml . | nindent 8 }}
+        {{- toYaml .Values.server.extraVolumes | nindent 8 }}
       {{- end }}
