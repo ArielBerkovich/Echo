@@ -121,7 +121,7 @@ spec:
             - name: RHSSO_REDIRECT_URI
               value: {{ .Values.rhsso.redirectUri | quote }}
             {{- end }}
-            {{- if include "echo.extraCaConfigMapName" . }}
+            {{- if .Values.rhsso.extraCaCertConfigMap }}
             - name: NODE_EXTRA_CA_CERTS
               value: "/etc/ssl/certs/extra-ca.pem"
             {{- else }}
@@ -140,16 +140,16 @@ spec:
             periodSeconds: 20
           resources: {{- toYaml .Values.server.resources | nindent 12 }}
           volumeMounts:
-            {{- if include "echo.extraCaConfigMapName" . }}
+            {{- if .Values.rhsso.extraCaCertConfigMap }}
             - name: extra-ca-cert
               mountPath: /etc/ssl/certs/extra-ca.pem
               subPath: extra-ca.pem
             {{- end }}
       volumes:
-        {{- if include "echo.extraCaConfigMapName" . }}
+        {{- if .Values.rhsso.extraCaCertConfigMap }}
         - name: extra-ca-cert
           configMap:
-            name: {{ include "echo.extraCaConfigMapName" . }}
+            name: {{ .Values.rhsso.extraCaCertConfigMap }}
             items:
               - key: extra-ca.pem
                 path: extra-ca.pem

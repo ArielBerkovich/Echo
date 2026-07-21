@@ -79,9 +79,7 @@ rhsso:
   realm: ""
   clientId: ""
   clientSecret: ""
-  # If true, a ConfigMap containing a mock/placeholder CA certificate is created.
-  createMockExtraCaCert: false
-  # Name of an existing ConfigMap containing the extra CA cert. Takes precedence.
+  # Name of an existing ConfigMap containing the extra CA cert.
   extraCaCertConfigMap: ""
   # Standard OIDC defaults. Dot-separated nested claim paths are supported.
   usernameClaim: preferred_username
