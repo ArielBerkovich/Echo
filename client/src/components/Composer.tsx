@@ -159,9 +159,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
     }
   }
 
-  async function onPickFiles(e) {
-    const files = Array.from(e.target.files || []);
-    e.target.value = ""; // allow re-picking the same file later
+  async function stageFiles(files) {
     if (files.length === 0) return;
     onError?.(null);
     const sizeError = uploadSizeError(files);
@@ -194,6 +192,12 @@ export default function Composer({ channel, parentId = null, users = [], channel
     } finally {
       setUploading(false);
     }
+  }
+
+  function onPickFiles(e) {
+    const files = Array.from(e.target.files || []);
+    e.target.value = ""; // allow re-picking the same file later
+    stageFiles(files);
   }
 
   function removePending(key) {
@@ -282,6 +286,16 @@ export default function Composer({ channel, parentId = null, users = [], channel
   }
 
   function handlePaste(e) {
+    const images = Array.from(e.clipboardData?.items || [])
+      .filter((item) => item.kind === "file" && item.type.startsWith("image/"))
+      .map((item) => item.getAsFile())
+      .filter(Boolean);
+    if (images.length > 0) {
+      e.preventDefault();
+      stageFiles(images);
+      return;
+    }
+
     const text = e.clipboardData?.getData("text/plain");
     if (!text) return;
     e.preventDefault();
