@@ -129,16 +129,15 @@ server:
     extraCaCertsPath: /etc/ssl/certs/extra-ca.pem
     rejectUnauthorized: true
   extraVolumeMounts:
-    - name: extra-ca
+    - name: extra-ca-cert
       mountPath: /etc/ssl/certs/extra-ca.pem
       subPath: extra-ca.pem
-      readOnly: true
   extraVolumes:
-    - name: extra-ca
+    - name: extra-ca-cert
       configMap:
-        name: organization-ca
+        name: extra-ca-cert
         items:
-          - key: ca.pem
+          - key: extra-ca.pem
             path: extra-ca.pem
 ```
 
