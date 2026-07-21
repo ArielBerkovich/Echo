@@ -51,6 +51,9 @@ export default function Login({ onAuthed, initialError = "" }) {
   const [usernameTaken, setUsernameTaken] = useState(false);
   const [usernameSuffix, setUsernameSuffix] = useState("");
   const [rhssoEnabled, setRhssoEnabled] = useState(false);
+  const [passwordHelpBusy, setPasswordHelpBusy] = useState(false);
+  const [passwordHelpMessage, setPasswordHelpMessage] = useState("");
+  const [passwordHelpError, setPasswordHelpError] = useState("");
 
   const isRegister = needsSetup || mode === "register";
   const resolver = useMemo(
@@ -121,25 +124,43 @@ export default function Login({ onAuthed, initialError = "" }) {
       .then(({ needsSetup, rhssoEnabled }) => {
         if (cancelled) return;
         setRhssoEnabled(!!rhssoEnabled);
-        if (!needsSetup) return;
-        setNeedsSetup(true);
-        setMode("register");
-        setRegisterStep(2);
-        setValue("username", "admin", { shouldValidate: true });
-        setUsernameSuffix("");
-        usernameEdited.current = true;
+        if (needsSetup) {
+          setNeedsSetup(true);
+          setMode("register");
+          setRegisterStep(2);
+          setValue("username", "admin", { shouldValidate: true });
+          setUsernameSuffix("");
+          usernameEdited.current = true;
+          return;
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+        const isBypassed =
+          !!initialError ||
+          params.has("local") ||
+          params.get("local") === "true" ||
+          hashParams.has("local") ||
+          hashParams.get("local") === "true" ||
+          sessionStorage.getItem("echo.ssoBypass") === "true";
+
+        if (rhssoEnabled && !isBypassed) {
+          window.location.assign(rhssoLoginUrl());
+        }
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [initialError, setValue]);
 
   function switchMode(next) {
     setServerError(null);
     setUsernameSuggestions([]);
     setUsernameTaken(false);
     setUsernameSuffix("");
+    setPasswordHelpMessage("");
+    setPasswordHelpError("");
     clearErrors();
     setMode(next);
     setRegisterStep(1);
@@ -147,6 +168,26 @@ export default function Login({ onAuthed, initialError = "" }) {
       usernameEdited.current = false;
       setValue("password", "", { shouldValidate: false });
       setShowPw(false);
+    }
+  }
+
+  async function requestPasswordHelp() {
+    const requestedUsername = String(username || "").trim();
+    setPasswordHelpMessage("");
+    setPasswordHelpError("");
+    if (!requestedUsername) {
+      setPasswordHelpError("Enter your username first, then request password help.");
+      return;
+    }
+
+    setPasswordHelpBusy(true);
+    try {
+      const result = await api.requestPasswordHelp(requestedUsername);
+      setPasswordHelpMessage(result.message);
+    } catch (error) {
+      setPasswordHelpError(error.message);
+    } finally {
+      setPasswordHelpBusy(false);
     }
   }
 
@@ -449,9 +490,9 @@ export default function Login({ onAuthed, initialError = "" }) {
             </div>
           )}
 
-          <label className="field">
-            <span className="field-label-row">
-              <span>Password</span>
+          <div className="field">
+            <div className={`field-heading field-label-row${!isRegister ? " login-password-label" : ""}`}>
+              <label htmlFor="auth-password">Password</label>
               {isRegister && (
                 <button
                   type="button"
@@ -462,11 +503,23 @@ export default function Login({ onAuthed, initialError = "" }) {
                   <InfoIcon size={14} strokeWidth={2} />
                 </button>
               )}
-            </span>
+              {!isRegister && (
+                <button
+                  type="button"
+                  className="auth-forgot"
+                  aria-label="Forgot password?"
+                  disabled={passwordHelpBusy}
+                  onClick={requestPasswordHelp}
+                >
+                  {passwordHelpBusy ? "Requesting…" : "Forgot password?"}
+                </button>
+              )}
+            </div>
             <div className="input-wrap">
               <LockIcon size={17} strokeWidth={1.6} />
               <input
                 {...register("password")}
+                id="auth-password"
                 type={showPw ? "text" : "password"}
                 autoComplete={isRegister ? "new-password" : "current-password"}
                 placeholder={isRegister ? "Create a password" : "Enter your password"}
@@ -489,7 +542,13 @@ export default function Login({ onAuthed, initialError = "" }) {
             </div>
             {errors.password && <span className="field-hint error small">{errors.password.message}</span>}
             {!isRegister && serverError && <span className="field-hint error small">{serverError}</span>}
-          </label>
+            {!isRegister && passwordHelpError && (
+              <span className="field-hint error small">{passwordHelpError}</span>
+            )}
+            {!isRegister && passwordHelpMessage && (
+              <span className="field-hint auth-help-success" role="status">{passwordHelpMessage}</span>
+            )}
+          </div>
 
           {isRegister && (
             <label className="field confirm-password-field">

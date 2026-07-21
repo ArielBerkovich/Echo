@@ -308,7 +308,7 @@ export default function ChannelView({
     const onUpdate = (u) => {
       if (u.channelId !== channel.id || u.parentId) return; // thread edits handled in panel
       setMessages((prev) =>
-        prev.map((m) => (m.id === u.id ? { ...m, body: u.body, editedAt: u.editedAt } : m))
+        prev.map((m) => (m.id === u.id ? { ...m, ...u } : m))
       );
     };
     socket.on("message:update", onUpdate);
@@ -456,6 +456,15 @@ export default function ChannelView({
     getSocket().emit("message:pin", { messageId: m.id }, (res) => {
       if (res?.error) setError(res.error);
     });
+  }
+
+  async function issuePasswordHelp(messageId) {
+    const { request } = await api.adminIssuePasswordHelp(messageId);
+    setMessages((prev) =>
+      prev.map((message) =>
+        message.id === messageId ? { ...message, passwordHelpRequest: request } : message
+      )
+    );
   }
 
   function openPinnedPanel() {
@@ -694,7 +703,7 @@ export default function ChannelView({
         return;
       }
       requestAnimationFrame(() => {
-        bottomRef.current?.scrollIntoView({ block: "end" });
+        scrollToExactBottom();
         stickToBottomRef.current = true;
         suppressGrowFollowRef.current = false;
       });
@@ -1060,6 +1069,7 @@ export default function ChannelView({
                     onEditSave={saveEdit}
                     onEditCancel={() => setEditing(null)}
                     onTogglePin={() => togglePin(m)}
+                    onIssuePasswordHelp={() => issuePasswordHelp(m.id)}
                     canPin={!isDm}
                   />
                 </Fragment>
@@ -1136,6 +1146,7 @@ export default function ChannelView({
           onAddCustomEmoji={onAddCustomEmoji}
           onError={setError}
           onChannelUpdated={onChannelUpdated}
+          captureScreenDrops={!thread}
         />
       )}
       </div>

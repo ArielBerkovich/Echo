@@ -27,7 +27,7 @@ export function sanitizeAttachments(attachments) {
 // channel room, DM room joins so both participants receive it, and
 // `activity:bump` to anyone it's "activity" for. Shared by the live socket
 // sender and the scheduled-message dispatcher so both behave identically.
-export async function deliverMessage({ channel, authorId, body, parentId, attachments, idempotencyKey }) {
+export async function deliverMessage({ channel, authorId, body, parentId, attachments, idempotencyKey, passwordHelpRequest }) {
   const io = getIO();
   const cid = channel._id.toString();
 
@@ -38,6 +38,7 @@ export async function deliverMessage({ channel, authorId, body, parentId, attach
     body: body || "",
     parentId: parentId || null,
     attachments: attachments || [],
+    passwordHelpRequest: passwordHelpRequest || null,
     ...activityMetadata,
   };
   const idem = String(idempotencyKey || "").trim().slice(0, 128);

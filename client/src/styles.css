@@ -906,6 +906,33 @@ input:focus {
   align-items: center;
   gap: 5px;
 }
+.field-heading {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.login-password-label {
+  justify-content: space-between;
+}
+.auth-forgot {
+  padding: 0;
+  background: none;
+  color: var(--blue-500);
+  font-size: 12px;
+  font-weight: 600;
+}
+.auth-forgot:hover:not(:disabled) {
+  color: var(--navy-600);
+  text-decoration: underline;
+}
+.auth-forgot:disabled {
+  opacity: 0.7;
+}
+.auth-help-success {
+  color: var(--success, #15803d);
+  font-weight: 600;
+  user-select: text;
+}
 .input-wrap {
   position: relative;
   display: flex;
@@ -1705,13 +1732,52 @@ input:focus {
 }
 .connection-banner {
   flex: none;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   padding: 7px 16px;
-  background: #9a6700;
-  color: #fff;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  color: var(--text);
   font-size: 13px;
-  font-weight: 650;
-  text-align: center;
-  letter-spacing: 0.01em;
+  line-height: 1.35;
+  box-shadow: var(--shadow-sm);
+}
+.connection-banner-dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--active-bg);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.connection-banner.is-reconnecting .connection-banner-dot {
+  animation: connectionPulse 1.6s ease-in-out infinite;
+}
+.connection-banner-title {
+  font-weight: 700;
+  letter-spacing: 0.005em;
+}
+.connection-banner-detail {
+  color: var(--muted);
+}
+@keyframes connectionPulse {
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+}
+@media (max-width: 520px) {
+  .connection-banner-detail {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .connection-banner.is-reconnecting .connection-banner-dot {
+    animation: none;
+  }
 }
 .app {
   flex: 1;
@@ -5776,6 +5842,23 @@ html[data-mode="dark"] .channel-header {
      this just stops short RTL text from jumping to the far right of the column. */
   text-align: left;
 }
+.password-help-action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 9px;
+}
+.password-help-action .btn-primary {
+  min-height: 36px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+.password-help-issued {
+  color: var(--success, #15803d);
+  font-size: 12px;
+  font-weight: 650;
+}
 
 .avatar {
   display: inline-flex;
@@ -5868,6 +5951,33 @@ html[data-mode="dark"] .channel-header {
 .composer:focus-within {
   border-color: rgba(29, 28, 29, 0.32);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+.composer.dragging-files {
+  border-color: var(--blue-500);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16);
+}
+.composer-drop-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--surface) 88%, var(--blue-500));
+  color: var(--blue-500);
+  font-size: 14px;
+  font-weight: 750;
+  pointer-events: none;
+}
+.composer-drop-overlay.screen-drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  border: 3px dashed color-mix(in srgb, var(--blue-500) 72%, transparent);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  font-size: 18px;
 }
 
 .composer-toolbar {
