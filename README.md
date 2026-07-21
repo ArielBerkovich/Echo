@@ -227,3 +227,36 @@ backend URL. A managed deployment can skip the prompt with
 `--echo-server-url=https://echo.example.com` or `ELECTRON_START_URL`. Desktop
 notifications are handled by Electron, are suppressed while the window is
 focused, and close automatically after five seconds.
+
+### Desktop automatic updates
+
+Packaged Windows NSIS and Linux AppImage builds check their configured Echo
+deployment for updates shortly after launch and every four hours. Updates are
+downloaded in the background; Echo prompts to restart once an update is ready.
+Set `ECHO_DISABLE_AUTO_UPDATE=1` when launching the app to disable these checks.
+
+Each versioned `echo-server` image produced by the release workflow embeds the
+matching update feed:
+
+```text
+desktop-updates/
+  windows/latest.yml
+  windows/Echo Setup <version>.exe
+  windows/Echo Setup <version>.exe.blockmap
+  linux/latest-linux.yml
+  linux/Echo-<version>.AppImage
+```
+
+Echo Server exposes these embedded files at `/api/desktop-updates`. Update
+manifests are not cached; versioned artifacts are cached immutably. Docker
+Compose and Helm require no update-specific volume or configuration—deploy the
+server image with the same version as the desktop/client release. Local source
+builds contain an empty feed unless files are placed in `desktop-updates/`
+before building the server image.
+
+The Debian package continues to use the system package manager rather than the
+in-app updater. macOS automatic updates are not enabled until signed and
+notarized release builds are added. Existing installations older than the first
+updater-enabled release need one manual upgrade before they can update this way.
+On Windows, uninstalling Echo removes its complete application-data directory,
+including the saved backend URL, login session, caches, and local preferences.

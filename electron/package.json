@@ -15,6 +15,9 @@
     "start:dev": "ELECTRON_START_URL=http://localhost:5173 electron .",
     "dist": "ELECTRON_BUILD=1 npm --prefix ../client run build && electron-builder"
   },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  },
   "devDependencies": {
     "electron": "^37.2.6",
     "electron-builder": "^25.1.8"
@@ -27,6 +30,10 @@
       "preload.cjs",
       "setup.html"
     ],
+    "publish": {
+      "provider": "generic",
+      "url": "https://updates.invalid/echo"
+    },
     "extraResources": [
       {
         "from": "../client/dist",
@@ -51,6 +58,9 @@
     "win": {
       "target": "nsis",
       "icon": "../client/src/assets/echo-logo.png"
+    },
+    "nsis": {
+      "deleteAppDataOnUninstall": true
     }
   }
 }

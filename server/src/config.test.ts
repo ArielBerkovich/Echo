@@ -26,6 +26,7 @@ describe("config", () => {
     assert.equal(config.port, 4000);
     assert.equal(config.mongoUri, "mongodb://localhost:27017/echo");
     assert.equal(config.clientOrigin, "http://localhost:8080");
+    assert.equal(config.desktopUpdateDir, "");
     assert.deepEqual(config.rhsso, {
       enabled: false,
       url: "",
@@ -50,6 +51,7 @@ describe("config", () => {
       PORT: "5000",
       MONGO_URI: "mongodb://db1:27017,db2:27017/echo?replicaSet=rs0",
       CLIENT_ORIGIN: "https://echo.example",
+      DESKTOP_UPDATE_DIR: "/srv/echo-updates",
       S3_ENDPOINT: "https://s3.example",
       S3_ACCESS_KEY: "access",
       S3_SECRET_KEY: "secret-key",
@@ -71,6 +73,7 @@ describe("config", () => {
     assert.equal(config.port, 5000);
     assert.equal(config.mongoUri, "mongodb://db1:27017,db2:27017/echo?replicaSet=rs0");
     assert.equal(config.clientOrigin, "https://echo.example");
+    assert.equal(config.desktopUpdateDir, "/srv/echo-updates");
     assert.deepEqual(config.s3, {
       endpoint: "https://s3.example",
       accessKey: "access",

@@ -54,7 +54,12 @@ server:
     secretKey: ""
     bucket: echo-uploads
     region: us-east-1
-  resources: {}
+  resources:
+    requests:
+      cpu: 512m
+      memory: 2Gi
+    limits:
+      memory: 2Gi
   podSecurityContext:
     runAsUser: 1000
     runAsGroup: 1000
@@ -116,7 +121,12 @@ client:
     tls:
       termination: edge
       insecureEdgeTerminationPolicy: Redirect
-  resources: {}
+  resources:
+    requests:
+      cpu: 25m
+      memory: 256Mi
+    limits:
+      memory: 256Mi
   podSecurityContext:
     runAsUser: 101
     runAsGroup: 101

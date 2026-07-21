@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeftIcon, EyeIcon, EyeOffIcon, IdCardIcon, InfoIcon, LockIcon, MailIcon, NotebookTextIcon, UserIcon } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { api, rhssoLoginUrl } from "../api.js";
+import { api, getBackendUrl, rhssoLoginUrl } from "../api.js";
+import BackendConnectionModal from "./BackendConnectionModal.js";
 import Logo from "./Logo.js";
 import { PASSWORD_RULE } from "../lib/password.js";
 import { authSchema } from "../lib/formSchemas.js";
@@ -24,6 +25,11 @@ function lettersOnly(value) {
 
 function usernameSuffixOnly(value) {
   return String(value || "").replace(/[^A-Za-z0-9]/g, "").toLowerCase();
+}
+
+function desktopConnectionIssue(error) {
+  if (!error?.isNetworkError || !window.echoDesktopConfig?.changeBackendUrl) return null;
+  return { backendUrl: error.backendUrl || getBackendUrl() };
 }
 
 // Little postal letters that drift gently around the hero panel — each with its
@@ -54,6 +60,8 @@ export default function Login({ onAuthed, initialError = "" }) {
   const [passwordHelpBusy, setPasswordHelpBusy] = useState(false);
   const [passwordHelpMessage, setPasswordHelpMessage] = useState("");
   const [passwordHelpError, setPasswordHelpError] = useState("");
+  const [connectionIssue, setConnectionIssue] = useState(null);
+  const [setupStatusAttempt, setSetupStatusAttempt] = useState(0);
 
   const isRegister = needsSetup || mode === "register";
   const resolver = useMemo(
@@ -108,7 +116,11 @@ export default function Login({ onAuthed, initialError = "" }) {
           if (username === usernameBase) setUsernameTaken(!available);
           setUsernameSuggestions(available ? [] : suggestions || []);
         })
-        .catch(() => {});
+        .catch((error) => {
+          if (cancelled) return;
+          const issue = desktopConnectionIssue(error);
+          if (issue) setConnectionIssue(issue);
+        });
     }, 300);
     return () => {
       cancelled = true;
@@ -148,11 +160,15 @@ export default function Login({ onAuthed, initialError = "" }) {
           window.location.assign(rhssoLoginUrl());
         }
       })
-      .catch(() => {});
+      .catch((error) => {
+        if (cancelled) return;
+        const issue = desktopConnectionIssue(error);
+        if (issue) setConnectionIssue(issue);
+      });
     return () => {
       cancelled = true;
     };
-  }, [initialError, setValue]);
+  }, [initialError, setValue, setupStatusAttempt]);
 
   function switchMode(next) {
     setServerError(null);
@@ -185,6 +201,11 @@ export default function Login({ onAuthed, initialError = "" }) {
       const result = await api.requestPasswordHelp(requestedUsername);
       setPasswordHelpMessage(result.message);
     } catch (error) {
+      const issue = desktopConnectionIssue(error);
+      if (issue) {
+        setConnectionIssue(issue);
+        return;
+      }
       setPasswordHelpError(error.message);
     } finally {
       setPasswordHelpBusy(false);
@@ -207,6 +228,11 @@ export default function Login({ onAuthed, initialError = "" }) {
         setSuccess(true);
         setTimeout(() => onAuthed(result), 1150);
       } catch (err) {
+        const issue = desktopConnectionIssue(err);
+        if (issue) {
+          setConnectionIssue(issue);
+          return;
+        }
         setServerError(err.message);
         if (err.usernameTaken && err.suggestions) {
           setUsernameTaken(true);
@@ -618,6 +644,16 @@ export default function Login({ onAuthed, initialError = "" }) {
           <div className="success-text">Welcome to Echo</div>
         </div>
       )}
+      {connectionIssue ? (
+        <BackendConnectionModal
+          backendUrl={connectionIssue.backendUrl}
+          onClose={() => setConnectionIssue(null)}
+          onRetry={() => {
+            setConnectionIssue(null);
+            setSetupStatusAttempt((attempt) => attempt + 1);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

@@ -44,6 +44,13 @@ function apiUrl(path) {
   return `${getBackendUrl()}/api${path}`;
 }
 
+function unreachableError() {
+  const wrapped = new Error("We couldn't reach Echo right now. Check your connection and try again.");
+  wrapped.isNetworkError = true;
+  wrapped.backendUrl = getBackendUrl();
+  return wrapped;
+}
+
 function friendlyErrorMessage(status, serverMessage, path, errorLabel) {
   if (status >= 500) {
     if (path === "/auth/login") return "We couldn't sign you in right now. Please try again in a moment.";
@@ -74,9 +81,10 @@ async function parseResponse(res, errorLabel, path) {
 
 async function request(path, { method = "GET", body } = {}) {
   const hasBody = body !== undefined;
+  const requestUrl = apiUrl(path);
 
   try {
-    const res = await fetch(apiUrl(path), {
+    const res = await fetch(requestUrl, {
       method,
       headers: authHeaders(hasBody ? { "Content-Type": "application/json" } : {}),
       body: hasBody ? JSON.stringify(body) : undefined,
@@ -85,13 +93,14 @@ async function request(path, { method = "GET", body } = {}) {
     return parseResponse(res, "Request", path);
   } catch (error) {
     if (error.status) throw error;
-    throw new Error("We couldn't reach Echo right now. Check your connection and try again.");
+    throw unreachableError();
   }
 }
 
 async function requestMultipart(path, form, errorLabel) {
+  const requestUrl = apiUrl(path);
   try {
-    const res = await fetch(apiUrl(path), {
+    const res = await fetch(requestUrl, {
       method: "POST",
       headers: authHeaders(),
       body: form,
@@ -100,7 +109,7 @@ async function requestMultipart(path, form, errorLabel) {
     return parseResponse(res, errorLabel, path);
   } catch (error) {
     if (error.status) throw error;
-    throw new Error("We couldn't reach Echo right now. Check your connection and try again.");
+    throw unreachableError();
   }
 }
 

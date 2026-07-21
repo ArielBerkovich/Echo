@@ -20,7 +20,10 @@ jobs:
             runner: windows-latest
             target: --win nsis
             artifact: echo-windows
-            files: electron/dist/*.exe
+            files: |
+              electron/dist/*.exe
+              electron/dist/*.exe.blockmap
+              electron/dist/latest.yml
           - name: Ubuntu
             runner: ubuntu-latest
             target: --linux AppImage deb
@@ -28,6 +31,7 @@ jobs:
             files: |
               electron/dist/*.AppImage
               electron/dist/*.deb
+              electron/dist/latest-linux.yml
     defaults:
       run:
         shell: bash
@@ -77,15 +81,35 @@ jobs:
   docker:
     name: Docker (${{ matrix.component }})
     runs-on: ubuntu-latest
+    needs: desktop
     strategy:
       fail-fast: false
       matrix:
-        component:
-          - client
-          - server
+        include:
+          - component: client
+            context: ./client
+            dockerfile: ./client/Dockerfile
+          - component: server
+            context: .
+            dockerfile: ./server/Dockerfile
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Download desktop update artifacts
+        if: matrix.component == 'server'
+        uses: actions/download-artifact@v5
+        with:
+          pattern: echo-*
+          path: desktop-release-assets
+          merge-multiple: true
+
+      - name: Embed desktop update feed
+        if: matrix.component == 'server'
+        run: |
+          mkdir -p desktop-updates/windows desktop-updates/linux
+          cp desktop-release-assets/latest.yml desktop-release-assets/*.exe desktop-release-assets/*.exe.blockmap desktop-updates/windows/
+          cp desktop-release-assets/latest-linux.yml desktop-release-assets/*.AppImage desktop-updates/linux/
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v4
@@ -109,7 +133,8 @@ jobs:
       - name: Build and push image
         uses: docker/build-push-action@v7
         with:
-          context: ./${{ matrix.component }}
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -162,6 +187,15 @@ jobs:
           pattern: echo-*
           path: release-assets
           merge-multiple: true
+
+      - name: Package self-hosted desktop update feed
+        env:
+          RELEASE_VERSION: ${{ github.ref_name }}
+        run: |
+          mkdir -p desktop-update-feed/windows desktop-update-feed/linux
+          cp release-assets/latest.yml release-assets/*.exe release-assets/*.exe.blockmap desktop-update-feed/windows/
+          cp release-assets/latest-linux.yml release-assets/*.AppImage desktop-update-feed/linux/
+          tar -C desktop-update-feed -czf "release-assets/echo-desktop-updates-${RELEASE_VERSION#v}.tgz" .
 
       - name: Create GitHub release
         env:

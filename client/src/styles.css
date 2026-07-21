@@ -1335,6 +1335,29 @@ input:focus {
 .modal.forward-modal {
   margin-top: -44px;
 }
+.modal.backend-connection-modal {
+  width: 520px;
+}
+.backend-connection-field {
+  display: grid;
+  gap: 8px;
+  margin: 20px 0 14px;
+  font-weight: 650;
+}
+.backend-connection-field .settings-input {
+  width: 100%;
+}
+.backend-connection-error {
+  color: #9f1239;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  font-weight: 600;
+}
+html[data-mode="dark"] .backend-connection-error {
+  color: #ffe4e6;
+  background: #4c0519;
+  border-color: #9f1239;
+}
 .manager-modal-hint {
   margin: -2px 0 18px;
 }
@@ -7719,4 +7742,13 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     width: 28px;
     height: 28px;
   }
+}
+.update-confirmation-modal {
+  max-width: 480px;
+}
+
+.update-confirmation-version {
+  color: #15803d;
+  font-size: 1.1rem;
+  font-weight: 700;
 }
