@@ -119,3 +119,31 @@ The claim mappings accept dot-separated paths. RHSSO users are linked only by
 the OIDC issuer and immutable `sub` claim; a matching Echo username does not
 link or replace a local account. If the generated username is already used,
 Echo assigns a numeric suffix.
+
+For RHSSO or any other outbound service using a private CA, mount an existing
+ConfigMap into the server and configure Node.js to load the CA bundle:
+
+```yaml
+server:
+  outboundTls:
+    extraCaCertsPath: /etc/ssl/certs/extra-ca.pem
+    rejectUnauthorized: true
+  extraVolumeMounts:
+    - name: extra-ca
+      mountPath: /etc/ssl/certs/extra-ca.pem
+      subPath: extra-ca.pem
+      readOnly: true
+  extraVolumes:
+    - name: extra-ca
+      configMap:
+        name: organization-ca
+        items:
+          - key: ca.pem
+            path: extra-ca.pem
+```
+
+The ConfigMap must exist in the release namespace. Restart the server pods after
+rotating the certificate because Node.js loads `NODE_EXTRA_CA_CERTS` only when
+the process starts. As a development-only escape hatch, setting
+`server.outboundTls.rejectUnauthorized=false` disables certificate verification
+for all TLS connections made by the server process.
