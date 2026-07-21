@@ -38,15 +38,6 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- else if .Values.minio.enabled }}{{ printf "http://%s:9000" (include "echo.minioName" .) }}
 {{- else }}{{ required "server.s3.endpoint is required when minio.enabled is false" .Values.server.s3.endpoint }}{{ end -}}
 {{- end -}}
-{{- define "echo.clientRouteHost" -}}
-{{- $domain := required "client.route.domain is required when client.route.enabled is true" .Values.client.route.domain -}}
-{{- if .Values.prod -}}
-{{- printf "echo-chat.%s" $domain -}}
-{{- else -}}
-{{- printf "echo-chat-%s.%s" .Release.Namespace $domain -}}
-{{- end -}}
-{{- end -}}
-
 {{- define "echo.rhssoCaConfigMapName" -}}
 {{- if .Values.rhsso.caCertConfigMap -}}
 {{- .Values.rhsso.caCertConfigMap -}}
@@ -57,7 +48,7 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 
 {{- define "echo.clientOrigin" -}}
 {{- if .Values.server.clientOrigin }}{{ .Values.server.clientOrigin }}
-{{- else if .Values.client.route.enabled }}{{ printf "https://%s" (include "echo.clientRouteHost" .) }}
+{{- else if .Values.client.route.enabled }}{{ printf "https://%s" (required "client.route.host is required when client.route.enabled is true" .Values.client.route.host) }}
 {{- else if .Values.client.ingress.enabled }}{{ printf "http://%s" (index .Values.client.ingress.hosts 0).host }}
 {{- else }}http://localhost:8090{{ end -}}
 {{- end -}}

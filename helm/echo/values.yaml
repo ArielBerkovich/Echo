@@ -1,7 +1,3 @@
-# Set to true for production environments. When false, enables development behaviors
-# such as suffixing routes with the namespace name and bypassing TLS validations if needed.
-prod: false
-
 global:
   # Prefix for Echo and Bitnami images. For Artifactory, keep the hostname here
   # and put the Artifactory repository path in each image.repository value.
@@ -113,11 +109,11 @@ client:
           - path: /
             pathType: Prefix
     tls: []
-  # OpenShift Route. Leave disabled for ordinary Kubernetes. The base domain is
-  # required when enabled because Echo uses it to derive client hostnames and CORS origin.
+  # OpenShift Route. Leave disabled for ordinary Kubernetes. The host is
+  # required when enabled because Echo uses it as its CORS client origin.
   route:
     enabled: false
-    domain: "apps.example.com"
+    host: ""
     annotations: {}
     tls:
       termination: edge

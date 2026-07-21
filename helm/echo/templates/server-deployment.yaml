@@ -124,8 +124,7 @@ spec:
             {{- if include "echo.rhssoCaConfigMapName" . }}
             - name: NODE_EXTRA_CA_CERTS
               value: "/etc/ssl/certs/rhsso-ca.pem"
-            {{- end }}
-            {{- if and (not (include "echo.rhssoCaConfigMapName" .)) (not .Values.prod) }}
+            {{- else }}
             - name: NODE_TLS_REJECT_UNAUTHORIZED
               value: "0"
             {{- end }}
