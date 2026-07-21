@@ -79,6 +79,8 @@ rhsso:
   realm: ""
   clientId: ""
   clientSecret: ""
+  # Name of an existing ConfigMap containing the extra CA cert.
+  extraCaCertConfigMap: ""
   # Standard OIDC defaults. Dot-separated nested claim paths are supported.
   usernameClaim: preferred_username
   displayNameClaim: name

@@ -121,6 +121,13 @@ spec:
             - name: RHSSO_REDIRECT_URI
               value: {{ .Values.rhsso.redirectUri | quote }}
             {{- end }}
+            {{- if .Values.rhsso.extraCaCertConfigMap }}
+            - name: NODE_EXTRA_CA_CERTS
+              value: "/etc/ssl/certs/extra-ca.pem"
+            {{- else }}
+            - name: NODE_TLS_REJECT_UNAUTHORIZED
+              value: "0"
+            {{- end }}
             {{- end }}
             {{- with .Values.server.extraEnv }}{{ toYaml . | nindent 12 }}{{- end }}
           readinessProbe:
@@ -132,3 +139,18 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 20
           resources: {{- toYaml .Values.server.resources | nindent 12 }}
+          volumeMounts:
+            {{- if .Values.rhsso.extraCaCertConfigMap }}
+            - name: extra-ca-cert
+              mountPath: /etc/ssl/certs/extra-ca.pem
+              subPath: extra-ca.pem
+            {{- end }}
+      volumes:
+        {{- if .Values.rhsso.extraCaCertConfigMap }}
+        - name: extra-ca-cert
+          configMap:
+            name: {{ .Values.rhsso.extraCaCertConfigMap }}
+            items:
+              - key: extra-ca.pem
+                path: extra-ca.pem
+        {{- end }}
