@@ -10,5 +10,5 @@ Enable `client.ingress.enabled`, enable `client.route.enabled` on OpenShift, or 
 {{- end }}
 
 {{- if .Values.client.route.enabled }}
-OpenShift route: https://{{ include "echo.clientRouteHost" . }}
+OpenShift route: https://{{ .Values.client.route.host }}
 {{- end }}
