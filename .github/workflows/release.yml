@@ -158,7 +158,24 @@ jobs:
           RELEASE_VERSION: ${{ github.ref_name }}
         run: |
           version="${RELEASE_VERSION#v}"
-          helm lint ./helm/echo
+          helm dependency list ./helm/echo
+          helm lint ./helm/echo --strict
+          helm lint ./helm/echo --strict \
+            --values ./helm/echo/values-openshift.yaml
+
+          helm template echo ./helm/echo \
+            --namespace echo \
+            --kube-version 1.30.0 \
+            > /tmp/echo-kubernetes.yaml
+          helm template echo ./helm/echo \
+            --namespace echo \
+            --kube-version 1.30.0 \
+            --api-versions route.openshift.io/v1/Route \
+            --values ./helm/echo/values-openshift.yaml \
+            > /tmp/echo-openshift.yaml
+
+          test -s /tmp/echo-kubernetes.yaml
+          test -s /tmp/echo-openshift.yaml
           helm package ./helm/echo \
             --destination release-assets \
             --version "${version}" \
