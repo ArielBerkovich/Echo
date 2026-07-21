@@ -38,11 +38,11 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- else if .Values.minio.enabled }}{{ printf "http://%s:9000" (include "echo.minioName" .) }}
 {{- else }}{{ required "server.s3.endpoint is required when minio.enabled is false" .Values.server.s3.endpoint }}{{ end -}}
 {{- end -}}
-{{- define "echo.rhssoCaConfigMapName" -}}
-{{- if .Values.rhsso.caCertConfigMap -}}
-{{- .Values.rhsso.caCertConfigMap -}}
-{{- else if .Values.rhsso.createMockCaCert -}}
-{{- printf "%s-rhsso-ca" (include "echo.fullname" .) -}}
+{{- define "echo.extraCaConfigMapName" -}}
+{{- if .Values.rhsso.extraCaCertConfigMap -}}
+{{- .Values.rhsso.extraCaCertConfigMap -}}
+{{- else if .Values.rhsso.createMockExtraCaCert -}}
+{{- printf "%s-extra-ca" (include "echo.fullname" .) -}}
 {{- end -}}
 {{- end -}}
 
