@@ -1,0 +1,7 @@
+*
+!server/
+!server/**
+!desktop-updates/
+!desktop-updates/**
+server/node_modules/
+server/dist/

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { beforeEach, describe, it } from "node:test";
+import { afterEach, beforeEach, describe, it } from "node:test";
 
 import { api, getToken, setToken } from "./api.js";
 
@@ -29,6 +29,10 @@ describe("api token helpers", () => {
 describe("api request helpers", () => {
   beforeEach(() => {
     globalThis.localStorage = createStorage();
+  });
+
+  afterEach(() => {
+    delete globalThis.window;
   });
 
   it("sends JSON requests with bearer tokens", async () => {
@@ -122,6 +126,23 @@ describe("api request helpers", () => {
       api.login({ username: "a", password: "b" }),
       /We couldn't sign you in right now\. Please try again in a moment\./
     );
+  });
+
+  it("marks network failures without exposing request credentials", async () => {
+    globalThis.window = {
+      echoDesktopConfig: { backendUrl: "http://192.168.1.110:8090", appVersion: "0.2.2" },
+      location: { href: "file:///client-dist/index.html" },
+    };
+    globalThis.fetch = async () => {
+      throw new TypeError("Failed to fetch");
+    };
+
+    await assert.rejects(api.login({ username: "alice", password: "not-in-error" }), (error) => {
+      assert.equal(error.isNetworkError, true);
+      assert.equal(error.backendUrl, "http://192.168.1.110:8090");
+      assert.equal(JSON.stringify(error).includes("not-in-error"), false);
+      return true;
+    });
   });
 
   it("uploads multipart files without setting a content-type header", async () => {

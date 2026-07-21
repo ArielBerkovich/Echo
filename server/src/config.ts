@@ -14,6 +14,8 @@ export const config = {
       : "mongodb://localhost:27017/echo"),
   jwtSecret: required("JWT_SECRET"),
   clientOrigin: process.env.CLIENT_ORIGIN || "http://localhost:8080",
+  // Optional directory containing electron-builder update manifests and artifacts.
+  desktopUpdateDir: process.env.DESKTOP_UPDATE_DIR || "",
   rhsso: {
     enabled: process.env.RHSSO_ENABLED === "true",
     url: String(process.env.RHSSO_URL || "").replace(/\/+$/, ""),

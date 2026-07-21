@@ -80,6 +80,14 @@ external databases/storage, disable the dependencies and provide
 `server.mongoUri`, `server.s3.endpoint`, `server.s3.accessKey`, and
 `server.s3.secretKey`.
 
+## Desktop update hosting
+
+Versioned Echo Server images embed the matching Windows NSIS and Linux AppImage
+update artifacts and serve them below `/api/desktop-updates`. No PVC or Helm
+configuration is required; deploy the server image with the same version as the
+desktop/client release. Use trusted HTTPS when the deployment is not on an
+isolated development network.
+
 ## RHSSO login
 
 Echo supports RHSSO/Keycloak through OpenID Connect authorization code flow

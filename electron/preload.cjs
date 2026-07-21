@@ -1,5 +1,7 @@
 const { contextBridge, ipcRenderer } = require("electron");
 const backendUrl = process.argv.find((arg) => arg.startsWith("--echo-backend-url="))?.slice("--echo-backend-url=".length) || "";
+const appVersion = process.argv.find((arg) => arg.startsWith("--echo-app-version="))?.slice("--echo-app-version=".length) || "";
+const wasUpdated = process.argv.includes("--echo-was-updated=true");
 
 contextBridge.exposeInMainWorld("echoDesktopNotifications", {
   showNotification(options) {
@@ -16,7 +18,12 @@ contextBridge.exposeInMainWorld("echoDesktopNotifications", {
 
 contextBridge.exposeInMainWorld("echoDesktopConfig", {
   backendUrl,
+  appVersion,
+  wasUpdated,
   saveBackendUrl(value) {
     return ipcRenderer.invoke("echo:save-backend-url", value);
+  },
+  changeBackendUrl(value) {
+    return ipcRenderer.invoke("echo:change-backend-url", value);
   },
 });

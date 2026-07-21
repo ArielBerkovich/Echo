@@ -16,6 +16,7 @@ import { savedRouter } from "./routes/saved.js";
 import { messagesRouter } from "./routes/messages.js";
 import { webhooksRouter } from "./routes/webhooks.js";
 import { openApiDocument } from "./openapi.js";
+import { desktopUpdatesRouter } from "./desktopUpdates.js";
 
 export function createApp() {
   const app = express();
@@ -33,6 +34,7 @@ export function createApp() {
 
   app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
   app.get("/api/openapi.json", (_req, res) => res.json(openApiDocument()));
+  app.use("/api/desktop-updates", desktopUpdatesRouter(config.desktopUpdateDir));
   app.use("/api/auth", authRouter);
   app.use("/api/channels", channelsRouter);
   app.use("/api/users", usersRouter);
