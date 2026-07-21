@@ -106,7 +106,7 @@ test("recovers missed messages after a temporary server outage", async ({ browse
     await expect(alicePage.page.locator(".channel-view")).toBeVisible();
 
     await alicePage.context.setOffline(true);
-    await expect(alicePage.page.locator(".connection-banner")).toContainText("reconnecting");
+    await expect(alicePage.page.locator(".connection-banner")).toContainText("Reconnecting to Echo");
 
     const missedBody = `Missed during restart ${Date.now()}`;
     await requestAsToken(page, bob.token, `/channels/${generalChannel.id}/messages`, {

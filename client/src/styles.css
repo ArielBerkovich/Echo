@@ -1732,13 +1732,52 @@ input:focus {
 }
 .connection-banner {
   flex: none;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   padding: 7px 16px;
-  background: #9a6700;
-  color: #fff;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  color: var(--text);
   font-size: 13px;
-  font-weight: 650;
-  text-align: center;
-  letter-spacing: 0.01em;
+  line-height: 1.35;
+  box-shadow: var(--shadow-sm);
+}
+.connection-banner-dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--active-bg);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.connection-banner.is-reconnecting .connection-banner-dot {
+  animation: connectionPulse 1.6s ease-in-out infinite;
+}
+.connection-banner-title {
+  font-weight: 700;
+  letter-spacing: 0.005em;
+}
+.connection-banner-detail {
+  color: var(--muted);
+}
+@keyframes connectionPulse {
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+}
+@media (max-width: 520px) {
+  .connection-banner-detail {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .connection-banner.is-reconnecting .connection-banner-dot {
+    animation: none;
+  }
 }
 .app {
   flex: 1;

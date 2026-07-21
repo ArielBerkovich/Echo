@@ -90,6 +90,7 @@ export function useRealtime({
     let retryTimer = null;
     let retryDelay = 1000;
     let needsRecovery = false;
+    let hasConnected = socket.connected;
     let recoveryRun = 0;
 
     const scheduleReconnect = () => {
@@ -157,6 +158,7 @@ export function useRealtime({
     const onConnect = () => {
       clearTimeout(retryTimer);
       retryDelay = 1000;
+      hasConnected = true;
       if (needsRecovery) {
         needsRecovery = false;
         recover();
@@ -175,8 +177,15 @@ export function useRealtime({
         onAuthInvalid?.();
         return;
       }
-      needsRecovery = true;
-      setConnectionStatus("reconnecting");
+      // A failed first handshake is still the initial connection, not a
+      // reconnection. Reserve the outage banner for a socket that was online
+      // and subsequently dropped.
+      if (hasConnected) {
+        needsRecovery = true;
+        setConnectionStatus("reconnecting");
+      } else {
+        setConnectionStatus("connecting");
+      }
       // Socket.IO does not automatically retry when middleware rejects a
       // handshake, so retry temporary startup/database failures ourselves.
       scheduleReconnect();
@@ -186,6 +195,7 @@ export function useRealtime({
     socket.on("disconnect", onDisconnect);
     socket.on("connect_error", onConnectError);
     if (socket.connected) setConnectionStatus("online");
+    else setConnectionStatus("connecting");
 
     return () => {
       cancelled = true;

@@ -63,6 +63,7 @@ function loadScrollStates(userId) {
 }
 
 const RECENTS_KEY = "echo.recentSearches";
+const CONNECTION_BANNER_DELAY_MS = 1000;
 
 function loadRecents() {
   return readJson(RECENTS_KEY, []);
@@ -101,6 +102,7 @@ export default function App() {
   const [openThreadReq, setOpenThreadReq] = useState(null); // { channelId, rootId, messageId } — thread to open after a jump
   const [scrollToBottomTarget, setScrollToBottomTarget] = useState(null); // { id, channelId } pinned-open request
   const [toast, setToast] = useState(null); // transient notice (e.g. no access)
+  const [connectionBannerVisible, setConnectionBannerVisible] = useState(false);
   const searchRef = useRef(null);
   const markReadAtRef = useRef({}); // channelId -> last markRead time (throttle)
   const restoredRef = useRef(false); // have we restored the saved location yet?
@@ -161,6 +163,22 @@ export default function App() {
       refreshDms,
       onAuthInvalid: handleLogout,
     });
+
+  const hasConnectionIssue =
+    connectionStatus !== "online" &&
+    connectionStatus !== "connecting" &&
+    connectionStatus !== "auth-error";
+
+  // Only surface an established connection dropping if it lasts long enough
+  // to be actionable, avoiding transient banner flashes and layout shifts.
+  useEffect(() => {
+    if (!hasConnectionIssue) {
+      setConnectionBannerVisible(false);
+      return;
+    }
+    const timer = setTimeout(() => setConnectionBannerVisible(true), CONNECTION_BANNER_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [hasConnectionIssue]);
 
   // Apply + persist theme (colour identity) and mode (light/dark) independently.
   useEffect(() => {
@@ -896,11 +914,21 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      {connectionStatus !== "online" && connectionStatus !== "auth-error" && (
-        <div className="connection-banner" role="status" aria-live="polite">
-          {connectionStatus === "recovering"
-            ? "Connected. Catching up on anything you missed…"
-            : "Echo is reconnecting… Your session is safe."}
+      {connectionBannerVisible && hasConnectionIssue && (
+        <div
+          className={`connection-banner ${connectionStatus === "recovering" ? "is-recovering" : "is-reconnecting"}`}
+          role="status"
+          aria-live="polite"
+        >
+          <span className="connection-banner-dot" aria-hidden="true" />
+          <span className="connection-banner-title">
+            {connectionStatus === "recovering" ? "Connection restored" : "Reconnecting to Echo"}
+          </span>
+          <span className="connection-banner-detail">
+            {connectionStatus === "recovering"
+              ? "Syncing recent messages…"
+              : "Messages will sync automatically."}
+          </span>
         </div>
       )}
       <div className={`app ${navOpen ? "nav-open" : ""}`}>
