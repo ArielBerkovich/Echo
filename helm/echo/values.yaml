@@ -113,11 +113,11 @@ client:
           - path: /
             pathType: Prefix
     tls: []
-  # OpenShift Route. Leave disabled for ordinary Kubernetes. The host is
-  # required when enabled because Echo uses it as its CORS client origin.
+  # OpenShift Route. Leave disabled for ordinary Kubernetes. The base domain is
+  # required when enabled because Echo uses it to derive client hostnames and CORS origin.
   route:
     enabled: false
-    host: ""
+    domain: "apps.example.com"
     annotations: {}
     tls:
       termination: edge

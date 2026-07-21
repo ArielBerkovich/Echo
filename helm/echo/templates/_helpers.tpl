@@ -39,8 +39,7 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- else }}{{ required "server.s3.endpoint is required when minio.enabled is false" .Values.server.s3.endpoint }}{{ end -}}
 {{- end -}}
 {{- define "echo.clientRouteHost" -}}
-{{- $host := required "client.route.host is required when client.route.enabled is true" .Values.client.route.host -}}
-{{- $domain := regexReplaceAll "^[^.]+\\." $host "" -}}
+{{- $domain := required "client.route.domain is required when client.route.enabled is true" .Values.client.route.domain -}}
 {{- if .Values.prod -}}
 {{- printf "echo-chat.%s" $domain -}}
 {{- else -}}

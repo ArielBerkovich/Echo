@@ -33,7 +33,7 @@ client:
     enabled: false
   route:
     enabled: true
-    host: echo.apps.example.com
+    domain: apps.example.com
     annotations: {}
     tls:
       termination: edge
