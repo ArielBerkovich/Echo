@@ -56,11 +56,14 @@ function Message({
   onDeactivate, // hide the toolbar when leaving both the message and its portal
   onOpenLightbox, // (src, name) => open image in a side panel (when in thread)
   onTogglePin,
+  onIssuePasswordHelp,
   canPin = true,
 }) {
   const isMine = m.author?.id === currentUserId;
   const actionsVisible = showActions;
   const [copied, setCopied] = useState(false);
+  const [issuingPassword, setIssuingPassword] = useState(false);
+  const [passwordActionError, setPasswordActionError] = useState("");
   const [menuPosition, setMenuPosition] = useState(null);
   const [actionsPosition, setActionsPosition] = useState(null);
   const messageRef = useRef(null);
@@ -199,6 +202,19 @@ function Message({
     }
   }
 
+  async function issuePasswordAndReply() {
+    if (!onIssuePasswordHelp || issuingPassword) return;
+    setIssuingPassword(true);
+    setPasswordActionError("");
+    try {
+      await onIssuePasswordHelp();
+    } catch (error) {
+      setPasswordActionError(error.message);
+    } finally {
+      setIssuingPassword(false);
+    }
+  }
+
   return (
     <div
       className={`message ${grouped ? "grouped" : ""} ${highlighted ? "flash" : ""} ${menuOpen ? "menu-open" : ""}`}
@@ -292,6 +308,27 @@ function Message({
             {messageBody}
             {messageAttachments}
           </>
+        )}
+
+        {m.passwordHelpRequest && usersById?.get(currentUserId)?.isAdmin && (
+          <div className="password-help-action">
+            {m.passwordHelpRequest.status === "issued" ? (
+              <span className="password-help-issued">One-time password issued and posted below ✓</span>
+            ) : (
+              <button
+                type="button"
+                className="btn-primary"
+                data-testid={`message-${mid}-issue-password`}
+                disabled={issuingPassword || m.passwordHelpRequest.status === "issuing"}
+                onClick={issuePasswordAndReply}
+              >
+                {issuingPassword || m.passwordHelpRequest.status === "issuing"
+                  ? "Issuing…"
+                  : `Issue OTP for @${m.passwordHelpRequest.username} and reply`}
+              </button>
+            )}
+            {passwordActionError && <span className="error small">{passwordActionError}</span>}
+          </div>
         )}
 
         {m.reactions?.length > 0 && (

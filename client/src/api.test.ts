@@ -46,6 +46,34 @@ describe("api request helpers", () => {
     assert.equal(call[1].body, JSON.stringify({ name: "general", type: "private" }));
   });
 
+  it("sends password-help requests without requiring a session", async () => {
+    let call;
+    globalThis.fetch = async (...args) => {
+      call = args;
+      return { ok: true, json: async () => ({ ok: true }) };
+    };
+
+    assert.deepEqual(await api.requestPasswordHelp("alice.test"), { ok: true });
+    assert.equal(call[0], "/api/auth/forgot-password");
+    assert.equal(call[1].method, "POST");
+    assert.equal(call[1].headers.Authorization, undefined);
+    assert.equal(call[1].body, JSON.stringify({ username: "alice.test" }));
+  });
+
+  it("issues an admin password-help request by its server-authored message id", async () => {
+    setToken("admin-token");
+    let call;
+    globalThis.fetch = async (...args) => {
+      call = args;
+      return { ok: true, json: async () => ({ ok: true }) };
+    };
+
+    await api.adminIssuePasswordHelp("message-1");
+    assert.equal(call[0], "/api/admin/password-help/message-1/issue");
+    assert.equal(call[1].method, "POST");
+    assert.equal(call[1].headers.Authorization, "Bearer admin-token");
+  });
+
   it("omits empty request bodies", async () => {
     let call;
     globalThis.fetch = async (...args) => {
