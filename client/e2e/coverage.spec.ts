@@ -288,6 +288,48 @@ test("pastes a clipboard image into the composer as an attachment", async ({ pag
   await expect(page.locator('.message .att-image img[alt="clipboard.png"]').last()).toBeVisible();
 });
 
+test("drags an image and a file into the composer as attachments", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator(".composer")).toBeVisible();
+  await page.evaluate(
+    ({ imageBase64, textBase64 }) => {
+      const bytes = (base64) => Uint8Array.from(atob(base64), (character) => character.charCodeAt(0));
+      const transfer = new DataTransfer();
+      transfer.items.add(new File([bytes(imageBase64)], "dragged.png", { type: "image/png" }));
+      transfer.items.add(new File([bytes(textBase64)], "dragged.txt", { type: "text/plain" }));
+      window.__composerDragTransfer = transfer;
+      document.querySelector(".composer").dispatchEvent(
+        new DragEvent("dragenter", { bubbles: true, cancelable: true, dataTransfer: transfer })
+      );
+    },
+    {
+      imageBase64: ONE_BY_ONE_PNG.toString("base64"),
+      textBase64: NOT_IMAGE.toString("base64"),
+    }
+  );
+
+  await expect(page.getByTestId("composer-drop-overlay")).toHaveText("Drop files to attach");
+  await page.evaluate(() => {
+    document.querySelector(".composer").dispatchEvent(
+      new DragEvent("drop", {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer: window.__composerDragTransfer,
+      })
+    );
+    delete window.__composerDragTransfer;
+  });
+
+  await expect(page.getByTestId("composer-drop-overlay")).toHaveCount(0);
+  await expect(page.locator('.pending-att.is-image img[alt="dragged.png"]')).toBeVisible();
+  await expect(page.locator(".pending-file-name")).toHaveText("dragged.txt");
+  await expect(page.locator(".pending-att.uploading")).toHaveCount(0);
+  await page.getByTestId("composer-send").click();
+
+  await expect(page.locator('.message .att-image img[alt="dragged.png"]').last()).toBeVisible();
+  await expect(page.locator(".message .att-file-name").filter({ hasText: "dragged.txt" }).last()).toBeVisible();
+});
+
 test("explains the 10 MB attachment limit before uploading", async ({ page }) => {
   await page.goto("/");
   await page.getByTestId("composer-attachments").setInputFiles({

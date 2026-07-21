@@ -5913,6 +5913,24 @@ html[data-mode="dark"] .channel-header {
   border-color: rgba(29, 28, 29, 0.32);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
+.composer.dragging-files {
+  border-color: var(--blue-500);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16);
+}
+.composer-drop-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--surface) 88%, var(--blue-500));
+  color: var(--blue-500);
+  font-size: 14px;
+  font-weight: 750;
+  pointer-events: none;
+}
 
 .composer-toolbar {
   display: flex;

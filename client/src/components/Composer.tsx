@@ -35,6 +35,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
   const [active, setActive] = useState({}); // which inline formats are on at the caret
   const [pending, setPending] = useState([]); // uploaded attachments staged for the next send
   const [uploading, setUploading] = useState(false);
+  const [draggingFiles, setDraggingFiles] = useState(false);
   const [linkDraft, setLinkDraft] = useState(null); // { text, url } for the link dialog
   // Guards sends that @-mention non-members of a private channel.
   const { gate, mentionModal } = useMentionGate({ channel, users, onChannelUpdated });
@@ -51,6 +52,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
   const typingActiveRef = useRef(false); // are we currently flagged as typing?
   const typingStopRef = useRef(null); // timer that clears the typing flag
   const pendingRef = useRef([]); // latest staged attachments, used for cleanup on unmount
+  const dragDepthRef = useRef(0); // nested dragenter/leaves inside the composer
 
   const isDm = channel.type === "dm";
 
@@ -198,6 +200,38 @@ export default function Composer({ channel, parentId = null, users = [], channel
     const files = Array.from(e.target.files || []);
     e.target.value = ""; // allow re-picking the same file later
     stageFiles(files);
+  }
+
+  function hasDraggedFiles(event) {
+    return Array.from(event.dataTransfer?.types || []).includes("Files");
+  }
+
+  function handleDragEnter(event) {
+    if (!hasDraggedFiles(event)) return;
+    event.preventDefault();
+    dragDepthRef.current += 1;
+    setDraggingFiles(true);
+  }
+
+  function handleDragOver(event) {
+    if (!hasDraggedFiles(event)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  }
+
+  function handleDragLeave(event) {
+    if (dragDepthRef.current === 0) return;
+    event.preventDefault();
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) setDraggingFiles(false);
+  }
+
+  function handleDrop(event) {
+    if (!hasDraggedFiles(event)) return;
+    event.preventDefault();
+    dragDepthRef.current = 0;
+    setDraggingFiles(false);
+    stageFiles(Array.from(event.dataTransfer.files || []));
   }
 
   function removePending(key) {
@@ -781,7 +815,19 @@ export default function Composer({ channel, parentId = null, users = [], channel
   const keepFocus = (e) => e.preventDefault();
 
   return (
-    <form className="composer" onSubmit={handleSend}>
+    <form
+      className={`composer${draggingFiles ? " dragging-files" : ""}`}
+      onSubmit={handleSend}
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {draggingFiles && (
+        <div className="composer-drop-overlay" data-testid="composer-drop-overlay" aria-hidden="true">
+          Drop files to attach
+        </div>
+      )}
       {!isThread && scheduledMsgs.length > 0 && (
         <button
           type="button"
