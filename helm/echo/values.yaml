@@ -1,3 +1,7 @@
+# Set to true for production environments. When false, enables development behaviors
+# such as suffixing routes with the namespace name and bypassing TLS validations if needed.
+prod: false
+
 global:
   # Prefix for Echo and Bitnami images. For Artifactory, keep the hostname here
   # and put the Artifactory repository path in each image.repository value.
@@ -79,6 +83,10 @@ rhsso:
   realm: ""
   clientId: ""
   clientSecret: ""
+  # If true, a ConfigMap containing a mock/placeholder CA certificate is created.
+  createMockCaCert: false
+  # Name of an existing ConfigMap containing the RHSSO CA cert. Takes precedence.
+  caCertConfigMap: ""
   # Standard OIDC defaults. Dot-separated nested claim paths are supported.
   usernameClaim: preferred_username
   displayNameClaim: name
