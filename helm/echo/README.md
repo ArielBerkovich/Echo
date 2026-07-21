@@ -75,7 +75,7 @@ namespace or manually deleting the PVCs still deletes or releases the storage
 according to the cluster StorageClass and persistent-volume reclaim policy.
 
 Set `client.ingress.enabled=true` for Kubernetes Ingress, or
-`client.route.enabled=true` and `client.route.domain` for an OpenShift Route. For
+`client.route.enabled=true` and `client.route.host` for an OpenShift Route. For
 external databases/storage, disable the dependencies and provide
 `server.mongoUri`, `server.s3.endpoint`, `server.s3.accessKey`, and
 `server.s3.secretKey`.
