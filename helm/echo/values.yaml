@@ -54,6 +54,11 @@ server:
     secretKey: ""
     bucket: echo-uploads
     region: us-east-1
+  outboundTls:
+    ## @param server.outboundTls.extraCaCertsPath Path to an additional PEM CA bundle in the server container.
+    extraCaCertsPath: ""
+    ## @param server.outboundTls.rejectUnauthorized Verify certificates for outbound TLS connections.
+    rejectUnauthorized: true
   resources:
     requests:
       cpu: 512m
@@ -71,7 +76,23 @@ server:
       drop: [ALL]
     seccompProfile:
       type: RuntimeDefault
+  ## @param server.extraEnv Additional environment variables for the Echo server container.
   extraEnv: []
+  ## @param server.extraVolumeMounts Additional volume mounts for the Echo server container.
+  ## Example:
+  ## extraVolumeMounts:
+  ##   - name: extras
+  ##     mountPath: /usr/share/extras
+  ##     readOnly: true
+  ##
+  extraVolumeMounts: []
+  ## @param server.extraVolumes Additional volumes for the Echo server pod.
+  ## Example:
+  ## extraVolumes:
+  ##   - name: extras
+  ##     emptyDir: {}
+  ##
+  extraVolumes: []
 
 # Red Hat SSO / Keycloak OpenID Connect login. The client may be public
 # (recommended with PKCE; leave clientSecret empty) or confidential.
@@ -84,8 +105,6 @@ rhsso:
   realm: ""
   clientId: ""
   clientSecret: ""
-  # Name of an existing ConfigMap containing the extra CA cert.
-  extraCaCertConfigMap: ""
   # Standard OIDC defaults. Dot-separated nested claim paths are supported.
   usernameClaim: preferred_username
   displayNameClaim: name
