@@ -26,6 +26,12 @@ export const config = {
     usernameClaim: process.env.RHSSO_USERNAME_CLAIM || "preferred_username",
     displayNameClaim: process.env.RHSSO_DISPLAY_NAME_CLAIM || "name",
     redirectUri: process.env.RHSSO_REDIRECT_URI || "",
+    allowedClientOrigins: String(
+      process.env.RHSSO_ALLOWED_CLIENT_ORIGINS || process.env.CLIENT_ORIGIN || "http://localhost:8080"
+    )
+      .split(",")
+      .map((origin) => origin.trim().replace(/\/+$/, ""))
+      .filter(Boolean),
   },
   // How many messages to return per history page.
   messagePageSize: 50,

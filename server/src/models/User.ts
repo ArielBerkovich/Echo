@@ -21,6 +21,11 @@ const userSchema = new mongoose.Schema(
     // merely by presenting the same username.
     rhssoIssuer: { type: String, default: undefined },
     rhssoSubject: { type: String, default: undefined },
+    // Records how this Echo person was originally created. A migrated local
+    // account keeps "local" here even when its current login becomes RHSSO.
+    authOrigin: { type: String, enum: ["local", "rhsso"], default: "local" },
+    // Identity replacement is intentionally one-time.
+    migratedAt: { type: Date, default: null },
     // Object-storage key for the user's uploaded profile picture (optional).
     avatarKey: { type: String, default: null },
     // The first registered user becomes the workspace admin.

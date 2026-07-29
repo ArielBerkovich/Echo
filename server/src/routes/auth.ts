@@ -12,12 +12,29 @@ import { ensureDmChannel } from "../lib/dms.js";
 import { passwordProblem } from "../password.js";
 import { usernameCandidate, usernameFromName } from "../lib/usernames.js";
 import { config } from "../config.js";
+import { usernameIsReserved } from "../lib/userAliases.js";
+import {
+  clearMigrationIntentCookie,
+  completeMigration,
+  loadMigrationIntent,
+  migrationIntentCookie,
+  migrationIntentToken,
+  migrationStatus,
+  createRhssoCreationIntent,
+  attachMigrationSource,
+  completeRhssoSignup,
+  stageRhssoIdentity,
+  startMigration,
+  verifyIntentToken,
+} from "../migration.js";
 import {
   beginRhssoLogin,
   clearRhssoCookie,
   cookieValue,
   finishRhssoLogin,
   rhssoCookie,
+  rhssoClientOrigin,
+  rhssoFlowContext,
 } from "../rhsso.js";
 
 export const authRouter = Router();
@@ -50,7 +67,7 @@ async function usernameSuggestions(base) {
   const suggestions = [];
   for (let suffix = 1; suggestions.length < 3 && suffix < 1000; suffix += 1) {
     const candidate = usernameCandidate(base, suffix);
-    if (!(await User.exists({ username: candidate }))) suggestions.push(candidate);
+    if (!(await usernameIsReserved(candidate))) suggestions.push(candidate);
   }
   return suggestions;
 }
@@ -62,11 +79,11 @@ authRouter.get("/setup-status", async (_req, res) => {
   res.json({ needsSetup: count === 0, rhssoEnabled: config.rhsso.enabled && count > 0 });
 });
 
-function rhssoClientRedirect(res, error, token = "") {
+function rhssoClientRedirect(res, error, token = "", clientOrigin = config.clientOrigin) {
   const fragment = new URLSearchParams();
   if (token) fragment.set("rhsso_token", token);
   if (error) fragment.set("rhsso_error", error);
-  return res.redirect(302, `${config.clientOrigin.replace(/\/+$/, "")}/#${fragment}`);
+  return res.redirect(302, `${clientOrigin.replace(/\/+$/, "")}/#${fragment}`);
 }
 
 function externalUsername(value) {
@@ -83,23 +100,24 @@ function externalUsername(value) {
 
 async function availableExternalUsername(value) {
   const base = externalUsername(value);
-  if (!(await User.exists({ username: base }))) return base;
+  if (!(await usernameIsReserved(base))) return base;
   for (let suffix = 1; suffix < 10000; suffix += 1) {
     const text = String(suffix);
     const candidate = `${base.slice(0, 32 - text.length)}${text}`;
-    if (!(await User.exists({ username: candidate }))) return candidate;
+    if (!(await usernameIsReserved(candidate))) return candidate;
   }
   throw new Error("Could not allocate an Echo username for this RHSSO identity");
 }
 
 // GET /api/auth/rhsso/login — starts an OIDC authorization-code + PKCE flow.
-authRouter.get("/rhsso/login", async (_req, res) => {
+authRouter.get("/rhsso/login", async (req, res) => {
   try {
     if (!(await User.exists({ isAdmin: true }))) {
       return rhssoClientRedirect(res, "Create the local admin account before using RHSSO.");
     }
-    const { authorizationUrl, flowToken } = await beginRhssoLogin();
-    res.setHeader("Set-Cookie", rhssoCookie(flowToken));
+    const clientOrigin = rhssoClientOrigin(req.query.origin);
+    const { authorizationUrl, flowToken, redirectUri } = await beginRhssoLogin({ clientOrigin });
+    res.setHeader("Set-Cookie", rhssoCookie(flowToken, redirectUri));
     return res.redirect(302, authorizationUrl);
   } catch (error) {
     return rhssoClientRedirect(res, error?.message || "Could not start RHSSO login.");
@@ -110,43 +128,175 @@ authRouter.get("/rhsso/login", async (_req, res) => {
 // identity without linking by username, and returns an ordinary Echo session.
 authRouter.get("/rhsso/callback", async (req, res) => {
   res.setHeader("Set-Cookie", clearRhssoCookie());
+  let migrationFlow = false;
+  let clientOrigin = config.clientOrigin;
   try {
+    const flowToken = cookieValue(req.headers.cookie, "echo_rhsso_flow");
+    const flow = rhssoFlowContext(flowToken);
+    clientOrigin = rhssoClientOrigin(flow.clientOrigin);
+    migrationFlow = flow.kind === "rhsso-migration";
     if (req.query.error) {
-      return rhssoClientRedirect(res, String(req.query.error_description || req.query.error));
+      const message = String(req.query.error_description || req.query.error);
+      return migrationFlow
+        ? migrationClientRedirect(res, message, clientOrigin)
+        : rhssoClientRedirect(res, message, "", clientOrigin);
+    }
+    if (migrationFlow) {
+      const intentToken = migrationIntentToken(req.headers.cookie);
+      const intentPayload = verifyIntentToken(intentToken);
+      const identity = await finishRhssoLogin({
+        code: String(req.query.code || ""),
+        state: String(req.query.state || ""),
+        flowToken,
+        expectedKind: "rhsso-migration",
+      });
+      if (identity.intentId !== intentPayload.intentId) {
+        return migrationClientRedirect(
+          res,
+          "The RHSSO identity does not match this migration attempt.",
+          clientOrigin
+        );
+      }
+      await stageRhssoIdentity(intentToken, {
+        ...identity,
+        username: externalUsername(identity.username),
+      });
+      return migrationClientRedirect(res, "", clientOrigin);
     }
     const identity = await finishRhssoLogin({
       code: String(req.query.code || ""),
       state: String(req.query.state || ""),
-      flowToken: cookieValue(req.headers.cookie, "echo_rhsso_flow"),
+      flowToken,
     });
 
     let user = await User.findOne({ rhssoIssuer: identity.issuer, rhssoSubject: identity.subject });
-    if (user?.isAdmin) return rhssoClientRedirect(res, "The bootstrap admin account only supports local login.");
-    if (!user) {
-      const username = await availableExternalUsername(identity.username);
-      const passwordHash = await bcrypt.hash(crypto.randomBytes(32).toString("base64url"), 10);
-      try {
-        user = await User.create({
-          username,
-          displayName: String(identity.displayName).trim().slice(0, 64) || username,
-          passwordHash,
-          rhssoIssuer: identity.issuer,
-          rhssoSubject: identity.subject,
-          isAdmin: false,
-        });
-      } catch (error) {
-        if (error?.code === 11000) {
-          user = await User.findOne({ rhssoIssuer: identity.issuer, rhssoSubject: identity.subject });
-        }
-        if (!user) throw error;
-      }
-      await Channel.updateOne({ name: "general" }, { $addToSet: { members: user._id } });
-      emitAll("user:new", user.toPublicJSON());
+    if (user?.isAdmin) {
+      return rhssoClientRedirect(
+        res,
+        "The bootstrap admin account only supports local login.",
+        "",
+        clientOrigin
+      );
     }
-    return rhssoClientRedirect(res, "", signToken(user));
+    if (!user) {
+      const pending = await createRhssoCreationIntent({
+        ...identity,
+        username: externalUsername(identity.username),
+      });
+      res.setHeader("Set-Cookie", [clearRhssoCookie(), migrationIntentCookie(pending.token)]);
+      return rhssoCreationClientRedirect(res, clientOrigin);
+    }
+    return rhssoClientRedirect(res, "", signToken(user), clientOrigin);
   } catch (error) {
     console.error("RHSSO login failed:", error);
-    return rhssoClientRedirect(res, error?.message || "RHSSO login failed.");
+    return migrationFlow
+      ? migrationClientRedirect(res, error?.message || "RHSSO migration failed.", clientOrigin)
+      : rhssoClientRedirect(res, error?.message || "RHSSO login failed.", "", clientOrigin);
+  }
+});
+
+function migrationClientRedirect(res, error = "", clientOrigin = config.clientOrigin) {
+  const fragment = new URLSearchParams();
+  if (error) fragment.set("migration_error", error);
+  else fragment.set("migration", "rhsso-ready");
+  return res.redirect(302, `${clientOrigin.replace(/\/+$/, "")}/#${fragment}`);
+}
+
+function rhssoCreationClientRedirect(res, clientOrigin = config.clientOrigin) {
+  return res.redirect(
+    302,
+    `${clientOrigin.replace(/\/+$/, "")}/#rhsso_creation=pending`
+  );
+}
+
+// POST /api/auth/migration/start — prove ownership of an eligible old local
+// account. No Echo session is created; the signed, short-lived intent cookie
+// carries the browser through local or RHSSO account creation.
+authRouter.post("/migration/start", authRateLimit, async (req, res) => {
+  try {
+    const result = await startMigration({
+      oldUsername: req.body?.oldUsername,
+      oldPassword: req.body?.oldPassword,
+      targetType: req.body?.targetType,
+    });
+    const cookies = [migrationIntentCookie(result.token)];
+    let authorizationUrl = null;
+    if (result.intent.targetType === "rhsso") {
+      const rhsso = await beginRhssoLogin({
+        kind: "rhsso-migration",
+        intentId: result.intent._id.toString(),
+        clientOrigin: rhssoClientOrigin(req.body?.clientOrigin),
+      });
+      cookies.push(rhssoCookie(rhsso.flowToken, rhsso.redirectUri));
+      authorizationUrl = rhsso.authorizationUrl;
+    }
+    res.setHeader("Set-Cookie", cookies);
+    return res.status(201).json({ source: result.source, targetType: result.intent.targetType, authorizationUrl });
+  } catch (error) {
+    return res.status(error?.status || 500).json({
+      error: error?.status ? error.message : "Could not start account migration.",
+    });
+  }
+});
+
+authRouter.get("/migration/status", async (req, res) => {
+  try {
+    return res.json(await migrationStatus(migrationIntentToken(req.headers.cookie)));
+  } catch (error) {
+    return res.status(error?.status || 500).json({
+      error: error?.status ? error.message : "Could not load this migration.",
+    });
+  }
+});
+
+authRouter.post("/migration/attach-source", authRateLimit, async (req, res) => {
+  try {
+    return res.json(await attachMigrationSource(
+      migrationIntentToken(req.headers.cookie),
+      { oldUsername: req.body?.oldUsername, oldPassword: req.body?.oldPassword }
+    ));
+  } catch (error) {
+    return res.status(error?.status || 500).json({
+      error: error?.status ? error.message : "Could not verify the old account.",
+    });
+  }
+});
+
+authRouter.post("/migration/create-rhsso-user", authRateLimit, async (req, res) => {
+  try {
+    const result = await completeRhssoSignup(migrationIntentToken(req.headers.cookie));
+    res.setHeader("Set-Cookie", clearMigrationIntentCookie());
+    return res.status(201).json(result);
+  } catch (error) {
+    return res.status(error?.status || 500).json({
+      error: error?.status ? error.message : "Could not create the RHSSO account.",
+    });
+  }
+});
+
+authRouter.post("/migration/confirm", authRateLimit, async (req, res) => {
+  try {
+    const { intent } = await loadMigrationIntent(
+      migrationIntentToken(req.headers.cookie),
+      { allowConsumed: true }
+    );
+    if (intent.targetType === "local" && !req.body?.password) {
+      return res.status(400).json({ error: "A new password is required." });
+    }
+    const result = await completeMigration(
+      migrationIntentToken(req.headers.cookie),
+      { username: req.body?.username, password: req.body?.password }
+    );
+    res.setHeader("Set-Cookie", clearMigrationIntentCookie());
+    return res.json(result);
+  } catch (error) {
+    if (error?.code === 11000) {
+      return res.status(409).json({ error: "That username is no longer available.", usernameTaken: true });
+    }
+    return res.status(error?.status || 500).json({
+      error: error?.status ? error.message : "Could not complete account migration.",
+      ...(error?.usernameTaken ? { usernameTaken: true } : {}),
+    });
   }
 });
 
@@ -158,7 +308,7 @@ authRouter.get("/username-options", async (req, res) => {
   if (!username || !first || !last) return res.json({ available: true, suggestions: [] });
 
   const base = usernameFromName(first, last);
-  const taken = !!(await User.exists({ username }));
+  const taken = await usernameIsReserved(username);
   return res.json({
     available: !taken,
     suggestions: taken ? await usernameSuggestions(base) : [],
@@ -249,7 +399,7 @@ authRouter.post("/register", authRateLimit, async (req, res) => {
     return res.status(400).json({ error: "Username suffixes can only contain letters and numbers" });
   }
 
-  if (requested && (await User.exists({ username: requested }))) {
+  if (requested && (await usernameIsReserved(requested))) {
     return res.status(409).json({
       error: `@${requested} is already taken`,
       usernameTaken: true,
@@ -274,6 +424,7 @@ authRouter.post("/register", authRateLimit, async (req, res) => {
         displayName: isAdminSetup ? "Admin" : `${first} ${last}`,
         passwordHash,
         isAdmin: isFirstUser,
+        authOrigin: "local",
       });
     } catch (err) {
       if (err?.code === 11000) {
@@ -306,7 +457,10 @@ authRouter.post("/login", authRateLimit, async (req, res) => {
     return res.status(400).json({ error: "username and password are required" });
   }
 
-  const user = await User.findOne({ username: String(username).toLowerCase() });
+  const user = await User.findOne({
+    username: String(username).toLowerCase(),
+    rhssoSubject: { $exists: false },
+  });
   // Compare even when the user is missing to avoid leaking which step failed.
   const ok = user && (await bcrypt.compare(String(password), user.passwordHash));
   if (!ok) {

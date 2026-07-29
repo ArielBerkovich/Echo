@@ -48,6 +48,13 @@ export async function syncUserSockets(user) {
   }
 }
 
+// Revoke every live transport for a user after an identity or credential
+// replacement. The next connection must authenticate with the new tokenVersion.
+export async function disconnectUserSockets(userId) {
+  if (!io) return;
+  io.in(userRoom(userId.toString())).disconnectSockets(true);
+}
+
 // Broadcast to every connected socket (e.g. a new workspace-wide custom emoji).
 export function emitAll(event, payload) {
   io?.emit(event, payload);

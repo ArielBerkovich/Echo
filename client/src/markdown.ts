@@ -38,7 +38,7 @@ for (const [alias, id] of Object.entries(emojiData.aliases || {})) {
 
 // Build a Markdown renderer that also turns @mentions and public #channel tags
 // into highlighted, clickable pills.
-// `knownUsernames` is a Set of lowercase handles; `me` is the current handle.
+// `knownUsernames` is a Set of handles or an alias->canonical Map.
 // Matches an emoji incl. ZWJ sequences and variation selectors.
 const EMOJI_RE = /\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic})*/gu;
 const HAS_EMOJI = /\p{Extended_Pictographic}/u;
@@ -134,8 +134,9 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
             return `<span class="mention mention--broadcast">📣 @${token.handle}</span>`;
           }
           if (!knownUsernames.has(handle)) return token.raw; // not a real user
-          const mine = handle === String(me).toLowerCase() ? " mention--me" : "";
-          return `<span class="mention${mine}" data-mention="${handle}">@${token.handle}</span>`;
+          const canonical = knownUsernames instanceof Map ? knownUsernames.get(handle) : handle;
+          const mine = canonical === String(me).toLowerCase() ? " mention--me" : "";
+          return `<span class="mention${mine}" data-mention="${canonical}">@${canonical}</span>`;
         },
       },
       {

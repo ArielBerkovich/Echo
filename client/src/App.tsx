@@ -186,6 +186,7 @@ export default function App() {
       setVipIds,
       setView,
       setActiveChannel,
+      setProfileUser,
       refreshChannels,
       refreshDms,
       onAuthInvalid: handleLogout,
@@ -559,7 +560,12 @@ export default function App() {
   // username (an @mention click).
   function openProfile(idOrHandle) {
     const key = String(idOrHandle).toLowerCase();
-    const u = users.find((x) => x.id === idOrHandle || x.username.toLowerCase() === key);
+    const u = users.find(
+      (x) =>
+        x.id === idOrHandle ||
+        x.username.toLowerCase() === key ||
+        (x.aliases || []).some((alias) => String(alias).toLowerCase() === key)
+    );
     if (u) setProfileUser(u);
   }
 

@@ -3,10 +3,15 @@ import { createRenderer } from "../markdown.js";
 import { useAuthUrls } from "./useAuthUrl.js";
 
 export function useMarkdownRenderer(users = [], username, customEmojis = [], channels = []) {
-  const knownUsernames = useMemo(
-    () => new Set(users.map((u) => u.username.toLowerCase())),
-    [users]
-  );
+  const knownUsernames = useMemo(() => {
+    const map = new Map();
+    for (const user of users) {
+      const canonical = user.username.toLowerCase();
+      map.set(canonical, canonical);
+      for (const alias of user.aliases || []) map.set(String(alias).toLowerCase(), canonical);
+    }
+    return map;
+  }, [users]);
   const authUrls = useAuthUrls(customEmojis.map((e) => e.url));
   const authenticatedEmojis = useMemo(
     () => customEmojis

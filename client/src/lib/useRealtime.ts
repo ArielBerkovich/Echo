@@ -22,6 +22,7 @@ export function useRealtime({
   setVipIds,
   setView,
   setActiveChannel,
+  setProfileUser,
   refreshChannels,
   refreshDms,
   onAuthInvalid,
@@ -227,6 +228,7 @@ export function useRealtime({
           ? { ...prev, dmName: updated.displayName }
           : prev
       );
+      setProfileUser?.((prev) => (prev?.id === updated.id ? { ...prev, ...updated } : prev));
     };
     const onPresence = ({ online } = {}) => setOnlineIds(new Set(online || []));
     const mergeChannel = (prev, updated) => {
@@ -264,6 +266,7 @@ export function useRealtime({
     socket.on("emoji:new", onEmoji);
     socket.on("user:new", onNewUser);
     socket.on("user:update", onUserUpdate);
+    socket.on("user:identity-changed", onUserUpdate);
     socket.on("presence", onPresence);
     socket.on("channel:update", onChannelUpdate);
     socket.on("channel:catalog", onChannelCatalog);
@@ -273,6 +276,7 @@ export function useRealtime({
       socket.off("emoji:new", onEmoji);
       socket.off("user:new", onNewUser);
       socket.off("user:update", onUserUpdate);
+      socket.off("user:identity-changed", onUserUpdate);
       socket.off("presence", onPresence);
       socket.off("channel:update", onChannelUpdate);
       socket.off("channel:catalog", onChannelCatalog);
@@ -328,8 +332,10 @@ export function useRealtime({
       }
 
       const body = msg.body || "";
-      const personallyMentioned = mentionRe.test(body);
-      const broadcastsAll = inChannels && /@everyone\b/i.test(body);
+      const personallyMentioned =
+        (msg.mentionedUserIds || []).includes(user.id) || mentionRe.test(body);
+      const broadcastsAll =
+        inChannels && (msg.mentionsEveryone === true || /@everyone\b/i.test(body));
       const mentionsMe = personallyMentioned || broadcastsAll;
 
       // Activity badge: count @mentions and @everyone broadcasts you haven't

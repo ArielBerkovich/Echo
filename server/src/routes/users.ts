@@ -8,6 +8,7 @@ import { setFileCategory, FILE_CATEGORY } from "../storage.js";
 import { emitAll, syncUserSockets } from "../realtime.js";
 import { passwordProblem } from "../password.js";
 import { ensureDmChannel } from "../lib/dms.js";
+import { aliasesByUserId } from "../lib/userAliases.js";
 
 export const usersRouter = Router();
 usersRouter.use(requireAuth);
@@ -18,7 +19,13 @@ usersRouter.get("/", async (_req, res) => {
   const users = await User.find({ username: { $ne: "system" } })
     .sort({ displayName: 1 })
     .limit(500);
-  res.json({ users: users.map((u) => u.toPublicJSON()) });
+  const aliases = await aliasesByUserId(users.map((u) => u._id));
+  res.json({
+    users: users.map((u) => ({
+      ...u.toPublicJSON(),
+      aliases: aliases.get(u._id.toString()) || [],
+    })),
+  });
 });
 
 // GET /api/users/vips — the ids of users the current user has marked VIP.

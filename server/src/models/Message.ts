@@ -142,6 +142,8 @@ messageSchema.methods.toPublicJSON = function () {
     editedAt: this.editedAt || null,
     kind: this.kind || "user",
     parentId: this.parentId ? this.parentId.toString() : null,
+    mentionedUserIds: (this.mentionedUserIds || []).map((id) => id.toString()),
+    mentionsEveryone: !!this.mentionsEveryone,
     externalKey: this.externalKey || null,
     automation: this.automation
       ? {

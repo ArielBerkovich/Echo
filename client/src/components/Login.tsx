@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { api, getBackendUrl, rhssoLoginUrl } from "../api.js";
 import BackendConnectionModal from "./BackendConnectionModal.js";
+import CreationMigrationModal from "./CreationMigrationModal.js";
 import Logo from "./Logo.js";
 import { PASSWORD_RULE } from "../lib/password.js";
 import { authSchema } from "../lib/formSchemas.js";
@@ -47,7 +48,13 @@ const FLOATERS = [
 
 // Combined login / register screen — split hero + auth form.
 export default function Login({ onAuthed, initialError = "" }) {
-  const [mode, setMode] = useState("login");
+  const [mode, setMode] = useState(() => {
+    return "login";
+  });
+  const [creationMigration, setCreationMigration] = useState(() => {
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    return hash.get("rhsso_creation") === "pending" ? "rhsso" : null;
+  });
   const [showPw, setShowPw] = useState(false);
   const [serverError, setServerError] = useState(initialError || null);
   const [success, setSuccess] = useState(false);
@@ -143,21 +150,6 @@ export default function Login({ onAuthed, initialError = "" }) {
           setValue("username", "admin", { shouldValidate: true });
           setUsernameSuffix("");
           usernameEdited.current = true;
-          return;
-        }
-
-        const params = new URLSearchParams(window.location.search);
-        const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-        const isBypassed =
-          !!initialError ||
-          params.has("local") ||
-          params.get("local") === "true" ||
-          hashParams.has("local") ||
-          hashParams.get("local") === "true" ||
-          sessionStorage.getItem("echo.ssoBypass") === "true";
-
-        if (rhssoEnabled && !isBypassed) {
-          window.location.assign(rhssoLoginUrl());
         }
       })
       .catch((error) => {
@@ -168,7 +160,7 @@ export default function Login({ onAuthed, initialError = "" }) {
     return () => {
       cancelled = true;
     };
-  }, [initialError, setValue, setupStatusAttempt]);
+  }, [setValue, setupStatusAttempt]);
 
   function switchMode(next) {
     setServerError(null);
@@ -617,7 +609,6 @@ export default function Login({ onAuthed, initialError = "" }) {
             </>
           )}
           </>}
-
           {!needsSetup && !isRegister && (
             <p className="auth-switch">
               New to Echo?{" "}
@@ -630,8 +621,41 @@ export default function Login({ onAuthed, initialError = "" }) {
               </button>
             </p>
           )}
+          {!needsSetup && isRegister && registerStep === 2 && (
+            <p className="auth-switch">
+              Have an old local Echo account?{" "}
+              <button
+                type="button"
+                className="link"
+                onClick={async () => {
+                  const valid = await trigger([
+                    "firstName",
+                    "lastName",
+                    "username",
+                    "password",
+                    "confirmPassword",
+                  ]);
+                  if (valid) setCreationMigration("local");
+                }}
+              >
+                Bring its history
+              </button>
+            </p>
+          )}
         </form>
       </div>
+
+      {creationMigration ? (
+        <CreationMigrationModal
+          kind={creationMigration}
+          newAccount={{
+            username,
+            password: watch("password"),
+          }}
+          onAuthed={onAuthed}
+          onClose={creationMigration === "local" ? () => setCreationMigration(null) : undefined}
+        />
+      ) : null}
 
       {success && (
         <div className="auth-success">

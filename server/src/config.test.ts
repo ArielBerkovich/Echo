@@ -37,6 +37,7 @@ describe("config", () => {
       usernameClaim: "preferred_username",
       displayNameClaim: "name",
       redirectUri: "",
+      allowedClientOrigins: ["http://localhost:8080"],
     });
     assert.equal(config.messagePageSize, 50);
     assert.equal(config.maxUploadBytes, 10 * 1024 * 1024);
@@ -68,6 +69,7 @@ describe("config", () => {
       RHSSO_USERNAME_CLAIM: "attributes.handle",
       RHSSO_DISPLAY_NAME_CLAIM: "display_name",
       RHSSO_REDIRECT_URI: "https://echo.example/api/auth/rhsso/callback",
+      RHSSO_ALLOWED_CLIENT_ORIGINS: "https://echo.example, https://echo-lan.example/",
     });
 
     assert.equal(config.port, 5000);
@@ -93,6 +95,7 @@ describe("config", () => {
       usernameClaim: "attributes.handle",
       displayNameClaim: "display_name",
       redirectUri: "https://echo.example/api/auth/rhsso/callback",
+      allowedClientOrigins: ["https://echo.example", "https://echo-lan.example"],
     });
   });
 });
