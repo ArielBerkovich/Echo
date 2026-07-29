@@ -56,6 +56,83 @@ test("opens a Home sidebar DM without switching to the DMs view", async ({ page 
   await expect(page.getByTestId("channel-row-general")).toBeVisible();
 });
 
+test("aligns the Direct Messages and main search dividers", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/");
+  await railItem(page, "dms").click();
+
+  const bottomEdges = await page.evaluate(() => ({
+    sidebar: document.querySelector(".sidebar.dms-view .sidebar-header")?.getBoundingClientRect().bottom,
+    main: document.querySelector(".pane-search")?.getBoundingClientRect().bottom,
+  }));
+
+  expect(bottomEdges.sidebar).toBeDefined();
+  expect(bottomEdges.main).toBeDefined();
+  expect(Math.abs(bottomEdges.sidebar - bottomEdges.main)).toBeLessThanOrEqual(1);
+});
+
+test("aligns the Home filter with the main search field", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/");
+  await railItem(page, "home").click();
+
+  const topEdges = await page.evaluate(() => ({
+    sidebar: document.querySelector(".sidebar:not(.dms-view) .dm-find input")?.getBoundingClientRect().top,
+    main: document.querySelector(".pane-search .search-box-field")?.getBoundingClientRect().top,
+  }));
+
+  expect(topEdges.sidebar).toBeDefined();
+  expect(topEdges.main).toBeDefined();
+  expect(Math.abs(topEdges.sidebar - topEdges.main)).toBeLessThanOrEqual(1);
+});
+
+test("starts a conversation from the Home Direct Messages button", async ({ page }) => {
+  await page.goto("/");
+
+  const dmSection = page.locator(".dm-label");
+  const startButton = dmSection.getByTestId("start-dm");
+  await expect(startButton).toBeVisible();
+  await expect(startButton).toHaveClass(/add-channel/);
+  await expect(startButton).toHaveAttribute("aria-label", "Start a new conversation");
+
+  await startButton.click();
+
+  const search = page.getByTestId("search-input");
+  await expect(search).toBeFocused();
+  await expect(search).toHaveAttribute("placeholder", "Find someone to message");
+  await expect(page.getByTestId("search-messages-row")).toHaveCount(0);
+
+  await search.fill(fixture.bob.username);
+  const bobResult = page.getByTestId(`search-user-${slug(fixture.bob.username)}`);
+  await expect(bobResult).toBeVisible();
+  await bobResult.click();
+
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.bob.displayName);
+  await expect(railItem(page, "dms")).toHaveClass(/active/);
+});
+
+test("starts a conversation from the dedicated DMs button with the keyboard", async ({ page }) => {
+  await page.goto("/");
+  await railItem(page, "dms").click();
+
+  const dmHeader = page.locator(".sidebar.dms-view .sidebar-header");
+  const startButton = dmHeader.getByTestId("start-dm");
+  await expect(startButton).toBeVisible();
+  await expect(startButton).toHaveAttribute("title", "Start a new conversation");
+
+  await startButton.click();
+
+  const search = page.getByTestId("search-input");
+  await expect(search).toBeFocused();
+  await expect(search).toHaveAttribute("placeholder", "Find someone to message");
+  await search.fill(fixture.bob.username);
+  await expect(page.getByTestId(`search-user-${slug(fixture.bob.username)}`)).toBeVisible();
+  await search.press("Enter");
+
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.bob.displayName);
+  await expect(railItem(page, "dms")).toHaveClass(/active/);
+});
+
 test("keeps the DM preview width stable when toggling VIP", async ({ page }) => {
   await page.goto("/");
   await railItem(page, "dms").click();
@@ -400,7 +477,7 @@ test("shows a friendly message when login returns a server error", async ({ page
 
   await loginPage.getByLabel("Username").fill("someone");
   await loginPage.locator('input[name="password"]').fill("Password1");
-  await loginPage.getByRole("button", { name: "Sign in" }).click();
+  await loginPage.getByRole("button", { name: "Sign in", exact: true }).click();
 
   await expect(loginPage.locator(".error")).toContainText("We couldn't sign you in right now. Please try again in a moment.");
   await expect(loginPage.locator(".error")).not.toContainText("internal details");

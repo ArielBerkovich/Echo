@@ -29,7 +29,7 @@ import { BUILT_IN_GIT_EMOJIS } from "./lib/gitEmojis.js";
 // surface, accent] preview for the picker.
 const THEMES = [
   { id: "nord", label: "Nord", swatch: ["#3b4252", "#2b303b", "#81a1c1"] },
-  { id: "aubergine", label: "Aubergine", swatch: ["#4a154b", "#ffffff", "#7a3e83"] },
+  { id: "aubergine", label: "Aubergine", swatch: ["#5b1b42", "#f7f3f0", "#8c8580"] },
   { id: "azure", label: "Azure", swatch: ["#0d2444", "#08182e", "#2f81f7"] },
   { id: "midnight", label: "Midnight", swatch: ["#1a1640", "#15132e", "#8b5cf6"] },
   { id: "dracula", label: "Dracula", swatch: ["#343746", "#282a36", "#bd93f9"] },
@@ -1030,6 +1030,13 @@ export default function App() {
               }}
               browsingChannels={view === "browse"}
               publicChannelCount={catalogCounts?.all}
+              onStartConversation={() => {
+                markNavDuringRestore();
+                clearNavigationTarget();
+                setSearchQuery(null);
+                setNavOpen(false);
+                requestAnimationFrame(() => searchRef.current?.startConversation());
+              }}
               onOpenDm={(u, isSelf) => {
                 markNavDuringRestore();
                 handleOpenDm(u, isSelf, view === "home" ? "home" : "dms");

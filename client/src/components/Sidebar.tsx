@@ -1,9 +1,23 @@
 import { useState } from "react";
-import { ChevronDownIcon, CompassIcon, LockKeyholeIcon, MoonIcon, SettingsIcon, SunIcon } from "lucide-react";
-import Logo from "./Logo.js";
+import { ChevronDownIcon, CompassIcon, LockKeyholeIcon, MoonIcon, PlusIcon, SettingsIcon, SunIcon } from "lucide-react";
 import Avatar from "./Avatar.js";
 import { relativeTime } from "../lib/time.js";
 import { LeaveIcon } from "./Icons.js";
+
+function StartConversationButton({ onClick }) {
+  return (
+    <button
+      type="button"
+      className="add-channel start-conversation"
+      data-testid="start-dm"
+      onClick={onClick}
+      title="Start a new conversation"
+      aria-label="Start a new conversation"
+    >
+      <PlusIcon size={14} strokeWidth={2.2} aria-hidden="true" />
+    </button>
+  );
+}
 
 // Plain-text preview of a (markdown) message body for the DM list.
 function preview(body) {
@@ -44,6 +58,7 @@ export default function Sidebar({
   onBrowseChannels,
   browsingChannels = false,
   publicChannelCount = null,
+  onStartConversation,
   onOpenDm,
   onPrefetchDm,
   onHideDm,
@@ -112,10 +127,12 @@ export default function Sidebar({
 
   return (
     <aside className={`sidebar ${dmsOnly ? "dms-view" : ""}`}>
-      <div className="sidebar-header">
-        <Logo size={40} />
-        <span className="brand-sm">{dmsOnly ? "Direct messages" : "Echo"}</span>
-      </div>
+      {dmsOnly && (
+        <div className="sidebar-header">
+          <span className="brand-sm">Direct messages</span>
+          <StartConversationButton onClick={onStartConversation} />
+        </div>
+      )}
 
       <div className="dm-find">
         <input
@@ -261,6 +278,7 @@ export default function Sidebar({
               <Chevron collapsed={dmCollapsed && !f} />
               <span>Direct Messages</span>
             </button>
+            <StartConversationButton onClick={onStartConversation} />
           </div>
           {showDms && regularDms.map(renderDmRow)}
           {showDms && regularDms.length === 0 && (

@@ -1,6 +1,7 @@
 import { flushSync } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIcon, BookmarkIcon, HomeIcon, MessageSquareTextIcon } from "lucide-react";
+import Logo from "./Logo.js";
 
 const icon = (Icon) => () => <Icon size={22} strokeWidth={2} />;
 const ITEMS = [
@@ -33,7 +34,16 @@ export default function LeftRail({ view, onSelect, badges = {} }) {
   }
 
   return (
-    <nav className="rail" onMouseDownCapture={selectFromEvent} onPointerDownCapture={selectFromEvent}>
+    <nav
+      className="rail"
+      aria-label="Primary navigation"
+      onMouseDownCapture={selectFromEvent}
+      onPointerDownCapture={selectFromEvent}
+    >
+      <div className="rail-brand" aria-hidden="true">
+        <Logo size={54} />
+        <span className="rail-brand-name">echo</span>
+      </div>
       <div className="rail-top">
         {ITEMS.map(({ key, label, Icon }) => {
           const count = badges[key] || 0;
@@ -43,6 +53,7 @@ export default function LeftRail({ view, onSelect, badges = {} }) {
               type="button"
               className={`rail-item rail-item-${key} ${view === key ? "active" : ""} ${clicked === key ? "clicked" : ""}`}
               data-testid={`rail-${key}`}
+              aria-current={view === key ? "page" : undefined}
               onClick={() => {
                 pulse(key);
                 onSelect(key);

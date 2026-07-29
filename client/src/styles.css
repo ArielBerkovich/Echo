@@ -65,25 +65,25 @@ html[data-mode="dark"] {
   --shadow-lg: 0 24px 56px rgba(0, 0, 0, 0.6);
 }
 
-/* Aubergine — a rich plum navigation space with a quiet neutral canvas. */
+/* Aubergine — warm stone highlights against deep wine navigation. */
 html[data-theme="aubergine"] {
-  --accent: #7a3e83;
-  --active-bg: #611f69;
-  --on-navy: #f8eef6;
-  --on-navy-muted: #d3b8d2;
-  --sidebar-bg: linear-gradient(180deg, #4a154b, #3f0e40);
-  --rail-bg: #2f0b32;
+  --accent: #8c8580;
+  --active-bg: #6f6863;
+  --on-navy: #fff5ef;
+  --on-navy-muted: #d8abbf;
+  --sidebar-bg: linear-gradient(165deg, #5b1b42 0%, #43122f 52%, #321022 100%);
+  --rail-bg: #240817;
 }
 html[data-theme="aubergine"][data-mode="light"] {
-  --bg: #f8f8f8;
-  --surface: #ffffff;
-  --surface-2: #f3f0f4;
-  --border: #ddd6de;
-  --text: #262127;
-  --muted: #625b63;
-  --code-bg: #f5f3f5;
-  --code-text: #262127;
-  --code-border: #ddd6de;
+  --bg: #f7f3f0;
+  --surface: #fffdfb;
+  --surface-2: #f1e7e3;
+  --border: #dfd1cc;
+  --text: #2b2026;
+  --muted: #75636a;
+  --code-bg: #f3e9e5;
+  --code-text: #35232c;
+  --code-border: #ddcec9;
 }
 
 /* Azure — clean sky blue; deep navy surfaces in dark mode. */
@@ -196,15 +196,15 @@ html[data-theme="sand"][data-mode="light"] {
 /* ---- Theme-tinted dark surfaces so the chat panel stays on-brand in dark
    mode without flattening into a generic layout. ---- */
 html[data-theme="aubergine"][data-mode="dark"] {
-  --bg: #1d171e;
-  --surface: #251e26;
-  --surface-2: #322934;
-  --border: #4b3d4e;
-  --text: #f4ebf3;
-  --muted: #b7a9b8;
-  --code-bg: #18131a;
-  --code-text: #f4ebf3;
-  --code-border: #4b3d4e;
+  --bg: #1a1016;
+  --surface: #261821;
+  --surface-2: #34212d;
+  --border: #513444;
+  --text: #fff4ee;
+  --muted: #c09aa9;
+  --code-bg: #140b10;
+  --code-text: #f8e9e2;
+  --code-border: #513444;
 }
 html[data-theme="sand"][data-mode="dark"] {
   --bg: #16120c;
@@ -1864,63 +1864,133 @@ html[data-mode="dark"] .backend-connection-error {
   color: #fff;
 }
 
-/* Leftmost nav rail (Home / DMs / Activity) */
+/* Echo's "signal dock": a compact, freestanding primary navigation surface. */
 .rail {
-  width: 72px;
+  position: relative;
+  width: 88px;
   flex: none;
-  background: var(--rail-bg);
+  background:
+    radial-gradient(circle at 48% 10%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 30%),
+    var(--rail-bg);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  padding: 10px 0 14px;
+  padding: 14px 9px 18px;
+  border-right: 1px solid color-mix(in srgb, var(--on-navy) 10%, transparent);
+  overflow: hidden;
+}
+.rail::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -48px;
+  width: 112px;
+  height: 112px;
+  border: 1px solid color-mix(in srgb, var(--accent) 16%, transparent);
+  border-radius: 50%;
+  transform: translateX(-50%);
+  box-shadow:
+    0 0 0 18px color-mix(in srgb, var(--accent) 6%, transparent),
+    0 0 0 38px color-mix(in srgb, var(--accent) 3%, transparent);
+  pointer-events: none;
+}
+.rail-brand {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: 1px 0 22px;
+  color: var(--on-navy);
+}
+.rail-brand .echo-logo {
+  width: 54px;
+  height: 54px;
+  filter: drop-shadow(0 7px 16px rgba(0, 0, 0, 0.24));
+}
+.rail-brand-name {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  line-height: 1;
+  text-transform: uppercase;
 }
 .rail-top {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 7px;
   align-items: center;
+  width: 100%;
+  padding: 7px 5px;
+  border: 1px solid color-mix(in srgb, var(--on-navy) 10%, transparent);
+  border-radius: 23px;
+  background: color-mix(in srgb, var(--on-navy) 6%, transparent);
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.16),
+    0 1px 0 color-mix(in srgb, var(--on-navy) 8%, transparent) inset;
+  backdrop-filter: blur(10px);
 }
 .rail-item {
-  width: 58px;
+  position: relative;
+  width: 60px;
+  min-height: 58px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  justify-content: center;
+  gap: 4px;
   background: none;
   color: var(--on-navy-muted);
-  padding: 7px 0;
-  border-radius: 10px;
-  font-size: 11px;
-  font-weight: 600;
+  padding: 8px 0 7px;
+  border: 1px solid transparent;
+  border-radius: 18px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transition: color 0.18s ease, background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
 }
 .rail-item > * {
   pointer-events: none;
 }
 .rail-item:hover {
   color: #fff;
+  background: color-mix(in srgb, var(--on-navy) 7%, transparent);
 }
 .rail-item.active {
-  color: #fff;
+  color: var(--on-navy);
+  background: color-mix(in srgb, var(--active-bg) 16%, transparent);
+  border-color: color-mix(in srgb, var(--active-bg) 36%, transparent);
+}
+.rail-item.active::before {
+  content: "";
+  position: absolute;
+  left: -8px;
+  top: 50%;
+  width: 3px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--active-bg);
+  transform: translateY(-50%);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--active-bg) 75%, transparent);
 }
 .rail-icon {
   position: relative;
-  width: 42px;
-  height: 38px;
-  border-radius: 12px;
+  width: 34px;
+  height: 30px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  transition: transform 0.18s ease, color 0.18s ease;
 }
 .rail-item:hover .rail-icon {
-  background: color-mix(in srgb, var(--active-bg) 24%, transparent);
   transform: translateY(-1px);
 }
 .rail-item.active .rail-icon {
-  background: var(--active-bg);
-  color: var(--active-fg);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--active-fg) 16%, transparent) inset;
+  color: color-mix(in srgb, var(--active-bg) 72%, white);
 }
 .rail-item.clicked .rail-icon {
   animation-duration: 0.62s;
@@ -1957,8 +2027,8 @@ html[data-mode="dark"] .backend-connection-error {
 }
 .rail-badge {
   position: absolute;
-  top: -3px;
-  right: 0;
+  top: -5px;
+  right: -5px;
   background: var(--danger);
   color: #fff;
   font-size: 10px;
@@ -1970,11 +2040,12 @@ html[data-mode="dark"] .backend-connection-error {
   align-items: center;
   justify-content: center;
   padding: 0 4px;
-  border: 2px solid #08111f;
+  border: 2px solid var(--rail-bg);
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.28);
 }
 .rail-badge.dot {
-  top: 1px;
-  right: 3px;
+  top: 0;
+  right: 0;
   min-width: 8px;
   width: 8px;
   height: 8px;
@@ -2235,6 +2306,9 @@ html[data-mode="dark"] .sidebar {
   gap: 10px;
   padding: 18px 18px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.dms-view .sidebar-header {
+  height: 70px;
 }
 .sidebar-header .brand-sm {
   font-weight: 700;
@@ -2498,6 +2572,9 @@ html[data-mode="dark"] .sidebar {
   margin-top: 10px;
   padding: 0 12px 8px;
 }
+.sidebar:not(.dms-view) > .dm-find {
+  margin-top: 21px;
+}
 .dm-find input {
   flex: 1;
   background: rgba(255, 255, 255, 0.1);
@@ -2511,6 +2588,9 @@ html[data-mode="dark"] .sidebar {
 .dm-find input:focus {
   border-color: var(--cyan);
   box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+}
+.sidebar-header .start-conversation {
+  margin-left: auto;
 }
 .dm-rich {
   display: flex;
@@ -6856,7 +6936,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 /* Very narrow: trim the drawer so it doesn't cover the whole screen. */
 @media (max-width: 420px) {
   .sidebar {
-    width: calc(100vw - 72px - 36px);
+    width: calc(100vw - 88px - 24px);
     max-width: 260px;
   }
 }
@@ -7532,26 +7612,44 @@ html[data-mode="dark"] .hljs-class .hljs-title {
    flexible so the added navigation space does not create horizontal overflow. */
 @media (min-width: 1600px) {
   .rail {
-    width: 112px;
-    padding-block: 16px 20px;
+    width: 104px;
+    padding: 18px 10px 22px;
+  }
+  .rail-brand {
+    gap: 8px;
+    margin-bottom: 28px;
+  }
+  .rail-brand .echo-logo {
+    width: 62px;
+    height: 62px;
+  }
+  .rail-brand-name {
+    font-size: 11px;
+  }
+  .rail-top {
+    gap: 9px;
+    padding: 9px 6px;
+    border-radius: 27px;
   }
   .rail-item {
-    width: 100px;
-    gap: 7px;
-    padding-block: 13px;
-    font-size: 15px;
+    width: 72px;
+    min-height: 70px;
+    gap: 5px;
+    padding-block: 10px;
+    border-radius: 21px;
+    font-size: 12px;
   }
   .rail-icon {
-    width: 64px;
-    height: 56px;
+    width: 40px;
+    height: 36px;
   }
   .rail-icon svg {
-    width: 28px;
-    height: 28px;
+    width: 25px;
+    height: 25px;
   }
   .rail-badge {
     top: -5px;
-    right: -3px;
+    right: -5px;
     min-width: 22px;
     height: 22px;
     border-radius: 11px;
@@ -7564,6 +7662,9 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   .sidebar-header {
     gap: 12px;
     padding: 23px 22px;
+  }
+  .dms-view .sidebar-header {
+    height: 73px;
   }
   .channel-list {
     padding: 18px 14px;

@@ -84,6 +84,7 @@ const SearchBox = forwardRef(function SearchBox(
   const [caret, setCaret] = useState(0);
   const [activeIdx, setActiveIdx] = useState(0);
   const [remoteChannels, setRemoteChannels] = useState([]);
+  const [conversationPickerOpen, setConversationPickerOpen] = useState(false);
   const wrapRef = useRef(null);
   const inputRef = useRef(null);
   const highlightRef = useRef(null);
@@ -103,20 +104,33 @@ const SearchBox = forwardRef(function SearchBox(
 
   useImperativeHandle(ref, () => ({
     focus() {
+      setConversationPickerOpen(false);
       inputRef.current?.focus();
       setOpen(true);
+    },
+    startConversation() {
+      setQuery("");
+      setCaret(0);
+      setActiveIdx(0);
+      setConversationPickerOpen(true);
+      setOpen(true);
+      requestAnimationFrame(() => inputRef.current?.focus());
     },
     clear() {
       setOpen(false);
       setQuery("");
       setCaret(0);
       setActiveIdx(0);
+      setConversationPickerOpen(false);
     },
   }));
 
   useEffect(() => {
     function onDown(e) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) {
+        setOpen(false);
+        setConversationPickerOpen(false);
+      }
     }
     document.addEventListener("mousedown", onDown);
     return () => document.removeEventListener("mousedown", onDown);
@@ -125,7 +139,7 @@ const SearchBox = forwardRef(function SearchBox(
   const publicChannels = useMemo(() => channels.filter((c) => c.type === "public"), [channels]);
   const q = query.trim().toLowerCase();
   const hasFilterTokens = /(?:^|\s)(in:|from:|has:)/i.test(query);
-  const peoplePicker = variant === "people-picker";
+  const peoplePicker = variant === "people-picker" || conversationPickerOpen;
 
   const filter = activeFilterAt(query, caret);
   const shouldFindChannels =
@@ -179,7 +193,7 @@ const SearchBox = forwardRef(function SearchBox(
       ? channelCandidates.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 6)
       : [];
   const peopleHits =
-    q && !hasFilterTokens
+    (q || peoplePicker) && !hasFilterTokens
       ? users
           .filter(
             (u) => u.username.toLowerCase().includes(q) || u.displayName.toLowerCase().includes(q)
@@ -194,10 +208,10 @@ const SearchBox = forwardRef(function SearchBox(
     if (filter && filterSuggestions.length) {
       return filterSuggestions.map((item) => ({ kind: "filter", item }));
     }
+    if (peoplePicker) {
+      return peopleHits.map((item) => ({ kind: "people", item }));
+    }
     if (q && !hasFilterTokens) {
-      if (peoplePicker) {
-        return peopleHits.map((item) => ({ kind: "people", item }));
-      }
       return [
         { kind: "search" },
         ...channelHits.map((item) => ({ kind: "channel", item })),
@@ -225,6 +239,7 @@ const SearchBox = forwardRef(function SearchBox(
   function close() {
     setOpen(false);
     setQuery("");
+    setConversationPickerOpen(false);
   }
   function pickChannel(c) {
     onPickChannel(c);
@@ -305,6 +320,7 @@ const SearchBox = forwardRef(function SearchBox(
     }
     if (e.key === "Escape") {
       setOpen(false);
+      setConversationPickerOpen(false);
       return;
     }
     // Tab always completes a filter token from the highlighted suggestion.
@@ -361,7 +377,7 @@ const SearchBox = forwardRef(function SearchBox(
 
   // Flat-index offsets for the quick-nav layout (search row is index 0).
   const channelStart = 1;
-  const peopleStart = 1 + channelHits.length;
+  const peopleStart = peoplePicker ? 0 : 1 + channelHits.length;
 
   return (
     <div className="search-box" ref={wrapRef} data-testid="search-box">
@@ -386,7 +402,7 @@ const SearchBox = forwardRef(function SearchBox(
               setOpen(true);
             }}
             onKeyDown={onKeyDown}
-            placeholder="Search messages, people, and channels"
+            placeholder={peoplePicker ? "Find someone to message" : "Search messages, people, and channels"}
             dir="auto"
           />
         </div>
@@ -428,7 +444,7 @@ const SearchBox = forwardRef(function SearchBox(
             </>
           ) : (
             <>
-              {!q && (
+              {!q && !peoplePicker && (
                 <>
                   <div className="search-hint" data-testid="search-hint">
                     Press <b>Enter</b> to search messages. Filter with <code>in:channel</code>,{" "}
@@ -495,11 +511,11 @@ const SearchBox = forwardRef(function SearchBox(
               {!peoplePicker && channelHits.length > 0 && <div className="search-section">Channels</div>}
               {!peoplePicker && channelHits.map((c, i) => channelRow(c, channelStart + i, "hit"))}
 
-              {peopleHits.length > 0 && <div className="search-section">{peoplePicker ? "People in this channel" : "People"}</div>}
+              {peopleHits.length > 0 && <div className="search-section">People</div>}
               {peopleHits.map((u, i) => personRow(u, peopleStart + i, "hit"))}
 
-              {q && !hasFilterTokens && channelHits.length === 0 && peopleHits.length === 0 && (
-                <div className="people-empty">No people in this channel match.</div>
+              {(q || peoplePicker) && !hasFilterTokens && channelHits.length === 0 && peopleHits.length === 0 && (
+                <div className="people-empty">No people match.</div>
               )}
             </>
           )}
