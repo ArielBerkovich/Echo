@@ -5,7 +5,11 @@
 export function nonMemberMentions(channel, users, body) {
   if (channel.type !== "private") return [];
   const memberIds = new Set(channel.members || []);
-  const byUsername = new Map(users.map((u) => [u.username.toLowerCase(), u]));
+  const byUsername = new Map();
+  for (const user of users) {
+    byUsername.set(user.username.toLowerCase(), user);
+    for (const alias of user.aliases || []) byUsername.set(String(alias).toLowerCase(), user);
+  }
   const found = new Map();
   const re = /(?:^|\s)@([\w.-]+)/g;
   let m;

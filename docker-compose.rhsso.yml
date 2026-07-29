@@ -61,7 +61,9 @@ services:
       - rhsso-keycloak-data:/opt/keycloak/data
 
   server:
-    build: ./server
+    build:
+      context: .
+      dockerfile: server/Dockerfile
     restart: unless-stopped
     environment:
       PORT: 4000

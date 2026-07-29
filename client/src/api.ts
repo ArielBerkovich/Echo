@@ -24,7 +24,9 @@ export function getBackendUrl() {
 }
 
 export function rhssoLoginUrl() {
-  return `${getBackendUrl()}/api/auth/rhsso/login`;
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const query = origin ? `?origin=${encodeURIComponent(origin)}` : "";
+  return `${getBackendUrl()}/api/auth/rhsso/login${query}`;
 }
 
 // The backend returns the Echo session in the URL fragment so it is never
@@ -58,6 +60,9 @@ function friendlyErrorMessage(status, serverMessage, path, errorLabel) {
     return "Something went wrong on our end. Please try again in a moment.";
   }
   if (status === 401) {
+    if (path.startsWith("/auth/migration")) {
+      return serverMessage || "This migration attempt expired. Please start again.";
+    }
     return path === "/auth/login"
       ? "That username or password doesn't look right."
       : "Your session may have expired. Please sign in again.";
@@ -86,6 +91,7 @@ async function request(path, { method = "GET", body } = {}) {
   try {
     const res = await fetch(requestUrl, {
       method,
+      credentials: "include",
       headers: authHeaders(hasBody ? { "Content-Type": "application/json" } : {}),
       body: hasBody ? JSON.stringify(body) : undefined,
     });
@@ -102,6 +108,7 @@ async function requestMultipart(path, form, errorLabel) {
   try {
     const res = await fetch(requestUrl, {
       method: "POST",
+      credentials: "include",
       headers: authHeaders(),
       body: form,
     });
@@ -134,6 +141,15 @@ async function createEmoji(name, file) {
 export const api = {
   register: (payload) => request("/auth/register", { method: "POST", body: payload }),
   login: (payload) => request("/auth/login", { method: "POST", body: payload }),
+  startMigration: (payload) =>
+    request("/auth/migration/start", { method: "POST", body: payload }),
+  migrationStatus: () => request("/auth/migration/status"),
+  attachMigrationSource: (payload) =>
+    request("/auth/migration/attach-source", { method: "POST", body: payload }),
+  createRhssoUser: () =>
+    request("/auth/migration/create-rhsso-user", { method: "POST" }),
+  confirmMigration: (payload) =>
+    request("/auth/migration/confirm", { method: "POST", body: payload }),
   requestPasswordHelp: (username) =>
     request("/auth/forgot-password", { method: "POST", body: { username } }),
   setupStatus: () => request("/auth/setup-status"),

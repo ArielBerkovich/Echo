@@ -3,6 +3,7 @@ import { afterEach, describe, it } from "node:test";
 
 import {
   emitAll,
+  disconnectUserSockets,
   emitToChannel,
   emitToUser,
   getIO,
@@ -32,6 +33,9 @@ function createIO() {
         },
         socketsLeave(target) {
           calls.push(["socketsLeave", room, target]);
+        },
+        disconnectSockets(close) {
+          calls.push(["disconnectSockets", room, close]);
         },
         async fetchSockets() {
           calls.push(["fetchSockets", room]);
@@ -84,6 +88,18 @@ describe("realtime helpers", () => {
       ["socketsJoin", "user:u1", "channel:c1"],
       ["in", "user:u1"],
       ["socketsLeave", "user:u1", "channel:c1"],
+    ]);
+  });
+
+  it("disconnects every live socket for an invalidated user", async () => {
+    const io = createIO();
+    setIO(io);
+
+    await disconnectUserSockets("u1");
+
+    assert.deepEqual(io.calls, [
+      ["in", "user:u1"],
+      ["disconnectSockets", "user:u1", true],
     ]);
   });
 

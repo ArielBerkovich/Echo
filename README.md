@@ -154,6 +154,17 @@ npm run build
 npx playwright test
 ```
 
+Real RHSSO integration tests:
+
+```bash
+docker compose -p echo-rhsso-e2e -f docker-compose.rhsso.yml up -d --build
+curl -fsS -X POST http://127.0.0.1:8091/api/auth/register \
+  -H 'Content-Type: application/json' \
+  --data '{"username":"admin","password":"Password1"}'
+cd client
+ECHO_URL=http://localhost:8091 npm run test:e2e:rhsso
+```
+
 ## Helm
 
 The repository also includes a self-contained Helm chart at [helm/echo](/home/ariel/repositories/Echo/helm/echo).

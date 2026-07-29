@@ -18,8 +18,25 @@ export function rhssoIssuer() {
   return `${config.rhsso.url}/realms/${encodeURIComponent(config.rhsso.realm)}`;
 }
 
-export function rhssoRedirectUri() {
-  return config.rhsso.redirectUri || `${config.clientOrigin.replace(/\/+$/, "")}/api/auth/rhsso/callback`;
+export function rhssoClientOrigin(value) {
+  const candidate = String(value || config.clientOrigin).trim().replace(/\/+$/, "");
+  let parsed;
+  try {
+    parsed = new URL(candidate);
+  } catch {
+    throw Object.assign(new Error("This Echo address is not allowed for RHSSO login"), { status: 400 });
+  }
+  const normalized = parsed.origin;
+  if (!["http:", "https:"].includes(parsed.protocol) ||
+      !config.rhsso.allowedClientOrigins.includes(normalized)) {
+    throw Object.assign(new Error("This Echo address is not allowed for RHSSO login"), { status: 400 });
+  }
+  return normalized;
+}
+
+export function rhssoRedirectUri(clientOrigin = config.clientOrigin) {
+  return config.rhsso.redirectUri ||
+    `${rhssoClientOrigin(clientOrigin)}/api/auth/rhsso/callback`;
 }
 
 function backchannelEndpoint(endpoint) {
@@ -48,20 +65,34 @@ async function discovery() {
   return discoveryCache.document;
 }
 
-export async function beginRhssoLogin() {
+export async function beginRhssoLogin({
+  kind = "rhsso-flow",
+  intentId = null,
+  clientOrigin = config.clientOrigin,
+} = {}) {
   const metadata = await discovery();
+  const verifiedClientOrigin = rhssoClientOrigin(clientOrigin);
+  const redirectUri = rhssoRedirectUri(verifiedClientOrigin);
   const state = crypto.randomBytes(24).toString("base64url");
   const nonce = crypto.randomBytes(24).toString("base64url");
   const verifier = crypto.randomBytes(48).toString("base64url");
   const challenge = crypto.createHash("sha256").update(verifier).digest("base64url");
   const flowToken = jwt.sign(
-    { kind: "rhsso-flow", state, nonce, verifier },
+    {
+      kind,
+      state,
+      nonce,
+      verifier,
+      clientOrigin: verifiedClientOrigin,
+      redirectUri,
+      ...(intentId ? { intentId } : {}),
+    },
     config.jwtSecret,
     { expiresIn: FLOW_TTL_SECONDS }
   );
   const params = new URLSearchParams({
     client_id: config.rhsso.clientId,
-    redirect_uri: rhssoRedirectUri(),
+    redirect_uri: redirectUri,
     response_type: "code",
     scope: "openid profile",
     state,
@@ -69,7 +100,11 @@ export async function beginRhssoLogin() {
     code_challenge: challenge,
     code_challenge_method: "S256",
   });
-  return { authorizationUrl: `${metadata.authorization_endpoint}?${params}`, flowToken };
+  return {
+    authorizationUrl: `${metadata.authorization_endpoint}?${params}`,
+    flowToken,
+    redirectUri,
+  };
 }
 
 function readClaim(claims, path) {
@@ -94,23 +129,19 @@ async function signingKey(metadata, header) {
   return crypto.createPublicKey({ key: jwk, format: "jwk" });
 }
 
-export async function finishRhssoLogin({ code, state, flowToken }) {
+export async function finishRhssoLogin({ code, state, flowToken, expectedKind = "rhsso-flow" }) {
   assertConfigured();
-  let flow;
-  try {
-    flow = jwt.verify(flowToken, config.jwtSecret);
-  } catch {
-    throw Object.assign(new Error("The RHSSO login attempt expired; please try again"), { status: 400 });
-  }
-  if (flow.kind !== "rhsso-flow" || !state || state !== flow.state || !code) {
+  const flow = rhssoFlowContext(flowToken);
+  if (flow.kind !== expectedKind || !state || state !== flow.state || !code) {
     throw Object.assign(new Error("Invalid RHSSO login callback"), { status: 400 });
   }
 
   const metadata = await discovery();
+  const redirectUri = String(flow.redirectUri || rhssoRedirectUri(flow.clientOrigin));
   const body = new URLSearchParams({
     grant_type: "authorization_code",
     client_id: config.rhsso.clientId,
-    redirect_uri: rhssoRedirectUri(),
+    redirect_uri: redirectUri,
     code,
     code_verifier: flow.verifier,
   });
@@ -143,11 +174,20 @@ export async function finishRhssoLogin({ code, state, flowToken }) {
     subject: claims.sub,
     username: readClaim(claims, config.rhsso.usernameClaim) || claims.preferred_username || claims.sub,
     displayName: configuredDisplayName || fallbackDisplayName || claims.preferred_username || claims.sub,
+    ...(flow.intentId ? { intentId: flow.intentId } : {}),
   };
 }
 
-export function rhssoCookie(flowToken) {
-  const secure = rhssoRedirectUri().startsWith("https://") ? "; Secure" : "";
+export function rhssoFlowContext(flowToken) {
+  try {
+    return jwt.verify(flowToken, config.jwtSecret);
+  } catch {
+    throw Object.assign(new Error("The RHSSO login attempt expired; please try again"), { status: 400 });
+  }
+}
+
+export function rhssoCookie(flowToken, redirectUri = rhssoRedirectUri()) {
+  const secure = redirectUri.startsWith("https://") ? "; Secure" : "";
   return `echo_rhsso_flow=${encodeURIComponent(flowToken)}; Path=/api/auth/rhsso; HttpOnly; SameSite=Lax; Max-Age=${FLOW_TTL_SECONDS}${secure}`;
 }
 

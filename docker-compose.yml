@@ -51,6 +51,20 @@ services:
       timeout: 5s
       retries: 5
 
+  rhsso:
+    image: quay.io/keycloak/keycloak:26.7.0
+    restart: unless-stopped
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: AdminPassword1
+      KC_HOSTNAME: http://${ECHO_PUBLIC_HOST:-192.168.1.110}:8180
+    ports:
+      - "8180:8080"
+    volumes:
+      - ./docker/rhsso/echo-realm.json:/opt/keycloak/data/import/echo-realm.json:ro
+      - rhsso-keycloak-data:/opt/keycloak/data
+
   server:
     build:
       context: .
@@ -66,6 +80,14 @@ services:
       - S3_ACCESS_KEY=${MINIO_ROOT_USER:-echo}
       - S3_SECRET_KEY=${MINIO_ROOT_PASSWORD:-echo-dev-secret}
       - S3_BUCKET=echo-uploads
+      - RHSSO_ENABLED=true
+      - RHSSO_URL=http://${ECHO_PUBLIC_HOST:-192.168.1.110}:8180
+      - RHSSO_BACKCHANNEL_URL=http://rhsso:8080
+      - RHSSO_REALM=echo
+      - RHSSO_CLIENT_ID=echo
+      - RHSSO_USERNAME_CLAIM=preferred_username
+      - RHSSO_DISPLAY_NAME_CLAIM=name
+      - RHSSO_ALLOWED_CLIENT_ORIGINS=http://localhost:8090,http://${ECHO_PUBLIC_HOST:-192.168.1.110}:8090
     depends_on:
       mongo:
         condition: service_healthy
@@ -73,6 +95,8 @@ services:
         condition: service_completed_successfully
       minio:
         condition: service_healthy
+      rhsso:
+        condition: service_started
 
   client:
     build: ./client
@@ -86,3 +110,4 @@ services:
 volumes:
   mongo-data:
   minio-data:
+  rhsso-keycloak-data:

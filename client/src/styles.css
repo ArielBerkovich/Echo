@@ -1323,6 +1323,32 @@ input:focus {
   z-index: 100;
   animation: fadeInUp 0.18s ease both;
 }
+
+.auth-creation-backdrop {
+  z-index: 1000;
+}
+
+.modal.auth-creation-modal {
+  width: min(500px, calc(100vw - 32px));
+  max-height: min(760px, calc(100vh - 32px));
+  overflow-y: auto;
+}
+
+.auth-creation-modal h2 {
+  margin: 0 36px 8px 0;
+  color: #111;
+}
+
+.auth-creation-modal > p {
+  color: #111;
+  line-height: 1.5;
+}
+
+.creation-choice-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
 .modal {
   width: 480px;
   max-width: calc(100vw - 40px);

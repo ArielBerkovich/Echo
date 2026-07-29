@@ -31,4 +31,12 @@ describe("nonMemberMentions", () => {
   it("matches mentions at the start of text or after whitespace only", () => {
     assert.deepEqual(nonMemberMentions({ type: "private", members: [] }, users, "email@alice @bob"), [users[1]]);
   });
+
+  it("resolves retired usernames to the canonical user", () => {
+    const renamed = { id: "u4", username: "new.name", aliases: ["old.name"] };
+    assert.deepEqual(
+      nonMemberMentions({ type: "private", members: [] }, [renamed], "hello @old.name"),
+      [renamed]
+    );
+  });
 });

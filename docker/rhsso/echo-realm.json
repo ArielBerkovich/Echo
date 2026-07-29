@@ -13,8 +13,16 @@
       "publicClient": true,
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": false,
-      "redirectUris": ["http://localhost:8091/api/auth/rhsso/callback"],
-      "webOrigins": ["http://localhost:8091"],
+      "redirectUris": [
+        "http://localhost:8090/api/auth/rhsso/callback",
+        "http://localhost:8091/api/auth/rhsso/callback",
+        "http://192.168.1.110:8090/api/auth/rhsso/callback"
+      ],
+      "webOrigins": [
+        "http://localhost:8090",
+        "http://localhost:8091",
+        "http://192.168.1.110:8090"
+      ],
       "attributes": {
         "pkce.code.challenge.method": "S256"
       }

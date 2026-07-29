@@ -75,6 +75,7 @@ describe("RHSSO OpenID Connect flow", () => {
       usernameClaim: "preferred_username",
       displayNameClaim: "profile.display",
       redirectUri: "",
+      allowedClientOrigins: ["https://echo.example.test", "http://192.168.1.110:8090"],
     });
     config.clientOrigin = "https://echo.example.test";
   });
@@ -120,6 +121,52 @@ describe("RHSSO OpenID Connect flow", () => {
     const { flowToken } = await beginRhssoLogin();
     await assert.rejects(
       finishRhssoLogin({ code: "authorization-code", state: "wrong-state", flowToken }),
+      /Invalid RHSSO login callback/
+    );
+  });
+
+  it("signs and reuses an allowed LAN callback origin", async () => {
+    const { authorizationUrl, flowToken } = await beginRhssoLogin({
+      clientOrigin: "http://192.168.1.110:8090",
+    });
+    const authorization = new URL(authorizationUrl);
+    const flow = jwt.verify(flowToken, config.jwtSecret);
+    assert.equal(
+      authorization.searchParams.get("redirect_uri"),
+      "http://192.168.1.110:8090/api/auth/rhsso/callback"
+    );
+    assert.equal(flow.clientOrigin, "http://192.168.1.110:8090");
+    assert.equal(flow.redirectUri, "http://192.168.1.110:8090/api/auth/rhsso/callback");
+
+    await assert.rejects(
+      beginRhssoLogin({ clientOrigin: "https://attacker.example" }),
+      /not allowed/
+    );
+  });
+
+  it("binds a migration flow to its purpose and intent", async () => {
+    const { authorizationUrl, flowToken } = await beginRhssoLogin({
+      kind: "rhsso-migration",
+      intentId: "intent-123",
+    });
+    const authorization = new URL(authorizationUrl);
+    const flow = jwt.verify(flowToken, config.jwtSecret);
+    expectedNonce = flow.nonce;
+
+    const identity = await finishRhssoLogin({
+      code: "authorization-code",
+      state: authorization.searchParams.get("state"),
+      flowToken,
+      expectedKind: "rhsso-migration",
+    });
+    assert.equal(identity.intentId, "intent-123");
+
+    await assert.rejects(
+      finishRhssoLogin({
+        code: "authorization-code",
+        state: authorization.searchParams.get("state"),
+        flowToken,
+      }),
       /Invalid RHSSO login callback/
     );
   });

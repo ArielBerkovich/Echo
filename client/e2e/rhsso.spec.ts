@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { registerUser, uniqueSuffix } from "./helpers.js";
 
 // ---------------------------------------------------------------------------
 // RHSSO / Keycloak E2E tests
@@ -6,6 +7,40 @@ import { expect, test } from "@playwright/test";
 
 const RHSSO_USER = process.env.RHSSO_USER || "jane.doe";
 const RHSSO_PASSWORD = process.env.RHSSO_PASSWORD || "UserPassword1";
+const RHSSO_ADMIN = process.env.RHSSO_ADMIN || "admin";
+const RHSSO_ADMIN_PASSWORD = process.env.RHSSO_ADMIN_PASSWORD || "AdminPassword1";
+const RHSSO_ORIGIN = process.env.RHSSO_ORIGIN || "http://localhost:8180";
+const ECHO_ORIGIN = process.env.ECHO_URL || "http://localhost:8091";
+const ECHO_PORT = new URL(ECHO_ORIGIN).port;
+
+async function createRhssoUser(request, username, password) {
+  const tokenResponse = await request.post(
+    `${RHSSO_ORIGIN}/realms/master/protocol/openid-connect/token`,
+    {
+      form: {
+        grant_type: "password",
+        client_id: "admin-cli",
+        username: RHSSO_ADMIN,
+        password: RHSSO_ADMIN_PASSWORD,
+      },
+    }
+  );
+  expect(tokenResponse.ok(), "failed to authenticate the RHSSO test administrator").toBeTruthy();
+  const { access_token: accessToken } = await tokenResponse.json();
+  const createResponse = await request.post(`${RHSSO_ORIGIN}/admin/realms/echo/users`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    data: {
+      username,
+      enabled: true,
+      email: `${username}@example.test`,
+      emailVerified: true,
+      firstName: "Target",
+      lastName: "Identity",
+      credentials: [{ type: "password", value: password, temporary: false }],
+    },
+  });
+  expect(createResponse.status(), "failed to create the RHSSO migration target").toBe(201);
+}
 
 async function isActualSsoEnabled(request) {
   try {
@@ -29,7 +64,7 @@ test.describe("RHSSO login flows (Mocked, runs in every test run)", () => {
     });
   });
 
-  test("auto-redirects to Keycloak login page when RHSSO is enabled (Mocked)", async ({ page }) => {
+  test("offers RHSSO without redirecting until the user chooses it (Mocked)", async ({ page }) => {
     // 1. Mock the setup status to report that RHSSO is enabled.
     await page.route("**/api/auth/setup-status", async (route) => {
       await route.fulfill({
@@ -41,7 +76,7 @@ test.describe("RHSSO login flows (Mocked, runs in every test run)", () => {
 
     // 2. Intercept the redirect to the backend login route.
     let redirectAttempted = false;
-    await page.route("**/api/auth/rhsso/login", async (route) => {
+    await page.route("**/api/auth/rhsso/login?**", async (route) => {
       redirectAttempted = true;
       await route.fulfill({
         status: 200,
@@ -53,7 +88,10 @@ test.describe("RHSSO login flows (Mocked, runs in every test run)", () => {
     // 3. Navigate to the client.
     await page.goto("/");
 
-    // 4. Verify that the auto-redirect was triggered.
+    // 4. Local login remains available and RHSSO starts only after an explicit click.
+    await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
+    expect(redirectAttempted).toBe(false);
+    await page.getByRole("button", { name: "Sign in with RHSSO" }).click();
     await expect.poll(() => redirectAttempted).toBe(true);
   });
 
@@ -87,7 +125,7 @@ test.describe("RHSSO login flows (Mocked, runs in every test run)", () => {
 
     // 2. Intercept any redirect attempts.
     let redirectAttempted = false;
-    await page.route("**/api/auth/rhsso/login", async (route) => {
+    await page.route("**/api/auth/rhsso/login?**", async (route) => {
       redirectAttempted = true;
       await route.fulfill({ status: 200, body: "Redirected" });
     });
@@ -123,8 +161,10 @@ test.describe("RHSSO login flows (Real integration, runs only when Keycloak is u
     });
   });
 
-  test("auto-redirects to Keycloak login page when RHSSO is enabled (Real)", async ({ page }) => {
+  test("opens Keycloak only after choosing RHSSO (Real)", async ({ page }) => {
     await page.goto("/");
+    await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Sign in with RHSSO" }).click();
     await page.waitForURL((url) => url.hostname !== "localhost" || url.port === "8180", {
       timeout: 15_000,
     });
@@ -140,6 +180,7 @@ test.describe("RHSSO login flows (Real integration, runs only when Keycloak is u
     page,
   }) => {
     await page.goto("/");
+    await page.getByRole("button", { name: "Sign in with RHSSO" }).click();
     await page.waitForURL((url) => url.port === "8180", { timeout: 15_000 });
 
     await page.locator("#username").fill(RHSSO_USER);
@@ -147,15 +188,16 @@ test.describe("RHSSO login flows (Real integration, runs only when Keycloak is u
     await page.locator("#kc-login").click();
 
     await page.waitForURL(
-      (url) =>
-        (url.hostname === "localhost" && (url.port === "8091" || url.port === "5173")) &&
-        url.hash.includes("rhsso_token="),
+      (url) => url.hostname === "localhost" && url.port === ECHO_PORT,
       { timeout: 15_000 },
     );
-
-    const callbackUrl = new URL(page.url());
-    const token = new URLSearchParams(callbackUrl.hash.slice(1)).get("rhsso_token");
-    expect(token, "Echo callback must contain an rhsso_token").toBeTruthy();
+    const creationModal = page.getByTestId("creation-migration-modal");
+    if (await creationModal.isVisible().catch(() => false)) {
+      await creationModal.getByRole("button", { name: "Create a new Echo account" }).click();
+    }
+    await expect(page.getByTestId("sidebar-logout")).toBeVisible({ timeout: 15_000 });
+    const token = await page.evaluate(() => localStorage.getItem("echo.token"));
+    expect(token, "Echo must store the RHSSO session after account creation").toBeTruthy();
 
     const meResponse = await page.request.get("/api/auth/me", {
       headers: { Authorization: `Bearer ${token}` },
@@ -170,13 +212,14 @@ test.describe("RHSSO login flows (Real integration, runs only when Keycloak is u
 
   test("logout does not cause a redirect loop back to Keycloak (Real)", async ({ page }) => {
     await page.goto("/");
+    await page.getByRole("button", { name: "Sign in with RHSSO" }).click();
     await page.waitForURL((url) => url.port === "8180", { timeout: 15_000 });
     await page.locator("#username").fill(RHSSO_USER);
     await page.locator("#password").fill(RHSSO_PASSWORD);
     await page.locator("#kc-login").click();
 
     await page.waitForURL(
-      (url) => url.hostname === "localhost" && (url.port === "8091" || url.port === "5173"),
+      (url) => url.hostname === "localhost" && url.port === ECHO_PORT,
       { timeout: 15_000 },
     );
 
@@ -188,7 +231,67 @@ test.describe("RHSSO login flows (Real integration, runs only when Keycloak is u
     await page.waitForTimeout(3_000);
 
     const currentUrl = new URL(page.url());
-    expect(currentUrl.port).toMatch(/^(8091|5173)$/);
+    expect(currentUrl.port).toBe(ECHO_PORT);
     expect(currentUrl.hostname).toBe("localhost");
+  });
+
+  test("migrates a logged-out local Echo user into a new RHSSO identity (Real)", async ({
+    page,
+    request,
+  }) => {
+    const suffix = uniqueSuffix("sso").replace(/[^a-z0-9]/gi, "").slice(-12);
+    const oldUsername = `legacy.person${suffix}`;
+    const targetUsername = `migration.sso${suffix}`;
+    const targetPassword = "TargetPassword1";
+    await createRhssoUser(request, targetUsername, targetPassword);
+
+    const oldAccount = await registerUser(page, {
+      username: oldUsername,
+      password: "Password1",
+      displayName: "Legacy Person",
+    });
+
+    await page.goto("/");
+    await page.getByRole("button", { name: "Sign in with RHSSO" }).click();
+    await page.waitForURL((url) => url.port === "8180", { timeout: 15_000 });
+    await page.locator("#username").fill(targetUsername);
+    await page.locator("#password").fill(targetPassword);
+    await page.locator("#kc-login").click();
+
+    await page.waitForURL(
+      (url) => url.port === ECHO_PORT && url.hash.includes("rhsso_creation=pending"),
+      { timeout: 15_000 }
+    );
+    const modal = page.getByTestId("creation-migration-modal");
+    await expect(modal).toBeVisible();
+    await modal.getByRole("button", { name: "Bring history from an old account" }).click();
+    await modal.getByLabel("Old username").fill(oldUsername);
+    await modal.getByLabel("Old password").fill("Password1");
+    const rhssoUsername = page.getByLabel("RHSSO username");
+    await expect(rhssoUsername).toHaveValue(targetUsername);
+    await expect(rhssoUsername).toHaveAttribute("readonly", "");
+    await modal.getByRole("button", { name: "Keep old history and continue" }).click();
+
+    await expect(page.getByTestId("sidebar-logout")).toBeVisible({ timeout: 15_000 });
+    const token = await page.evaluate(() => localStorage.getItem("echo.token"));
+    const meResponse = await page.request.get("/api/auth/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const { user } = await meResponse.json();
+    expect(user).toMatchObject({
+      id: oldAccount.user.id,
+      username: targetUsername,
+      displayName: "Legacy Person",
+    });
+
+    const oldLogin = await page.request.post("/api/auth/login", {
+      data: { username: oldUsername, password: "Password1" },
+    });
+    expect(oldLogin.status()).toBe(401);
+
+    await page.getByTestId("sidebar-logout").click();
+    await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
+    await expect(page.getByText("This migration attempt expired. Please start again.")).toHaveCount(0);
+    expect(new URL(page.url()).hash).toBe("");
   });
 });
