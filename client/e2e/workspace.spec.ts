@@ -31,7 +31,7 @@ test("sign out clears the session and returns to login", async ({ page }) => {
 
   await page.getByRole("button", { name: "Sign out" }).click({ force: true });
 
-  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
   await expect(page.evaluate(() => localStorage.getItem("echo.token"))).resolves.toBeNull();
 });
 

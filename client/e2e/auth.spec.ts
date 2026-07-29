@@ -128,7 +128,7 @@ test("login displays server errors", async ({ page }) => {
   }
 
   await page.goto("/");
-  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
 
   await page.getByLabel("Username").fill(username);
   await page.locator('input[name="password"]').fill("WrongPassword1");
