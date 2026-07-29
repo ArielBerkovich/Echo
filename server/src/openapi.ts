@@ -55,6 +55,27 @@ export function openApiDocument() {
           responses: { 200: { description: "OpenAPI JSON" } },
         },
       },
+      "/api/channels": {
+        get: {
+          summary: "List channels or browse the public channel catalog",
+          parameters: [
+            { name: "scope", in: "query", schema: { type: "string", enum: ["all"] } },
+            { name: "catalog", in: "query", schema: { type: "string", enum: ["1"] } },
+            { name: "q", in: "query", schema: { type: "string", maxLength: 100 } },
+            {
+              name: "membership",
+              in: "query",
+              schema: { type: "string", enum: ["all", "joined", "available"] },
+            },
+            { name: "limit", in: "query", schema: { type: "integer", minimum: 1, maximum: 100 } },
+            { name: "cursor", in: "query", schema: { type: "string" } },
+          ],
+          responses: {
+            200: { description: "Channel list or paginated public-channel catalog" },
+            400: { description: "Invalid cursor" },
+          },
+        },
+      },
       "/api/channels/by-name/{name}": {
         get: {
           summary: "Find a channel by name",

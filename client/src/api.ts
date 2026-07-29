@@ -143,6 +143,18 @@ export const api = {
   listUsers: () => request("/users"),
   listChannels: () => request("/channels"),
   listAllChannels: () => request("/channels?scope=all"),
+  browseChannels: ({ q = "", membership = "all", cursor = "", limit = 50 } = {}) => {
+    const params = new URLSearchParams({
+      scope: "all",
+      catalog: "1",
+      membership,
+      limit: String(limit),
+    });
+    if (q) params.set("q", q);
+    if (cursor) params.set("cursor", cursor);
+    return request(`/channels?${params.toString()}`);
+  },
+  getChannelByName: (name) => request(`/channels/by-name/${encodeURIComponent(name)}`),
   getChannel: (id) => request(`/channels/${id}`),
   createChannel: (name, type = "public") =>
     request("/channels", { method: "POST", body: { name, type } }),

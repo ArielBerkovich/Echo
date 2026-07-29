@@ -53,10 +53,132 @@ import { requireAuth } from "../middleware/requireAuth.js";
 export const channelsRouter = Router();
 channelsRouter.use(requireAuth);
 
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function decodeCatalogCursor(raw) {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(Buffer.from(String(raw), "base64url").toString("utf8"));
+    if (typeof parsed?.name !== "string" || !mongoose.isValidObjectId(parsed?.id)) return null;
+    return { name: parsed.name, id: new mongoose.Types.ObjectId(parsed.id) };
+  } catch {
+    return null;
+  }
+}
+
+function encodeCatalogCursor(channel) {
+  return Buffer.from(JSON.stringify({ name: channel.name, id: channel._id.toString() })).toString("base64url");
+}
+
+async function listCatalogPage(req, res) {
+  const limit = Math.min(Math.max(Number.parseInt(String(req.query.limit || "50"), 10) || 50, 1), 100);
+  const membership = ["joined", "available"].includes(String(req.query.membership))
+    ? String(req.query.membership)
+    : "all";
+  const q = String(req.query.q || "").trim().slice(0, 100);
+  const cursor = decodeCatalogCursor(req.query.cursor);
+  if (req.query.cursor && !cursor) {
+    return res.status(400).json({ error: "invalid channel catalog cursor" });
+  }
+
+  const match = { isArchived: false, type: "public" };
+  if (q) {
+    const pattern = new RegExp(escapeRegex(q), "i");
+    match.$or = [{ name: pattern }, { topic: pattern }, { description: pattern }];
+  }
+
+  const membershipMatch =
+    membership === "joined" ? { joined: true } : membership === "available" ? { joined: false } : null;
+  const cursorMatch = cursor
+    ? {
+        $or: [
+          { name: { $gt: cursor.name } },
+          { name: cursor.name, _id: { $gt: cursor.id } },
+        ],
+      }
+    : null;
+
+  const [result] = await Channel.aggregate([
+    { $match: match },
+    {
+      $project: {
+        name: 1,
+        type: 1,
+        topic: { $ifNull: ["$topic", ""] },
+        description: { $ifNull: ["$description", ""] },
+        createdAt: 1,
+        memberCount: { $size: { $ifNull: ["$members", []] } },
+        joined: { $in: [req.user._id, { $ifNull: ["$members", []] }] },
+      },
+    },
+    {
+      $facet: {
+        counts: [
+          {
+            $group: {
+              _id: null,
+              all: { $sum: 1 },
+              joined: { $sum: { $cond: ["$joined", 1, 0] } },
+              available: { $sum: { $cond: ["$joined", 0, 1] } },
+            },
+          },
+        ],
+        channels: [
+          ...(membershipMatch ? [{ $match: membershipMatch }] : []),
+          ...(cursorMatch ? [{ $match: cursorMatch }] : []),
+          { $sort: { name: 1, _id: 1 } },
+          { $limit: limit + 1 },
+        ],
+      },
+    },
+  ]);
+
+  const docs = result?.channels || [];
+  const hasMore = docs.length > limit;
+  const pageDocs = hasMore ? docs.slice(0, limit) : docs;
+  const last = pageDocs.at(-1);
+  const counts = result?.counts?.[0] || { all: 0, joined: 0, available: 0 };
+  return res.json({
+    channels: pageDocs.map((channel) => ({
+      id: channel._id.toString(),
+      name: channel.name,
+      type: channel.type,
+      topic: channel.topic,
+      description: channel.description,
+      memberCount: channel.memberCount,
+      joined: channel.joined,
+      createdAt: channel.createdAt,
+      isArchived: false,
+    })),
+    counts: {
+      all: counts.all || 0,
+      joined: counts.joined || 0,
+      available: counts.available || 0,
+    },
+    page: {
+      hasMore,
+      nextCursor: hasMore && last ? encodeCatalogCursor(last) : null,
+    },
+  });
+}
+
 // GET /api/channels — public channels plus any private ones the user belongs to.
 channelsRouter.get("/", async (req, res) => {
   // ?scope=all → browsable public channels (for search); default → your channels.
   if (req.query.scope === "all") {
+    // The paginated catalog is opt-in so older clients and API consumers that
+    // expect the complete legacy response remain compatible.
+    if (
+      req.query.catalog === "1" ||
+      req.query.limit !== undefined ||
+      req.query.cursor !== undefined ||
+      req.query.q !== undefined ||
+      req.query.membership !== undefined
+    ) {
+      return listCatalogPage(req, res);
+    }
     const all = await Channel.find({ isArchived: false, type: "public" }).sort({ name: 1 });
     return res.json({ channels: all.map((c) => c.toPublicJSON()) });
   }
@@ -124,6 +246,9 @@ channelsRouter.post("/:id/join", async (req, res) => {
     return res.status(404).json({ error: "channel not found" });
   }
   const already = channel.members.some((m) => m.equals(req.user._id));
+  if (channel.type !== "public" && !already) {
+    return res.status(403).json({ error: "private channels are invite-only" });
+  }
   await Channel.updateOne(
     { _id: channel._id },
     { $addToSet: { members: req.user._id } }
@@ -131,7 +256,16 @@ channelsRouter.post("/:id/join", async (req, res) => {
   if (!already) await logSystem(channel._id, req.user._id, "joined the channel");
   const updated = await Channel.findById(channel._id);
   joinUserToChannel(req.user._id.toString(), channel._id.toString());
-  res.json({ channel: updated.toPublicJSON() });
+  const updatedPayload = updated.toPublicJSON();
+  if (!already) {
+    // Existing members may have the members panel open. Keep it in sync with
+    // self-service joins just as we do when someone uses "Add people".
+    emitToChannel(channel._id.toString(), "channel:update", { channel: updatedPayload });
+    if (channel.type === "public") {
+      emitAll("channel:catalog", { channel: updatedPayload });
+    }
+  }
+  res.json({ channel: updatedPayload });
 });
 
 // POST /api/channels/:id/members { userId } — add another user to a channel.

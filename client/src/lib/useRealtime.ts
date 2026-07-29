@@ -112,7 +112,6 @@ export function useRealtime({
       const results = await Promise.allSettled([
         api.listUsers(),
         api.listChannels(),
-        api.listAllChannels(),
         api.listDms(),
         api.listEmojis(),
         api.getActivity(),
@@ -123,14 +122,13 @@ export function useRealtime({
 
       if (results[0].status === "fulfilled") setUsers(results[0].value.users || []);
       if (results[1].status === "fulfilled") setChannels(results[1].value.channels || []);
-      if (results[2].status === "fulfilled") setAllChannels?.(results[2].value.channels || []);
-      if (results[3].status === "fulfilled") setDms(results[3].value.conversations || []);
-      if (results[4].status === "fulfilled") setCustomEmojis(results[4].value.emojis || []);
-      if (results[5].status === "fulfilled") syncActivity(results[5].value.items || []);
-      if (results[6].status === "fulfilled") {
-        setSavedIds?.(new Set((results[6].value.items || []).map((item) => item.id)));
+      if (results[2].status === "fulfilled") setDms(results[2].value.conversations || []);
+      if (results[3].status === "fulfilled") setCustomEmojis(results[3].value.emojis || []);
+      if (results[4].status === "fulfilled") syncActivity(results[4].value.items || []);
+      if (results[5].status === "fulfilled") {
+        setSavedIds?.(new Set((results[5].value.items || []).map((item) => item.id)));
       }
-      if (results[7].status === "fulfilled") setVipIds?.(new Set(results[7].value.vipIds || []));
+      if (results[6].status === "fulfilled") setVipIds?.(new Set(results[6].value.vipIds || []));
 
       // Consumers use this to reconcile data local to the active view, such as
       // message history and an open thread.

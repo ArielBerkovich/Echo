@@ -160,6 +160,57 @@ test("shows newly created public channels in search without refresh", async ({ b
   });
 });
 
+test("updates a browsed channel when another member adds the current user", async ({ browser, page }) => {
+  const { alice, bob } = fixture;
+  await withAliceBobPages(browser, async ({ alicePage }) => {
+    const channelName = `live-membership-${Date.now()}`;
+    const created = await requestAsToken(page, bob.token, "/channels", {
+      method: "POST",
+      body: { name: channelName, type: "public" },
+    });
+
+    await alicePage.page.getByTestId("browse-channels").click();
+    await alicePage.page.getByTestId("channel-browser-search").fill(channelName);
+    const row = alicePage.page.getByTestId(`browse-channel-${channelName}`);
+    await expect(row.getByRole("button", { name: `Join #${channelName}` })).toBeVisible();
+
+    await requestAsToken(page, bob.token, `/channels/${created.channel.id}/members`, {
+      method: "POST",
+      body: { userId: alice.id },
+    });
+
+    await expect(row.getByRole("button", { name: `Open #${channelName}`, exact: true })).toBeVisible();
+    await expect(row).toContainText("2 members");
+  });
+});
+
+test("updates an open members panel when another user joins from Browse", async ({ browser, page }) => {
+  const { alice, bob } = fixture;
+  const channelName = `live-self-join-${Date.now()}`;
+  await requestAsToken(page, bob.token, "/channels", {
+    method: "POST",
+    body: { name: channelName, type: "public" },
+  });
+
+  await withAliceBobPages(browser, async ({ alicePage, bobPage }) => {
+    await bobPage.page.getByTestId(`channel-row-${channelName}`).click();
+    await bobPage.page.getByTestId("channel-members").click();
+    const membersPanel = bobPage.page.locator(".members-panel");
+    await expect(membersPanel).toBeVisible();
+    await expect(membersPanel).not.toContainText(alice.displayName);
+
+    await alicePage.page.getByTestId("browse-channels").click();
+    await alicePage.page.getByTestId("channel-browser-search").fill(channelName);
+    await alicePage.page
+      .getByTestId(`browse-channel-${channelName}`)
+      .getByRole("button", { name: `Join #${channelName}` })
+      .click();
+
+    await expect(membersPanel).toContainText(alice.displayName);
+    await expect(membersPanel).toContainText("2 people");
+  });
+});
+
 test("updates the typing indicator after a display name change", async ({ browser, page }) => {
   const { alice } = fixture;
   await withAliceBobPages(browser, async ({ alicePage, bobPage }) => {

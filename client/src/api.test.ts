@@ -102,6 +102,25 @@ describe("api request helpers", () => {
     assert.equal(path, "/api/search/messages?q=hello%20%23general&page=2&sort=relevance");
   });
 
+  it("builds backward-compatible paginated channel catalog requests", async () => {
+    let path;
+    globalThis.fetch = async (...args) => {
+      path = args[0];
+      return { ok: true, json: async () => ({ channels: [], page: { hasMore: false } }) };
+    };
+
+    await api.browseChannels({
+      q: "release notes",
+      membership: "available",
+      cursor: "opaque+cursor",
+      limit: 25,
+    });
+    assert.equal(
+      path,
+      "/api/channels?scope=all&catalog=1&membership=available&limit=25&q=release+notes&cursor=opaque%2Bcursor"
+    );
+  });
+
   it("softens authentication errors while preserving server details", async () => {
     globalThis.fetch = async () => ({
       ok: false,

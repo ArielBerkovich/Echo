@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDownIcon, LockKeyholeIcon, MoonIcon, SettingsIcon, SunIcon } from "lucide-react";
+import { ChevronDownIcon, CompassIcon, LockKeyholeIcon, MoonIcon, SettingsIcon, SunIcon } from "lucide-react";
 import Logo from "./Logo.js";
 import Avatar from "./Avatar.js";
 import { relativeTime } from "../lib/time.js";
@@ -41,6 +41,9 @@ export default function Sidebar({
   onSelect,
   onPrefetchChannel,
   onNewChannel,
+  onBrowseChannels,
+  browsingChannels = false,
+  publicChannelCount = null,
   onOpenDm,
   onPrefetchDm,
   onHideDm,
@@ -184,20 +187,39 @@ export default function Sidebar({
               <Chevron collapsed={chCollapsed && !f} />
               <span>Channels</span>
             </button>
-            <button className="add-channel" data-testid="create-channel" onClick={onNewChannel} title="Create channel" aria-label="Create channel">
-              <span className="add-channel-mark" aria-hidden="true">
-                <span />
-                <span />
-              </span>
-            </button>
+            <span className="channel-header-actions" role="group" aria-label="Channel actions">
+              <button
+                type="button"
+                className={`add-channel browse-channels-button ${browsingChannels ? "active" : ""}`}
+                data-testid="browse-channels"
+                aria-label="Browse all channels"
+                aria-pressed={browsingChannels}
+                aria-controls="channel-browser-pane"
+                title={
+                  Number.isFinite(publicChannelCount)
+                    ? `Browse ${publicChannelCount} public ${publicChannelCount === 1 ? "channel" : "channels"}`
+                    : "Browse public channels"
+                }
+                onClick={onBrowseChannels}
+              >
+                <CompassIcon size={14} strokeWidth={1.9} aria-hidden="true" />
+              </button>
+              <button type="button" className="add-channel" data-testid="create-channel" onClick={onNewChannel} title="Create channel" aria-label="Create channel">
+                <span className="add-channel-mark" aria-hidden="true">
+                  <span />
+                  <span />
+                </span>
+              </button>
+            </span>
           </div>
           {showChannels &&
             shownChannels.map((c) => (
               <button
                 key={c.id}
                 type="button"
-                className={`channel-item channel-row ${activeChannel?.id === c.id ? "active" : ""} ${c.unread ? "unread" : ""}`}
+                className={`channel-item channel-row ${!browsingChannels && activeChannel?.id === c.id ? "active" : ""} ${c.unread ? "unread" : ""}`}
                 data-testid={`channel-row-${slug(c.name)}`}
+                aria-current={!browsingChannels && activeChannel?.id === c.id ? "page" : undefined}
                 onClick={() => onSelect(c)}
                 onMouseEnter={() => onPrefetchChannel?.(c.id)}
                 onFocus={() => onPrefetchChannel?.(c.id)}
@@ -210,7 +232,6 @@ export default function Sidebar({
           {showChannels && shownChannels.length === 0 && (
             <div className="dm-empty">{filter ? "No matching channels." : "No channels yet."}</div>
           )}
-
           {vipDms.length > 0 && (
             <>
               <div className="section-label section-toggle">
