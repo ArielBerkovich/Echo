@@ -26,11 +26,10 @@ jobs:
               electron/dist/latest.yml
           - name: Ubuntu
             runner: ubuntu-latest
-            target: --linux AppImage deb
+            target: --linux AppImage
             artifact: echo-ubuntu
             files: |
               electron/dist/*.AppImage
-              electron/dist/*.deb
               electron/dist/latest-linux.yml
     defaults:
       run:
@@ -205,17 +204,23 @@ jobs:
           path: release-assets
           merge-multiple: true
 
-      - name: Package self-hosted desktop update feed
-        env:
-          RELEASE_VERSION: ${{ github.ref_name }}
-        run: |
-          mkdir -p desktop-update-feed/windows desktop-update-feed/linux
-          cp release-assets/latest.yml release-assets/*.exe release-assets/*.exe.blockmap desktop-update-feed/windows/
-          cp release-assets/latest-linux.yml release-assets/*.AppImage desktop-update-feed/linux/
-          tar -C desktop-update-feed -czf "release-assets/echo-desktop-updates-${RELEASE_VERSION#v}.tgz" .
-
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-        run: gh release create "${GITHUB_REF_NAME}" release-assets/* --verify-tag --generate-notes --title "Echo ${GITHUB_REF_NAME}"
+        run: |
+          windows=(release-assets/*.exe)
+          linux=(release-assets/*.AppImage)
+          charts=(release-assets/echo-*.tgz)
+
+          test "${#windows[@]}" -eq 1
+          test "${#linux[@]}" -eq 1
+          test "${#charts[@]}" -eq 1
+
+          gh release create "${GITHUB_REF_NAME}" \
+            "${windows[0]}" \
+            "${linux[0]}" \
+            "${charts[0]}" \
+            --verify-tag \
+            --generate-notes \
+            --title "Echo ${GITHUB_REF_NAME}"

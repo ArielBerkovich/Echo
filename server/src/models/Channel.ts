@@ -27,6 +27,11 @@ const channelSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Catalog browsing always scopes by visibility/archive status and sorts by
+// name. Membership filters use the companion multikey index.
+channelSchema.index({ type: 1, isArchived: 1, name: 1 });
+channelSchema.index({ type: 1, isArchived: 1, members: 1, name: 1 });
+
 channelSchema.methods.toPublicJSON = function () {
   return {
     id: this._id.toString(),

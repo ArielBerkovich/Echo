@@ -16,6 +16,7 @@ import ApiDocsPage from "./components/ApiDocsPage.js";
 import SearchResults from "./components/SearchResults.js";
 import AddEmojiModal from "./components/AddEmojiModal.js";
 import SettingsModal from "./components/SettingsModal.js";
+import ChannelBrowser from "./components/ChannelBrowser.js";
 import Walkthrough from "./components/Walkthrough.js";
 import ForcePasswordReset from "./components/ForcePasswordReset.js";
 import { readJson, readString, writeJson, writeString } from "./lib/storage.js";
@@ -75,7 +76,8 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [startupUnavailable, setStartupUnavailable] = useState(false);
   const [channels, setChannels] = useState([]); // channels you belong to (sidebar)
-  const [allChannels, setAllChannels] = useState([]); // public channels (search/browse)
+  const [allChannels, setAllChannels] = useState([]); // bounded cache of public channel summaries
+  const [catalogCounts, setCatalogCounts] = useState(null);
   const [activeChannel, setActiveChannel] = useState(null);
   const [users, setUsers] = useState([]);
   const [dms, setDms] = useState([]);
@@ -88,7 +90,7 @@ export default function App() {
   const [showApiDocs, setShowApiDocs] = useState(false); // REST API reference page
   const [profileUser, setProfileUser] = useState(null); // user whose profile card is open
   const [hidden, setHidden] = useState(loadHidden); // hidden channel ids
-  const [view, setView] = useState("home"); // home | dms | activity | saved
+  const [view, setView] = useState("home"); // home | browse | dms | activity | saved
   const [savedIds, setSavedIds] = useState(() => new Set()); // saved/bookmarked message ids
   const [vipIds, setVipIds] = useState(() => new Set()); // user ids marked VIP
   const [navOpen, setNavOpen] = useState(false); // mobile: rail+sidebar drawer open?
@@ -132,6 +134,31 @@ export default function App() {
     [channels, allChannels]
   );
   const myChannelIds = useMemo(() => channels.map((c) => c.id), [channels]);
+  const myPublicChannelIdSet = useMemo(
+    () => new Set(channels.filter((channel) => channel.type === "public").map((channel) => channel.id)),
+    [channels]
+  );
+  const cacheCatalogChannels = useCallback((found) => {
+    if (!found?.length) return;
+    setAllChannels((previous) => {
+      const merged = new Map(previous.map((channel) => [channel.id, channel]));
+      for (const channel of found) merged.set(channel.id, { ...merged.get(channel.id), ...channel });
+      // This cache supports quick navigation and message channel tags; Browse
+      // owns its paged results, so retaining its entire history is unnecessary.
+      return [...merged.values()].slice(-500);
+    });
+  }, []);
+  const updateCatalogCache = useCallback((updater) => {
+    setAllChannels((previous) => {
+      const next = typeof updater === "function" ? updater(previous) : updater;
+      return (next || []).slice(-500);
+    });
+  }, []);
+  const findPublicChannels = useCallback(async (q) => {
+    const result = await api.browseChannels({ q, membership: "all", limit: 8 });
+    cacheCatalogChannels(result.channels || []);
+    return result.channels || [];
+  }, [cacheCatalogChannels]);
 
   // Real-time layer: socket listeners + live Activity-badge counts.
   // (refreshChannels/refreshDms are hoisted declarations below.)
@@ -151,7 +178,7 @@ export default function App() {
       dms,
       vipIds,
       setChannels,
-      setAllChannels,
+      setAllChannels: updateCatalogCache,
       setDms,
       setUsers,
       setCustomEmojis,
@@ -238,7 +265,6 @@ export default function App() {
   }
   function refreshChannels() {
     api.listChannels().then(({ channels }) => setChannels(channels)).catch(() => {});
-    api.listAllChannels().then(({ channels }) => setAllChannels(channels)).catch(() => {});
   }
 
   function cacheMessages(channelId, messages) {
@@ -304,7 +330,10 @@ export default function App() {
   function applyLocation(saved, chs, conversations) {
     let nextView = "home";
     let active = chs[0] || null;
-    if (saved?.view === "activity" || saved?.view === "saved") {
+    if (saved?.view === "browse") {
+      nextView = "browse";
+      active = chs.find((channel) => channel.id === saved.convId) || active;
+    } else if (saved?.view === "activity" || saved?.view === "saved") {
       nextView = saved.view; // full-page views, no conversation needed
     } else if (saved?.convType === "dm" && saved.convId) {
       const dm = conversations.find((d) => d.id === saved.convId);
@@ -332,17 +361,20 @@ export default function App() {
     navDuringRestoreRef.current = false;
     setScrollStates(loadScrollStates(user.id));
     let cancelled = false;
-    Promise.all([api.listChannels(), api.listDms(), api.listAllChannels().catch(() => ({ channels: [] }))])
-      .then(([chRes, dmRes, allChRes]) => {
+    Promise.all([api.listChannels(), api.listDms()])
+      .then(async ([chRes, dmRes]) => {
         if (cancelled) return;
         const chs = chRes.channels || [];
-        const allChs = allChRes.channels || [];
         const conversations = dmRes.conversations || [];
         setChannels(chs);
         setDms(conversations);
-        setAllChannels(allChs);
         const inviteId = new URLSearchParams(window.location.search).get("invite");
-        const invitedChannel = inviteId && [...chs, ...allChs].find((channel) => channel.id === inviteId);
+        let invitedChannel = inviteId && chs.find((channel) => channel.id === inviteId);
+        if (inviteId && !invitedChannel) {
+          invitedChannel = await api.getChannel(inviteId).then(({ channel }) => channel).catch(() => null);
+          if (cancelled) return;
+          if (invitedChannel?.type === "public") cacheCatalogChannels([invitedChannel]);
+        }
         if (invitedChannel) {
           setActiveChannel(invitedChannel);
           setView("home");
@@ -357,7 +389,6 @@ export default function App() {
       .catch(() => {
         restoredRef.current = true;
       });
-    // Public channels were loaded with the initial restore above.
     api.listUsers().then(({ users }) => setUsers(users)).catch(() => {});
     api.listEmojis().then(({ emojis }) => setCustomEmojis(emojis)).catch(() => {});
     api.getActivity().then(({ items }) => syncActivity(items)).catch(() => {});
@@ -366,7 +397,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, cacheCatalogChannels]);
 
   // Persist the current location (after the initial restore) so a refresh lands
   // the user back where they were — and mirror it into the browser history so
@@ -433,6 +464,8 @@ export default function App() {
     disconnectSocket();
     setUser(null);
     setChannels([]);
+    setAllChannels([]);
+    setCatalogCounts(null);
     setActiveChannel(null);
     setDms([]);
     setScrollStates({});
@@ -451,6 +484,7 @@ export default function App() {
     const { channel } = await api.createChannel(name, type);
     upsertChannel(channel);
     setActiveChannel(channel);
+    setView("home");
   }
 
   function upsertChannel(channel) {
@@ -606,8 +640,12 @@ export default function App() {
     rememberRecent({ type: "channel", id: picked.id, name: picked.name });
   }
 
-  function handleOpenChannelTag(name) {
-    const picked = visibleChannels.find((channel) => channel.type === "public" && channel.name === name);
+  async function handleOpenChannelTag(name) {
+    let picked = visibleChannels.find((channel) => channel.type === "public" && channel.name === name);
+    if (!picked) {
+      picked = await api.getChannelByName(name).then(({ channel }) => channel).catch(() => null);
+      if (picked?.type === "public") cacheCatalogChannels([picked]);
+    }
     if (picked) handlePickChannel(picked);
   }
 
@@ -615,8 +653,10 @@ export default function App() {
     await api.joinChannel(channel.id);
     const { channels: fresh } = await api.listChannels();
     setChannels(fresh);
-    setActiveChannel(fresh.find((c) => c.id === channel.id) || channel);
-    refreshChannels();
+    const joined = fresh.find((c) => c.id === channel.id) || channel;
+    setActiveChannel(joined);
+    cacheCatalogChannels([{ ...joined, joined: true }]);
+    return joined;
   }
 
   function handlePickUser(picked) {
@@ -934,7 +974,7 @@ export default function App() {
       <div className={`app ${navOpen ? "nav-open" : ""}`}>
         <div className="app-nav">
           <LeftRail
-            view={view}
+            view={view === "browse" ? "home" : view}
             onSelect={(v) => {
                 markNavDuringRestore();
                 clearNavigationTarget();
@@ -970,10 +1010,20 @@ export default function App() {
                 clearNavigationTarget();
                 setSearchQuery(null);
                 setActiveChannel(c);
+                setView("home");
                 setNavOpen(false);
               }}
               onPrefetchChannel={prefetchMessages}
               onNewChannel={() => setShowCreate(true)}
+              onBrowseChannels={() => {
+                markNavDuringRestore();
+                clearNavigationTarget();
+                setSearchQuery(null);
+                setView("browse");
+                setNavOpen(false);
+              }}
+              browsingChannels={view === "browse"}
+              publicChannelCount={catalogCounts?.all}
               onOpenDm={(u, isSelf) => {
                 markNavDuringRestore();
                 handleOpenDm(u, isSelf, view === "home" ? "home" : "dms");
@@ -1021,6 +1071,7 @@ export default function App() {
                   : null
               }
               onPickChannel={handlePickChannel}
+              onFindChannels={findPublicChannels}
               onPickUser={handlePickUser}
               onAddPeople={() => setShowAddPeople(true)}
               onSearchMessages={handleSearchMessages}
@@ -1035,6 +1086,19 @@ export default function App() {
                 searchRef.current?.clear();
                 setSearchQuery(null);
               }}
+            />
+          ) : view === "browse" ? (
+            <ChannelBrowser
+              joinedIds={myPublicChannelIdSet}
+              hiddenIds={hidden}
+              onOpen={(channel) => {
+                handlePickChannel(channel);
+                setNavOpen(false);
+              }}
+              onJoin={handleJoinChannel}
+              onCreate={() => setShowCreate(true)}
+              onCatalog={cacheCatalogChannels}
+              onCounts={setCatalogCounts}
             />
           ) : view === "activity" ? (
             <ActivityFeed

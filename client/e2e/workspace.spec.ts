@@ -44,6 +44,81 @@ test("opens API reference from the sidebar footer", async ({ page }) => {
   await expect(page.getByText(/REST API/i)).toBeVisible();
 });
 
+test("browses, filters, and joins public channels while private channels stay invite-only", async ({ page }) => {
+  const suffix = Date.now();
+  const publicPrefix = `zz-discoverable-${suffix}`;
+  const publicName = `${publicPrefix}-a`;
+  const privateName = `invite-only-${suffix}`;
+  for (const name of [publicName, `${publicPrefix}-b`, `${publicPrefix}-c`]) {
+    await requestAsToken(page, fixture.bob.token, "/channels", {
+      method: "POST",
+      body: { name, type: "public" },
+    });
+  }
+  const privateChannel = await requestAsToken(page, fixture.bob.token, "/channels", {
+    method: "POST",
+    body: { name: privateName, type: "private" },
+  });
+
+  const privateJoin = await page.request.post(`/api/channels/${privateChannel.channel.id}/join`, {
+    headers: { Authorization: `Bearer ${fixture.alice.token}` },
+  });
+  expect(privateJoin.status()).toBe(403);
+
+  const firstPage = await requestAsToken(
+    page,
+    fixture.alice.token,
+    `/channels?scope=all&catalog=1&q=${publicPrefix}&limit=2`
+  );
+  expect(firstPage.channels).toHaveLength(2);
+  expect(firstPage.page.hasMore).toBe(true);
+  expect(firstPage.channels.every((channel) => channel.members === undefined)).toBe(true);
+  const secondPage = await requestAsToken(
+    page,
+    fixture.alice.token,
+    `/channels?scope=all&catalog=1&q=${publicPrefix}&limit=2&cursor=${encodeURIComponent(firstPage.page.nextCursor)}`
+  );
+  expect(secondPage.channels).toHaveLength(1);
+  expect(secondPage.page.hasMore).toBe(false);
+  expect(new Set([...firstPage.channels, ...secondPage.channels].map((channel) => channel.id)).size).toBe(3);
+  const legacyCatalog = await requestAsToken(page, fixture.alice.token, "/channels?scope=all");
+  expect(Array.isArray(legacyCatalog.channels.find((channel) => channel.name === publicName)?.members)).toBe(true);
+
+  await page.goto("/");
+  await page.getByTestId("browse-channels").click();
+
+  await expect(page.getByTestId("channel-browser")).toBeVisible();
+  await expect(page.getByTestId("browse-channels")).toHaveClass(/active/);
+  await expect(page.getByTestId("browse-channels")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("channel-row-general")).not.toHaveClass(/active/);
+  await page.getByTestId(`channel-row-${fixture.projectChannel.name}`).click();
+  await expect(page.getByTestId("channel-browser")).toBeHidden();
+  await expect(page.getByText(`#${fixture.projectChannel.name}`, { exact: true }).first()).toBeVisible();
+
+  await page.getByTestId("browse-channels").click();
+  await expect(page.getByTestId("channel-browser")).toBeVisible();
+  const browserSearch = page.getByTestId("channel-browser-search");
+  await expect(browserSearch).not.toBeFocused();
+  await browserSearch.fill(publicName);
+  await expect.poll(() => browserSearch.evaluate((input) => getComputedStyle(input).boxShadow)).toBe("none");
+  await page.getByTestId("channel-browser-search-clear").click();
+  await expect(browserSearch).toBeFocused();
+  await expect(browserSearch).toHaveValue("");
+  await browserSearch.fill(publicName);
+  const row = page.getByTestId(`browse-channel-${publicName}`);
+  await expect(row).toBeVisible();
+  await expect(row).not.toContainText("No topic has been added yet.");
+  await expect(row.getByRole("button", { name: `Join #${publicName}` })).toBeVisible();
+
+  await row.getByRole("button", { name: `Join #${publicName}` }).click();
+  await expect(row.getByRole("button", { name: `Open #${publicName}`, exact: true })).toBeVisible();
+  await expect(page.getByTestId(`channel-row-${publicName}`)).toBeVisible();
+
+  await row.getByRole("button", { name: `Open #${publicName}`, exact: true }).click();
+  await expect(page.getByTestId("channel-browser")).toBeHidden();
+  await expect(page.getByText(`#${publicName}`, { exact: true }).first()).toBeVisible();
+});
+
 test("keeps channel header actions inside the header when pinned panel is open", async ({
   page,
 }) => {

@@ -19,7 +19,7 @@ function buildGroups(token) {
         {
           method: "GET",
           path: "/api/channels",
-          desc: "List your channels (each with id, name, type). Add ?scope=all to list every public channel.",
+          desc: "List your channels. ?scope=all keeps the complete legacy catalog; add catalog=1 with q, membership, limit, and cursor for paginated public-channel summaries.",
           curl: `curl ${ORIGIN}/api/channels \\
   ${auth}`,
         },

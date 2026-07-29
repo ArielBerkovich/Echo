@@ -71,6 +71,7 @@ const SearchBox = forwardRef(function SearchBox(
     myChannelIds,
     addPeopleChannel = null,
     onPickChannel,
+    onFindChannels,
     onPickUser,
     onAddPeople,
     onSearchMessages,
@@ -82,6 +83,7 @@ const SearchBox = forwardRef(function SearchBox(
   const [query, setQuery] = useState("");
   const [caret, setCaret] = useState(0);
   const [activeIdx, setActiveIdx] = useState(0);
+  const [remoteChannels, setRemoteChannels] = useState([]);
   const wrapRef = useRef(null);
   const inputRef = useRef(null);
   const highlightRef = useRef(null);
@@ -126,13 +128,42 @@ const SearchBox = forwardRef(function SearchBox(
   const peoplePicker = variant === "people-picker";
 
   const filter = activeFilterAt(query, caret);
+  const shouldFindChannels =
+    filter?.type === "in" || (!!q && !hasFilterTokens && !peoplePicker);
+  const channelLookup = filter?.type === "in" ? filter.query : q;
+
+  useEffect(() => {
+    if (!shouldFindChannels || !onFindChannels) {
+      setRemoteChannels([]);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      onFindChannels(channelLookup)
+        .then((found) => {
+          if (!cancelled) setRemoteChannels(found || []);
+        })
+        .catch(() => {
+          if (!cancelled) setRemoteChannels([]);
+        });
+    }, 200);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [channelLookup, onFindChannels, shouldFindChannels]);
+
+  const channelCandidates = useMemo(
+    () => [...new Map([...publicChannels, ...remoteChannels].map((channel) => [channel.id, channel])).values()],
+    [publicChannels, remoteChannels]
+  );
 
   // Suggestions for the active filter token (channels for in:, users for from:).
   const filterSuggestions = useMemo(() => {
     if (!filter) return [];
     const fq = filter.query.toLowerCase();
     if (filter.type === "in") {
-      return channels.filter((c) => c.name.toLowerCase().includes(fq)).slice(0, 8);
+      return channelCandidates.filter((c) => c.name.toLowerCase().includes(fq)).slice(0, 8);
     }
     if (filter.type === "has") {
       return HAS_OPTIONS.filter((o) => o.key.startsWith(fq));
@@ -140,12 +171,12 @@ const SearchBox = forwardRef(function SearchBox(
     return users
       .filter((u) => u.username.toLowerCase().includes(fq) || u.displayName.toLowerCase().includes(fq))
       .slice(0, 8);
-  }, [filter, channels, users]);
+  }, [filter, channelCandidates, users]);
 
   // Quick-nav results (only when not building a filtered query).
   const channelHits =
     q && !hasFilterTokens
-      ? publicChannels.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 6)
+      ? channelCandidates.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 6)
       : [];
   const peopleHits =
     q && !hasFilterTokens
