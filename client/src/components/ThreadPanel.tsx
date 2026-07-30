@@ -2,6 +2,7 @@ import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 
 import { api } from "../api.js";
 import { getSocket } from "../socket.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
+import { scrollElementToCenter } from "../lib/scroll.js";
 import ReactionPicker from "./ReactionPicker.js";
 import Message from "./Message.js";
 import Composer from "./Composer.js";
@@ -167,10 +168,12 @@ export default function ThreadPanel({
     const targetId = openThreadJumpMessageId || jumpTargetRef.current;
     if (!targetId) return;
     if (jumpHandledRef.current === targetId) return;
-    const target = document.querySelector(`.thread-body [data-mid="${targetId}"]`);
-    if (!target) return;
+    const scroller = scrollerRef.current;
+    const target = scroller?.querySelector(`[data-mid="${targetId}"]`);
+    if (!scroller || !target) return;
     jumpHandledRef.current = targetId;
-    target.scrollIntoView({ block: "center", behavior: "auto" });
+    stickToBottomRef.current = false;
+    scrollElementToCenter(scroller, target);
     setHighlightId(targetId);
   }, [openThreadJumpMessageId, replies, rootMsg.id]);
 
@@ -187,6 +190,16 @@ export default function ThreadPanel({
 
     let raf = 0;
     const ro = new ResizeObserver(() => {
+      const targetId = jumpTargetRef.current;
+      if (targetId) {
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(() => {
+          const scroller = scrollerRef.current;
+          const target = scroller?.querySelector(`[data-mid="${targetId}"]`);
+          if (scroller && target) scrollElementToCenter(scroller, target);
+        });
+        return;
+      }
       if (!stickToBottomRef.current) return;
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
@@ -274,7 +287,15 @@ export default function ThreadPanel({
         <button className="thread-close" data-testid="thread-close" onClick={onClose} aria-label="Close thread">✕</button>
       </header>
 
-      <div ref={scrollerRef} className="thread-body" onScroll={onBodyScroll} onMouseLeave={() => { if (!menuFor) setActionsFor(null); }}>
+      <div
+        ref={scrollerRef}
+        className="thread-body"
+        onScroll={onBodyScroll}
+        onWheelCapture={() => { jumpTargetRef.current = null; }}
+        onTouchStartCapture={() => { jumpTargetRef.current = null; }}
+        onPointerDownCapture={() => { jumpTargetRef.current = null; }}
+        onMouseLeave={() => { if (!menuFor) setActionsFor(null); }}
+      >
         <div ref={bodyInnerRef}>
           {messages.map((m, index) => (
             <Fragment key={m.id}>

@@ -22,6 +22,7 @@ import ConfirmDialog from "./ConfirmDialog.js";
 import Modal from "./Modal.js";
 import { LeaveIcon, PinIcon } from "./Icons.js";
 import { formatDayDivider, isDifferentDay } from "../lib/time.js";
+import { scrollElementToCenter } from "../lib/scroll.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
 import { StarIcon, UsersRoundIcon } from "lucide-react";
 
@@ -129,6 +130,9 @@ export default function ChannelView({
   const handledBottomScrollRequestRef = useRef(0); // last handled open-at-bottom request id
   const jumpingRef = useRef(false); // a jump scroll is in flight — pause scroll-up pagination
   const jumpSettleRef = useRef(null); // timer that re-enables pagination after a jump lands
+  const jumpHandledRef = useRef(null); // guards against re-running after the target lands
+  const jumpLoadingRef = useRef(null); // guards against duplicate around-message requests
+  const activeJumpTargetRef = useRef(null); // re-centred across late image/layout changes until user interaction
   const unreadScrollAppliedRef = useRef(false); // did we already anchor the current unread divider?
   const suppressGrowFollowRef = useRef(false); // while true, don't auto-follow "grew" renders to the bottom
 
@@ -214,6 +218,7 @@ export default function ChannelView({
     // same message later isn't silently blocked by a leftover handled-id).
     jumpHandledRef.current = null;
     jumpLoadingRef.current = null;
+    activeJumpTargetRef.current = null;
     jumpingRef.current = false;
     clearTimeout(jumpSettleRef.current);
     setLoadingOlder(false);
@@ -607,6 +612,16 @@ export default function ChannelView({
 
     let raf = 0;
     const ro = new ResizeObserver(() => {
+      const activeJumpTarget = activeJumpTargetRef.current;
+      if (activeJumpTarget) {
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(() => {
+          const scroller = scrollerRef.current;
+          const target = scroller?.querySelector(`[data-mid="${activeJumpTarget}"]`);
+          if (scroller && target) scrollElementToCenter(scroller, target);
+        });
+        return;
+      }
       if (!stickToBottomRef.current || loading || jumpingRef.current) return;
       if (firstUnreadId && unreadScrollAppliedRef.current) return;
       cancelAnimationFrame(raf);
@@ -773,8 +788,6 @@ export default function ChannelView({
 
   // Scroll to + highlight a jumped-to message (e.g. a forwarded
   // message's original), once it's present in the loaded history.
-  const jumpHandledRef = useRef(null); // guards against re-running after the target lands
-  const jumpLoadingRef = useRef(null); // guards against duplicate around-message requests
   useEffect(() => {
     if (!jumpMessageId || loading || !historyReady) return;
     if (jumpHandledRef.current === jumpMessageId) return;
@@ -792,10 +805,12 @@ export default function ChannelView({
     };
 
     const scrollToTarget = () => {
-      const el = document.querySelector(`.messages [data-mid="${jumpMessageId}"]`);
-      if (!el) return false;
+      const scroller = scrollerRef.current;
+      const el = scroller?.querySelector(`[data-mid="${jumpMessageId}"]`);
+      if (!scroller || !el) return false;
       const behavior = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
-      el.scrollIntoView({ block: "center", behavior });
+      activeJumpTargetRef.current = jumpMessageId;
+      scrollElementToCenter(scroller, el, behavior);
       setHighlightId(jumpMessageId);
       return true;
     };
@@ -810,6 +825,7 @@ export default function ChannelView({
           if (!windowed.some((message) => message.id === jumpMessageId)) {
             setError("Couldn't locate that message.");
             onJumpConsumed?.();
+            activeJumpTargetRef.current = null;
             jumpingRef.current = false;
             return;
           }
@@ -819,6 +835,7 @@ export default function ChannelView({
         .catch(() => {
           setError("Couldn't load that message.");
           onJumpConsumed?.();
+          activeJumpTargetRef.current = null;
           jumpingRef.current = false;
         });
       return;
@@ -838,6 +855,7 @@ export default function ChannelView({
         } else {
           setError("Couldn't locate that message.");
           onJumpConsumed?.();
+          activeJumpTargetRef.current = null;
           jumpingRef.current = false;
         }
       });
@@ -984,6 +1002,9 @@ export default function ChannelView({
         className="messages"
         ref={scrollerRef}
         onScroll={onMessagesScroll}
+        onWheelCapture={() => { activeJumpTargetRef.current = null; }}
+        onTouchStartCapture={() => { activeJumpTargetRef.current = null; }}
+        onPointerDownCapture={() => { activeJumpTargetRef.current = null; }}
         onMouseLeave={(event) => {
           if (!menuFor && !event.relatedTarget?.closest?.("[data-message-actions]")) setActionsFor(null);
         }}

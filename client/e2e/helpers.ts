@@ -1,9 +1,59 @@
 import { expect } from "@playwright/test";
 import crypto from "crypto";
+import { deflateSync } from "node:zlib";
 
 const DEFAULT_PASSWORD = "Password1";
 const FIXTURE_ID = uniqueSuffix("e2e");
 let workspaceFixturePromise = null;
+
+function crc32(buffer) {
+  let crc = 0xffffffff;
+  for (const byte of buffer) {
+    crc ^= byte;
+    for (let bit = 0; bit < 8; bit++) {
+      crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+    }
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function pngChunk(type, data) {
+  const typeBuffer = Buffer.from(type, "ascii");
+  const checksum = Buffer.alloc(4);
+  checksum.writeUInt32BE(crc32(Buffer.concat([typeBuffer, data])));
+  const length = Buffer.alloc(4);
+  length.writeUInt32BE(data.length);
+  return Buffer.concat([length, typeBuffer, data, checksum]);
+}
+
+export function solidPng(width = 800, height = 600) {
+  const header = Buffer.alloc(13);
+  header.writeUInt32BE(width, 0);
+  header.writeUInt32BE(height, 4);
+  header[8] = 8;
+  header[9] = 6;
+
+  const rowLength = width * 4 + 1;
+  const pixels = Buffer.alloc(rowLength * height);
+  for (let row = 0; row < height; row++) {
+    const offset = row * rowLength;
+    pixels[offset] = 0;
+    for (let column = 0; column < width; column++) {
+      const pixel = offset + 1 + column * 4;
+      pixels[pixel] = 59;
+      pixels[pixel + 1] = 130;
+      pixels[pixel + 2] = 246;
+      pixels[pixel + 3] = 255;
+    }
+  }
+
+  return Buffer.concat([
+    Buffer.from("89504e470d0a1a0a", "hex"),
+    pngChunk("IHDR", header),
+    pngChunk("IDAT", deflateSync(pixels)),
+    pngChunk("IEND", Buffer.alloc(0)),
+  ]);
+}
 
 export function uniqueSuffix(prefix = "e2e") {
   return `${prefix}-${Date.now()}-${crypto.randomBytes(3).toString("hex")}`;
