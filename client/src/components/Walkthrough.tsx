@@ -6,19 +6,37 @@ import { useLayoutEffect, useState } from "react";
 const STEPS = [
   {
     title: "Welcome to Echo 👋",
-    body: "Here's a quick 30-second tour of the essentials. You can skip it anytime.",
+    body: "Here's a quick tour of the essentials. You can skip it anytime.",
     target: null,
   },
   {
     title: "Get around",
     body: "Switch between Home, Direct Messages, and Activity from this rail.",
-    target: ".rail",
+    target: ".rail-top",
     placement: "right",
   },
   {
-    title: "Channels & DMs",
-    body: "Your channels and conversations live here — click any one to open it.",
-    target: ".channel-list",
+    title: "Your sidebar",
+    body: "Your joined channels and recent direct messages live here. Select any conversation to open it.",
+    target: ".sidebar",
+    placement: "right",
+  },
+  {
+    title: "See all channels",
+    body: "Select this compass button beside Channels to browse every public channel in your workspace.",
+    target: '[data-testid="browse-channels"]',
+    placement: "right",
+  },
+  {
+    title: "Create a channel",
+    body: "Select this + button beside Channels to create a new public or private channel.",
+    target: '[data-testid="create-channel"]',
+    placement: "right",
+  },
+  {
+    title: "Start a DM",
+    body: "Select this + button beside Direct Messages to find someone and start a new conversation.",
+    target: '[data-testid="start-dm"]',
     placement: "right",
   },
   {
