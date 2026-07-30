@@ -3309,6 +3309,10 @@ html[data-mode="dark"] .sidebar {
 }
 .pinned-item-meta { font-size: 12px; color: var(--muted); }
 .pinned-item-body { font-size: 14px; line-height: 1.45; }
+.pinned-item .att-image,
+.pinned-item .att-image img {
+  max-width: 100%;
+}
 .pinned-unpin {
   align-self: flex-end;
   font-size: 12px;

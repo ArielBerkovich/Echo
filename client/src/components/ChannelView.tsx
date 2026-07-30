@@ -16,7 +16,7 @@ import ForwardModal from "./ForwardModal.js";
 import ChannelDetailsPanel from "./ChannelDetailsPanel.js";
 import MembersPanel from "./MembersPanel.js";
 import Message, { SystemMessage } from "./Message.js";
-import { LightboxImage } from "./Attachments.js";
+import Attachments, { LightboxImage } from "./Attachments.js";
 import Composer from "./Composer.js";
 import ConfirmDialog from "./ConfirmDialog.js";
 import Modal from "./Modal.js";
@@ -1364,6 +1364,7 @@ function PinnedPanel({ messages, renderMarkdown, emojiMap, onUnpin, onClose }) {
                 className="pinned-item-body markdown"
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(m.body || "") }}
               />
+              <Attachments attachments={m.attachments} />
               <button className="pinned-unpin" data-testid={`pinned-${m.id}-unpin`} onClick={() => onUnpin(m)} title="Unpin">
                 Unpin
               </button>

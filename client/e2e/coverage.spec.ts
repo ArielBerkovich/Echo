@@ -191,6 +191,38 @@ test("toggles reactions and pins messages", async ({ page }) => {
   await expect(pinned).toHaveCount(0);
 });
 
+test("opens an image attachment from a pinned message", async ({ page }) => {
+  await page.goto("/");
+
+  const fileInput = page.getByTestId("composer-attachments");
+  await fileInput.setInputFiles({
+    name: "pinned-proof.png",
+    mimeType: "image/png",
+    buffer: ONE_BY_ONE_PNG,
+  });
+
+  const body = `Pinned image ${Date.now()}`;
+  await page.getByTestId("composer-editor").fill(body);
+  await page.getByTestId("composer-send").click();
+
+  const message = page.locator(".message").filter({ hasText: body }).last();
+  await expect(message.locator('.att-image img[alt="pinned-proof.png"]')).toBeVisible();
+  await message.hover();
+  await page.locator('[data-message-actions="true"]').getByTitle("More message actions").click();
+  await page.getByRole("menuitem", { name: "Pin message" }).click();
+
+  await page.getByRole("button", { name: "Pinned messages" }).click();
+  const pinned = page.locator(".pinned-item").filter({ hasText: body });
+  const pinnedImage = pinned.locator('.att-image img[alt="pinned-proof.png"]');
+  await expect(pinnedImage).toBeVisible();
+  await pinnedImage.click();
+
+  await expect(page.locator(".lightbox-backdrop")).toBeVisible();
+  await expect(page.locator('.lightbox-img[alt="pinned-proof.png"]')).toBeVisible();
+  await page.locator(".lightbox-backdrop").getByRole("button", { name: "Close" }).click();
+  await expect(page.locator(".lightbox-backdrop")).toHaveCount(0);
+});
+
 test("forwards a message and jumps back to the original", async ({ page }) => {
   await page.goto("/");
 
