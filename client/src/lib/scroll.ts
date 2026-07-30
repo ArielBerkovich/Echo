@@ -15,12 +15,3 @@ export function scrollElementToCenter(scroller, element, behavior = "auto") {
   }
   return true;
 }
-
-export function setScrollCenteringSpace(scroller, startSpacer, endSpacer, enabled) {
-  if (!startSpacer || !endSpacer) return;
-  const height = enabled && scroller ? `${Math.ceil(scroller.clientHeight / 2)}px` : "0px";
-  startSpacer.style.height = height;
-  endSpacer.style.height = height;
-  startSpacer.style.flexShrink = "0";
-  endSpacer.style.flexShrink = "0";
-}

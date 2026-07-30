@@ -22,7 +22,7 @@ import ConfirmDialog from "./ConfirmDialog.js";
 import Modal from "./Modal.js";
 import { LeaveIcon, PinIcon } from "./Icons.js";
 import { formatDayDivider, isDifferentDay } from "../lib/time.js";
-import { scrollElementToCenter, setScrollCenteringSpace } from "../lib/scroll.js";
+import { scrollElementToCenter } from "../lib/scroll.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
 import { StarIcon, UsersRoundIcon } from "lucide-react";
 
@@ -116,7 +116,6 @@ export default function ChannelView({
   const [newMessageCount, setNewMessageCount] = useState(0);
 
   const bottomRef = useRef(null);
-  const topJumpSpacerRef = useRef(null);
   const scrollerRef = useRef(null); // the scrollable messages container
   const messagesInnerRef = useRef(null); // content wrapper used for resize-based auto-follow
   const typingTimersRef = useRef({}); // per-user safety timers to clear stale typing
@@ -134,7 +133,6 @@ export default function ChannelView({
   const jumpHandledRef = useRef(null); // guards against re-running after the target lands
   const jumpLoadingRef = useRef(null); // guards against duplicate around-message requests
   const activeJumpTargetRef = useRef(null); // re-centred across late image/layout changes until user interaction
-  const actionsScrollTimerRef = useRef(null);
   const unreadScrollAppliedRef = useRef(false); // did we already anchor the current unread divider?
   const suppressGrowFollowRef = useRef(false); // while true, don't auto-follow "grew" renders to the bottom
 
@@ -221,7 +219,6 @@ export default function ChannelView({
     jumpHandledRef.current = null;
     jumpLoadingRef.current = null;
     activeJumpTargetRef.current = null;
-    setScrollCenteringSpace(scrollerRef.current, topJumpSpacerRef.current, bottomRef.current, false);
     jumpingRef.current = false;
     clearTimeout(jumpSettleRef.current);
     setLoadingOlder(false);
@@ -565,12 +562,6 @@ export default function ChannelView({
 
   function onMessagesScroll(e) {
     const scroller = e.currentTarget;
-    if (!menuFor) {
-      clearTimeout(actionsScrollTimerRef.current);
-      // Defer dismissal until after browser-initiated hover scrolling settles;
-      // otherwise locator.hover() can lose the toolbar it just activated.
-      actionsScrollTimerRef.current = window.setTimeout(() => setActionsFor(null), 80);
-    }
     const atBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120;
     if (!jumpingRef.current && !(firstUnreadId && unreadScrollAppliedRef.current)) {
       stickToBottomRef.current = atBottom;
@@ -630,7 +621,6 @@ export default function ChannelView({
           if (scroller && target) {
             // Do not add artificial space at the history boundaries. The
             // browser should clamp first/last-message jumps naturally.
-            setScrollCenteringSpace(scroller, topJumpSpacerRef.current, bottomRef.current, false);
             scrollElementToCenter(scroller, target);
           }
         });
@@ -823,7 +813,6 @@ export default function ChannelView({
       const el = scroller?.querySelector(`[data-mid="${jumpMessageId}"]`);
       if (!scroller || !el) return false;
       activeJumpTargetRef.current = jumpMessageId;
-      setScrollCenteringSpace(scroller, topJumpSpacerRef.current, bottomRef.current, false);
       // A jump is a positioning operation, not an animated navigation. An
       // in-flight smooth scroll can be superseded by the channel's initial
       // layout/follow effects and leave the highlighted message off-screen.
@@ -843,7 +832,6 @@ export default function ChannelView({
             setError("Couldn't locate that message.");
             onJumpConsumed?.();
             activeJumpTargetRef.current = null;
-            setScrollCenteringSpace(scrollerRef.current, topJumpSpacerRef.current, bottomRef.current, false);
             jumpingRef.current = false;
             return;
           }
@@ -854,7 +842,6 @@ export default function ChannelView({
           setError("Couldn't load that message.");
           onJumpConsumed?.();
           activeJumpTargetRef.current = null;
-          setScrollCenteringSpace(scrollerRef.current, topJumpSpacerRef.current, bottomRef.current, false);
           jumpingRef.current = false;
         });
       return;
@@ -875,7 +862,6 @@ export default function ChannelView({
           setError("Couldn't locate that message.");
           onJumpConsumed?.();
           activeJumpTargetRef.current = null;
-          setScrollCenteringSpace(scrollerRef.current, topJumpSpacerRef.current, bottomRef.current, false);
           jumpingRef.current = false;
         }
       });
@@ -1022,24 +1008,11 @@ export default function ChannelView({
         className="messages"
         ref={scrollerRef}
         onScroll={onMessagesScroll}
-        onWheelCapture={() => {
-          activeJumpTargetRef.current = null;
-          setScrollCenteringSpace(scrollerRef.current, topJumpSpacerRef.current, bottomRef.current, false);
-        }}
-        onTouchStartCapture={() => {
-          activeJumpTargetRef.current = null;
-          setScrollCenteringSpace(scrollerRef.current, topJumpSpacerRef.current, bottomRef.current, false);
-        }}
-        onPointerDownCapture={() => {
-          activeJumpTargetRef.current = null;
-          setScrollCenteringSpace(scrollerRef.current, topJumpSpacerRef.current, bottomRef.current, false);
-        }}
         onMouseLeave={(event) => {
           if (!menuFor && !event.relatedTarget?.closest?.("[data-message-actions]")) setActionsFor(null);
         }}
       >
         <div ref={messagesInnerRef}>
-          <div ref={topJumpSpacerRef} aria-hidden="true" />
           {loadingOlder && <div className="older-loader">Loading earlier messages…</div>}
           {loading ? (
             <MessagesSkeleton />
@@ -1101,7 +1074,6 @@ export default function ChannelView({
                     onOpenChannel={onOpenChannel}
                     showActions={actionsFor === m.id}
                     onActivate={() => {
-                      clearTimeout(actionsScrollTimerRef.current);
                       setActionsFor(m.id);
                       setMenuFor((openId) => (openId && openId !== m.id ? null : openId));
                     }}
