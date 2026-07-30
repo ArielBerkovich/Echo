@@ -701,7 +701,9 @@ test("keeps the message menu inside the viewport at the bottom of a thread", asy
   }
 
   await page.goto("/");
+  await page.getByTestId(`channel-row-${slug(fixture.generalChannel.name)}`).click();
   const root = messageById(page, fixture.messages.threadRoot.id);
+  await expect(root).toBeVisible();
   await root.hover();
   await page.locator('[data-message-actions="true"]').getByTitle("Reply in thread").click();
   await expect(page.getByTestId("thread-panel")).toBeVisible();
