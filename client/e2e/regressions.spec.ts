@@ -382,7 +382,9 @@ test("threads offer new replies while scrolled up and follow your own reply", as
 
   await page.goto("/");
   await page.getByTestId(`channel-row-${slug(fixture.projectChannel.name)}`).click();
-  await page.getByTestId(`message-${fixture.messages.threadRoot.id}-reply-count`).click();
+  const replyCount = page.getByTestId(`message-${fixture.messages.threadRoot.id}-reply-count`);
+  await expect(replyCount).toBeVisible();
+  await replyCount.click();
 
   const scroller = page.locator(".thread-body");
   await expect(scroller).toBeVisible();
