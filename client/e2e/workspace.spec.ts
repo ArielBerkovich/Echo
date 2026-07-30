@@ -8,7 +8,13 @@ import {
   railItem,
   requestAsToken,
   seedWorkspaceFixture,
+  uploadAsToken,
 } from "./helpers.js";
+
+const ONE_BY_ONE_PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAEklEQVR42mP8/5+hHgAHggJ/PFvdcQAAAABJRU5ErkJggg==",
+  "base64"
+);
 
 let fixture: Awaited<ReturnType<typeof seedWorkspaceFixture>>;
 
@@ -476,6 +482,91 @@ test("shows saved messages and removes one from saved", async ({ page }) => {
 
   await expect(savedItem).toHaveCount(0);
   await unsave;
+});
+
+test("shows saved images and keeps message jumps anchored while chat images load", async ({ page }) => {
+  const uploaded = [];
+  for (let index = 0; index < 4; index++) {
+    const { attachments } = await uploadAsToken(page, fixture.alice.token, {
+      name: `saved-jump-${index}.png`,
+      mimeType: "image/png",
+      buffer: ONE_BY_ONE_PNG,
+    });
+    uploaded.push({ ...attachments[0], width: 800, height: 600 });
+  }
+
+  const stamp = Date.now();
+  const savedImage = await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body: `Saved image preview ${stamp}`,
+      attachments: [uploaded[0]],
+      externalKey: `saved-image-preview-${stamp}`,
+    },
+  });
+
+  const delayedKeys = new Set(uploaded.slice(1).map((attachment) => attachment.key));
+  for (let index = 1; index < uploaded.length; index++) {
+    await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
+      method: "POST",
+      body: {
+        channelId: fixture.generalChannel.id,
+        body: `Image before saved target ${index} ${stamp}`,
+        attachments: [uploaded[index]],
+        externalKey: `image-before-saved-target-${index}-${stamp}`,
+      },
+    });
+  }
+
+  const target = await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body: `Saved jump target ${stamp}`,
+      externalKey: `saved-jump-target-${stamp}`,
+    },
+  });
+
+  for (let index = 0; index < 8; index++) {
+    await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
+      method: "POST",
+      body: {
+        channelId: fixture.generalChannel.id,
+        body: `After saved target ${index} ${stamp}`,
+        externalKey: `after-saved-target-${index}-${stamp}`,
+      },
+    });
+  }
+
+  await requestAsToken(page, fixture.alice.token, `/saved/${savedImage.message.id}`, { method: "POST" });
+  await requestAsToken(page, fixture.alice.token, `/saved/${target.message.id}`, { method: "POST" });
+  await page.route("**/api/files/**", async (route) => {
+    const key = route.request().url().split("/").pop();
+    if (key && delayedKeys.has(key)) {
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+    }
+    await route.continue();
+  });
+
+  await page.goto("/");
+  await page.evaluate((userId) => {
+    localStorage.setItem(`echo.loc.${userId}`, JSON.stringify({ view: "saved", convId: null, convType: null }));
+  }, fixture.alice.id);
+  await page.reload();
+
+  const savedImageItem = page.getByTestId("saved-item").filter({ hasText: savedImage.message.body });
+  const savedImagePreview = savedImageItem.locator('.att-image img[alt="saved-jump-0.png"]');
+  await expect(savedImagePreview).toBeVisible();
+  await savedImagePreview.click();
+  await expect(page.locator(".lightbox-backdrop")).toBeVisible();
+  await page.locator(".lightbox-backdrop").getByRole("button", { name: "Close" }).click();
+
+  await page.getByTestId("saved-item").filter({ hasText: target.message.body }).click();
+  const targetMessage = messageById(page, target.message.id);
+  await expect(targetMessage).toBeInViewport();
+  await page.waitForTimeout(1500);
+  await expect(targetMessage).toBeInViewport();
 });
 
 test("opens a profile from an @mention in a message", async ({ page }) => {

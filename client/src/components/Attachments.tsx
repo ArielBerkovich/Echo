@@ -136,22 +136,33 @@ function ImageAttachment({ a, onOpenLightbox }) {
   const src = useAuthUrl(a.url);
   const [open, setOpen] = useState(false);
   const ratio = a.width && a.height ? a.width / a.height : null;
-  if (!src) return null;
+  const scale = ratio ? Math.min(1, 360 / a.width, 320 / a.height) : null;
+  const reservedWidth = scale ? Math.max(16, Math.round(a.width * scale)) : null;
 
   const handleClick = () => {
+    if (!src) return;
     if (onOpenLightbox) onOpenLightbox(src, a.name);
     else setOpen(true);
   };
 
   return (
     <>
-      <button className="att-image" onClick={handleClick} title={a.name} style={{ cursor: "zoom-in" }}>
-        <img
-          src={src}
-          alt={a.name}
-          loading="lazy"
-          style={ratio ? { aspectRatio: String(ratio) } : undefined}
-        />
+      <button
+        className={`att-image ${src ? "" : "loading"}`}
+        onClick={handleClick}
+        title={a.name}
+        aria-busy={!src}
+        disabled={!src}
+        style={ratio ? { width: reservedWidth, aspectRatio: String(ratio) } : undefined}
+      >
+        {src ? (
+          <img
+            src={src}
+            alt={a.name}
+            loading="lazy"
+            style={ratio ? { width: "100%", height: "100%", aspectRatio: String(ratio) } : undefined}
+          />
+        ) : null}
       </button>
       {open && <Lightbox src={src} name={a.name} onClose={() => setOpen(false)} />}
     </>

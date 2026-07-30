@@ -3,6 +3,7 @@ import { api } from "../api.js";
 import { formatDateTime } from "../lib/time.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
 import Avatar from "./Avatar.js";
+import Attachments from "./Attachments.js";
 import { BookmarkIcon } from "./Icons.js";
 
 // Feed of the current user's saved ("save for later") messages. Clicking a row
@@ -50,7 +51,21 @@ export default function SavedFeed({ user, users = [], customEmojis = [], onJump,
             </div>
           ) : (
             items.map((it) => (
-              <button key={it.id} className="activity-item" data-testid="saved-item" onClick={() => onJump(it)}>
+              <div
+                key={it.id}
+                className="activity-item"
+                data-testid="saved-item"
+                role="button"
+                tabIndex={0}
+                onClick={() => onJump(it)}
+                onKeyDown={(event) => {
+                  if (event.target !== event.currentTarget) return;
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onJump(it);
+                  }
+                }}
+              >
                 <Avatar name={it.author?.displayName || "?"} src={it.author?.avatarUrl} size={36} />
                 <div className="content">
                   <div className="meta">
@@ -68,17 +83,22 @@ export default function SavedFeed({ user, users = [], customEmojis = [], onJump,
                       dangerouslySetInnerHTML={{ __html: renderMarkdown(it.body) }}
                     />
                   )}
+                  {it.attachments?.length > 0 ? (
+                    <div onClick={(event) => event.stopPropagation()}>
+                      <Attachments attachments={it.attachments} />
+                    </div>
+                  ) : null}
                 </div>
-                <span
+                <button
+                  type="button"
                   className="saved-remove saved-active"
                   data-testid={`saved-remove-${it.id}`}
                   title="Remove from saved"
-                  role="button"
                   onClick={(e) => unsave(e, it)}
                 >
                   <BookmarkIcon />
-                </span>
-              </button>
+                </button>
+              </div>
             ))
           )}
         </div>

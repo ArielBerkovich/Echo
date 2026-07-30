@@ -3468,6 +3468,9 @@ html[data-mode="dark"] .day-divider-label {
   padding: 8px;
   border-radius: 8px;
   flex: none;
+  border: 0;
+  background: none;
+  cursor: pointer;
 }
 .saved-remove:hover {
   background: var(--surface-2);
@@ -4668,6 +4671,11 @@ html[data-mode="dark"] .day-divider-label {
   border: 1px solid var(--border);
   background: none;
   padding: 0;
+}
+.att-image.loading {
+  background: var(--surface-2);
+  cursor: wait;
+  opacity: 1;
 }
 .att-image img {
   display: block;
