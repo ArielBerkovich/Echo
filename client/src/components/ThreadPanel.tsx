@@ -2,7 +2,7 @@ import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 
 import { api } from "../api.js";
 import { getSocket } from "../socket.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
-import { scrollElementToCenter } from "../lib/scroll.js";
+import { scrollElementToCenter, setScrollCenteringSpace } from "../lib/scroll.js";
 import ReactionPicker from "./ReactionPicker.js";
 import Message from "./Message.js";
 import Composer from "./Composer.js";
@@ -46,6 +46,7 @@ export default function ThreadPanel({
   const [highlightId, setHighlightId] = useState(null);
   const [newMessageCount, setNewMessageCount] = useState(0);
   const bottomRef = useRef(null);
+  const topJumpSpacerRef = useRef(null);
   const scrollerRef = useRef(null);
   const bodyInnerRef = useRef(null); // content wrapper used to track height changes
   const stickToBottomRef = useRef(true); // should later layout changes keep us pinned?
@@ -69,6 +70,7 @@ export default function ThreadPanel({
     stickToBottomRef.current = true;
     jumpHandledRef.current = null;
     jumpTargetRef.current = openThreadJumpMessageId || null;
+    setScrollCenteringSpace(scrollerRef.current, topJumpSpacerRef.current, bottomRef.current, false);
     setHighlightId(null);
     setNewMessageCount(0);
   }, [root.id]);
@@ -173,6 +175,7 @@ export default function ThreadPanel({
     if (!scroller || !target) return;
     jumpHandledRef.current = targetId;
     stickToBottomRef.current = false;
+    setScrollCenteringSpace(scroller, topJumpSpacerRef.current, bottomRef.current, true);
     scrollElementToCenter(scroller, target);
     setHighlightId(targetId);
   }, [openThreadJumpMessageId, replies, rootMsg.id]);
@@ -196,7 +199,10 @@ export default function ThreadPanel({
         raf = requestAnimationFrame(() => {
           const scroller = scrollerRef.current;
           const target = scroller?.querySelector(`[data-mid="${targetId}"]`);
-          if (scroller && target) scrollElementToCenter(scroller, target);
+          if (scroller && target) {
+            setScrollCenteringSpace(scroller, topJumpSpacerRef.current, bottomRef.current, true);
+            scrollElementToCenter(scroller, target);
+          }
         });
         return;
       }
@@ -291,12 +297,22 @@ export default function ThreadPanel({
         ref={scrollerRef}
         className="thread-body"
         onScroll={onBodyScroll}
-        onWheelCapture={() => { jumpTargetRef.current = null; }}
-        onTouchStartCapture={() => { jumpTargetRef.current = null; }}
-        onPointerDownCapture={() => { jumpTargetRef.current = null; }}
+        onWheelCapture={() => {
+          jumpTargetRef.current = null;
+          setScrollCenteringSpace(scrollerRef.current, topJumpSpacerRef.current, bottomRef.current, false);
+        }}
+        onTouchStartCapture={() => {
+          jumpTargetRef.current = null;
+          setScrollCenteringSpace(scrollerRef.current, topJumpSpacerRef.current, bottomRef.current, false);
+        }}
+        onPointerDownCapture={() => {
+          jumpTargetRef.current = null;
+          setScrollCenteringSpace(scrollerRef.current, topJumpSpacerRef.current, bottomRef.current, false);
+        }}
         onMouseLeave={() => { if (!menuFor) setActionsFor(null); }}
       >
         <div ref={bodyInnerRef}>
+          <div ref={topJumpSpacerRef} aria-hidden="true" />
           {messages.map((m, index) => (
             <Fragment key={m.id}>
               <Message

@@ -160,6 +160,77 @@ async function openJumpOrigin(page, origin) {
   await expect(page.getByTestId(`${origin}-header`)).toBeVisible();
 }
 
+async function seedBoundaryCase(page, { origin, context, boundary }) {
+  const stamp = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const channelName = `jump-boundary-${stamp}`.slice(0, 64);
+  const { channel } = await requestAsToken(page, fixture.alice.token, "/channels", {
+    method: "POST",
+    body: { name: channelName, type: "public" },
+  });
+  await requestAsToken(page, fixture.alice.token, `/channels/${channel.id}/members`, {
+    method: "POST",
+    body: { userId: fixture.bob.id },
+  });
+
+  let threadId = null;
+  if (context === "thread") {
+    const root = await postMessage(page, {
+      authorToken: fixture.alice.token,
+      channelId: channel.id,
+      body: `Boundary thread root ${stamp}`,
+      key: `boundary-root-${stamp}`,
+    });
+    threadId = root.id;
+  }
+
+  const { attachments } = await uploadAsToken(page, fixture.alice.token, {
+    name: `boundary-layout-${stamp}.png`,
+    mimeType: "image/png",
+    buffer: solidPng(800, 600),
+  });
+  const image = attachments[0];
+
+  if (boundary === "end") {
+    for (let index = 0; index < 12; index++) {
+      await postMessage(page, {
+        authorToken: fixture.alice.token,
+        channelId: channel.id,
+        parentId: threadId,
+        body: `Boundary message before ${index} ${stamp}`,
+        attachments: index === 5 ? [image] : [],
+        key: `boundary-before-${index}-${stamp}`,
+      });
+    }
+  }
+
+  const marker = `Boundary ${origin} ${context} ${boundary} ${stamp}`;
+  const target = await postMessage(page, {
+    authorToken: origin === "activity" ? fixture.bob.token : fixture.alice.token,
+    channelId: channel.id,
+    parentId: threadId,
+    body: `${marker}${origin === "activity" ? ` @${fixture.alice.username}` : ""}`,
+    key: `boundary-target-${stamp}`,
+  });
+
+  const afterCount = boundary === "end" ? 3 : 12;
+  for (let index = 0; index < afterCount; index++) {
+    await postMessage(page, {
+      authorToken: fixture.alice.token,
+      channelId: channel.id,
+      parentId: threadId,
+      body: `Boundary message after ${index} ${stamp}`,
+      attachments: boundary === "start" && index === 5 ? [image] : [],
+      key: `boundary-after-${index}-${stamp}`,
+    });
+  }
+
+  if (origin === "saved") {
+    await requestAsToken(page, fixture.alice.token, `/saved/${target.id}`, { method: "POST" });
+  }
+
+  return { channel, imageKey: image.key, marker, target };
+}
+
 const origins = ["saved", "activity"];
 const contexts = ["channel", "thread"];
 const contents = ["plain", "code"];
@@ -208,4 +279,45 @@ for (const origin of origins) {
       }
     }
   }
+}
+
+const boundaryCases = [
+  { origin: "saved", context: "channel", boundary: "end" },
+  { origin: "activity", context: "channel", boundary: "start" },
+  { origin: "saved", context: "thread", boundary: "end" },
+  { origin: "activity", context: "thread", boundary: "start" },
+];
+
+for (const boundaryCase of boundaryCases) {
+  test(`${boundaryCase.origin} centers a ${boundaryCase.context} target near the ${boundaryCase.boundary} boundary`, async ({ page }) => {
+    const scenario = await seedBoundaryCase(page, boundaryCase);
+    await page.route(`**/api/files/${scenario.imageKey}`, async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 900));
+      await route.continue();
+    });
+
+    await openJumpOrigin(page, boundaryCase.origin);
+    const originItem = page
+      .getByTestId(boundaryCase.origin === "saved" ? "saved-item" : "activity-item")
+      .filter({ hasText: scenario.marker });
+    await expect(originItem).toBeVisible();
+    await originItem.click();
+
+    if (boundaryCase.context === "thread") {
+      await expect(page.getByTestId("thread-panel")).toBeVisible();
+    } else {
+      await expect(page.getByTestId("channel-title")).toContainText(scenario.channel.name);
+    }
+
+    const target = messageById(page, scenario.target.id);
+    await expect(target).toHaveClass(/flash/);
+    await expectMessageCentered(target);
+
+    const scroller = boundaryCase.context === "thread"
+      ? page.locator(".thread-body")
+      : page.locator(".channel-main > .messages");
+    await expect(scroller.locator(".att-image img")).toHaveCount(1);
+    await expect(scroller.locator(".att-image img")).toBeVisible();
+    await expectMessageCentered(target);
+  });
 }

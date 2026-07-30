@@ -22,7 +22,7 @@ import ConfirmDialog from "./ConfirmDialog.js";
 import Modal from "./Modal.js";
 import { LeaveIcon, PinIcon } from "./Icons.js";
 import { formatDayDivider, isDifferentDay } from "../lib/time.js";
-import { scrollElementToCenter } from "../lib/scroll.js";
+import { scrollElementToCenter, setScrollCenteringSpace } from "../lib/scroll.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
 import { StarIcon, UsersRoundIcon } from "lucide-react";
 
@@ -116,6 +116,7 @@ export default function ChannelView({
   const [newMessageCount, setNewMessageCount] = useState(0);
 
   const bottomRef = useRef(null);
+  const topJumpSpacerRef = useRef(null);
   const scrollerRef = useRef(null); // the scrollable messages container
   const messagesInnerRef = useRef(null); // content wrapper used for resize-based auto-follow
   const typingTimersRef = useRef({}); // per-user safety timers to clear stale typing
@@ -219,6 +220,7 @@ export default function ChannelView({
     jumpHandledRef.current = null;
     jumpLoadingRef.current = null;
     activeJumpTargetRef.current = null;
+    setScrollCenteringSpace(scrollerRef.current, topJumpSpacerRef.current, bottomRef.current, false);
     jumpingRef.current = false;
     clearTimeout(jumpSettleRef.current);
     setLoadingOlder(false);
@@ -618,7 +620,10 @@ export default function ChannelView({
         raf = requestAnimationFrame(() => {
           const scroller = scrollerRef.current;
           const target = scroller?.querySelector(`[data-mid="${activeJumpTarget}"]`);
-          if (scroller && target) scrollElementToCenter(scroller, target);
+          if (scroller && target) {
+            setScrollCenteringSpace(scroller, topJumpSpacerRef.current, bottomRef.current, true);
+            scrollElementToCenter(scroller, target);
+          }
         });
         return;
       }
@@ -810,6 +815,7 @@ export default function ChannelView({
       if (!scroller || !el) return false;
       const behavior = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
       activeJumpTargetRef.current = jumpMessageId;
+      setScrollCenteringSpace(scroller, topJumpSpacerRef.current, bottomRef.current, true);
       scrollElementToCenter(scroller, el, behavior);
       setHighlightId(jumpMessageId);
       return true;
@@ -826,6 +832,7 @@ export default function ChannelView({
             setError("Couldn't locate that message.");
             onJumpConsumed?.();
             activeJumpTargetRef.current = null;
+            setScrollCenteringSpace(scrollerRef.current, topJumpSpacerRef.current, bottomRef.current, false);
             jumpingRef.current = false;
             return;
           }
@@ -836,6 +843,7 @@ export default function ChannelView({
           setError("Couldn't load that message.");
           onJumpConsumed?.();
           activeJumpTargetRef.current = null;
+          setScrollCenteringSpace(scrollerRef.current, topJumpSpacerRef.current, bottomRef.current, false);
           jumpingRef.current = false;
         });
       return;
@@ -856,6 +864,7 @@ export default function ChannelView({
           setError("Couldn't locate that message.");
           onJumpConsumed?.();
           activeJumpTargetRef.current = null;
+          setScrollCenteringSpace(scrollerRef.current, topJumpSpacerRef.current, bottomRef.current, false);
           jumpingRef.current = false;
         }
       });
@@ -1002,14 +1011,24 @@ export default function ChannelView({
         className="messages"
         ref={scrollerRef}
         onScroll={onMessagesScroll}
-        onWheelCapture={() => { activeJumpTargetRef.current = null; }}
-        onTouchStartCapture={() => { activeJumpTargetRef.current = null; }}
-        onPointerDownCapture={() => { activeJumpTargetRef.current = null; }}
+        onWheelCapture={() => {
+          activeJumpTargetRef.current = null;
+          setScrollCenteringSpace(scrollerRef.current, topJumpSpacerRef.current, bottomRef.current, false);
+        }}
+        onTouchStartCapture={() => {
+          activeJumpTargetRef.current = null;
+          setScrollCenteringSpace(scrollerRef.current, topJumpSpacerRef.current, bottomRef.current, false);
+        }}
+        onPointerDownCapture={() => {
+          activeJumpTargetRef.current = null;
+          setScrollCenteringSpace(scrollerRef.current, topJumpSpacerRef.current, bottomRef.current, false);
+        }}
         onMouseLeave={(event) => {
           if (!menuFor && !event.relatedTarget?.closest?.("[data-message-actions]")) setActionsFor(null);
         }}
       >
         <div ref={messagesInnerRef}>
+          <div ref={topJumpSpacerRef} aria-hidden="true" />
           {loadingOlder && <div className="older-loader">Loading earlier messages…</div>}
           {loading ? (
             <MessagesSkeleton />
