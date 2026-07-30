@@ -3348,19 +3348,20 @@ html[data-mode="dark"] .sidebar {
 .thread-indicator {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 5px;
-  padding: 3px 9px 3px 7px;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: var(--surface);
+  gap: 5px;
+  padding: 3px 8px 3px 7px;
+  border: 1px solid color-mix(in srgb, var(--blue-400) 32%, var(--border));
+  border-radius: 8px;
+  background: transparent;
   color: var(--blue-500);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  transition: background 0.14s ease, border-color 0.14s ease;
 }
 .thread-indicator:hover {
-  background: var(--surface-2);
-  border-color: #cdd8e8;
+  background: color-mix(in srgb, var(--blue-400) 10%, var(--surface-2));
+  border-color: color-mix(in srgb, var(--blue-400) 55%, var(--border));
 }
 /* "User is typing…" indicator above the composer */
 .typing-indicator {
@@ -5510,45 +5511,53 @@ html[data-mode="dark"] .day-divider-label {
   background: var(--border);
 }
 
-/* Reaction pills */
+/* Compact message footer: reactions and thread replies share one visual row. */
+.message-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
+}
 .reactions {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
-  margin-top: 6px;
+  align-items: center;
+  gap: 4px;
 }
 .reaction {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  height: 26px;
-  padding: 0 9px;
-  border-radius: 13px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  font-size: 13px;
+  gap: 4px;
+  height: 24px;
+  padding: 0 7px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+  font-size: 12px;
   color: var(--text);
   transition: background 0.14s ease, border-color 0.14s ease, transform 0.1s ease;
 }
 .reaction:hover {
-  border-color: var(--blue-400);
-  transform: translateY(-1px);
+  background: var(--surface-2);
+  border-color: color-mix(in srgb, var(--blue-400) 55%, var(--border));
 }
 .reaction.mine {
   background: rgba(59, 130, 246, 0.16);
-  border-color: var(--blue-400);
+  border-color: color-mix(in srgb, var(--blue-400) 72%, var(--border));
   color: var(--blue-400);
 }
 .reaction-emoji {
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1;
 }
 .reaction-count {
-  font-weight: 600;
-  font-size: 12px;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 11px;
 }
 .reaction.add {
-  padding: 0 8px;
+  padding: 0 6px;
   color: var(--muted);
 }
 

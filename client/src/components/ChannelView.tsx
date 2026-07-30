@@ -564,6 +564,10 @@ export default function ChannelView({
 
   function onMessagesScroll(e) {
     const scroller = e.currentTarget;
+    // The hover toolbar is a transient affordance. Once the list moves, its
+    // fixed portal position is no longer useful and can appear to drift away
+    // from the message under the pointer. Let the user re-hover after scroll.
+    if (!menuFor) setActionsFor(null);
     const atBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120;
     if (!jumpingRef.current && !(firstUnreadId && unreadScrollAppliedRef.current)) {
       stickToBottomRef.current = atBottom;
@@ -621,7 +625,9 @@ export default function ChannelView({
           const scroller = scrollerRef.current;
           const target = scroller?.querySelector(`[data-mid="${activeJumpTarget}"]`);
           if (scroller && target) {
-            setScrollCenteringSpace(scroller, topJumpSpacerRef.current, bottomRef.current, true);
+            // Do not add artificial space at the history boundaries. The
+            // browser should clamp first/last-message jumps naturally.
+            setScrollCenteringSpace(scroller, topJumpSpacerRef.current, bottomRef.current, false);
             scrollElementToCenter(scroller, target);
           }
         });
@@ -813,10 +819,12 @@ export default function ChannelView({
       const scroller = scrollerRef.current;
       const el = scroller?.querySelector(`[data-mid="${jumpMessageId}"]`);
       if (!scroller || !el) return false;
-      const behavior = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
       activeJumpTargetRef.current = jumpMessageId;
-      setScrollCenteringSpace(scroller, topJumpSpacerRef.current, bottomRef.current, true);
-      scrollElementToCenter(scroller, el, behavior);
+      setScrollCenteringSpace(scroller, topJumpSpacerRef.current, bottomRef.current, false);
+      // A jump is a positioning operation, not an animated navigation. An
+      // in-flight smooth scroll can be superseded by the channel's initial
+      // layout/follow effects and leave the highlighted message off-screen.
+      scrollElementToCenter(scroller, el);
       setHighlightId(jumpMessageId);
       return true;
     };

@@ -12,7 +12,9 @@ const STEPS = [
   {
     title: "Get around",
     body: "Switch between Home, Direct Messages, and Activity from this rail.",
-    target: ".rail",
+    // The rail is now the full-height frame; .rail-top is the visible
+    // navigation control group users interact with.
+    target: ".rail-top",
     placement: "right",
   },
   {
@@ -133,6 +135,7 @@ export default function Walkthrough({ onClose }) {
       {rect && (
         <div
           className="wt-spotlight"
+          data-testid="walkthrough-spotlight"
           style={spotlightStyle(rect)}
         />
       )}

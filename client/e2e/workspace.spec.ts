@@ -263,6 +263,21 @@ test("clears message actions when leaving the message row but keeps them over th
   await expect(actions).toBeHidden();
 });
 
+test("dismisses message actions while scrolling the message list", async ({ page }) => {
+  await page.goto("/");
+  const message = page.locator(".message").filter({ hasText: fixture.messages.searchHit.body }).first();
+  await expect(message).toBeVisible();
+  await message.hover();
+  const actions = page.getByTestId(/message-.*-actions/).first();
+  await expect(actions).toBeVisible();
+
+  const scroller = page.locator(".channel-main .messages");
+  await scroller.evaluate((element) => {
+    element.scrollTop = Math.min(element.scrollTop + 240, element.scrollHeight - element.clientHeight);
+  });
+  await expect(actions).toBeHidden();
+});
+
 test("keeps copy-and-paste message paragraphs flush with the composer", async ({ page }) => {
   await page.goto("/");
   const source = page

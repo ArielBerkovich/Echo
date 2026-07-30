@@ -146,11 +146,21 @@ function Message({
       const menuRect = menu.getBoundingClientRect();
       const padding = 8;
       const gap = 6;
+      const maxTop = Math.max(padding, window.innerHeight - menuRect.height - padding);
+      const belowTop = triggerRect.bottom + gap;
+      const aboveTop = triggerRect.top - menuRect.height - gap;
+      // Prefer below the trigger, but flip above it when the thread's lower
+      // edge would clip the menu. Clamp the final position for very short
+      // viewports as well.
+      const preferredTop = belowTop + menuRect.height <= window.innerHeight - padding
+        ? belowTop
+        : aboveTop;
+      const top = Math.max(padding, Math.min(preferredTop, maxTop));
       const left = Math.min(
         Math.max(padding, triggerRect.right - menuRect.width),
         window.innerWidth - menuRect.width - padding
       );
-      setMenuPosition({ top: triggerRect.bottom + gap, left });
+      setMenuPosition({ top, left });
     };
     const frame = requestAnimationFrame(measure);
     const scrollViewport = menuTriggerRef.current?.closest(".messages, .thread-body");
@@ -331,33 +341,37 @@ function Message({
           </div>
         )}
 
-        {m.reactions?.length > 0 && (
-          <div className="reactions">
-            {m.reactions.map((r) => (
-              <button
-                key={r.emoji}
-                className={`reaction ${r.users.includes(currentUserId) ? "mine" : ""}`}
-                data-testid={`message-${mid}-reaction-${String(r.emoji).replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`}
-                onClick={() => onToggleReaction(r.emoji)}
-                data-tip={reactionTip(r.users, usersById, currentUserId, r.emoji)}
-              >
-                <span className="reaction-emoji">
-                  <EmojiValue value={r.emoji} emojiMap={emojiMap} />
-                </span>
-                <span className="reaction-count">{r.users.length}</span>
-              </button>
-            ))}
-            <button className="reaction add react-toggle" data-testid={`message-${mid}-add-reaction`} title="Add reaction" onClick={onReact}>
-              <EmojiAddIcon />
-            </button>
-          </div>
-        )}
+        {(m.reactions?.length > 0 || (!inThread && m.replyCount > 0)) && (
+          <div className="message-footer">
+            {m.reactions?.length > 0 && (
+              <div className="reactions">
+                {m.reactions.map((r) => (
+                  <button
+                    key={r.emoji}
+                    className={`reaction ${r.users.includes(currentUserId) ? "mine" : ""}`}
+                    data-testid={`message-${mid}-reaction-${String(r.emoji).replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`}
+                    onClick={() => onToggleReaction(r.emoji)}
+                    data-tip={reactionTip(r.users, usersById, currentUserId, r.emoji)}
+                  >
+                    <span className="reaction-emoji">
+                      <EmojiValue value={r.emoji} emojiMap={emojiMap} />
+                    </span>
+                    <span className="reaction-count">{r.users.length}</span>
+                  </button>
+                ))}
+                <button className="reaction add react-toggle" data-testid={`message-${mid}-add-reaction`} title="Add reaction" onClick={onReact}>
+                  <EmojiAddIcon />
+                </button>
+              </div>
+            )}
 
-        {!inThread && m.replyCount > 0 && (
-          <button className="thread-indicator" data-testid={`message-${mid}-reply-count`} onClick={onOpenThread}>
-            <ReplyIcon />
-            {m.replyCount} {m.replyCount === 1 ? "reply" : "replies"}
-          </button>
+            {!inThread && m.replyCount > 0 && (
+              <button className="thread-indicator" data-testid={`message-${mid}-reply-count`} onClick={onOpenThread}>
+                <ReplyIcon />
+                <span>{m.replyCount} {m.replyCount === 1 ? "reply" : "replies"}</span>
+              </button>
+            )}
+          </div>
         )}
       </div>
 

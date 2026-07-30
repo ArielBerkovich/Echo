@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { enableClipboardStub, requestAsToken, seedWorkspaceFixture, slug } from "./helpers.js";
+import { enableClipboardStub, messageById, requestAsToken, seedWorkspaceFixture, slug } from "./helpers.js";
 
 const ONE_BY_ONE_PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAEklEQVR42mP8/5+hHgAHggJ/PFvdcQAAAABJRU5ErkJggg==",
@@ -581,6 +581,16 @@ test("updates settings and replays the walkthrough", async ({ browser, page }) =
 
   await settings.getByRole("button", { name: "Replay walkthrough" }).click();
   await expect(page.getByText("Welcome to Echo 👋")).toBeVisible();
+  await page.getByRole("button", { name: "Next" }).click();
+  await expect(page.getByText("Get around")).toBeVisible();
+  const railBox = await page.locator(".rail-top").boundingBox();
+  const spotlightBox = await page.getByTestId("walkthrough-spotlight").boundingBox();
+  expect(railBox).not.toBeNull();
+  expect(spotlightBox).not.toBeNull();
+  expect(Math.abs(spotlightBox.x - (railBox.x - 6))).toBeLessThanOrEqual(1);
+  expect(Math.abs(spotlightBox.y - (railBox.y - 6))).toBeLessThanOrEqual(1);
+  expect(Math.abs(spotlightBox.width - (railBox.width + 12))).toBeLessThanOrEqual(4);
+  expect(Math.abs(spotlightBox.height - (railBox.height + 12))).toBeLessThanOrEqual(4);
   await page.getByRole("button", { name: "Skip tour" }).click();
 
   if (fixture.alice.isAdmin) {
@@ -664,10 +674,72 @@ test("pins a message from inside a thread", async ({ page }) => {
     .first();
   await reply.hover();
   await page.locator('[data-message-actions="true"]').getByTitle("More message actions").click();
+  const menuBox = await page.getByRole("menu", { name: "Message actions" }).boundingBox();
+  const viewport = page.viewportSize();
+  expect(menuBox).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect(menuBox.y).toBeGreaterThanOrEqual(0);
+  expect(menuBox.y + menuBox.height).toBeLessThanOrEqual(viewport.height);
   await page.getByRole("menuitem", { name: "Pin message" }).click();
 
   await page.getByRole("button", { name: "Pinned messages" }).click();
   await expect(page.locator(".pinned-item").filter({ hasText: fixture.messages.threadReply.body })).toBeVisible();
+});
+
+test("keeps the message menu inside the viewport at the bottom of a thread", async ({ page }) => {
+  const marker = `menu-boundary-${Date.now()}`;
+  for (let index = 0; index < 14; index++) {
+    await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
+      method: "POST",
+      body: {
+        channelId: fixture.projectChannel.id,
+        parentId: fixture.messages.threadRoot.id,
+        body: `${marker} reply ${index}`,
+        externalKey: `${marker}-${index}`,
+      },
+    });
+  }
+
+  await page.goto("/");
+  const root = messageById(page, fixture.messages.threadRoot.id);
+  await root.hover();
+  await page.locator('[data-message-actions="true"]').getByTitle("Reply in thread").click();
+  await expect(page.getByTestId("thread-panel")).toBeVisible();
+
+  const target = page.locator(".thread-panel .message").filter({ hasText: `${marker} reply 13` });
+  await expect(target).toBeVisible();
+  await page.locator(".thread-body").evaluate((element) => { element.scrollTop = element.scrollHeight; });
+  await target.hover();
+  const trigger = page.locator('[data-message-actions="true"] [title="More message actions"]').last();
+  const triggerBox = await trigger.boundingBox();
+  await trigger.click();
+  const menu = page.getByRole("menu", { name: "Message actions" });
+  await expect(menu).toBeVisible();
+  const menuBox = await menu.boundingBox();
+  const viewport = page.viewportSize();
+  expect(triggerBox).not.toBeNull();
+  expect(menuBox).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect(menuBox.y).toBeGreaterThanOrEqual(0);
+  expect(menuBox.y + menuBox.height).toBeLessThanOrEqual(viewport.height);
+  expect(menuBox.y).toBeLessThan(triggerBox.y);
+});
+
+test("keeps the message menu inside a narrow viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 640 });
+  await page.goto("/");
+  const message = page.locator(".message").filter({ hasText: fixture.messages.searchHit.body }).first();
+  await expect(message).toBeVisible();
+  await message.hover();
+  await page.locator('[data-message-actions="true"]').getByTitle("More message actions").click();
+  const menu = page.getByRole("menu", { name: "Message actions" });
+  await expect(menu).toBeVisible();
+  const menuBox = await menu.boundingBox();
+  expect(menuBox).not.toBeNull();
+  expect(menuBox.x).toBeGreaterThanOrEqual(0);
+  expect(menuBox.x + menuBox.width).toBeLessThanOrEqual(390);
+  expect(menuBox.y).toBeGreaterThanOrEqual(0);
+  expect(menuBox.y + menuBox.height).toBeLessThanOrEqual(640);
 });
 
 test("opens the original thread when a thread reply is forwarded into the same channel", async ({ page }) => {

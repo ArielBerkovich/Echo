@@ -155,6 +155,15 @@ export default function ThreadPanel({
     prevReplyCountRef.current = replies.length;
 
     if (!initialScrolledRef.current) {
+      // A thread opened from Saved/Activity may already have a reply jump
+      // queued. Do not start the normal bottom animation in that case: its
+      // later frames can overwrite the jump scroll after the target is
+      // highlighted, leaving the highlighted message off-screen.
+      if (jumpTargetRef.current || openThreadJumpMessageId) {
+        initialScrolledRef.current = true;
+        stickToBottomRef.current = false;
+        return;
+      }
       bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
       initialScrolledRef.current = true;
       stickToBottomRef.current = true;
@@ -175,7 +184,9 @@ export default function ThreadPanel({
     if (!scroller || !target) return;
     jumpHandledRef.current = targetId;
     stickToBottomRef.current = false;
-    setScrollCenteringSpace(scroller, topJumpSpacerRef.current, bottomRef.current, true);
+    // Keep the real scroll bounds so first/last replies are not artificially
+    // centered when the thread has insufficient content around them.
+    setScrollCenteringSpace(scroller, topJumpSpacerRef.current, bottomRef.current, false);
     scrollElementToCenter(scroller, target);
     setHighlightId(targetId);
   }, [openThreadJumpMessageId, replies, rootMsg.id]);
@@ -200,7 +211,7 @@ export default function ThreadPanel({
           const scroller = scrollerRef.current;
           const target = scroller?.querySelector(`[data-mid="${targetId}"]`);
           if (scroller && target) {
-            setScrollCenteringSpace(scroller, topJumpSpacerRef.current, bottomRef.current, true);
+            setScrollCenteringSpace(scroller, topJumpSpacerRef.current, bottomRef.current, false);
             scrollElementToCenter(scroller, target);
           }
         });
@@ -222,6 +233,7 @@ export default function ThreadPanel({
 
   function onBodyScroll(e) {
     const scroller = e.currentTarget;
+    if (!menuFor) setActionsFor(null);
     const atBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120;
     stickToBottomRef.current = atBottom;
     if (atBottom) setNewMessageCount(0);

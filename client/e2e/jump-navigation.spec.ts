@@ -66,6 +66,17 @@ async function expectMessageCentered(target) {
   ).toBeLessThanOrEqual(8);
 }
 
+async function expectMessageVisible(target) {
+  await expect(target).toBeVisible();
+  await expect.poll(() => target.evaluate((element) => {
+    const scroller = element.closest(".thread-body, .messages");
+    if (!scroller) return false;
+    const targetRect = element.getBoundingClientRect();
+    const scrollerRect = scroller.getBoundingClientRect();
+    return targetRect.top >= scrollerRect.top && targetRect.bottom <= scrollerRect.bottom;
+  }), { message: "expected the selected message to remain inside its scroller" }).toBe(true);
+}
+
 async function seedJumpCase(page, { origin, context, content, withImages }) {
   const stamp = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const marker = `Jump matrix ${origin} ${context} ${content} ${withImages ? "images" : "no-images"} ${stamp}`;
@@ -289,7 +300,7 @@ const boundaryCases = [
 ];
 
 for (const boundaryCase of boundaryCases) {
-  test(`${boundaryCase.origin} centers a ${boundaryCase.context} target near the ${boundaryCase.boundary} boundary`, async ({ page }) => {
+  test(`${boundaryCase.origin} keeps a ${boundaryCase.context} target visible at the ${boundaryCase.boundary} boundary`, async ({ page }) => {
     const scenario = await seedBoundaryCase(page, boundaryCase);
     await page.route(`**/api/files/${scenario.imageKey}`, async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 900));
@@ -311,13 +322,22 @@ for (const boundaryCase of boundaryCases) {
 
     const target = messageById(page, scenario.target.id);
     await expect(target).toHaveClass(/flash/);
-    await expectMessageCentered(target);
+    await expectMessageVisible(target);
+    await expect.poll(() => target.evaluate((element) => {
+      const scroller = element.closest(".thread-body, .messages");
+      if (!scroller) return 0;
+      const targetRect = element.getBoundingClientRect();
+      const scrollerRect = scroller.getBoundingClientRect();
+      return Math.abs(
+        targetRect.top + targetRect.height / 2 - (scrollerRect.top + scroller.clientHeight / 2)
+      );
+    })).toBeGreaterThan(8);
 
     const scroller = boundaryCase.context === "thread"
       ? page.locator(".thread-body")
       : page.locator(".channel-main > .messages");
     await expect(scroller.locator(".att-image img")).toHaveCount(1);
     await expect(scroller.locator(".att-image img")).toBeVisible();
-    await expectMessageCentered(target);
+    await expectMessageVisible(target);
   });
 }
