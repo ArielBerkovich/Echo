@@ -1,42 +1,48 @@
 # Echo
 
-![Echo hero banner](docs/images/hero-banner.png)
+![Echo — self-hosted team communication](docs/images/hero-banner-v2.png)
 
-Echo is a self-hosted team chat platform for secure networks, air-gapped deployments, and infrastructure that needs to stay under your control.
+Echo is a self-hosted communication workspace for teams that need fast collaboration without giving up control of their data or infrastructure.
 
-It ships as a compact Docker Compose stack with a React client, Node/Express API server, MongoDB, and MinIO-compatible object storage. The system is designed to run without external SaaS dependencies and can also connect to a replica set or cluster through a standard MongoDB URI.
+It brings channels, direct messages, threads, files, search, activity, and automation into one focused interface. Echo can run on an internal network or in a disconnected environment, with web and desktop clients backed by infrastructure you operate.
 
-## Capabilities
+## What Echo includes
 
-- Channels, private channels, direct messages, threads, reactions, pinned messages, saved messages, mentions, and activity tracking.
-- Rich message formatting with Markdown-style paste support.
-- File uploads backed by S3-compatible storage through MinIO.
-- Built-in REST API for automation, notifications, and CI/CD workflows.
-- Webhooks, idempotent message upserts, OpenAPI export, and API token support.
-- Docker Compose deployment with no external runtime dependencies beyond the container images.
-- MongoDB URI support for standalone deployments, replica sets, and cluster/SRV connections.
+- **Focused conversations:** public and private channels, direct messages, threads, mentions, reactions, pins, saved messages, and VIP contacts.
+- **Fast navigation:** unified search across messages, people, and channels; activity and saved-message views; public-channel discovery; and one-click conversation creation.
+- **Rich messages:** formatted text, code blocks, quotes, lists, emoji, file uploads, message forwarding, and scheduled messages.
+- **Automation-ready:** API tokens, webhooks, idempotent message upserts, thread keys, an OpenAPI export, and copy-ready curl examples in the app.
+- **Infrastructure you control:** Docker Compose and Helm deployment paths, S3-compatible object storage, external MongoDB support, and no required external service calls during normal operation.
+- **Multiple clients:** responsive web UI plus packaged desktop apps with automatic update support.
 
-## Screenshots
+## A look inside
 
 ### Workspace
 
-![Echo workspace](docs/images/workspace.png)
+Channels and conversations stay close at hand while the main pane keeps the current discussion in focus.
 
-### Login
+![Echo channel workspace](docs/images/workspace-v2.png)
 
-![Echo login](docs/images/login.png)
+### Direct messages
+
+Move between recent conversations or start a new one from the shared `+` action.
+
+![Echo direct messages](docs/images/direct-messages.png)
 
 ### API Reference
 
-![Echo API reference](docs/images/api-reference.png)
+Generate a token and explore the supported endpoints without leaving the app.
+
+![Echo API reference](docs/images/api-reference-v2.png)
 
 ## Stack
 
 - Client: React, Vite, TypeScript
+- Desktop: Electron
 - Server: Node.js, Express, TypeScript, Socket.IO
 - Database: MongoDB
-- Object storage: MinIO
-- Deployment: Docker Compose
+- Object storage: S3-compatible storage through MinIO
+- Deployment: Docker Compose and Helm
 
 ## Quick Start
 
@@ -59,6 +65,9 @@ http://localhost:8090
 ```
 
 The first account created becomes the workspace admin.
+
+Prebuilt desktop packages and versioned deployment artifacts are available on
+the [Releases](https://github.com/ArielBerkovich/Echo/releases) page.
 
 ### RHSSO demo
 
@@ -167,7 +176,7 @@ ECHO_URL=http://localhost:8091 npm run test:e2e:rhsso
 
 ## Helm
 
-The repository also includes a self-contained Helm chart at [helm/echo](/home/ariel/repositories/Echo/helm/echo).
+The repository also includes a self-contained Helm chart at [helm/echo](helm/echo).
 
 By default it deploys Echo plus bundled MongoDB and MinIO workloads. You can disable either dependency and point the server at your own services by setting:
 
@@ -179,7 +188,7 @@ By default it deploys Echo plus bundled MongoDB and MinIO workloads. You can dis
 - `server.s3.secretKey`
 - `server.clientOrigin`
 
-See [helm/echo/README.md](/home/ariel/repositories/Echo/helm/echo/README.md) for install examples and air-gapped registry configuration.
+See [helm/echo/README.md](helm/echo/README.md) for install examples and air-gapped registry configuration.
 
 ## API And Automation
 
@@ -225,8 +234,8 @@ Build installers with `npm run dist` after installing the Electron
 dependencies.
 
 Tagged releases are built by `.github/workflows/release.yml`. Push a semantic
-version tag such as `v0.2.0` to create a GitHub release containing the Windows
-installer, Linux AppImage, Debian package, and a versioned `echo-<version>.tgz`
+version tag such as `v0.10.0` to create a GitHub release containing the Windows
+installer, Linux AppImage, and a versioned `echo-<version>.tgz`
 Helm chart. The same workflow publishes `echo-client` and `echo-server` images
 to Docker Hub with versioned tags and, for stable releases, `latest`. Configure
 a `DOCKERHUB_USERNAME` repository variable and a `DOCKERHUB_TOKEN` repository
@@ -265,9 +274,8 @@ server image with the same version as the desktop/client release. Local source
 builds contain an empty feed unless files are placed in `desktop-updates/`
 before building the server image.
 
-The Debian package continues to use the system package manager rather than the
-in-app updater. macOS automatic updates are not enabled until signed and
-notarized release builds are added. Existing installations older than the first
-updater-enabled release need one manual upgrade before they can update this way.
-On Windows, uninstalling Echo removes its complete application-data directory,
-including the saved backend URL, login session, caches, and local preferences.
+macOS automatic updates are not enabled until signed and notarized release
+builds are added. Existing installations older than the first updater-enabled
+release need one manual upgrade before they can update this way. On Windows,
+uninstalling Echo removes its complete application-data directory, including
+the saved backend URL, login session, caches, and local preferences.
