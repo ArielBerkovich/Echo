@@ -273,7 +273,8 @@ test("dismisses message actions while scrolling the message list", async ({ page
 
   const scroller = page.locator(".channel-main .messages");
   await scroller.evaluate((element) => {
-    element.scrollTop = Math.min(element.scrollTop + 240, element.scrollHeight - element.clientHeight);
+    element.scrollTop = Math.max(0, element.scrollTop - 240);
+    element.dispatchEvent(new Event("scroll", { bubbles: true }));
   });
   await expect(actions).toBeHidden();
 });

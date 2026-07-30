@@ -134,6 +134,7 @@ export default function ChannelView({
   const jumpHandledRef = useRef(null); // guards against re-running after the target lands
   const jumpLoadingRef = useRef(null); // guards against duplicate around-message requests
   const activeJumpTargetRef = useRef(null); // re-centred across late image/layout changes until user interaction
+  const actionsScrollTimerRef = useRef(null);
   const unreadScrollAppliedRef = useRef(false); // did we already anchor the current unread divider?
   const suppressGrowFollowRef = useRef(false); // while true, don't auto-follow "grew" renders to the bottom
 
@@ -564,10 +565,12 @@ export default function ChannelView({
 
   function onMessagesScroll(e) {
     const scroller = e.currentTarget;
-    // The hover toolbar is a transient affordance. Once the list moves, its
-    // fixed portal position is no longer useful and can appear to drift away
-    // from the message under the pointer. Let the user re-hover after scroll.
-    if (!menuFor) setActionsFor(null);
+    if (!menuFor) {
+      clearTimeout(actionsScrollTimerRef.current);
+      // Defer dismissal until after browser-initiated hover scrolling settles;
+      // otherwise locator.hover() can lose the toolbar it just activated.
+      actionsScrollTimerRef.current = window.setTimeout(() => setActionsFor(null), 80);
+    }
     const atBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120;
     if (!jumpingRef.current && !(firstUnreadId && unreadScrollAppliedRef.current)) {
       stickToBottomRef.current = atBottom;
@@ -1098,6 +1101,7 @@ export default function ChannelView({
                     onOpenChannel={onOpenChannel}
                     showActions={actionsFor === m.id}
                     onActivate={() => {
+                      clearTimeout(actionsScrollTimerRef.current);
                       setActionsFor(m.id);
                       setMenuFor((openId) => (openId && openId !== m.id ? null : openId));
                     }}

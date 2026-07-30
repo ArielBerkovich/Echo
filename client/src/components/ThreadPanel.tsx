@@ -54,6 +54,7 @@ export default function ThreadPanel({
   const prevReplyCountRef = useRef(0); // reply count last render
   const jumpHandledRef = useRef(null); // last reply id we attempted to reveal
   const jumpTargetRef = useRef(openThreadJumpMessageId);
+  const actionsScrollTimerRef = useRef(null);
 
   const renderMarkdown = useMarkdownRenderer(users, user.username, customEmojis, channels);
   const emojiMap = useMemo(
@@ -233,7 +234,10 @@ export default function ThreadPanel({
 
   function onBodyScroll(e) {
     const scroller = e.currentTarget;
-    if (!menuFor) setActionsFor(null);
+    if (!menuFor) {
+      clearTimeout(actionsScrollTimerRef.current);
+      actionsScrollTimerRef.current = window.setTimeout(() => setActionsFor(null), 80);
+    }
     const atBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120;
     stickToBottomRef.current = atBottom;
     if (atBottom) setNewMessageCount(0);
@@ -343,6 +347,7 @@ export default function ThreadPanel({
                 onOpenChannel={onOpenChannel}
                 showActions={actionsFor === m.id}
                 onActivate={() => {
+                  clearTimeout(actionsScrollTimerRef.current);
                   setActionsFor(m.id);
                   setMenuFor((openId) => (openId && openId !== m.id ? null : openId));
                 }}
