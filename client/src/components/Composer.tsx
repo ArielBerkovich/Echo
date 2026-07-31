@@ -751,11 +751,6 @@ export default function Composer({ channel, parentId = null, users = [], channel
 
       <div className="composer-input">
         <EditorContent editor={editor} />
-        {(active.ul || active.ol) && (
-          <div className="list-exit-hint" role="status">
-            Press Enter on an empty item to finish the list.
-          </div>
-        )}
       </div>
 
       <div className="composer-actions">
