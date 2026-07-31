@@ -59,6 +59,7 @@ export default function App() {
     dmsQuery,
     users,
     setUsers,
+    usersQuery,
     customEmojis,
     setCustomEmojis,
     savedIds,
@@ -99,12 +100,21 @@ export default function App() {
     if (!restoredRef.current) navDuringRestoreRef.current = true;
   }
 
+  function conversationRouteName(channel) {
+    if (!channel) return null;
+    if (channel.type !== "dm") return channel.name || null;
+    return channel.dmUsername
+      || users.find((candidate) => candidate.id === channel.dmUserId)?.username
+      || null;
+  }
+
   function setView(nextView, channel = activeChannelRef.current, options = {}) {
     setViewState(nextView);
     navigate(
       workspacePath({
         view: nextView,
         convId: channel?.id || null,
+        convName: conversationRouteName(channel),
         convType: channel?.type || null,
       }),
       options
@@ -347,13 +357,33 @@ export default function App() {
     setSearchQuery(route.searchQuery);
 
     const currentChannel = activeChannelRef.current;
-    if (route.convId && currentChannel?.id === route.convId) {
+    const routeConversation = route.convId?.toLowerCase();
+    const currentRouteName = conversationRouteName(currentChannel)?.toLowerCase();
+    if (route.convId && (currentChannel?.id === route.convId || currentRouteName === routeConversation)) {
       setViewState(route.view);
+      if (currentChannel?.id === route.convId && currentRouteName) {
+        navigate(workspacePath({
+          view: route.view,
+          convId: currentChannel.id,
+          convName: conversationRouteName(currentChannel),
+          convType: currentChannel.type,
+        }), { replace: true });
+      }
       return;
     }
 
     if (route.convType === "dm" && route.convId) {
-      let dm = conversations.find((conversation) => conversation.id === route.convId);
+      let dm = conversations.find((conversation) =>
+        conversation.id === route.convId
+        || conversation.withUser.username?.toLowerCase() === routeConversation
+      );
+      if (!dm) {
+        const person = users.find((candidate) => candidate.username.toLowerCase() === routeConversation);
+        if (person) {
+          const result = await api.openDm(person.id).catch(() => null);
+          if (result?.channel) dm = { id: result.channel.id, withUser: person };
+        }
+      }
       if (!dm) {
         const result = await api.getChannel(route.convId).catch(() => null);
         const other = result?.members?.find((member) => member.id !== user.id)
@@ -362,21 +392,35 @@ export default function App() {
       }
       if (dm) {
         setViewState(route.view === "home" ? "home" : "dms");
-        setActiveChannel({ id: dm.id, type: "dm", dmName: dm.withUser.displayName, dmUserId: dm.withUser.id });
+        const activeDm = {
+          id: dm.id,
+          type: "dm",
+          dmName: dm.withUser.displayName,
+          dmUsername: dm.withUser.username,
+          dmUserId: dm.withUser.id,
+        };
+        setActiveChannel(activeDm);
+        if (route.convId === dm.id) {
+          navigate(workspacePath({ view: route.view, convId: dm.id, convName: dm.withUser.username, convType: "dm" }), { replace: true });
+        }
         return;
       }
     }
 
     if (route.convType === "channel" && route.convId) {
-      let channel = chs.find((candidate) => candidate.id === route.convId)
-        || allChannels.find((candidate) => candidate.id === route.convId);
+      let channel = chs.find((candidate) => candidate.id === route.convId || candidate.name.toLowerCase() === routeConversation)
+        || allChannels.find((candidate) => candidate.id === route.convId || candidate.name.toLowerCase() === routeConversation);
       if (!channel) {
-        channel = await api.getChannel(route.convId).then(({ channel }) => channel).catch(() => null);
+        channel = await api.getChannelByName(route.convId).then(({ channel }) => channel).catch(() => null)
+          || await api.getChannel(route.convId).then(({ channel }) => channel).catch(() => null);
         if (channel?.type === "public") cacheCatalogChannels([channel]);
       }
       if (channel && channel.type !== "dm") {
         setViewState("home");
         setActiveChannel(channel);
+        if (route.convId === channel.id) {
+          navigate(workspacePath({ view: "home", convId: channel.id, convName: channel.name, convType: channel.type }), { replace: true });
+        }
         return;
       }
     }
@@ -387,7 +431,7 @@ export default function App() {
   // Restore navigation once the independently fetched channel and DM queries
   // have both resolved. The other workspace queries continue in parallel.
   useEffect(() => {
-    if (!user || !channelsQuery.isSuccess || !dmsQuery.isSuccess) return;
+    if (!user || !channelsQuery.isSuccess || !dmsQuery.isSuccess || !usersQuery.isSuccess) return;
     if (restoredUserRef.current === user.id) return;
     restoredUserRef.current = user.id;
     restoredRef.current = false; // restore again for this (possibly new) account
@@ -409,13 +453,21 @@ export default function App() {
         if (invitedChannel) {
           setActiveChannel(invitedChannel);
           setViewState("home");
-          navigate(workspacePath({ view: "home", convId: invitedChannel.id, convType: invitedChannel.type }), { replace: true });
+          navigate(workspacePath({ view: "home", convId: invitedChannel.id, convName: invitedChannel.name, convType: invitedChannel.type }), { replace: true });
         } else if (hasExplicitRoute) {
           await applyRouteLocation(route, chs, conversations);
         } else if (!navDuringRestoreRef.current) {
           const saved = readJson(`echo.loc.${user.id}`, null);
           applyLocation(saved, chs, conversations);
-          navigate(workspacePath(saved || {}), { replace: true });
+          const savedConversation = saved?.convType === "dm"
+            ? conversations.find((conversation) => conversation.id === saved.convId)
+            : chs.find((channel) => channel.id === saved?.convId);
+          navigate(workspacePath({
+            ...(saved || {}),
+            convName: saved?.convType === "dm"
+              ? savedConversation?.withUser.username
+              : savedConversation?.name,
+          }), { replace: true });
         } else {
           writeCurrentLocation(user.id);
         }
@@ -427,7 +479,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [user, channelsQuery.isSuccess, dmsQuery.isSuccess, cacheCatalogChannels, location.key]);
+  }, [user, channelsQuery.isSuccess, dmsQuery.isSuccess, usersQuery.isSuccess, cacheCatalogChannels, location.key]);
 
   useEffect(() => {
     if (user) syncActivity(activityItems);
@@ -502,6 +554,15 @@ export default function App() {
   }
 
   function upsertChannel(channel) {
+    const active = activeChannelRef.current;
+    if (active?.id === channel.id && active.name !== channel.name) {
+      navigate(workspacePath({
+        view: viewRef.current,
+        convId: channel.id,
+        convName: channel.name,
+        convType: channel.type,
+      }), { replace: true });
+    }
     setChannels((prev) => {
       const exists = prev.some((c) => c.id === channel.id);
       const next = exists
@@ -594,6 +655,7 @@ export default function App() {
     return workspacePath({
       view,
       convId: activeChannel?.id || null,
+      convName: conversationRouteName(activeChannel),
       convType: activeChannel?.type || null,
       searchQuery,
     });
@@ -628,6 +690,7 @@ export default function App() {
       ...channel,
       type: "dm",
       dmName: isSelf ? `${target.displayName} (you)` : target.displayName,
+      dmUsername: target.username,
       dmUserId: target.id,
       isSelf,
     };
@@ -1077,6 +1140,7 @@ export default function App() {
               navigate(workspacePath({
                 view,
                 convId: activeChannel?.id || null,
+                convName: conversationRouteName(activeChannel),
                 convType: activeChannel?.type || null,
               }));
             },

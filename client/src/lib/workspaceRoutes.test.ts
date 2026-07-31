@@ -5,9 +5,10 @@ import { currentRoute, parseWorkspacePath, workspacePath } from "./workspaceRout
 describe("workspace routes", () => {
   it("builds stable paths for workspace views and conversations", () => {
     assert.equal(workspacePath({ view: "activity" }), "/activity");
-    assert.equal(workspacePath({ view: "home", convId: "channel 1", convType: "public" }), "/channels/channel%201");
-    assert.equal(workspacePath({ view: "dms", convId: "dm/1", convType: "dm" }), "/dms/dm%2F1");
-    assert.equal(workspacePath({ view: "home", convId: "dm/1", convType: "dm" }), "/home/dms/dm%2F1");
+    assert.equal(workspacePath({ view: "home", convId: "id-1", convName: "channel 1", convType: "public" }), "/channels/channel%201");
+    assert.equal(workspacePath({ view: "dms", convId: "id-2", convName: "alice", convType: "dm" }), "/dms/alice");
+    assert.equal(workspacePath({ view: "home", convId: "id-2", convName: "alice", convType: "dm" }), "/home/dms/alice");
+    assert.equal(workspacePath({ view: "home", convId: "legacy-id", convType: "public" }), "/channels/legacy-id");
     assert.equal(workspacePath({ searchQuery: "from:alice deployment" }), "/search?q=from%3Aalice%20deployment");
   });
 

@@ -1,14 +1,15 @@
 const STATIC_VIEWS = new Set(["browse", "activity", "saved", "dms"]);
 
-export function workspacePath({ view = "home", convId = null, convType = null, searchQuery = null } = {}) {
+export function workspacePath({ view = "home", convId = null, convName = null, convType = null, searchQuery = null } = {}) {
+  const conversation = convName || convId;
   if (searchQuery) return `/search?q=${encodeURIComponent(searchQuery)}`;
   if (view === "browse") return "/browse";
   if (view === "activity") return "/activity";
   if (view === "saved") return "/saved";
-  if (view === "dms") return convId && convType === "dm" ? `/dms/${encodeURIComponent(convId)}` : "/dms";
-  if (convId) {
-    if (convType === "dm") return `/home/dms/${encodeURIComponent(convId)}`;
-    return `/channels/${encodeURIComponent(convId)}`;
+  if (view === "dms") return conversation && convType === "dm" ? `/dms/${encodeURIComponent(conversation)}` : "/dms";
+  if (conversation) {
+    if (convType === "dm") return `/home/dms/${encodeURIComponent(conversation)}`;
+    return `/channels/${encodeURIComponent(conversation)}`;
   }
   return "/";
 }

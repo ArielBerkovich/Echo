@@ -51,18 +51,23 @@ test("restores an authenticated session into the default channel", async ({ page
 });
 
 test("supports direct workspace routes and browser history", async ({ page }) => {
+  // Legacy ID links remain valid, but are replaced with the readable canonical URL.
   await page.goto(`/channels/${fixture.projectChannel.id}`);
 
   await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
-  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.projectChannel.id}$`));
+  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.projectChannel.name}$`));
 
   await railItem(page, "activity").click();
   await expect(page).toHaveURL(/\/activity$/);
   await expect(railItem(page, "activity")).toHaveClass(/active/);
 
   await page.goBack();
-  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.projectChannel.id}$`));
+  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.projectChannel.name}$`));
   await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
+
+  await page.goto(`/dms/${fixture.bob.username}`);
+  await expect(page).toHaveURL(new RegExp(`/dms/${fixture.bob.username}$`));
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.bob.displayName);
 });
 
 test("sign out clears the session and returns to login", async ({ page }) => {
