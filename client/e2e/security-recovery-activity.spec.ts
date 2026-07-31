@@ -275,8 +275,11 @@ test("shows and permanently dismisses every supported Activity kind", async ({ b
     await expect(page.getByTestId("activity-header")).toBeVisible();
     await expect(page.getByText(stamp, { exact: false })).toHaveCount(0);
   } finally {
-    await requestAsToken(page, fixture.alice.token, `/channels/${addedChannel.channel.id}/leave`, {
-      method: "POST",
-    }).catch(() => {});
+    await requestAsToken(
+      page,
+      fixture.bob.token,
+      `/channels/${addedChannel.channel.id}/members/${fixture.alice.id}`,
+      { method: "DELETE" }
+    );
   }
 });

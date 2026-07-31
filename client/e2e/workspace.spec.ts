@@ -33,11 +33,21 @@ async function openFreshGeneralMessage(page, key, body) {
 }
 
 test("restores an authenticated session into the default channel", async ({ page }) => {
-  await page.goto("/");
+  const earlierChannel = await requestAsToken(page, fixture.alice.token, "/channels", {
+    method: "POST",
+    body: { name: `aaa-default-check-${fixture.suffix}`, type: "private" },
+  });
+  try {
+    await page.goto("/");
 
-  await expect(page.getByText("Echo").first()).toBeVisible();
-  await expect(page.getByText("#general", { exact: true })).toBeVisible();
-  await expect(page.locator(".composer-editor")).toBeVisible();
+    await expect(page.getByText("Echo").first()).toBeVisible();
+    await expect(page.getByText("#general", { exact: true })).toBeVisible();
+    await expect(page.locator(".composer-editor")).toBeVisible();
+  } finally {
+    await requestAsToken(page, fixture.alice.token, `/channels/${earlierChannel.channel.id}`, {
+      method: "DELETE",
+    });
+  }
 });
 
 test("sign out clears the session and returns to login", async ({ page }) => {
