@@ -1964,17 +1964,18 @@ html[data-mode="dark"] .backend-connection-error {
   background: color-mix(in srgb, var(--active-bg) 16%, transparent);
   border-color: color-mix(in srgb, var(--active-bg) 36%, transparent);
 }
-.rail-item.active::before {
-  content: "";
+.rail-active-indicator {
   position: absolute;
-  left: -8px;
-  top: 50%;
+  left: -4px;
+  top: 26px;
   width: 3px;
   height: 20px;
   border-radius: 999px;
   background: var(--active-bg);
-  transform: translateY(-50%);
+  transform: translateY(calc(var(--rail-active-index) * 65px));
+  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
   box-shadow: 0 0 12px color-mix(in srgb, var(--active-bg) 75%, transparent);
+  pointer-events: none;
 }
 .rail-icon {
   position: relative;
@@ -2024,6 +2025,7 @@ html[data-mode="dark"] .backend-connection-error {
 }
 @media (prefers-reduced-motion: reduce) {
   .rail-item.clicked .rail-icon { animation: none; }
+  .rail-active-indicator { transition: none; }
 }
 .rail-badge {
   position: absolute;
@@ -7815,6 +7817,10 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     padding-block: 10px;
     border-radius: 21px;
     font-size: 12px;
+  }
+  .rail-active-indicator {
+    top: 34px;
+    transform: translateY(calc(var(--rail-active-index) * 79px));
   }
   .rail-icon {
     width: 40px;

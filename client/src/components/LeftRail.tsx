@@ -13,6 +13,7 @@ const ITEMS = [
 export default function LeftRail({ view, onSelect, badges = {} }) {
   const [clicked, setClicked] = useState(null);
   const clickTimerRef = useRef(null);
+  const activeIndex = Math.max(0, ITEMS.findIndex((item) => item.key === view));
 
   useEffect(() => () => clearTimeout(clickTimerRef.current), []);
 
@@ -28,7 +29,8 @@ export default function LeftRail({ view, onSelect, badges = {} }) {
         <Logo size={54} />
         <span className="rail-brand-name">echo</span>
       </div>
-      <div className="rail-top">
+      <div className="rail-top" style={{ "--rail-active-index": activeIndex }}>
+        <span className="rail-active-indicator" aria-hidden="true" />
         {ITEMS.map(({ key, label, Icon }) => {
           const count = badges[key] || 0;
           return (
