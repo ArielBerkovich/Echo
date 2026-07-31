@@ -346,6 +346,7 @@ test("uses Shift+Enter for code newlines and Enter to exit the block", async ({ 
 
 test("sends multiple messages from the same composer", async ({ page }) => {
   await page.goto("/");
+  await channelRow(page, "general").click();
   await expect(page.getByTestId("channel-title")).toContainText("general");
 
   const composer = page.locator(".composer-editor");
