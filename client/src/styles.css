@@ -287,7 +287,8 @@ html[data-mode="dark"] .composer {
   border-color: var(--border);
 }
 html[data-mode="dark"] .composer:focus-within {
-  border-color: color-mix(in srgb, var(--text) 32%, var(--border));
+  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 24%, transparent);
 }
 html[data-mode="dark"] .composer-toolbar {
   background: rgba(255, 255, 255, 0.04);
@@ -2903,7 +2904,8 @@ html[data-mode="dark"] .sidebar {
 }
 .search-box-field:focus-within {
   background: var(--surface);
-  box-shadow: 0 0 0 2px var(--blue-400) inset, 0 6px 18px rgba(37, 99, 235, 0.18);
+  border: 1px solid color-mix(in srgb, var(--accent) 72%, var(--border));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 24%, transparent) inset;
 }
 /* The input sits transparently over a "mirror" that renders the same text
    with the filter keywords (in:/from:/has:) styled — native inputs can't
@@ -6281,8 +6283,8 @@ html[data-mode="dark"] .new-messages-button:hover {
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .composer:focus-within {
-  border-color: color-mix(in srgb, var(--text) 32%, var(--border));
-  box-shadow: 0 1px 4px color-mix(in srgb, var(--text) 8%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 24%, transparent);
 }
 .composer.dragging-files {
   border-color: var(--blue-500);
@@ -6816,6 +6818,7 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
 .new-message-search:focus-within {
   border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
   background: var(--surface);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 24%, transparent);
 }
 .new-message-search .new-message-search-input,
 .new-message-search .new-message-search-input:focus,
