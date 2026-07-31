@@ -6132,7 +6132,7 @@ html[data-mode="dark"] .new-messages-button:hover {
 }
 .message:hover {
   background: var(--surface-2);
-  box-shadow: inset 2px 0 0 var(--blue-400);
+  box-shadow: inset 2px 0 0 var(--accent);
 }
 .message.menu-open {
   z-index: 80;
