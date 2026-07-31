@@ -7,9 +7,3 @@ test-results/
 .claude/
 # Stray analysis screenshots in the repo root (not part of the app).
 /*.png
-
-# Presentation build workspace is maintained as its own repository.
-/presentation/web/
-
-# LibreOffice lock files are local and ephemeral.
-/presentation/output/.~lock.*
