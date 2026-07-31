@@ -30,7 +30,7 @@ async function openFreshGeneralMessage(page, key, body) {
   await channelRow(page, "general").click();
   const message = messageById(page, created.message.id);
   await expect(message).toBeVisible();
-  return message;
+  return { id: created.message.id, message };
 }
 
 test("restores an authenticated session into the default channel", async ({ page }) => {
@@ -193,23 +193,16 @@ test("aligns thread chrome with the conversation and labels replies clearly", as
 });
 
 test("copies the raw markdown body from a message", async ({ page }) => {
-  await page.goto("/");
-  await page.evaluate((userId) => {
-    localStorage.setItem(`echo.loc.${userId}`, JSON.stringify({ view: "saved", convId: null, convType: null }));
-  }, fixture.alice.id);
-  await page.reload();
-
-  const savedItem = page
-    .getByTestId("saved-item")
-    .filter({ hasText: `API formatting test ${fixture.suffix}` });
-  await expect(savedItem).toBeVisible();
-  await savedItem.click();
-
-  const message = messageById(page, fixture.messages.formatted.id);
-  await expect(message).toBeVisible();
+  const { id, message } = await openFreshGeneralMessage(
+    page,
+    "copy-markdown",
+    fixture.messages.formatted.body
+  );
 
   await message.hover();
-  await page.locator('[data-message-actions="true"]').getByTitle("More message actions").click();
+  const moreActions = page.getByTestId(`message-${id}-actions`).getByTitle("More message actions");
+  await expect(moreActions).toBeVisible();
+  await moreActions.click();
   await page.getByRole("menuitem", { name: "Copy message" }).click();
 
   await expect.poll(() => page.evaluate(() => window.__copiedText)).toBe(fixture.messages.formatted.body);
@@ -258,7 +251,7 @@ test("resets the composer placeholder after deleting the draft", async ({ page }
 });
 
 test("clears message actions when leaving the message row but keeps them over the toolbar", async ({ page }) => {
-  const message = await openFreshGeneralMessage(
+  const { message } = await openFreshGeneralMessage(
     page,
     "message-actions",
     `Message actions ${fixture.suffix}`
@@ -286,7 +279,7 @@ test("clears message actions when leaving the message row but keeps them over th
 
 test("keeps copy-and-paste message paragraphs flush with the composer", async ({ page }) => {
   const body = `Copy and paste ${fixture.suffix}`;
-  const source = await openFreshGeneralMessage(page, "copy-paste", body);
+  const { message: source } = await openFreshGeneralMessage(page, "copy-paste", body);
   await source.hover();
   await page.locator('[data-message-actions="true"]').getByTitle("More message actions").click();
   await page.getByRole("menuitem", { name: "Copy message" }).click();
