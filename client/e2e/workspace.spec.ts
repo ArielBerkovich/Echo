@@ -4,7 +4,6 @@ import {
   channelRow,
   dmRow,
   messageById,
-  messageByText,
   railItem,
   requestAsToken,
   seedWorkspaceFixture,
@@ -497,9 +496,11 @@ test("shows saved messages and removes one from saved", async ({ page }) => {
 });
 
 test("opens a profile from an @mention in a message", async ({ page }) => {
-  await page.goto("/");
-  const mention = messageByText(page, `Heads up @${fixture.alice.username}`).first();
-  await expect(mention).toBeVisible();
+  const { message: mention } = await openFreshGeneralMessage(
+    page,
+    "profile-mention",
+    `Profile mention @${fixture.alice.username}`
+  );
 
   await mention.locator(".mention--me").click();
 
