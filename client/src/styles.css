@@ -5517,6 +5517,12 @@ html[data-mode="dark"] .day-divider-label {
   position: relative;
   z-index: 3;
 }
+.forward-note-field .composer {
+  margin: 0;
+}
+.forward-note-field .composer-actions {
+  padding-bottom: 5px;
+}
 .forward-note-field > span {
   display: flex;
   margin-bottom: 6px;
