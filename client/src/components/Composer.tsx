@@ -96,14 +96,19 @@ export default function Composer({ channel, parentId = null, users = [], channel
   }, [disabled, editor]);
   const editorState = useEditorState({
     editor,
-    selector: ({ editor: currentEditor }) => ({
-      canSend: currentEditor.getText().trim().length > 0,
-      bold: currentEditor.isActive("bold"),
-      italic: currentEditor.isActive("italic"),
-      strikethrough: currentEditor.isActive("strike"),
-      ul: currentEditor.isActive("bulletList"),
-      ol: currentEditor.isActive("orderedList"),
-    }),
+    selector: ({ editor: currentEditor }) => {
+      if (!currentEditor?.state?.doc) {
+        return { canSend: false, bold: false, italic: false, strikethrough: false, ul: false, ol: false };
+      }
+      return {
+        canSend: currentEditor.getText().trim().length > 0,
+        bold: currentEditor.isActive("bold"),
+        italic: currentEditor.isActive("italic"),
+        strikethrough: currentEditor.isActive("strike"),
+        ul: currentEditor.isActive("bulletList"),
+        ol: currentEditor.isActive("orderedList"),
+      };
+    },
   });
   const { canSend = false, ...active } = editorState || {};
 
