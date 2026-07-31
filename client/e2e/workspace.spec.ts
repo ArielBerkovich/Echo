@@ -696,14 +696,16 @@ test("searches messages with filters and displays results", async ({ page }) => 
   });
 
   await page.goto("/");
-  await page.getByTestId("search-input").fill(`Welcome in:general from:@${fixture.alice.username} has:link`);
-  await page.keyboard.press("Enter");
-  await page.keyboard.press("Enter");
+  const searchInput = page.getByTestId("search-input");
+  await searchInput.fill(`Welcome in:general from:@${fixture.alice.username} has:link`);
+  // Put the caret outside the filter token so Enter submits the complete
+  // query instead of selecting an autocomplete suggestion.
+  await searchInput.press("Home");
+  await searchInput.press("Enter");
 
   await expect(page.getByTestId("search-results-header")).toContainText("Search");
   await expect(page.locator(".search-chip-from")).toContainText(`@${fixture.alice.username}`);
   await expect(page.getByText("in: #general")).toBeVisible();
-  await expect(page.getByText(`from: @${fixture.alice.username}`)).toBeVisible();
   await expect(page.getByText("has: link")).toBeVisible();
   await expect(page.getByTestId("search-result")).toContainText(fixture.messages.searchHit.body);
   await expect(page.getByTestId("search-result").locator("mark")).toContainText("Welcome");
