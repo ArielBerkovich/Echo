@@ -199,7 +199,7 @@ test.describe("RHSSO login flows (Real integration, runs only when Keycloak is u
     if (await creationModal.isVisible().catch(() => false)) {
       await creationModal.getByRole("button", { name: "Create a new Echo account" }).click();
     }
-    await expect(page.getByTestId("sidebar-logout")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("rail-logout")).toBeVisible({ timeout: 15_000 });
     const token = await page.evaluate(() => localStorage.getItem("echo.token"));
     expect(token, "Echo must store the RHSSO session after account creation").toBeTruthy();
 
@@ -227,8 +227,8 @@ test.describe("RHSSO login flows (Real integration, runs only when Keycloak is u
       { timeout: 15_000 },
     );
 
-    await expect(page.getByTestId("sidebar-logout")).toBeVisible({ timeout: 15_000 });
-    await page.getByTestId("sidebar-logout").click();
+    await expect(page.getByTestId("rail-logout")).toBeVisible({ timeout: 15_000 });
+    await page.getByTestId("rail-logout").click();
 
     await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible({ timeout: 10_000 });
 
@@ -276,7 +276,7 @@ test.describe("RHSSO login flows (Real integration, runs only when Keycloak is u
     await expect(rhssoUsername).toHaveAttribute("readonly", "");
     await modal.getByRole("button", { name: "Keep old history and continue" }).click();
 
-    await expect(page.getByTestId("sidebar-logout")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("rail-logout")).toBeVisible({ timeout: 15_000 });
     const token = await page.evaluate(() => localStorage.getItem("echo.token"));
     const meResponse = await page.request.get("/api/auth/me", {
       headers: { Authorization: `Bearer ${token}` },
@@ -295,7 +295,7 @@ test.describe("RHSSO login flows (Real integration, runs only when Keycloak is u
 
     const skipTour = page.getByRole("button", { name: "Skip tour" });
     if (await skipTour.isVisible().catch(() => false)) await skipTour.click();
-    await page.getByTestId("sidebar-logout").click();
+    await page.getByTestId("rail-logout").click();
     await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
     await expect(page.getByText("This migration attempt expired. Please start again.")).toHaveCount(0);
     expect(new URL(page.url()).hash).toBe("");

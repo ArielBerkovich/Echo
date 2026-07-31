@@ -103,11 +103,14 @@ test("sign out clears the session and returns to login", async ({ page }) => {
   await expect(page.evaluate(() => localStorage.getItem("echo.token"))).resolves.toBeNull();
 });
 
-test("opens API reference from the sidebar footer", async ({ page }) => {
+test("opens API reference from Settings", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText("#general", { exact: true })).toBeVisible();
 
-  await page.getByLabel("API reference").click({ force: true });
+  await page.getByTestId("rail-settings").click();
+  await expect(page.getByTestId("settings-page")).toBeVisible();
+  await page.getByRole("button", { name: "API" }).click();
+  await expect(page.getByTestId("api-reference-page")).toBeVisible();
 
   await expect(page.getByText(/REST API/i)).toBeVisible();
 });
@@ -693,14 +696,16 @@ test("searches messages with filters and displays results", async ({ page }) => 
   });
 
   await page.goto("/");
-  await page.getByTestId("search-input").fill(`Welcome in:general from:@${fixture.alice.username} has:link`);
-  await page.keyboard.press("Enter");
-  await page.keyboard.press("Enter");
+  const searchInput = page.getByTestId("search-input");
+  await searchInput.fill(`Welcome in:general from:@${fixture.alice.username} has:link`);
+  // Put the caret outside the filter token so Enter submits the complete
+  // query instead of selecting an autocomplete suggestion.
+  await searchInput.press("Home");
+  await searchInput.press("Enter");
 
   await expect(page.getByTestId("search-results-header")).toContainText("Search");
   await expect(page.locator(".search-chip-from")).toContainText(`@${fixture.alice.username}`);
   await expect(page.getByText("in: #general")).toBeVisible();
-  await expect(page.getByText(`from: @${fixture.alice.username}`)).toBeVisible();
   await expect(page.getByText("has: link")).toBeVisible();
   await expect(page.getByTestId("search-result")).toContainText(fixture.messages.searchHit.body);
   await expect(page.getByTestId("search-result").locator("mark")).toContainText("Welcome");

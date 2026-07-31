@@ -37,7 +37,7 @@ export default function WorkspaceOverlays({
   onUserUpdated,
   onToggleVip,
   onOpenDm,
-  onReplayTour,
+  onOpenApiDocs,
   onFinishTour,
   onClose,
 }) {
@@ -78,7 +78,7 @@ export default function WorkspaceOverlays({
           onSelectMode={onSelectMode}
           onUpdated={onUserUpdated}
           onClose={onClose.settings}
-          onReplayTour={onReplayTour}
+          onOpenApiDocs={onOpenApiDocs}
         />
       ) : null}
       {showApiDocs ? <ApiDocsPage onClose={onClose.apiDocs} /> : null}

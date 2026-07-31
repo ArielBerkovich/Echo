@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 
 // A lightweight first-run guided tour. Each step optionally spotlights a UI
 // element (dimming everything else) and shows a tooltip card beside it; steps
@@ -59,7 +59,7 @@ const STEPS = [
   },
   {
     title: "You're all set! 🎉",
-    body: "Head to #general to say hello. You can replay this tour anytime from Settings.",
+    body: "Head to #general to say hello. You're ready to get started.",
     target: null,
   },
 ];
@@ -140,6 +140,19 @@ export default function Walkthrough({ onClose }) {
       window.removeEventListener("scroll", measure, true);
     };
   }, [i, step.target]);
+
+  useEffect(() => {
+    function onKeyDown(event) {
+      if (event.key !== "Enter" || event.isComposing) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (last) onClose();
+      else setI((n) => n + 1);
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [last, onClose]);
 
   function next() {
     if (last) onClose();

@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { ChevronDownIcon, CompassIcon, LockKeyholeIcon, MoonIcon, SettingsIcon, SquarePenIcon, SunIcon } from "lucide-react";
+import { ChevronDownIcon, CompassIcon, LockKeyholeIcon, SquarePenIcon } from "lucide-react";
 import Avatar from "./Avatar.js";
 import { relativeTime } from "../lib/time.js";
-import { LeaveIcon } from "./Icons.js";
 
 function StartConversationButton({ onClick }) {
   return (
@@ -63,11 +62,6 @@ export default function Sidebar({
   onPrefetchDm,
   onHideDm,
   onHideChannel,
-  onLogout,
-  onOpenSettings,
-  onOpenApiDocs,
-  themeMode = "light",
-  onToggleTheme,
 }) {
   const dmsOnly = mode === "dms";
   const [filter, setFilter] = useState("");
@@ -286,37 +280,6 @@ export default function Sidebar({
           )}
         </div>
       )}
-
-      <div className="sidebar-footer">
-        <button className="me-button account-card" data-testid="sidebar-settings" onClick={onOpenSettings} title="Open account settings">
-          <Avatar name={user.displayName} src={user.avatarUrl} size={42} />
-          <div className="who account-copy">
-            <div className="me" dir="auto">{user.displayName}</div>
-            <div className="status">Active</div>
-          </div>
-          <span className="account-caret" aria-hidden="true">›</span>
-        </button>
-        <div className="footer-actions account-actions">
-          <button
-            className="link"
-            onClick={onToggleTheme}
-            title={themeMode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-            aria-label="Toggle dark mode"
-          >
-            {themeMode === "dark" ? <SunIcon size={16} strokeWidth={1.5} /> : <MoonIcon size={16} strokeWidth={1.5} />}
-          </button>
-          <button className="link" data-testid="sidebar-api-docs" onClick={onOpenApiDocs} title="API reference" aria-label="API reference">
-            <ApiIcon />
-          </button>
-          <button className="link" onClick={onOpenSettings} title="Settings">
-            <SettingsIcon size={17} strokeWidth={1.7} />
-          </button>
-          <button className="link footer-signout" data-testid="sidebar-logout" onClick={onLogout} title="Sign out" aria-label="Sign out">
-            <LeaveIcon />
-            Sign out
-          </button>
-        </div>
-      </div>
     </aside>
   );
 }
@@ -324,8 +287,4 @@ export default function Sidebar({
 // Section collapse chevron — points down when expanded, right when collapsed.
 function Chevron({ collapsed }) {
   return <ChevronDownIcon className={`sl-chevron ${collapsed ? "collapsed" : ""}`} size={11} strokeWidth={2.4} />;
-}
-
-function ApiIcon() {
-  return <span className="api-mini-icon" aria-hidden="true">API</span>;
 }

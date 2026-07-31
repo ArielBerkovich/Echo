@@ -1,4 +1,4 @@
-const STATIC_VIEWS = new Set(["browse", "activity", "saved", "dms"]);
+const STATIC_VIEWS = new Set(["browse", "activity", "saved", "dms", "settings"]);
 
 export function workspacePath({ view = "home", convId = null, convName = null, convType = null, searchQuery = null } = {}) {
   const conversation = convName || convId;
@@ -6,6 +6,7 @@ export function workspacePath({ view = "home", convId = null, convName = null, c
   if (view === "browse") return "/browse";
   if (view === "activity") return "/activity";
   if (view === "saved") return "/saved";
+  if (view === "settings") return "/settings";
   if (view === "dms") return conversation && convType === "dm" ? `/dms/${encodeURIComponent(conversation)}` : "/dms";
   if (conversation) {
     if (convType === "dm") return `/home/dms/${encodeURIComponent(conversation)}`;
@@ -18,7 +19,7 @@ export function parseWorkspacePath(pathname = "/", search = "") {
   const parts = pathname.split("/").filter(Boolean).map(decodeURIComponent);
   const [section, id] = parts;
 
-  if (section === "settings" || section === "api-docs") {
+  if (section === "api-docs") {
     return { overlay: section, view: "home", convId: null, convType: null, searchQuery: null };
   }
   if (section === "search") {

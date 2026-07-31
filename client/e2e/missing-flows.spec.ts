@@ -109,7 +109,8 @@ test("registers a new user, completes onboarding, sends a message, and restores 
     expect(await page.evaluate(() => localStorage.getItem("echo.token"))).toBeTruthy();
 
     await page.reload();
-    await expect(page.getByTestId("sidebar-settings")).toContainText(firstName);
+    await expect(page.getByTestId("rail-settings")).toBeVisible();
+    await expect(page.getByTestId("rail-account-name")).toContainText(firstName);
     await expect(messageByText(page, body)).toBeVisible();
     await expect(page.getByText("Welcome to Echo 👋")).toHaveCount(0);
 
@@ -131,7 +132,7 @@ test("changes a local user's password and invalidates the old credential", async
   await seedToken(settingsPage, user.token);
   try {
     await settingsPage.goto("/");
-    await settingsPage.getByTestId("sidebar-settings").click();
+    await settingsPage.getByTestId("rail-settings").click();
     const form = settingsPage.getByTestId("change-password-form");
     await form.getByTestId("current-password").fill("WrongPassword1");
     await form.getByTestId("new-password").fill("Password2");
@@ -161,13 +162,16 @@ test("generates an API token and exercises idempotent, external-key, and threade
   });
   await page.goto("/");
   await channelRow(page, "general").click();
-  await page.getByTestId("sidebar-api-docs").click();
+  await page.getByTestId("rail-settings").click();
+  await expect(page.getByTestId("settings-page")).toBeVisible();
+  await page.getByRole("button", { name: "API" }).click();
+  await expect(page.getByTestId("api-reference-page")).toBeVisible();
   await page.getByTestId("api-token-generate").click();
   const apiToken = (await page.getByTestId("api-token-value").textContent())?.trim();
   expect(apiToken).toBeTruthy();
   await page.getByTestId("api-token-copy").click();
   await expect(page.getByTestId("api-token-copy")).toHaveText("Copied!");
-  await page.getByRole("button", { name: "Close API reference" }).click();
+  await page.getByTestId("rail-home").click();
 
   const externalKey = uniqueSuffix("external");
   const first = await rawApi(page, apiToken!, "/messages/upsert", {
@@ -265,12 +269,12 @@ test("enables desktop notifications, filters events, and navigates when one is c
     window.__e2eNotifications = notifications;
   });
   await page.goto("/");
-  await page.getByTestId("sidebar-settings").click();
+  await page.getByTestId("rail-settings").click();
   await expect(page.getByTestId("settings-page")).toBeVisible();
   await page.getByTestId("notification-toggle").click();
   await expect(page.getByText("On ✓")).toBeVisible();
   await page.evaluate(() => { window.__e2eNotifications.length = 0; });
-  await page.getByTestId("settings-close").click();
+  await page.getByTestId("rail-home").click();
 
   await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
     method: "POST",
@@ -294,7 +298,7 @@ test("enables desktop notifications, filters events, and navigates when one is c
   await page.evaluate(() => window.__e2eNotifications[0].onclick?.());
   await expect(page.getByTestId("channel-title")).toContainText("general");
 
-  await page.getByTestId("sidebar-settings").click();
+  await page.getByTestId("rail-settings").click();
   await page.getByTestId("notification-toggle").click();
   await expect(page.getByText("On ✓")).toHaveCount(0);
 });
@@ -417,7 +421,7 @@ test("supports a core messaging, attachment, search, and settings flow on mobile
   await page.getByTestId("search-input").fill(body);
   await page.getByTestId("search-input").press("Enter");
   await expect(page.getByTestId("search-result").filter({ hasText: body })).toBeVisible();
-  await page.getByTestId("sidebar-settings").click();
+  await page.getByTestId("rail-settings").click();
   await expect(page.getByTestId("settings-page")).toBeVisible();
   const dimensions = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth }));
   expect(dimensions.document).toBeLessThanOrEqual(dimensions.viewport + 1);

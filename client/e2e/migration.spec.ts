@@ -105,7 +105,7 @@ test("the account-creation UI migrates a logged-out local user", async ({ page }
   await page.getByLabel("Old password").fill("Password1");
   await page.getByRole("button", { name: "Keep old history and continue" }).click();
 
-  await expect(page.getByTestId("sidebar-logout")).toBeVisible();
+  await expect(page.getByTestId("rail-logout")).toBeVisible();
   await expect(page.getByText("Preserved Person", { exact: true }).first()).toBeVisible();
   const token = await page.evaluate(() => localStorage.getItem("echo.token"));
   const me = await page.request.get("/api/auth/me", {
@@ -134,7 +134,7 @@ test("running clients receive the migrated username without a refresh", async ({
   await observerPage.addInitScript((token) => localStorage.setItem("echo.token", token), observer.token);
   try {
     await observerPage.goto("/");
-    await expect(observerPage.getByTestId("sidebar-logout")).toBeVisible();
+    await expect(observerPage.getByTestId("rail-logout")).toBeVisible();
     await observerPage.getByTestId("search-input").fill(oldUsername);
     await expect(observerPage.getByTestId(`search-user-${oldUsername.replaceAll(".", "-")}`)).toBeVisible();
 

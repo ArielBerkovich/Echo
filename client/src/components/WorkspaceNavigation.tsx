@@ -24,6 +24,7 @@ export default function WorkspaceNavigation({
   onHideDm,
   onHideChannel,
   onLogout,
+  onUpdated,
   onOpenSettings,
   onOpenApiDocs,
   onToggleMode,
@@ -33,11 +34,18 @@ export default function WorkspaceNavigation({
     dms: dms.reduce((sum, conversation) => sum + (conversation.unread || 0), 0),
     activity: activityBadge,
   };
-  const showSidebar = forceSidebar || (view !== "activity" && view !== "saved");
+  const showSidebar = forceSidebar || (view !== "activity" && view !== "saved" && view !== "settings");
 
   return (
     <div className="app-nav">
-      <LeftRail view={view === "browse" ? "home" : view} onSelect={onSelectView} user={user} badges={badges} />
+      <LeftRail
+        view={view === "browse" ? "home" : view}
+        onSelect={onSelectView}
+        user={user}
+        onLogout={onLogout}
+        onUpdated={onUpdated}
+        badges={badges}
+      />
       {showSidebar ? (
         <Sidebar
           user={user}
