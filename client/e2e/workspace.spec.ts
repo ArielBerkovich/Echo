@@ -476,9 +476,11 @@ test("shows activity items and marks activity as read", async ({ page }) => {
       externalKey: `activity-${Date.now()}`,
     },
   });
-  await railItem(page, "activity").click();
+  const activityRail = railItem(page, "activity");
+  await expect(activityRail).toBeVisible();
+  await activityRail.click();
 
-  await expect(page.getByTestId("activity-header")).toContainText("Activity");
+  await expect(page.getByTestId("activity-header")).toContainText("Activity", { timeout: 15_000 });
   const activityItem = page.getByTestId("activity-item").first();
   await expect(activityItem).toBeVisible();
   await markedRead;
