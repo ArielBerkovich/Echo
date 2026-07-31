@@ -59,6 +59,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
   } = useAttachments({ captureScreenDrops, onError });
 
   const isDm = channel.type === "dm";
+  const scheduledTargetLabel = isDm ? "this conversation" : "this channel";
   const placeholder = isThread
     ? "Reply to thread…"
     : isDm
@@ -480,7 +481,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
             setShowScheduled(true);
           }}
         >
-          🗓 {scheduledMsgs.length} scheduled message{scheduledMsgs.length === 1 ? "" : "s"} for this channel — view
+          🗓 {scheduledMsgs.length} scheduled message{scheduledMsgs.length === 1 ? "" : "s"} for {scheduledTargetLabel} — view
         </button>
       )}
 
@@ -556,7 +557,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
         >
           {scheduleError && <div className="error schedule-error" role="alert">{scheduleError}</div>}
           {scheduledMsgs.length === 0 ? (
-            <p className="settings-hint">No scheduled messages for this channel.</p>
+            <p className="settings-hint">No scheduled messages for {scheduledTargetLabel}.</p>
           ) : (
             <div className="scheduled-list">
               {scheduledMsgs.map((s) =>
