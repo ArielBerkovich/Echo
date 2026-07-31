@@ -1,0 +1,55 @@
+{
+  "title": "Echo — Operational Collaboration Possibilities",
+  "generatedAt": "2026-07-25T16:54:25.113Z",
+  "slides": [
+    {
+      "number": 1,
+      "name": "00-title",
+      "image": "../rendered/00-title.png",
+      "notes": "Open with Echo as an operational collaboration layer, not merely another chat application."
+    },
+    {
+      "number": 2,
+      "name": "01-jenkins-builds",
+      "image": "../rendered/01-jenkins-builds.png",
+      "notes": "One evolving message per build. Mention the trigger owner only when action is required."
+    },
+    {
+      "number": 3,
+      "name": "02-daily-prod-errors",
+      "image": "../rendered/02-daily-prod-errors.png",
+      "notes": "Aggregate by stable workload and error fingerprint—not ephemeral pod name."
+    },
+    {
+      "number": 4,
+      "name": "03-nightly-build-status",
+      "image": "../rendered/03-nightly-build-status.png",
+      "notes": "The nightly is a cross-system qualification story, with regressions compared to the previous baseline."
+    },
+    {
+      "number": 5,
+      "name": "04-version-releases",
+      "image": "../rendered/04-version-releases.png",
+      "notes": "Connect release notes to artifacts and environment rollout state."
+    },
+    {
+      "number": 6,
+      "name": "05-team-pr-alert-channels",
+      "image": "../rendered/05-team-pr-alert-channels.png",
+      "notes": "Different channels carry different expectations: conversation, review, and action."
+    },
+    {
+      "number": 7,
+      "name": "06-team-owned-e2e",
+      "image": "../rendered/06-team-owned-e2e.png",
+      "notes": "Ownership metadata makes the routing layer reusable across every integration."
+    },
+    {
+      "number": 8,
+      "name": "07-garp-ai",
+      "image": "../rendered/07-garp-ai.png",
+      "notes": "Garp answers in a thread, cites evidence, and recommends next steps while preserving human judgment."
+    }
+  ],
+  "garpSource": "https://www.pinterest.com/pin/garp-fanart--578501514655029831/"
+}

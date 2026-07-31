@@ -5864,8 +5864,18 @@ html[data-mode="dark"] .channel-header {
   display: none;
 }
 
+.messages-shell {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+  display: flex;
+}
+
 .messages {
   flex: 1;
+  min-width: 0;
+  min-height: 0;
   overflow-y: auto;
   position: relative;
   padding: 20px 24px;
@@ -5876,26 +5886,48 @@ html[data-mode="dark"] .channel-header {
 }
 
 .new-messages-button {
-  position: sticky;
-  align-self: flex-end;
-  right: 24px;
-  bottom: 16px;
-  flex: none;
-  margin: -48px 24px 16px 0;
-  z-index: 3;
-  border: 1px solid color-mix(in srgb, var(--blue-400) 55%, var(--border));
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--blue-400) 45%, var(--border));
   border-radius: 999px;
-  padding: 8px 13px;
-  background: var(--surface);
+  background: color-mix(in srgb, var(--surface) 92%, var(--blue-400));
   color: var(--blue-500);
-  box-shadow: var(--shadow-md);
+  box-shadow:
+    0 10px 28px color-mix(in srgb, var(--navy-900) 20%, transparent),
+    0 2px 7px color-mix(in srgb, var(--blue-500) 14%, transparent);
+  backdrop-filter: blur(12px);
   font: inherit;
   font-size: 12px;
   font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
+  transform: translateX(-50%);
+  transition: color 140ms ease, background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
+}
+.new-messages-button.has-count {
+  min-width: 0;
+  padding: 0 14px;
 }
 .new-messages-button:hover {
-  background: var(--surface-2);
+  color: var(--navy-700);
+  background: color-mix(in srgb, var(--surface) 84%, var(--blue-400));
+  border-color: var(--blue-400);
+  transform: translate(-50%, -2px);
+}
+.new-messages-button:active {
+  transform: translate(-50%, 0);
+}
+html[data-mode="dark"] .new-messages-button:hover {
+  color: #dbeafe;
 }
 
 .empty-state {
@@ -7452,10 +7484,6 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   .forward-actions {
     padding-bottom: env(safe-area-inset-bottom);
   }
-  .new-messages-button {
-    right: 12px;
-    margin-right: 12px;
-  }
   .channel-header {
     padding: 0.625rem 0.75rem;
   }
@@ -7843,7 +7871,27 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   justify-content: center;
 }
 .account-actions .footer-signout {
+  width: auto;
   min-height: 32px;
+  padding: 0 11px;
+  gap: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.055);
+  color: #cbd5e1;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: color 140ms ease, background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
+}
+.account-actions .footer-signout:hover {
+  color: #fecaca;
+  border-color: rgba(248, 113, 113, 0.38);
+  background: rgba(239, 68, 68, 0.12);
+  text-decoration: none;
+}
+.account-actions .footer-signout:active {
+  transform: translateY(1px);
 }
 
 @media (min-width: 1600px) {
@@ -7869,9 +7917,11 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     width: 38px;
     height: 36px;
   }
-.account-actions .footer-signout {
-  min-height: 36px;
-}
+  .account-actions .footer-signout {
+    width: auto;
+    min-height: 36px;
+    padding-inline: 13px;
+  }
 }
 
 /* Quick VIP action for the active direct-message conversation. */

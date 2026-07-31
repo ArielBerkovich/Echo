@@ -1,0 +1,11 @@
+{
+  "name": "echo-integration-presentation",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build-deck.mjs"
+  },
+  "dependencies": {
+    "pptxgenjs": "4.0.1"
+  }
+}

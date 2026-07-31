@@ -23,7 +23,7 @@ import Modal from "./Modal.js";
 import { LeaveIcon, PinIcon } from "./Icons.js";
 import { formatDayDivider, isDifferentDay } from "../lib/time.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
-import { StarIcon, UsersRoundIcon } from "lucide-react";
+import { ArrowDownIcon, StarIcon, UsersRoundIcon } from "lucide-react";
 
 // Shimmering placeholder rows shown while a channel's history loads, so the
 // pane has structure immediately instead of flashing an empty "say hello" state.
@@ -113,6 +113,7 @@ export default function ChannelView({
   const [loadingOlder, setLoadingOlder] = useState(false); // fetching older history (scroll-up)
   const [loading, setLoading] = useState(true); // initial history fetch for this channel in flight
   const [newMessageCount, setNewMessageCount] = useState(0);
+  const [showScrollToLatest, setShowScrollToLatest] = useState(false);
 
   const bottomRef = useRef(null);
   const scrollerRef = useRef(null); // the scrollable messages container
@@ -201,6 +202,7 @@ export default function ChannelView({
     setHistoryReady(false);
     setTypingUsers({});
     setNewMessageCount(0);
+    setShowScrollToLatest(false);
     initialScrolledRef.current = false;
     prevLenRef.current = 0;
     hasMoreOlderRef.current = true;
@@ -558,6 +560,7 @@ export default function ChannelView({
   function onMessagesScroll(e) {
     const scroller = e.currentTarget;
     const atBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120;
+    setShowScrollToLatest(!atBottom);
     if (!jumpingRef.current && !(firstUnreadId && unreadScrollAppliedRef.current)) {
       stickToBottomRef.current = atBottom;
       if (atBottom) setNewMessageCount(0);
@@ -575,8 +578,9 @@ export default function ChannelView({
     scroller.scrollTop = scroller.scrollHeight;
   }
 
-  function scrollToNewMessages() {
+  function scrollToLatest() {
     setNewMessageCount(0);
+    setShowScrollToLatest(false);
     stickToBottomRef.current = true;
     requestAnimationFrame(scrollToExactBottom);
   }
@@ -980,15 +984,16 @@ export default function ChannelView({
         )}
       </header>
 
-      <div
-        className="messages"
-        ref={scrollerRef}
-        onScroll={onMessagesScroll}
-        onMouseLeave={(event) => {
-          if (!menuFor && !event.relatedTarget?.closest?.("[data-message-actions]")) setActionsFor(null);
-        }}
-      >
-        <div ref={messagesInnerRef}>
+      <div className="messages-shell">
+        <div
+          className="messages"
+          ref={scrollerRef}
+          onScroll={onMessagesScroll}
+          onMouseLeave={(event) => {
+            if (!menuFor && !event.relatedTarget?.closest?.("[data-message-actions]")) setActionsFor(null);
+          }}
+        >
+          <div ref={messagesInnerRef}>
           {loadingOlder && <div className="older-loader">Loading earlier messages…</div>}
           {loading ? (
             <MessagesSkeleton />
@@ -1076,16 +1081,22 @@ export default function ChannelView({
               );
             })
           )}
-          <div ref={bottomRef} />
+            <div ref={bottomRef} />
+          </div>
         </div>
-        {newMessageCount > 0 && (
+        {(showScrollToLatest || newMessageCount > 0) && (
           <button
             type="button"
-            className="new-messages-button"
+            className={`new-messages-button ${newMessageCount > 0 ? "has-count" : "icon-only"}`}
             data-testid="new-messages-button"
-            onClick={scrollToNewMessages}
+            onClick={scrollToLatest}
+            aria-label="Scroll to latest message"
+            title={newMessageCount > 0 ? "View new messages" : "Jump to latest"}
           >
-            {newMessageCount === 1 ? "1 new message" : `${newMessageCount} new messages`} ↓
+            {newMessageCount > 0 && (
+              <span>{newMessageCount === 1 ? "1 new message" : `${newMessageCount} new messages`}</span>
+            )}
+            <ArrowDownIcon size={17} strokeWidth={2.25} aria-hidden="true" />
           </button>
         )}
       </div>
