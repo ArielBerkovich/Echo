@@ -6775,6 +6775,10 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
   width: 100%;
   margin: 14px 0 0;
 }
+.new-message-compose .composer .icon-btn.aa,
+.forward-note-field .composer .icon-btn.aa {
+  text-decoration: none;
+}
 .new-message-compose .composer.is-disabled { opacity: 0.62; }
 .new-message-recipient {
   display: flex;
