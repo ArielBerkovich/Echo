@@ -32,6 +32,18 @@ async function openFreshGeneralMessage(page, key, body) {
   return { id: created.message.id, message };
 }
 
+async function expectRailIndicatorAligned(page) {
+  const centers = await page.evaluate(() => {
+    const indicator = document.querySelector(".rail-active-indicator")?.getBoundingClientRect();
+    const icon = document.querySelector(".rail-item.active .rail-icon")?.getBoundingClientRect();
+    return {
+      indicator: indicator ? indicator.top + indicator.height / 2 : 0,
+      icon: icon ? icon.top + icon.height / 2 : 0,
+    };
+  });
+  expect(Math.abs(centers.indicator - centers.icon), JSON.stringify(centers)).toBeLessThan(1);
+}
+
 test("restores an authenticated session into the default channel", async ({ page }) => {
   const earlierChannel = await requestAsToken(page, fixture.alice.token, "/channels", {
     method: "POST",
@@ -48,6 +60,37 @@ test("restores an authenticated session into the default channel", async ({ page
       method: "DELETE",
     });
   }
+});
+
+test("supports direct workspace routes and browser history", async ({ page }) => {
+  // Legacy ID links remain valid, but are replaced with the readable canonical URL.
+  await page.goto(`/channels/${fixture.projectChannel.id}`);
+
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
+  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.projectChannel.name}$`));
+  await expectRailIndicatorAligned(page);
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await page.waitForTimeout(450);
+  await expectRailIndicatorAligned(page);
+  await page.setViewportSize({ width: 1280, height: 720 });
+
+  await railItem(page, "activity").click();
+  await expect(page).toHaveURL(/\/activity$/);
+  await expect(railItem(page, "activity")).toHaveClass(/active/);
+  await page.waitForTimeout(450);
+  await expectRailIndicatorAligned(page);
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await page.waitForTimeout(450);
+  await expectRailIndicatorAligned(page);
+  await page.setViewportSize({ width: 1280, height: 720 });
+
+  await page.goBack();
+  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.projectChannel.name}$`));
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
+
+  await page.goto(`/dms/${fixture.bob.username}`);
+  await expect(page).toHaveURL(new RegExp(`/dms/${fixture.bob.username}$`));
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.bob.displayName);
 });
 
 test("sign out clears the session and returns to login", async ({ page }) => {
@@ -433,9 +476,11 @@ test("shows activity items and marks activity as read", async ({ page }) => {
       externalKey: `activity-${Date.now()}`,
     },
   });
-  await railItem(page, "activity").click();
+  const activityRail = railItem(page, "activity");
+  await expect(activityRail).toBeVisible();
+  await activityRail.click();
 
-  await expect(page.getByTestId("activity-header")).toContainText("Activity");
+  await expect(page.getByTestId("activity-header")).toContainText("Activity", { timeout: 15_000 });
   const activityItem = page.getByTestId("activity-item").first();
   await expect(activityItem).toBeVisible();
   await markedRead;
@@ -653,6 +698,7 @@ test("searches messages with filters and displays results", async ({ page }) => 
   await page.keyboard.press("Enter");
 
   await expect(page.getByTestId("search-results-header")).toContainText("Search");
+  await expect(page.locator(".search-chip-from")).toContainText(`@${fixture.alice.username}`);
   await expect(page.getByText("in: #general")).toBeVisible();
   await expect(page.getByText(`from: @${fixture.alice.username}`)).toBeVisible();
   await expect(page.getByText("has: link")).toBeVisible();

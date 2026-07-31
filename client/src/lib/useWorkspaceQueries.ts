@@ -39,7 +39,7 @@ export function useWorkspaceQueries(enabled) {
     enabled,
     EMPTY_LIST,
   );
-  const [users, setUsers] = useQueryState(
+  const [users, setUsers, usersQuery] = useQueryState(
     workspaceKeys.users,
     async () => (await api.listUsers()).users || [],
     enabled,
@@ -78,6 +78,7 @@ export function useWorkspaceQueries(enabled) {
     dmsQuery,
     users,
     setUsers,
+    usersQuery,
     customEmojis,
     setCustomEmojis,
     savedIds,

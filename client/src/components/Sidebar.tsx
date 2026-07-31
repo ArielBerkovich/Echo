@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDownIcon, CompassIcon, LockKeyholeIcon, MoonIcon, PlusIcon, SettingsIcon, SunIcon } from "lucide-react";
+import { ChevronDownIcon, CompassIcon, LockKeyholeIcon, MoonIcon, SettingsIcon, SquarePenIcon, SunIcon } from "lucide-react";
 import Avatar from "./Avatar.js";
 import { relativeTime } from "../lib/time.js";
 import { LeaveIcon } from "./Icons.js";
@@ -11,10 +11,10 @@ function StartConversationButton({ onClick }) {
       className="add-channel start-conversation"
       data-testid="start-dm"
       onClick={onClick}
-      title="Start a new conversation"
-      aria-label="Start a new conversation"
+      title="New message"
+      aria-label="New message"
     >
-      <PlusIcon size={14} strokeWidth={2.2} aria-hidden="true" />
+      <SquarePenIcon size={15} strokeWidth={2} aria-hidden="true" />
     </button>
   );
 }
@@ -186,7 +186,7 @@ export default function Sidebar({
             );
           })}
           {shownDms.filter((c) => !c.isSelf).length === 0 && (
-            <div className="dm-empty">{filter ? "No matches." : "No conversations. Start one with +."}</div>
+            <div className="dm-empty">{filter ? "No matches." : "No conversations yet. Compose a new message."}</div>
           )}
         </div>
       ) : (
@@ -282,7 +282,7 @@ export default function Sidebar({
           </div>
           {showDms && regularDms.map(renderDmRow)}
           {showDms && regularDms.length === 0 && (
-            <div className="dm-empty">{filter ? "No matching DMs." : "Use search to start a conversation."}</div>
+            <div className="dm-empty">{filter ? "No matching DMs." : "Compose a new message to start a conversation."}</div>
           )}
         </div>
       )}

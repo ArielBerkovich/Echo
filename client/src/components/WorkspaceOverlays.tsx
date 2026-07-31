@@ -4,6 +4,7 @@ import AddPeopleModal from "./AddPeopleModal.js";
 import ApiDocsPage from "./ApiDocsPage.js";
 import CreateChannelModal from "./CreateChannelModal.js";
 import SettingsModal from "./SettingsModal.js";
+import NewMessageModal from "./NewMessageModal.js";
 import UserProfileModal from "./UserProfileModal.js";
 import Walkthrough from "./Walkthrough.js";
 
@@ -18,6 +19,7 @@ export default function WorkspaceOverlays({
   themes,
   mode,
   showCreate,
+  showNewMessage,
   showAddPeople,
   showAddEmoji,
   showSettings,
@@ -26,6 +28,8 @@ export default function WorkspaceOverlays({
   showTour,
   toast,
   onCreateChannel,
+  onStartDm,
+  onPrepareDm,
   onAddMember,
   onEmojiCreated,
   onSelectTheme,
@@ -42,6 +46,17 @@ export default function WorkspaceOverlays({
   return (
     <>
       {showCreate ? <CreateChannelModal onCreate={onCreateChannel} onClose={onClose.create} /> : null}
+      {showNewMessage ? (
+        <NewMessageModal
+          currentUserId={user.id}
+          users={users}
+          customEmojis={customEmojis}
+          mode={mode}
+          onPrepare={onPrepareDm}
+          onStart={onStartDm}
+          onClose={onClose.newMessage}
+        />
+      ) : null}
       {showAddPeople && canAddPeople ? (
         <AddPeopleModal channel={activeChannel} users={users} onAdd={onAddMember} onClose={onClose.addPeople} />
       ) : null}

@@ -1,4 +1,3 @@
-import { flushSync } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIcon, BookmarkIcon, HomeIcon, MessageSquareTextIcon } from "lucide-react";
 import Logo from "./Logo.js";
@@ -14,6 +13,7 @@ const ITEMS = [
 export default function LeftRail({ view, onSelect, badges = {} }) {
   const [clicked, setClicked] = useState(null);
   const clickTimerRef = useRef(null);
+  const activeIndex = Math.max(0, ITEMS.findIndex((item) => item.key === view));
 
   useEffect(() => () => clearTimeout(clickTimerRef.current), []);
 
@@ -23,28 +23,14 @@ export default function LeftRail({ view, onSelect, badges = {} }) {
     clickTimerRef.current = setTimeout(() => setClicked(null), 650);
   }
 
-  function selectFromEvent(e) {
-    const item = e.target.closest?.('button[data-testid^="rail-"]');
-    if (!item) return;
-    const key = item.dataset.testid?.slice("rail-".length);
-    if (key) flushSync(() => {
-      pulse(key);
-      onSelect(key);
-    });
-  }
-
   return (
-    <nav
-      className="rail"
-      aria-label="Primary navigation"
-      onMouseDownCapture={selectFromEvent}
-      onPointerDownCapture={selectFromEvent}
-    >
+    <nav className="rail" aria-label="Primary navigation">
       <div className="rail-brand" aria-hidden="true">
         <Logo size={54} />
         <span className="rail-brand-name">echo</span>
       </div>
-      <div className="rail-top">
+      <div className="rail-top" style={{ "--rail-active-index": activeIndex }}>
+        <span className="rail-active-indicator" aria-hidden="true" />
         {ITEMS.map(({ key, label, Icon }) => {
           const count = badges[key] || 0;
           return (

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useLocation, useNavigate } from "react-router";
 import { api, consumeRhssoCallback, getToken, setToken } from "./api.js";
 import { disconnectSocket } from "./socket.js";
 import { useRealtime } from "./lib/useRealtime.js";
@@ -15,6 +16,7 @@ import { THEMES, useThemePreferences } from "./lib/useThemePreferences.js";
 import { useConversationCache } from "./lib/useConversationCache.js";
 import { useWorkspaceQueries, workspaceKeys } from "./lib/useWorkspaceQueries.js";
 import { queryKeys } from "./lib/queryClient.js";
+import { currentRoute, workspacePath } from "./lib/workspaceRoutes.js";
 
 const HIDDEN_KEY = "echo.hiddenChannels";
 function loadHidden() {
@@ -30,6 +32,8 @@ function loadRecents() {
 
 export default function App() {
   const queryClient = useQueryClient();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [rhssoError] = useState(() => consumeRhssoCallback());
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -39,13 +43,14 @@ export default function App() {
   const [activeChannel, setActiveChannel] = useState(null);
   const [recents, setRecents] = useState(loadRecents);
   const [showCreate, setShowCreate] = useState(false);
+  const [showNewMessage, setShowNewMessage] = useState(false);
   const [showAddPeople, setShowAddPeople] = useState(false);
   const [showAddEmoji, setShowAddEmoji] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showApiDocs, setShowApiDocs] = useState(false); // REST API reference page
   const [profileUser, setProfileUser] = useState(null); // user whose profile card is open
   const [hidden, setHidden] = useState(loadHidden); // hidden channel ids
-  const [view, setView] = useState("home"); // home | browse | dms | activity | saved
+  const [view, setViewState] = useState("home"); // home | browse | dms | activity | saved
   const {
     channels,
     setChannels,
@@ -55,6 +60,7 @@ export default function App() {
     dmsQuery,
     users,
     setUsers,
+    usersQuery,
     customEmojis,
     setCustomEmojis,
     savedIds,
@@ -87,13 +93,33 @@ export default function App() {
   const navDuringRestoreRef = useRef(false); // user navigated before the initial restore finished
   const viewRef = useRef(view);
   const activeChannelRef = useRef(activeChannel);
-  const poppingRef = useRef(false); // applying a browser back/forward — don't re-push history
 
   useEffect(() => void (viewRef.current = view), [view]);
   useEffect(() => void (activeChannelRef.current = activeChannel), [activeChannel]);
 
   function markNavDuringRestore() {
     if (!restoredRef.current) navDuringRestoreRef.current = true;
+  }
+
+  function conversationRouteName(channel) {
+    if (!channel) return null;
+    if (channel.type !== "dm") return channel.name || null;
+    return channel.dmUsername
+      || users.find((candidate) => candidate.id === channel.dmUserId)?.username
+      || null;
+  }
+
+  function setView(nextView, channel = activeChannelRef.current, options = {}) {
+    setViewState(nextView);
+    navigate(
+      workspacePath({
+        view: nextView,
+        convId: channel?.id || null,
+        convName: conversationRouteName(channel),
+        convType: channel?.type || null,
+      }),
+      options
+    );
   }
 
   // Jump targets belong to the conversation that created them. Clear them
@@ -124,7 +150,7 @@ export default function App() {
     clearNavigationTarget();
     setSearchQuery(null);
     setActiveChannel(channel);
-    setView("home");
+    setView("home", channel);
     setNavOpen(false);
   }
 
@@ -141,7 +167,7 @@ export default function App() {
     clearNavigationTarget();
     setSearchQuery(null);
     setNavOpen(false);
-    requestAnimationFrame(() => searchRef.current?.startConversation());
+    setShowNewMessage(true);
   }
 
   function handleSidebarOpenDm(target, isSelf) {
@@ -322,14 +348,91 @@ export default function App() {
     } else if (saved?.view === "dms") {
       nextView = "dms";
     }
-    setView(nextView);
+    setViewState(nextView);
     setActiveChannel(active);
+  }
+
+  async function applyRouteLocation(route, chs, conversations) {
+    setShowSettings(route.overlay === "settings");
+    setShowApiDocs(route.overlay === "api-docs");
+    setSearchQuery(route.searchQuery);
+
+    const currentChannel = activeChannelRef.current;
+    const routeConversation = route.convId?.toLowerCase();
+    const currentRouteName = conversationRouteName(currentChannel)?.toLowerCase();
+    if (route.convId && (currentChannel?.id === route.convId || currentRouteName === routeConversation)) {
+      setViewState(route.view);
+      if (currentChannel?.id === route.convId && currentRouteName) {
+        navigate(workspacePath({
+          view: route.view,
+          convId: currentChannel.id,
+          convName: conversationRouteName(currentChannel),
+          convType: currentChannel.type,
+        }), { replace: true });
+      }
+      return;
+    }
+
+    if (route.convType === "dm" && route.convId) {
+      let dm = conversations.find((conversation) =>
+        conversation.id === route.convId
+        || conversation.withUser.username?.toLowerCase() === routeConversation
+      );
+      if (!dm) {
+        const person = users.find((candidate) => candidate.username.toLowerCase() === routeConversation);
+        if (person) {
+          const result = await api.openDm(person.id).catch(() => null);
+          if (result?.channel) dm = { id: result.channel.id, withUser: person };
+        }
+      }
+      if (!dm) {
+        const result = await api.getChannel(route.convId).catch(() => null);
+        const other = result?.members?.find((member) => member.id !== user.id)
+          || (result?.channel?.members?.length === 1 ? user : null);
+        if (result?.channel?.type === "dm" && other) dm = { id: result.channel.id, withUser: other };
+      }
+      if (dm) {
+        setViewState(route.view === "home" ? "home" : "dms");
+        const activeDm = {
+          id: dm.id,
+          type: "dm",
+          dmName: dm.withUser.displayName,
+          dmUsername: dm.withUser.username,
+          dmUserId: dm.withUser.id,
+        };
+        setActiveChannel(activeDm);
+        if (route.convId === dm.id) {
+          navigate(workspacePath({ view: route.view, convId: dm.id, convName: dm.withUser.username, convType: "dm" }), { replace: true });
+        }
+        return;
+      }
+    }
+
+    if (route.convType === "channel" && route.convId) {
+      let channel = chs.find((candidate) => candidate.id === route.convId || candidate.name.toLowerCase() === routeConversation)
+        || allChannels.find((candidate) => candidate.id === route.convId || candidate.name.toLowerCase() === routeConversation);
+      if (!channel) {
+        channel = await api.getChannelByName(route.convId).then(({ channel }) => channel).catch(() => null)
+          || await api.getChannel(route.convId).then(({ channel }) => channel).catch(() => null);
+        if (channel?.type === "public") cacheCatalogChannels([channel]);
+      }
+      if (channel && channel.type !== "dm") {
+        setViewState("home");
+        setActiveChannel(channel);
+        if (route.convId === channel.id) {
+          navigate(workspacePath({ view: "home", convId: channel.id, convName: channel.name, convType: channel.type }), { replace: true });
+        }
+        return;
+      }
+    }
+
+    applyLocation(route, chs, conversations);
   }
 
   // Restore navigation once the independently fetched channel and DM queries
   // have both resolved. The other workspace queries continue in parallel.
   useEffect(() => {
-    if (!user || !channelsQuery.isSuccess || !dmsQuery.isSuccess) return;
+    if (!user || !channelsQuery.isSuccess || !dmsQuery.isSuccess || !usersQuery.isSuccess) return;
     if (restoredUserRef.current === user.id) return;
     restoredUserRef.current = user.id;
     restoredRef.current = false; // restore again for this (possibly new) account
@@ -346,12 +449,26 @@ export default function App() {
           if (cancelled) return;
           if (invitedChannel?.type === "public") cacheCatalogChannels([invitedChannel]);
         }
+        const route = currentRoute(location);
+        const hasExplicitRoute = location.pathname !== "/" || !!route.searchQuery || !!route.overlay;
         if (invitedChannel) {
           setActiveChannel(invitedChannel);
-          setView("home");
-          window.history.replaceState(window.history.state, "", window.location.pathname);
+          setViewState("home");
+          navigate(workspacePath({ view: "home", convId: invitedChannel.id, convName: invitedChannel.name, convType: invitedChannel.type }), { replace: true });
+        } else if (hasExplicitRoute) {
+          await applyRouteLocation(route, chs, conversations);
         } else if (!navDuringRestoreRef.current) {
-          applyLocation(readJson(`echo.loc.${user.id}`, null), chs, conversations);
+          const saved = readJson(`echo.loc.${user.id}`, null);
+          applyLocation(saved, chs, conversations);
+          const savedConversation = saved?.convType === "dm"
+            ? conversations.find((conversation) => conversation.id === saved.convId)
+            : chs.find((channel) => channel.id === saved?.convId);
+          navigate(workspacePath({
+            ...(saved || {}),
+            convName: saved?.convType === "dm"
+              ? savedConversation?.withUser.username
+              : savedConversation?.name,
+          }), { replace: true });
         } else {
           writeCurrentLocation(user.id);
         }
@@ -363,15 +480,14 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [user, channelsQuery.isSuccess, dmsQuery.isSuccess, cacheCatalogChannels]);
+  }, [user, channelsQuery.isSuccess, dmsQuery.isSuccess, usersQuery.isSuccess, cacheCatalogChannels, location.key]);
 
   useEffect(() => {
     if (user) syncActivity(activityItems);
   }, [user, activityItems]);
 
-  // Persist the current location (after the initial restore) so a refresh lands
-  // the user back where they were — and mirror it into the browser history so
-  // the back/forward buttons move through the in-app navigation.
+  // Persist the current location as a backward-compatible fallback for users
+  // upgrading from versions that did not expose routes in the URL.
   useEffect(() => {
     if (!user || !restoredRef.current) return;
     writeCurrentLocation(user.id);
@@ -384,39 +500,19 @@ export default function App() {
       convType: activeChannelRef.current?.type || null,
     };
     writeJson(`echo.loc.${userId}`, loc);
-
-    // Don't push a new entry when we're applying a back/forward navigation.
-    if (poppingRef.current) {
-      poppingRef.current = false;
-      return;
-    }
-    const cur = window.history.state;
-    const same =
-      cur && cur.__echo && cur.view === loc.view && cur.convId === loc.convId && cur.convType === loc.convType;
-    if (same) return; // same place (e.g. channel object refreshed) — no new entry
-    if (cur && cur.__echo) {
-      window.history.pushState({ __echo: true, ...loc }, "");
-    } else {
-      window.history.replaceState({ __echo: true, ...loc }, ""); // seed the first entry
-    }
   }
 
-  // Browser back/forward: restore the in-app location from the history entry.
+  // React Router owns browser history. Apply URL changes (including Back and
+  // Forward) to the existing workspace state once startup restoration is done.
   useEffect(() => {
-    function onPop(e) {
-      const st = e.state;
-      if (!st || !st.__echo) return;
-      // The history "same place" dedup in the push effect prevents a re-push,
-      // so we just apply the popped state (location + any Settings layer).
-      setSearchQuery(null);
-      setProfileUser(null);
-      setShowSettings(!!st.settings);
-      setShowApiDocs(!!st.apiDocs);
-      applyLocation(st, channels, dms);
-    }
-    window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
-  }, [channels, dms]);
+    if (!restoredRef.current) return;
+    let cancelled = false;
+    setProfileUser(null);
+    applyRouteLocation(currentRoute(location), channels, dms).catch(() => {
+      if (!cancelled) setToast("That Echo location is no longer available.");
+    });
+    return () => void (cancelled = true);
+  }, [location.key]);
 
   function handleEmojiCreated(emoji) {
     setCustomEmojis((prev) => (prev.some((e) => e.id === emoji.id) ? prev : [...prev, emoji]));
@@ -440,6 +536,7 @@ export default function App() {
     setCatalogCounts(null);
     setActiveChannel(null);
     setScrollToBottomTarget(null);
+    navigate("/", { replace: true });
   }
 
   function rememberRecent(item) {
@@ -454,10 +551,19 @@ export default function App() {
     const { channel } = await api.createChannel(name, type);
     upsertChannel(channel);
     setActiveChannel(channel);
-    setView("home");
+    setView("home", channel);
   }
 
   function upsertChannel(channel) {
+    const active = activeChannelRef.current;
+    if (active?.id === channel.id && active.name !== channel.name) {
+      navigate(workspacePath({
+        view: viewRef.current,
+        convId: channel.id,
+        convName: channel.name,
+        convType: channel.type,
+      }), { replace: true });
+    }
     setChannels((prev) => {
       const exists = prev.some((c) => c.id === channel.id);
       const next = exists
@@ -510,7 +616,11 @@ export default function App() {
     }
     const { channels } = await api.listChannels();
     setChannels(channels);
-    setActiveChannel((prev) => (prev?.id === channel.id ? channels[0] || null : prev));
+    if (activeChannel?.id === channel.id) {
+      const fallback = channels[0] || null;
+      setActiveChannel(fallback);
+      setView("home", fallback);
+    }
   }
 
   async function handleDeleteChannel(channel) {
@@ -521,7 +631,11 @@ export default function App() {
     const { channels } = await api.listChannels();
     setChannels(channels);
     setAllChannels((prev) => prev.filter((candidate) => candidate.id !== channel.id));
-    setActiveChannel((prev) => (prev?.id === channel.id ? channels[0] || null : prev));
+    if (activeChannel?.id === channel.id) {
+      const fallback = channels[0] || null;
+      setActiveChannel(fallback);
+      setView("home", fallback);
+    }
   }
 
   // Open (or create) a direct message with another user.
@@ -538,53 +652,81 @@ export default function App() {
     if (u) setProfileUser(u);
   }
 
-  // Settings opens as a history entry so the browser Back button (and the
-  // in-app "Back to Echo") both close it.
+  function activeWorkspacePath() {
+    return workspacePath({
+      view,
+      convId: activeChannel?.id || null,
+      convName: conversationRouteName(activeChannel),
+      convType: activeChannel?.type || null,
+      searchQuery,
+    });
+  }
+
+  // Route-backed overlays retain the workspace path underneath, so Back closes
+  // them and a refresh still has a deterministic fallback.
   function openSettings() {
-    const loc = { view, convId: activeChannel?.id || null, convType: activeChannel?.type || null };
-    window.history.pushState({ __echo: true, ...loc, settings: true }, "");
-    setShowSettings(true);
+    navigate("/settings", { state: { workspacePath: activeWorkspacePath() } });
   }
   function closeSettings() {
-    if (window.history.state?.settings) window.history.back();
+    if (location.pathname === "/settings" && location.state?.workspacePath) navigate(-1);
+    else if (location.pathname === "/settings") navigate(activeWorkspacePath(), { replace: true });
     else setShowSettings(false);
   }
-  // API reference — same history-backed overlay pattern as Settings.
   function openApiDocs() {
-    const loc = { view, convId: activeChannel?.id || null, convType: activeChannel?.type || null };
-    window.history.pushState({ __echo: true, ...loc, apiDocs: true }, "");
-    setShowApiDocs(true);
+    navigate("/api-docs", { state: { workspacePath: activeWorkspacePath() } });
   }
   function closeApiDocs() {
-    if (window.history.state?.apiDocs) window.history.back();
+    if (location.pathname === "/api-docs" && location.state?.workspacePath) navigate(-1);
+    else if (location.pathname === "/api-docs") navigate(activeWorkspacePath(), { replace: true });
     else setShowApiDocs(false);
   }
 
   async function handleOpenDm(target, isSelf = false, destination = "dms", existingChannel = null) {
     markNavDuringRestore();
     clearNavigationTarget();
-    setView(destination);
     setSearchQuery(null);
     const channel = existingChannel || (await api.openDm(target.id)).channel;
     const existing = dms.find((d) => d.id === channel.id);
-    setActiveChannel({
+    const activeDm = {
       ...channel,
       type: "dm",
       dmName: isSelf ? `${target.displayName} (you)` : target.displayName,
+      dmUsername: target.username,
       dmUserId: target.id,
       isSelf,
-    });
+    };
+    setActiveChannel(activeDm);
+    setView(destination, activeDm);
     if (!scrollStates[channel.id] && (!existing || (existing.unread || 0) === 0)) {
       setScrollToBottomTarget((prev) => ({ id: (prev?.id || 0) + 1, channelId: channel.id }));
     }
     refreshDms();
   }
 
+  async function handlePrepareDm(target) {
+    const { channel } = await api.openDm(target.id);
+    return {
+      ...channel,
+      type: "dm",
+      dmName: target.displayName,
+      dmUsername: target.username,
+      dmUserId: target.id,
+    };
+  }
+
+  async function handleStartDm(target, channel) {
+    await handleOpenDm(target, false, "dms", channel);
+  }
+
   async function handleHideDm(conv) {
     if (vipIds.has(conv.withUser.id)) return;
     await api.hideDm(conv.id);
     setDms((prev) => prev.filter((d) => d.id !== conv.id));
-    setActiveChannel((prev) => (prev?.id === conv.id ? channels[0] || null : prev));
+    if (activeChannel?.id === conv.id) {
+      const fallback = channels[0] || null;
+      setActiveChannel(fallback);
+      setView("home", fallback);
+    }
   }
 
   function persistHidden(set) {
@@ -593,7 +735,10 @@ export default function App() {
   }
   function handleHideChannel(id) {
     setHidden((prev) => persistHidden(new Set(prev).add(id)));
-    setActiveChannel((prev) => (prev?.id === id ? null : prev));
+    if (activeChannel?.id === id) {
+      setActiveChannel(null);
+      setView("home", null);
+    }
   }
   function unhideChannel(id) {
     setHidden((prev) => {
@@ -606,12 +751,12 @@ export default function App() {
   function handlePickChannel(picked) {
     markNavDuringRestore();
     clearNavigationTarget();
-    setView("home");
     setSearchQuery(null);
     unhideChannel(picked.id); // re-show if it was hidden
     // Open it (preview if you're not a member — a Join button will appear).
     const full = channels.find((c) => c.id === picked.id) || allChannels.find((c) => c.id === picked.id) || picked;
     setActiveChannel(full);
+    setView("home", full);
     rememberRecent({ type: "channel", id: picked.id, name: picked.name });
   }
 
@@ -683,7 +828,7 @@ export default function App() {
     const channel = resolveJumpChannel({ channelId, channelType, channelName });
     if (channel) {
       setActiveChannel(channel);
-      setView("home");
+      setView("home", channel);
       opened = true;
     } else {
       let dm = dms.find((d) => d.id === channelId);
@@ -702,8 +847,9 @@ export default function App() {
         }
       }
       if (dm) {
-        setView("dms");
-        setActiveChannel({ id: dm.id, type: "dm", dmName: dm.withUser.displayName, dmUserId: dm.withUser.id });
+        const activeDm = { id: dm.id, type: "dm", dmName: dm.withUser.displayName, dmUserId: dm.withUser.id };
+        setActiveChannel(activeDm);
+        setView("dms", activeDm);
         opened = true;
       }
     }
@@ -716,8 +862,9 @@ export default function App() {
   // Run a full-text message search (from the search bar, on Enter).
   function handleSearchMessages(q) {
     markNavDuringRestore();
-    setView("home");
+    setViewState("home");
     setSearchQuery(q);
+    navigate(workspacePath({ searchQuery: q }));
   }
 
   // Jump from a search result to the message in its conversation. Thread
@@ -761,20 +908,21 @@ export default function App() {
         const channel = resolveJumpChannel({ channelId, channelType, channelName });
         const dm = dms.find((d) => d.id === channelId);
         if (channel) {
-          setView("home");
           setActiveChannel(channel);
+          setView("home", channel);
           setScrollToBottomTarget((prev) => ({ id: (prev?.id || 0) + 1, channelId }));
           if (threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
           return;
         }
         if (dm) {
-          setView("dms");
-          setActiveChannel({
+          const activeDm = {
             id: dm.id,
             type: "dm",
             dmName: dm.withUser.displayName,
             dmUserId: dm.withUser.id,
-          });
+          };
+          setActiveChannel(activeDm);
+          setView("dms", activeDm);
           setScrollToBottomTarget((prev) => ({ id: (prev?.id || 0) + 1, channelId }));
           if (threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
           return;
@@ -786,13 +934,14 @@ export default function App() {
       if (channelType === "dm") {
         const conv = dms.find((d) => d.id === channelId);
         if (!conv) return setToast("This was forwarded from a direct message you're not part of.");
-        setView("dms");
-        setActiveChannel({
+        const activeDm = {
           id: conv.id,
           type: "dm",
           dmName: conv.withUser.displayName,
           dmUserId: conv.withUser.id,
-        });
+        };
+        setActiveChannel(activeDm);
+        setView("dms", activeDm);
         if (threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
         else setJumpMessageId(messageId);
         return;
@@ -803,8 +952,8 @@ export default function App() {
       if (!channel) {
         return setToast("You don't have access to the channel this message was forwarded from.");
       }
-      setView("home");
       setActiveChannel(channel);
+      setView("home", channel);
       if (threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
       else setJumpMessageId(messageId);
     },
@@ -1004,6 +1153,12 @@ export default function App() {
             onClose: () => {
               searchRef.current?.clear();
               setSearchQuery(null);
+              navigate(workspacePath({
+                view,
+                convId: activeChannel?.id || null,
+                convName: conversationRouteName(activeChannel),
+                convType: activeChannel?.type || null,
+              }));
             },
           }}
           browse={{
@@ -1087,6 +1242,7 @@ export default function App() {
         themes={THEMES}
         mode={mode}
         showCreate={showCreate}
+        showNewMessage={showNewMessage}
         showAddPeople={showAddPeople}
         showAddEmoji={showAddEmoji}
         showSettings={showSettings}
@@ -1095,6 +1251,8 @@ export default function App() {
         showTour={showTour}
         toast={toast}
         onCreateChannel={handleCreateChannel}
+        onStartDm={handleStartDm}
+        onPrepareDm={handlePrepareDm}
         onAddMember={handleAddMember}
         onEmojiCreated={handleEmojiCreated}
         onSelectTheme={setTheme}
@@ -1113,6 +1271,7 @@ export default function App() {
         onFinishTour={finishTour}
         onClose={{
           create: () => setShowCreate(false),
+          newMessage: () => setShowNewMessage(false),
           addPeople: () => setShowAddPeople(false),
           addEmoji: () => setShowAddEmoji(false),
           settings: closeSettings,

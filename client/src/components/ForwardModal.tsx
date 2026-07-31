@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Avatar from "./Avatar.js";
 import Modal, { ModalActions } from "./Modal.js";
-import { ShareIcon, XIcon } from "lucide-react";
+import Composer from "./Composer.js";
+import { Forward as ForwardIcon, XIcon } from "lucide-react";
 import { formatDateTime } from "../lib/time.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
 
 const MAX_DESTINATIONS = 10;
-const MAX_NOTE_LENGTH = 2000;
 const MAX_VISIBLE_SEARCH_RESULTS = 20;
 
 function destinationKey(destination) {
@@ -179,7 +179,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
               <strong>{authorName}</strong>
               <span>Original message{message?.createdAt ? ` · ${formatDateTime(message.createdAt)}` : ""}</span>
             </div>
-            <ShareIcon aria-hidden="true" />
+            <ForwardIcon aria-hidden="true" />
           </div>
           <p title={preview}>{preview || "(No text in this message)"}</p>
           {message?.attachments?.some((attachment) => attachment.isImage) && (
@@ -264,21 +264,30 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
           )}
         </section>
 
-        <label className="forward-note-field">
+        <div className="forward-note-field">
           <span className="forward-field-heading">
             <span>Note <em>Optional</em></span>
-            <small>{note.length}/{MAX_NOTE_LENGTH}</small>
           </span>
           <textarea
+            className="sr-only"
+            tabIndex={-1}
+            aria-hidden="true"
             value={note}
-            maxLength={MAX_NOTE_LENGTH}
-            rows={2}
             placeholder="Add context for the recipient…"
-            onChange={(event) => setNote(event.target.value)}
-            disabled={status === "submitting"}
+            onChange={(event) => setNote(event.target.value.slice(0, 2000))}
             data-testid="forward-note"
           />
-        </label>
+          <Composer
+            channel={{ id: "forward-note-draft", type: "dm", dmName: "recipient" }}
+            users={users}
+            placeholder="Add context for the recipients…"
+            showSchedule={false}
+            showSend={false}
+            disabled={status === "submitting"}
+            onDraftChange={(value) => setNote(value.slice(0, 2000))}
+            onError={setError}
+          />
+        </div>
 
         <div className="forward-live-region" aria-live="polite">
           {error && <div className="error forward-error" role="alert">{error}</div>}

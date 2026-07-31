@@ -50,6 +50,7 @@ describe("api request helpers", () => {
     assert.equal(call[1].body, JSON.stringify({ name: "general", type: "private" }));
   });
 
+
   it("sends password-help requests without requiring a session", async () => {
     let call;
     globalThis.fetch = async (...args) => {

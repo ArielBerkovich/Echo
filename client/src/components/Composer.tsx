@@ -27,7 +27,7 @@ const SCHEDULE_PRESETS = [
 // Rich-text message composer: @mention autocomplete, a formatting toolbar,
 // emoji, and file attachments. Owns all of its own editor state — mount it with
 // a `key={channel.id}` so switching channels yields a fresh, empty composer.
-export default function Composer({ channel, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, mode = "light", captureScreenDrops = false }) {
+export default function Composer({ channel, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, onDraftChange, placeholder: customPlaceholder, mode = "light", captureScreenDrops = false, showSchedule = true, showSend = true, disabled = false }) {
   const isThread = !!parentId; // a thread reply composer (hides channel-level scheduling)
   const [mention, setMention] = useState(null); // { trigger, query, from, to } or null
   const [activeIdx, setActiveIdx] = useState(0);
@@ -59,14 +59,16 @@ export default function Composer({ channel, parentId = null, users = [], channel
   } = useAttachments({ captureScreenDrops, onError });
 
   const isDm = channel.type === "dm";
-  const placeholder = isThread
+  const scheduledTargetLabel = isDm ? "this conversation" : "this channel";
+  const placeholder = customPlaceholder || (isThread
     ? "Reply to thread…"
     : isDm
       ? `Message ${channel.dmName}`
-      : `Message #${channel.name}`;
+      : `Message #${channel.name}`);
   const editor = useEditor({
+    editable: !disabled,
     extensions: [
-      StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
+      StarterKit.configure({ heading: { levels: [1, 2, 3] }, trailingNode: false }),
       Placeholder.configure({ placeholder }),
     ],
     editorProps: {
@@ -90,17 +92,25 @@ export default function Composer({ channel, parentId = null, users = [], channel
     onCreate: ({ editor: currentEditor }) => syncEditorState(currentEditor),
     onUpdate: ({ editor: currentEditor }) => syncEditorState(currentEditor),
     onSelectionUpdate: ({ editor: currentEditor }) => syncMentionContext(currentEditor),
-  }, [channel.id, parentId, placeholder]);
+  }, [channel.id, parentId, placeholder, disabled]);
+  useEffect(() => {
+    editor?.setEditable(!disabled);
+  }, [disabled, editor]);
   const editorState = useEditorState({
     editor,
-    selector: ({ editor: currentEditor }) => ({
-      canSend: currentEditor.getText().trim().length > 0,
-      bold: currentEditor.isActive("bold"),
-      italic: currentEditor.isActive("italic"),
-      strikethrough: currentEditor.isActive("strike"),
-      ul: currentEditor.isActive("bulletList"),
-      ol: currentEditor.isActive("orderedList"),
-    }),
+    selector: ({ editor: currentEditor }) => {
+      if (!currentEditor?.isInitialized || !currentEditor?.state?.doc) {
+        return { canSend: false, bold: false, italic: false, strikethrough: false, ul: false, ol: false };
+      }
+      return {
+        canSend: currentEditor.getText().trim().length > 0,
+        bold: currentEditor.isActive("bold"),
+        italic: currentEditor.isActive("italic"),
+        strikethrough: currentEditor.isActive("strike"),
+        ul: currentEditor.isActive("bulletList"),
+        ol: currentEditor.isActive("orderedList"),
+      };
+    },
   });
   const { canSend = false, ...active } = editorState || {};
 
@@ -130,17 +140,17 @@ export default function Composer({ channel, parentId = null, users = [], channel
       .catch(() => {});
   }
   useEffect(() => {
-    if (!isThread) refreshScheduled(); // scheduling is a channel-level feature
-  }, [channel.id, isThread]);
+    if (!isThread && showSchedule && !disabled) refreshScheduled(); // scheduling is a channel-level feature
+  }, [channel.id, isThread, showSchedule, disabled]);
   useEffect(() => {
-    if (isThread) return;
+    if (isThread || !showSchedule || disabled) return;
     const socket = getSocket();
     const onNew = (msg) => {
       if (msg.channelId === channel.id) refreshScheduled();
     };
     socket.on("message:new", onNew);
     return () => socket.off("message:new", onNew);
-  }, [channel.id, isThread]);
+  }, [channel.id, isThread, showSchedule, disabled]);
 
   const suggestions = useMemo(() => {
     if (!mention) return [];
@@ -170,6 +180,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
     const hasText = currentEditor.getText().trim().length > 0;
     hasText ? signalTyping() : stopTyping();
     syncMentionContext(currentEditor);
+    onDraftChange?.(htmlToMarkdown(currentEditor.getHTML()));
   }
 
   function syncMentionContext(currentEditor) {
@@ -296,6 +307,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
     }
     socket.emit("message:send", { channelId: channel.id, body, attachments, parentId }, (res) => {
       if (res?.error) onError?.(res.error);
+      else onSent?.();
     });
     resetComposer();
     return true;
@@ -454,7 +466,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
 
   return (
     <form
-      className={`composer${draggingFiles ? " dragging-files" : ""}`}
+      className={`composer${draggingFiles ? " dragging-files" : ""}${disabled ? " is-disabled" : ""}`}
       onSubmit={handleSend}
     >
       {draggingFiles && (
@@ -471,7 +483,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
             setShowScheduled(true);
           }}
         >
-          🗓 {scheduledMsgs.length} scheduled message{scheduledMsgs.length === 1 ? "" : "s"} for this channel — view
+          🗓 {scheduledMsgs.length} scheduled message{scheduledMsgs.length === 1 ? "" : "s"} for {scheduledTargetLabel} — view
         </button>
       )}
 
@@ -510,7 +522,8 @@ export default function Composer({ channel, parentId = null, users = [], channel
               setScheduleAt(e.target.value);
             }}
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
+    if (e.key === "Enter") {
+      if (!showSend) return;
                 e.preventDefault();
                 confirmSchedule();
               }
@@ -547,7 +560,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
         >
           {scheduleError && <div className="error schedule-error" role="alert">{scheduleError}</div>}
           {scheduledMsgs.length === 0 ? (
-            <p className="settings-hint">No scheduled messages for this channel.</p>
+            <p className="settings-hint">No scheduled messages for {scheduledTargetLabel}.</p>
           ) : (
             <div className="scheduled-list">
               {scheduledMsgs.map((s) =>
@@ -739,11 +752,6 @@ export default function Composer({ channel, parentId = null, users = [], channel
 
       <div className="composer-input">
         <EditorContent editor={editor} />
-        {(active.ul || active.ol) && (
-          <div className="list-exit-hint" role="status">
-            Press Enter on an empty item to finish the list.
-          </div>
-        )}
       </div>
 
       <div className="composer-actions">
@@ -761,7 +769,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
         </div>
 
         <div className="right">
-          <button
+          {showSend && <button
             type="submit"
             className={`icon-btn send-btn ${canSend || pending.length ? "ready" : ""}`}
             data-testid="composer-send"
@@ -769,9 +777,9 @@ export default function Composer({ channel, parentId = null, users = [], channel
             aria-label="Send"
           >
             <SendIcon />
-          </button>
-          {!isThread && <span className="tb-sep" />}
-          {!isThread && (
+          </button>}
+          {!isThread && showSchedule && showSend && <span className="tb-sep" />}
+          {!isThread && showSchedule && showSend && (
             <button
               type="button"
               className="icon-btn chevron-btn"
@@ -783,7 +791,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
               <ChevronIcon />
             </button>
           )}
-          {!isThread && sendMenuOpen && (
+          {!isThread && showSchedule && showSend && sendMenuOpen && (
             <>
               <div className="menu-overlay" onClick={() => setSendMenuOpen(false)} />
               <div className="send-menu">

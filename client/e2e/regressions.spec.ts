@@ -149,22 +149,61 @@ test("starts a conversation from the Home Direct Messages button", async ({ page
   const startButton = dmSection.getByTestId("start-dm");
   await expect(startButton).toBeVisible();
   await expect(startButton).toHaveClass(/add-channel/);
-  await expect(startButton).toHaveAttribute("aria-label", "Start a new conversation");
+  await expect(startButton).toHaveAttribute("aria-label", "New message");
+  await expect(startButton.locator(".lucide-square-pen")).toBeVisible();
 
   await startButton.click();
 
-  const search = page.getByTestId("search-input");
+  await expect(page.getByTestId("new-message-modal")).toBeVisible();
+  const search = page.getByTestId("new-message-search-input");
   await expect(search).toBeFocused();
-  await expect(search).toHaveAttribute("placeholder", "Find someone to message");
-  await expect(page.getByTestId("search-messages-row")).toHaveCount(0);
+  await expect(search).toHaveAttribute("placeholder", "Search people");
 
   await search.fill(fixture.bob.username);
-  const bobResult = page.getByTestId(`search-user-${slug(fixture.bob.username)}`);
+  const bobResult = page.getByTestId(`new-message-user-${fixture.bob.username}`);
   await expect(bobResult).toBeVisible();
   await bobResult.click();
+  const firstMessage = `Started from compose ${Date.now()}`;
+  const modal = page.getByTestId("new-message-modal");
+  const composer = modal.getByTestId("composer-editor");
+  await expect(composer).toHaveAttribute("contenteditable", "true");
+  await composer.fill(firstMessage);
+  await expect(composer).toHaveText(firstMessage);
+  await modal.getByTestId("composer-send").click();
 
   await expect(page.getByTestId("channel-title")).toContainText(fixture.bob.displayName);
   await expect(railItem(page, "dms")).toHaveClass(/active/);
+  await expect(page.getByText(firstMessage, { exact: true })).toBeVisible();
+});
+
+test("shows an inactive Composer before choosing a new message recipient", async ({ page }) => {
+  await page.goto("/");
+  await page.locator(".dm-label").getByTestId("start-dm").click();
+  const modal = page.getByTestId("new-message-modal");
+  await expect(modal.getByTestId("composer-editor")).toBeVisible();
+  await expect(modal.getByTestId("composer-editor")).toHaveAttribute("contenteditable", "false");
+  await expect(modal.getByTestId("composer-send")).toBeDisabled();
+  await expect(modal.getByTestId("composer-send-options")).toHaveCount(0);
+});
+
+test("activates the Composer after selecting a new message recipient", async ({ page }) => {
+  await page.goto("/");
+  await page.locator(".dm-label").getByTestId("start-dm").click();
+  const modal = page.getByTestId("new-message-modal");
+  await modal.getByTestId("new-message-search-input").fill(fixture.bob.username);
+  await modal.getByTestId(`new-message-user-${fixture.bob.username}`).click();
+  await expect(modal.getByTestId("composer-editor")).toHaveAttribute("contenteditable", "true");
+  await expect(modal.getByTestId("composer-send-options")).toHaveCount(0);
+});
+
+test("keeps list markers beside text without a trailing paragraph", async ({ page }) => {
+  await page.goto("/");
+  const editor = page.getByTestId("composer-editor").first();
+  await editor.fill("List item");
+  await page.getByTitle("Bulleted list").first().click();
+  await expect(editor).toContainText("List item");
+  await expect(editor.locator(":scope > ul > li")).toHaveCount(1);
+  await expect(editor.locator(":scope > p")).toHaveCount(0);
 });
 
 test("starts a conversation from the dedicated DMs button with the keyboard", async ({ page }) => {
@@ -174,16 +213,21 @@ test("starts a conversation from the dedicated DMs button with the keyboard", as
   const dmHeader = page.locator(".sidebar.dms-view .sidebar-header");
   const startButton = dmHeader.getByTestId("start-dm");
   await expect(startButton).toBeVisible();
-  await expect(startButton).toHaveAttribute("title", "Start a new conversation");
+  await expect(startButton).toHaveAttribute("title", "New message");
 
   await startButton.click();
 
-  const search = page.getByTestId("search-input");
+  const search = page.getByTestId("new-message-search-input");
   await expect(search).toBeFocused();
-  await expect(search).toHaveAttribute("placeholder", "Find someone to message");
+  await expect(search).toHaveAttribute("placeholder", "Search people");
   await search.fill(fixture.bob.username);
-  await expect(page.getByTestId(`search-user-${slug(fixture.bob.username)}`)).toBeVisible();
+  await expect(page.getByTestId(`new-message-user-${fixture.bob.username}`)).toBeVisible();
   await search.press("Enter");
+  const composer = page.getByTestId("composer-editor");
+  await composer.click();
+  await expect(composer).toBeFocused();
+  await composer.fill("Hello from the new message dialog");
+  await page.getByTestId("composer-send").click();
 
   await expect(page.getByTestId("channel-title")).toContainText(fixture.bob.displayName);
   await expect(railItem(page, "dms")).toHaveClass(/active/);
@@ -271,7 +315,9 @@ test("opens people and channels searched from Activity and Saved", async ({ page
   await page.evaluate((userId) => {
     localStorage.setItem(`echo.loc.${userId}`, JSON.stringify({ view: "saved", convId: null, convType: null }));
   }, fixture.alice.id);
-  await page.reload();
+  // Legacy saved locations are the fallback at the root route. Explicit URLs
+  // take precedence once navigation is represented by React Router.
+  await page.goto("/");
   await expect(page.getByTestId("saved-header")).toBeVisible();
 
   await page.getByTestId("search-input").fill(fixture.projectChannel.name);

@@ -412,6 +412,21 @@ test("schedules a message and clears the banner after delivery", async ({ page }
   await expect(page.locator(".message").filter({ hasText: scheduledBody })).toBeVisible();
 });
 
+test("uses conversation wording for scheduled messages in DMs", async ({ page }) => {
+  await page.goto("/");
+  await page.locator(".dm-item").filter({ hasText: fixture.bob.displayName }).locator(".dm-open").click();
+  const dmComposer = page.locator(".composer:not(.is-disabled) .composer-editor").first();
+  await expect(dmComposer).toHaveAttribute("contenteditable", "true");
+  await dmComposer.click();
+  await dmComposer.pressSequentially(`DM scheduled ${Date.now()}`);
+  await expect(dmComposer).not.toBeEmpty();
+  const sendOptions = page.getByRole("button", { name: "Send options" });
+  await expect(sendOptions).toBeEnabled();
+  await sendOptions.click();
+  await page.locator(".composer:not(.is-disabled) .send-menu button").filter({ hasText: "Tomorrow, 9:00 AM" }).click();
+  await expect(page.locator(".scheduled-banner")).toContainText("for this conversation");
+});
+
 test("shows invalid schedule times inside the schedule dialog", async ({ page }) => {
   await page.goto("/");
 
@@ -529,6 +544,7 @@ test("updates settings and replays the walkthrough", async ({ browser, page }) =
 
   await page.getByRole("button", { name: "Settings" }).click();
   const settings = page.locator(".settings-page");
+  await expect(settings).toBeVisible({ timeout: 15_000 });
   const displayName = `Alice ${Date.now()}`;
   await settings.locator(".settings-input").first().fill(displayName);
   await settings.getByRole("button", { name: "Save" }).click();
