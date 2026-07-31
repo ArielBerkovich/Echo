@@ -6434,6 +6434,10 @@ html[data-mode="dark"] .new-messages-button:hover {
   list-style-position: inside;
   padding-inline-start: 0;
 }
+.composer-editor > ul + p:has(> br.ProseMirror-trailingBreak:only-child),
+.composer-editor > ol + p:has(> br.ProseMirror-trailingBreak:only-child) {
+  display: none;
+}
 .composer-editor li { margin: 1px 0; }
 .composer-editor blockquote {
   margin: 4px 0;
