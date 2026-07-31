@@ -155,7 +155,7 @@ test("starts a conversation from the Home Direct Messages button", async ({ page
   await startButton.click();
 
   await expect(page.getByTestId("new-message-modal")).toBeVisible();
-  const search = page.getByTestId("new-message-search");
+  const search = page.getByTestId("new-message-search-input");
   await expect(search).toBeFocused();
   await expect(search).toHaveAttribute("placeholder", "Search people");
 
@@ -183,7 +183,7 @@ test("starts a conversation from the dedicated DMs button with the keyboard", as
 
   await startButton.click();
 
-  const search = page.getByTestId("new-message-search");
+  const search = page.getByTestId("new-message-search-input");
   await expect(search).toBeFocused();
   await expect(search).toHaveAttribute("placeholder", "Search people");
   await search.fill(fixture.bob.username);

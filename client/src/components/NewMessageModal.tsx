@@ -45,11 +45,11 @@ export default function NewMessageModal({ currentUserId, users, onStart, onClose
   return (
     <Modal title="New message" className="new-message-modal" testId="new-message-modal" closeDisabled={sending} onClose={onClose}>
       <form onSubmit={submit}>
-        <label className="new-message-search">
+        <label className="new-message-search" data-testid="new-message-search">
           <SearchIcon size={17} strokeWidth={1.8} aria-hidden="true" />
           <input
             className="new-message-search-input"
-            data-testid="new-message-search"
+            data-testid="new-message-search-input"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={(event) => {
