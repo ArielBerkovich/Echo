@@ -416,8 +416,9 @@ test("uses conversation wording for scheduled messages in DMs", async ({ page })
   await page.goto("/");
   await page.locator(".dm-item").filter({ hasText: fixture.bob.displayName }).locator(".dm-open").click();
   const dmComposer = page.locator(".composer:not(.is-disabled) .composer-editor").first();
-  await expect(dmComposer).toBeEditable();
+  await expect(dmComposer).toHaveAttribute("contenteditable", "true");
   await dmComposer.fill(`DM scheduled ${Date.now()}`);
+  await expect(dmComposer).not.toBeEmpty();
   await page.getByRole("button", { name: "Send options" }).click();
   await page.locator(".send-menu button").filter({ hasText: "Tomorrow, 9:00 AM" }).click();
   await expect(page.locator(".scheduled-banner")).toContainText("for this conversation");

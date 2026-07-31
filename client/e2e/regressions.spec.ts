@@ -165,8 +165,10 @@ test("starts a conversation from the Home Direct Messages button", async ({ page
   await bobResult.click();
   const firstMessage = `Started from compose ${Date.now()}`;
   const modal = page.getByTestId("new-message-modal");
-  await expect(modal.getByTestId("composer-editor")).toBeEditable();
-  await modal.getByTestId("composer-editor").fill(firstMessage);
+  const composer = modal.getByTestId("composer-editor");
+  await expect(composer).toHaveAttribute("contenteditable", "true");
+  await composer.fill(firstMessage);
+  await expect(composer).toHaveText(firstMessage);
   await modal.getByTestId("composer-send").click();
 
   await expect(page.getByTestId("channel-title")).toContainText(fixture.bob.displayName);
