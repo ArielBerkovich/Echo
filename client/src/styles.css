@@ -1967,12 +1967,12 @@ html[data-mode="dark"] .backend-connection-error {
 .rail-active-indicator {
   position: absolute;
   left: -4px;
-  top: 26px;
+  top: 21px;
   width: 3px;
   height: 20px;
   border-radius: 999px;
   background: var(--active-bg);
-  transform: translateY(calc(var(--rail-active-index) * 65px));
+  transform: translateY(calc(var(--rail-active-index) * 69px));
   transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
   box-shadow: 0 0 12px color-mix(in srgb, var(--active-bg) 75%, transparent);
   pointer-events: none;
@@ -7819,8 +7819,8 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     font-size: 12px;
   }
   .rail-active-indicator {
-    top: 34px;
-    transform: translateY(calc(var(--rail-active-index) * 79px));
+    top: 28px;
+    transform: translateY(calc(var(--rail-active-index) * 86px));
   }
   .rail-icon {
     width: 40px;

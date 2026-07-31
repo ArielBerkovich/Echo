@@ -32,6 +32,18 @@ async function openFreshGeneralMessage(page, key, body) {
   return { id: created.message.id, message };
 }
 
+async function expectRailIndicatorAligned(page) {
+  const centers = await page.evaluate(() => {
+    const indicator = document.querySelector(".rail-active-indicator")?.getBoundingClientRect();
+    const icon = document.querySelector(".rail-item.active .rail-icon")?.getBoundingClientRect();
+    return {
+      indicator: indicator ? indicator.top + indicator.height / 2 : 0,
+      icon: icon ? icon.top + icon.height / 2 : 0,
+    };
+  });
+  expect(Math.abs(centers.indicator - centers.icon), JSON.stringify(centers)).toBeLessThan(1);
+}
+
 test("restores an authenticated session into the default channel", async ({ page }) => {
   const earlierChannel = await requestAsToken(page, fixture.alice.token, "/channels", {
     method: "POST",
@@ -56,10 +68,21 @@ test("supports direct workspace routes and browser history", async ({ page }) =>
 
   await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
   await expect(page).toHaveURL(new RegExp(`/channels/${fixture.projectChannel.name}$`));
+  await expectRailIndicatorAligned(page);
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await page.waitForTimeout(450);
+  await expectRailIndicatorAligned(page);
+  await page.setViewportSize({ width: 1280, height: 720 });
 
   await railItem(page, "activity").click();
   await expect(page).toHaveURL(/\/activity$/);
   await expect(railItem(page, "activity")).toHaveClass(/active/);
+  await page.waitForTimeout(450);
+  await expectRailIndicatorAligned(page);
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await page.waitForTimeout(450);
+  await expectRailIndicatorAligned(page);
+  await page.setViewportSize({ width: 1280, height: 720 });
 
   await page.goBack();
   await expect(page).toHaveURL(new RegExp(`/channels/${fixture.projectChannel.name}$`));
