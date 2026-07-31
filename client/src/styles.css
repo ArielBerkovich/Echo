@@ -6759,14 +6759,11 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
   border-radius: 10px;
   color: var(--muted);
   background: var(--surface-2);
-  outline: 2px solid transparent;
-  transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.18s ease, outline-color 0.18s ease;
+  transition: background 0.16s ease, border-color 0.16s ease;
 }
 .new-message-search:focus-within {
   border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
   background: var(--surface);
-  outline-color: color-mix(in srgb, var(--accent) 22%, transparent);
-  box-shadow: 0 5px 16px color-mix(in srgb, var(--accent) 14%, transparent);
 }
 .new-message-search .new-message-search-input,
 .new-message-search .new-message-search-input:focus,

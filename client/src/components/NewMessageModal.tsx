@@ -60,6 +60,7 @@ export default function NewMessageModal({ currentUserId, users, onStart, onClose
             }}
             placeholder="Search people"
             autoFocus
+            style={{ border: "none", outline: "none", boxShadow: "none", background: "transparent" }}
           />
         </label>
 
