@@ -46,19 +46,8 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
 
   return (
     <Modal title="New message" className="new-message-modal" testId="new-message-modal" closeDisabled={preparing} onClose={onClose}>
-        {channel ? (
-          <div className="new-message-recipient">
-            <Avatar name={selected.displayName} src={selected.avatarUrl} size={32} />
-            <span className="person-info">
-              <span className="person-name">{selected.displayName}</span>
-              <span className="person-handle">@{selected.username}</span>
-            </span>
-            <button type="button" className="new-message-change" onClick={() => { setChannel(null); setSelected(null); }}>
-              Change
-            </button>
-          </div>
-        ) : (
-          <>
+        <div className="new-message-layout">
+          <div className="new-message-picker">
             <label className="new-message-search" data-testid="new-message-search">
               <SearchIcon size={17} strokeWidth={1.8} aria-hidden="true" />
               <input
@@ -82,9 +71,10 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
                 <button
                   type="button"
                   key={user.id}
-                  className="new-message-person"
+                  className={`new-message-person ${selected?.id === user.id ? "selected" : ""}`}
                   data-testid={`new-message-user-${user.username}`}
                   role="option"
+                  aria-selected={selected?.id === user.id}
                   onClick={() => select(user)}
                 >
                   <Avatar name={user.displayName} src={user.avatarUrl} size={34} />
@@ -95,22 +85,36 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
                 </button>
               )) : <div className="people-empty">No people found.</div>}
             </div>
-          </>
-        )}
+          </div>
+
+          <div className={`new-message-compose ${channel ? "has-channel" : ""}`}>
+            {channel ? (
+              <div className="new-message-recipient">
+                <Avatar name={selected.displayName} src={selected.avatarUrl} size={32} />
+                <span className="person-info">
+                  <span className="person-name">{selected.displayName}</span>
+                  <span className="person-handle">@{selected.username}</span>
+                </span>
+              </div>
+            ) : (
+              <div className="new-message-compose-empty">Select someone to start a message</div>
+            )}
+            {preparing ? <div className="people-empty">Opening conversation…</div> : null}
+            {channel ? (
+              <Composer
+                key={channel.id}
+                channel={channel}
+                users={users}
+                customEmojis={customEmojis}
+                mode={mode}
+                onError={setError}
+                onSent={handleSent}
+              />
+            ) : null}
+          </div>
+        </div>
 
         {error ? <div className="error" role="alert">{error}</div> : null}
-        {preparing ? <div className="people-empty">Opening conversation…</div> : null}
-        {channel ? (
-          <Composer
-            key={channel.id}
-            channel={channel}
-            users={users}
-            customEmojis={customEmojis}
-            mode={mode}
-            onError={setError}
-            onSent={handleSent}
-          />
-        ) : null}
     </Modal>
   );
 }
