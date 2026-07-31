@@ -287,7 +287,7 @@ html[data-mode="dark"] .composer {
   border-color: var(--border);
 }
 html[data-mode="dark"] .composer:focus-within {
-  border-color: var(--blue-400);
+  border-color: color-mix(in srgb, var(--text) 32%, var(--border));
 }
 html[data-mode="dark"] .composer-toolbar {
   background: rgba(255, 255, 255, 0.04);
@@ -6275,8 +6275,8 @@ html[data-mode="dark"] .new-messages-button:hover {
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .composer:focus-within {
-  border-color: rgba(29, 28, 29, 0.32);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  border-color: color-mix(in srgb, var(--text) 32%, var(--border));
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--text) 8%, transparent);
 }
 .composer.dragging-files {
   border-color: var(--blue-500);
