@@ -266,6 +266,7 @@ test("enables desktop notifications, filters events, and navigates when one is c
   });
   await page.goto("/");
   await page.getByTestId("sidebar-settings").click();
+  await expect(page.getByTestId("settings-page")).toBeVisible();
   await page.getByTestId("notification-toggle").click();
   await expect(page.getByText("On ✓")).toBeVisible();
   await page.evaluate(() => { window.__e2eNotifications.length = 0; });

@@ -696,6 +696,7 @@ test("searches messages with filters and displays results", async ({ page }) => 
   await page.keyboard.press("Enter");
 
   await expect(page.getByTestId("search-results-header")).toContainText("Search");
+  await expect(page.locator(".search-chip-from")).toContainText(`@${fixture.alice.username}`);
   await expect(page.getByText("in: #general")).toBeVisible();
   await expect(page.getByText(`from: @${fixture.alice.username}`)).toBeVisible();
   await expect(page.getByText("has: link")).toBeVisible();

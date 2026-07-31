@@ -419,8 +419,8 @@ test("uses conversation wording for scheduled messages in DMs", async ({ page })
   await expect(dmComposer).toHaveAttribute("contenteditable", "true");
   await dmComposer.fill(`DM scheduled ${Date.now()}`);
   await expect(dmComposer).not.toBeEmpty();
-  await page.getByRole("button", { name: "Send options" }).click();
-  await page.locator(".send-menu button").filter({ hasText: "Tomorrow, 9:00 AM" }).click();
+  await dmComposer.locator("xpath=ancestor::div[contains(@class,'composer')]").getByRole("button", { name: "Send options" }).click();
+  await page.locator(".composer:not(.is-disabled) .send-menu button").filter({ hasText: "Tomorrow, 9:00 AM" }).click();
   await expect(page.locator(".scheduled-banner")).toContainText("for this conversation");
 });
 
