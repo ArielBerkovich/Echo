@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
+import { useState } from "react";
 import { api } from "../api.js";
 import { formatDate } from "../lib/time.js";
 import Avatar from "./Avatar.js";
@@ -18,14 +19,6 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
   const [error, setError] = useState(null);
   const [memberQuery, setMemberQuery] = useState("");
   const [promotingId, setPromotingId] = useState(null);
-
-  useEffect(() => {
-    function onKeyDown(event) {
-      if (event.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
 
   const byId = new Map(users.map((u) => [u.id, u]));
   const creator = byId.get(channel.createdBy);
@@ -85,19 +78,14 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
   const ChannelIcon = channel.type === "private" ? LockKeyholeIcon : HashIcon;
 
   return (
-    <div
-      className="channel-details-backdrop modal-backdrop"
-      role="presentation"
-      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
-    >
-      <section
-        className="details-panel channel-details-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="channel-details-title"
-        data-testid="channel-details-dialog"
-        onMouseDown={(event) => event.stopPropagation()}
-      >
+    <Dialog.Root open onOpenChange={(open) => !open && onClose()}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="channel-details-backdrop modal-backdrop">
+          <Dialog.Content
+            className="details-panel channel-details-dialog"
+            data-testid="channel-details-dialog"
+            aria-describedby={undefined}
+          >
         <header className="channel-details-header">
           <div className="channel-details-heading">
             <span className="channel-details-icon" aria-hidden="true">
@@ -105,15 +93,17 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
             </span>
             <div className="channel-details-heading-copy">
               <span className="channel-details-eyebrow">Channel details</span>
-              <h2 id="channel-details-title">{channel.name}</h2>
+              <Dialog.Title id="channel-details-title">{channel.name}</Dialog.Title>
               <span className="channel-details-meta">
                 {channel.type === "private" ? "Private channel" : "Public channel"} · {channel.memberCount ?? members.length} members
               </span>
             </div>
           </div>
-          <button type="button" className="channel-details-close" onClick={onClose} aria-label="Close channel details">
-            <XIcon size={19} strokeWidth={1.8} />
-          </button>
+          <Dialog.Close asChild>
+            <button type="button" className="channel-details-close" aria-label="Close channel details">
+              <XIcon size={19} strokeWidth={1.8} />
+            </button>
+          </Dialog.Close>
         </header>
 
         <div className="channel-details-content">
@@ -256,8 +246,10 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
 
           {error && <div className="error">{error}</div>}
         </div>
-      </section>
-    </div>
+          </Dialog.Content>
+        </Dialog.Overlay>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
 

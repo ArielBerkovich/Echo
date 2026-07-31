@@ -280,7 +280,8 @@ test("resets the composer placeholder after deleting the draft", async ({ page }
   await expect(editor).toHaveAttribute("data-placeholder", "Message #general");
   await expect(editor.locator("p.is-editor-empty")).toHaveCount(1);
   await editor.fill("temporary draft");
-  await editor.fill("");
+  await editor.press("ControlOrMeta+A");
+  await editor.press("Backspace");
 
   await expect(editor).toHaveText("");
   await expect(editor.locator("p.is-editor-empty")).toHaveCount(1);

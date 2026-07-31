@@ -1,3 +1,9 @@
+/* Tailwind is introduced without Preflight so existing Echo styles can be
+   migrated component by component without a global visual reset. */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
 :root {
   /* Navy core */
   --navy-900: #0a1a33;
@@ -1603,12 +1609,6 @@ html[data-mode="dark"] .backend-connection-error {
 }
 .visibility-option.selected .vo-check {
   opacity: 1;
-}
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 22px;
 }
 .btn-secondary {
   padding: 11px 18px;

@@ -1,99 +1,76 @@
-import { useEffect, useId, useRef } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
+import { cn } from "../lib/cn.js";
 
 export function ModalActions({ children, className = "" }) {
-  return <div className={`modal-actions${className ? ` ${className}` : ""}`}>{children}</div>;
+  return <div className={cn("modal-actions mt-[22px] flex justify-end gap-2.5", className)}>{children}</div>;
 }
 
 export default function Modal({
   title,
   className = "",
+  backdropClassName = "",
   closeLabel = "Close",
   closeClassName = "",
   closeTestId,
   closeDisabled = false,
   showHeader = true,
+  showClose = true,
   testId,
   onClose,
   children,
 }) {
-  const modalRef = useRef(null);
-  const titleId = useId();
-  const restoreFocusRef = useRef(typeof document !== "undefined" ? document.activeElement : null);
-  const onCloseRef = useRef(onClose);
-  const closeDisabledRef = useRef(closeDisabled);
-
-  useEffect(() => {
-    onCloseRef.current = onClose;
-    closeDisabledRef.current = closeDisabled;
-  }, [closeDisabled, onClose]);
-
-  useEffect(() => {
-    const modal = modalRef.current;
-    if (!modal) return undefined;
-    const focusable = () => [...modal.querySelectorAll(
-      'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
-    )];
-    const first = modal.querySelector("[autofocus]") || focusable()[0];
-    first?.focus();
-    const onKeyDown = (event) => {
-      if (event.key === "Escape" && !closeDisabledRef.current) {
-        event.preventDefault();
-        onCloseRef.current();
-        return;
-      }
-      if (event.key !== "Tab") return;
-      const items = focusable();
-      if (!items.length) return;
-      const firstItem = items[0];
-      const lastItem = items[items.length - 1];
-      if (event.shiftKey && document.activeElement === firstItem) {
-        event.preventDefault();
-        lastItem.focus();
-      } else if (!event.shiftKey && document.activeElement === lastItem) {
-        event.preventDefault();
-        firstItem.focus();
-      }
-    };
-    modal.addEventListener("keydown", onKeyDown);
-    return () => {
-      modal.removeEventListener("keydown", onKeyDown);
-      if (restoreFocusRef.current instanceof HTMLElement) restoreFocusRef.current.focus();
-    };
-  }, []);
-
   return (
-    <div className="modal-backdrop" onMouseDown={() => !closeDisabled && onClose()}>
-      <div
-        ref={modalRef}
-        className={`modal${className ? ` ${className}` : ""}`}
-        data-testid={testId}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={showHeader ? titleId : undefined}
-        aria-label={showHeader ? undefined : title}
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        {showHeader ? (
-          <div className="modal-header">
-            <h2 id={titleId}>{title}</h2>
-            <button type="button" className="modal-close" onClick={onClose} aria-label={closeLabel} disabled={closeDisabled}>
-              ✕
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            className={`modal-close${closeClassName ? ` ${closeClassName}` : ""}`}
-            data-testid={closeTestId}
-            onClick={onClose}
-            aria-label={closeLabel}
-            disabled={closeDisabled}
+    <Dialog.Root open onOpenChange={(open) => !open && !closeDisabled && onClose()}>
+      <Dialog.Portal>
+        <Dialog.Overlay
+          className={cn(
+            "modal-backdrop fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-[3px]",
+            backdropClassName
+          )}
+        >
+          <Dialog.Content
+            className={cn(
+              "modal z-[101] w-[480px] max-w-[calc(100vw-40px)] rounded-2xl bg-[var(--surface)] p-6 shadow-[var(--shadow-lg)]",
+              className
+            )}
+            data-testid={testId}
+            aria-describedby={undefined}
+            onEscapeKeyDown={(event) => closeDisabled && event.preventDefault()}
+            onPointerDownOutside={(event) => closeDisabled && event.preventDefault()}
           >
-            ✕
-          </button>
-        )}
-        {children}
-      </div>
-    </div>
+            {showHeader ? (
+              <div className="modal-header mb-[18px] flex items-center justify-between">
+                <Dialog.Title className="m-0 text-[21px] font-extrabold tracking-[-0.01em]">{title}</Dialog.Title>
+                {showClose && (
+                  <Dialog.Close asChild>
+                    <button type="button" className="modal-close" aria-label={closeLabel} disabled={closeDisabled}>
+                      ✕
+                    </button>
+                  </Dialog.Close>
+                )}
+              </div>
+            ) : (
+              <>
+                <Dialog.Title className="sr-only">{title}</Dialog.Title>
+                {showClose && (
+                  <Dialog.Close asChild>
+                    <button
+                      type="button"
+                      className={cn("modal-close", closeClassName)}
+                      data-testid={closeTestId}
+                      aria-label={closeLabel}
+                      disabled={closeDisabled}
+                    >
+                      ✕
+                    </button>
+                  </Dialog.Close>
+                )}
+              </>
+            )}
+            {children}
+          </Dialog.Content>
+        </Dialog.Overlay>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
