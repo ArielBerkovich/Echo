@@ -244,8 +244,22 @@ test("updates the typing indicator after a display name change", async ({ browse
 
 test("updates an open channel message avatar after a profile picture change", async ({ browser, page }) => {
   const { alice, bob } = fixture;
+  await requestAsToken(page, alice.token, "/users/me", {
+    method: "PATCH",
+    body: { avatarKey: null },
+  });
+  const avatarMessage = await requestAsToken(page, alice.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body: `Avatar check ${Date.now()}`,
+      externalKey: `avatar-${slug(String(Date.now()))}`,
+    },
+  });
+
   await withAliceBobPages(browser, async ({ bobPage }) => {
-    const message = bobPage.page.getByTestId(`message-${fixture.messages.formatted.id}`);
+    await bobPage.page.locator(".channel-row").filter({ hasText: "general" }).click();
+    const message = messageById(bobPage.page, avatarMessage.message.id);
     await expect(message).toBeVisible();
     await expect(message.locator(".avatar-img")).toHaveCount(0);
 
