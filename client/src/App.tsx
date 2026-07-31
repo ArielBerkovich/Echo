@@ -3,64 +3,19 @@ import { api, consumeRhssoCallback, getToken, setToken } from "./api.js";
 import { disconnectSocket } from "./socket.js";
 import { useRealtime } from "./lib/useRealtime.js";
 import Login from "./components/Login.js";
-import Sidebar from "./components/Sidebar.js";
-import ChannelView from "./components/ChannelView.js";
-import CreateChannelModal from "./components/CreateChannelModal.js";
-import AddPeopleModal from "./components/AddPeopleModal.js";
-import SearchBox from "./components/SearchBox.js";
-import LeftRail from "./components/LeftRail.js";
-import ActivityFeed from "./components/ActivityFeed.js";
-import SavedFeed from "./components/SavedFeed.js";
-import UserProfileModal from "./components/UserProfileModal.js";
-import ApiDocsPage from "./components/ApiDocsPage.js";
-import SearchResults from "./components/SearchResults.js";
-import AddEmojiModal from "./components/AddEmojiModal.js";
-import SettingsModal from "./components/SettingsModal.js";
-import ChannelBrowser from "./components/ChannelBrowser.js";
-import Walkthrough from "./components/Walkthrough.js";
 import ForcePasswordReset from "./components/ForcePasswordReset.js";
-import { readJson, readString, writeJson, writeString } from "./lib/storage.js";
+import WorkspaceNavigation from "./components/WorkspaceNavigation.js";
+import WorkspaceOverlays from "./components/WorkspaceOverlays.js";
+import WorkspaceContent from "./components/WorkspaceContent.js";
+import { readJson, writeJson } from "./lib/storage.js";
 import { notifyPermission, notifySupported, requestNotifyPermission, setNotifyPref } from "./lib/notify.js";
 import { BUILT_IN_GIT_EMOJIS } from "./lib/gitEmojis.js";
-
-// Colour themes — each is an *identity* (accent + sidebar/rail) that works in
-// both light and dark mode. The light/dark mode is chosen independently, so the
-// quick toggle darkens/lightens whatever theme you're on. `swatch` = [sidebar,
-// surface, accent] preview for the picker.
-const THEMES = [
-  { id: "nord", label: "Nord", swatch: ["#3b4252", "#2b303b", "#81a1c1"] },
-  { id: "aubergine", label: "Aubergine", swatch: ["#5b1b42", "#f7f3f0", "#8c8580"] },
-  { id: "azure", label: "Azure", swatch: ["#0d2444", "#08182e", "#2f81f7"] },
-  { id: "midnight", label: "Midnight", swatch: ["#1a1640", "#15132e", "#8b5cf6"] },
-  { id: "dracula", label: "Dracula", swatch: ["#343746", "#282a36", "#bd93f9"] },
-  { id: "sand", label: "Sand", swatch: ["#5a4632", "#fffdf8", "#c2682a"] },
-];
-const THEME_IDS = new Set(THEMES.map((t) => t.id));
-const DEFAULT_THEME = "nord";
-
-// Resolve the stored theme + mode, defaulting to Nord and migrating any older /
-// removed theme id (e.g. "default", "forest", "dark") to the default.
-function readThemeMode() {
-  const storedMode = readString("echo.mode");
-  const storedTheme = readString("echo.theme");
-  const theme = THEME_IDS.has(storedTheme) ? storedTheme : DEFAULT_THEME;
-  if (storedMode === "light" || storedMode === "dark") {
-    return { theme, mode: storedMode };
-  }
-  // Legacy single-value migration.
-  if (!storedTheme || storedTheme === "dark") return { theme: DEFAULT_THEME, mode: "dark" };
-  if (storedTheme === "light") return { theme: DEFAULT_THEME, mode: "light" };
-  const LEGACY_DARK = new Set(["azure", "midnight", "nord", "dracula"]);
-  return { theme, mode: LEGACY_DARK.has(storedTheme) ? "dark" : "light" };
-}
+import { THEMES, useThemePreferences } from "./lib/useThemePreferences.js";
+import { useConversationCache } from "./lib/useConversationCache.js";
 
 const HIDDEN_KEY = "echo.hiddenChannels";
 function loadHidden() {
   return new Set(readJson(HIDDEN_KEY, []));
-}
-
-function loadScrollStates(userId) {
-  return readJson(`echo.scroll.${userId}`, {});
 }
 
 const RECENTS_KEY = "echo.recentSearches";
@@ -95,10 +50,15 @@ export default function App() {
   const [vipIds, setVipIds] = useState(() => new Set()); // user ids marked VIP
   const [navOpen, setNavOpen] = useState(false); // mobile: rail+sidebar drawer open?
   const [showTour, setShowTour] = useState(false); // first-run walkthrough
-  const [theme, setTheme] = useState(() => readThemeMode().theme); // colour identity
-  const [mode, setMode] = useState(() => readThemeMode().mode); // "light" | "dark"
-  const [messageCache, setMessageCache] = useState({}); // channel/DM history snapshots for instant revisits
-  const [scrollStates, setScrollStates] = useState({}); // channel/DM scroll anchors for revisits
+  const { theme, setTheme, mode, setMode, toggleMode } = useThemePreferences();
+  const {
+    messageCache,
+    scrollStates,
+    cacheMessages,
+    rememberScrollState,
+    clearScrollState,
+    prefetchMessages,
+  } = useConversationCache(user?.id);
   const [jumpMessageId, setJumpMessageId] = useState(null); // message to scroll to + highlight
   const [searchQuery, setSearchQuery] = useState(null); // active message-search query (results pane)
   const [openThreadReq, setOpenThreadReq] = useState(null); // { channelId, rootId, messageId } — thread to open after a jump
@@ -127,6 +87,46 @@ export default function App() {
     setJumpMessageId(null);
     setOpenThreadReq(null);
     setScrollToBottomTarget(null);
+  }
+
+  function handleViewSelect(nextView) {
+    markNavDuringRestore();
+    clearNavigationTarget();
+    searchRef.current?.clear();
+    setSearchQuery(null);
+    setView(nextView);
+    setNavOpen(window.matchMedia("(max-width: 760px)").matches);
+  }
+
+  function handleSidebarSelect(channel) {
+    markNavDuringRestore();
+    clearNavigationTarget();
+    setSearchQuery(null);
+    setActiveChannel(channel);
+    setView("home");
+    setNavOpen(false);
+  }
+
+  function handleBrowseChannels() {
+    markNavDuringRestore();
+    clearNavigationTarget();
+    setSearchQuery(null);
+    setView("browse");
+    setNavOpen(false);
+  }
+
+  function handleStartConversation() {
+    markNavDuringRestore();
+    clearNavigationTarget();
+    setSearchQuery(null);
+    setNavOpen(false);
+    requestAnimationFrame(() => searchRef.current?.startConversation());
+  }
+
+  function handleSidebarOpenDm(target, isSelf) {
+    markNavDuringRestore();
+    handleOpenDm(target, isSelf, view === "home" ? "home" : "dms");
+    setNavOpen(false);
   }
 
   const visibleChannels = useMemo(
@@ -208,19 +208,6 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [hasConnectionIssue]);
 
-  // Apply + persist theme (colour identity) and mode (light/dark) independently.
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    document.documentElement.dataset.mode = mode;
-    writeString("echo.theme", theme);
-    writeString("echo.mode", mode);
-  }, [theme, mode]);
-
-  // Quick switch between light and dark — keeps the current colour theme.
-  function toggleMode() {
-    setMode((m) => (m === "dark" ? "light" : "dark"));
-  }
-
   // Restore the session on load if a token is present.
   useEffect(() => {
     if (!getToken()) {
@@ -268,45 +255,8 @@ export default function App() {
     api.listChannels().then(({ channels }) => setChannels(channels)).catch(() => {});
   }
 
-  function cacheMessages(channelId, messages) {
-    setMessageCache((prev) => {
-      const current = prev[channelId];
-      if (current === messages) return prev;
-      if (current && current.length === messages.length && current.every((m, i) => m.id === messages[i]?.id)) {
-        return prev;
-      }
-      return { ...prev, [channelId]: messages };
-    });
-  }
-
-  function rememberScrollState(channelId, state) {
-    setScrollStates((prev) => {
-      const next = { ...prev, [channelId]: state };
-      if (user?.id) writeJson(`echo.scroll.${user.id}`, next);
-      return next;
-    });
-  }
-
-  function clearScrollState(channelId) {
-    setScrollStates((prev) => {
-      if (!prev[channelId]) return prev;
-      const next = { ...prev };
-      delete next[channelId];
-      if (user?.id) writeJson(`echo.scroll.${user.id}`, next);
-      return next;
-    });
-  }
-
   function clearScrollToBottomTarget() {
     setScrollToBottomTarget(null);
-  }
-
-  function prefetchMessages(channelId) {
-    if (!channelId || messageCache[channelId]) return;
-    api
-      .getMessages(channelId)
-      .then(({ messages }) => cacheMessages(channelId, messages))
-      .catch(() => {});
   }
 
   // Mark a conversation read: clear its unread locally (no refetch) and persist
@@ -360,7 +310,6 @@ export default function App() {
     if (!user) return;
     restoredRef.current = false; // restore again for this (possibly new) account
     navDuringRestoreRef.current = false;
-    setScrollStates(loadScrollStates(user.id));
     let cancelled = false;
     Promise.all([api.listChannels(), api.listDms()])
       .then(async ([chRes, dmRes]) => {
@@ -469,7 +418,6 @@ export default function App() {
     setCatalogCounts(null);
     setActiveChannel(null);
     setDms([]);
-    setScrollStates({});
     setScrollToBottomTarget(null);
   }
 
@@ -978,276 +926,172 @@ export default function App() {
         </div>
       )}
       <div className={`app ${navOpen ? "nav-open" : ""}`}>
-        <div className="app-nav">
-          <LeftRail
-            view={view === "browse" ? "home" : view}
-            onSelect={(v) => {
-                markNavDuringRestore();
-                clearNavigationTarget();
-                searchRef.current?.clear();
-                setSearchQuery(null);
-                setView(v);
-                // Keep the complete navigation unit open after every rail
-                // selection on mobile. Home and DMs expose their sidebar;
-                // Activity and Saved still intentionally render rail-only
-                // content inside the drawer.
-                setNavOpen(window.matchMedia("(max-width: 760px)").matches);
-            }}
-            user={user}
-            badges={{
-              home: channels.reduce((s, c) => s + (c.unread || 0), 0),
-              dms: dms.reduce((s, d) => s + (d.unread || 0), 0),
-              activity: activityBadge,
-            }}
-          />
-
-          {((view !== "activity" && view !== "saved") || searchQuery) && (
-            <Sidebar
-              user={user}
-              channels={channels}
-              dms={dms}
-              hidden={hidden}
-              vipIds={vipIds}
-              onlineIds={onlineIds}
-              activeChannel={activeChannel}
-              mode={view === "dms" ? "dms" : "home"}
-              onSelect={(c) => {
-                markNavDuringRestore();
-                clearNavigationTarget();
-                setSearchQuery(null);
-                setActiveChannel(c);
-                setView("home");
-                setNavOpen(false);
-              }}
-              onPrefetchChannel={prefetchMessages}
-              onNewChannel={() => setShowCreate(true)}
-              onBrowseChannels={() => {
-                markNavDuringRestore();
-                clearNavigationTarget();
-                setSearchQuery(null);
-                setView("browse");
-                setNavOpen(false);
-              }}
-              browsingChannels={view === "browse"}
-              publicChannelCount={catalogCounts?.all}
-              onStartConversation={() => {
-                markNavDuringRestore();
-                clearNavigationTarget();
-                setSearchQuery(null);
-                setNavOpen(false);
-                requestAnimationFrame(() => searchRef.current?.startConversation());
-              }}
-              onOpenDm={(u, isSelf) => {
-                markNavDuringRestore();
-                handleOpenDm(u, isSelf, view === "home" ? "home" : "dms");
-                setNavOpen(false);
-              }}
-              onPrefetchDm={prefetchMessages}
-              onHideDm={handleHideDm}
-              onHideChannel={handleHideChannel}
-              onLogout={handleLogout}
-              onOpenSettings={openSettings}
-              onOpenApiDocs={openApiDocs}
-              themeMode={mode}
-              onToggleTheme={toggleMode}
-            />
-          )}
-        </div>
+        <WorkspaceNavigation
+          view={view}
+          user={user}
+          channels={channels}
+          dms={dms}
+          hidden={hidden}
+          vipIds={vipIds}
+          onlineIds={onlineIds}
+          activeChannel={activeChannel}
+          activityBadge={activityBadge}
+          forceSidebar={!!searchQuery}
+          publicChannelCount={catalogCounts?.all}
+          mode={mode}
+          onSelectView={handleViewSelect}
+          onSelectChannel={handleSidebarSelect}
+          onPrefetchChannel={prefetchMessages}
+          onCreateChannel={() => setShowCreate(true)}
+          onBrowseChannels={handleBrowseChannels}
+          onStartConversation={handleStartConversation}
+          onOpenDm={handleSidebarOpenDm}
+          onHideDm={handleHideDm}
+          onHideChannel={handleHideChannel}
+          onLogout={handleLogout}
+          onOpenSettings={openSettings}
+          onOpenApiDocs={openApiDocs}
+          onToggleMode={toggleMode}
+        />
 
         {/* Backdrop closes the nav drawer on narrow screens. */}
         <div className="nav-backdrop" onClick={() => setNavOpen(false)} />
 
-        <div className="chat-pane">
-          <div className="pane-search">
-            <button
-              className="nav-toggle"
-              onClick={() => setNavOpen(true)}
-              aria-label="Open navigation"
-              title="Menu"
-            >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                <path d="M3 5h14M3 10h14M3 15h14" />
-              </svg>
-            </button>
-            <SearchBox
-              ref={searchRef}
-              channels={visibleChannels}
-              myChannelIds={myChannelIds}
-              users={users}
-              recents={recents}
-              addPeopleChannel={
-                activeChannel &&
-                activeChannel.type !== "dm" &&
-                activeChannel.name?.toLowerCase() !== "general" &&
-                (activeChannel.members || []).includes(user.id)
-                  ? activeChannel
-                  : null
-              }
-              onPickChannel={handlePickChannel}
-              onFindChannels={findPublicChannels}
-              onPickUser={handlePickUser}
-              onAddPeople={() => setShowAddPeople(true)}
-              onSearchMessages={handleSearchMessages}
-            />
-          </div>
-
-          {searchQuery ? (
-            <SearchResults
-              query={searchQuery}
-              onJump={handleSearchJump}
-              onClose={() => {
-                searchRef.current?.clear();
-                setSearchQuery(null);
-              }}
-            />
-          ) : view === "browse" ? (
-            <ChannelBrowser
-              joinedIds={myPublicChannelIdSet}
-              hiddenIds={hidden}
-              onOpen={(channel) => {
-                handlePickChannel(channel);
-                setNavOpen(false);
-              }}
-              onJoin={handleJoinChannel}
-              onCreate={() => setShowCreate(true)}
-              onCatalog={cacheCatalogChannels}
-              onCounts={setCatalogCounts}
-            />
-          ) : view === "activity" ? (
-            <ActivityFeed
-              user={user}
-              users={users}
-              customEmojis={emojis}
-              onJump={handleJump}
-              onLoaded={syncActivity}
-            />
-          ) : view === "saved" ? (
-            <SavedFeed
-              user={user}
-              users={users}
-              customEmojis={emojis}
-              onJump={handleJump}
-              onUnsave={(id) => setSavedIds((prev) => {
-                const next = new Set(prev);
-                next.delete(id);
-                return next;
-              })}
-            />
-          ) : activeChannel && (view === "home" || activeChannel.type === "dm") ? (
-            <ChannelView
-              key={activeChannel.id}
-              channel={activeChannel}
-              recoveryEpoch={recoveryEpoch}
-              cachedMessages={messageCache[activeChannel.id] || null}
-              initialScrollState={activeInitialScrollState}
-              hasUnread={activeUnreadCount > 0}
-              user={user}
-              users={users}
-              channels={visibleChannels}
-              dms={dms}
-              customEmojis={emojis}
-              mode={mode}
-              savedIds={savedIds}
-              onToggleSave={handleToggleSave}
-              onCacheMessages={cacheMessages}
-              onRememberScroll={rememberScrollState}
-              onScrollToBottomTargetConsumed={clearScrollToBottomTarget}
-              onOpenProfile={openProfile}
-              onOpenChannel={handleOpenChannelTag}
-              onOpenForwardedDm={(target, channel) => handleOpenDm(target, false, "dms", channel)}
-              onToast={setToast}
-              onDmsChanged={refreshDms}
-              isVip={activeChannel.type === "dm" && vipIds.has(activeChannel.dmUserId)}
-              onToggleVip={handleToggleVip}
-              jumpMessageId={jumpMessageId}
-              scrollToBottomTarget={scrollToBottomTarget}
-              canJumpToForward={canJumpToForward}
-              onJumpToMessage={handleJumpToMessage}
-              onJumpConsumed={() => setJumpMessageId(null)}
-              onAddCustomEmoji={() => setShowAddEmoji(true)}
-              onAddPeople={() => setShowAddPeople(true)}
-              onPromoteManager={handlePromoteManager}
-              onRemoveMember={handleRemoveMember}
-              onLeave={handleLeaveChannel}
-              onDeleteChannel={handleDeleteChannel}
-              onChangeVisibility={handleChangeVisibility}
-              onChannelUpdated={upsertChannel}
-              onJoin={handleJoinChannel}
-              onRead={handleRead}
-              onThreadRead={clearThreadActivity}
-              openThreadId={
-                openThreadReq && openThreadReq.channelId === activeChannel.id ? openThreadReq.rootId : null
-              }
-              openThreadJumpMessageId={
-                openThreadReq && openThreadReq.channelId === activeChannel.id ? openThreadReq.messageId : null
-              }
-              onThreadOpened={() => setOpenThreadReq(null)}
-            />
-          ) : (
-            <div className="empty-pane">
-              {view === "dms" ? "Select a conversation, or start a new one." : "Search to start a conversation."}
-            </div>
-          )}
-        </div>
+        <WorkspaceContent
+          view={view}
+          onOpenNavigation={() => setNavOpen(true)}
+          search={{
+            inputRef: searchRef,
+            query: searchQuery,
+            channels: visibleChannels,
+            myChannelIds,
+            recents,
+            onPickChannel: handlePickChannel,
+            onFindChannels: findPublicChannels,
+            onPickUser: handlePickUser,
+            onAddPeople: () => setShowAddPeople(true),
+            onSearchMessages: handleSearchMessages,
+            onJump: handleSearchJump,
+            onClose: () => {
+              searchRef.current?.clear();
+              setSearchQuery(null);
+            },
+          }}
+          browse={{
+            joinedIds: myPublicChannelIdSet,
+            hiddenIds: hidden,
+            onOpen: (channel) => {
+              handlePickChannel(channel);
+              setNavOpen(false);
+            },
+            onJoin: handleJoinChannel,
+            onCreate: () => setShowCreate(true),
+            onCatalog: cacheCatalogChannels,
+            onCounts: setCatalogCounts,
+          }}
+          feeds={{
+            user,
+            users,
+            emojis,
+            onJump: handleJump,
+            onActivityLoaded: syncActivity,
+            onUnsave: (id) => setSavedIds((previous) => {
+              const next = new Set(previous);
+              next.delete(id);
+              return next;
+            }),
+          }}
+          conversation={{
+            channel: activeChannel,
+            recoveryEpoch,
+            cachedMessages: activeChannel ? messageCache[activeChannel.id] || null : null,
+            initialScrollState: activeInitialScrollState,
+            hasUnread: activeUnreadCount > 0,
+            user,
+            users,
+            channels: visibleChannels,
+            dms,
+            customEmojis: emojis,
+            mode,
+            savedIds,
+            onToggleSave: handleToggleSave,
+            onCacheMessages: cacheMessages,
+            onRememberScroll: rememberScrollState,
+            onScrollToBottomTargetConsumed: clearScrollToBottomTarget,
+            onOpenProfile: openProfile,
+            onOpenChannel: handleOpenChannelTag,
+            onOpenForwardedDm: (target, channel) => handleOpenDm(target, false, "dms", channel),
+            onToast: setToast,
+            onDmsChanged: refreshDms,
+            isVip: activeChannel?.type === "dm" && vipIds.has(activeChannel.dmUserId),
+            onToggleVip: handleToggleVip,
+            jumpMessageId,
+            scrollToBottomTarget,
+            canJumpToForward,
+            onJumpToMessage: handleJumpToMessage,
+            onJumpConsumed: () => setJumpMessageId(null),
+            onAddCustomEmoji: () => setShowAddEmoji(true),
+            onAddPeople: () => setShowAddPeople(true),
+            onPromoteManager: handlePromoteManager,
+            onRemoveMember: handleRemoveMember,
+            onLeave: handleLeaveChannel,
+            onDeleteChannel: handleDeleteChannel,
+            onChangeVisibility: handleChangeVisibility,
+            onChannelUpdated: upsertChannel,
+            onJoin: handleJoinChannel,
+            onRead: handleRead,
+            onThreadRead: clearThreadActivity,
+            openThreadId: activeChannel && openThreadReq?.channelId === activeChannel.id ? openThreadReq.rootId : null,
+            openThreadJumpMessageId: activeChannel && openThreadReq?.channelId === activeChannel.id ? openThreadReq.messageId : null,
+            onThreadOpened: () => setOpenThreadReq(null),
+          }}
+        />
       </div>
-      {showCreate && (
-        <CreateChannelModal onCreate={handleCreateChannel} onClose={() => setShowCreate(false)} />
-      )}
-      {showAddPeople && activeChannel && activeChannel.type !== "dm" &&
-        (activeChannel.name || "").toLowerCase() !== "general" && (
-        <AddPeopleModal
-          channel={activeChannel}
-          users={users}
-          onAdd={handleAddMember}
-          onClose={() => setShowAddPeople(false)}
-        />
-      )}
-      {showAddEmoji && (
-        <AddEmojiModal
-          existing={[...BUILT_IN_GIT_EMOJIS, ...customEmojis]}
-          onCreated={handleEmojiCreated}
-          onClose={() => setShowAddEmoji(false)}
-        />
-      )}
-      {showSettings && (
-        <SettingsModal
-          user={user}
-          users={users}
-          theme={theme}
-          themes={THEMES}
-          onSelectTheme={setTheme}
-          mode={mode}
-          onSelectMode={setMode}
-          onUpdated={(updated) => setUser((prev) => ({ ...prev, ...updated }))}
-          onClose={closeSettings}
-          onReplayTour={() => {
-            closeSettings();
-            setNavOpen(false);
-            setShowTour(true);
-          }}
-        />
-      )}
-      {showApiDocs && <ApiDocsPage onClose={closeApiDocs} />}
-      {profileUser && (
-        <UserProfileModal
-          user={profileUser}
-          currentUserId={user.id}
-          online={onlineIds.has(profileUser.id)}
-          isVip={vipIds.has(profileUser.id)}
-          onToggleVip={() => handleToggleVip(profileUser.id)}
-          onMessage={(u) => {
-            setProfileUser(null);
-            handleOpenDm(u);
-          }}
-          onClose={() => setProfileUser(null)}
-        />
-      )}
-      {showTour && <Walkthrough onClose={finishTour} />}
-      {toast && (
-        <div className="toast" role="status" onClick={() => setToast(null)}>
-          {toast}
-        </div>
-      )}
+      <WorkspaceOverlays
+        user={user}
+        users={users}
+        activeChannel={activeChannel}
+        customEmojis={customEmojis}
+        onlineIds={onlineIds}
+        vipIds={vipIds}
+        theme={theme}
+        themes={THEMES}
+        mode={mode}
+        showCreate={showCreate}
+        showAddPeople={showAddPeople}
+        showAddEmoji={showAddEmoji}
+        showSettings={showSettings}
+        showApiDocs={showApiDocs}
+        profileUser={profileUser}
+        showTour={showTour}
+        toast={toast}
+        onCreateChannel={handleCreateChannel}
+        onAddMember={handleAddMember}
+        onEmojiCreated={handleEmojiCreated}
+        onSelectTheme={setTheme}
+        onSelectMode={setMode}
+        onUserUpdated={(updated) => setUser((previous) => ({ ...previous, ...updated }))}
+        onToggleVip={handleToggleVip}
+        onOpenDm={(target) => {
+          setProfileUser(null);
+          handleOpenDm(target);
+        }}
+        onReplayTour={() => {
+          closeSettings();
+          setNavOpen(false);
+          setShowTour(true);
+        }}
+        onFinishTour={finishTour}
+        onClose={{
+          create: () => setShowCreate(false),
+          addPeople: () => setShowAddPeople(false),
+          addEmoji: () => setShowAddEmoji(false),
+          settings: closeSettings,
+          apiDocs: closeApiDocs,
+          profile: () => setProfileUser(null),
+          toast: () => setToast(null),
+        }}
+      />
     </div>
   );
 }

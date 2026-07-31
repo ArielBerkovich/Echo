@@ -1,5 +1,5 @@
 import Avatar from "./Avatar.js";
-import Modal from "./Modal.js";
+import Modal, { ModalActions } from "./Modal.js";
 
 // "Add to #channel?" prompt shown when a message @-mentions people who aren't
 // in the (private) channel. Purely presentational — state lives in useMentionGate.
@@ -23,14 +23,14 @@ export default function MentionAddModal({ prompt, channelName, adding, error, on
         ))}
       </div>
       {error && <div className="error">{error}</div>}
-      <div className="modal-actions">
+      <ModalActions>
         <button type="button" className="btn-secondary" onClick={onSendAnyway} disabled={adding}>
           Send without adding
         </button>
         <button type="button" className="btn-primary" onClick={onAdd} disabled={adding}>
           {adding ? "Adding…" : n === 1 ? "Add & send" : `Add ${n} & send`}
         </button>
-      </div>
+      </ModalActions>
     </Modal>
   );
 }

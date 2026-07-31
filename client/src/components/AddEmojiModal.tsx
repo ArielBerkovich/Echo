@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { api } from "../api.js";
-import Modal from "./Modal.js";
+import Modal, { ModalActions } from "./Modal.js";
 import { emojiNameSchema, normalizeEmojiNameInput } from "../lib/formSchemas.js";
 import { uploadSizeError } from "../lib/uploads.js";
 
@@ -125,14 +125,14 @@ export default function AddEmojiModal({ existing = [], onCreated, onClose }) {
 
         {serverError && <div className="error">{serverError}</div>}
 
-        <div className="modal-actions">
+        <ModalActions>
           <button type="button" className="btn-secondary" data-testid="emoji-cancel" onClick={onClose}>
             Cancel
           </button>
           <button type="submit" className="btn-primary" data-testid="emoji-submit" disabled={isSubmitting}>
             {isSubmitting ? "Saving…" : "Add emoji"}
           </button>
-        </div>
+        </ModalActions>
       </form>
     </Modal>
   );

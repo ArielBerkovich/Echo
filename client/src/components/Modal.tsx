@@ -1,7 +1,23 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 
-export default function Modal({ title, className = "", closeLabel = "Close", closeDisabled = false, onClose, children }) {
+export function ModalActions({ children, className = "" }) {
+  return <div className={`modal-actions${className ? ` ${className}` : ""}`}>{children}</div>;
+}
+
+export default function Modal({
+  title,
+  className = "",
+  closeLabel = "Close",
+  closeClassName = "",
+  closeTestId,
+  closeDisabled = false,
+  showHeader = true,
+  testId,
+  onClose,
+  children,
+}) {
   const modalRef = useRef(null);
+  const titleId = useId();
   const restoreFocusRef = useRef(typeof document !== "undefined" ? document.activeElement : null);
   const onCloseRef = useRef(onClose);
   const closeDisabledRef = useRef(closeDisabled);
@@ -46,21 +62,36 @@ export default function Modal({ title, className = "", closeLabel = "Close", clo
   }, []);
 
   return (
-    <div className="modal-backdrop" onMouseDown={onClose}>
+    <div className="modal-backdrop" onMouseDown={() => !closeDisabled && onClose()}>
       <div
         ref={modalRef}
         className={`modal${className ? ` ${className}` : ""}`}
+        data-testid={testId}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="modal-title"
+        aria-labelledby={showHeader ? titleId : undefined}
+        aria-label={showHeader ? undefined : title}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="modal-header">
-          <h2 id="modal-title">{title}</h2>
-          <button type="button" className="modal-close" onClick={onClose} aria-label={closeLabel} disabled={closeDisabled}>
+        {showHeader ? (
+          <div className="modal-header">
+            <h2 id={titleId}>{title}</h2>
+            <button type="button" className="modal-close" onClick={onClose} aria-label={closeLabel} disabled={closeDisabled}>
+              ✕
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className={`modal-close${closeClassName ? ` ${closeClassName}` : ""}`}
+            data-testid={closeTestId}
+            onClick={onClose}
+            aria-label={closeLabel}
+            disabled={closeDisabled}
+          >
             ✕
           </button>
-        </div>
+        )}
         {children}
       </div>
     </div>

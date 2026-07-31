@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Placeholder from "@tiptap/extension-placeholder";
 import { api } from "../api.js";
 import { getSocket } from "../socket.js";
 import { htmlToMarkdown } from "../htmlToMarkdown.js";
 import { markdownTextToComposerHtml } from "../markdownPaste.js";
 import { formatSize } from "../lib/format.js";
 import { formatDateTime } from "../lib/time.js";
-import { uploadSizeError } from "../lib/uploads.js";
+import { useAttachments } from "../lib/useAttachments.js";
 import Avatar from "./Avatar.js";
 import EmojiPicker from "./EmojiPicker.js";
-import Modal from "./Modal.js";
+import Modal, { ModalActions } from "./Modal.js";
 import { useMentionGate } from "../lib/useMentionGate.js";
 import {
   LinkIcon, OrderedListIcon, BulletListIcon, QuoteIcon, CodeIcon, CodeBlockIcon,
@@ -26,16 +29,10 @@ const SCHEDULE_PRESETS = [
 // a `key={channel.id}` so switching channels yields a fresh, empty composer.
 export default function Composer({ channel, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, mode = "light", captureScreenDrops = false }) {
   const isThread = !!parentId; // a thread reply composer (hides channel-level scheduling)
-  const [empty, setEmpty] = useState(true); // editor blank? (controls placeholder)
-  const [canSend, setCanSend] = useState(false); // has real text? (controls send)
-  const [mention, setMention] = useState(null); // { query, node, start } or null
+  const [mention, setMention] = useState(null); // { trigger, query, from, to } or null
   const [activeIdx, setActiveIdx] = useState(0);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [showFormatting, setShowFormatting] = useState(true);
-  const [active, setActive] = useState({}); // which inline formats are on at the caret
-  const [pending, setPending] = useState([]); // uploaded attachments staged for the next send
-  const [uploading, setUploading] = useState(false);
-  const [draggingFiles, setDraggingFiles] = useState(false);
   const [linkDraft, setLinkDraft] = useState(null); // { text, url } for the link dialog
   // Guards sends that @-mention non-members of a private channel.
   const { gate, mentionModal } = useMentionGate({ channel, users, onChannelUpdated });
@@ -46,16 +43,66 @@ export default function Composer({ channel, parentId = null, users = [], channel
   const [showScheduled, setShowScheduled] = useState(false); // manage-scheduled modal
   const [editingSched, setEditingSched] = useState(null); // { id, body, at } being edited
 
-  const editorRef = useRef(null);
-  const fileInputRef = useRef(null);
-  const savedRange = useRef(null); // last caret position inside the editor
+  const keyDownHandlerRef = useRef(null);
+  const pasteHandlerRef = useRef(null);
   const typingActiveRef = useRef(false); // are we currently flagged as typing?
   const typingStopRef = useRef(null); // timer that clears the typing flag
-  const pendingRef = useRef([]); // latest staged attachments, used for cleanup on unmount
-  const dragDepthRef = useRef(0); // nested dragenter/leaves across the window
-  const stageFilesRef = useRef(null); // current upload callback for stable window listeners
+  const {
+    pending,
+    uploading,
+    draggingFiles,
+    fileInputRef,
+    stageFiles,
+    onPickFiles,
+    removePending,
+    clearAttachments,
+  } = useAttachments({ captureScreenDrops, onError });
 
   const isDm = channel.type === "dm";
+  const placeholder = isThread
+    ? "Reply to thread…"
+    : isDm
+      ? `Message ${channel.dmName}`
+      : `Message #${channel.name}`;
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
+      Placeholder.configure({ placeholder }),
+    ],
+    editorProps: {
+      attributes: {
+        class: "composer-editor is-empty",
+        "data-testid": "composer-editor",
+        "data-placeholder": placeholder,
+        role: "textbox",
+        "aria-multiline": "true",
+        dir: "auto",
+      },
+      handleKeyDown: (_view, event) => {
+        keyDownHandlerRef.current?.(event);
+        return event.defaultPrevented;
+      },
+      handlePaste: (_view, event) => {
+        pasteHandlerRef.current?.(event);
+        return event.defaultPrevented;
+      },
+    },
+    onCreate: ({ editor: currentEditor }) => syncEditorState(currentEditor),
+    onUpdate: ({ editor: currentEditor }) => syncEditorState(currentEditor),
+    onSelectionUpdate: ({ editor: currentEditor }) => syncMentionContext(currentEditor),
+  }, [channel.id, parentId, placeholder]);
+  const editorState = useEditorState({
+    editor,
+    selector: ({ editor: currentEditor }) => ({
+      canSend: currentEditor.getText().trim().length > 0,
+      bold: currentEditor.isActive("bold"),
+      italic: currentEditor.isActive("italic"),
+      strikethrough: currentEditor.isActive("strike"),
+      ul: currentEditor.isActive("bulletList"),
+      ol: currentEditor.isActive("orderedList"),
+    }),
+  });
+  const { canSend = false, ...active } = editorState || {};
 
   // Tell others we're typing (throttled), and auto-clear after a short pause.
   function signalTyping() {
@@ -75,13 +122,6 @@ export default function Composer({ channel, parentId = null, users = [], channel
   }
   // Stop signalling when the composer unmounts (e.g. switching channels).
   useEffect(() => stopTyping, []);
-  useEffect(() => {
-    pendingRef.current = pending;
-  }, [pending]);
-  useEffect(() => () => {
-    pendingRef.current.forEach(revokePreviewUrl);
-  }, []);
-
   // Load pending scheduled messages for this channel (for the banner + manager).
   function refreshScheduled() {
     api
@@ -124,221 +164,29 @@ export default function Composer({ channel, parentId = null, users = [], channel
     return [...specials, ...people].slice(0, 8);
   }, [mention, users, channels, isDm]);
 
-  // ---- file attachments ----
-  function readImageSize(file) {
-    return new Promise((resolve) => {
-      if (!file.type.startsWith("image/")) return resolve(null);
-      const url = URL.createObjectURL(file);
-      const img = new Image();
-      img.onload = () => {
-        resolve({ width: img.naturalWidth, height: img.naturalHeight });
-        URL.revokeObjectURL(url);
-      };
-      img.onerror = () => {
-        resolve(null);
-        URL.revokeObjectURL(url);
-      };
-      img.src = url;
+  // ---- Tiptap editor integration ----
+
+  function syncEditorState(currentEditor) {
+    const hasText = currentEditor.getText().trim().length > 0;
+    currentEditor.view.dom.classList.toggle("is-empty", currentEditor.isEmpty);
+    hasText ? signalTyping() : stopTyping();
+    syncMentionContext(currentEditor);
+  }
+
+  function syncMentionContext(currentEditor) {
+    const { selection } = currentEditor.state;
+    if (!selection.empty) return setMention(null);
+    const { $from, from } = selection;
+    const before = $from.parent.textBetween(0, $from.parentOffset, "\n", "\0");
+    const match = before.match(/(?:^|\s)([@#])([\w.-]*)$/);
+    if (!match) return setMention(null);
+    setMention({
+      trigger: match[1],
+      query: match[2],
+      from: from - match[2].length - 1,
+      to: from,
     });
-  }
-
-  function makePendingAttachment(file) {
-    const isImage = file.type.startsWith("image/");
-    const tempId = crypto.randomUUID();
-    return {
-      key: tempId,
-      tempId,
-      name: file.name,
-      size: file.size,
-      contentType: file.type || "application/octet-stream",
-      isImage,
-      previewUrl: isImage ? URL.createObjectURL(file) : null,
-    };
-  }
-
-  function revokePreviewUrl(att) {
-    if (att?.previewUrl?.startsWith("blob:")) {
-      URL.revokeObjectURL(att.previewUrl);
-    }
-  }
-
-  async function stageFiles(files) {
-    if (files.length === 0) return;
-    onError?.(null);
-    const sizeError = uploadSizeError(files);
-    if (sizeError) {
-      onError?.(sizeError);
-      return;
-    }
-    const staged = files.map(makePendingAttachment);
-    setPending((prev) => [...prev, ...staged]);
-    setUploading(true);
-    try {
-      const dims = await Promise.all(files.map(readImageSize));
-      const { attachments } = await api.uploadFiles(files);
-      const withDims = attachments.map((a, i) => ({ ...a, width: dims[i]?.width, height: dims[i]?.height }));
-      const uploadedByTempId = new Map(
-        staged.map((a, i) => [
-          a.tempId,
-          {
-            ...(withDims[i] || {}),
-            previewUrl: a.previewUrl,
-            tempId: a.tempId,
-          },
-        ])
-      );
-      setPending((prev) => prev.map((a) => uploadedByTempId.get(a.tempId) || a));
-    } catch (err) {
-      staged.forEach(revokePreviewUrl);
-      setPending((prev) => prev.filter((a) => !staged.some((s) => s.tempId === a.tempId)));
-      onError?.(err.message);
-    } finally {
-      setUploading(false);
-    }
-  }
-  stageFilesRef.current = stageFiles;
-
-  function onPickFiles(e) {
-    const files = Array.from(e.target.files || []);
-    e.target.value = ""; // allow re-picking the same file later
-    stageFiles(files);
-  }
-
-  useEffect(() => {
-    if (!captureScreenDrops) {
-      dragDepthRef.current = 0;
-      setDraggingFiles(false);
-      return undefined;
-    }
-
-    const hasFiles = (event) => Array.from(event.dataTransfer?.types || []).includes("Files");
-    const onDragEnter = (event) => {
-      if (!hasFiles(event)) return;
-      event.preventDefault();
-      dragDepthRef.current += 1;
-      setDraggingFiles(true);
-    };
-    const onDragOver = (event) => {
-      if (!hasFiles(event)) return;
-      event.preventDefault();
-      event.dataTransfer.dropEffect = "copy";
-    };
-    const clearDrag = () => {
-      dragDepthRef.current = 0;
-      setDraggingFiles(false);
-    };
-    const onDragLeave = (event) => {
-      if (!hasFiles(event) || dragDepthRef.current === 0) return;
-      event.preventDefault();
-      dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
-      if (dragDepthRef.current === 0) setDraggingFiles(false);
-    };
-    const onDrop = (event) => {
-      if (!hasFiles(event)) return;
-      event.preventDefault();
-      const files = Array.from(event.dataTransfer.files || []);
-      clearDrag();
-      stageFilesRef.current?.(files);
-    };
-
-    window.addEventListener("dragenter", onDragEnter, true);
-    window.addEventListener("dragover", onDragOver, true);
-    window.addEventListener("dragleave", onDragLeave, true);
-    window.addEventListener("drop", onDrop, true);
-    window.addEventListener("dragend", clearDrag, true);
-    return () => {
-      dragDepthRef.current = 0;
-      window.removeEventListener("dragenter", onDragEnter, true);
-      window.removeEventListener("dragover", onDragOver, true);
-      window.removeEventListener("dragleave", onDragLeave, true);
-      window.removeEventListener("drop", onDrop, true);
-      window.removeEventListener("dragend", clearDrag, true);
-    };
-  }, [captureScreenDrops]);
-
-  function removePending(key) {
-    setPending((prev) => {
-      const removed = prev.find((a) => a.key === key);
-      revokePreviewUrl(removed);
-      return prev.filter((a) => a.key !== key);
-    });
-  }
-
-  // ---- editor: caret tracking, mentions, formatting ----
-
-  // Remember the caret position so emoji inserts land there even after focus
-  // moves to the (focus-stealing) emoji picker.
-  function saveSelection() {
-    const sel = window.getSelection();
-    if (sel && sel.rangeCount) {
-      const r = sel.getRangeAt(0);
-      if (editorRef.current?.contains(r.commonAncestorContainer)) {
-        savedRange.current = r.cloneRange();
-      }
-    }
-  }
-
-  // Reflect which inline formats are active at the caret (for toolbar highlights).
-  function syncActive() {
-    saveSelection();
-    try {
-      setActive({
-        bold: document.queryCommandState("bold"),
-        italic: document.queryCommandState("italic"),
-        strikethrough: document.queryCommandState("strikeThrough"),
-        ul: document.queryCommandState("insertUnorderedList"),
-        ol: document.queryCommandState("insertOrderedList"),
-      });
-    } catch {
-      /* queryCommandState unsupported — ignore */
-    }
-  }
-
-  // Find a person mention or public channel tag being typed at the caret.
-  function getMentionContext() {
-    const sel = window.getSelection();
-    if (!sel || !sel.rangeCount) return null;
-    const range = sel.getRangeAt(0);
-    const node = range.startContainer;
-    if (node.nodeType !== Node.TEXT_NODE) return null;
-    const before = node.textContent.slice(0, range.startOffset);
-    const m = before.match(/(?:^|\s)([@#])([\w.-]*)$/);
-    if (!m) return null;
-    return {
-      trigger: m[1],
-      query: m[2],
-      node,
-      start: range.startOffset - m[2].length - 1,
-    };
-  }
-
-  // Blank only when there's no text AND no structural content (lists, code,
-  // quotes) — so clicking a list/quote button hides the placeholder.
-  function isEditorEmpty(el) {
-    if (!el) return true;
-    if (el.textContent.trim() !== "") return false;
-    return !el.querySelector("li, pre, blockquote, img");
-  }
-
-  function handleInput() {
-    const el = editorRef.current;
-    const hasText = !!el && el.textContent.trim() !== "";
-    const emptyNow = isEditorEmpty(el);
-    if (emptyNow && el) {
-      el.replaceChildren();
-    }
-    setEmpty(emptyNow);
-    setCanSend(hasText);
-    if (hasText) signalTyping();
-    else stopTyping();
-    const ctx = getMentionContext();
-    if (ctx) {
-      setMention(ctx);
-      setActiveIdx(0);
-    } else {
-      setMention(null);
-    }
-    syncActive();
+    setActiveIdx(0);
   }
 
   function handlePaste(e) {
@@ -355,222 +203,22 @@ export default function Composer({ channel, parentId = null, users = [], channel
     const text = e.clipboardData?.getData("text/plain");
     if (!text) return;
     e.preventDefault();
-    document.execCommand("insertHTML", false, markdownTextToComposerHtml(text));
-    handleInput();
+    editor?.commands.insertContent(markdownTextToComposerHtml(text));
   }
 
   function applyMention(picked) {
-    if (!mention) return;
-    const { node, start, query } = mention;
-    const full = node.textContent;
-    const before = full.slice(0, start);
-    const after = full.slice(start + 1 + query.length);
+    if (!mention || !editor) return;
     const value = mention.trigger === "#" ? `#${picked.name}` : `@${picked.username}`;
-    node.textContent = `${before}${value} ${after}`;
-
-    const pos = before.length + value.length + 1;
-    const range = document.createRange();
-    range.setStart(node, Math.min(pos, node.textContent.length));
-    range.collapse(true);
-    const sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
-
+    editor.chain().focus().insertContentAt({ from: mention.from, to: mention.to }, `${value} `).run();
     setMention(null);
-    setEmpty(false);
-    editorRef.current?.focus();
-  }
-
-  // True when the caret sits inside any list (ordered or bulleted).
-  function caretInList() {
-    return !!findListAncestor(window.getSelection()?.anchorNode);
-  }
-
-  // ---- toolbar commands (operate on the live selection in the editor) ----
-  function exec(cmd, value = null) {
-    editorRef.current?.focus();
-    document.execCommand(cmd, false, value);
-    handleInput();
-  }
-
-  // Walk up from a node to the enclosing <code>/<pre>, if any (else null).
-  function findCodeAncestor(node) {
-    for (; node && node !== editorRef.current; node = node.parentNode) {
-      if (node.nodeType === 1 && (node.tagName === "CODE" || node.tagName === "PRE")) return node;
-    }
-    return null;
-  }
-
-  // Walk up from a node to the enclosing <ul>/<ol>, if any (else null).
-  function findListAncestor(node) {
-    for (; node && node !== editorRef.current; node = node.parentNode) {
-      if (node.nodeType === 1 && (node.tagName === "UL" || node.tagName === "OL")) return node;
-    }
-    return null;
-  }
-
-  // Remove a code section, turning it back into plain text (newlines → <br>).
-  function unwrapCode(el) {
-    const container =
-      el.tagName === "CODE" && el.parentNode?.tagName === "PRE" ? el.parentNode : el;
-    const text = container.textContent.replace(/​/g, "");
-    const frag = document.createDocumentFragment();
-    text.split("\n").forEach((line, i) => {
-      if (i > 0) frag.appendChild(document.createElement("br"));
-      frag.appendChild(document.createTextNode(line));
-    });
-    if (!frag.childNodes.length) frag.appendChild(document.createTextNode(""));
-    const parent = container.parentNode;
-    const last = frag.lastChild;
-    parent.replaceChild(frag, container);
-    const range = document.createRange();
-    range.setStartAfter(last);
-    range.collapse(true);
-    const sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
-    handleInput();
-  }
-
-  // Drop a single trailing newline from a code element (the blank line the first
-  // Enter left behind, removed when a quick second Enter exits the block).
-  function trimTrailingNewline(el) {
-    let node = el;
-    while (node && node.lastChild) node = node.lastChild;
-    if (node && node.nodeType === Node.TEXT_NODE && node.textContent.endsWith("\n")) {
-      node.textContent = node.textContent.replace(/\n$/, "");
-    }
-  }
-
-  // Insert a visible line break at the caret (used inside list items).
-  function insertLineBreakAtCaret() {
-    const sel = window.getSelection();
-    if (!sel.rangeCount) return;
-    const range = sel.getRangeAt(0);
-    range.deleteContents();
-    const br = document.createElement("br");
-    const spacer = document.createTextNode("​");
-    range.insertNode(br);
-    br.after(spacer);
-    const after = document.createRange();
-    after.setStartAfter(spacer);
-    after.collapse(true);
-    sel.removeAllRanges();
-    sel.addRange(after);
-    handleInput();
-  }
-
-  // Insert a visible line break inside code without letting contenteditable
-  // split the block into a new paragraph/pre wrapper.
-  function insertCodeNewlineAtCaret() {
-    const sel = window.getSelection();
-    if (!sel.rangeCount) return;
-    const range = sel.getRangeAt(0);
-    if (!range.collapsed) range.deleteContents();
-
-    const node = range.startContainer;
-    const offset = range.startOffset;
-    if (node.nodeType === Node.TEXT_NODE) {
-      const tail = node.splitText(offset);
-      const br = document.createElement("br");
-      const spacer = document.createTextNode("​");
-      node.parentNode.insertBefore(br, tail);
-      node.parentNode.insertBefore(spacer, tail);
-      const after = document.createRange();
-      after.setStartAfter(spacer);
-      after.collapse(true);
-      sel.removeAllRanges();
-      sel.addRange(after);
-      handleInput();
-      return;
-    }
-
-    const br = document.createElement("br");
-    const spacer = document.createTextNode("​");
-    range.insertNode(br);
-    br.after(spacer);
-    const after = document.createRange();
-    after.setStartAfter(spacer);
-    after.collapse(true);
-    sel.removeAllRanges();
-    sel.addRange(after);
-    handleInput();
-  }
-
-  // Leave a code section: trim the trailing blank line and drop the caret into a
-  // fresh normal line right after the block.
-  function exitCode(container) {
-    trimTrailingNewline(container);
-    const line = document.createElement("div");
-    line.appendChild(document.createElement("br"));
-    container.parentNode.insertBefore(line, container.nextSibling);
-    const range = document.createRange();
-    range.setStart(line, 0);
-    range.collapse(true);
-    const sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
-    handleInput();
-  }
-
-  function wrapCode(block) {
-    editorRef.current?.focus();
-    const sel = window.getSelection();
-    if (!sel || !sel.rangeCount) return;
-
-    // Toggle: clicking Code while the caret is already inside a code section
-    // removes the formatting (rather than nesting code inside code).
-    const existing = findCodeAncestor(sel.anchorNode);
-    if (existing) {
-      unwrapCode(existing);
-      return;
-    }
-
-    // With a selection, wrap it. With none, insert an empty code element and
-    // drop the caret inside it (using a zero-width space so the element doesn't
-    // collapse) — so the user types their own code rather than the word "code".
-    if (!sel.isCollapsed) {
-      const safe = sel.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-      const html = block ? `<pre><code>${safe}</code></pre><p><br></p>` : `<code>${safe}</code>&nbsp;`;
-      document.execCommand("insertHTML", false, html);
-      handleInput();
-      return;
-    }
-
-    const range = sel.getRangeAt(0);
-    const zwsp = document.createTextNode("​");
-    const code = document.createElement("code");
-    code.appendChild(zwsp);
-    if (block) {
-      const pre = document.createElement("pre");
-      pre.appendChild(code);
-      range.insertNode(pre);
-    } else {
-      range.insertNode(code);
-    }
-    const caret = document.createRange();
-    caret.setStart(zwsp, 1); // just after the zero-width space, inside the code
-    caret.collapse(true);
-    sel.removeAllRanges();
-    sel.addRange(caret);
-    handleInput();
   }
 
   // Open a small dialog to add a hyperlink (replaces the clunky window.prompt).
   // Prefills the label from any selected text and remembers the caret position.
   function openLinkDialog() {
-    saveSelection();
-    const sel = window.getSelection();
-    const text = sel && !sel.isCollapsed ? sel.toString() : "";
-    setLinkDraft({ text, url: "" });
-  }
-
-  function escapeHtmlAttr(s) {
-    return String(s)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
+    if (!editor) return;
+    const { from, to } = editor.state.selection;
+    setLinkDraft({ text: editor.state.doc.textBetween(from, to), url: "", from, to });
   }
 
   function confirmLink() {
@@ -579,35 +227,19 @@ export default function Composer({ channel, parentId = null, users = [], channel
     if (!url) return;
     const href = /^(https?:\/\/|mailto:)/i.test(url) ? url : `https://${url}`;
     const label = (linkDraft.text.trim() || url).trim();
-    const el = editorRef.current;
-    el?.focus();
-    // Restore the caret/selection we had before the dialog stole focus.
-    const sel = window.getSelection();
-    if (savedRange.current) {
-      sel.removeAllRanges();
-      sel.addRange(savedRange.current);
-    }
-    document.execCommand(
-      "insertHTML",
-      false,
-      `<a href="${escapeHtmlAttr(href)}">${escapeHtmlAttr(label)}</a>&nbsp;`
-    );
+    editor?.chain()
+      .focus()
+      .insertContentAt(
+        { from: linkDraft.from, to: linkDraft.to },
+        { type: "text", text: `${label} `, marks: [{ type: "link", attrs: { href } }] }
+      )
+      .run();
     setLinkDraft(null);
-    handleInput();
   }
 
   // Insert at the saved caret; keep the picker open for picking several.
   function insertEmoji(emoji) {
-    const el = editorRef.current;
-    el?.focus();
-    const sel = window.getSelection();
-    if (savedRange.current) {
-      sel.removeAllRanges();
-      sel.addRange(savedRange.current);
-    }
-    document.execCommand("insertText", false, emoji);
-    saveSelection();
-    handleInput();
+    editor?.chain().focus().insertContent(emoji).run();
   }
 
   function handleKeyDown(e) {
@@ -632,32 +264,24 @@ export default function Composer({ channel, parentId = null, users = [], channel
         return;
       }
     }
-    if (e.key === "Enter") {
-      const codeEl = findCodeAncestor(window.getSelection()?.anchorNode);
-      if (codeEl) {
+    if (e.key === "Enter" && editor) {
+      if (editor.isActive("codeBlock")) {
         e.preventDefault();
-        const pre =
-          codeEl.tagName === "PRE"
-            ? codeEl
-            : codeEl.parentNode?.tagName === "PRE"
-              ? codeEl.parentNode
-              : null;
-        // Code blocks keep Shift+Enter for a literal new line; Enter exits.
-        if (pre && e.shiftKey) insertCodeNewlineAtCaret();
-        else exitCode(pre || codeEl);
+        if (e.shiftKey) editor.chain().focus().insertContent("\n").run();
+        else editor.chain().focus().exitCode().run();
         return;
       }
-      const listEl = findListAncestor(window.getSelection()?.anchorNode);
-      if (listEl) {
+      if (editor.isActive("code")) {
         e.preventDefault();
-        if (e.shiftKey) insertLineBreakAtCaret();
-        else {
-          document.execCommand("insertParagraph");
-          handleInput();
-        }
+        editor.chain().focus().toggleCode().splitBlock().run();
         return;
       }
-      if (e.shiftKey) return; // newline in normal text
+      if (
+        e.shiftKey
+        || editor.isActive("bulletList")
+        || editor.isActive("orderedList")
+        || editor.isActive("blockquote")
+      ) return;
       e.preventDefault();
       handleSend();
     }
@@ -683,22 +307,15 @@ export default function Composer({ channel, parentId = null, users = [], channel
   function dismissMobileKeyboard() {
     if (!window.matchMedia("(max-width: 760px)").matches) return;
     requestAnimationFrame(() => {
-      editorRef.current?.blur();
+      editor?.commands.blur();
       const active = document.activeElement;
       if (active instanceof HTMLElement) active.blur();
     });
   }
 
   function resetComposer() {
-    pending.forEach(revokePreviewUrl);
-    if (editorRef.current) editorRef.current.innerHTML = "";
-    // A new message must not inherit the previous message's toolbar state or
-    // caret context (especially list, bold, and italic formatting).
-    savedRange.current = null;
-    setActive({});
-    setEmpty(true);
-    setCanSend(false);
-    setPending([]);
+    editor?.commands.clearContent(true);
+    clearAttachments();
     setMention(null);
     setEmojiOpen(false);
   }
@@ -728,13 +345,12 @@ export default function Composer({ channel, parentId = null, users = [], channel
       reportError("Pick a time in the future.");
       return;
     }
-    const el = editorRef.current;
-    const hasText = !!el && el.textContent.trim() !== "";
+    const hasText = !!editor && editor.getText().trim() !== "";
     if (!hasText && pending.length === 0) {
       reportError("Write a message before scheduling it.");
       return;
     }
-    const body = hasText ? htmlToMarkdown(el.innerHTML || "") : "";
+    const body = hasText ? htmlToMarkdown(editor.getHTML()) : "";
     try {
       if (inScheduleModal) setScheduleError(null);
       else onError?.(null);
@@ -756,8 +372,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
     onError?.(null);
     setScheduleError(null);
     setSendMenuOpen(false);
-    const el = editorRef.current;
-    const hasText = !!el && el.textContent.trim() !== "";
+    const hasText = !!editor && editor.getText().trim() !== "";
     if (!hasText && pending.length === 0) {
       onError?.("Write a message before scheduling it.");
       return;
@@ -819,11 +434,10 @@ export default function Composer({ channel, parentId = null, users = [], channel
 
   function handleSend(e) {
     e?.preventDefault();
-    const el = editorRef.current;
-    const hasText = !!el && el.textContent.trim() !== "";
+    const hasText = !!editor && editor.getText().trim() !== "";
     if (!hasText && pending.length === 0) return; // nothing to send
     if (uploading) return; // wait for in-flight uploads
-    const body = hasText ? htmlToMarkdown(el.innerHTML || "") : "";
+    const body = hasText ? htmlToMarkdown(editor.getHTML()) : "";
     const attachments = pending;
     const proceed = () => {
       stopTyping();
@@ -833,6 +447,9 @@ export default function Composer({ channel, parentId = null, users = [], channel
     if (gate(body, proceed)) return;
     proceed();
   }
+
+  keyDownHandlerRef.current = handleKeyDown;
+  pasteHandlerRef.current = handlePaste;
 
   const keepFocus = (e) => e.preventDefault();
 
@@ -901,7 +518,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
             }}
           />
           {scheduleError && <div className="error schedule-error" role="alert">{scheduleError}</div>}
-          <div className="modal-actions">
+          <ModalActions>
             <button
               type="button"
               className="btn-secondary"
@@ -915,7 +532,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
             <button type="button" className="btn-primary" onClick={confirmSchedule}>
               Schedule
             </button>
-          </div>
+          </ModalActions>
         </Modal>
       )}
 
@@ -1013,14 +630,14 @@ export default function Composer({ channel, parentId = null, users = [], channel
               }}
             />
           </label>
-          <div className="modal-actions">
+          <ModalActions>
             <button type="button" className="btn-secondary" onClick={() => setLinkDraft(null)}>
               Cancel
             </button>
             <button type="button" className="btn-primary" disabled={!linkDraft.url.trim()} onClick={confirmLink}>
               Add link
             </button>
-          </div>
+          </ModalActions>
         </Modal>
       )}
 
@@ -1088,13 +705,13 @@ export default function Composer({ channel, parentId = null, users = [], channel
 
       {showFormatting && (
         <div className="composer-toolbar">
-          <button type="button" className={`icon-btn fmt fmt-b ${active.bold ? "active" : ""}`} title="Bold" onMouseDown={keepFocus} onClick={() => exec("bold")}>
+          <button type="button" className={`icon-btn fmt fmt-b ${active.bold ? "active" : ""}`} title="Bold" onMouseDown={keepFocus} onClick={() => editor?.chain().focus().toggleBold().run()}>
             B
           </button>
-          <button type="button" className={`icon-btn fmt fmt-i ${active.italic ? "active" : ""}`} title="Italic" onMouseDown={keepFocus} onClick={() => exec("italic")}>
+          <button type="button" className={`icon-btn fmt fmt-i ${active.italic ? "active" : ""}`} title="Italic" onMouseDown={keepFocus} onClick={() => editor?.chain().focus().toggleItalic().run()}>
             I
           </button>
-          <button type="button" className={`icon-btn fmt fmt-s ${active.strikethrough ? "active" : ""}`} title="Strikethrough" onMouseDown={keepFocus} onClick={() => exec("strikeThrough")}>
+          <button type="button" className={`icon-btn fmt fmt-s ${active.strikethrough ? "active" : ""}`} title="Strikethrough" onMouseDown={keepFocus} onClick={() => editor?.chain().focus().toggleStrike().run()}>
             S
           </button>
           <span className="tb-sep" />
@@ -1102,48 +719,27 @@ export default function Composer({ channel, parentId = null, users = [], channel
             <LinkIcon />
           </button>
           <span className="tb-sep" />
-          <button type="button" className={`icon-btn ${active.ol ? "active" : ""}`} title="Ordered list" onMouseDown={keepFocus} onClick={() => exec("insertOrderedList")}>
+          <button type="button" className={`icon-btn ${active.ol ? "active" : ""}`} title="Ordered list" onMouseDown={keepFocus} onClick={() => editor?.chain().focus().toggleOrderedList().run()}>
             <OrderedListIcon />
           </button>
-          <button type="button" className={`icon-btn ${active.ul ? "active" : ""}`} title="Bulleted list" onMouseDown={keepFocus} onClick={() => exec("insertUnorderedList")}>
+          <button type="button" className={`icon-btn ${active.ul ? "active" : ""}`} title="Bulleted list" onMouseDown={keepFocus} onClick={() => editor?.chain().focus().toggleBulletList().run()}>
             <BulletListIcon />
           </button>
-          <button type="button" className="icon-btn" title="Blockquote" onMouseDown={keepFocus} onClick={() => exec("formatBlock", "blockquote")}>
+          <button type="button" className="icon-btn" title="Blockquote" onMouseDown={keepFocus} onClick={() => editor?.chain().focus().toggleBlockquote().run()}>
             <QuoteIcon />
           </button>
           <span className="tb-sep" />
-          <button type="button" className="icon-btn" title="Code" onMouseDown={keepFocus} onClick={() => wrapCode(false)}>
+          <button type="button" className="icon-btn" title="Code" onMouseDown={keepFocus} onClick={() => editor?.chain().focus().toggleCode().run()}>
             <CodeIcon />
           </button>
-          <button type="button" className="icon-btn" title="Code block" onMouseDown={keepFocus} onClick={() => wrapCode(true)}>
+          <button type="button" className="icon-btn" title="Code block" onMouseDown={keepFocus} onClick={() => editor?.chain().focus().toggleCodeBlock().run()}>
             <CodeBlockIcon />
           </button>
         </div>
       )}
 
       <div className="composer-input">
-        <div
-          ref={editorRef}
-          className={`composer-editor ${empty ? "is-empty" : ""}`}
-          data-testid="composer-editor"
-          data-placeholder={
-            isThread
-              ? "Reply to thread…"
-              : isDm
-                ? `Message ${channel.dmName}`
-                : `Message #${channel.name}`
-          }
-          contentEditable
-          suppressContentEditableWarning
-          role="textbox"
-          aria-multiline="true"
-          dir="auto"
-          onInput={handleInput}
-          onPaste={handlePaste}
-          onKeyDown={handleKeyDown}
-          onKeyUp={syncActive}
-          onMouseUp={syncActive}
-        />
+        <EditorContent editor={editor} />
         {(active.ul || active.ol) && (
           <div className="list-exit-hint" role="status">
             Press Enter on an empty item to finish the list.

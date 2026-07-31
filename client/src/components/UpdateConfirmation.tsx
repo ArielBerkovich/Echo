@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Modal from "./Modal.js";
+import Modal, { ModalActions } from "./Modal.js";
 
 let updateNoticeClaimed = false;
 
@@ -23,9 +23,9 @@ export default function UpdateConfirmation() {
   return (
     <Modal title="Echo was updated" className="update-confirmation-modal" onClose={() => setOpen(false)}>
       <p className="update-confirmation-version">Echo has been updated to version {appVersion}.</p>
-      <div className="modal-actions">
+      <ModalActions>
         <button type="button" className="btn-primary" onClick={() => setOpen(false)}>OK</button>
-      </div>
+      </ModalActions>
     </Modal>
   );
 }

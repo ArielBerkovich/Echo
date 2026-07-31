@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Avatar from "./Avatar.js";
-import Modal from "./Modal.js";
+import Modal, { ModalActions } from "./Modal.js";
 import { ShareIcon, XIcon } from "lucide-react";
 import { formatDateTime } from "../lib/time.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
@@ -283,7 +283,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
         <div className="forward-live-region" aria-live="polite">
           {error && <div className="error forward-error" role="alert">{error}</div>}
         </div>
-        <div className="forward-actions">
+        <ModalActions className="forward-actions">
           <button type="button" className="btn-secondary" onClick={onClose} disabled={status === "submitting"}>Cancel</button>
           <button
             type="button"
@@ -295,7 +295,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
           >
             {status === "submitting" ? "Forwarding…" : `Forward${selected.length ? ` to ${selected.length}` : ""}`}
           </button>
-        </div>
+        </ModalActions>
       </div>
     </Modal>
   );

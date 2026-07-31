@@ -10,6 +10,7 @@ async function workspaceAdminAuth(page) {
     data: { username: "admin", password: ADMIN_PASSWORD },
   });
   const body = await response.json().catch(() => ({}));
+  if (!response.ok() && !process.env.E2E_ADMIN_PASSWORD && !needsSetup) return null;
   expect(response.ok(), body.error || "failed to authenticate workspace admin").toBeTruthy();
   return body;
 }
@@ -46,6 +47,7 @@ test("forgot password requests admin help for the entered username", async ({ pa
 
 test("forgot password delivers Echo's one-time-password instructions to the admin", async ({ browser, page }) => {
   const admin = await workspaceAdminAuth(page);
+  test.skip(!admin, "Set E2E_ADMIN_PASSWORD to run admin-only coverage against an existing workspace");
   await requestAsToken(page, admin.token, "/users/me/onboarded", { method: "POST" });
   const selfReset = await page.request.post(`/api/admin/users/${admin.user.id}/reset-password`, {
     headers: { Authorization: `Bearer ${admin.token}` },
@@ -132,7 +134,7 @@ test("login displays server errors", async ({ page }) => {
 
   await page.getByLabel("Username").fill(username);
   await page.locator('input[name="password"]').fill("WrongPassword1");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
 
   await expect(page.getByText("That username or password doesn't look right.")).toBeVisible();
 });
