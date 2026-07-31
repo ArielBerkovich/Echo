@@ -1,26 +1,31 @@
-import { useMemo, useState } from "react";
-import { SearchIcon } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import Avatar from "./Avatar.js";
 import Composer from "./Composer.js";
 import Modal from "./Modal.js";
 
 export default function NewMessageModal({ currentUserId, users, customEmojis, mode, onPrepare, onStart, onClose }) {
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selected, setSelected] = useState(null);
   const [channel, setChannel] = useState(null);
   const [preparing, setPreparing] = useState(false);
   const [error, setError] = useState(null);
   const draftChannel = { id: "new-message-draft", type: "dm", dmName: selected?.displayName || "recipient" };
 
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query.trim()), 200);
+    return () => clearTimeout(timer);
+  }, [query]);
+
   const matches = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
+    const normalized = debouncedQuery.toLowerCase();
     return users
       .filter((user) => user.id !== currentUserId)
       .filter((user) => !normalized
         || user.displayName.toLowerCase().includes(normalized)
         || user.username.toLowerCase().includes(normalized))
       .slice(0, 20);
-  }, [currentUserId, query, users]);
+  }, [currentUserId, debouncedQuery, users]);
 
   async function select(user) {
     setSelected(user);
@@ -49,8 +54,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
     <Modal title="New message" className="new-message-modal" testId="new-message-modal" closeDisabled={preparing} onClose={onClose}>
         <div className="new-message-layout">
           <div className="new-message-picker">
-            <label className="new-message-search" data-testid="new-message-search">
-              <SearchIcon size={17} strokeWidth={1.8} aria-hidden="true" />
+            <label className="new-message-search people-filter" data-testid="new-message-search">
               <input
                 className="new-message-search-input"
                 data-testid="new-message-search-input"
@@ -67,7 +71,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
               />
             </label>
 
-            <div className="new-message-people" role="listbox" aria-label="People">
+            {debouncedQuery ? <div className="new-message-people" role="listbox" aria-label="People">
               {matches.length ? matches.map((user) => (
                 <button
                   type="button"
@@ -85,19 +89,10 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
                   </span>
                 </button>
               )) : <div className="people-empty">No people found.</div>}
-            </div>
+            </div> : null}
           </div>
 
           <div className={`new-message-compose ${channel ? "has-channel" : ""}`}>
-            {channel ? (
-              <div className="new-message-recipient">
-                <Avatar name={selected.displayName} src={selected.avatarUrl} size={32} />
-                <span className="person-info">
-                  <span className="person-name">{selected.displayName}</span>
-                  <span className="person-handle">@{selected.username}</span>
-                </span>
-              </div>
-            ) : null}
             {preparing ? <div className="people-empty">Opening conversation…</div> : null}
             <Composer
                 key={channel?.id || draftChannel.id}
