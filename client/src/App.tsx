@@ -1135,10 +1135,12 @@ export default function App() {
             />
           ) : activeChannel && (view === "home" || activeChannel.type === "dm") ? (
             <ChannelView
+              key={activeChannel.id}
               channel={activeChannel}
               recoveryEpoch={recoveryEpoch}
               cachedMessages={messageCache[activeChannel.id] || null}
               initialScrollState={activeInitialScrollState}
+              hasUnread={activeUnreadCount > 0}
               user={user}
               users={users}
               channels={visibleChannels}

@@ -135,8 +135,15 @@ function Lightbox({ src, name, onClose, inline = false }) {
 function ImageAttachment({ a, onOpenLightbox }) {
   const src = useAuthUrl(a.url);
   const [open, setOpen] = useState(false);
-  const ratio = a.width && a.height ? a.width / a.height : null;
-  if (!src) return null;
+  const [intrinsicSize, setIntrinsicSize] = useState(null);
+  const [loaded, setLoaded] = useState(false);
+  const sourceWidth = a.width || intrinsicSize?.width;
+  const sourceHeight = a.height || intrinsicSize?.height;
+  const ratio = sourceWidth && sourceHeight ? sourceWidth / sourceHeight : 16 / 9;
+  const scale = sourceWidth && sourceHeight
+    ? Math.min(1, 360 / sourceWidth, 320 / sourceHeight)
+    : 1;
+  const reservedWidth = sourceWidth ? Math.round(sourceWidth * scale) : 320;
 
   const handleClick = () => {
     if (onOpenLightbox) onOpenLightbox(src, a.name);
@@ -145,13 +152,28 @@ function ImageAttachment({ a, onOpenLightbox }) {
 
   return (
     <>
-      <button className="att-image" onClick={handleClick} title={a.name} style={{ cursor: "zoom-in" }}>
-        <img
-          src={src}
-          alt={a.name}
-          loading="lazy"
-          style={ratio ? { aspectRatio: String(ratio) } : undefined}
-        />
+      <button
+        className={`att-image${loaded ? " is-loaded" : " is-loading"}`}
+        onClick={handleClick}
+        title={a.name}
+        disabled={!src}
+        style={{ width: `${reservedWidth}px`, aspectRatio: String(ratio), cursor: src ? "zoom-in" : "default" }}
+      >
+        {src && (
+          <img
+            src={src}
+            alt={a.name}
+            loading="lazy"
+            onLoad={(event) => {
+              setIntrinsicSize({
+                width: event.currentTarget.naturalWidth,
+                height: event.currentTarget.naturalHeight,
+              });
+              setLoaded(true);
+            }}
+            onError={() => setLoaded(true)}
+          />
+        )}
       </button>
       {open && <Lightbox src={src} name={a.name} onClose={() => setOpen(false)} />}
     </>
