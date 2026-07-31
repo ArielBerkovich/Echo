@@ -6768,11 +6768,15 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
   outline-color: color-mix(in srgb, var(--accent) 22%, transparent);
   box-shadow: 0 5px 16px color-mix(in srgb, var(--accent) 14%, transparent);
 }
-.new-message-search input {
+.new-message-search .new-message-search-input,
+.new-message-search .new-message-search-input:focus,
+.new-message-search .new-message-search-input:focus-visible {
   width: 100%;
   padding: 10px 0;
-  border: 0;
-  outline: 0;
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0;
   background: transparent;
   color: var(--text);
 }

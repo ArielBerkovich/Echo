@@ -48,6 +48,7 @@ export default function NewMessageModal({ currentUserId, users, onStart, onClose
         <label className="new-message-search">
           <SearchIcon size={17} strokeWidth={1.8} aria-hidden="true" />
           <input
+            className="new-message-search-input"
             data-testid="new-message-search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
