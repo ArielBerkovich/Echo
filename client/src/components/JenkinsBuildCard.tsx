@@ -8,7 +8,6 @@ import {
   GitBranchIcon,
   TriangleAlertIcon,
 } from "lucide-react";
-import jenkinsAvatar from "../assets/jenkins-headshot.png";
 
 const STATUS_DETAILS = {
   success: { label: "Passed", Icon: CircleCheckIcon, result: "All checks passed" },
@@ -21,19 +20,6 @@ const STATUS_DETAILS = {
 
 function normalizeMention(value) {
   return String(value || "").trim().replace(/^@/, "");
-}
-
-export function JenkinsAvatar({ size = 36 }) {
-  return (
-    <img
-      className="jenkins-avatar"
-      src={jenkinsAvatar}
-      alt=""
-      aria-hidden="true"
-      width={size}
-      height={size}
-    />
-  );
 }
 
 function JenkinsBuildCard({ report }) {
