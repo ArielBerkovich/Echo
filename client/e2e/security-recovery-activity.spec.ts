@@ -165,11 +165,26 @@ test("keeps a failed scheduled message editable and creates it once on retry", a
   await expect(modal.locator(".schedule-error")).toContainText("Something went wrong on our end");
   await expect(page.getByTestId("composer-editor")).toHaveText(body);
 
+  const scheduledResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes("/api/scheduled") &&
+      response.request().method() === "POST" &&
+      response.status() === 201
+  );
   await modal.getByRole("button", { name: "Schedule" }).click();
+  const scheduledResponse = await scheduledResponsePromise;
+  const created = await scheduledResponse.json();
+  expect(created.scheduled.body).toBe(body);
   await expect(modal).toHaveCount(0);
   await expect(page.locator(".scheduled-banner")).toContainText("1 scheduled message");
-  const scheduled = await requestAsToken(page, fixture.alice.token, `/scheduled?channelId=${fixture.generalChannel.id}`);
-  expect(scheduled.scheduled.filter((item) => item.body === body)).toHaveLength(1);
+  await expect.poll(async () => {
+    const scheduled = await requestAsToken(
+      page,
+      fixture.alice.token,
+      `/scheduled?channelId=${fixture.generalChannel.id}`
+    );
+    return scheduled.scheduled.filter((item) => item.id === created.scheduled.id).length;
+  }).toBe(1);
   expect(scheduleAttempts).toBe(2);
 });
 
@@ -214,55 +229,61 @@ test("shows and permanently dismisses every supported Activity kind", async ({ b
     method: "POST",
     body: { userId: fixture.alice.id },
   });
-  const removedChannel = await requestAsToken(page, fixture.bob.token, "/channels", {
-    method: "POST",
-    body: { name: `activity-removed-${stamp}`, type: "private" },
-  });
-  await requestAsToken(page, fixture.bob.token, `/channels/${removedChannel.channel.id}/members`, {
-    method: "POST",
-    body: { userId: fixture.alice.id },
-  });
-  await requestAsToken(page, fixture.bob.token, `/channels/${removedChannel.channel.id}/members/${fixture.alice.id}`, {
-    method: "DELETE",
-  });
-
-  const bobContext = await browser.newContext();
-  const bobPage = await bobContext.newPage();
-  await seedToken(bobPage, fixture.bob.token);
   try {
-    await bobPage.goto("/");
-    await bobPage.getByTestId("channel-row-general").click();
-    const root = messageById(bobPage, reactionRoot.message.id);
-    await root.hover();
-    await bobPage.locator('[data-message-actions="true"]').getByTitle("Add reaction").click();
-    await bobPage.getByRole("button", { name: "React with 👍" }).click();
+    const removedChannel = await requestAsToken(page, fixture.bob.token, "/channels", {
+      method: "POST",
+      body: { name: `activity-removed-${stamp}`, type: "private" },
+    });
+    await requestAsToken(page, fixture.bob.token, `/channels/${removedChannel.channel.id}/members`, {
+      method: "POST",
+      body: { userId: fixture.alice.id },
+    });
+    await requestAsToken(page, fixture.bob.token, `/channels/${removedChannel.channel.id}/members/${fixture.alice.id}`, {
+      method: "DELETE",
+    });
+
+    const bobContext = await browser.newContext();
+    const bobPage = await bobContext.newPage();
+    await seedToken(bobPage, fixture.bob.token);
+    try {
+      await bobPage.goto("/");
+      await bobPage.getByTestId("channel-row-general").click();
+      const root = messageById(bobPage, reactionRoot.message.id);
+      await root.hover();
+      await bobPage.locator('[data-message-actions="true"]').getByTitle("Add reaction").click();
+      await bobPage.getByRole("button", { name: "React with 👍" }).click();
+    } finally {
+      await bobContext.close();
+    }
+
+    const expectedKinds = ["mention", "broadcast", "reply", "reaction", "channel_add", "channel_remove"];
+    await expect.poll(async () => {
+      const activity = await requestAsToken(page, fixture.alice.token, "/activity");
+      return expectedKinds.filter((kind) => activity.items.some((item) => item.kind === kind)).sort();
+    }).toEqual([...expectedKinds].sort());
+
+    await page.goto("/");
+    await page.getByTestId("rail-activity").click();
+    const targets = [
+      page.locator('[data-activity-kind="mention"]').filter({ hasText: mentionBody }),
+      page.locator('[data-activity-kind="broadcast"]').filter({ hasText: `Broadcast ${stamp}` }),
+      page.locator('[data-activity-kind="reply"]').filter({ hasText: `Thread reply ${stamp}` }),
+      page.locator('[data-activity-kind="reaction"]').filter({ hasText: rootBody }),
+      page.locator('[data-activity-kind="channel_add"]').filter({ hasText: addedChannel.channel.name }),
+      page.locator('[data-activity-kind="channel_remove"]').filter({ hasText: removedChannel.channel.name }),
+    ];
+    for (const target of targets) {
+      await expect(target).toBeVisible();
+      await target.getByRole("button", { name: "Delete activity" }).click();
+      await expect(target).toHaveCount(0);
+    }
+
+    await page.reload();
+    await expect(page.getByTestId("activity-header")).toBeVisible();
+    await expect(page.getByText(stamp, { exact: false })).toHaveCount(0);
   } finally {
-    await bobContext.close();
+    await requestAsToken(page, fixture.alice.token, `/channels/${addedChannel.channel.id}/leave`, {
+      method: "POST",
+    }).catch(() => {});
   }
-
-  const expectedKinds = ["mention", "broadcast", "reply", "reaction", "channel_add", "channel_remove"];
-  await expect.poll(async () => {
-    const activity = await requestAsToken(page, fixture.alice.token, "/activity");
-    return expectedKinds.filter((kind) => activity.items.some((item) => item.kind === kind)).sort();
-  }).toEqual([...expectedKinds].sort());
-
-  await page.goto("/");
-  await page.getByTestId("rail-activity").click();
-  const targets = [
-    page.locator('[data-activity-kind="mention"]').filter({ hasText: mentionBody }),
-    page.locator('[data-activity-kind="broadcast"]').filter({ hasText: `Broadcast ${stamp}` }),
-    page.locator('[data-activity-kind="reply"]').filter({ hasText: `Thread reply ${stamp}` }),
-    page.locator('[data-activity-kind="reaction"]').filter({ hasText: rootBody }),
-    page.locator('[data-activity-kind="channel_add"]').filter({ hasText: addedChannel.channel.name }),
-    page.locator('[data-activity-kind="channel_remove"]').filter({ hasText: removedChannel.channel.name }),
-  ];
-  for (const target of targets) {
-    await expect(target).toBeVisible();
-    await target.getByRole("button", { name: "Delete activity" }).click();
-    await expect(target).toHaveCount(0);
-  }
-
-  await page.reload();
-  await expect(page.getByTestId("activity-header")).toBeVisible();
-  await expect(page.getByText(stamp, { exact: false })).toHaveCount(0);
 });

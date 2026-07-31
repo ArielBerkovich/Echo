@@ -1,5 +1,12 @@
 import { expect, test } from "@playwright/test";
-import { requestAsToken, seedWorkspaceFixture, slug, uploadAsToken, railItem } from "./helpers.js";
+import {
+  messageById,
+  requestAsToken,
+  seedWorkspaceFixture,
+  slug,
+  uploadAsToken,
+  railItem,
+} from "./helpers.js";
 
 const ONE_BY_ONE_PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAEklEQVR42mP8/5+hHgAHggJ/PFvdcQAAAABJRU5ErkJggg==",
@@ -37,16 +44,21 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("shows presence and typing across sessions", async ({ browser, page }) => {
-  await withAliceBobPages(browser, async ({ alicePage, bobPage, alice, bob }) => {
-    await alicePage.page
-      .locator(".message")
-      .filter({ hasText: `Heads up @${alice.username}` })
-      .locator(".author-btn")
-      .click();
+  const presenceMessage = await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body: `Presence check ${Date.now()}`,
+      externalKey: `presence-${slug(String(Date.now()))}`,
+    },
+  });
+
+  await withAliceBobPages(browser, async ({ alicePage, bobPage, bob }) => {
+    await alicePage.page.locator(".channel-row").filter({ hasText: "general" }).click();
+    await messageById(alicePage.page, presenceMessage.message.id).locator(".author-btn").click();
     await expect(alicePage.page.locator(".profile-modal .profile-presence")).toContainText("Active");
     await alicePage.page.locator(".profile-modal .profile-close").click();
 
-    await alicePage.page.locator(".channel-row").filter({ hasText: "general" }).click();
     await bobPage.page.locator(".channel-row").filter({ hasText: "general" }).click();
 
     const typing = `Typing ${Date.now()}`;
