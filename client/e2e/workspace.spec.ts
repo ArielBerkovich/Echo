@@ -229,6 +229,7 @@ test("pastes markdown into the composer as formatted content", async ({ page }) 
 
 test("resets the composer placeholder after deleting the draft", async ({ page }) => {
   await page.goto("/");
+  await channelRow(page, "general").click();
   const editor = page.getByTestId("composer-editor");
 
   await expect(editor).toHaveClass(/is-empty/);
