@@ -214,6 +214,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
                           <button
                             type="button"
                             className="channel-details-person-promote"
+                            data-testid={`channel-promote-${member.id}`}
                             onClick={() => promoteManager(member)}
                             disabled={promotingId === member.id}
                             title={`Make ${member.displayName} a manager`}
@@ -224,6 +225,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
                         <button
                           type="button"
                           className="channel-details-person-remove"
+                          data-testid={`channel-remove-${member.id}`}
                           onClick={() => removeMember(member)}
                           title={`Remove ${member.displayName} from the channel`}
                         >

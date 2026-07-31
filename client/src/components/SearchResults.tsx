@@ -139,7 +139,7 @@ export default function SearchResults({ query, onJump, onClose }) {
                 </button>
               ))}
               {hasMore && (
-                <button className="btn-secondary search-more" disabled={loadingMore} onClick={loadMore}>
+                <button className="btn-secondary search-more" data-testid="search-load-more" disabled={loadingMore} onClick={loadMore}>
                   {loadingMore ? "Loading…" : "Load more results"}
                 </button>
               )}

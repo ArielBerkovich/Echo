@@ -70,6 +70,7 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
               key={it.id}
               className={`activity-item ${it.unread ? "unread" : ""}`}
               data-testid="activity-item"
+              data-activity-kind={it.kind}
               role="button"
               tabIndex={0}
               onClick={() => onJump(it)}
@@ -105,6 +106,7 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
               <button
                 type="button"
                 className="activity-dismiss"
+                data-testid={`activity-delete-${it.id}`}
                 title="Delete activity"
                 aria-label="Delete activity"
                 onClick={(event) => {
