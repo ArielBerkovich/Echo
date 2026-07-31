@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Avatar from "./Avatar.js";
 import Modal, { ModalActions } from "./Modal.js";
 import Composer from "./Composer.js";
-import { ShareIcon, XIcon } from "lucide-react";
+import { Forward as ForwardIcon, XIcon } from "lucide-react";
 import { formatDateTime } from "../lib/time.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
 
@@ -179,7 +179,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
               <strong>{authorName}</strong>
               <span>Original message{message?.createdAt ? ` · ${formatDateTime(message.createdAt)}` : ""}</span>
             </div>
-            <ShareIcon aria-hidden="true" />
+            <ForwardIcon aria-hidden="true" />
           </div>
           <p title={preview}>{preview || "(No text in this message)"}</p>
           {message?.attachments?.some((attachment) => attachment.isImage) && (
@@ -280,6 +280,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
           <Composer
             channel={{ id: "forward-note-draft", type: "dm", dmName: "recipient" }}
             users={users}
+            placeholder="Add context for the recipients…"
             showSchedule={false}
             showSend={false}
             disabled={status === "submitting"}

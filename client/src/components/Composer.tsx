@@ -27,7 +27,7 @@ const SCHEDULE_PRESETS = [
 // Rich-text message composer: @mention autocomplete, a formatting toolbar,
 // emoji, and file attachments. Owns all of its own editor state — mount it with
 // a `key={channel.id}` so switching channels yields a fresh, empty composer.
-export default function Composer({ channel, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, onDraftChange, mode = "light", captureScreenDrops = false, showSchedule = true, showSend = true, disabled = false }) {
+export default function Composer({ channel, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, onDraftChange, placeholder: customPlaceholder, mode = "light", captureScreenDrops = false, showSchedule = true, showSend = true, disabled = false }) {
   const isThread = !!parentId; // a thread reply composer (hides channel-level scheduling)
   const [mention, setMention] = useState(null); // { trigger, query, from, to } or null
   const [activeIdx, setActiveIdx] = useState(0);
@@ -60,11 +60,11 @@ export default function Composer({ channel, parentId = null, users = [], channel
 
   const isDm = channel.type === "dm";
   const scheduledTargetLabel = isDm ? "this conversation" : "this channel";
-  const placeholder = isThread
+  const placeholder = customPlaceholder || (isThread
     ? "Reply to thread…"
     : isDm
       ? `Message ${channel.dmName}`
-      : `Message #${channel.name}`;
+      : `Message #${channel.name}`);
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ heading: { levels: [1, 2, 3] }, trailingNode: false }),
