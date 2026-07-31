@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api.js";
+import { queryKeys } from "../lib/queryClient.js";
 import { formatDateTime } from "../lib/time.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
 import Avatar from "./Avatar.js";
@@ -9,29 +10,32 @@ import { FeedContent, FeedLayout, FeedMessage } from "./FeedLayout.js";
 // Feed of the current user's saved ("save for later") messages. Clicking a row
 // jumps to the message; the bookmark removes it from saved.
 export default function SavedFeed({ user, users = [], customEmojis = [], onJump, onUnsave }) {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-
+  const queryClient = useQueryClient();
   const renderMarkdown = useMarkdownRenderer(users, user.username, customEmojis);
+  const { data: items = [], isPending: loading } = useQuery({
+    queryKey: queryKeys.saved,
+    queryFn: async () => (await api.getSaved()).items || [],
+  });
+  const unsaveMutation = useMutation({
+    mutationFn: (messageId) => api.toggleSaved(messageId),
+    onMutate: async (messageId) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.saved });
+      const previous = queryClient.getQueryData(queryKeys.saved);
+      queryClient.setQueryData(queryKeys.saved, (current = []) =>
+        current.filter((message) => message.id !== messageId)
+      );
+      return { previous };
+    },
+    onError: (_error, _messageId, context) => {
+      if (context?.previous) queryClient.setQueryData(queryKeys.saved, context.previous);
+    },
+    onSuccess: (_result, messageId) => onUnsave?.(messageId),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.saved }),
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-    api
-      .getSaved()
-      .then(({ items }) => !cancelled && setItems(items))
-      .catch(() => {})
-      .finally(() => !cancelled && setLoading(false));
-  }, []);
-
-  async function unsave(e, it) {
+  function unsave(e, it) {
     e.stopPropagation(); // don't trigger the row's jump
-    setItems((prev) => prev.filter((m) => m.id !== it.id));
-    try {
-      await api.toggleSaved(it.id);
-      onUnsave?.(it.id);
-    } catch {
-      /* leave the optimistic removal; a reload will re-sync */
-    }
+    unsaveMutation.mutate(it.id);
   }
 
   return (

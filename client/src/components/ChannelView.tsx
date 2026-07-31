@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { api } from "../api.js";
 import { getSocket } from "../socket.js";
 import Avatar from "./Avatar.js";
@@ -24,6 +25,7 @@ import { LeaveIcon, PinIcon } from "./Icons.js";
 import { formatDayDivider, isDifferentDay } from "../lib/time.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
 import { ChevronsDownIcon, StarIcon, UsersRoundIcon } from "lucide-react";
+import { queryKeys } from "../lib/queryClient.js";
 
 // Shimmering placeholder rows shown while a channel's history loads, so the
 // pane has structure immediately instead of flashing an empty "say hello" state.
@@ -88,6 +90,7 @@ export default function ChannelView({
   onThreadOpened,
   mode = "light",
 }) {
+  const queryClient = useQueryClient();
   const hasUsableCache = cachedMessages !== null && !hasUnread;
   const [messages, setMessages] = useState(() => hasUsableCache ? cachedMessages : []);
   const [error, setError] = useState(null);
@@ -185,8 +188,12 @@ export default function ChannelView({
     const socket = getSocket();
     const myId = user.id;
 
-    api
-      .getMessages(channel.id)
+    queryClient
+      .fetchQuery({
+        queryKey: queryKeys.messages(channel.id),
+        queryFn: () => api.getMessages(channel.id),
+        staleTime: hasUnread ? 0 : 30_000,
+      })
       .then(({ messages, lastReadAt }) => {
         if (cancelled) return;
         setMessages(messages);
@@ -352,8 +359,12 @@ export default function ChannelView({
     let cancelled = false;
     const socket = getSocket();
     socket.emit("channel:join", channel.id);
-    api
-      .getMessages(channel.id)
+    queryClient
+      .fetchQuery({
+        queryKey: queryKeys.messages(channel.id),
+        queryFn: () => api.getMessages(channel.id),
+        staleTime: 0,
+      })
       .then(({ messages }) => {
         if (cancelled) return;
         setMessages(messages);

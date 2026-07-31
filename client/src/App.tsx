@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { api, consumeRhssoCallback, getToken, setToken } from "./api.js";
 import { disconnectSocket } from "./socket.js";
 import { useRealtime } from "./lib/useRealtime.js";
@@ -12,6 +13,8 @@ import { notifyPermission, notifySupported, requestNotifyPermission, setNotifyPr
 import { BUILT_IN_GIT_EMOJIS } from "./lib/gitEmojis.js";
 import { THEMES, useThemePreferences } from "./lib/useThemePreferences.js";
 import { useConversationCache } from "./lib/useConversationCache.js";
+import { useWorkspaceQueries, workspaceKeys } from "./lib/useWorkspaceQueries.js";
+import { queryKeys } from "./lib/queryClient.js";
 
 const HIDDEN_KEY = "echo.hiddenChannels";
 function loadHidden() {
@@ -26,35 +29,47 @@ function loadRecents() {
 }
 
 export default function App() {
+  const queryClient = useQueryClient();
   const [rhssoError] = useState(() => consumeRhssoCallback());
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [startupUnavailable, setStartupUnavailable] = useState(false);
-  const [channels, setChannels] = useState([]); // channels you belong to (sidebar)
   const [allChannels, setAllChannels] = useState([]); // bounded cache of public channel summaries
   const [catalogCounts, setCatalogCounts] = useState(null);
   const [activeChannel, setActiveChannel] = useState(null);
-  const [users, setUsers] = useState([]);
-  const [dms, setDms] = useState([]);
   const [recents, setRecents] = useState(loadRecents);
   const [showCreate, setShowCreate] = useState(false);
   const [showAddPeople, setShowAddPeople] = useState(false);
-  const [customEmojis, setCustomEmojis] = useState([]);
   const [showAddEmoji, setShowAddEmoji] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showApiDocs, setShowApiDocs] = useState(false); // REST API reference page
   const [profileUser, setProfileUser] = useState(null); // user whose profile card is open
   const [hidden, setHidden] = useState(loadHidden); // hidden channel ids
   const [view, setView] = useState("home"); // home | browse | dms | activity | saved
-  const [savedIds, setSavedIds] = useState(() => new Set()); // saved/bookmarked message ids
-  const [vipIds, setVipIds] = useState(() => new Set()); // user ids marked VIP
+  const {
+    channels,
+    setChannels,
+    channelsQuery,
+    dms,
+    setDms,
+    dmsQuery,
+    users,
+    setUsers,
+    customEmojis,
+    setCustomEmojis,
+    savedIds,
+    setSavedIds,
+    vipIds,
+    setVipIds,
+    activityItems,
+  } = useWorkspaceQueries(!!user);
   const [navOpen, setNavOpen] = useState(false); // mobile: rail+sidebar drawer open?
   const [showTour, setShowTour] = useState(false); // first-run walkthrough
   const { theme, setTheme, mode, setMode, toggleMode } = useThemePreferences();
   const {
-    messageCache,
     scrollStates,
     cacheMessages,
+    getCachedMessages,
     rememberScrollState,
     clearScrollState,
     prefetchMessages,
@@ -68,6 +83,7 @@ export default function App() {
   const searchRef = useRef(null);
   const markReadAtRef = useRef({}); // channelId -> last markRead time (throttle)
   const restoredRef = useRef(false); // have we restored the saved location yet?
+  const restoredUserRef = useRef(null);
   const navDuringRestoreRef = useRef(false); // user navigated before the initial restore finished
   const viewRef = useRef(view);
   const activeChannelRef = useRef(activeChannel);
@@ -94,6 +110,11 @@ export default function App() {
     clearNavigationTarget();
     searchRef.current?.clear();
     setSearchQuery(null);
+    if (nextView === "activity") {
+      api.markActivityRead()
+        .catch(() => {})
+        .finally(() => queryClient.invalidateQueries({ queryKey: queryKeys.activity }));
+    }
     setView(nextView);
     setNavOpen(window.matchMedia("(max-width: 760px)").matches);
   }
@@ -249,10 +270,10 @@ export default function App() {
   }, []);
 
   function refreshDms() {
-    api.listDms().then(({ conversations }) => setDms(conversations)).catch(() => {});
+    queryClient.invalidateQueries({ queryKey: workspaceKeys.dms });
   }
   function refreshChannels() {
-    api.listChannels().then(({ channels }) => setChannels(channels)).catch(() => {});
+    queryClient.invalidateQueries({ queryKey: workspaceKeys.channels });
   }
 
   function clearScrollToBottomTarget() {
@@ -305,19 +326,19 @@ export default function App() {
     setActiveChannel(active);
   }
 
-  // Load workspace data once authenticated.
+  // Restore navigation once the independently fetched channel and DM queries
+  // have both resolved. The other workspace queries continue in parallel.
   useEffect(() => {
-    if (!user) return;
+    if (!user || !channelsQuery.isSuccess || !dmsQuery.isSuccess) return;
+    if (restoredUserRef.current === user.id) return;
+    restoredUserRef.current = user.id;
     restoredRef.current = false; // restore again for this (possibly new) account
     navDuringRestoreRef.current = false;
     let cancelled = false;
-    Promise.all([api.listChannels(), api.listDms()])
-      .then(async ([chRes, dmRes]) => {
-        if (cancelled) return;
-        const chs = chRes.channels || [];
-        const conversations = dmRes.conversations || [];
-        setChannels(chs);
-        setDms(conversations);
+    Promise.resolve()
+      .then(async () => {
+        const chs = channels;
+        const conversations = dms;
         const inviteId = new URLSearchParams(window.location.search).get("invite");
         let invitedChannel = inviteId && chs.find((channel) => channel.id === inviteId);
         if (inviteId && !invitedChannel) {
@@ -339,15 +360,14 @@ export default function App() {
       .catch(() => {
         restoredRef.current = true;
       });
-    api.listUsers().then(({ users }) => setUsers(users)).catch(() => {});
-    api.listEmojis().then(({ emojis }) => setCustomEmojis(emojis)).catch(() => {});
-    api.getActivity().then(({ items }) => syncActivity(items)).catch(() => {});
-    api.getSaved().then(({ items }) => setSavedIds(new Set(items.map((i) => i.id)))).catch(() => {});
-    api.getVips().then(({ vipIds }) => setVipIds(new Set(vipIds))).catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [user, cacheCatalogChannels]);
+  }, [user, channelsQuery.isSuccess, dmsQuery.isSuccess, cacheCatalogChannels]);
+
+  useEffect(() => {
+    if (user) syncActivity(activityItems);
+  }, [user, activityItems]);
 
   // Persist the current location (after the initial restore) so a refresh lands
   // the user back where they were — and mirror it into the browser history so
@@ -404,6 +424,7 @@ export default function App() {
 
   function handleAuthed({ token, user }) {
     sessionStorage.removeItem("echo.ssoBypass");
+    queryClient.clear();
     setToken(token);
     setUser(user);
   }
@@ -412,12 +433,12 @@ export default function App() {
     sessionStorage.setItem("echo.ssoBypass", "true");
     setToken(null);
     disconnectSocket();
+    queryClient.clear();
+    restoredUserRef.current = null;
     setUser(null);
-    setChannels([]);
     setAllChannels([]);
     setCatalogCounts(null);
     setActiveChannel(null);
-    setDms([]);
     setScrollToBottomTarget(null);
   }
 
@@ -792,21 +813,29 @@ export default function App() {
 
   // Toggle a message's saved ("save for later") state, optimistically.
   function handleToggleSave(messageId) {
+    const wasSaved = savedIds.has(messageId);
     setSavedIds((prev) => {
       const next = new Set(prev);
       if (next.has(messageId)) next.delete(messageId);
       else next.add(messageId);
       return next;
     });
-    api.toggleSaved(messageId).catch(() => {
-      // Roll back on failure.
-      setSavedIds((prev) => {
-        const next = new Set(prev);
-        if (next.has(messageId)) next.delete(messageId);
-        else next.add(messageId);
-        return next;
-      });
-    });
+    if (wasSaved) {
+      queryClient.setQueryData(queryKeys.saved, (items = []) =>
+        items.filter((item) => item.id !== messageId)
+      );
+    }
+    api.toggleSaved(messageId)
+      .catch(() => {
+        // Roll back on failure.
+        setSavedIds((prev) => {
+          const next = new Set(prev);
+          if (next.has(messageId)) next.delete(messageId);
+          else next.add(messageId);
+          return next;
+        });
+      })
+      .finally(() => queryClient.invalidateQueries({ queryKey: queryKeys.saved }));
   }
 
   // Toggle a user's VIP status, optimistically.
@@ -1004,7 +1033,7 @@ export default function App() {
           conversation={{
             channel: activeChannel,
             recoveryEpoch,
-            cachedMessages: activeChannel ? messageCache[activeChannel.id] || null : null,
+            cachedMessages: activeChannel ? getCachedMessages(activeChannel.id) : null,
             initialScrollState: activeInitialScrollState,
             hasUnread: activeUnreadCount > 0,
             user,

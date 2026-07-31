@@ -90,6 +90,7 @@ test("shows a dot instead of a Home notification count", async ({ page }) => {
 test("does not offer DM removal in the dedicated DMs view", async ({ page }) => {
   await page.goto("/");
   await railItem(page, "dms").click();
+  await expect(page.locator(".sidebar")).toHaveClass(/dms-view/);
 
   const row = dmRow(page, fixture.bob.displayName);
   await expect(row).toBeVisible();
@@ -114,6 +115,7 @@ test("aligns the Direct Messages and main search dividers", async ({ page }) => 
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/");
   await railItem(page, "dms").click();
+  await expect(page.locator(".sidebar")).toHaveClass(/dms-view/);
 
   const bottomEdges = await page.evaluate(() => ({
     sidebar: document.querySelector(".sidebar.dms-view .sidebar-header")?.getBoundingClientRect().bottom,

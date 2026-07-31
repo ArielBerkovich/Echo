@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { api } from "../api.js";
 import { getSocket } from "../socket.js";
 import { notificationPreview, notificationsActive, showNotification } from "./notify.js";
+import { queryKeys } from "./queryClient.js";
 
 // Owns the real-time layer: socket listeners (message:new, activity:bump,
 // reconnect, emoji:new, user:new, presence), the live Activity-badge counts,
@@ -27,6 +29,7 @@ export function useRealtime({
   refreshDms,
   onAuthInvalid,
 }) {
+  const queryClient = useQueryClient();
   // Activity badge counts (live). Top-level mentions keyed by channel (cleared
   // when you open the channel); thread mentions keyed by their root (cleared
   // when you open the thread).
@@ -300,6 +303,18 @@ export function useRealtime({
       const inChannels = channelsRef.current.some((c) => c.id === msg.channelId);
       const inDms = dmsRef.current.some((d) => d.id === msg.channelId);
 
+      queryClient.setQueryData(queryKeys.messages(msg.channelId), (history) => {
+        if (!history?.messages) return history;
+        const messages = msg.parentId
+          ? history.messages.map((message) =>
+              message.id === msg.parentId
+                ? { ...message, replyCount: (message.replyCount || 0) + 1, lastReplyAt: msg.createdAt }
+                : message
+            )
+          : [...history.messages, msg];
+        return { ...history, messages };
+      });
+
       // Channel sidebar: bump unread locally (no refetch).
       if (inChannels && !mine && !viewingHere) {
         setChannels((prev) =>
@@ -392,7 +407,11 @@ export function useRealtime({
     // Server flags a message as "activity" for us — re-sync the badge (works even
     // for mentions in channels we haven't joined, where no message:new arrives).
     const onActivityBump = () => {
-      api.getActivity().then(({ items }) => syncActivity(items)).catch(() => {});
+      queryClient.fetchQuery({
+        queryKey: queryKeys.activity,
+        queryFn: async () => (await api.getActivity()).items || [],
+        staleTime: 0,
+      }).then(syncActivity).catch(() => {});
     };
     socket.on("activity:bump", onActivityBump);
 

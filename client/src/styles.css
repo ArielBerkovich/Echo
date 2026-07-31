@@ -6387,12 +6387,15 @@ html[data-mode="dark"] .new-messages-button:hover {
 .composer-editor p:last-child {
   margin-bottom: 0;
 }
-.composer-editor.is-empty::before {
+.composer-editor p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   color: #8d8d8d;
   direction: ltr;
   text-align: left;
   unicode-bidi: isolate;
+  float: left;
+  height: 0;
+  pointer-events: none;
   pointer-events: none;
 }
 .list-exit-hint {
