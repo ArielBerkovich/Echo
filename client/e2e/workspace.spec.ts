@@ -103,11 +103,14 @@ test("sign out clears the session and returns to login", async ({ page }) => {
   await expect(page.evaluate(() => localStorage.getItem("echo.token"))).resolves.toBeNull();
 });
 
-test("opens API reference from its workspace route", async ({ page }) => {
+test("opens API reference from Settings", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText("#general", { exact: true })).toBeVisible();
 
-  await page.goto("/api-docs");
+  await page.getByTestId("rail-settings").click();
+  await expect(page.getByTestId("settings-page")).toBeVisible();
+  await page.getByRole("button", { name: "API" }).click();
+  await expect(page.getByTestId("api-reference-page")).toBeVisible();
 
   await expect(page.getByText(/REST API/i)).toBeVisible();
 });

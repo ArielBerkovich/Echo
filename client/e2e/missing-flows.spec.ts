@@ -162,13 +162,16 @@ test("generates an API token and exercises idempotent, external-key, and threade
   });
   await page.goto("/");
   await channelRow(page, "general").click();
-  await page.goto("/api-docs");
+  await page.getByTestId("rail-settings").click();
+  await expect(page.getByTestId("settings-page")).toBeVisible();
+  await page.getByRole("button", { name: "API" }).click();
+  await expect(page.getByTestId("api-reference-page")).toBeVisible();
   await page.getByTestId("api-token-generate").click();
   const apiToken = (await page.getByTestId("api-token-value").textContent())?.trim();
   expect(apiToken).toBeTruthy();
   await page.getByTestId("api-token-copy").click();
   await expect(page.getByTestId("api-token-copy")).toHaveText("Copied!");
-  await page.getByRole("button", { name: "Close API reference" }).click();
+  await page.getByTestId("rail-home").click();
 
   const externalKey = uniqueSuffix("external");
   const first = await rawApi(page, apiToken!, "/messages/upsert", {
