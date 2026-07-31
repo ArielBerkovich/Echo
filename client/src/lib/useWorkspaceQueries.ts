@@ -12,7 +12,7 @@ export const workspaceKeys = {
   dms: ["workspace", "dms"] as const,
   users: ["workspace", "users"] as const,
   emojis: ["workspace", "emojis"] as const,
-  vips: ["workspace", "vips"] as const,
+  starred: ["workspace", "starred"] as const,
 };
 
 function useQueryState(queryKey, queryFn, enabled, fallback) {
@@ -57,9 +57,9 @@ export function useWorkspaceQueries(enabled) {
     enabled,
     EMPTY_SET,
   );
-  const [vipIds, setVipIds] = useQueryState(
-    workspaceKeys.vips,
-    async () => new Set((await api.getVips()).vipIds || []),
+  const [starredIds, setStarredIds] = useQueryState(
+    workspaceKeys.starred,
+    async () => new Set((await api.getStarred()).starredIds || []),
     enabled,
     EMPTY_SET,
   );
@@ -83,8 +83,8 @@ export function useWorkspaceQueries(enabled) {
     setCustomEmojis,
     savedIds,
     setSavedIds,
-    vipIds,
-    setVipIds,
+    starredIds,
+    setStarredIds,
     activityItems: activityQuery.data || EMPTY_LIST,
   };
 }

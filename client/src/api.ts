@@ -211,8 +211,14 @@ export const api = {
   deleteActivity: (id) => request(`/activity/${encodeURIComponent(id)}`, { method: "DELETE" }),
   getSaved: () => request("/saved"),
   toggleSaved: (messageId) => request(`/saved/${messageId}`, { method: "POST" }),
-  getVips: () => request("/users/vips"),
-  toggleVip: (userId) => request(`/users/${userId}/vip`, { method: "POST" }),
+  getStarred: async () => {
+    const result = await request("/users/vips");
+    return { ...result, starredIds: result.vipIds };
+  },
+  toggleStarred: async (userId) => {
+    const result = await request(`/users/${userId}/vip`, { method: "POST" });
+    return { ...result, starred: result.vip };
+  },
   markOnboarded: () => request("/users/me/onboarded", { method: "POST" }),
   scheduleMessage: (channelId, payload) =>
     request("/scheduled", { method: "POST", body: { channelId, ...payload } }),

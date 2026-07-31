@@ -7,7 +7,7 @@ export default function WorkspaceNavigation({
   channels,
   dms,
   hidden,
-  vipIds,
+  starredIds,
   onlineIds,
   activeChannel,
   activityBadge,
@@ -52,7 +52,7 @@ export default function WorkspaceNavigation({
           channels={channels}
           dms={dms}
           hidden={hidden}
-          vipIds={vipIds}
+          starredIds={starredIds}
           onlineIds={onlineIds}
           activeChannel={activeChannel}
           mode={view === "dms" ? "dms" : "home"}

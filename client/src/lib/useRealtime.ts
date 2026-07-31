@@ -14,14 +14,14 @@ export function useRealtime({
   activeChannel,
   channels,
   dms,
-  vipIds,
+  starredIds,
   setChannels,
   setAllChannels,
   setDms,
   setUsers,
   setCustomEmojis,
   setSavedIds,
-  setVipIds,
+  setStarredIds,
   setView,
   setActiveChannel,
   setProfileUser,
@@ -43,11 +43,11 @@ export function useRealtime({
   const activeRef = useRef(null);
   const channelsRef = useRef([]);
   const dmsRef = useRef([]);
-  const vipRef = useRef(new Set());
+  const starredRef = useRef(new Set());
   useEffect(() => void (activeRef.current = activeChannel), [activeChannel]);
   useEffect(() => void (channelsRef.current = channels), [channels]);
   useEffect(() => void (dmsRef.current = dms), [dms]);
-  useEffect(() => void (vipRef.current = vipIds || new Set()), [vipIds]);
+  useEffect(() => void (starredRef.current = starredIds || new Set()), [starredIds]);
 
   function mergeUser(userList, updated) {
     return userList.map((u) => (u.id === updated.id ? { ...u, ...updated } : u));
@@ -120,7 +120,7 @@ export function useRealtime({
         api.listEmojis(),
         api.getActivity(),
         api.getSaved(),
-        api.getVips(),
+        api.getStarred(),
       ]);
       if (cancelled || run !== recoveryRun) return;
 
@@ -132,7 +132,7 @@ export function useRealtime({
       if (results[5].status === "fulfilled") {
         setSavedIds?.(new Set((results[5].value.items || []).map((item) => item.id)));
       }
-      if (results[6].status === "fulfilled") setVipIds?.(new Set(results[6].value.vipIds || []));
+      if (results[6].status === "fulfilled") setStarredIds?.(new Set(results[6].value.starredIds || []));
 
       // Consumers use this to reconcile data local to the active view, such as
       // message history and an open thread.
@@ -363,7 +363,7 @@ export function useRealtime({
         }
       }
 
-      // Desktop notification — DMs (with a VIP badge), and channel @mentions.
+      // Desktop notification — Starred DMs, and channel @mentions.
       // Skipped if you're already focused on that conversation.
       if (!mine && notificationsActive()) {
         const focusedHere = !!active && msg.channelId === active.id && document.hasFocus();
@@ -372,8 +372,8 @@ export function useRealtime({
           const preview = notificationPreview(msg.body) || "Sent an attachment";
           if (inDms) {
             const dm = dmsRef.current.find((d) => d.id === msg.channelId);
-            const vip = dm && vipRef.current.has(dm.withUser.id);
-            showNotification(vip ? `⭐ ${sender} · VIP message` : `Message from ${sender}`, {
+            const starred = dm && starredRef.current.has(dm.withUser.id);
+            showNotification(starred ? `⭐ ${sender} · Starred message` : `Message from ${sender}`, {
               body: preview,
               tag: msg.channelId,
               onClick: () => {
