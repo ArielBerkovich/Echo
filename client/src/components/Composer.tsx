@@ -67,7 +67,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
       : `Message #${channel.name}`;
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
+      StarterKit.configure({ heading: { levels: [1, 2, 3] }, trailingNode: false }),
       Placeholder.configure({ placeholder }),
     ],
     editorProps: {
