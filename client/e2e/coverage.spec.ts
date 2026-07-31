@@ -544,6 +544,7 @@ test("updates settings and replays the walkthrough", async ({ browser, page }) =
 
   await page.getByRole("button", { name: "Settings" }).click();
   const settings = page.locator(".settings-page");
+  await expect(settings).toBeVisible({ timeout: 15_000 });
   const displayName = `Alice ${Date.now()}`;
   await settings.locator(".settings-input").first().fill(displayName);
   await settings.getByRole("button", { name: "Save" }).click();
