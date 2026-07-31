@@ -27,7 +27,7 @@ const SCHEDULE_PRESETS = [
 // Rich-text message composer: @mention autocomplete, a formatting toolbar,
 // emoji, and file attachments. Owns all of its own editor state — mount it with
 // a `key={channel.id}` so switching channels yields a fresh, empty composer.
-export default function Composer({ channel, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, mode = "light", captureScreenDrops = false, showSchedule = true, disabled = false }) {
+export default function Composer({ channel, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, onDraftChange, mode = "light", captureScreenDrops = false, showSchedule = true, showSend = true, disabled = false }) {
   const isThread = !!parentId; // a thread reply composer (hides channel-level scheduling)
   const [mention, setMention] = useState(null); // { trigger, query, from, to } or null
   const [activeIdx, setActiveIdx] = useState(0);
@@ -139,17 +139,17 @@ export default function Composer({ channel, parentId = null, users = [], channel
       .catch(() => {});
   }
   useEffect(() => {
-    if (!isThread && !disabled) refreshScheduled(); // scheduling is a channel-level feature
-  }, [channel.id, isThread, disabled]);
+    if (!isThread && showSchedule && !disabled) refreshScheduled(); // scheduling is a channel-level feature
+  }, [channel.id, isThread, showSchedule, disabled]);
   useEffect(() => {
-    if (isThread || disabled) return;
+    if (isThread || !showSchedule || disabled) return;
     const socket = getSocket();
     const onNew = (msg) => {
       if (msg.channelId === channel.id) refreshScheduled();
     };
     socket.on("message:new", onNew);
     return () => socket.off("message:new", onNew);
-  }, [channel.id, isThread, disabled]);
+  }, [channel.id, isThread, showSchedule, disabled]);
 
   const suggestions = useMemo(() => {
     if (!mention) return [];
@@ -179,6 +179,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
     const hasText = currentEditor.getText().trim().length > 0;
     hasText ? signalTyping() : stopTyping();
     syncMentionContext(currentEditor);
+    onDraftChange?.(htmlToMarkdown(currentEditor.getHTML()));
   }
 
   function syncMentionContext(currentEditor) {
@@ -520,7 +521,8 @@ export default function Composer({ channel, parentId = null, users = [], channel
               setScheduleAt(e.target.value);
             }}
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
+    if (e.key === "Enter") {
+      if (!showSend) return;
                 e.preventDefault();
                 confirmSchedule();
               }
@@ -771,7 +773,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
         </div>
 
         <div className="right">
-          <button
+          {showSend && <button
             type="submit"
             className={`icon-btn send-btn ${canSend || pending.length ? "ready" : ""}`}
             data-testid="composer-send"
@@ -779,9 +781,9 @@ export default function Composer({ channel, parentId = null, users = [], channel
             aria-label="Send"
           >
             <SendIcon />
-          </button>
-          {!isThread && showSchedule && <span className="tb-sep" />}
-          {!isThread && showSchedule && (
+          </button>}
+          {!isThread && showSchedule && showSend && <span className="tb-sep" />}
+          {!isThread && showSchedule && showSend && (
             <button
               type="button"
               className="icon-btn chevron-btn"
@@ -793,7 +795,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
               <ChevronIcon />
             </button>
           )}
-          {!isThread && showSchedule && sendMenuOpen && (
+          {!isThread && showSchedule && showSend && sendMenuOpen && (
             <>
               <div className="menu-overlay" onClick={() => setSendMenuOpen(false)} />
               <div className="send-menu">

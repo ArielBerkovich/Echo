@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Avatar from "./Avatar.js";
 import Modal, { ModalActions } from "./Modal.js";
+import Composer from "./Composer.js";
 import { ShareIcon, XIcon } from "lucide-react";
 import { formatDateTime } from "../lib/time.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
 
 const MAX_DESTINATIONS = 10;
-const MAX_NOTE_LENGTH = 2000;
 const MAX_VISIBLE_SEARCH_RESULTS = 20;
 
 function destinationKey(destination) {
@@ -264,21 +264,20 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
           )}
         </section>
 
-        <label className="forward-note-field">
+        <div className="forward-note-field">
           <span className="forward-field-heading">
             <span>Note <em>Optional</em></span>
-            <small>{note.length}/{MAX_NOTE_LENGTH}</small>
           </span>
-          <textarea
-            value={note}
-            maxLength={MAX_NOTE_LENGTH}
-            rows={2}
-            placeholder="Add context for the recipient…"
-            onChange={(event) => setNote(event.target.value)}
+          <Composer
+            channel={{ id: "forward-note-draft", type: "dm", dmName: "recipient" }}
+            users={users}
+            showSchedule={false}
+            showSend={false}
             disabled={status === "submitting"}
-            data-testid="forward-note"
+            onDraftChange={(value) => setNote(value.slice(0, 2000))}
+            onError={setError}
           />
-        </label>
+        </div>
 
         <div className="forward-live-region" aria-live="polite">
           {error && <div className="error forward-error" role="alert">{error}</div>}
