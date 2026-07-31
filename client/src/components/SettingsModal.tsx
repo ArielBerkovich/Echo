@@ -276,7 +276,7 @@ function NotificationToggle() {
 
   return (
     <div className="notify-row">
-      <button type="button" className={on ? "btn-secondary" : "btn-primary"} onClick={on ? disable : enable}>
+      <button type="button" className={on ? "btn-secondary" : "btn-primary"} data-testid="notification-toggle" onClick={on ? disable : enable}>
         {on ? "Turn off notifications" : "Enable desktop notifications"}
       </button>
       {on && <span className="notify-on">On ✓</span>}
@@ -324,10 +324,11 @@ function ChangePassword() {
         Change your password here. Forgot it and can't sign in? Your workspace admin can issue you a
         one-time password to set a new one.
       </p>
-      <div className="pw-form">
+      <div className="pw-form" data-testid="change-password-form">
         <input
           {...currentPasswordField}
           className="settings-input"
+          data-testid="current-password"
           type="password"
           placeholder="Current password"
           onChange={(e) => {
@@ -340,6 +341,7 @@ function ChangePassword() {
         <input
           {...newPasswordField}
           className="settings-input"
+          data-testid="new-password"
           type="password"
           placeholder="New password"
           onChange={(e) => {
@@ -352,6 +354,7 @@ function ChangePassword() {
         <input
           {...confirmPasswordField}
           className="settings-input"
+          data-testid="confirm-new-password"
           type="password"
           placeholder="Confirm new password"
           onChange={(e) => {
@@ -362,7 +365,7 @@ function ChangePassword() {
         />
         {errors.confirmPassword && <div className="error small">{errors.confirmPassword.message}</div>}
         <div className="field-hint">{PASSWORD_RULE}</div>
-        <button type="button" className="btn-primary" disabled={isSubmitting} onClick={submit}>
+        <button type="button" className="btn-primary" data-testid="change-password-submit" disabled={isSubmitting} onClick={submit}>
           {isSubmitting ? "Updating…" : "Update password"}
         </button>
       </div>

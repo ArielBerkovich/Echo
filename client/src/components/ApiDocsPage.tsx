@@ -216,7 +216,7 @@ export default function ApiDocsPage({ onClose }) {
   }
 
   return (
-    <div className="settings-page api-page">
+    <div className="settings-page api-page" data-testid="api-reference-page">
       <header className="settings-page-head">
         <h2>API reference</h2>
         <button className="settings-close" onClick={onClose} aria-label="Close API reference">
@@ -235,14 +235,14 @@ export default function ApiDocsPage({ onClose }) {
               it. Valid for one year — keep it secret.
             </p>
             {token ? (
-              <div className="token-box">
-                <code className="token-value">{token}</code>
-                <button type="button" className="btn-secondary" onClick={() => copy(token, "token")}>
+              <div className="token-box" data-testid="api-token-box">
+                <code className="token-value" data-testid="api-token-value">{token}</code>
+                <button type="button" className="btn-secondary" data-testid="api-token-copy" onClick={() => copy(token, "token")}>
                   {copied === "token" ? "Copied!" : "Copy"}
                 </button>
               </div>
             ) : (
-              <button type="button" className="btn-primary" disabled={busy} onClick={generate}>
+              <button type="button" className="btn-primary" data-testid="api-token-generate" disabled={busy} onClick={generate}>
                 {busy ? "Generating…" : "Generate API token"}
               </button>
             )}

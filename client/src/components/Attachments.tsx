@@ -79,6 +79,7 @@ function Lightbox({ src, name, onClose, inline = false }) {
   const content = (
     <div
       className={inline ? "lightbox-panel" : "lightbox-backdrop"}
+      data-testid="attachment-lightbox"
       onClick={inline ? undefined : handleBackdropClick}
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
@@ -106,12 +107,13 @@ function Lightbox({ src, name, onClose, inline = false }) {
           <button className="lightbox-close" onClick={onClose} aria-label="Close">✕</button>
         </div>
         <div className="lightbox-toolbar" onClick={(e) => e.stopPropagation()}>
-          <button className="lb-tool" onClick={handleDownload} title="Download">
+          <button className="lb-tool" data-testid="lightbox-download" onClick={handleDownload} title="Download">
             <DownloadIcon size={18} strokeWidth={2} />
           </button>
 <input
             type="range"
             className="lb-zoom-slider"
+            data-testid="lightbox-zoom"
             min={MIN_SCALE}
             max={MAX_SCALE}
             step={0.1}
@@ -154,6 +156,7 @@ function ImageAttachment({ a, onOpenLightbox }) {
     <>
       <button
         className={`att-image${loaded ? " is-loaded" : " is-loading"}`}
+        data-testid={`image-attachment-${a.key}`}
         onClick={handleClick}
         title={a.name}
         disabled={!src}
@@ -190,6 +193,7 @@ function FileAttachment({ a }) {
   return (
     <a
       className="att-file"
+      data-testid={`file-attachment-${a.key}`}
       href={src ? `${src}` : undefined}
       onClick={(e) => {
         if (!src) { e.preventDefault(); return; }

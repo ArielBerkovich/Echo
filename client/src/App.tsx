@@ -330,7 +330,7 @@ export default function App() {
   // channel) once channels & DMs are loaded.
   function applyLocation(saved, chs, conversations) {
     let nextView = "home";
-    let active = chs[0] || null;
+    let active = chs.find((channel) => channel.name.toLowerCase() === "general") || chs[0] || null;
     if (saved?.view === "browse") {
       nextView = "browse";
       active = chs.find((channel) => channel.id === saved.convId) || active;
