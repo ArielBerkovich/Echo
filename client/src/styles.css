@@ -6746,6 +6746,101 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
   text-align: center;
 }
 
+/* Single-recipient DM composer. */
+.new-message-modal {
+  width: 520px;
+}
+.new-message-search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--muted);
+  background: var(--surface-2);
+}
+.new-message-search:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.new-message-search input {
+  width: 100%;
+  padding: 10px 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+}
+.new-message-people {
+  max-height: 220px;
+  margin: 10px 0 16px;
+  overflow-y: auto;
+}
+.new-message-person {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+.new-message-person:hover {
+  background: var(--hover);
+}
+.new-message-person.selected {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.new-message-person .person-info,
+.new-message-person .person-name,
+.new-message-person .person-handle {
+  display: block;
+}
+.new-message-check {
+  opacity: 0;
+  color: var(--accent);
+  font-weight: 800;
+}
+.new-message-person.selected .new-message-check {
+  opacity: 1;
+}
+.new-message-compose > span {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.new-message-compose textarea {
+  width: 100%;
+  min-height: 96px;
+  resize: vertical;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  outline: 0;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  line-height: 1.45;
+}
+.new-message-compose textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.new-message-compose textarea:disabled {
+  opacity: 0.58;
+}
+.new-message-send {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
 /* Markdown rendering inside messages */
 .markdown .emoji {
   font-size: 1.35em;

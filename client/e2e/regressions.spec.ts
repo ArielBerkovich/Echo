@@ -149,22 +149,27 @@ test("starts a conversation from the Home Direct Messages button", async ({ page
   const startButton = dmSection.getByTestId("start-dm");
   await expect(startButton).toBeVisible();
   await expect(startButton).toHaveClass(/add-channel/);
-  await expect(startButton).toHaveAttribute("aria-label", "Start a new conversation");
+  await expect(startButton).toHaveAttribute("aria-label", "New message");
+  await expect(startButton.locator(".lucide-square-pen")).toBeVisible();
 
   await startButton.click();
 
-  const search = page.getByTestId("search-input");
+  await expect(page.getByTestId("new-message-modal")).toBeVisible();
+  const search = page.getByTestId("new-message-search");
   await expect(search).toBeFocused();
-  await expect(search).toHaveAttribute("placeholder", "Find someone to message");
-  await expect(page.getByTestId("search-messages-row")).toHaveCount(0);
+  await expect(search).toHaveAttribute("placeholder", "Search people");
 
   await search.fill(fixture.bob.username);
-  const bobResult = page.getByTestId(`search-user-${slug(fixture.bob.username)}`);
+  const bobResult = page.getByTestId(`new-message-user-${fixture.bob.username}`);
   await expect(bobResult).toBeVisible();
   await bobResult.click();
+  const firstMessage = `Started from compose ${Date.now()}`;
+  await page.getByTestId("new-message-body").fill(firstMessage);
+  await page.getByTestId("new-message-submit").click();
 
   await expect(page.getByTestId("channel-title")).toContainText(fixture.bob.displayName);
   await expect(railItem(page, "dms")).toHaveClass(/active/);
+  await expect(page.getByText(firstMessage, { exact: true })).toBeVisible();
 });
 
 test("starts a conversation from the dedicated DMs button with the keyboard", async ({ page }) => {
@@ -174,16 +179,18 @@ test("starts a conversation from the dedicated DMs button with the keyboard", as
   const dmHeader = page.locator(".sidebar.dms-view .sidebar-header");
   const startButton = dmHeader.getByTestId("start-dm");
   await expect(startButton).toBeVisible();
-  await expect(startButton).toHaveAttribute("title", "Start a new conversation");
+  await expect(startButton).toHaveAttribute("title", "New message");
 
   await startButton.click();
 
-  const search = page.getByTestId("search-input");
+  const search = page.getByTestId("new-message-search");
   await expect(search).toBeFocused();
-  await expect(search).toHaveAttribute("placeholder", "Find someone to message");
+  await expect(search).toHaveAttribute("placeholder", "Search people");
   await search.fill(fixture.bob.username);
-  await expect(page.getByTestId(`search-user-${slug(fixture.bob.username)}`)).toBeVisible();
+  await expect(page.getByTestId(`new-message-user-${fixture.bob.username}`)).toBeVisible();
   await search.press("Enter");
+  await expect(page.getByTestId("new-message-body")).toBeFocused();
+  await page.getByTestId("new-message-submit").click();
 
   await expect(page.getByTestId("channel-title")).toContainText(fixture.bob.displayName);
   await expect(railItem(page, "dms")).toHaveClass(/active/);

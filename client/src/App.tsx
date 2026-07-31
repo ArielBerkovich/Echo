@@ -43,6 +43,7 @@ export default function App() {
   const [activeChannel, setActiveChannel] = useState(null);
   const [recents, setRecents] = useState(loadRecents);
   const [showCreate, setShowCreate] = useState(false);
+  const [showNewMessage, setShowNewMessage] = useState(false);
   const [showAddPeople, setShowAddPeople] = useState(false);
   const [showAddEmoji, setShowAddEmoji] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -166,7 +167,7 @@ export default function App() {
     clearNavigationTarget();
     setSearchQuery(null);
     setNavOpen(false);
-    requestAnimationFrame(() => searchRef.current?.startConversation());
+    setShowNewMessage(true);
   }
 
   function handleSidebarOpenDm(target, isSelf) {
@@ -702,6 +703,12 @@ export default function App() {
     refreshDms();
   }
 
+  async function handleStartDm(target, message) {
+    const { channel } = await api.openDm(target.id);
+    if (message) await api.sendMessage(channel.id, message);
+    await handleOpenDm(target, false, "dms", channel);
+  }
+
   async function handleHideDm(conv) {
     if (vipIds.has(conv.withUser.id)) return;
     await api.hideDm(conv.id);
@@ -1226,6 +1233,7 @@ export default function App() {
         themes={THEMES}
         mode={mode}
         showCreate={showCreate}
+        showNewMessage={showNewMessage}
         showAddPeople={showAddPeople}
         showAddEmoji={showAddEmoji}
         showSettings={showSettings}
@@ -1234,6 +1242,7 @@ export default function App() {
         showTour={showTour}
         toast={toast}
         onCreateChannel={handleCreateChannel}
+        onStartDm={handleStartDm}
         onAddMember={handleAddMember}
         onEmojiCreated={handleEmojiCreated}
         onSelectTheme={setTheme}
@@ -1252,6 +1261,7 @@ export default function App() {
         onFinishTour={finishTour}
         onClose={{
           create: () => setShowCreate(false),
+          newMessage: () => setShowNewMessage(false),
           addPeople: () => setShowAddPeople(false),
           addEmoji: () => setShowAddEmoji(false),
           settings: closeSettings,

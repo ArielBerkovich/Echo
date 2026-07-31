@@ -196,6 +196,8 @@ export const api = {
       : "";
     return request(`/channels/${id}/messages${qs}`);
   },
+  sendMessage: (id, body) =>
+    request(`/channels/${id}/messages`, { method: "POST", body: { body } }),
   searchMessages: (q, page = 0, sort = "relevance") =>
     request(`/search/messages?q=${encodeURIComponent(q)}&page=${page}&sort=${sort}`),
   markRead: (id, thread = null) =>
