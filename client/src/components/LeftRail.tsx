@@ -21,7 +21,7 @@ function railNameFontSize(name) {
   return Math.max(6, Math.min(12, 68 / (longestWord * 0.66)));
 }
 
-export default function LeftRail({ view, onSelect, badges = {}, user, onLogout, onUpdated }) {
+export default function LeftRail({ view, onSelect, badges = {}, user, branding, onLogout, onUpdated }) {
   const [clicked, setClicked] = useState(null);
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
@@ -88,9 +88,9 @@ export default function LeftRail({ view, onSelect, badges = {}, user, onLogout, 
 
   return (
     <nav className="rail" aria-label="Primary navigation">
-      <div className="rail-brand" aria-hidden="true">
-        <Logo size={54} />
-        <span className="rail-brand-name">echo</span>
+      <div className="rail-brand" aria-label={branding?.enabled ? branding.name : "Echo"}>
+        {branding?.enabled ? <Avatar name={branding.name} src={branding.imageUrl} size={54} /> : <Logo size={54} />}
+        <span className="rail-brand-name">{branding?.enabled ? branding.name : "echo"}</span>
       </div>
       <div
         ref={railTopRef}

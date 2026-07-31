@@ -1911,11 +1911,16 @@ html[data-mode="dark"] .backend-connection-error {
   filter: drop-shadow(0 7px 16px rgba(0, 0, 0, 0.24));
 }
 .rail-brand-name {
+  width: 68px;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.2em;
   line-height: 1;
   text-transform: uppercase;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .rail-top {
   position: relative;
@@ -3955,6 +3960,23 @@ html[data-mode="dark"] .day-divider-label {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+.settings-branding-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 14px 0;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.settings-branding-toggle input {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 1px 0 0;
+  accent-color: var(--active-bg);
 }
 .link-danger {
   background: none;
