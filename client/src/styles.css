@@ -5489,7 +5489,6 @@ html[data-mode="dark"] .day-divider-label {
   gap: 10px;
   margin-top: 16px;
   padding-top: 14px;
-  border-top: 1px solid var(--border);
 }
 .forward-actions .btn-primary,
 .forward-actions .btn-secondary {
@@ -6763,7 +6762,6 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
 }
 .new-message-picker {
   min-width: 0;
-  border-bottom: 1px solid var(--border);
   padding-bottom: 4px;
 }
 .new-message-compose {
