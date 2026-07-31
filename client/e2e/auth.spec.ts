@@ -125,7 +125,7 @@ test("login displays server errors", async ({ page }) => {
     await page.getByLabel("Confirm password").fill("Password1");
     await page.getByRole("button", { name: "Create admin account" }).click();
 
-    await expect(page.getByTestId("sidebar-logout")).toBeVisible();
+    await expect(page.getByTestId("rail-logout")).toBeVisible();
     return;
   }
 
@@ -148,7 +148,7 @@ test("create account tab submits registration payload", async ({ page }) => {
     await page.locator('input[name="password"]').fill("Password1");
     await page.getByLabel("Confirm password").fill("Password1");
     await page.getByRole("button", { name: "Create admin account" }).click();
-    await expect(page.getByTestId("sidebar-logout")).toBeVisible();
+    await expect(page.getByTestId("rail-logout")).toBeVisible();
     return;
   }
 

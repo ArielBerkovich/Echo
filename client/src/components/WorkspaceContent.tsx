@@ -2,6 +2,7 @@ import ActivityFeed from "./ActivityFeed.js";
 import ChannelBrowser from "./ChannelBrowser.js";
 import ChannelView from "./ChannelView.js";
 import SavedFeed from "./SavedFeed.js";
+import SettingsModal from "./SettingsModal.js";
 import SearchBox from "./SearchBox.js";
 import SearchResults from "./SearchResults.js";
 
@@ -85,6 +86,9 @@ function ActiveWorkspaceView({ view, search, browse, feeds, conversation }) {
         onUnsave={feeds.onUnsave}
       />
     );
+  }
+  if (view === "settings") {
+    return <SettingsModal {...feeds.settings} />;
   }
   if (!conversation.channel || (view !== "home" && conversation.channel.type !== "dm")) {
     return (

@@ -50,7 +50,7 @@ export default function App() {
   const [showApiDocs, setShowApiDocs] = useState(false); // REST API reference page
   const [profileUser, setProfileUser] = useState(null); // user whose profile card is open
   const [hidden, setHidden] = useState(loadHidden); // hidden channel ids
-  const [view, setViewState] = useState("home"); // home | browse | dms | activity | saved
+  const [view, setViewState] = useState("home"); // home | browse | dms | activity | saved | settings
   const {
     channels,
     setChannels,
@@ -331,7 +331,7 @@ export default function App() {
     if (saved?.view === "browse") {
       nextView = "browse";
       active = chs.find((channel) => channel.id === saved.convId) || active;
-    } else if (saved?.view === "activity" || saved?.view === "saved") {
+    } else if (saved?.view === "activity" || saved?.view === "saved" || saved?.view === "settings") {
       nextView = saved.view; // full-page views, no conversation needed
     } else if (saved?.convType === "dm" && saved.convId) {
       const dm = conversations.find((d) => d.id === saved.convId);
@@ -353,7 +353,7 @@ export default function App() {
   }
 
   async function applyRouteLocation(route, chs, conversations) {
-    setShowSettings(route.overlay === "settings");
+    setShowSettings(false);
     setShowApiDocs(route.overlay === "api-docs");
     setSearchQuery(route.searchQuery);
 
@@ -669,7 +669,12 @@ export default function App() {
   }
   function closeSettings() {
     if (location.pathname === "/settings" && location.state?.workspacePath) navigate(-1);
-    else if (location.pathname === "/settings") navigate(activeWorkspacePath(), { replace: true });
+    else if (location.pathname === "/settings") navigate(workspacePath({
+      view: activeChannel?.type === "dm" ? "dms" : "home",
+      convId: activeChannel?.id || null,
+      convName: conversationRouteName(activeChannel),
+      convType: activeChannel?.type || null,
+    }), { replace: true });
     else setShowSettings(false);
   }
   function openApiDocs() {
@@ -1127,6 +1132,7 @@ export default function App() {
           onHideDm={handleHideDm}
           onHideChannel={handleHideChannel}
           onLogout={handleLogout}
+          onUpdated={(updated) => setUser((previous) => ({ ...previous, ...updated }))}
           onOpenSettings={openSettings}
           onOpenApiDocs={openApiDocs}
           onToggleMode={toggleMode}
@@ -1184,6 +1190,18 @@ export default function App() {
               next.delete(id);
               return next;
             }),
+            settings: {
+              user,
+              users,
+              theme,
+              themes: THEMES,
+              onSelectTheme: setTheme,
+              mode,
+              onSelectMode: setMode,
+              onUpdated: (updated) => setUser((previous) => ({ ...previous, ...updated })),
+              onClose: closeSettings,
+              onOpenApiDocs: openApiDocs,
+            },
           }}
           conversation={{
             channel: activeChannel,
@@ -1263,11 +1281,7 @@ export default function App() {
           setProfileUser(null);
           handleOpenDm(target);
         }}
-        onReplayTour={() => {
-          closeSettings();
-          setNavOpen(false);
-          setShowTour(true);
-        }}
+        onOpenApiDocs={openApiDocs}
         onFinishTour={finishTour}
         onClose={{
           create: () => setShowCreate(false),

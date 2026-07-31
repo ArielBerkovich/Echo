@@ -176,7 +176,7 @@ curl -X POST ${ORIGIN}/api/channels/CHANNEL_ID/messages \\
   ];
 }
 
-export default function ApiDocsPage({ onClose }) {
+export default function ApiDocsPage({ onClose, embedded = false }) {
   const [token, setToken] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -215,17 +215,8 @@ export default function ApiDocsPage({ onClose }) {
     }
   }
 
-  return (
-    <div className="settings-page api-page" data-testid="api-reference-page">
-      <header className="settings-page-head">
-        <h2>API reference</h2>
-        <button className="settings-close" onClick={onClose} aria-label="Close API reference">
-          ✕
-        </button>
-      </header>
-
-      <div className="settings-page-body">
-        <div className="api-inner">
+  const content = (
+    <div className="api-inner">
           {/* Token generation lives in its own panel above the columns, so
               generating a token doesn't reflow/shift the endpoint cards. */}
           <section className="settings-section api-token-panel">
@@ -312,8 +303,18 @@ export default function ApiDocsPage({ onClose }) {
               </section>
             ))}
           </div>
-        </div>
-      </div>
+    </div>
+  );
+
+  if (embedded) return <div className="api-embedded" data-testid="api-reference-page">{content}</div>;
+
+  return (
+    <div className="settings-page api-page" data-testid="api-reference-page">
+      <header className="settings-page-head">
+        <h2>API reference</h2>
+        <button className="settings-close" onClick={onClose} aria-label="Close API reference">✕</button>
+      </header>
+      <div className="settings-page-body">{content}</div>
     </div>
   );
 }

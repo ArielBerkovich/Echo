@@ -1,8 +1,12 @@
-import { useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { Code2Icon, PaletteIcon, UserRoundIcon } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { api } from "../api.js";
 import Avatar from "./Avatar.js";
+import { MAX_DISPLAY_NAME_LENGTH } from "../lib/profile.js";
+import ApiDocsPage from "./ApiDocsPage.js";
+import ProfilePictureDialog from "./ProfilePictureDialog.js";
 import { PASSWORD_RULE } from "../lib/password.js";
 import { passwordPairSchema } from "../lib/formSchemas.js";
 import { uploadSizeError } from "../lib/uploads.js";
@@ -15,6 +19,12 @@ import {
   showTestNotification,
 } from "../lib/notify.js";
 
+const SETTINGS_TABS = [
+  { id: "account", label: "Account", Icon: UserRoundIcon },
+  { id: "appearance", label: "Appearance", Icon: PaletteIcon },
+  { id: "api", label: "API", Icon: Code2Icon },
+];
+
 // User settings: profile picture, display name, and a copyable API token.
 export default function SettingsModal({
   user,
@@ -25,35 +35,45 @@ export default function SettingsModal({
   mode = "dark",
   onSelectMode,
   onUpdated,
-  onClose,
-  onReplayTour,
 }) {
   const [displayName, setDisplayName] = useState(user.displayName);
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl || null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [saved, setSaved] = useState(false);
+  const [activeTab, setActiveTab] = useState("account");
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
 
-  const fileRef = useRef(null);
   const nameChanged = displayName.trim() !== user.displayName;
 
-  async function onPickAvatar(e) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
+  useEffect(() => {
+    setDisplayName(user.displayName);
+    setAvatarUrl(user.avatarUrl || null);
+  }, [user.displayName, user.avatarUrl]);
+
+  function onAvatarFileSelected(file) {
     if (!file) return;
     if (!file.type.startsWith("image/")) return setError("Profile picture must be an image");
     const sizeError = uploadSizeError([file], undefined, "Profile pictures");
     if (sizeError) return setError(sizeError);
     setError(null);
+    setAvatarFile(file);
+  }
+
+  async function saveAvatar(file) {
     setBusy(true);
     try {
       const { attachments } = await api.uploadFiles([file]);
       const { user: updated } = await api.updateProfile({ avatarKey: attachments[0].key });
       setAvatarUrl(updated.avatarUrl);
       onUpdated(updated);
+      setAvatarFile(null);
+      setAvatarDialogOpen(false);
       flashSaved();
     } catch (err) {
       setError(err.message);
+      throw err;
     } finally {
       setBusy(false);
     }
@@ -76,10 +96,15 @@ export default function SettingsModal({
 
   async function saveName() {
     if (!nameChanged) return;
+    const nextName = displayName.trim();
+    if (!nextName || nextName.length > MAX_DISPLAY_NAME_LENGTH) {
+      setError(`Display name must be 1-${MAX_DISPLAY_NAME_LENGTH} characters`);
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
-      const { user: updated } = await api.updateProfile({ displayName: displayName.trim() });
+      const { user: updated } = await api.updateProfile({ displayName: nextName });
       onUpdated(updated);
       flashSaved();
     } catch (err) {
@@ -97,147 +122,72 @@ export default function SettingsModal({
 
   return (
     <div className="settings-page" data-testid="settings-page">
-      <header className="settings-page-head">
-        <h2>Settings</h2>
-        <button className="settings-close" data-testid="settings-close" onClick={onClose} aria-label="Close settings">
-          ✕
-        </button>
-      </header>
-      <div className="settings-page-body">
-        <div className="settings-page-inner">
-          <section className="settings-section">
-            <h3>Profile picture</h3>
-            <div className="settings-avatar-row">
-              <Avatar name={displayName} src={avatarUrl} size={72} />
-              <div className="settings-avatar-actions">
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*"
-                  hidden
-                  data-testid="settings-avatar-input"
-                  onChange={onPickAvatar}
-                />
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  data-testid="settings-avatar-button"
-                  disabled={busy}
-                  onClick={() => fileRef.current?.click()}
-                >
-                  {avatarUrl ? "Change" : "Upload"}
-                </button>
-                {avatarUrl && (
-                  <button
-                    type="button"
-                    className="link-danger"
-                    data-testid="settings-avatar-remove"
-                    disabled={busy}
-                    onClick={removeAvatar}
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-            </div>
-          </section>
-
-          {themes.length > 0 && (
-            <section className="settings-section">
-              <h3>Appearance</h3>
-              <p className="settings-hint">Pick a colour theme — it works in both light and dark.</p>
-              <div className="mode-toggle" role="group" aria-label="Light or dark mode">
-                <button
-                  type="button"
-                  className={`mode-option${mode === "light" ? " active" : ""}`}
-                  data-testid="settings-mode-light"
-                  onClick={() => onSelectMode?.("light")}
-                  aria-pressed={mode === "light"}
-                >
-                  ☀ Light
-                </button>
-                <button
-                  type="button"
-                  className={`mode-option${mode === "dark" ? " active" : ""}`}
-                  data-testid="settings-mode-dark"
-                  onClick={() => onSelectMode?.("dark")}
-                  aria-pressed={mode === "dark"}
-                >
-                  ☾ Dark
-                </button>
-              </div>
-              <div className="theme-grid">
-                {themes.map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    className={`theme-card${theme === t.id ? " active" : ""}`}
-                    data-testid={`settings-theme-${t.id}`}
-                    onClick={() => onSelectTheme?.(t.id)}
-                    aria-pressed={theme === t.id}
-                  >
-                    <span className="theme-swatch">
-                      {t.swatch.map((c, i) => (
-                        <span key={i} style={{ background: c }} />
-                      ))}
-                    </span>
-                    <span className="theme-name">{t.label}</span>
-                  </button>
-                ))}
+      <div className="settings-layout">
+        <aside className="settings-nav" aria-label="Settings categories">
+          <div className="settings-nav-account">
+            <span className="settings-nav-username">@{user.username}</span>
+          </div>
+          <nav className="settings-nav-list">
+            {SETTINGS_TABS.map(({ id, label, Icon }) => (
+              <button key={id} type="button" className={`settings-nav-item${activeTab === id ? " active" : ""}`} onClick={() => setActiveTab(id)} aria-current={activeTab === id ? "page" : undefined}>
+                <Icon size={17} strokeWidth={1.8} /><span>{label}</span>
+              </button>
+            ))}
+          </nav>
+        </aside>
+        <main className={`settings-content settings-content-${activeTab}`}>
+          {activeTab === "account" && <>
+            <section className="settings-section settings-profile-section">
+              <h3>Profile</h3>
+              <div className="settings-profile-fields">
+                <div className="settings-profile-field">
+                  <div className="settings-profile-field-label">Profile picture</div>
+                <div className="settings-avatar-row">
+                    <Avatar name={displayName} src={avatarUrl} size={64} />
+                  <div className="settings-avatar-actions">
+                    <button type="button" className="btn-secondary" data-testid="settings-avatar-button" disabled={busy} onClick={() => setAvatarDialogOpen(true)}>{avatarUrl ? "Change" : "Upload"}</button>
+                    {avatarUrl && <button type="button" className="link-danger" data-testid="settings-avatar-remove" disabled={busy} onClick={removeAvatar}>Remove</button>}
+                  </div>
+                </div>
+                </div>
+                <div className="settings-profile-field">
+                  <div className="settings-profile-field-label">Display name</div>
+                <div className="settings-name-row">
+                  <input className="settings-input" data-testid="settings-display-name" value={displayName} maxLength={MAX_DISPLAY_NAME_LENGTH} dir="auto" onChange={(e) => setDisplayName(e.target.value)} />
+                  <button type="button" className="btn-primary" disabled={!nameChanged || busy} onClick={saveName}>Save</button>
+                </div>
+                </div>
               </div>
             </section>
-          )}
-
-          <section className="settings-section">
-            <h3>Display name</h3>
-            <div className="settings-name-row">
-              <input
-                className="settings-input"
-                data-testid="settings-display-name"
-                value={displayName}
-                maxLength={64}
-                dir="auto"
-                onChange={(e) => setDisplayName(e.target.value)}
-              />
-              <button type="button" className="btn-primary" disabled={!nameChanged || busy} onClick={saveName}>
-                Save
-              </button>
-            </div>
-            <div className="settings-handle">@{user.username}</div>
-          </section>
-
-          {!user.isAdmin && <ChangePassword />}
-
-          {user.isAdmin && <AdminPasswordReset users={users} currentUserId={user.id} />}
-
-          <section className="settings-section">
-            <h3>Desktop notifications</h3>
-            <p className="settings-hint">
-              Get a desktop alert for direct messages, @mentions, and VIP messages when Echo isn't
-              focused.
-            </p>
-            <NotificationToggle />
-          </section>
-
-          {onReplayTour && (
             <section className="settings-section">
-              <h3>Walkthrough</h3>
-              <p className="settings-hint">New here, or want a refresher? Replay the quick product tour.</p>
-              <button
-                type="button"
-                className="btn-secondary replay-tour-btn"
-                data-testid="settings-replay-tour"
-                onClick={onReplayTour}
-              >
-                Replay walkthrough
-              </button>
+              <h3>Desktop notifications</h3>
+              <p className="settings-hint">Get a desktop alert for direct messages, @mentions, and VIP messages when Echo isn't focused.</p>
+              <NotificationToggle />
             </section>
-          )}
+            {!user.isAdmin ? <ChangePassword /> : <AdminPasswordReset users={users} currentUserId={user.id} />}
+          </>}
+
+          {activeTab === "appearance" && themes.length > 0 && <section className="settings-section settings-appearance-card">
+            <h3>Appearance</h3>
+            <p className="settings-hint">Choose a color theme and the surface mode that works best for you.</p>
+            <div className="mode-toggle" role="group" aria-label="Light or dark mode">
+              <button type="button" className={`mode-option${mode === "light" ? " active" : ""}`} data-testid="settings-mode-light" onClick={() => onSelectMode?.("light")} aria-pressed={mode === "light"}>☀ Light</button>
+              <button type="button" className={`mode-option${mode === "dark" ? " active" : ""}`} data-testid="settings-mode-dark" onClick={() => onSelectMode?.("dark")} aria-pressed={mode === "dark"}>☾ Dark</button>
+            </div>
+            <div className="theme-grid">
+              {themes.map((t) => <button key={t.id} type="button" className={`theme-card${theme === t.id ? " active" : ""}`} data-testid={`settings-theme-${t.id}`} onClick={() => onSelectTheme?.(t.id)} aria-pressed={theme === t.id}>
+                <span className="theme-swatch">{t.swatch.map((c, i) => <span key={i} style={{ background: c }} />)}</span><span className="theme-name">{t.label}</span>
+              </button>)}
+            </div>
+          </section>}
+
+          {activeTab === "api" && <ApiDocsPage embedded />}
 
           {error && <div className="error">{error}</div>}
           {saved && <div className="settings-saved">Saved ✓</div>}
-        </div>
+        </main>
       </div>
+      {avatarDialogOpen && <ProfilePictureDialog file={avatarFile} currentSrc={avatarUrl} onFileSelected={onAvatarFileSelected} onSave={saveAvatar} onClose={() => { setAvatarFile(null); setAvatarDialogOpen(false); }} />}
     </div>
   );
 }
