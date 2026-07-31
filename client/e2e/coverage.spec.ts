@@ -414,8 +414,10 @@ test("schedules a message and clears the banner after delivery", async ({ page }
 
 test("uses conversation wording for scheduled messages in DMs", async ({ page }) => {
   await page.goto("/");
-  await page.locator(".dm-item").filter({ hasText: fixture.bob.displayName }).first().click();
-  await page.locator(".composer-editor").fill(`DM scheduled ${Date.now()}`);
+  await page.locator(".dm-item").filter({ hasText: fixture.bob.displayName }).locator(".dm-open").click();
+  const dmComposer = page.locator(".composer-editor");
+  await expect(dmComposer).toBeEditable();
+  await dmComposer.fill(`DM scheduled ${Date.now()}`);
   await page.getByRole("button", { name: "Send options" }).click();
   await page.locator(".send-menu button").filter({ hasText: "Tomorrow, 9:00 AM" }).click();
   await expect(page.locator(".scheduled-banner")).toContainText("for this conversation");
