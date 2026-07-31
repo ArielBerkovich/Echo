@@ -97,7 +97,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
   const editorState = useEditorState({
     editor,
     selector: ({ editor: currentEditor }) => {
-      if (!currentEditor?.state?.doc) {
+      if (!currentEditor?.isInitialized || !currentEditor?.state?.doc) {
         return { canSend: false, bold: false, italic: false, strikethrough: false, ul: false, ol: false };
       }
       return {
