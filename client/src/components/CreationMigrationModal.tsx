@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { LockIcon, UserIcon, XIcon } from "lucide-react";
+import { LockIcon, UserIcon } from "lucide-react";
 import { api } from "../api.js";
+import Modal from "./Modal.js";
 
 export default function CreationMigrationModal({
   kind,
@@ -83,22 +84,21 @@ export default function CreationMigrationModal({
     }
   }
 
+  const title = kind === "rhsso" ? "Create your Echo account" : "Bring your history";
+
   return (
-    <div className="modal-backdrop auth-creation-backdrop" role="presentation">
-      <section
-        className="modal auth-creation-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="creation-migration-title"
-        data-testid="creation-migration-modal"
-      >
-        {kind === "local" ? (
-          <button type="button" className="modal-close" onClick={onClose} aria-label="Close">
-            <XIcon size={18} />
-          </button>
-        ) : null}
+    <Modal
+      title={title}
+      className="auth-creation-modal"
+      backdropClassName="auth-creation-backdrop"
+      closeDisabled={kind === "rhsso"}
+      showHeader={false}
+      showClose={kind === "local"}
+      testId="creation-migration-modal"
+      onClose={onClose}
+    >
         <h2 id="creation-migration-title">
-          {kind === "rhsso" ? "Create your Echo account" : "Bring your history"}
+          {title}
         </h2>
         {kind === "rhsso" && !showMigration ? (
           <>
@@ -197,7 +197,6 @@ export default function CreationMigrationModal({
             </div>
           </>
         )}
-      </section>
-    </div>
+    </Modal>
   );
 }

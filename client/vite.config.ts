@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 
 // During local `vite dev`, proxy API + socket traffic to the backend.
 // In production the nginx container handles this instead.
@@ -10,7 +11,7 @@ export default defineConfig({
   // Keep the built-in emoji as cacheable files instead of embedding SVG data
   // URLs in the main JavaScript bundle.
   build: { assetsInlineLimit: 0 },
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   server: {
     // Bind to all interfaces so phones and other devices on the LAN can
     // reach the Vite dev server.
