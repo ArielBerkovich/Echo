@@ -6428,11 +6428,10 @@ html[data-mode="dark"] .new-messages-button:hover {
 .composer-editor ul,
 .composer-editor ol {
   margin: 2px 0;
-  /* Match the editor's normal left anchor; keep the marker in the line so it
-     does not float at the far edge of an RTL text box. */
+  /* Keep the marker beside the paragraph text rendered by Tiptap. */
   text-align: left;
-  list-style-position: inside;
-  padding-inline-start: 0;
+  list-style-position: outside;
+  padding-inline-start: 22px;
 }
 .composer-editor li { margin: 1px 0; }
 .composer-editor li > p { margin: 0; }
