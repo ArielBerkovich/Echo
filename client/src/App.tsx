@@ -67,6 +67,8 @@ export default function App() {
     setSavedIds,
     starredIds,
     setStarredIds,
+    branding,
+    setBranding,
     activityItems,
   } = useWorkspaceQueries(!!user);
   const [navOpen, setNavOpen] = useState(false); // mobile: rail+sidebar drawer open?
@@ -1116,6 +1118,7 @@ export default function App() {
           dms={dms}
           hidden={hidden}
           starredIds={starredIds}
+          branding={branding}
           onlineIds={onlineIds}
           activeChannel={activeChannel}
           activityBadge={activityBadge}
@@ -1199,6 +1202,8 @@ export default function App() {
               mode,
               onSelectMode: setMode,
               onUpdated: (updated) => setUser((previous) => ({ ...previous, ...updated })),
+              branding,
+              onBrandingUpdated: setBranding,
               onClose: closeSettings,
               onOpenApiDocs: openApiDocs,
             },
@@ -1256,6 +1261,7 @@ export default function App() {
         customEmojis={customEmojis}
         onlineIds={onlineIds}
         starredIds={starredIds}
+        branding={branding}
         theme={theme}
         themes={THEMES}
         mode={mode}
@@ -1277,6 +1283,7 @@ export default function App() {
         onSelectMode={setMode}
         onUserUpdated={(updated) => setUser((previous) => ({ ...previous, ...updated }))}
         onToggleStarred={handleToggleStarred}
+        onBrandingUpdated={setBranding}
         onOpenDm={(target) => {
           setProfileUser(null);
           handleOpenDm(target);
