@@ -143,7 +143,7 @@ function ImageAttachment({ a, onOpenLightbox }) {
   const scale = sourceWidth && sourceHeight
     ? Math.min(1, 360 / sourceWidth, 320 / sourceHeight)
     : 1;
-  const reservedWidth = sourceWidth ? Math.round(sourceWidth * scale) : 320;
+  const reservedWidth = sourceWidth ? Math.max(48, Math.round(sourceWidth * scale)) : 320;
 
   const handleClick = () => {
     if (onOpenLightbox) onOpenLightbox(src, a.name);
