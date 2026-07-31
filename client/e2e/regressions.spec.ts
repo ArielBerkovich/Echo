@@ -7,13 +7,67 @@ import {
   seedWorkspaceFixture,
   slug,
   uniqueSuffix,
+  uploadAsToken,
 } from "./helpers.js";
+
+const ONE_BY_ONE_PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAEklEQVR42mP8/5+hHgAHggJ/PFvdcQAAAABJRU5ErkJggg==",
+  "base64"
+);
 
 let fixture: Awaited<ReturnType<typeof seedWorkspaceFixture>>;
 
 test.beforeEach(async ({ page }) => {
   fixture = await seedWorkspaceFixture(page);
 });
+
+async function createScrollableChannel(page, prefix) {
+  const channelName = `${prefix}-${fixture.suffix}`;
+  const created = await requestAsToken(page, fixture.alice.token, "/channels", {
+    method: "POST",
+    body: { name: channelName, type: "public" },
+  });
+  for (let index = 0; index < 28; index += 1) {
+    await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+      method: "POST",
+      body: {
+        channelId: created.channel.id,
+        body: `${prefix} seed ${index} ${fixture.suffix}`,
+        externalKey: `${prefix}-seed-${fixture.suffix}-${index}`,
+      },
+    });
+  }
+  await requestAsToken(page, fixture.alice.token, `/channels/${created.channel.id}/read`, {
+    method: "POST",
+  });
+  return { channelName, channel: created.channel };
+}
+
+async function createImageChannel(page, prefix) {
+  const channelName = `${prefix}-${fixture.suffix}`;
+  const [{ channel }, { attachments }] = await Promise.all([
+    requestAsToken(page, fixture.alice.token, "/channels", {
+      method: "POST",
+      body: { name: channelName, type: "public" },
+    }),
+    uploadAsToken(page, fixture.alice.token, {
+      name: `${prefix}.png`,
+      mimeType: "image/png",
+      buffer: ONE_BY_ONE_PNG,
+    }),
+  ]);
+  const attachment = { ...attachments[0], width: 320, height: 180 };
+  const { message } = await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: channel.id,
+      body: `${prefix} message ${fixture.suffix}`,
+      attachments: [attachment],
+      externalKey: `${prefix}-message-${fixture.suffix}`,
+    },
+  });
+  return { attachment, channel, channelName, message };
+}
 
 test("shows a dot instead of a Home notification count", async ({ page }) => {
   await page.goto("/");
@@ -288,48 +342,154 @@ test("shows only joined channels in the Channels section", async ({ page }) => {
   await expect(page.getByTestId("channel-leave")).toHaveCount(0);
 });
 
-test("preserves the reading position and offers new messages when scrolled up", async ({ page }) => {
-  const channelName = `scroll-regression-${fixture.suffix}`;
-  const created = await requestAsToken(page, fixture.alice.token, "/channels", {
-    method: "POST",
-    body: { name: channelName, type: "public" },
+test("switches channels without flashing stale messages while images load", async ({ page }) => {
+  const seeded = await createImageChannel(page, "switch-image");
+  let fileRequests = 0;
+  let releaseImage;
+  const imageGate = new Promise((resolve) => {
+    releaseImage = resolve;
   });
-  for (let i = 0; i < 28; i += 1) {
-    await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
-      method: "POST",
-      body: {
-        channelId: created.channel.id,
-        body: `Scroll seed ${i} ${Date.now()}`,
-        externalKey: `scroll-seed-${fixture.suffix}-${i}`,
-      },
-    });
-  }
-  await requestAsToken(page, fixture.alice.token, `/channels/${created.channel.id}/read`, { method: "POST" });
+  await page.route(`**${seeded.attachment.url}`, async (route) => {
+    fileRequests += 1;
+    await imageGate;
+    await route.continue();
+  });
+
+  await page.goto("/");
+  await page.locator(".dm-item").filter({ hasText: fixture.bob.displayName }).locator(".dm-open").click();
+  const staleMessage = page.getByTestId(`message-${fixture.messages.dmMessage.id}`);
+  await expect(staleMessage).toBeVisible();
+  await page.evaluate(
+    ({ nextChannel, staleText }) => {
+      (window as any).__staleTimelineSeen = false;
+      const observer = new MutationObserver(() => {
+        const title = document.querySelector('[data-testid="channel-title"]')?.textContent || "";
+        const timeline = document.querySelector(".channel-main .messages")?.textContent || "";
+        if (title.includes(nextChannel) && timeline.includes(staleText)) {
+          (window as any).__staleTimelineSeen = true;
+        }
+      });
+      const channelMain = document.querySelector(".channel-main");
+      if (channelMain) observer.observe(channelMain, { childList: true, subtree: true, characterData: true });
+      (window as any).__stopStaleTimelineObserver = () => observer.disconnect();
+    },
+    { nextChannel: seeded.channelName, staleText: fixture.messages.dmMessage.body }
+  );
+
+  await page.getByTestId(`channel-row-${slug(seeded.channelName)}`).click();
+  await expect(page.getByTestId("channel-title")).toContainText(seeded.channelName);
+  await expect(page.getByTestId(`message-${seeded.message.id}`)).toBeVisible();
+  await expect(staleMessage).toHaveCount(0);
+  await expect(page.locator(".att-image.is-loading")).toBeVisible();
+  await expect.poll(() => fileRequests).toBe(1);
+
+  const before = await page.locator(".att-image").boundingBox();
+  const beforeScrollTop = await page.locator(".channel-main .messages").evaluate((el) => el.scrollTop);
+  releaseImage();
+  await expect(page.locator(`.att-image img[alt="${seeded.attachment.name}"]`)).toBeVisible();
+  const after = await page.locator(".att-image").boundingBox();
+  const afterScrollTop = await page.locator(".channel-main .messages").evaluate((el) => el.scrollTop);
+
+  expect(before).not.toBeNull();
+  expect(after).not.toBeNull();
+  expect(Math.abs(after.width - before.width)).toBeLessThanOrEqual(1);
+  expect(Math.abs(after.height - before.height)).toBeLessThanOrEqual(1);
+  expect(Math.abs(afterScrollTop - beforeScrollTop)).toBeLessThanOrEqual(2);
+  expect(await page.evaluate(() => (window as any).__staleTimelineSeen)).toBeFalsy();
+  await page.evaluate(() => (window as any).__stopStaleTimelineObserver?.());
+});
+
+test("reuses protected attachment media when revisiting a channel", async ({ page }) => {
+  const seeded = await createImageChannel(page, "cached-image");
+  let fileRequests = 0;
+  await page.route(`**${seeded.attachment.url}`, async (route) => {
+    fileRequests += 1;
+    await route.continue();
+  });
+
+  await page.goto("/");
+  const channelRow = page.getByTestId(`channel-row-${slug(seeded.channelName)}`);
+  await channelRow.click();
+  const image = page.locator(`.att-image img[alt="${seeded.attachment.name}"]`);
+  await expect(image).toBeVisible();
+  await expect.poll(() => fileRequests).toBe(1);
+
+  await page.getByTestId("channel-row-general").click();
+  await expect(page.getByTestId("channel-title")).toContainText("general");
+  await channelRow.click();
+  await expect(image).toBeVisible();
+  await expect.poll(() => fileRequests).toBe(1);
+});
+
+test("shows a compact scroll-to-latest control only when away from the bottom", async ({ page }) => {
+  const { channelName } = await createScrollableChannel(page, "scroll-control");
 
   await page.goto("/");
   await page.getByTestId(`channel-row-${slug(channelName)}`).click();
   const scroller = page.locator(".channel-main .messages");
   await expect(scroller).toBeVisible();
-  await expect(page.getByText("Scroll seed 27", { exact: false })).toBeVisible();
+  await expect(page.getByText("scroll-control seed 27", { exact: false })).toBeVisible();
+  await expect.poll(async () => scroller.evaluate((el) => el.scrollHeight - el.scrollTop - el.clientHeight)).toBeLessThanOrEqual(2);
+  await expect(page.getByTestId("new-messages-button")).toHaveCount(0);
+
+  await scroller.evaluate((el) => {
+    el.scrollTop = Math.max(0, el.scrollHeight - el.clientHeight - 220);
+    el.dispatchEvent(new Event("scroll", { bubbles: true }));
+  });
+  const button = page.getByTestId("new-messages-button");
+  await expect(button).toBeVisible();
+  await expect(button).toHaveAttribute("aria-label", "Scroll to latest message");
+  await expect(button.locator("svg.lucide-chevrons-down")).toHaveCount(1);
+
+  const [buttonBox, scrollerBox] = await Promise.all([button.boundingBox(), scroller.boundingBox()]);
+  expect(buttonBox).not.toBeNull();
+  expect(scrollerBox).not.toBeNull();
+  expect(buttonBox.width).toBeLessThanOrEqual(36);
+  expect(buttonBox.height).toBeLessThanOrEqual(36);
+  const rightGap = scrollerBox.x + scrollerBox.width - buttonBox.x - buttonBox.width;
+  expect(rightGap).toBeGreaterThanOrEqual(0);
+  expect(rightGap).toBeLessThanOrEqual(18);
+
+  await scroller.evaluate((el) => {
+    el.scrollTop = el.scrollHeight;
+    el.dispatchEvent(new Event("scroll", { bubbles: true }));
+  });
+  await expect(button).toHaveCount(0);
+});
+
+test("scroll-to-latest reports unread count and returns to the live edge", async ({ page }) => {
+  const { channel, channelName } = await createScrollableChannel(page, "scroll-unread");
+
+  await page.goto("/");
+  await page.getByTestId(`channel-row-${slug(channelName)}`).click();
+  const scroller = page.locator(".channel-main .messages");
+  await expect(page.getByText("scroll-unread seed 27", { exact: false })).toBeVisible();
+  await expect.poll(async () => scroller.evaluate((el) => el.scrollHeight - el.scrollTop - el.clientHeight)).toBeLessThanOrEqual(2);
   await scroller.evaluate((el) => {
     el.scrollTop = Math.max(0, el.scrollHeight - el.clientHeight - 220);
     el.dispatchEvent(new Event("scroll", { bubbles: true }));
   });
   const position = await scroller.evaluate((el) => el.scrollTop);
+  const button = page.getByTestId("new-messages-button");
+  await expect(button).toHaveAttribute("aria-label", "Scroll to latest message");
 
-  await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
-    method: "POST",
-    body: {
-      channelId: created.channel.id,
-      body: `Message while reading ${Date.now()}`,
-      externalKey: `scroll-live-${fixture.suffix}`,
-    },
-  });
+  for (const index of [0, 1]) {
+    await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+      method: "POST",
+      body: {
+        channelId: channel.id,
+        body: `Message while reading ${index} ${fixture.suffix}`,
+        externalKey: `scroll-live-${fixture.suffix}-${index}`,
+      },
+    });
+  }
 
-  await expect(page.getByTestId("new-messages-button")).toBeVisible();
+  await expect(button).toHaveAttribute("aria-label", "Scroll to latest, 2 new messages");
+  await expect(button.locator(".new-messages-count")).toHaveText("2");
   await expect.poll(() => scroller.evaluate((el) => el.scrollTop)).toBeGreaterThanOrEqual(position - 2);
-  await page.getByTestId("new-messages-button").click();
+  await button.click();
   await expect.poll(async () => scroller.evaluate((el) => el.scrollHeight - el.scrollTop - el.clientHeight)).toBeLessThanOrEqual(2);
+  await expect(button).toHaveCount(0);
 });
 
 test("scrolls to the bottom after sending while reading older messages", async ({ page }) => {
