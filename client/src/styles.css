@@ -6750,6 +6750,37 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
 .new-message-modal {
   width: 520px;
 }
+.new-message-modal .composer {
+  margin: 14px 0 0;
+}
+.new-message-recipient {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+.new-message-recipient .person-info {
+  min-width: 0;
+  flex: 1;
+}
+.new-message-change {
+  flex: none;
+  padding: 6px 9px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.new-message-change:hover {
+  background: var(--hover);
+  color: var(--text);
+}
 .new-message-search {
   display: flex;
   align-items: center;
