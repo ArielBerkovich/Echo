@@ -19,7 +19,7 @@ import Message, { SystemMessage } from "./Message.js";
 import { LightboxImage } from "./Attachments.js";
 import Composer from "./Composer.js";
 import ConfirmDialog from "./ConfirmDialog.js";
-import Modal from "./Modal.js";
+import LeaveChannelDialog from "./LeaveChannelDialog.js";
 import { LeaveIcon, PinIcon } from "./Icons.js";
 import { formatDayDivider, isDifferentDay } from "../lib/time.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
@@ -100,8 +100,6 @@ export default function ChannelView({
   const [forwarding, setForwarding] = useState(null); // message being forwarded, or null
   const [confirmDelete, setConfirmDelete] = useState(null); // message pending delete confirmation
   const [confirmLeave, setConfirmLeave] = useState(false); // leave-channel confirmation open?
-  const [leaveManagerId, setLeaveManagerId] = useState("");
-  const [leaveManagerQuery, setLeaveManagerQuery] = useState("");
   const [showDetails, setShowDetails] = useState(false); // channel details panel open?
   const [showMembers, setShowMembers] = useState(false); // members side panel open?
   const [showPinned, setShowPinned] = useState(false); // pinned messages panel open?
@@ -827,21 +825,6 @@ export default function ChannelView({
   const dmAvatar = dmUser?.avatarUrl || null;
   const isMember = isDm || (channel.members || []).includes(user.id);
   const isCreator = !isDm && channel.createdBy === user.id;
-  const remainingMembers = (channel.members || []).filter((memberId) => memberId !== user.id);
-  const hasRemainingManager = (channel.managers || []).some(
-    (managerId) => managerId !== user.id && remainingMembers.includes(managerId)
-  );
-  const needsManagerTransfer = isCreator && remainingMembers.length > 0 && !hasRemainingManager;
-  const leaveCandidates = users
-    .filter((candidate) => remainingMembers.includes(candidate.id))
-    .sort((a, b) => a.displayName.localeCompare(b.displayName));
-  const managerQuery = leaveManagerQuery.trim().toLowerCase();
-  const visibleLeaveCandidates = leaveCandidates.filter(
-    (candidate) =>
-      !managerQuery ||
-      candidate.displayName.toLowerCase().includes(managerQuery) ||
-      candidate.username.toLowerCase().includes(managerQuery)
-  );
   const canToggleVip = isDm && !!dmUser?.id && dmUser.id !== user.id;
   // #general is the default channel — everyone stays in it, so no Leave action.
   const isGeneral = (channel.name || "").toLowerCase() === "general";
@@ -1208,105 +1191,15 @@ export default function ChannelView({
         />
       )}
 
-      {confirmLeave && needsManagerTransfer ? (
-        <Modal title="Choose a manager before leaving" className="manager-modal" onClose={() => setConfirmLeave(false)}>
-          <p className="settings-hint manager-modal-hint">
-            Choose someone to manage members after you leave #{channel.name}.
-          </p>
-          {channel.type === "private" && (
-            <p className="settings-hint leave-saved-warning">
-              All messages you saved from this private channel will be removed from Saved.
-            </p>
-          )}
-          <label className="manager-select-field">
-            <span>New manager</span>
-            <input
-              className="people-filter"
-              data-testid="leave-manager-search"
-              value={leaveManagerQuery}
-              onChange={(event) => setLeaveManagerQuery(event.target.value)}
-              placeholder="Search people"
-              autoFocus
-            />
-          </label>
-          <div className="people-list manager-picker-list">
-            {visibleLeaveCandidates.length === 0 ? (
-              <div className="people-empty">No matching members.</div>
-            ) : (
-              visibleLeaveCandidates.map((candidate) => {
-                const selected = leaveManagerId === candidate.id;
-                return (
-                  <div
-                    className={`person-row manager-candidate ${selected ? "selected" : ""}`}
-                    key={candidate.id}
-                    role="button"
-                    tabIndex={0}
-                    aria-pressed={selected}
-                    onClick={() => setLeaveManagerId(candidate.id)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        setLeaveManagerId(candidate.id);
-                      }
-                    }}
-                  >
-                    <Avatar name={candidate.displayName} src={candidate.avatarUrl} size={32} />
-                    <div className="person-info">
-                      <div className="person-name">{candidate.displayName}</div>
-                      <div className="person-handle">@{candidate.username}</div>
-                    </div>
-                    {selected && (
-                      <span className="manager-selected-check" aria-label="Selected manager">✓</span>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
-          <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={() => setConfirmLeave(false)}>Cancel</button>
-            <button
-              type="button"
-              className="btn-danger"
-              disabled={!leaveManagerId}
-              onClick={() => {
-                setConfirmLeave(false);
-                onLeave(channel, leaveManagerId);
-              }}
-            >
-              Transfer & leave
-            </button>
-          </div>
-        </Modal>
-      ) : confirmLeave && isCreator && remainingMembers.length === 0 ? (
-        <ConfirmDialog
-          title={`Delete #${channel.name}?`}
-          message={channel.type === "private"
-            ? "This channel has no other members. Deleting it will archive its history and remove all messages you saved from it."
-            : "This channel has no other members. Deleting it will archive its history."}
-          confirmLabel="Delete channel"
-          danger
-          onConfirm={() => {
-            setConfirmLeave(false);
-            onDeleteChannel?.(channel);
-          }}
-          onCancel={() => setConfirmLeave(false)}
-        />
-      ) : confirmLeave && (
-        <ConfirmDialog
-          title={`Leave #${channel.name}?`}
-          message={channel.type === "private"
-            ? "You'll stop receiving messages from this channel. All messages you saved from it will be removed from Saved."
-            : "You'll stop receiving messages from this channel. You can rejoin later if it's public."}
-          confirmLabel="Leave"
-          danger
-          onConfirm={() => {
-            setConfirmLeave(false);
-            onLeave(channel);
-          }}
-          onCancel={() => setConfirmLeave(false)}
-        />
-      )}
+      <LeaveChannelDialog
+        open={confirmLeave}
+        channel={channel}
+        users={users}
+        currentUserId={user.id}
+        onLeave={onLeave}
+        onDelete={onDeleteChannel}
+        onClose={() => setConfirmLeave(false)}
+      />
     </main>
   );
 }

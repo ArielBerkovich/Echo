@@ -22,6 +22,14 @@ td.addRule("strikethrough", {
   replacement: (content) => `~~${content}~~`,
 });
 
+// ProseMirror/Tiptap represents list-item text as <li><p>…</p></li>. Treat
+// that paragraph as structural so the persisted Markdown stays compatible
+// with the previous editor's compact "- item" representation.
+td.addRule("listItemParagraph", {
+  filter: (node) => node.nodeName === "P" && node.parentNode?.nodeName === "LI",
+  replacement: (content) => content,
+});
+
 export function htmlToMarkdown(html) {
   // Strip zero-width spaces (used as caret anchors inside empty code spans).
   return td.turndown(normalizeCodeBlockBreaks(html)).replace(/​/g, "").trim();

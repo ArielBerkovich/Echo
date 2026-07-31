@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Modal from "./Modal.js";
+import Modal, { ModalActions } from "./Modal.js";
 
 export default function BackendConnectionModal({ backendUrl, onClose, onRetry }) {
   const [value, setValue] = useState(backendUrl);
@@ -38,12 +38,12 @@ export default function BackendConnectionModal({ backendUrl, onClose, onRetry })
         />
       </label>
       {error ? <div className="error backend-connection-error" role="alert">{error}</div> : null}
-      <div className="modal-actions">
+      <ModalActions>
         <button type="button" className="btn-secondary" onClick={onRetry} disabled={saving}>Try again</button>
         <button type="button" className="btn-primary" onClick={save} disabled={saving || !value.trim()}>
           {saving ? "Restarting Echo…" : "Save and reconnect"}
         </button>
-      </div>
+      </ModalActions>
     </Modal>
   );
 }

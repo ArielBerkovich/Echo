@@ -238,11 +238,38 @@ test("pastes markdown into the composer as formatted content", async ({ page }) 
   const editor = page.locator(".composer-editor");
   await expect(editor.locator("h1")).toHaveText("Heading 1");
   await expect(editor.locator("strong")).toHaveText("Bold text");
-  await expect(editor.locator("del")).toHaveText("Strikethrough text");
+  await expect(editor.locator("s, del")).toHaveText("Strikethrough text");
   await expect(editor.locator("pre code")).toContainText("formatted via API");
   await expect(editor.locator("blockquote")).toContainText("Quote line");
   await expect(editor.locator("li")).toContainText(["Bullet item", "Numbered item"]);
   await expect(editor.locator('a[href="https://example.com"]')).toHaveText("Echo link");
+});
+
+test("serializes Tiptap content through the existing Markdown message contract", async ({ page }) => {
+  await page.goto("/");
+  const marker = `Tiptap contract ${Date.now()}`;
+  const body = `# ${marker}\n\n**Bold** and ~~strike~~ with [a link](https://example.com)\n\n- List item\n\n\`\`\`js\nconst compatible = true;\n\`\`\``;
+  const expectedBody = `# ${marker}\n\n**Bold** and ~~strike~~ with [a link](https://example.com)\n\n-   List item\n\n\`\`\`js\nconst compatible = true;\n\`\`\``;
+  const editor = page.getByTestId("composer-editor");
+  await editor.focus();
+  await page.evaluate((markdown) => {
+    const clipboard = new DataTransfer();
+    clipboard.setData("text/plain", markdown);
+    document.querySelector('[data-testid="composer-editor"]').dispatchEvent(new ClipboardEvent("paste", {
+      bubbles: true,
+      cancelable: true,
+      clipboardData: clipboard,
+    }));
+  }, body);
+  await page.getByTestId("composer-send").click();
+  await expect(page.getByText(marker)).toBeVisible();
+
+  const { messages } = await requestAsToken(
+    page,
+    fixture.alice.token,
+    `/channels/${fixture.generalChannel.id}/messages`
+  );
+  expect(messages.find((message) => message.body.includes(marker))?.body).toBe(expectedBody);
 });
 
 test("resets the composer placeholder after deleting the draft", async ({ page }) => {
@@ -256,7 +283,8 @@ test("resets the composer placeholder after deleting the draft", async ({ page }
   await editor.fill("");
 
   await expect(editor).toHaveClass(/is-empty/);
-  await expect.poll(() => editor.evaluate((element) => element.innerHTML)).toBe("");
+  await expect(editor).toHaveText("");
+  await expect(editor.locator("p.is-editor-empty")).toHaveCount(1);
 });
 
 test("clears message actions when leaving the message row but keeps them over the toolbar", async ({ page }) => {
@@ -308,7 +336,7 @@ test("keeps copy-and-paste message paragraphs flush with the composer", async ({
     );
   });
 
-  await expect(editor.locator("p")).toHaveCount(0);
+  await expect(editor.locator("p")).toHaveCount(1);
   await expect(editor).toContainText(body);
 });
 
@@ -328,8 +356,11 @@ test("uses Enter for new list items and Shift+Enter for list line breaks", async
   await page.keyboard.up("Shift");
   await page.keyboard.type("After list");
 
-  const html = await editor.evaluate((el) => el.innerHTML);
-  expect(html).toMatch(/<ul><li>List item one<\/li><li>List item two<br>\u200b?After list<\/li><\/ul>/);
+  const items = editor.locator("ul > li");
+  await expect(items).toHaveCount(2);
+  await expect(items.nth(0)).toHaveText("List item one");
+  await expect(items.nth(1)).toHaveText("List item twoAfter list");
+  await expect(items.nth(1).locator("br")).toHaveCount(1);
 });
 
 test("uses Shift+Enter for code newlines and Enter to exit the block", async ({ page }) => {
@@ -348,9 +379,24 @@ test("uses Shift+Enter for code newlines and Enter to exit the block", async ({ 
   await page.keyboard.press("Enter");
   await page.keyboard.type("After code");
 
-  const html = await editor.evaluate((el) => el.innerHTML);
-  expect(html).toMatch(/<pre><code>[\s\S]*const value = 1;<br>\u200b?console\.log\(value\);[\s\S]*<\/code><\/pre>/);
-  expect(html).toMatch(/<\/pre><div[^>]*>After code<\/div>/);
+  await expect(editor.locator("pre code")).toContainText("const value = 1;");
+  await expect(editor.locator("pre code")).toContainText("console.log(value);");
+  await expect(editor.locator("p").filter({ hasText: "After code" })).toHaveText("After code");
+});
+
+test("uses an empty quoted line to exit a blockquote", async ({ page }) => {
+  await page.goto("/");
+
+  const editor = page.locator(".composer-editor");
+  await editor.click();
+  await page.getByTitle("Blockquote").click();
+  await page.keyboard.type("Quoted text");
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("After quote");
+
+  await expect(editor.locator("blockquote")).toHaveText("Quoted text");
+  await expect(editor.locator(":scope > p").filter({ hasText: "After quote" })).toHaveText("After quote");
 });
 
 test("sends multiple messages from the same composer", async ({ page }) => {

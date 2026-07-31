@@ -4,6 +4,7 @@ import { formatDateTime } from "../lib/time.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
 import Avatar from "./Avatar.js";
 import { BookmarkIcon } from "./Icons.js";
+import { FeedContent, FeedLayout, FeedMessage } from "./FeedLayout.js";
 
 // Feed of the current user's saved ("save for later") messages. Clicking a row
 // jumps to the message; the bookmark removes it from saved.
@@ -34,55 +35,51 @@ export default function SavedFeed({ user, users = [], customEmojis = [], onJump,
   }
 
   return (
-    <main className="channel-view">
-      <div className="channel-main">
-        <header className="channel-header" data-testid="saved-header">
-          <span className="ch-name">Saved</span>
-          <span className="ch-meta">Messages you've saved for later</span>
-        </header>
-        <div className="messages activity-list" data-testid="saved-list">
-          {loading ? (
-            <div className="empty-state"><p>Loading…</p></div>
-          ) : items.length === 0 ? (
-            <div className="empty-state">
-              <h3>Nothing saved yet</h3>
-              <p>Hover a message and hit the bookmark to save it for later.</p>
+    <FeedLayout title="Saved" subtitle="Messages you've saved for later" testId="saved">
+      <FeedContent
+        loading={loading}
+        items={items}
+        emptyTitle="Nothing saved yet"
+        emptyMessage="Hover a message and hit the bookmark to save it for later."
+      >
+        {items.map((it) => (
+          <div
+            key={it.id}
+            className="activity-item"
+            data-testid="saved-item"
+            role="button"
+            tabIndex={0}
+            onClick={() => onJump(it)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onJump(it);
+              }
+            }}
+          >
+            <Avatar name={it.author?.displayName || "?"} src={it.author?.avatarUrl} size={36} />
+            <div className="content">
+              <FeedMessage
+                author={it.author?.displayName || "unknown"}
+                context={`${it.channelType === "dm" ? `in your DM with ${it.channelName}` : `in #${it.channelName}`}${it.threadId ? " · thread" : ""}`}
+                time={formatDateTime(it.createdAt)}
+                body={it.body}
+                renderMarkdown={renderMarkdown}
+              />
             </div>
-          ) : (
-            items.map((it) => (
-              <button key={it.id} className="activity-item" data-testid="saved-item" onClick={() => onJump(it)}>
-                <Avatar name={it.author?.displayName || "?"} src={it.author?.avatarUrl} size={36} />
-                <div className="content">
-                  <div className="meta">
-                    <span className="author">{it.author?.displayName || "unknown"}</span>
-                    <span className="activity-where">
-                      {it.channelType === "dm" ? `in your DM with ${it.channelName}` : `in #${it.channelName}`}
-                      {it.threadId ? " · thread" : ""}
-                    </span>
-                    <span className="time">{formatDateTime(it.createdAt)}</span>
-                  </div>
-                  {it.body && (
-                    <div
-                      className="body markdown"
-                      dir="auto"
-                      dangerouslySetInnerHTML={{ __html: renderMarkdown(it.body) }}
-                    />
-                  )}
-                </div>
-                <span
-                  className="saved-remove saved-active"
-                  data-testid={`saved-remove-${it.id}`}
-                  title="Remove from saved"
-                  role="button"
-                  onClick={(e) => unsave(e, it)}
-                >
-                  <BookmarkIcon />
-                </span>
-              </button>
-            ))
-          )}
-        </div>
-      </div>
-    </main>
+            <button
+              type="button"
+              className="saved-remove saved-active"
+              data-testid={`saved-remove-${it.id}`}
+              title="Remove from saved"
+              aria-label="Remove from saved"
+              onClick={(event) => unsave(event, it)}
+            >
+              <BookmarkIcon />
+            </button>
+          </div>
+        ))}
+      </FeedContent>
+    </FeedLayout>
   );
 }

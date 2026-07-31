@@ -24,6 +24,13 @@ describe("htmlToMarkdown", () => {
     assert.equal(htmlToMarkdown(html), "```\nline one\nline two\n```");
   });
 
+  it("keeps Tiptap list paragraphs compatible with existing Markdown", () => {
+    assert.equal(
+      htmlToMarkdown("<ul><li><p>First</p></li><li><p>Second</p></li></ul>"),
+      "-   First\n-   Second"
+    );
+  });
+
   it("strips zero-width caret anchors", () => {
     assert.equal(htmlToMarkdown("<p>he\u200bllo</p>"), "hello");
   });

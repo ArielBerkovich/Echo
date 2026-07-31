@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Avatar from "./Avatar.js";
-import Modal from "./Modal.js";
+import Modal, { ModalActions } from "./Modal.js";
 
 // Pick workspace members to add to a channel. Adding is immediate; the person
 // then drops out of the list. "Done" closes the dialog.
@@ -65,11 +65,11 @@ export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
 
       {error && <div className="error">{error}</div>}
 
-      <div className="modal-actions">
+      <ModalActions>
         <button type="button" className="btn-primary" data-testid="add-people-done" onClick={onClose}>
           Done
         </button>
-      </div>
+      </ModalActions>
       </div>
     </Modal>
   );

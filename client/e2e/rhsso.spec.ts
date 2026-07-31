@@ -43,6 +43,10 @@ async function createRhssoUser(request, username, password) {
 }
 
 async function isActualSsoEnabled(request) {
+  // The default suite runs through Vite, whose origin is intentionally not an
+  // RHSSO callback origin. Real integration belongs to playwright.rhsso.config
+  // against the dedicated Compose stack; keep it out of ordinary UI runs.
+  if (!process.env.ECHO_URL) return false;
   try {
     const statusResponse = await request.get("/api/auth/setup-status");
     if (statusResponse.ok()) {
@@ -289,6 +293,8 @@ test.describe("RHSSO login flows (Real integration, runs only when Keycloak is u
     });
     expect(oldLogin.status()).toBe(401);
 
+    const skipTour = page.getByRole("button", { name: "Skip tour" });
+    if (await skipTour.isVisible().catch(() => false)) await skipTour.click();
     await page.getByTestId("sidebar-logout").click();
     await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
     await expect(page.getByText("This migration attempt expired. Please start again.")).toHaveCount(0);
