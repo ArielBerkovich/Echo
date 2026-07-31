@@ -3337,26 +3337,66 @@ html[data-mode="dark"] .sidebar {
   margin: 4px 12px 22px;
 }
 
-/* Thread indicator + hover reply on messages */
+/* Thread and reaction summary beneath a message. */
 .message {
   position: relative;
+}
+.message-engagement {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 8px;
 }
 .thread-indicator {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 5px;
-  padding: 3px 9px 3px 7px;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: var(--surface);
+  gap: 7px;
+  height: 30px;
+  padding: 0 9px 0 5px;
+  border: 1px solid color-mix(in srgb, var(--blue-400) 34%, var(--border));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--blue-400) 7%, var(--surface));
   color: var(--blue-500);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12.5px;
+  font-weight: 650;
+  line-height: 1;
+  box-shadow: 0 1px 1px color-mix(in srgb, var(--navy-900) 5%, transparent);
+  transition: background 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
+}
+.thread-indicator-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--blue-400) 13%, transparent);
+}
+.thread-indicator-icon svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2;
+}
+.thread-indicator-arrow {
+  margin-left: 1px;
+  color: color-mix(in srgb, var(--blue-500) 68%, var(--muted));
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1;
+  transition: transform 0.14s ease;
 }
 .thread-indicator:hover {
-  background: var(--surface-2);
-  border-color: #cdd8e8;
+  background: color-mix(in srgb, var(--blue-400) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--blue-400) 62%, var(--border));
+  box-shadow: 0 2px 5px color-mix(in srgb, var(--blue-500) 12%, transparent);
+}
+.thread-indicator:hover .thread-indicator-arrow {
+  transform: translateX(2px);
+}
+.thread-indicator:focus-visible {
+  outline: 2px solid var(--blue-400);
+  outline-offset: 2px;
 }
 /* "User is typing…" indicator above the composer */
 .typing-indicator {
@@ -5502,42 +5542,67 @@ html[data-mode="dark"] .day-divider-label {
 .reactions {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
-  margin-top: 6px;
+  align-items: center;
+  gap: 4px;
 }
 .reaction {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  height: 26px;
-  padding: 0 9px;
-  border-radius: 13px;
-  background: var(--surface-2);
+  height: 30px;
+  min-width: 38px;
+  justify-content: center;
+  padding: 0 8px;
+  border-radius: 9px;
+  background: var(--surface);
   border: 1px solid var(--border);
   font-size: 13px;
   color: var(--text);
-  transition: background 0.14s ease, border-color 0.14s ease, transform 0.1s ease;
+  box-shadow: 0 1px 1px color-mix(in srgb, var(--navy-900) 5%, transparent);
+  transition: background 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
 }
 .reaction:hover {
-  border-color: var(--blue-400);
-  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--blue-400) 6%, var(--surface));
+  border-color: color-mix(in srgb, var(--blue-400) 58%, var(--border));
+  box-shadow: 0 2px 5px color-mix(in srgb, var(--blue-500) 10%, transparent);
+}
+.reaction:focus-visible {
+  outline: 2px solid var(--blue-400);
+  outline-offset: 2px;
 }
 .reaction.mine {
-  background: rgba(59, 130, 246, 0.16);
-  border-color: var(--blue-400);
-  color: var(--blue-400);
+  background: color-mix(in srgb, var(--blue-400) 14%, var(--surface));
+  border-color: color-mix(in srgb, var(--blue-400) 72%, var(--border));
+  color: var(--blue-500);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--blue-400) 12%, transparent);
 }
 .reaction-emoji {
-  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 15px;
   line-height: 1;
 }
 .reaction-count {
-  font-weight: 600;
-  font-size: 12px;
+  min-width: 1ch;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 11.5px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.reaction.mine .reaction-count {
+  color: currentColor;
 }
 .reaction.add {
-  padding: 0 8px;
+  min-width: 30px;
+  width: 30px;
+  padding: 0;
+  border-style: dashed;
   color: var(--muted);
+}
+.reaction.add svg {
+  width: 15px;
+  height: 15px;
 }
 
 /* Reaction emoji picker — fixed near the clicked button (flips to stay on-screen) */
@@ -7119,7 +7184,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 .reaction {
   position: relative;
 }
-.reaction[data-tip]:hover::after {
+.reaction[data-tip]:is(:hover, :focus-visible)::after {
   content: attr(data-tip);
   position: absolute;
   bottom: calc(100% + 9px);
@@ -7139,7 +7204,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   box-shadow: var(--shadow-lg);
   pointer-events: none;
 }
-.reaction[data-tip]:hover::before {
+.reaction[data-tip]:is(:hover, :focus-visible)::before {
   content: "";
   position: absolute;
   bottom: calc(100% + 3px);

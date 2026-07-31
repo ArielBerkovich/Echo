@@ -331,33 +331,60 @@ function Message({
           </div>
         )}
 
-        {m.reactions?.length > 0 && (
-          <div className="reactions">
-            {m.reactions.map((r) => (
-              <button
-                key={r.emoji}
-                className={`reaction ${r.users.includes(currentUserId) ? "mine" : ""}`}
-                data-testid={`message-${mid}-reaction-${String(r.emoji).replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`}
-                onClick={() => onToggleReaction(r.emoji)}
-                data-tip={reactionTip(r.users, usersById, currentUserId, r.emoji)}
-              >
-                <span className="reaction-emoji">
-                  <EmojiValue value={r.emoji} emojiMap={emojiMap} />
-                </span>
-                <span className="reaction-count">{r.users.length}</span>
-              </button>
-            ))}
-            <button className="reaction add react-toggle" data-testid={`message-${mid}-add-reaction`} title="Add reaction" onClick={onReact}>
-              <EmojiAddIcon />
-            </button>
-          </div>
-        )}
+        {(m.reactions?.length > 0 || (!inThread && m.replyCount > 0)) && (
+          <div className="message-engagement">
+            {m.reactions?.length > 0 && (
+              <div className="reactions" aria-label="Message reactions">
+                {m.reactions.map((r) => {
+                  const mine = r.users.includes(currentUserId);
+                  const tip = reactionTip(r.users, usersById, currentUserId, r.emoji);
+                  return (
+                    <button
+                      type="button"
+                      key={r.emoji}
+                      className={`reaction ${mine ? "mine" : ""}`}
+                      data-testid={`message-${mid}-reaction-${String(r.emoji).replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`}
+                      aria-label={`${tip}. ${mine ? "Remove" : "Add"} this reaction`}
+                      aria-pressed={mine}
+                      onClick={() => onToggleReaction(r.emoji)}
+                      data-tip={tip}
+                    >
+                      <span className="reaction-emoji">
+                        <EmojiValue value={r.emoji} emojiMap={emojiMap} />
+                      </span>
+                      <span className="reaction-count">{r.users.length}</span>
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  className="reaction add react-toggle"
+                  data-testid={`message-${mid}-add-reaction`}
+                  aria-label="Add another reaction"
+                  title="Add another reaction"
+                  onClick={onReact}
+                >
+                  <EmojiAddIcon />
+                </button>
+              </div>
+            )}
 
-        {!inThread && m.replyCount > 0 && (
-          <button className="thread-indicator" data-testid={`message-${mid}-reply-count`} onClick={onOpenThread}>
-            <ReplyIcon />
-            {m.replyCount} {m.replyCount === 1 ? "reply" : "replies"}
-          </button>
+            {!inThread && m.replyCount > 0 && (
+              <button
+                type="button"
+                className="thread-indicator"
+                data-testid={`message-${mid}-reply-count`}
+                aria-label={`Open thread with ${m.replyCount} ${m.replyCount === 1 ? "reply" : "replies"}`}
+                onClick={onOpenThread}
+              >
+                <span className="thread-indicator-icon" aria-hidden="true">
+                  <ReplyIcon />
+                </span>
+                <span>{m.replyCount} {m.replyCount === 1 ? "reply" : "replies"}</span>
+                <span className="thread-indicator-arrow" aria-hidden="true">›</span>
+              </button>
+            )}
+          </div>
         )}
       </div>
 
