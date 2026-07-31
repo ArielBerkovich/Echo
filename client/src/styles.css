@@ -2903,8 +2903,7 @@ html[data-mode="dark"] .sidebar {
 }
 .search-box-field:focus-within {
   background: var(--surface);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 32%, var(--border)) inset,
-    0 4px 14px color-mix(in srgb, var(--text) 8%, transparent);
+  box-shadow: 0 0 0 2px var(--blue-400) inset, 0 6px 18px rgba(37, 99, 235, 0.18);
 }
 /* The input sits transparently over a "mirror" that renders the same text
    with the filter keywords (in:/from:/has:) styled — native inputs can't
@@ -4403,8 +4402,8 @@ html[data-mode="dark"] .day-divider-label {
   color: var(--muted);
 }
 .channel-details-search:focus-within {
-  border-color: color-mix(in srgb, var(--text) 32%, var(--border));
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 32%, var(--border));
+  border-color: var(--active-bg);
+  box-shadow: 0 0 0 2px var(--active-ring);
 }
 .channel-details-search input {
   width: 100%;
@@ -5277,10 +5276,6 @@ html[data-mode="dark"] .day-divider-label {
 }
 .forward-destination-search {
   flex: none;
-}
-.forward-destination-search:focus {
-  outline: 2px solid color-mix(in srgb, var(--text) 32%, transparent);
-  outline-offset: 2px;
 }
 .forward-selected-chips {
   display: flex;
@@ -6813,9 +6808,8 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
   transition: background 0.16s ease, border-color 0.16s ease;
 }
 .new-message-search:focus-within {
-  border-color: color-mix(in srgb, var(--text) 32%, var(--border));
+  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
   background: var(--surface);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 32%, var(--border));
 }
 .new-message-search .new-message-search-input,
 .new-message-search .new-message-search-input:focus,
@@ -8286,8 +8280,8 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   box-shadow: var(--shadow-sm);
 }
 .channel-browser-search:focus-within {
-  border-color: color-mix(in srgb, var(--text) 32%, var(--border));
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 32%, var(--border));
+  border-color: var(--accent);
+  box-shadow: var(--shadow-sm);
 }
 .channel-browser-search input {
   appearance: none;
