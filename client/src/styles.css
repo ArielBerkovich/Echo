@@ -5277,6 +5277,11 @@ html[data-mode="dark"] .day-divider-label {
 .forward-destination-search {
   flex: none;
 }
+.forward-destination-search:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 24%, transparent);
+}
 .forward-selected-chips {
   display: flex;
   flex-wrap: wrap;
