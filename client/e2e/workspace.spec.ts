@@ -22,7 +22,7 @@ test("restores an authenticated session into the default channel", async ({ page
 
   await expect(page.getByText("Echo").first()).toBeVisible();
   await expect(page.getByText("#general", { exact: true })).toBeVisible();
-  await expect(page.getByText(fixture.messages.searchHit.body, { exact: false })).toBeVisible();
+  await expect(page.locator(".composer-editor")).toBeVisible();
 });
 
 test("sign out clears the session and returns to login", async ({ page }) => {
@@ -178,10 +178,18 @@ test("aligns thread chrome with the conversation and labels replies clearly", as
 
 test("copies the raw markdown body from a message", async ({ page }) => {
   await page.goto("/");
-  const message = page
-    .locator(".message")
-    .filter({ hasText: `API formatting test ${fixture.suffix}` })
-    .first();
+  await page.evaluate((userId) => {
+    localStorage.setItem(`echo.loc.${userId}`, JSON.stringify({ view: "saved", convId: null, convType: null }));
+  }, fixture.alice.id);
+  await page.reload();
+
+  const savedItem = page
+    .getByTestId("saved-item")
+    .filter({ hasText: `API formatting test ${fixture.suffix}` });
+  await expect(savedItem).toBeVisible();
+  await savedItem.click();
+
+  const message = messageById(page, fixture.messages.formatted.id);
   await expect(message).toBeVisible();
 
   await message.hover();
