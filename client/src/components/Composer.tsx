@@ -71,7 +71,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
     ],
     editorProps: {
       attributes: {
-        class: "composer-editor is-empty",
+        class: "composer-editor",
         "data-testid": "composer-editor",
         "data-placeholder": placeholder,
         role: "textbox",
@@ -168,7 +168,6 @@ export default function Composer({ channel, parentId = null, users = [], channel
 
   function syncEditorState(currentEditor) {
     const hasText = currentEditor.getText().trim().length > 0;
-    currentEditor.view.dom.classList.toggle("is-empty", currentEditor.isEmpty);
     hasText ? signalTyping() : stopTyping();
     syncMentionContext(currentEditor);
   }

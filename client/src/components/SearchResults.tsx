@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { api } from "../api.js";
 import Avatar from "./Avatar.js";
 import { formatDateTime } from "../lib/time.js";
 import { parseSearchQuery, filterChipLabel } from "../lib/searchQuery.js";
+import { queryKeys } from "../lib/queryClient.js";
 
 const SNIPPET_MAX = 240;
 
@@ -44,49 +46,21 @@ function snippet(body, query) {
 
 // Dedicated results pane for full-text message search (triggered on Enter).
 export default function SearchResults({ query, onJump, onClose }) {
-  const [results, setResults] = useState([]);
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState(null);
-
   const parsed = useMemo(() => parseSearchQuery(query), [query]);
-
-  useEffect(() => {
-    let cancelled = false;
-    setResults([]);
-    setPage(0);
-    setHasMore(false);
-    setError(null);
-    setLoading(true);
-    api
-      .searchMessages(query, 0)
-      .then(({ results, hasMore }) => {
-        if (cancelled) return;
-        setResults(results);
-        setHasMore(hasMore);
-      })
-      .catch((e) => !cancelled && setError(e.message))
-      .finally(() => !cancelled && setLoading(false));
-    return () => {
-      cancelled = true;
-    };
-  }, [query]);
-
-  function loadMore() {
-    const next = page + 1;
-    setLoadingMore(true);
-    api
-      .searchMessages(query, next)
-      .then(({ results: more, hasMore }) => {
-        setResults((prev) => [...prev, ...more]);
-        setHasMore(hasMore);
-        setPage(next);
-      })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoadingMore(false));
-  }
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage: hasMore,
+    isFetchingNextPage: loadingMore,
+    isPending: loading,
+  } = useInfiniteQuery({
+    queryKey: queryKeys.search(query),
+    queryFn: ({ pageParam }) => api.searchMessages(query, pageParam),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, pages) => lastPage.hasMore ? pages.length : undefined,
+  });
+  const results = data?.pages.flatMap((page) => page.results || []) || [];
 
   return (
     <main className="channel-view">
@@ -110,7 +84,7 @@ export default function SearchResults({ query, onJump, onClose }) {
           {loading ? (
             <div className="empty-state"><p>Searching…</p></div>
           ) : error ? (
-            <div className="empty-state"><h3>Search failed</h3><p>{error}</p></div>
+            <div className="empty-state"><h3>Search failed</h3><p>{error.message}</p></div>
           ) : results.length === 0 ? (
             <div className="empty-state">
               <h3>No messages found</h3>
@@ -139,7 +113,7 @@ export default function SearchResults({ query, onJump, onClose }) {
                 </button>
               ))}
               {hasMore && (
-                <button className="btn-secondary search-more" data-testid="search-load-more" disabled={loadingMore} onClick={loadMore}>
+                <button className="btn-secondary search-more" data-testid="search-load-more" disabled={loadingMore} onClick={() => fetchNextPage()}>
                   {loadingMore ? "Loading…" : "Load more results"}
                 </button>
               )}

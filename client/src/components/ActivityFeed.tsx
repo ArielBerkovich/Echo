@@ -1,54 +1,49 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Trash2Icon } from "lucide-react";
 import { api } from "../api.js";
 import { getSocket } from "../socket.js";
 import { formatDateTime } from "../lib/time.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
+import { queryKeys } from "../lib/queryClient.js";
 import Avatar from "./Avatar.js";
 import { FeedContent, FeedLayout, FeedMessage } from "./FeedLayout.js";
 
 // Feed of messages that @mention the current user. Clicking jumps to the channel.
 export default function ActivityFeed({ user, users = [], customEmojis = [], onJump, onLoaded }) {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-
+  const queryClient = useQueryClient();
   const renderMarkdown = useMarkdownRenderer(users, user.username, customEmojis);
-
-  async function dismiss(item) {
-    await api.deleteActivity(item.id);
-    setItems((previous) => {
-      const next = previous.filter((candidate) => candidate.id !== item.id);
-      onLoaded?.(next);
-      return next;
-    });
-  }
+  const { data: items = [], isPending: loading } = useQuery({
+    queryKey: queryKeys.activity,
+    queryFn: async () => (await api.getActivity()).items || [],
+  });
+  const dismissMutation = useMutation({
+    mutationFn: (itemId) => api.deleteActivity(itemId),
+    onMutate: async (itemId) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.activity });
+      const previous = queryClient.getQueryData(queryKeys.activity);
+      queryClient.setQueryData(queryKeys.activity, (current = []) =>
+        current.filter((item) => item.id !== itemId)
+      );
+      return { previous };
+    },
+    onError: (_error, _itemId, context) => {
+      if (context?.previous) queryClient.setQueryData(queryKeys.activity, context.previous);
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.activity }),
+  });
 
   useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      // Viewing the panel clears reaction unread, so do that before fetching.
-      await api.markActivityRead().catch(() => {});
-      try {
-        const { items } = await api.getActivity();
-        if (cancelled) return;
-        setItems(items);
-        onLoaded?.(items);
-      } catch {
-        /* keep prior items */
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    load();
+    onLoaded?.(items);
+  }, [items]);
+
+  useEffect(() => {
     // Live-refresh while the panel is open (new mentions, replies, reactions).
     const socket = getSocket();
-    const onBump = () => load();
+    const onBump = () => queryClient.invalidateQueries({ queryKey: queryKeys.activity });
     socket.on("activity:bump", onBump);
-    return () => {
-      cancelled = true;
-      socket.off("activity:bump", onBump);
-    };
-  }, []);
+    return () => socket.off("activity:bump", onBump);
+  }, [queryClient]);
 
   return (
     <FeedLayout title="Activity" subtitle="Mentions, replies & broadcasts · last 30 days" testId="activity">
@@ -93,7 +88,7 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
               aria-label="Delete activity"
               onClick={(event) => {
                 event.stopPropagation();
-                dismiss(it).catch(() => {});
+                dismissMutation.mutate(it.id);
               }}
             >
               <Trash2Icon size={15} strokeWidth={1.8} />

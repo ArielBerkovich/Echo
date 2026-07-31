@@ -1,6 +1,8 @@
 import { useEffect, useId, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CompassIcon, HashIcon, PlusIcon, SearchIcon, UsersIcon, XIcon } from "lucide-react";
 import { api } from "../api.js";
+import { queryKeys } from "../lib/queryClient.js";
 
 const FILTERS = [
   { id: "all", label: "All" },
@@ -24,22 +26,15 @@ export default function ChannelBrowser({
   const [query, setQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState("all");
-  const [channels, setChannels] = useState([]);
-  const [counts, setCounts] = useState(EMPTY_COUNTS);
   const [page, setPage] = useState({ cursor: "", number: 1, history: [] });
-  const [nextCursor, setNextCursor] = useState("");
-  const [hasMore, setHasMore] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [joiningId, setJoiningId] = useState(null);
   const [membershipEpoch, setMembershipEpoch] = useState(0);
-  const [error, setError] = useState("");
+  const [actionError, setActionError] = useState("");
+  const queryClient = useQueryClient();
   const resultsId = useId();
-  const backgroundRefreshRef = useRef(false);
   const contentRef = useRef(null);
   const joinedIdsRef = useRef(joinedIds);
-  const pendingScrollTopRef = useRef(null);
   const searchInputRef = useRef(null);
-  const requestKeyRef = useRef("");
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -58,58 +53,30 @@ export default function ChannelBrowser({
     ) {
       return;
     }
-    backgroundRefreshRef.current = true;
-    pendingScrollTopRef.current = contentRef.current?.scrollTop ?? null;
     setMembershipEpoch((epoch) => epoch + 1);
   }, [joinedIds]);
 
-  useEffect(() => {
-    const preservePage = backgroundRefreshRef.current;
-    backgroundRefreshRef.current = false;
-    const requestKey = `${searchTerm}\n${filter}\n${page.cursor}\n${membershipEpoch}`;
-    requestKeyRef.current = requestKey;
-    let cancelled = false;
-    if (!preservePage) setLoading(true);
-    setError("");
-    api
-      .browseChannels({
+  const catalogKey = queryKeys.channelCatalog(searchTerm, filter, page.cursor, membershipEpoch);
+  const { data: catalog, error: loadError, isPending: loading } = useQuery({
+    queryKey: catalogKey,
+    queryFn: () => api.browseChannels({
         q: searchTerm,
         membership: filter,
         cursor: page.cursor,
         limit: PAGE_SIZE,
-      })
-      .then((result) => {
-        if (cancelled || requestKeyRef.current !== requestKey) return;
-        const nextChannels = result.channels || [];
-        const nextCounts = result.counts || EMPTY_COUNTS;
-        setChannels(nextChannels);
-        setCounts(nextCounts);
-        setNextCursor(result.page?.nextCursor || "");
-        setHasMore(!!result.page?.hasMore);
-        onCatalog?.(nextChannels);
-        if (!searchTerm) onCounts?.(nextCounts);
-        if (preservePage) {
-          requestAnimationFrame(() => {
-            if (contentRef.current && pendingScrollTopRef.current !== null) {
-              contentRef.current.scrollTop = pendingScrollTopRef.current;
-            }
-            pendingScrollTopRef.current = null;
-          });
-        }
-      })
-      .catch((loadError) => {
-        if (!cancelled && requestKeyRef.current === requestKey) {
-          if (!preservePage) setChannels([]);
-          setError(loadError?.message || "We couldn't load public channels. Please try again.");
-        }
-      })
-      .finally(() => {
-        if (!cancelled && requestKeyRef.current === requestKey) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [searchTerm, filter, page.cursor, membershipEpoch, onCatalog, onCounts]);
+      }),
+  });
+  const channels = catalog?.channels || [];
+  const counts = catalog?.counts || EMPTY_COUNTS;
+  const nextCursor = catalog?.page?.nextCursor || "";
+  const hasMore = !!catalog?.page?.hasMore;
+  const error = actionError || loadError?.message || "";
+
+  useEffect(() => {
+    if (!catalog) return;
+    onCatalog?.(channels);
+    if (!searchTerm) onCounts?.(counts);
+  }, [catalog]);
 
   const totalForFilter = counts[filter] || 0;
   const firstResult = channels.length > 0 ? (page.number - 1) * PAGE_SIZE + 1 : 0;
@@ -145,7 +112,7 @@ export default function ChannelBrowser({
   const emptyCopy = !loading && channels.length === 0 ? getEmptyCopy() : null;
 
   async function join(channel) {
-    setError("");
+    setActionError("");
     setJoiningId(channel.id);
     const scrollTop = contentRef.current?.scrollTop;
     try {
@@ -156,17 +123,18 @@ export default function ChannelBrowser({
         joined: true,
         memberCount: joinedChannel.memberCount ?? (channel.memberCount || 0) + 1,
       };
-      setChannels((current) => (
-        filter === "available"
-          ? current.filter((item) => item.id !== channel.id)
-          : current.map((item) => (item.id === channel.id ? nextChannel : item))
-      ));
       const updateCounts = (current) => ({
         ...current,
         joined: (current.joined || 0) + 1,
         available: Math.max(0, (current.available || 0) - 1),
       });
-      setCounts(updateCounts);
+      queryClient.setQueryData(catalogKey, (current) => current ? ({
+        ...current,
+        channels: filter === "available"
+          ? (current.channels || []).filter((item) => item.id !== channel.id)
+          : (current.channels || []).map((item) => item.id === channel.id ? nextChannel : item),
+        counts: updateCounts(current.counts || EMPTY_COUNTS),
+      }) : current);
       if (!searchTerm) onCounts?.(updateCounts);
       requestAnimationFrame(() => {
         if (contentRef.current && scrollTop !== undefined) {
@@ -174,7 +142,7 @@ export default function ChannelBrowser({
         }
       });
     } catch (joinError) {
-      setError(joinError?.message || "We couldn't join that channel. Please try again.");
+      setActionError(joinError?.message || "We couldn't join that channel. Please try again.");
     } finally {
       setJoiningId(null);
     }
@@ -209,7 +177,7 @@ export default function ChannelBrowser({
                 value={query}
                 onChange={(event) => {
                   setQuery(event.target.value);
-                  setError("");
+                  setActionError("");
                 }}
                 placeholder="Search by name, topic, or description"
                 autoComplete="off"
@@ -224,7 +192,7 @@ export default function ChannelBrowser({
                   aria-label="Clear channel search"
                   onClick={() => {
                     setQuery("");
-                    setError("");
+                    setActionError("");
                     searchInputRef.current?.focus();
                   }}
                 >
@@ -242,7 +210,7 @@ export default function ChannelBrowser({
                   onClick={() => {
                     setPage({ cursor: "", number: 1, history: [] });
                     setFilter(item.id);
-                    setError("");
+                    setActionError("");
                   }}
                 >
                   <span>{item.label}</span>

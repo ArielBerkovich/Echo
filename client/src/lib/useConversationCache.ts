@@ -1,29 +1,26 @@
 import { useCallback, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { api } from "../api.js";
+import { queryKeys } from "./queryClient.js";
 import { readJson, writeJson } from "./storage.js";
 
 const scrollStorageKey = (userId) => `echo.scroll.${userId}`;
 
 export function useConversationCache(userId) {
-  const [messageCache, setMessageCache] = useState({});
+  const queryClient = useQueryClient();
   const [scrollStates, setScrollStates] = useState({});
 
   useEffect(() => {
     setScrollStates(userId ? readJson(scrollStorageKey(userId), {}) : {});
-    if (!userId) setMessageCache({});
   }, [userId]);
 
   const cacheMessages = useCallback((channelId, messages) => {
-    setMessageCache((previous) => {
-      const current = previous[channelId];
-      const unchanged = current === messages || (
-        current &&
-        current.length === messages.length &&
-        current.every((message, index) => message.id === messages[index]?.id)
-      );
-      return unchanged ? previous : { ...previous, [channelId]: messages };
-    });
-  }, []);
+    queryClient.setQueryData(queryKeys.messages(channelId), { messages });
+  }, [queryClient]);
+
+  const getCachedMessages = useCallback((channelId) =>
+    queryClient.getQueryData(queryKeys.messages(channelId))?.messages || null,
+  [queryClient]);
 
   const rememberScrollState = useCallback((channelId, state) => {
     setScrollStates((previous) => {
@@ -44,16 +41,17 @@ export function useConversationCache(userId) {
   }, [userId]);
 
   const prefetchMessages = useCallback((channelId) => {
-    if (!channelId || messageCache[channelId]) return;
-    api.getMessages(channelId)
-      .then(({ messages }) => cacheMessages(channelId, messages))
-      .catch(() => {});
-  }, [cacheMessages, messageCache]);
+    if (!channelId) return;
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.messages(channelId),
+      queryFn: () => api.getMessages(channelId),
+    });
+  }, [queryClient]);
 
   return {
-    messageCache,
     scrollStates,
     cacheMessages,
+    getCachedMessages,
     rememberScrollState,
     clearScrollState,
     prefetchMessages,
