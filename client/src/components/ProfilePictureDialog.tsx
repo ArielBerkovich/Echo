@@ -10,7 +10,15 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(value, max));
 }
 
-export default function ProfilePictureDialog({ file = null, currentSrc = null, onFileSelected, onSave, onClose }) {
+export default function ProfilePictureDialog({
+  file = null,
+  currentSrc = null,
+  onFileSelected,
+  onSave,
+  onClose,
+  title = "Update profile picture",
+  previewAlt = "Profile preview",
+}) {
   const imageRef = useRef(null);
   const fileRef = useRef(null);
   const [imageUrl, setImageUrl] = useState("");
@@ -124,7 +132,7 @@ export default function ProfilePictureDialog({ file = null, currentSrc = null, o
   }
 
   return (
-    <Modal title="Update profile picture" onClose={onClose} closeDisabled={saving} testId="profile-picture-dialog">
+    <Modal title={title} onClose={onClose} closeDisabled={saving} testId="profile-picture-dialog">
       <input ref={fileRef} type="file" accept="image/*" hidden data-testid="profile-picture-import-input" onChange={importFile} />
       <div
         className={`profile-picture-crop${dragging ? " dragging" : ""}`}
@@ -137,7 +145,7 @@ export default function ProfilePictureDialog({ file = null, currentSrc = null, o
           <img
             ref={imageRef}
             src={sourceUrl}
-            alt="Profile preview"
+            alt={previewAlt}
             className="profile-picture-crop-image"
             style={{ width: displayWidth, height: displayHeight, transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))` }}
             onLoad={(event) => setImageSize({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })}

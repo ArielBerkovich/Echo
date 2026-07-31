@@ -15,6 +15,7 @@ export default function WorkspaceOverlays({
   customEmojis,
   onlineIds,
   starredIds,
+  branding,
   theme,
   themes,
   mode,
@@ -36,6 +37,7 @@ export default function WorkspaceOverlays({
   onSelectMode,
   onUserUpdated,
   onToggleStarred,
+  onBrandingUpdated,
   onOpenDm,
   onOpenApiDocs,
   onFinishTour,
@@ -79,6 +81,8 @@ export default function WorkspaceOverlays({
           onUpdated={onUserUpdated}
           onClose={onClose.settings}
           onOpenApiDocs={onOpenApiDocs}
+          branding={branding}
+          onBrandingUpdated={onBrandingUpdated}
         />
       ) : null}
       {showApiDocs ? <ApiDocsPage onClose={onClose.apiDocs} /> : null}

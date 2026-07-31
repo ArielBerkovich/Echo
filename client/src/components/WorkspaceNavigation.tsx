@@ -8,6 +8,7 @@ export default function WorkspaceNavigation({
   dms,
   hidden,
   starredIds,
+  branding,
   onlineIds,
   activeChannel,
   activityBadge,
@@ -45,6 +46,7 @@ export default function WorkspaceNavigation({
         onLogout={onLogout}
         onUpdated={onUpdated}
         badges={badges}
+        branding={branding}
       />
       {showSidebar ? (
         <Sidebar
