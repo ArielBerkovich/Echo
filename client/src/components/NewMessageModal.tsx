@@ -10,6 +10,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
   const [channel, setChannel] = useState(null);
   const [preparing, setPreparing] = useState(false);
   const [error, setError] = useState(null);
+  const draftChannel = { id: "new-message-draft", type: "dm", dmName: selected?.displayName || "recipient" };
 
   const matches = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -96,22 +97,19 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
                   <span className="person-handle">@{selected.username}</span>
                 </span>
               </div>
-            ) : (
-              <div className="new-message-compose-empty">Select someone to start a message</div>
-            )}
+            ) : null}
             {preparing ? <div className="people-empty">Opening conversation…</div> : null}
-            {channel ? (
-              <Composer
-                key={channel.id}
-                channel={channel}
+            <Composer
+                key={channel?.id || draftChannel.id}
+                channel={channel || draftChannel}
                 users={users}
                 customEmojis={customEmojis}
                 mode={mode}
                 showSchedule={false}
+                disabled={!channel}
                 onError={setError}
                 onSent={handleSent}
               />
-            ) : null}
           </div>
         </div>
 

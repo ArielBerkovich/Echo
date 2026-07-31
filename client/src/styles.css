@@ -6769,14 +6769,7 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
   width: 100%;
   margin: 14px 0 0;
 }
-.new-message-compose-empty {
-  padding: 24px 18px;
-  border: 1px dashed var(--border);
-  border-radius: 12px;
-  color: var(--muted);
-  font-size: 13px;
-  text-align: center;
-}
+.new-message-compose .composer.is-disabled { opacity: 0.62; }
 .new-message-recipient {
   display: flex;
   align-items: center;

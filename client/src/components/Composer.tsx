@@ -27,7 +27,7 @@ const SCHEDULE_PRESETS = [
 // Rich-text message composer: @mention autocomplete, a formatting toolbar,
 // emoji, and file attachments. Owns all of its own editor state — mount it with
 // a `key={channel.id}` so switching channels yields a fresh, empty composer.
-export default function Composer({ channel, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, mode = "light", captureScreenDrops = false, showSchedule = true }) {
+export default function Composer({ channel, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, mode = "light", captureScreenDrops = false, showSchedule = true, disabled = false }) {
   const isThread = !!parentId; // a thread reply composer (hides channel-level scheduling)
   const [mention, setMention] = useState(null); // { trigger, query, from, to } or null
   const [activeIdx, setActiveIdx] = useState(0);
@@ -91,6 +91,9 @@ export default function Composer({ channel, parentId = null, users = [], channel
     onUpdate: ({ editor: currentEditor }) => syncEditorState(currentEditor),
     onSelectionUpdate: ({ editor: currentEditor }) => syncMentionContext(currentEditor),
   }, [channel.id, parentId, placeholder]);
+  useEffect(() => {
+    editor?.setEditable(!disabled);
+  }, [disabled, editor]);
   const editorState = useEditorState({
     editor,
     selector: ({ editor: currentEditor }) => ({
@@ -130,17 +133,17 @@ export default function Composer({ channel, parentId = null, users = [], channel
       .catch(() => {});
   }
   useEffect(() => {
-    if (!isThread) refreshScheduled(); // scheduling is a channel-level feature
-  }, [channel.id, isThread]);
+    if (!isThread && !disabled) refreshScheduled(); // scheduling is a channel-level feature
+  }, [channel.id, isThread, disabled]);
   useEffect(() => {
-    if (isThread) return;
+    if (isThread || disabled) return;
     const socket = getSocket();
     const onNew = (msg) => {
       if (msg.channelId === channel.id) refreshScheduled();
     };
     socket.on("message:new", onNew);
     return () => socket.off("message:new", onNew);
-  }, [channel.id, isThread]);
+  }, [channel.id, isThread, disabled]);
 
   const suggestions = useMemo(() => {
     if (!mention) return [];
@@ -455,7 +458,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
 
   return (
     <form
-      className={`composer${draggingFiles ? " dragging-files" : ""}`}
+      className={`composer${draggingFiles ? " dragging-files" : ""}${disabled ? " is-disabled" : ""}`}
       onSubmit={handleSend}
     >
       {draggingFiles && (
