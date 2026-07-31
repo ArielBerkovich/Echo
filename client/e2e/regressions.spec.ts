@@ -271,7 +271,9 @@ test("opens people and channels searched from Activity and Saved", async ({ page
   await page.evaluate((userId) => {
     localStorage.setItem(`echo.loc.${userId}`, JSON.stringify({ view: "saved", convId: null, convType: null }));
   }, fixture.alice.id);
-  await page.reload();
+  // Legacy saved locations are the fallback at the root route. Explicit URLs
+  // take precedence once navigation is represented by React Router.
+  await page.goto("/");
   await expect(page.getByTestId("saved-header")).toBeVisible();
 
   await page.getByTestId("search-input").fill(fixture.projectChannel.name);

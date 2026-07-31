@@ -1,4 +1,3 @@
-import { flushSync } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIcon, BookmarkIcon, HomeIcon, MessageSquareTextIcon } from "lucide-react";
 import Logo from "./Logo.js";
@@ -23,23 +22,8 @@ export default function LeftRail({ view, onSelect, badges = {} }) {
     clickTimerRef.current = setTimeout(() => setClicked(null), 650);
   }
 
-  function selectFromEvent(e) {
-    const item = e.target.closest?.('button[data-testid^="rail-"]');
-    if (!item) return;
-    const key = item.dataset.testid?.slice("rail-".length);
-    if (key) flushSync(() => {
-      pulse(key);
-      onSelect(key);
-    });
-  }
-
   return (
-    <nav
-      className="rail"
-      aria-label="Primary navigation"
-      onMouseDownCapture={selectFromEvent}
-      onPointerDownCapture={selectFromEvent}
-    >
+    <nav className="rail" aria-label="Primary navigation">
       <div className="rail-brand" aria-hidden="true">
         <Logo size={54} />
         <span className="rail-brand-name">echo</span>

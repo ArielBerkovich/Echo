@@ -50,6 +50,21 @@ test("restores an authenticated session into the default channel", async ({ page
   }
 });
 
+test("supports direct workspace routes and browser history", async ({ page }) => {
+  await page.goto(`/channels/${fixture.projectChannel.id}`);
+
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
+  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.projectChannel.id}$`));
+
+  await railItem(page, "activity").click();
+  await expect(page).toHaveURL(/\/activity$/);
+  await expect(railItem(page, "activity")).toHaveClass(/active/);
+
+  await page.goBack();
+  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.projectChannel.id}$`));
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
+});
+
 test("sign out clears the session and returns to login", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText("#general", { exact: true })).toBeVisible();
