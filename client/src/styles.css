@@ -6435,6 +6435,7 @@ html[data-mode="dark"] .new-messages-button:hover {
   padding-inline-start: 0;
 }
 .composer-editor li { margin: 1px 0; }
+.composer-editor li > p { margin: 0; }
 .composer-editor blockquote {
   margin: 4px 0;
   padding: 2px 0 2px 12px;
