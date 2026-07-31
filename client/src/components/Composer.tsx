@@ -27,7 +27,7 @@ const SCHEDULE_PRESETS = [
 // Rich-text message composer: @mention autocomplete, a formatting toolbar,
 // emoji, and file attachments. Owns all of its own editor state — mount it with
 // a `key={channel.id}` so switching channels yields a fresh, empty composer.
-export default function Composer({ channel, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, mode = "light", captureScreenDrops = false }) {
+export default function Composer({ channel, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, mode = "light", captureScreenDrops = false, showSchedule = true }) {
   const isThread = !!parentId; // a thread reply composer (hides channel-level scheduling)
   const [mention, setMention] = useState(null); // { trigger, query, from, to } or null
   const [activeIdx, setActiveIdx] = useState(0);
@@ -771,8 +771,8 @@ export default function Composer({ channel, parentId = null, users = [], channel
           >
             <SendIcon />
           </button>
-          {!isThread && <span className="tb-sep" />}
-          {!isThread && (
+          {!isThread && showSchedule && <span className="tb-sep" />}
+          {!isThread && showSchedule && (
             <button
               type="button"
               className="icon-btn chevron-btn"
@@ -784,7 +784,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
               <ChevronIcon />
             </button>
           )}
-          {!isThread && sendMenuOpen && (
+          {!isThread && showSchedule && sendMenuOpen && (
             <>
               <div className="menu-overlay" onClick={() => setSendMenuOpen(false)} />
               <div className="send-menu">

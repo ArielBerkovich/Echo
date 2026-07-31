@@ -6748,27 +6748,22 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
 
 /* Single-recipient DM composer. */
 .new-message-modal {
-  width: 760px;
+  width: 520px;
 }
 .new-message-layout {
-  display: grid;
-  grid-template-columns: minmax(220px, 0.85fr) minmax(320px, 1.15fr);
-  gap: 18px;
-  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 .new-message-picker {
   min-width: 0;
-  border-right: 1px solid var(--border);
-  padding-right: 18px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
 }
 .new-message-compose {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-}
-.new-message-compose.has-channel {
-  justify-content: flex-start;
 }
 .new-message-compose .composer {
   width: 100%;
@@ -6876,18 +6871,7 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
 }
 
 @media (max-width: 700px) {
-  .new-message-modal {
-    width: min(520px, calc(100vw - 40px));
-  }
-  .new-message-layout {
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-  .new-message-picker {
-    border-right: 0;
-    border-bottom: 1px solid var(--border);
-    padding: 0 0 14px;
-  }
+  .new-message-modal { width: min(520px, calc(100vw - 40px)); }
 }
 
 /* Markdown rendering inside messages */

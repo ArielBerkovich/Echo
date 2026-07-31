@@ -107,6 +107,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
                 users={users}
                 customEmojis={customEmojis}
                 mode={mode}
+                showSchedule={false}
                 onError={setError}
                 onSent={handleSent}
               />
