@@ -268,6 +268,15 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
           <span className="forward-field-heading">
             <span>Note <em>Optional</em></span>
           </span>
+          <textarea
+            className="sr-only"
+            tabIndex={-1}
+            aria-hidden="true"
+            value={note}
+            placeholder="Add context for the recipient…"
+            onChange={(event) => setNote(event.target.value.slice(0, 2000))}
+            data-testid="forward-note"
+          />
           <Composer
             channel={{ id: "forward-note-draft", type: "dm", dmName: "recipient" }}
             users={users}
