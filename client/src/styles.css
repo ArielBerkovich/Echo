@@ -411,11 +411,11 @@ input {
 }
 input:focus {
   outline: none;
-  border-color: var(--blue-400);
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 24%, transparent);
 }
 :focus-visible {
-  outline: 2px solid var(--blue-400);
+  outline: 2px solid color-mix(in srgb, var(--accent) 72%, transparent);
   outline-offset: 2px;
   border-radius: 6px;
 }
@@ -963,8 +963,8 @@ input:focus {
 }
 .input-wrap input:focus {
   outline: none;
-  border-color: var(--blue-500);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16);
+  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 24%, transparent);
 }
 .username-composed {
   min-width: 0;
@@ -976,8 +976,8 @@ input:focus {
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .username-composed:focus-within {
-  border-color: var(--blue-500);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16);
+  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 24%, transparent);
 }
 .username-composed input {
   flex: 1 1 auto;
@@ -3837,7 +3837,8 @@ html[data-mode="dark"] .day-divider-label {
 }
 .settings-input:focus {
   outline: none;
-  border-color: var(--blue-500);
+  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 24%, transparent);
 }
 .settings-handle {
   margin-top: 8px;
@@ -5552,8 +5553,8 @@ html[data-mode="dark"] .day-divider-label {
 }
 .forward-note-field textarea:focus {
   outline: none;
-  border-color: var(--blue-400);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 24%, transparent);
 }
 .forward-note {
   margin: 5px 0 9px;
