@@ -5,6 +5,7 @@ import { queryKeys } from "./queryClient.js";
 
 const EMPTY_LIST: any[] = [];
 const EMPTY_SET = new Set<string>();
+const DEFAULT_BRANDING = { enabled: false, name: "Echo", imageUrl: null };
 
 export const workspaceKeys = {
   all: ["workspace"] as const,
@@ -13,6 +14,7 @@ export const workspaceKeys = {
   users: ["workspace", "users"] as const,
   emojis: ["workspace", "emojis"] as const,
   starred: ["workspace", "starred"] as const,
+  branding: ["workspace", "branding"] as const,
 };
 
 function useQueryState(queryKey, queryFn, enabled, fallback) {
@@ -63,6 +65,12 @@ export function useWorkspaceQueries(enabled) {
     enabled,
     EMPTY_SET,
   );
+  const [branding, setBranding] = useQueryState(
+    workspaceKeys.branding,
+    async () => (await api.getWorkspaceBranding()).branding || DEFAULT_BRANDING,
+    enabled,
+    DEFAULT_BRANDING,
+  );
   const activityQuery = useQuery({
     queryKey: queryKeys.activity,
     queryFn: async () => (await api.getActivity()).items || [],
@@ -85,6 +93,8 @@ export function useWorkspaceQueries(enabled) {
     setSavedIds,
     starredIds,
     setStarredIds,
+    branding,
+    setBranding,
     activityItems: activityQuery.data || EMPTY_LIST,
   };
 }
