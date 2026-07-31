@@ -6762,6 +6762,7 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
 }
 .new-message-picker {
   min-width: 0;
+  border-bottom: 1px solid var(--border);
   padding-bottom: 4px;
 }
 .new-message-compose {
