@@ -4,7 +4,6 @@ import {
   channelRow,
   dmRow,
   messageById,
-  messageByText,
   railItem,
   requestAsToken,
   seedWorkspaceFixture,
@@ -17,12 +16,28 @@ test.beforeEach(async ({ page }) => {
   await enableClipboardStub(page);
 });
 
+async function openFreshGeneralMessage(page, key, body) {
+  const created = await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body,
+      externalKey: `${key}-${fixture.suffix}`,
+    },
+  });
+  await page.goto("/");
+  await channelRow(page, "general").click();
+  const message = messageById(page, created.message.id);
+  await expect(message).toBeVisible();
+  return { id: created.message.id, message };
+}
+
 test("restores an authenticated session into the default channel", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.getByText("Echo").first()).toBeVisible();
   await expect(page.getByText("#general", { exact: true })).toBeVisible();
-  await expect(page.getByText(fixture.messages.searchHit.body, { exact: false })).toBeVisible();
+  await expect(page.locator(".composer-editor")).toBeVisible();
 });
 
 test("sign out clears the session and returns to login", async ({ page }) => {
@@ -177,15 +192,16 @@ test("aligns thread chrome with the conversation and labels replies clearly", as
 });
 
 test("copies the raw markdown body from a message", async ({ page }) => {
-  await page.goto("/");
-  const message = page
-    .locator(".message")
-    .filter({ hasText: `API formatting test ${fixture.suffix}` })
-    .first();
-  await expect(message).toBeVisible();
+  const { id, message } = await openFreshGeneralMessage(
+    page,
+    "copy-markdown",
+    fixture.messages.formatted.body
+  );
 
   await message.hover();
-  await page.locator('[data-message-actions="true"]').getByTitle("More message actions").click();
+  const moreActions = page.getByTestId(`message-${id}-actions`).getByTitle("More message actions");
+  await expect(moreActions).toBeVisible();
+  await moreActions.click();
   await page.getByRole("menuitem", { name: "Copy message" }).click();
 
   await expect.poll(() => page.evaluate(() => window.__copiedText)).toBe(fixture.messages.formatted.body);
@@ -221,6 +237,7 @@ test("pastes markdown into the composer as formatted content", async ({ page }) 
 
 test("resets the composer placeholder after deleting the draft", async ({ page }) => {
   await page.goto("/");
+  await channelRow(page, "general").click();
   const editor = page.getByTestId("composer-editor");
 
   await expect(editor).toHaveClass(/is-empty/);
@@ -233,9 +250,11 @@ test("resets the composer placeholder after deleting the draft", async ({ page }
 });
 
 test("clears message actions when leaving the message row but keeps them over the toolbar", async ({ page }) => {
-  await page.goto("/");
-  const message = page.locator(".message").filter({ hasText: fixture.messages.searchHit.body }).first();
-  await expect(message).toBeVisible();
+  const { message } = await openFreshGeneralMessage(
+    page,
+    "message-actions",
+    `Message actions ${fixture.suffix}`
+  );
 
   await message.hover();
   const actions = page.getByTestId(/message-.*-actions/).first();
@@ -258,11 +277,8 @@ test("clears message actions when leaving the message row but keeps them over th
 });
 
 test("keeps copy-and-paste message paragraphs flush with the composer", async ({ page }) => {
-  await page.goto("/");
-  const source = page
-    .locator(".message")
-    .filter({ hasText: fixture.messages.searchHit.body })
-    .first();
+  const body = `Copy and paste ${fixture.suffix}`;
+  const { message: source } = await openFreshGeneralMessage(page, "copy-paste", body);
   await source.hover();
   await page.locator('[data-message-actions="true"]').getByTitle("More message actions").click();
   await page.getByRole("menuitem", { name: "Copy message" }).click();
@@ -283,7 +299,7 @@ test("keeps copy-and-paste message paragraphs flush with the composer", async ({
   });
 
   await expect(editor.locator("p")).toHaveCount(0);
-  await expect(editor).toContainText(fixture.messages.searchHit.body);
+  await expect(editor).toContainText(body);
 });
 
 test("uses Enter for new list items and Shift+Enter for list line breaks", async ({ page }) => {
@@ -329,6 +345,7 @@ test("uses Shift+Enter for code newlines and Enter to exit the block", async ({ 
 
 test("sends multiple messages from the same composer", async ({ page }) => {
   await page.goto("/");
+  await channelRow(page, "general").click();
   await expect(page.getByTestId("channel-title")).toContainText("general");
 
   const composer = page.locator(".composer-editor");
@@ -479,9 +496,11 @@ test("shows saved messages and removes one from saved", async ({ page }) => {
 });
 
 test("opens a profile from an @mention in a message", async ({ page }) => {
-  await page.goto("/");
-  const mention = messageByText(page, `Heads up @${fixture.alice.username}`).first();
-  await expect(mention).toBeVisible();
+  const { message: mention } = await openFreshGeneralMessage(
+    page,
+    "profile-mention",
+    `Profile mention @${fixture.alice.username}`
+  );
 
   await mention.locator(".mention--me").click();
 

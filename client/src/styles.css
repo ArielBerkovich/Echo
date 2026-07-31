@@ -3354,14 +3354,16 @@ html[data-mode="dark"] .sidebar {
   gap: 7px;
   height: 30px;
   padding: 0 9px 0 5px;
-  border: 1px solid color-mix(in srgb, var(--blue-400) 34%, var(--border));
+  border: 1px solid color-mix(in srgb, var(--text) 10%, var(--border));
   border-radius: 9px;
-  background: color-mix(in srgb, var(--blue-400) 7%, var(--surface));
-  color: var(--blue-500);
+  background: color-mix(in srgb, var(--surface) 94%, var(--surface-2));
+  color: var(--text);
   font-size: 12.5px;
   font-weight: 650;
   line-height: 1;
-  box-shadow: 0 1px 1px color-mix(in srgb, var(--navy-900) 5%, transparent);
+  box-shadow:
+    0 2px 7px color-mix(in srgb, var(--text) 7%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--surface) 80%, transparent);
   transition: background 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
 }
 .thread-indicator-icon {
@@ -3371,7 +3373,8 @@ html[data-mode="dark"] .sidebar {
   width: 20px;
   height: 20px;
   border-radius: 6px;
-  background: color-mix(in srgb, var(--blue-400) 13%, transparent);
+  background: var(--surface-2);
+  color: var(--muted);
 }
 .thread-indicator-icon svg {
   width: 14px;
@@ -3380,23 +3383,37 @@ html[data-mode="dark"] .sidebar {
 }
 .thread-indicator-arrow {
   margin-left: 1px;
-  color: color-mix(in srgb, var(--blue-500) 68%, var(--muted));
+  color: var(--muted);
   font-size: 17px;
   font-weight: 500;
   line-height: 1;
   transition: transform 0.14s ease;
 }
 .thread-indicator:hover {
-  background: color-mix(in srgb, var(--blue-400) 12%, var(--surface));
-  border-color: color-mix(in srgb, var(--blue-400) 62%, var(--border));
-  box-shadow: 0 2px 5px color-mix(in srgb, var(--blue-500) 12%, transparent);
+  background: var(--surface-2);
+  border-color: color-mix(in srgb, var(--text) 20%, var(--border));
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--text) 10%, transparent);
 }
 .thread-indicator:hover .thread-indicator-arrow {
   transform: translateX(2px);
 }
 .thread-indicator:focus-visible {
-  outline: 2px solid var(--blue-400);
+  outline: 2px solid color-mix(in srgb, var(--text) 32%, transparent);
   outline-offset: 2px;
+}
+html[data-mode="dark"] .thread-indicator {
+  background: color-mix(in srgb, var(--surface-2) 88%, var(--surface));
+  border-color: color-mix(in srgb, var(--text) 14%, var(--border));
+  box-shadow:
+    0 3px 10px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 color-mix(in srgb, var(--text) 7%, transparent);
+}
+html[data-mode="dark"] .thread-indicator-icon {
+  background: color-mix(in srgb, var(--surface) 76%, var(--surface-2));
+}
+html[data-mode="dark"] .thread-indicator:hover {
+  background: color-mix(in srgb, var(--surface-2) 76%, var(--text));
+  border-color: color-mix(in srgb, var(--text) 24%, var(--border));
 }
 /* "User is typing…" indicator above the composer */
 .typing-indicator {
@@ -4699,19 +4716,30 @@ html[data-mode="dark"] .day-divider-label {
 .att-image {
   display: block;
   max-width: 360px;
+  max-height: 320px;
+  min-width: 0;
   border-radius: 10px;
   overflow: hidden;
   border: 1px solid var(--border);
-  background: none;
+  background: var(--surface-2);
   padding: 0;
+}
+.att-image.is-loading {
+  background: linear-gradient(100deg, var(--surface-2) 20%, var(--border) 45%, var(--surface-2) 70%);
+  background-size: 220% 100%;
+  animation: attachmentShimmer 1.35s ease-in-out infinite;
+}
+.att-image:disabled {
+  opacity: 1;
 }
 .att-image img {
   display: block;
-  max-width: 360px;
-  max-height: 320px;
-  width: auto;
-  height: auto;
-  object-fit: cover;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+@keyframes attachmentShimmer {
+  to { background-position-x: -220%; }
 }
 
 /* Lightbox — full-screen overlay */
@@ -5864,8 +5892,18 @@ html[data-mode="dark"] .channel-header {
   display: none;
 }
 
+.messages-shell {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+  display: flex;
+}
+
 .messages {
   flex: 1;
+  min-width: 0;
+  min-height: 0;
   overflow-y: auto;
   position: relative;
   padding: 20px 24px;
@@ -5875,27 +5913,102 @@ html[data-mode="dark"] .channel-header {
   background: linear-gradient(180deg, var(--bg), var(--surface) 120px);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .att-image.is-loading {
+    animation: none;
+  }
+}
+
 .new-messages-button {
-  position: sticky;
-  align-self: flex-end;
-  right: 24px;
-  bottom: 16px;
-  flex: none;
-  margin: -48px 24px 16px 0;
-  z-index: 3;
-  border: 1px solid color-mix(in srgb, var(--blue-400) 55%, var(--border));
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--text) 10%, var(--border));
   border-radius: 999px;
-  padding: 8px 13px;
-  background: var(--surface);
-  color: var(--blue-500);
-  box-shadow: var(--shadow-md);
+  background: color-mix(in srgb, var(--surface) 94%, var(--surface-2));
+  color: var(--muted);
+  box-shadow:
+    0 8px 22px color-mix(in srgb, var(--text) 12%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--surface) 80%, transparent);
+  backdrop-filter: blur(12px);
   font: inherit;
   font-size: 12px;
   font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
+  transform: translateX(-50%);
+  transition: color 140ms ease, background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
+}
+.new-messages-button.has-count {
+  min-width: 0;
+  padding: 0 14px;
+}
+.new-messages-button.timeline-jump-button {
+  left: auto;
+  right: 10px;
+  bottom: 10px;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  gap: 0;
+  transform: none;
+}
+.new-messages-count {
+  position: absolute;
+  top: -6px;
+  right: -5px;
+  display: grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border: 2px solid var(--surface);
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--surface);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
 }
 .new-messages-button:hover {
+  color: var(--text);
   background: var(--surface-2);
+  border-color: color-mix(in srgb, var(--text) 20%, var(--border));
+  transform: translate(-50%, -2px);
+}
+.new-messages-button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--text) 32%, transparent);
+  outline-offset: 2px;
+}
+.new-messages-button:active {
+  transform: translate(-50%, 0);
+}
+.new-messages-button.timeline-jump-button:hover {
+  transform: translateY(-2px);
+}
+.new-messages-button.timeline-jump-button:active {
+  transform: translateY(0);
+}
+html[data-mode="dark"] .new-messages-button {
+  background: color-mix(in srgb, var(--surface-2) 88%, var(--surface));
+  color: var(--muted);
+  border-color: color-mix(in srgb, var(--text) 14%, var(--border));
+  box-shadow:
+    0 8px 22px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 color-mix(in srgb, var(--text) 7%, transparent);
+}
+html[data-mode="dark"] .new-messages-button:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface-2) 76%, var(--text));
+  border-color: color-mix(in srgb, var(--text) 24%, var(--border));
 }
 
 .empty-state {
@@ -7452,10 +7565,6 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   .forward-actions {
     padding-bottom: env(safe-area-inset-bottom);
   }
-  .new-messages-button {
-    right: 12px;
-    margin-right: 12px;
-  }
   .channel-header {
     padding: 0.625rem 0.75rem;
   }
@@ -7843,7 +7952,27 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   justify-content: center;
 }
 .account-actions .footer-signout {
+  width: auto;
   min-height: 32px;
+  padding: 0 11px;
+  gap: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.055);
+  color: #cbd5e1;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: color 140ms ease, background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
+}
+.account-actions .footer-signout:hover {
+  color: #fecaca;
+  border-color: rgba(248, 113, 113, 0.38);
+  background: rgba(239, 68, 68, 0.12);
+  text-decoration: none;
+}
+.account-actions .footer-signout:active {
+  transform: translateY(1px);
 }
 
 @media (min-width: 1600px) {
@@ -7869,9 +7998,11 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     width: 38px;
     height: 36px;
   }
-.account-actions .footer-signout {
-  min-height: 36px;
-}
+  .account-actions .footer-signout {
+    width: auto;
+    min-height: 36px;
+    padding-inline: 13px;
+  }
 }
 
 /* Quick VIP action for the active direct-message conversation. */

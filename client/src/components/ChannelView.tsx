@@ -23,7 +23,7 @@ import Modal from "./Modal.js";
 import { LeaveIcon, PinIcon } from "./Icons.js";
 import { formatDayDivider, isDifferentDay } from "../lib/time.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
-import { StarIcon, UsersRoundIcon } from "lucide-react";
+import { ChevronsDownIcon, StarIcon, UsersRoundIcon } from "lucide-react";
 
 // Shimmering placeholder rows shown while a channel's history loads, so the
 // pane has structure immediately instead of flashing an empty "say hello" state.
@@ -49,6 +49,7 @@ export default function ChannelView({
   recoveryEpoch = 0,
   cachedMessages = null,
   initialScrollState = null,
+  hasUnread = false,
   user,
   users = [],
   channels = [],
@@ -87,7 +88,8 @@ export default function ChannelView({
   onThreadOpened,
   mode = "light",
 }) {
-  const [messages, setMessages] = useState([]);
+  const hasUsableCache = cachedMessages !== null && !hasUnread;
+  const [messages, setMessages] = useState(() => hasUsableCache ? cachedMessages : []);
   const [error, setError] = useState(null);
   const [thread, setThread] = useState(null); // open thread root message, or null
   const [threadJumpTargetId, setThreadJumpTargetId] = useState(null);
@@ -107,12 +109,13 @@ export default function ChannelView({
   const showPinnedRef = useRef(false);
   const [firstUnreadId, setFirstUnreadId] = useState(null); // first message not yet seen
   const [highlightId, setHighlightId] = useState(null); // message highlighted after a jump
-  const [historyReady, setHistoryReady] = useState(false); // has the initial message payload resolved?
+  const [historyReady, setHistoryReady] = useState(hasUsableCache); // is rendered history safe to position?
   const [typingUsers, setTypingUsers] = useState({}); // { userId: displayName } currently typing
   const [threadLightbox, setThreadLightbox] = useState(null); // { src, name } opened from thread
   const [loadingOlder, setLoadingOlder] = useState(false); // fetching older history (scroll-up)
-  const [loading, setLoading] = useState(true); // initial history fetch for this channel in flight
+  const [loading, setLoading] = useState(!hasUsableCache); // initial history fetch for this channel in flight
   const [newMessageCount, setNewMessageCount] = useState(0);
+  const [showScrollToLatest, setShowScrollToLatest] = useState(false);
 
   const bottomRef = useRef(null);
   const scrollerRef = useRef(null); // the scrollable messages container
@@ -130,7 +133,7 @@ export default function ChannelView({
   const jumpingRef = useRef(false); // a jump scroll is in flight — pause scroll-up pagination
   const jumpSettleRef = useRef(null); // timer that re-enables pagination after a jump lands
   const unreadScrollAppliedRef = useRef(false); // did we already anchor the current unread divider?
-  const suppressGrowFollowRef = useRef(false); // while true, don't auto-follow "grew" renders to the bottom
+  const suppressGrowFollowRef = useRef(true); // while true, don't auto-follow until initial positioning settles
 
   const renderMarkdown = useMarkdownRenderer(users, user.username, customEmojis, channels);
   const emojiMap = useMemo(
@@ -183,47 +186,6 @@ export default function ChannelView({
     let cancelled = false;
     const socket = getSocket();
     const myId = user.id;
-
-    setMessages([]);
-    setLoading(true);
-    setError(null);
-    setThread(null);
-    setThreadJumpTargetId(null);
-    setMenuFor(null);
-    setEditing(null);
-    setForwarding(null);
-    setShowDetails(false);
-    setShowMembers(false);
-    setShowPinned(false);
-    setPinnedMessages([]);
-    setFirstUnreadId(null);
-    setHighlightId(null);
-    setHistoryReady(false);
-    setTypingUsers({});
-    setNewMessageCount(0);
-    initialScrolledRef.current = false;
-    prevLenRef.current = 0;
-    hasMoreOlderRef.current = true;
-    loadingOlderRef.current = false;
-    pendingPrependRef.current = null;
-    justPrependedRef.current = false;
-    unreadScrollAppliedRef.current = false;
-    suppressGrowFollowRef.current = true;
-    // A fresh channel means any in-flight jump is stale: clear the guards so the
-    // pending jump for this channel is handled cleanly (and re-jumping to the
-    // same message later isn't silently blocked by a leftover handled-id).
-    jumpHandledRef.current = null;
-    jumpLoadingRef.current = null;
-    jumpingRef.current = false;
-    clearTimeout(jumpSettleRef.current);
-    setLoadingOlder(false);
-    if (cachedMessages?.length) {
-      setMessages(cachedMessages);
-      setLoading(false);
-    } else {
-      setMessages([]);
-      setLoading(true);
-    }
 
     api
       .getMessages(channel.id)
@@ -558,6 +520,7 @@ export default function ChannelView({
   function onMessagesScroll(e) {
     const scroller = e.currentTarget;
     const atBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120;
+    setShowScrollToLatest(!atBottom);
     if (!jumpingRef.current && !(firstUnreadId && unreadScrollAppliedRef.current)) {
       stickToBottomRef.current = atBottom;
       if (atBottom) setNewMessageCount(0);
@@ -575,8 +538,9 @@ export default function ChannelView({
     scroller.scrollTop = scroller.scrollHeight;
   }
 
-  function scrollToNewMessages() {
+  function scrollToLatest() {
     setNewMessageCount(0);
+    setShowScrollToLatest(false);
     stickToBottomRef.current = true;
     requestAnimationFrame(scrollToExactBottom);
   }
@@ -628,7 +592,7 @@ export default function ChannelView({
     };
   }, [channel.id]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     // Wait until messages are actually rendered (not the loading skeleton),
     // otherwise bottomRef/firstUnreadRef don't exist yet and the initial scroll
     // is silently lost.
@@ -664,21 +628,17 @@ export default function ChannelView({
       if (shouldForceBottom) {
         handledBottomScrollRequestRef.current = scrollToBottomTarget.id;
         onScrollToBottomTargetConsumed?.();
-        requestAnimationFrame(() => {
-          scrollToExactBottom();
-          stickToBottomRef.current = true;
-          suppressGrowFollowRef.current = false;
-        });
+        scrollToExactBottom();
+        stickToBottomRef.current = true;
+        suppressGrowFollowRef.current = false;
         return;
       }
       if (firstUnreadId && firstUnreadRef.current) {
         unreadScrollAppliedRef.current = true;
         jumpingRef.current = true;
         stickToBottomRef.current = false;
-        requestAnimationFrame(() => {
-          anchorUnreadDivider();
-          settleUnreadAnchor();
-        });
+        anchorUnreadDivider();
+        settleUnreadAnchor();
         return;
       }
       if (initialScrollState) {
@@ -687,26 +647,22 @@ export default function ChannelView({
         if (!initialScrollState.atBottom) {
           stickToBottomRef.current = false;
         }
-        requestAnimationFrame(() => {
-          const scroller = scrollerRef.current;
-          if (!scroller) return;
+        const scroller = scrollerRef.current;
+        if (!scroller) return;
         if (initialScrollState.atBottom) {
           scrollToExactBottom();
           stickToBottomRef.current = true;
           suppressGrowFollowRef.current = false;
         } else {
-            scroller.scrollTop = initialScrollState.scrollTop;
-            stickToBottomRef.current = false;
-            settleInitialScroll();
-          }
-        });
+          scroller.scrollTop = initialScrollState.scrollTop;
+          stickToBottomRef.current = false;
+          settleInitialScroll();
+        }
         return;
       }
-      requestAnimationFrame(() => {
-        scrollToExactBottom();
-        stickToBottomRef.current = true;
-        suppressGrowFollowRef.current = false;
-      });
+      scrollToExactBottom();
+      stickToBottomRef.current = true;
+      suppressGrowFollowRef.current = false;
     } else if (shouldForceBottom && !jumpMessageId) {
       handledBottomScrollRequestRef.current = scrollToBottomTarget.id;
       onScrollToBottomTargetConsumed?.();
@@ -980,15 +936,16 @@ export default function ChannelView({
         )}
       </header>
 
-      <div
-        className="messages"
-        ref={scrollerRef}
-        onScroll={onMessagesScroll}
-        onMouseLeave={(event) => {
-          if (!menuFor && !event.relatedTarget?.closest?.("[data-message-actions]")) setActionsFor(null);
-        }}
-      >
-        <div ref={messagesInnerRef}>
+      <div className="messages-shell">
+        <div
+          className="messages"
+          ref={scrollerRef}
+          onScroll={onMessagesScroll}
+          onMouseLeave={(event) => {
+            if (!menuFor && !event.relatedTarget?.closest?.("[data-message-actions]")) setActionsFor(null);
+          }}
+        >
+          <div ref={messagesInnerRef}>
           {loadingOlder && <div className="older-loader">Loading earlier messages…</div>}
           {loading ? (
             <MessagesSkeleton />
@@ -1076,16 +1033,26 @@ export default function ChannelView({
               );
             })
           )}
-          <div ref={bottomRef} />
+            <div ref={bottomRef} />
+          </div>
         </div>
-        {newMessageCount > 0 && (
+        {(showScrollToLatest || newMessageCount > 0) && (
           <button
             type="button"
-            className="new-messages-button"
+            className="new-messages-button timeline-jump-button"
             data-testid="new-messages-button"
-            onClick={scrollToNewMessages}
+            onClick={scrollToLatest}
+            aria-label={newMessageCount > 0
+              ? `Scroll to latest, ${newMessageCount} new ${newMessageCount === 1 ? "message" : "messages"}`
+              : "Scroll to latest message"}
+            title={newMessageCount > 0 ? "View new messages" : "Jump to latest"}
           >
-            {newMessageCount === 1 ? "1 new message" : `${newMessageCount} new messages`} ↓
+            {newMessageCount > 0 && (
+              <span className="new-messages-count" aria-hidden="true">
+                {newMessageCount > 99 ? "99+" : newMessageCount}
+              </span>
+            )}
+            <ChevronsDownIcon size={17} strokeWidth={2.2} aria-hidden="true" />
           </button>
         )}
       </div>
