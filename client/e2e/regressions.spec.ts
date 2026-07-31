@@ -173,6 +173,36 @@ test("starts a conversation from the Home Direct Messages button", async ({ page
   await expect(page.getByText(firstMessage, { exact: true })).toBeVisible();
 });
 
+test("shows an inactive Composer before choosing a new message recipient", async ({ page }) => {
+  await page.goto("/");
+  await page.locator(".dm-label").getByTestId("start-dm").click();
+  const modal = page.getByTestId("new-message-modal");
+  await expect(modal.getByTestId("composer-editor")).toBeVisible();
+  await expect(modal.getByTestId("composer-editor")).toHaveAttribute("contenteditable", "false");
+  await expect(modal.getByTestId("composer-send")).toBeDisabled();
+  await expect(modal.getByTestId("composer-send-options")).toHaveCount(0);
+});
+
+test("activates the Composer after selecting a new message recipient", async ({ page }) => {
+  await page.goto("/");
+  await page.locator(".dm-label").getByTestId("start-dm").click();
+  const modal = page.getByTestId("new-message-modal");
+  await modal.getByTestId("new-message-search-input").fill(fixture.bob.username);
+  await modal.getByTestId(`new-message-user-${fixture.bob.username}`).click();
+  await expect(modal.getByTestId("composer-editor")).toHaveAttribute("contenteditable", "true");
+  await expect(modal.getByTestId("composer-send-options")).toHaveCount(0);
+});
+
+test("keeps list markers beside text without a trailing paragraph", async ({ page }) => {
+  await page.goto("/");
+  const editor = page.getByTestId("composer-editor").first();
+  await editor.fill("List item");
+  await page.getByTitle("Bulleted list").first().click();
+  await expect(editor).toContainText("List item");
+  await expect(editor.locator(":scope > ul > li")).toHaveCount(1);
+  await expect(editor.locator(":scope > p")).toHaveCount(0);
+});
+
 test("starts a conversation from the dedicated DMs button with the keyboard", async ({ page }) => {
   await page.goto("/");
   await railItem(page, "dms").click();
