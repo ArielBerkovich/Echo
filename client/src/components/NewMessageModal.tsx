@@ -29,11 +29,12 @@ export default function NewMessageModal({ currentUserId, users, onStart, onClose
 
   async function submit(event) {
     event.preventDefault();
-    if (!selected || sending) return;
+    const body = message.trim();
+    if (!selected || !body || sending) return;
     setSending(true);
     setError(null);
     try {
-      await onStart(selected, message.trim());
+      await onStart(selected, body);
       onClose();
     } catch (err) {
       setError(err.message);
@@ -83,7 +84,7 @@ export default function NewMessageModal({ currentUserId, users, onStart, onClose
         </div>
 
         <label className="new-message-compose">
-          <span>Message <span className="settings-hint">(optional)</span></span>
+          <span>Message</span>
           <textarea
             ref={messageRef}
             data-testid="new-message-body"
@@ -98,9 +99,9 @@ export default function NewMessageModal({ currentUserId, users, onStart, onClose
         {error ? <div className="error" role="alert">{error}</div> : null}
         <ModalActions>
           <button type="button" className="btn-secondary" disabled={sending} onClick={onClose}>Cancel</button>
-          <button type="submit" className="btn-primary new-message-send" data-testid="new-message-submit" disabled={!selected || sending}>
+          <button type="submit" className="btn-primary new-message-send" data-testid="new-message-submit" disabled={!selected || !message.trim() || sending}>
             <SendIcon size={16} strokeWidth={1.9} aria-hidden="true" />
-            {sending ? "Sending…" : message.trim() ? "Send message" : "Open DM"}
+            {sending ? "Sending…" : "Send message"}
           </button>
         </ModalActions>
       </form>

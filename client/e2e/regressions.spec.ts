@@ -190,6 +190,7 @@ test("starts a conversation from the dedicated DMs button with the keyboard", as
   await expect(page.getByTestId(`new-message-user-${fixture.bob.username}`)).toBeVisible();
   await search.press("Enter");
   await expect(page.getByTestId("new-message-body")).toBeFocused();
+  await page.getByTestId("new-message-body").fill("Hello from the new message dialog");
   await page.getByTestId("new-message-submit").click();
 
   await expect(page.getByTestId("channel-title")).toContainText(fixture.bob.displayName);
