@@ -1,15 +1,15 @@
-import { useMemo, useRef, useState } from "react";
-import { SendIcon, SearchIcon } from "lucide-react";
+import { useMemo, useState } from "react";
+import { SearchIcon } from "lucide-react";
 import Avatar from "./Avatar.js";
-import Modal, { ModalActions } from "./Modal.js";
+import Composer from "./Composer.js";
+import Modal from "./Modal.js";
 
-export default function NewMessageModal({ currentUserId, users, onStart, onClose }) {
+export default function NewMessageModal({ currentUserId, users, customEmojis, mode, onPrepare, onStart, onClose }) {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(null);
-  const [message, setMessage] = useState("");
-  const [sending, setSending] = useState(false);
+  const [channel, setChannel] = useState(null);
+  const [preparing, setPreparing] = useState(false);
   const [error, setError] = useState(null);
-  const messageRef = useRef(null);
 
   const matches = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -21,30 +21,31 @@ export default function NewMessageModal({ currentUserId, users, onStart, onClose
       .slice(0, 20);
   }, [currentUserId, query, users]);
 
-  function select(user) {
+  async function select(user) {
     setSelected(user);
+    setChannel(null);
     setError(null);
-    requestAnimationFrame(() => messageRef.current?.focus());
+    setPreparing(true);
+    try {
+      setChannel(await onPrepare(user));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setPreparing(false);
+    }
   }
 
-  async function submit(event) {
-    event.preventDefault();
-    const body = message.trim();
-    if (!selected || !body || sending) return;
-    setSending(true);
-    setError(null);
+  async function handleSent() {
     try {
-      await onStart(selected, body);
+      await onStart(selected, channel);
       onClose();
     } catch (err) {
       setError(err.message);
-      setSending(false);
     }
   }
 
   return (
-    <Modal title="New message" className="new-message-modal" testId="new-message-modal" closeDisabled={sending} onClose={onClose}>
-      <form onSubmit={submit}>
+    <Modal title="New message" className="new-message-modal" testId="new-message-modal" closeDisabled={preparing} onClose={onClose}>
         <label className="new-message-search" data-testid="new-message-search">
           <SearchIcon size={17} strokeWidth={1.8} aria-hidden="true" />
           <input
@@ -85,28 +86,19 @@ export default function NewMessageModal({ currentUserId, users, onStart, onClose
           )) : <div className="people-empty">No people found.</div>}
         </div>
 
-        <label className="new-message-compose">
-          <span>Message</span>
-          <textarea
-            ref={messageRef}
-            data-testid="new-message-body"
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
-            placeholder={selected ? `Message ${selected.displayName}` : "Choose someone first"}
-            disabled={!selected || sending}
-            rows={4}
-          />
-        </label>
-
         {error ? <div className="error" role="alert">{error}</div> : null}
-        <ModalActions>
-          <button type="button" className="btn-secondary" disabled={sending} onClick={onClose}>Cancel</button>
-          <button type="submit" className="btn-primary new-message-send" data-testid="new-message-submit" disabled={!selected || !message.trim() || sending}>
-            <SendIcon size={16} strokeWidth={1.9} aria-hidden="true" />
-            {sending ? "Sending…" : "Send message"}
-          </button>
-        </ModalActions>
-      </form>
+        {preparing ? <div className="people-empty">Opening conversation…</div> : null}
+        {channel ? (
+          <Composer
+            key={channel.id}
+            channel={channel}
+            users={users}
+            customEmojis={customEmojis}
+            mode={mode}
+            onError={setError}
+            onSent={handleSent}
+          />
+        ) : null}
     </Modal>
   );
 }

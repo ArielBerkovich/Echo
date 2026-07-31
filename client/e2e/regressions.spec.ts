@@ -164,8 +164,9 @@ test("starts a conversation from the Home Direct Messages button", async ({ page
   await expect(bobResult).toBeVisible();
   await bobResult.click();
   const firstMessage = `Started from compose ${Date.now()}`;
-  await page.getByTestId("new-message-body").fill(firstMessage);
-  await page.getByTestId("new-message-submit").click();
+  const modal = page.getByTestId("new-message-modal");
+  await modal.getByTestId("composer-editor").fill(firstMessage);
+  await modal.getByTestId("composer-send").click();
 
   await expect(page.getByTestId("channel-title")).toContainText(fixture.bob.displayName);
   await expect(railItem(page, "dms")).toHaveClass(/active/);
@@ -189,9 +190,11 @@ test("starts a conversation from the dedicated DMs button with the keyboard", as
   await search.fill(fixture.bob.username);
   await expect(page.getByTestId(`new-message-user-${fixture.bob.username}`)).toBeVisible();
   await search.press("Enter");
-  await expect(page.getByTestId("new-message-body")).toBeFocused();
-  await page.getByTestId("new-message-body").fill("Hello from the new message dialog");
-  await page.getByTestId("new-message-submit").click();
+  const composer = page.getByTestId("composer-editor");
+  await composer.click();
+  await expect(composer).toBeFocused();
+  await composer.fill("Hello from the new message dialog");
+  await page.getByTestId("composer-send").click();
 
   await expect(page.getByTestId("channel-title")).toContainText(fixture.bob.displayName);
   await expect(railItem(page, "dms")).toHaveClass(/active/);

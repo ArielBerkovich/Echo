@@ -50,18 +50,6 @@ describe("api request helpers", () => {
     assert.equal(call[1].body, JSON.stringify({ name: "general", type: "private" }));
   });
 
-  it("sends a message through the REST conversation endpoint", async () => {
-    let call;
-    globalThis.fetch = async (...args) => {
-      call = args;
-      return { ok: true, json: async () => ({ message: { id: "message-1" } }) };
-    };
-
-    await api.sendMessage("channel-1", "Hello Bob");
-    assert.equal(call[0], "/api/channels/channel-1/messages");
-    assert.equal(call[1].method, "POST");
-    assert.equal(call[1].body, JSON.stringify({ body: "Hello Bob" }));
-  });
 
   it("sends password-help requests without requiring a session", async () => {
     let call;

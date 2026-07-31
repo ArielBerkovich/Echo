@@ -27,7 +27,7 @@ const SCHEDULE_PRESETS = [
 // Rich-text message composer: @mention autocomplete, a formatting toolbar,
 // emoji, and file attachments. Owns all of its own editor state — mount it with
 // a `key={channel.id}` so switching channels yields a fresh, empty composer.
-export default function Composer({ channel, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, mode = "light", captureScreenDrops = false }) {
+export default function Composer({ channel, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, mode = "light", captureScreenDrops = false }) {
   const isThread = !!parentId; // a thread reply composer (hides channel-level scheduling)
   const [mention, setMention] = useState(null); // { trigger, query, from, to } or null
   const [activeIdx, setActiveIdx] = useState(0);
@@ -296,6 +296,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
     }
     socket.emit("message:send", { channelId: channel.id, body, attachments, parentId }, (res) => {
       if (res?.error) onError?.(res.error);
+      else onSent?.();
     });
     resetComposer();
     return true;

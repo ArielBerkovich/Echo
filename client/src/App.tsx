@@ -703,9 +703,18 @@ export default function App() {
     refreshDms();
   }
 
-  async function handleStartDm(target, message) {
+  async function handlePrepareDm(target) {
     const { channel } = await api.openDm(target.id);
-    if (message) await api.sendMessage(channel.id, message);
+    return {
+      ...channel,
+      type: "dm",
+      dmName: target.displayName,
+      dmUsername: target.username,
+      dmUserId: target.id,
+    };
+  }
+
+  async function handleStartDm(target, channel) {
     await handleOpenDm(target, false, "dms", channel);
   }
 
@@ -1243,6 +1252,7 @@ export default function App() {
         toast={toast}
         onCreateChannel={handleCreateChannel}
         onStartDm={handleStartDm}
+        onPrepareDm={handlePrepareDm}
         onAddMember={handleAddMember}
         onEmojiCreated={handleEmojiCreated}
         onSelectTheme={setTheme}

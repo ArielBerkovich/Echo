@@ -29,6 +29,7 @@ export default function WorkspaceOverlays({
   toast,
   onCreateChannel,
   onStartDm,
+  onPrepareDm,
   onAddMember,
   onEmojiCreated,
   onSelectTheme,
@@ -49,6 +50,9 @@ export default function WorkspaceOverlays({
         <NewMessageModal
           currentUserId={user.id}
           users={users}
+          customEmojis={customEmojis}
+          mode={mode}
+          onPrepare={onPrepareDm}
           onStart={onStartDm}
           onClose={onClose.newMessage}
         />
