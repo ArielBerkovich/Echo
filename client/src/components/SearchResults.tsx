@@ -107,7 +107,7 @@ export default function SearchResults({ query, onJump, onClose }) {
                     <div
                       className="body markdown"
                       dir="auto"
-                      dangerouslySetInnerHTML={{ __html: snippet(r.body, query) }}
+                      dangerouslySetInnerHTML={{ __html: snippet(r.body, parsed.text) }}
                     />
                   </div>
                 </button>

@@ -66,6 +66,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
       ? `Message ${channel.dmName}`
       : `Message #${channel.name}`);
   const editor = useEditor({
+    editable: !disabled,
     extensions: [
       StarterKit.configure({ heading: { levels: [1, 2, 3] }, trailingNode: false }),
       Placeholder.configure({ placeholder }),
@@ -91,7 +92,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
     onCreate: ({ editor: currentEditor }) => syncEditorState(currentEditor),
     onUpdate: ({ editor: currentEditor }) => syncEditorState(currentEditor),
     onSelectionUpdate: ({ editor: currentEditor }) => syncMentionContext(currentEditor),
-  }, [channel.id, parentId, placeholder]);
+  }, [channel.id, parentId, placeholder, disabled]);
   useEffect(() => {
     editor?.setEditable(!disabled);
   }, [disabled, editor]);
