@@ -5521,6 +5521,8 @@ html[data-mode="dark"] .day-divider-label {
 .forward-note-field {
   display: block;
   margin: 12px 0 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
   position: relative;
   z-index: 3;
 }
