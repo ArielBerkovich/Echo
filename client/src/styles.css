@@ -1744,33 +1744,48 @@ html[data-mode="dark"] .backend-connection-error {
   flex: 1;
   margin-top: 0;
 }
-.profile-vip {
+.profile-starred {
+  width: 46px;
+  height: 46px;
+  flex: none;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 11px 14px;
-  border-radius: 10px;
+  justify-content: center;
+  padding: 0;
+  border-radius: 13px;
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--text);
-  font-size: 14px;
-  font-weight: 700;
   cursor: pointer;
-  white-space: nowrap;
+  transition: color 180ms ease, border-color 180ms ease, background 180ms ease, transform 180ms ease, box-shadow 180ms ease;
 }
-.profile-vip:hover {
+.profile-starred:hover {
   border-color: var(--beam);
+  color: var(--beam);
+  background: color-mix(in srgb, var(--beam) 10%, var(--surface-2));
+  transform: translateY(-2px) rotate(-4deg);
+  box-shadow: 0 5px 12px color-mix(in srgb, var(--beam) 16%, transparent);
 }
-.profile-vip.active {
+.profile-starred.active {
   border-color: var(--beam);
   background: color-mix(in srgb, var(--beam) 18%, transparent);
-}
-.profile-vip .vip-star {
   color: var(--beam);
-  font-size: 16px;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--beam) 9%, transparent), 0 0 10px color-mix(in srgb, var(--beam) 20%, transparent);
 }
-/* Gold VIP section header in the sidebar. */
-.vip-label {
+.profile-starred:active {
+  transform: translateY(0) scale(0.94);
+}
+.profile-star-icon {
+  filter: drop-shadow(0 0 0 transparent);
+  transition: transform 220ms cubic-bezier(0.2, 0.85, 0.35, 1.25), filter 220ms ease;
+}
+.profile-starred:hover .profile-star-icon,
+.profile-starred.active .profile-star-icon {
+  transform: scale(1.14) rotate(8deg);
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--beam) 46%, transparent));
+}
+/* Gold Starred section header in the sidebar. */
+.starred-label {
   color: var(--beam);
 }
 
@@ -2094,13 +2109,13 @@ html[data-mode="dark"] .backend-connection-error {
 .rail-active-indicator {
   position: absolute;
   left: -4px;
-  top: 19px;
+  top: var(--rail-indicator-offset, 0px);
   width: 3px;
   height: 20px;
   border-radius: 999px;
   background: var(--active-bg);
-  transform: translateY(calc(var(--rail-active-index) * 69px));
-  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translateY(-50%);
+  transition: top 420ms cubic-bezier(0.22, 1, 0.36, 1);
   box-shadow: 0 0 12px color-mix(in srgb, var(--active-bg) 75%, transparent);
   pointer-events: none;
 }
@@ -8358,8 +8373,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     font-size: 12px;
   }
   .rail-active-indicator {
-    top: 25px;
-    transform: translateY(calc(var(--rail-active-index) * 86px));
+    transition-duration: 420ms;
   }
   .rail-icon {
     width: 40px;
@@ -8553,8 +8567,8 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   }
 }
 
-/* Quick VIP action for the active direct-message conversation. */
-.dm-vip-toggle {
+/* Quick Starred action for the active direct-message conversation. */
+.dm-starred-toggle {
   flex: none;
   width: 28px;
   height: 28px;
@@ -8566,22 +8580,22 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   background: var(--surface-2);
   color: var(--muted);
 }
-.dm-vip-toggle svg {
+.dm-starred-toggle svg {
   width: 16px;
   height: 16px;
 }
-.dm-vip-toggle:hover {
+.dm-starred-toggle:hover {
   color: var(--beam);
   border-color: var(--beam);
   background: color-mix(in srgb, var(--beam) 12%, var(--surface));
 }
-.dm-vip-toggle.active {
+.dm-starred-toggle.active {
   color: #fbbf24 !important;
   border-color: #fbbf24 !important;
   background: rgba(251, 191, 36, 0.12) !important;
   box-shadow: none;
 }
-.dm-vip-toggle.active svg {
+.dm-starred-toggle.active svg {
   color: #fbbf24;
   stroke: #fbbf24;
   fill: #fbbf24;
@@ -8613,14 +8627,14 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 }
 
 @media (min-width: 1600px) {
-  .dm-vip-toggle {
+  .dm-starred-toggle {
     width: 30px;
     height: 30px;
   }
 }
 
 @media (max-width: 420px) {
-  .dm-vip-toggle {
+  .dm-starred-toggle {
     width: 28px;
     height: 28px;
   }

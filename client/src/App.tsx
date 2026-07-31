@@ -65,8 +65,8 @@ export default function App() {
     setCustomEmojis,
     savedIds,
     setSavedIds,
-    vipIds,
-    setVipIds,
+    starredIds,
+    setStarredIds,
     activityItems,
   } = useWorkspaceQueries(!!user);
   const [navOpen, setNavOpen] = useState(false); // mobile: rail+sidebar drawer open?
@@ -223,14 +223,14 @@ export default function App() {
       activeChannel,
       channels,
       dms,
-      vipIds,
+      starredIds,
       setChannels,
       setAllChannels: updateCatalogCache,
       setDms,
       setUsers,
       setCustomEmojis,
       setSavedIds,
-      setVipIds,
+      setStarredIds,
       setView,
       setActiveChannel,
       setProfileUser,
@@ -724,7 +724,7 @@ export default function App() {
   }
 
   async function handleHideDm(conv) {
-    if (vipIds.has(conv.withUser.id)) return;
+    if (starredIds.has(conv.withUser.id)) return;
     await api.hideDm(conv.id);
     setDms((prev) => prev.filter((d) => d.id !== conv.id));
     if (activeChannel?.id === conv.id) {
@@ -992,26 +992,26 @@ export default function App() {
       .finally(() => queryClient.invalidateQueries({ queryKey: queryKeys.saved }));
   }
 
-  // Toggle a user's VIP status, optimistically.
-  function handleToggleVip(userId) {
-    const wasVip = vipIds.has(userId);
-    setVipIds((prev) => {
+  // Toggle a user's Starred status, optimistically.
+  function handleToggleStarred(userId) {
+    const wasStarred = starredIds.has(userId);
+    setStarredIds((prev) => {
       const next = new Set(prev);
-      wasVip ? next.delete(userId) : next.add(userId);
+      wasStarred ? next.delete(userId) : next.add(userId);
       return next;
     });
-    api.toggleVip(userId).then(({ vip }) => {
-      setVipIds((prev) => {
+    api.toggleStarred(userId).then(({ starred }) => {
+      setStarredIds((prev) => {
         const next = new Set(prev);
-        if (vip) next.add(userId);
+        if (starred) next.add(userId);
         else next.delete(userId);
         return next;
       });
       refreshDms();
     }).catch(() => {
-      setVipIds((prev) => {
+      setStarredIds((prev) => {
         const next = new Set(prev);
-        if (wasVip) next.add(userId);
+        if (wasStarred) next.add(userId);
         else next.delete(userId);
         return next;
       });
@@ -1115,7 +1115,7 @@ export default function App() {
           channels={channels}
           dms={dms}
           hidden={hidden}
-          vipIds={vipIds}
+          starredIds={starredIds}
           onlineIds={onlineIds}
           activeChannel={activeChannel}
           activityBadge={activityBadge}
@@ -1225,8 +1225,8 @@ export default function App() {
             onOpenForwardedDm: (target, channel) => handleOpenDm(target, false, "dms", channel),
             onToast: setToast,
             onDmsChanged: refreshDms,
-            isVip: activeChannel?.type === "dm" && vipIds.has(activeChannel.dmUserId),
-            onToggleVip: handleToggleVip,
+            isStarred: activeChannel?.type === "dm" && starredIds.has(activeChannel.dmUserId),
+            onToggleStarred: handleToggleStarred,
             jumpMessageId,
             scrollToBottomTarget,
             canJumpToForward,
@@ -1255,7 +1255,7 @@ export default function App() {
         activeChannel={activeChannel}
         customEmojis={customEmojis}
         onlineIds={onlineIds}
-        vipIds={vipIds}
+        starredIds={starredIds}
         theme={theme}
         themes={THEMES}
         mode={mode}
@@ -1276,7 +1276,7 @@ export default function App() {
         onSelectTheme={setTheme}
         onSelectMode={setMode}
         onUserUpdated={(updated) => setUser((previous) => ({ ...previous, ...updated }))}
-        onToggleVip={handleToggleVip}
+        onToggleStarred={handleToggleStarred}
         onOpenDm={(target) => {
           setProfileUser(null);
           handleOpenDm(target);

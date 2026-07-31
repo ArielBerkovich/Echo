@@ -1,9 +1,10 @@
 import Avatar from "./Avatar.js";
 import Modal from "./Modal.js";
+import { StarIcon } from "lucide-react";
 
 // A small profile card shown when you click someone's name, avatar, or @mention.
 // Offers a quick "Message" action that opens a DM with them.
-export default function UserProfileModal({ user, currentUserId, online, isVip, onToggleVip, onMessage, onClose }) {
+export default function UserProfileModal({ user, currentUserId, online, isStarred, onToggleStarred, onMessage, onClose }) {
   if (!user) return null;
   const isSelf = user.id === currentUserId;
 
@@ -33,13 +34,13 @@ export default function UserProfileModal({ user, currentUserId, online, isVip, o
           </button>
           <button
             type="button"
-            className={`profile-vip ${isVip ? "active" : ""}`}
-            data-testid="profile-vip"
-            onClick={onToggleVip}
-            title={isVip ? "Remove from VIP" : "Mark as VIP"}
+            className={`profile-starred ${isStarred ? "active" : ""}`}
+            data-testid="profile-starred"
+            onClick={onToggleStarred}
+            aria-label={isStarred ? "Remove from Starred" : "Mark as Starred"}
+            title={isStarred ? "Remove from Starred" : "Mark as Starred"}
           >
-            <span className="vip-star">{isVip ? "★" : "☆"}</span>
-            {isVip ? "VIP" : "Mark as VIP"}
+            <StarIcon className="profile-star-icon" size={23} strokeWidth={1.8} fill={isStarred ? "currentColor" : "none"} />
           </button>
         </div>
       )}

@@ -14,7 +14,7 @@ export default function WorkspaceOverlays({
   activeChannel,
   customEmojis,
   onlineIds,
-  vipIds,
+  starredIds,
   theme,
   themes,
   mode,
@@ -35,7 +35,7 @@ export default function WorkspaceOverlays({
   onSelectTheme,
   onSelectMode,
   onUserUpdated,
-  onToggleVip,
+  onToggleStarred,
   onOpenDm,
   onOpenApiDocs,
   onFinishTour,
@@ -87,8 +87,8 @@ export default function WorkspaceOverlays({
           user={profileUser}
           currentUserId={user.id}
           online={onlineIds.has(profileUser.id)}
-          isVip={vipIds.has(profileUser.id)}
-          onToggleVip={() => onToggleVip(profileUser.id)}
+          isStarred={starredIds.has(profileUser.id)}
+          onToggleStarred={() => onToggleStarred(profileUser.id)}
           onMessage={onOpenDm}
           onClose={onClose.profile}
         />

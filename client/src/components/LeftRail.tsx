@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ActivityIcon, BookmarkIcon, HomeIcon, MessageSquareTextIcon, SettingsIcon } from "lucide-react";
 import Avatar from "./Avatar.js";
 import { LeaveIcon } from "./Icons.js";
@@ -26,9 +26,32 @@ export default function LeftRail({ view, onSelect, badges = {}, user, onLogout, 
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
   const [displayNameDialogOpen, setDisplayNameDialogOpen] = useState(false);
+  const [indicatorOffset, setIndicatorOffset] = useState(null);
   const clickTimerRef = useRef(null);
+  const railTopRef = useRef(null);
+  const itemRefs = useRef(new Map());
+
   const activeIndex = ITEMS.findIndex((item) => item.key === view);
 
+  useLayoutEffect(() => {
+    const railTop = railTopRef.current;
+    const activeItem = itemRefs.current.get(view);
+    if (!railTop || !activeItem) return undefined;
+
+    const updateIndicatorPosition = () => {
+      const railTopRect = railTop.getBoundingClientRect();
+      const activeItemRect = activeItem.getBoundingClientRect();
+      setIndicatorOffset(
+        activeItemRect.top + activeItemRect.height / 2 - railTopRect.top - railTop.clientTop
+      );
+    };
+
+    updateIndicatorPosition();
+    const observer = new ResizeObserver(updateIndicatorPosition);
+    observer.observe(railTop);
+    observer.observe(activeItem);
+    return () => observer.disconnect();
+  }, [view]);
   useEffect(() => () => clearTimeout(clickTimerRef.current), []);
 
   function pulse(key) {
@@ -69,8 +92,12 @@ export default function LeftRail({ view, onSelect, badges = {}, user, onLogout, 
         <Logo size={54} />
         <span className="rail-brand-name">echo</span>
       </div>
-      <div className="rail-top" style={{ "--rail-active-index": Math.max(0, activeIndex) }}>
-        {activeIndex >= 0 && <span className="rail-active-indicator" aria-hidden="true" />}
+      <div
+        ref={railTopRef}
+        className="rail-top"
+        style={{ "--rail-indicator-offset": indicatorOffset == null ? "0px" : `${indicatorOffset}px` }}
+      >
+        {activeIndex >= 0 && indicatorOffset != null && <span className="rail-active-indicator" aria-hidden="true" />}
         {ITEMS.map(({ key, label, Icon }) => {
           const count = badges[key] || 0;
           return (
@@ -79,7 +106,13 @@ export default function LeftRail({ view, onSelect, badges = {}, user, onLogout, 
               type="button"
               className={`rail-item rail-item-${key} ${view === key ? "active" : ""} ${clicked === key ? "clicked" : ""}`}
               data-testid={`rail-${key}`}
+              aria-label={label}
+              title={label}
               aria-current={view === key ? "page" : undefined}
+              ref={(node) => {
+                if (node) itemRefs.current.set(key, node);
+                else itemRefs.current.delete(key);
+              }}
               onClick={() => {
                 pulse(key);
                 onSelect(key);
@@ -93,7 +126,6 @@ export default function LeftRail({ view, onSelect, badges = {}, user, onLogout, 
                   </span>
                 )}
               </span>
-              <span className="rail-label">{label}</span>
             </button>
           );
         })}

@@ -161,7 +161,7 @@ export default function SettingsModal({
             </section>
             <section className="settings-section">
               <h3>Desktop notifications</h3>
-              <p className="settings-hint">Get a desktop alert for direct messages, @mentions, and VIP messages when Echo isn't focused.</p>
+              <p className="settings-hint">Get a desktop alert for direct messages, @mentions, and Starred messages when Echo isn't focused.</p>
               <NotificationToggle />
             </section>
             {!user.isAdmin ? <ChangePassword /> : <AdminPasswordReset users={users} currentUserId={user.id} />}

@@ -65,8 +65,8 @@ export default function ChannelView({
   onOpenProfile,
   onOpenChannel,
   onOpenForwardedDm,
-  isVip = false,
-  onToggleVip,
+  isStarred = false,
+  onToggleStarred,
   jumpMessageId = null,
   scrollToBottomTarget = null,
   canJumpToForward,
@@ -836,7 +836,7 @@ export default function ChannelView({
   const dmAvatar = dmUser?.avatarUrl || null;
   const isMember = isDm || (channel.members || []).includes(user.id);
   const isCreator = !isDm && channel.createdBy === user.id;
-  const canToggleVip = isDm && !!dmUser?.id && dmUser.id !== user.id;
+  const canToggleStarred = isDm && !!dmUser?.id && dmUser.id !== user.id;
   // #general is the default channel — everyone stays in it, so no Leave action.
   const isGeneral = (channel.name || "").toLowerCase() === "general";
 
@@ -865,17 +865,17 @@ export default function ChannelView({
       <header className="channel-header" data-testid="channel-header">
         {isDm ? (
           <>
-            {canToggleVip && (
+            {canToggleStarred && (
               <button
                 type="button"
-                className={`dm-vip-toggle ${isVip ? "active" : ""}`}
-                data-testid="dm-vip-toggle"
-                aria-label={isVip ? `Remove ${dmLabel} from VIP` : `Mark ${dmLabel} as VIP`}
-                aria-pressed={isVip}
-                title={isVip ? "Remove from VIP" : "Mark as VIP"}
-                onClick={() => onToggleVip?.(dmUser.id)}
+                className={`dm-starred-toggle ${isStarred ? "active" : ""}`}
+                data-testid="dm-starred-toggle"
+                aria-label={isStarred ? `Remove ${dmLabel} from Starred` : `Mark ${dmLabel} as Starred`}
+                aria-pressed={isStarred}
+                title={isStarred ? "Remove from Starred" : "Mark as Starred"}
+                onClick={() => onToggleStarred?.(dmUser.id)}
               >
-                <StarIcon size={20} strokeWidth={1.9} fill={isVip ? "currentColor" : "none"} />
+                <StarIcon size={20} strokeWidth={1.9} fill={isStarred ? "currentColor" : "none"} />
               </button>
             )}
             <Avatar name={dmAvatarName} src={dmAvatar} size={36} />

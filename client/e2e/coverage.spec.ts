@@ -120,7 +120,7 @@ test("joins a public channel, hides a channel locally, and restores it from sear
   await expect(page.getByRole("button", { name: "Leave channel" })).toHaveCount(0);
 });
 
-test("opens a profile, marks VIP, starts a DM, protects it, and can message self", async ({ page }) => {
+test("opens a profile, marks Starred, starts a DM, protects it, and can message self", async ({ page }) => {
   await page.goto("/");
 
   const bobMention = page
@@ -129,15 +129,15 @@ test("opens a profile, marks VIP, starts a DM, protects it, and can message self
   await bobMention.locator(".author-btn").click();
 
   const profile = page.locator(".profile-modal");
-  await profile.getByRole("button", { name: "Mark as VIP" }).click();
-  await expect(profile.getByRole("button", { name: "VIP" })).toBeVisible();
+  await profile.getByRole("button", { name: "Mark as Starred" }).click();
+  await expect(profile.getByRole("button", { name: "Remove from Starred" })).toBeVisible();
   await profile.getByRole("button", { name: "Message" }).click();
   await expect(page.locator(".channel-header .ch-name")).toHaveText(fixture.bob.displayName);
 
   await page.getByRole("button", { name: "DMs" }).click();
-  const vipDm = page.locator(".dm-rich").filter({ hasText: fixture.bob.displayName });
-  await expect(vipDm).toBeVisible();
-  await expect(vipDm.getByTitle("Remove conversation")).toHaveCount(0);
+  const starredDm = page.locator(".dm-rich").filter({ hasText: fixture.bob.displayName });
+  await expect(starredDm).toBeVisible();
+  await expect(starredDm.getByTitle("Remove conversation")).toHaveCount(0);
 
   await page.locator(".dm-self .dm-open").click();
   await expect(page.locator(".channel-header .ch-name")).toContainText(fixture.alice.displayName);

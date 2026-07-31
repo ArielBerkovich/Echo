@@ -1,6 +1,6 @@
 import { readString, writeString } from "./storage.js";
 
-// Desktop (Web) notifications for DMs, mentions, and VIP messages.
+// Desktop (Web) notifications for DMs, mentions, and Starred messages.
 const PREF_KEY = "echo.notify";
 const ICON = "/echo-logo.png";
 const desktopClickHandlers = new Map();
@@ -99,7 +99,7 @@ export function showNotification(title, { body, tag, onClick } = {}) {
 export function showTestNotification() {
   if (!notificationsActive()) return false;
   showNotification("Echo notifications work 🎉", {
-    body: "You'll be alerted about DMs, @mentions, and VIP messages.",
+    body: "You'll be alerted about DMs, @mentions, and Starred messages.",
   });
   return true;
 }

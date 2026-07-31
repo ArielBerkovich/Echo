@@ -47,7 +47,7 @@ export default function Sidebar({
   channels,
   dms = [],
   hidden,
-  vipIds = new Set(),
+  starredIds = new Set(),
   onlineIds = new Set(),
   activeChannel,
   mode = "home",
@@ -66,27 +66,27 @@ export default function Sidebar({
   const dmsOnly = mode === "dms";
   const [filter, setFilter] = useState("");
   const [chCollapsed, setChCollapsed] = useState(false); // Channels section collapsed?
-  const [vipCollapsed, setVipCollapsed] = useState(false); // VIP section collapsed?
+  const [starredCollapsed, setStarredCollapsed] = useState(false); // Starred section collapsed?
   const [dmCollapsed, setDmCollapsed] = useState(false); // DMs section collapsed?
   const hiddenSet = hidden || new Set();
   const f = filter.trim().toLowerCase();
   // A filter overrides a collapsed section so matches are always visible.
   const showChannels = !chCollapsed || !!f;
-  const showVip = !vipCollapsed || !!f;
+  const showStarred = !starredCollapsed || !!f;
   const showDms = !dmCollapsed || !!f;
   const shownChannels = channels
     .filter((c) => !hiddenSet.has(c.id))
     .filter((c) => !f || c.name.toLowerCase().includes(f));
   const shownDms = dms.filter((c) => !f || (c.withUser.displayName || "").toLowerCase().includes(f));
-  // VIP DMs get their own section; the rest stay under "Direct Messages".
-  const vipDms = shownDms.filter((c) => vipIds.has(c.withUser.id));
-  const regularDms = shownDms.filter((c) => !vipIds.has(c.withUser.id));
+  // Starred DMs get their own section; the rest stay under "Direct Messages".
+  const starredDms = shownDms.filter((c) => starredIds.has(c.withUser.id));
+  const regularDms = shownDms.filter((c) => !starredIds.has(c.withUser.id));
 
-  // Compact DM row used by both the VIP and Direct Messages sections.
+  // Compact DM row used by both the Starred and Direct Messages sections.
   const renderDmRow = (conv) => {
     const active = activeChannel?.type === "dm" && activeChannel?.dmUserId === conv.withUser.id;
     const unread = conv.unread > 0;
-    const isVip = vipIds.has(conv.withUser.id);
+    const isStarred = starredIds.has(conv.withUser.id);
     const label = conv.isSelf ? `${conv.withUser.displayName} (you)` : conv.withUser.displayName;
     return (
       <div key={conv.id} className={`channel-item dm-item ${active ? "active" : ""} ${unread ? "unread" : ""}`}>
@@ -106,12 +106,12 @@ export default function Sidebar({
         </button>
         {unread && <span className="unread-badge">{conv.unread > 99 ? "99+" : conv.unread}</span>}
         <button
-          className={`dm-remove ${isVip ? "reserved" : ""}`}
-          title={isVip ? undefined : "Remove conversation"}
+          className={`dm-remove ${isStarred ? "reserved" : ""}`}
+          title={isStarred ? undefined : "Remove conversation"}
           onClick={() => onHideDm(conv)}
-          disabled={isVip}
-          aria-hidden={isVip}
-          tabIndex={isVip ? -1 : 0}
+          disabled={isStarred}
+          aria-hidden={isStarred}
+          tabIndex={isStarred ? -1 : 0}
         >
           {dmsOnly ? "Remove" : "✕"}
         </button>
@@ -154,7 +154,7 @@ export default function Sidebar({
           {shownDms.filter((c) => !c.isSelf).map((conv) => {
             const active = activeChannel?.type === "dm" && activeChannel?.dmUserId === conv.withUser.id;
             const unread = conv.unread > 0;
-            const isVip = vipIds.has(conv.withUser.id);
+            const isStarred = starredIds.has(conv.withUser.id);
             return (
               <div key={conv.id} className={`dm-rich ${active ? "active" : ""} ${unread ? "unread" : ""}`} data-testid={`dm-row-${slug(conv.withUser.displayName)}`}>
                 <button className="dm-open" data-testid={`dm-open-${slug(conv.withUser.displayName)}`} onClick={() => onOpenDm(conv.withUser)}>
@@ -243,21 +243,21 @@ export default function Sidebar({
           {showChannels && shownChannels.length === 0 && (
             <div className="dm-empty">{filter ? "No matching channels." : "No channels yet."}</div>
           )}
-          {vipDms.length > 0 && (
+          {starredDms.length > 0 && (
             <>
               <div className="section-label section-toggle">
                 <button
                   type="button"
                   className="sl-collapse"
-                  data-testid="vip-toggle"
-                  onClick={() => setVipCollapsed((v) => !v)}
-                  aria-expanded={!vipCollapsed}
+                  data-testid="starred-toggle"
+                  onClick={() => setStarredCollapsed((v) => !v)}
+                  aria-expanded={!starredCollapsed}
                 >
-                  <Chevron collapsed={vipCollapsed && !f} />
-                  <span className="vip-label">★ VIP</span>
+                  <Chevron collapsed={starredCollapsed && !f} />
+                  <span className="starred-label">★ Starred</span>
                 </button>
               </div>
-              {showVip && vipDms.map(renderDmRow)}
+              {showStarred && starredDms.map(renderDmRow)}
             </>
           )}
 

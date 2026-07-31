@@ -233,7 +233,7 @@ test("starts a conversation from the dedicated DMs button with the keyboard", as
   await expect(railItem(page, "dms")).toHaveClass(/active/);
 });
 
-test("keeps the DM preview width stable when toggling VIP", async ({ page }) => {
+test("keeps the DM preview width stable when toggling Starred", async ({ page }) => {
   await page.goto("/");
   await railItem(page, "dms").click();
 
@@ -243,10 +243,10 @@ test("keeps the DM preview width stable when toggling VIP", async ({ page }) => 
   expect(before).not.toBeNull();
 
   await row.locator(".dm-open").click();
-  const vipToggle = page.getByTestId("dm-vip-toggle");
-  const wasVip = (await vipToggle.getAttribute("aria-pressed")) === "true";
-  await vipToggle.click();
-  await expect(vipToggle).toHaveAttribute("aria-pressed", String(!wasVip));
+  const starredToggle = page.getByTestId("dm-starred-toggle");
+  const wasStarred = (await starredToggle.getAttribute("aria-pressed")) === "true";
+  await starredToggle.click();
+  await expect(starredToggle).toHaveAttribute("aria-pressed", String(!wasStarred));
   await railItem(page, "dms").click();
 
   const after = await dmRow(page, fixture.bob.displayName).locator(".dm-preview").boundingBox();
@@ -255,27 +255,27 @@ test("keeps the DM preview width stable when toggling VIP", async ({ page }) => 
 
   // Leave the fixture in its normal state for subsequent tests.
   await dmRow(page, fixture.bob.displayName).locator(".dm-open").click();
-  const cleanupToggle = page.getByTestId("dm-vip-toggle");
-  if (((await cleanupToggle.getAttribute("aria-pressed")) === "true") !== wasVip) {
+  const cleanupToggle = page.getByTestId("dm-starred-toggle");
+  if (((await cleanupToggle.getAttribute("aria-pressed")) === "true") !== wasStarred) {
     await cleanupToggle.click();
   }
 });
 
-test("adds a channel-message author to VIPs without opening a DM first", async ({ page }) => {
-  const candidateSuffix = uniqueSuffix("vip").replace(/[^a-z0-9]/gi, "").slice(0, 16);
+test("adds a channel-message author to Starred without opening a DM first", async ({ page }) => {
+  const candidateSuffix = uniqueSuffix("starred").replace(/[^a-z0-9]/gi, "").slice(0, 16);
   const candidate = await registerUser(page, {
     username: `victor.profile${candidateSuffix}`,
     displayName: "Victor Profile",
   });
   await requestAsToken(page, candidate.token, "/users/me/onboarded", { method: "POST" });
 
-  const body = `VIP profile regression ${candidateSuffix}`;
+  const body = `Starred profile regression ${candidateSuffix}`;
   const { message } = await requestAsToken(page, candidate.token, "/messages/upsert", {
     method: "POST",
     body: {
       channelId: fixture.generalChannel.id,
       body,
-      externalKey: `vip-profile-${candidateSuffix}`,
+      externalKey: `starred-profile-${candidateSuffix}`,
     },
   });
 
@@ -286,11 +286,11 @@ test("adds a channel-message author to VIPs without opening a DM first", async (
   await page.getByTestId(`message-${message.id}-author`).click();
 
   const profile = page.getByTestId("profile-modal");
-  await profile.getByRole("button", { name: "Mark as VIP" }).click();
-  await expect(profile.getByRole("button", { name: "VIP" })).toBeVisible();
+  await profile.getByRole("button", { name: "Mark as Starred" }).click();
+  await expect(profile.getByRole("button", { name: "Remove from Starred" })).toBeVisible();
   await profile.getByTestId("profile-close").click();
 
-  await expect(page.getByTestId("vip-toggle")).toBeVisible();
+  await expect(page.getByTestId("starred-toggle")).toBeVisible();
   await expect(page.locator(".dm-item").filter({ hasText: candidate.user.displayName })).toBeVisible();
 
   const after = await requestAsToken(page, fixture.alice.token, "/dms");
@@ -654,14 +654,14 @@ test("opens a saved message from a hidden DM", async ({ page }) => {
   await expect(page.getByTestId(`message-${dmMessage.message.id}`)).toBeVisible();
 });
 
-test("keeps a hidden DM visible after marking the other user VIP", async ({ page }) => {
+test("keeps a hidden DM visible after marking the other user Starred", async ({ page }) => {
   await requestAsToken(page, fixture.alice.token, `/dms/${fixture.dmChannel.id}`, { method: "DELETE" });
-  const vips = await requestAsToken(page, fixture.alice.token, "/users/vips");
-  if (vips.vipIds.includes(fixture.bob.id)) {
+  const starredUsers = await requestAsToken(page, fixture.alice.token, "/users/vips");
+  if (starredUsers.vipIds.includes(fixture.bob.id)) {
     await requestAsToken(page, fixture.alice.token, `/users/${fixture.bob.id}/vip`, { method: "POST" });
   }
-  const vipResult = await requestAsToken(page, fixture.alice.token, `/users/${fixture.bob.id}/vip`, { method: "POST" });
-  expect(vipResult.vip).toBeTruthy();
+  const starredResult = await requestAsToken(page, fixture.alice.token, `/users/${fixture.bob.id}/vip`, { method: "POST" });
+  expect(starredResult.vip).toBeTruthy();
 
   const visibleDms = await requestAsToken(page, fixture.alice.token, "/dms");
   expect(
@@ -669,9 +669,9 @@ test("keeps a hidden DM visible after marking the other user VIP", async ({ page
     `expected visible DM ${fixture.dmChannel.id}`
   ).toBeTruthy();
   await page.goto("/");
-  const vipDm = page.locator(".dm-item").filter({ hasText: fixture.bob.displayName });
-  await expect(vipDm).toBeVisible();
-  await expect(page.getByTestId("vip-toggle")).toBeVisible();
+  const starredDm = page.locator(".dm-item").filter({ hasText: fixture.bob.displayName });
+  await expect(starredDm).toBeVisible();
+  await expect(page.getByTestId("starred-toggle")).toBeVisible();
 
   await requestAsToken(page, fixture.alice.token, `/users/${fixture.bob.id}/vip`, { method: "POST" });
 });
