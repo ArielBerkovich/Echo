@@ -1103,69 +1103,6 @@ input:focus {
   animation: spin 0.6s linear infinite;
 }
 
-/* Login success: ripple-burst welcome that covers the screen before hand-off */
-.auth-success {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 26px;
-  background: radial-gradient(1200px 700px at 50% 42%, #1e40af 0%, #0f2748 55%, #081326 100%);
-  animation: fadeIn 0.35s ease both;
-}
-.success-mark {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.success-mark .echo-logo {
-  position: relative;
-  z-index: 1;
-  filter: drop-shadow(0 10px 30px rgba(8, 19, 38, 0.5));
-  animation: logoPop 0.7s cubic-bezier(0.2, 1.4, 0.45, 1) both;
-}
-.success-ripple {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 104px;
-  height: 104px;
-  margin: -52px 0 0 -52px;
-  border-radius: 50%;
-  border: 2px solid rgba(56, 189, 248, 0.6);
-  animation: successRipple 1.3s ease-out infinite;
-}
-.success-ripple:nth-child(2) { animation-delay: 0.32s; }
-.success-ripple:nth-child(3) { animation-delay: 0.64s; }
-.success-text {
-  color: #eaf1ff;
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  animation: fadeUp 0.5s 0.3s both;
-}
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes logoPop {
-  0% { opacity: 0; transform: scale(0.3); }
-  60% { opacity: 1; }
-  100% { opacity: 1; transform: scale(1); }
-}
-@keyframes successRipple {
-  0% { transform: scale(1); opacity: 0.7; }
-  100% { transform: scale(4.2); opacity: 0; }
-}
-
 @keyframes floatLetter {
   0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
   50% { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 1; }
@@ -8101,6 +8038,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 .auth-shell {
   width: 100%;
   max-width: none;
+  grid-template-columns: 1fr 1fr;
   height: 100dvh;
   max-height: none;
   min-height: 100dvh;

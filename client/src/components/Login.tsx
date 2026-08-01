@@ -57,7 +57,6 @@ export default function Login({ onAuthed, initialError = "" }) {
   });
   const [showPw, setShowPw] = useState(false);
   const [serverError, setServerError] = useState(initialError || null);
-  const [success, setSuccess] = useState(false);
   const [needsSetup, setNeedsSetup] = useState(false); // no users yet → create the admin
   const [registerStep, setRegisterStep] = useState(1);
   const [usernameSuggestions, setUsernameSuggestions] = useState([]);
@@ -216,9 +215,7 @@ export default function Login({ onAuthed, initialError = "" }) {
             }
           : { username: values.username, password: values.password };
         const result = isRegister ? await api.register(payload) : await api.login(payload);
-        // Play the ripple-burst welcome, then hand off to the app.
-        setSuccess(true);
-        setTimeout(() => onAuthed(result), 1150);
+        onAuthed(result);
       } catch (err) {
         const issue = desktopConnectionIssue(err);
         if (issue) {
@@ -659,17 +656,6 @@ export default function Login({ onAuthed, initialError = "" }) {
         />
       ) : null}
 
-      {success && (
-        <div className="auth-success">
-          <div className="success-mark">
-            <span className="success-ripple" />
-            <span className="success-ripple" />
-            <span className="success-ripple" />
-            <Logo size={104} />
-          </div>
-          <div className="success-text">Welcome to Echo</div>
-        </div>
-      )}
       {connectionIssue ? (
         <BackendConnectionModal
           backendUrl={connectionIssue.backendUrl}
