@@ -1217,12 +1217,6 @@ input:focus {
     column-gap: 0;
   }
 }
-@media (min-width: 761px) {
-  .auth-card-head {
-    display: none; /* the hero panel already carries the brand */
-  }
-}
-
 .btn-primary {
   padding: 12px;
   border-radius: 10px;
