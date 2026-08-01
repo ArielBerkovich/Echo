@@ -157,7 +157,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
               />
             </div>
 
-            <div className="channel-details-managers" aria-label="Channel managers">
+            <div className="channel-details-managers" data-testid="channel-details-managers" aria-label="Channel managers">
               <span className="channel-details-managers-label">Managers</span>
               {managerMembers.length > 0 ? (
                 managerMembers.map((manager) => (
@@ -182,7 +182,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
                 <div className="channel-details-empty">No members match “{memberQuery.trim()}”.</div>
               ) : (
                 shownMembers.map((member) => (
-                  <div className="channel-details-person" key={member.id}>
+                  <div className="channel-details-person" data-testid={`channel-details-person-${member.id}`} key={member.id}>
                     <Avatar name={member.displayName} src={member.avatarUrl} size={34} />
                     <div className="channel-details-person-copy">
                       <button

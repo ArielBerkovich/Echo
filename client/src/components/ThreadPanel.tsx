@@ -266,15 +266,15 @@ export default function ThreadPanel({
 
   return (
     <aside className="thread-panel" data-testid="thread-panel">
-      <header className="thread-header">
+      <header className="thread-header" data-testid="thread-header">
         <div className="thread-heading">
           <span className="thread-title">Thread</span>
-          <span className="thread-context" title={conversationLabel}>in {conversationLabel}</span>
+          <span className="thread-context" data-testid="thread-context" title={conversationLabel}>in {conversationLabel}</span>
         </div>
         <button className="thread-close" data-testid="thread-close" onClick={onClose} aria-label="Close thread">✕</button>
       </header>
 
-      <div ref={scrollerRef} className="thread-body" onScroll={onBodyScroll} onMouseLeave={() => { if (!menuFor) setActionsFor(null); }}>
+      <div ref={scrollerRef} className="thread-body" data-testid="thread-body" onScroll={onBodyScroll} onMouseLeave={() => { if (!menuFor) setActionsFor(null); }}>
         <div ref={bodyInnerRef}>
           {messages.map((m, index) => (
             <Fragment key={m.id}>

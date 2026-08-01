@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 import {
+  channelRow,
   messageById,
+  messageByText,
   requestAsToken,
   seedWorkspaceFixture,
   slug,
@@ -54,16 +56,16 @@ test("shows presence and typing across sessions", async ({ browser, page }) => {
   });
 
   await withAliceBobPages(browser, async ({ alicePage, bobPage, bob }) => {
-    await alicePage.page.locator(".channel-row").filter({ hasText: "general" }).click();
+    await channelRow(alicePage.page, "general").click();
     await messageById(alicePage.page, presenceMessage.message.id).locator(".author-btn").click();
-    await expect(alicePage.page.locator(".profile-modal .profile-presence")).toContainText("Active");
-    await alicePage.page.locator(".profile-modal .profile-close").click();
+    await expect(alicePage.page.getByTestId("profile-presence")).toContainText("Active");
+    await alicePage.page.getByTestId("profile-close").click();
 
-    await bobPage.page.locator(".channel-row").filter({ hasText: "general" }).click();
+    await channelRow(bobPage.page, "general").click();
 
     const typing = `Typing ${Date.now()}`;
-    await bobPage.page.locator(".composer-editor").fill(typing);
-    await expect(alicePage.page.locator(".typing-indicator")).toContainText(
+    await bobPage.page.getByTestId("composer-editor").fill(typing);
+    await expect(alicePage.page.getByTestId("typing-indicator")).toContainText(
       `${bob.displayName} is typing`
     );
   });
@@ -72,39 +74,36 @@ test("shows presence and typing across sessions", async ({ browser, page }) => {
 test("bumps unread counts and reflects live edits and deletes", async ({ browser, page }) => {
   const { alice, bob, projectChannel } = fixture;
   await withAliceBobPages(browser, async ({ alicePage, bobPage }) => {
-    await alicePage.page.locator(".channel-row").filter({ hasText: projectChannel.name }).click();
-    await bobPage.page.locator(".channel-row").filter({ hasText: "general" }).click();
+    await channelRow(alicePage.page, projectChannel.name).click();
+    await channelRow(bobPage.page, "general").click();
 
     const liveBody = `Realtime ${Date.now()}`;
-    await bobPage.page.locator(".composer-editor").fill(liveBody);
-    await bobPage.page.locator(".composer-editor").press("Enter");
+    await bobPage.page.getByTestId("composer-editor").fill(liveBody);
+    await bobPage.page.getByTestId("composer-editor").press("Enter");
 
     await expect(
-      alicePage.page.locator(".channel-row").filter({ hasText: "general" }).locator(".unread-badge")
+      channelRow(alicePage.page, "general").locator(".unread-badge")
     ).toBeVisible();
 
-    await alicePage.page.locator(".channel-row").filter({ hasText: "general" }).click();
-    const liveMessage = alicePage.page.locator(".message").filter({ hasText: liveBody }).first();
+    await channelRow(alicePage.page, "general").click();
+    const liveMessage = messageByText(alicePage.page, liveBody).first();
     await expect(liveMessage).toBeVisible();
 
-    const liveMessageOnBob = bobPage.page.locator(".message").filter({ hasText: liveBody }).first();
+    const liveMessageOnBob = messageByText(bobPage.page, liveBody).first();
     await liveMessageOnBob.hover();
-    await bobPage.page.locator('[data-message-actions="true"]').getByTitle("More message actions").click();
+    await bobPage.page.getByTestId(/-actions$/).getByTitle("More message actions").click();
     await bobPage.page.getByRole("menuitem", { name: "Edit message" }).click();
-    await bobPage.page.locator(".msg-edit-input").fill(`${liveBody} updated`);
-    await bobPage.page.locator(".msg-edit-actions .btn-primary").click();
+    await bobPage.page.getByTestId("message-edit-input").fill(`${liveBody} updated`);
+    await bobPage.page.getByTestId("message-edit-actions").getByRole("button", { name: "Save" }).click();
     await expect(liveMessage).toContainText("updated");
     await expect(liveMessage).toContainText("(edited)");
 
-    const updatedLiveMessageOnBob = bobPage.page
-      .locator(".message")
-      .filter({ hasText: `${liveBody} updated` })
-      .first();
+    const updatedLiveMessageOnBob = messageByText(bobPage.page, `${liveBody} updated`).first();
     await updatedLiveMessageOnBob.hover();
-    await bobPage.page.locator('[data-message-actions="true"]').getByTitle("More message actions").click();
+    await bobPage.page.getByTestId(/-actions$/).getByTitle("More message actions").click();
     await bobPage.page.getByRole("menuitem", { name: "Delete message" }).click();
     await bobPage.page.getByRole("button", { name: "Delete", exact: true }).click();
-    await expect(alicePage.page.locator(".message").filter({ hasText: `${liveBody} updated` })).toHaveCount(0);
+    await expect(messageByText(alicePage.page, `${liveBody} updated`)).toHaveCount(0);
   });
 });
 
@@ -114,11 +113,11 @@ test("recovers missed messages after a temporary server outage", async ({ browse
 
   try {
     await alicePage.page.goto("/");
-    await alicePage.page.locator(".channel-row").filter({ hasText: generalChannel.name }).click();
-    await expect(alicePage.page.locator(".channel-view")).toBeVisible();
+    await channelRow(alicePage.page, generalChannel.name).click();
+    await expect(alicePage.page.getByTestId("channel-view")).toBeVisible();
 
     await alicePage.context.setOffline(true);
-    await expect(alicePage.page.locator(".connection-banner")).toContainText("Reconnecting to Echo");
+    await expect(alicePage.page.getByTestId("connection-banner")).toContainText("Reconnecting to Echo");
 
     const missedBody = `Missed during restart ${Date.now()}`;
     await requestAsToken(page, bob.token, `/channels/${generalChannel.id}/messages`, {
@@ -127,8 +126,8 @@ test("recovers missed messages after a temporary server outage", async ({ browse
     });
 
     await alicePage.context.setOffline(false);
-    await expect(alicePage.page.locator(".connection-banner")).toHaveCount(0, { timeout: 20_000 });
-    await expect(alicePage.page.locator(".message").filter({ hasText: missedBody })).toBeVisible();
+    await expect(alicePage.page.getByTestId("connection-banner")).toHaveCount(0, { timeout: 20_000 });
+    await expect(messageByText(alicePage.page, missedBody)).toBeVisible();
     await expect.poll(() => alicePage.page.evaluate(() => localStorage.getItem("echo.token"))).toBe(alice.token);
   } finally {
     await alicePage.context.setOffline(false).catch(() => {});
@@ -139,7 +138,7 @@ test("recovers missed messages after a temporary server outage", async ({ browse
 test("updates user search results after a display name change", async ({ browser, page }) => {
   const { alice } = fixture;
   await withAliceBobPages(browser, async ({ alicePage, bobPage }) => {
-    await bobPage.page.locator(".search-input").fill(alice.username);
+    await bobPage.page.getByTestId("search-input").fill(alice.username);
     const row = bobPage.page.getByTestId(`search-user-${slug(alice.username)}`);
     await expect(row).toContainText(alice.displayName);
 
@@ -157,7 +156,7 @@ test("shows newly created public channels in search without refresh", async ({ b
   const { alice } = fixture;
   await withAliceBobPages(browser, async ({ bobPage }) => {
     const channelName = `live-search-${Date.now()}`;
-    const input = bobPage.page.locator(".search-input");
+    const input = bobPage.page.getByTestId("search-input");
     await input.fill(channelName);
 
     const row = bobPage.page.getByTestId(`search-channel-${slug(channelName)}`);
@@ -207,7 +206,7 @@ test("updates an open members panel when another user joins from Browse", async 
   await withAliceBobPages(browser, async ({ alicePage, bobPage }) => {
     await bobPage.page.getByTestId(`channel-row-${channelName}`).click();
     await bobPage.page.getByTestId("channel-members").click();
-    const membersPanel = bobPage.page.locator(".members-panel");
+    const membersPanel = bobPage.page.getByTestId("members-panel");
     await expect(membersPanel).toBeVisible();
     await expect(membersPanel).not.toContainText(alice.displayName);
 
@@ -226,8 +225,8 @@ test("updates an open members panel when another user joins from Browse", async 
 test("updates the typing indicator after a display name change", async ({ browser, page }) => {
   const { alice } = fixture;
   await withAliceBobPages(browser, async ({ alicePage, bobPage }) => {
-    await alicePage.page.locator(".channel-row").filter({ hasText: "general" }).click();
-    await bobPage.page.locator(".channel-row").filter({ hasText: "general" }).click();
+    await channelRow(alicePage.page, "general").click();
+    await channelRow(bobPage.page, "general").click();
 
     const updatedName = `${alice.displayName} Renamed`;
     await requestAsToken(page, alice.token, "/users/me", {
@@ -236,9 +235,9 @@ test("updates the typing indicator after a display name change", async ({ browse
     });
 
     const typing = `Typing ${Date.now()}`;
-    await alicePage.page.locator(".composer-editor").fill(typing);
+    await alicePage.page.getByTestId("composer-editor").fill(typing);
 
-    await expect(bobPage.page.locator(".typing-indicator")).toContainText(`${updatedName} is typing`);
+    await expect(bobPage.page.getByTestId("typing-indicator")).toContainText(`${updatedName} is typing`);
   });
 });
 
@@ -258,7 +257,7 @@ test("updates an open channel message avatar after a profile picture change", as
   });
 
   await withAliceBobPages(browser, async ({ bobPage }) => {
-    await bobPage.page.locator(".channel-row").filter({ hasText: "general" }).click();
+    await channelRow(bobPage.page, "general").click();
     const message = messageById(bobPage.page, avatarMessage.message.id);
     await expect(message).toBeVisible();
     await expect(message.locator(".avatar-img")).toHaveCount(0);
@@ -296,8 +295,18 @@ test("shows a private-channel removal in Activity", async ({ browser, page }) =>
     });
 
     await railItem(bobPage.page, "activity").click();
+    await expect(bobPage.page.getByTestId("activity-header")).toBeVisible();
+    await expect.poll(async () => {
+      const activity = await requestAsToken(bobPage.page, bob.token, "/activity");
+      return activity.items.some(
+        (item) => item.kind === "channel_remove" && item.channelName === channelName
+      );
+    }, { timeout: 10_000 }).toBe(true);
+
+    await bobPage.page.reload();
+    await railItem(bobPage.page, "activity").click();
     await expect(
       bobPage.page.getByTestId("activity-item").filter({ hasText: `removed you from #${channelName}` })
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 10_000 });
   });
 });

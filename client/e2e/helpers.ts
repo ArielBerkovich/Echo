@@ -384,7 +384,7 @@ export function messageById(page, id) {
 }
 
 export function messageByText(page, text) {
-  return page.locator('[data-testid^="message-"]').filter({ hasText: text });
+  return page.getByTestId(/^message-[a-f0-9]+$/).filter({ hasText: text });
 }
 
 export function composer(page) {

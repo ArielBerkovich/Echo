@@ -88,16 +88,15 @@ export default function LeftRail({ view, onSelect, badges = {}, user, onLogout, 
 
   return (
     <nav className="rail" aria-label="Primary navigation">
-      <div className="rail-brand" aria-hidden="true">
+      <div className="rail-brand" aria-label="Echo" data-testid="rail-brand">
         <Logo size={54} />
-        <span className="rail-brand-name">echo</span>
       </div>
       <div
         ref={railTopRef}
         className="rail-top"
         style={{ "--rail-indicator-offset": indicatorOffset == null ? "0px" : `${indicatorOffset}px` }}
       >
-        {activeIndex >= 0 && indicatorOffset != null && <span className="rail-active-indicator" aria-hidden="true" />}
+        {activeIndex >= 0 && indicatorOffset != null && <span className="rail-active-indicator" data-testid="rail-active-indicator" aria-hidden="true" />}
         {ITEMS.map(({ key, label, Icon }) => {
           const count = badges[key] || 0;
           return (
@@ -118,10 +117,10 @@ export default function LeftRail({ view, onSelect, badges = {}, user, onLogout, 
                 onSelect(key);
               }}
             >
-              <span className="rail-icon">
+              <span className="rail-icon" data-testid="rail-icon">
                 <Icon />
                 {count > 0 && (
-                  <span className={`rail-badge ${key === "home" ? "dot" : ""}`} aria-hidden="true">
+                  <span className={`rail-badge ${key === "home" ? "dot" : ""}`} data-testid={`rail-badge-${key}`} aria-hidden="true">
                     {key === "home" ? null : count > 99 ? "99+" : count}
                   </span>
                 )}

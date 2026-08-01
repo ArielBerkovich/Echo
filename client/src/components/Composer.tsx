@@ -467,6 +467,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
   return (
     <form
       className={`composer${draggingFiles ? " dragging-files" : ""}${disabled ? " is-disabled" : ""}`}
+      data-testid="composer"
       onSubmit={handleSend}
     >
       {draggingFiles && (

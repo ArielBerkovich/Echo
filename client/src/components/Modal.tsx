@@ -1,8 +1,8 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { cn } from "../lib/cn.js";
 
-export function ModalActions({ children, className = "" }) {
-  return <div className={cn("modal-actions mt-[22px] flex justify-end gap-2.5", className)}>{children}</div>;
+export function ModalActions({ children, className = "", ...props }) {
+  return <div className={cn("modal-actions mt-[22px] flex justify-end gap-2.5", className)} {...props}>{children}</div>;
 }
 
 export default function Modal({

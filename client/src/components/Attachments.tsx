@@ -125,7 +125,7 @@ function Lightbox({ src, name, onClose, inline = false }) {
             }}
             title={`Zoom: ${Math.round(scale * 100)}%`}
           />
-          <span className="lb-zoom-label">{Math.round(scale * 100)}%</span>
+          <span className="lb-zoom-label" data-testid="lightbox-zoom-label">{Math.round(scale * 100)}%</span>
         </div>
       </div>
     </div>

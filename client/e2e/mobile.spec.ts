@@ -22,9 +22,10 @@ test("keeps the workspace usable on a phone and opens the navigation drawer", as
   expect(viewport.documentWidth).toBeLessThanOrEqual(viewport.width + 1);
 
   await page.getByRole("button", { name: "Open navigation" }).click();
-  await expect(page.locator(".app.nav-open .sidebar")).toBeVisible();
+  await expect(page.getByTestId("app-root")).toHaveAttribute("data-nav-open", "true");
+  await expect(page.getByTestId("sidebar")).toBeVisible();
   await expect(page.getByText(fixture.generalChannel.name, { exact: true })).toBeVisible();
 
-  await page.locator(".nav-backdrop").click({ position: { x: 360, y: 300 } });
-  await expect(page.locator(".app.nav-open")).toHaveCount(0);
+  await page.getByTestId("nav-backdrop").click({ position: { x: 360, y: 300 } });
+  await expect(page.getByTestId("app-root")).toHaveAttribute("data-nav-open", "false");
 });

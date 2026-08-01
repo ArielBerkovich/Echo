@@ -1094,6 +1094,7 @@ export default function App() {
       {connectionBannerVisible && hasConnectionIssue && (
         <div
           className={`connection-banner ${connectionStatus === "recovering" ? "is-recovering" : "is-reconnecting"}`}
+          data-testid="connection-banner"
           role="status"
           aria-live="polite"
         >
@@ -1108,7 +1109,7 @@ export default function App() {
           </span>
         </div>
       )}
-      <div className={`app ${navOpen ? "nav-open" : ""}`}>
+      <div className={`app ${navOpen ? "nav-open" : ""}`} data-testid="app-root" data-nav-open={navOpen ? "true" : "false"}>
         <WorkspaceNavigation
           view={view}
           user={user}
@@ -1139,7 +1140,7 @@ export default function App() {
         />
 
         {/* Backdrop closes the nav drawer on narrow screens. */}
-        <div className="nav-backdrop" onClick={() => setNavOpen(false)} />
+        <div className="nav-backdrop" data-testid="nav-backdrop" onClick={() => setNavOpen(false)} />
 
         <WorkspaceContent
           view={view}

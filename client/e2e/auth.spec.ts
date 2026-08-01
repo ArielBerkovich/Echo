@@ -73,7 +73,7 @@ test("forgot password delivers Echo's one-time-password instructions to the admi
     const echoDm = adminPage.getByRole("button", { name: "Offline Echo" });
     await expect(echoDm).toBeVisible();
     await echoDm.click();
-    const notification = adminPage.locator('[data-testid^="message-"]').filter({
+    const notification = adminPage.getByTestId(/^message-[a-f0-9]+$/).filter({
       hasText: `Password help requested for @${requestedUser.user.username}`,
     });
     const issueButton = notification.getByRole("button", {
@@ -83,7 +83,7 @@ test("forgot password delivers Echo's one-time-password instructions to the admi
     await issueButton.click();
 
     await expect(notification).toContainText("One-time password issued and posted below");
-    const reply = adminPage.locator('[data-testid^="message-"]').filter({
+    const reply = adminPage.getByTestId(/^message-[a-f0-9]+$/).filter({
       hasText: `One-time password for @${requestedUser.user.username}`,
     });
     await expect(reply).toContainText("It expires in 1 hour");
@@ -121,7 +121,7 @@ test("login displays server errors", async ({ page }) => {
   if (needsSetup) {
     await page.goto("/");
     await expect(page.getByLabel("Admin username")).toHaveValue("admin");
-    await page.locator('input[name="password"]').fill("Password1");
+    await page.getByTestId("auth-password").fill("Password1");
     await page.getByLabel("Confirm password").fill("Password1");
     await page.getByRole("button", { name: "Create admin account" }).click();
 
@@ -133,7 +133,7 @@ test("login displays server errors", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
 
   await page.getByLabel("Username").fill(username);
-  await page.locator('input[name="password"]').fill("WrongPassword1");
+  await page.getByTestId("auth-password").fill("WrongPassword1");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
 
   await expect(page.getByText("That username or password doesn't look right.")).toBeVisible();
@@ -145,7 +145,7 @@ test("create account tab submits registration payload", async ({ page }) => {
   if (needsSetup) {
     await page.goto("/");
     await expect(page.getByLabel("Admin username")).toHaveValue("admin");
-    await page.locator('input[name="password"]').fill("Password1");
+    await page.getByTestId("auth-password").fill("Password1");
     await page.getByLabel("Confirm password").fill("Password1");
     await page.getByRole("button", { name: "Create admin account" }).click();
     await expect(page.getByTestId("rail-logout")).toBeVisible();
@@ -170,7 +170,7 @@ test("create account tab submits registration payload", async ({ page }) => {
     await registerPage.getByLabel("First name").fill("Bob");
     await registerPage.getByLabel("Last name").fill("Builder");
     await registerPage.getByRole("button", { name: "Continue" }).click();
-    await registerPage.locator('input[name="password"]').fill("Password1");
+    await registerPage.getByTestId("auth-password").fill("Password1");
     await registerPage.getByLabel("Confirm password").fill("Password1");
     await registerPage.getByRole("button", { name: "Create account" }).click();
   } finally {
@@ -198,7 +198,7 @@ test("signup keeps password confirmation errors on the fields", async ({ page })
     await page.getByRole("button", { name: "Continue" }).click();
   }
 
-  const password = page.locator('input[name="password"]');
+  const password = page.getByTestId("auth-password");
   const confirmation = page.getByLabel("Confirm password");
   await expect(password).toHaveAttribute("autocomplete", "new-password");
   await expect(confirmation).toHaveAttribute("autocomplete", "new-password");
@@ -211,7 +211,7 @@ test("signup keeps password confirmation errors on the fields", async ({ page })
   await page.getByRole("button", { name: needsSetup ? "Create admin account" : "Create account" }).click();
   await expect(confirmation.locator("xpath=../.."))
     .toContainText("Passwords don't match");
-  await expect(page.locator(".auth-card > .error")).toHaveCount(0);
+  await expect(page.getByTestId("auth-error")).toHaveCount(0);
 
   const pasteWasPrevented = await confirmation.evaluate((input) => {
     const event = new ClipboardEvent("paste", { bubbles: true, cancelable: true });

@@ -381,7 +381,7 @@ const SearchBox = forwardRef(function SearchBox(
 
   return (
     <div className="search-box" ref={wrapRef} data-testid="search-box">
-      <div className="search-box-field">
+      <div className="search-box-field" data-testid="search-box-field">
         <SearchIcon size={15} strokeWidth={1.8} />
         <div className="search-input-wrap">
           <div className="search-highlight" ref={highlightRef} aria-hidden="true" dir="auto">

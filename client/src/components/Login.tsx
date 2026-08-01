@@ -303,6 +303,7 @@ export default function Login({ onAuthed, initialError = "" }) {
         {/* Auth form panel */}
         <form
           className={`auth-card ${needsSetup ? "setup" : ""}`}
+          data-testid="auth-card"
           onSubmit={(event) => {
             if (isRegister && !needsSetup && registerStep === 1) {
               event.preventDefault();
@@ -535,9 +536,10 @@ export default function Login({ onAuthed, initialError = "" }) {
             </div>
             <div className="input-wrap">
               <LockIcon size={17} strokeWidth={1.6} />
-              <input
-                {...register("password")}
-                id="auth-password"
+                <input
+                  {...register("password")}
+                  id="auth-password"
+                  data-testid="auth-password"
                 type={showPw ? "text" : "password"}
                 autoComplete={isRegister ? "new-password" : "current-password"}
                 placeholder={isRegister ? "Create a password" : "Enter your password"}
@@ -559,7 +561,7 @@ export default function Login({ onAuthed, initialError = "" }) {
               </button>
             </div>
             {errors.password && <span className="field-hint error small">{errors.password.message}</span>}
-            {!isRegister && serverError && <span className="field-hint error small">{serverError}</span>}
+            {!isRegister && serverError && <span className="field-hint error small" data-testid="auth-error">{serverError}</span>}
             {!isRegister && passwordHelpError && (
               <span className="field-hint error small">{passwordHelpError}</span>
             )}
