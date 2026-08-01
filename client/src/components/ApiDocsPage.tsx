@@ -63,7 +63,7 @@ function buildGroups(token) {
     },
     {
       title: "Messages",
-      note: "Also available in real time over Socket.IO — emit message:send with { channelId, body, parentId?, attachments? }. The REST and socket paths behave identically.",
+      note: "Also available in real time over Socket.IO — emit message:send with { channelId, body, parentId?, attachments? }. Use a channel name or username when sending over REST.",
       formats: [
         { label: "Bold", syntax: "**bold text**" },
         { label: "Italic", syntax: "_italic text_" },
@@ -80,9 +80,9 @@ function buildGroups(token) {
       endpoints: [
         {
           method: "POST",
-          path: "/api/channels/:id/messages",
-          desc: "Send a message to a channel or DM (:id is its id). Body: { body, parentId?, attachments? }. parentId posts a thread reply.",
-          curl: `curl -X POST ${ORIGIN}/api/channels/CHANNEL_ID/messages \\
+          path: "/api/channels/:channelName/messages",
+          desc: "Send a message to a channel or DM by name (or pass its id). Body: { body, parentId?, attachments? }. parentId posts a thread reply.",
+          curl: `curl -X POST ${ORIGIN}/api/channels/general/messages \\
   ${auth} \\
   ${json} \\
   -d '{"body":"Hello from the Echo API"}'`,
@@ -96,39 +96,14 @@ function buildGroups(token) {
   ${json} \\
   -d '{"userId":"USER_ID"}'`,
         },
-      ],
-    },
-    {
-      title: "Automation",
-      note: "Use these for CI/CD status messages. externalKey updates the same logical message; Idempotency-Key dedupes retries; threadKey groups related updates in one thread.",
-      endpoints: [
         {
           method: "POST",
-          path: "/api/messages/upsert",
-          desc: "Create or update a structured CI/CD message by channelId or channelName. Body supports { body/text, status, title, fields, externalKey, idempotencyKey, threadKey }.",
-          curl: `curl -X POST ${ORIGIN}/api/messages/upsert \\
+          path: "/api/users/:username/messages",
+          desc: "Send a direct message by username. The DM is created or reused automatically; use your own username for a personal notes conversation.",
+          curl: `curl -X POST ${ORIGIN}/api/users/bob.builder/messages \\
   ${auth} \\
   ${json} \\
-  -H "Idempotency-Key: github-run-123-attempt-1" \\
-  -d '{"channelName":"deploys","externalKey":"github:repo:run-123","status":"running","title":"Deploy started","fields":{"branch":"main","sha":"abc123"}}'`,
-        },
-        {
-          method: "POST",
-          path: "/api/messages/upsert",
-          desc: "Update the same CI/CD message later by reusing externalKey.",
-          curl: `curl -X POST ${ORIGIN}/api/messages/upsert \\
-  ${auth} \\
-  ${json} \\
-  -d '{"channelName":"deploys","externalKey":"github:repo:run-123","status":"success","title":"Deploy passed","fields":{"duration":"4m 12s"}}'`,
-        },
-        {
-          method: "POST",
-          path: "/api/messages/upsert",
-          desc: "Post related updates under a thread root by using threadKey. Use a different externalKey for each thread reply you want to upsert.",
-          curl: `curl -X POST ${ORIGIN}/api/messages/upsert \\
-  ${auth} \\
-  ${json} \\
-  -d '{"channelName":"deploys","threadKey":"github:repo:run-123","externalKey":"github:repo:run-123:test","status":"failed","title":"Tests failed","body":"See artifact logs for details."}'`,
+  -d '{"body":"Hello Bob"}'`,
         },
       ],
     },
@@ -157,7 +132,7 @@ function buildGroups(token) {
         {
           id: "send-with-attachment",
           method: "POST",
-          path: "/api/channels/:id/messages",
+          path: "/api/channels/:channelName/messages",
           desc: "Send a message WITH a file — upload it first, then include the returned attachment object(s) in \"attachments\".",
           curl: `# 1) upload the file → grab its "attachments" array
 curl -s -X POST ${ORIGIN}/api/uploads \\
@@ -166,7 +141,7 @@ curl -s -X POST ${ORIGIN}/api/uploads \\
 # → { "attachments": [ { "key": "...", "name": "file.png", "contentType": "image/png", "isImage": true } ] }
 
 # 2) send a message that includes it
-curl -X POST ${ORIGIN}/api/channels/CHANNEL_ID/messages \\
+curl -X POST ${ORIGIN}/api/channels/general/messages \\
   ${auth} \\
   ${json} \\
   -d '{"body":"See attached","attachments":[{"key":"UPLOADED_KEY","name":"file.png","contentType":"image/png","isImage":true}]}'`,

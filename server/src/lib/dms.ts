@@ -24,3 +24,14 @@ export function ensureDmChannel(currentUserId, otherUserId) {
     { new: true, upsert: true, setDefaultsOnInsert: false }
   );
 }
+
+// Create or restore the current user's personal notes conversation.
+export async function ensureSelfDmChannel(userId) {
+  const name = `dm-self-${userId}`;
+  let channel = await Channel.findOne({ name });
+  if (channel) {
+    await Channel.updateOne({ _id: channel._id }, { $pull: { hiddenFor: userId } });
+    return Channel.findById(channel._id);
+  }
+  return Channel.create({ name, type: "dm", members: [userId], createdBy: userId });
+}

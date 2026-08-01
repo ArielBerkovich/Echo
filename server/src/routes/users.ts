@@ -9,6 +9,8 @@ import { emitAll, syncUserSockets } from "../realtime.js";
 import { passwordProblem } from "../password.js";
 import { ensureDmChannel } from "../lib/dms.js";
 import { aliasesByUserId } from "../lib/userAliases.js";
+import { ensureDmChannel, ensureSelfDmChannel } from "../lib/dms.js";
+import { deliverMessage, sanitizeAttachments } from "../deliver.js";
 
 export const usersRouter = Router();
 usersRouter.use(requireAuth);
@@ -36,6 +38,45 @@ usersRouter.get("/", async (req, res) => {
 // GET /api/users/vips — the ids of users the current user has marked VIP.
 usersRouter.get("/vips", (req, res) => {
   res.json({ vipIds: (req.user.vips || []).map((id) => id.toString()) });
+});
+
+// POST /api/users/:username/messages — open or reuse a DM by username and send.
+usersRouter.post("/:username/messages", async (req, res) => {
+  const username = decodeURIComponent(String(req.params.username)).trim().toLowerCase();
+  const recipient = username === "system" ? null : await User.findOne({ username });
+  if (!recipient) return res.status(404).json({ error: "user not found" });
+
+  const isSelf = recipient._id.equals(req.user._id);
+  const channel = isSelf
+    ? await ensureSelfDmChannel(req.user._id)
+    : await ensureDmChannel(req.user._id, recipient._id);
+  const text = String(req.body?.body || "").trim();
+  const attachments = sanitizeAttachments(req.body?.attachments);
+  if (!text && attachments.length === 0) {
+    return res.status(400).json({ error: "message needs text or an attachment" });
+  }
+  const parentId = req.body?.parentId && mongoose.isValidObjectId(req.body.parentId)
+    ? req.body.parentId
+    : null;
+  const idempotencyKey = String(req.header("Idempotency-Key") || req.body?.idempotencyKey || "").trim();
+  if (idempotencyKey) {
+    const existing = await Message.findOne({
+      channel: channel._id,
+      author: req.user._id,
+      idempotencyKey: idempotencyKey.slice(0, 128),
+    }).populate("author");
+    if (existing) return res.json({ message: existing.toPublicJSON(), channel: channel.toPublicJSON(), idempotent: true });
+  }
+
+  const message = await deliverMessage({
+    channel,
+    authorId: req.user._id,
+    body: text,
+    parentId,
+    attachments,
+    idempotencyKey,
+  });
+  res.status(201).json({ message, channel: channel.toPublicJSON(), withUser: recipient.toPublicJSON(), isSelf });
 });
 
 // Resolve a directory entry for message authors that arrived before the

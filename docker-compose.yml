@@ -58,7 +58,7 @@ services:
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: AdminPassword1
-      KC_HOSTNAME: http://${ECHO_PUBLIC_HOST:-192.168.1.110}:8180
+      KC_HOSTNAME: http://${ECHO_PUBLIC_HOST:-localhost}:8180
     ports:
       - "8180:8080"
     volumes:
@@ -81,13 +81,13 @@ services:
       - S3_SECRET_KEY=${MINIO_ROOT_PASSWORD:-echo-dev-secret}
       - S3_BUCKET=echo-uploads
       - RHSSO_ENABLED=true
-      - RHSSO_URL=http://${ECHO_PUBLIC_HOST:-192.168.1.110}:8180
+      - RHSSO_URL=http://${ECHO_PUBLIC_HOST:-localhost}:8180
       - RHSSO_BACKCHANNEL_URL=http://rhsso:8080
       - RHSSO_REALM=echo
       - RHSSO_CLIENT_ID=echo
       - RHSSO_USERNAME_CLAIM=preferred_username
       - RHSSO_DISPLAY_NAME_CLAIM=name
-      - RHSSO_ALLOWED_CLIENT_ORIGINS=http://localhost:8090,http://${ECHO_PUBLIC_HOST:-192.168.1.110}:8090
+      - RHSSO_ALLOWED_CLIENT_ORIGINS=http://localhost:8090,http://${ECHO_PUBLIC_HOST:-localhost}:8090
     depends_on:
       mongo:
         condition: service_healthy

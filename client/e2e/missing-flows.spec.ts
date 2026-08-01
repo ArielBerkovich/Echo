@@ -153,68 +153,6 @@ test("changes a local user's password and invalidates the old credential", async
   expect(newLogin.ok()).toBeTruthy();
 });
 
-test("generates an API token and exercises idempotent, external-key, and threaded automation", async ({ page }) => {
-  await page.addInitScript(() => {
-    Object.defineProperty(navigator, "clipboard", {
-      configurable: true,
-      value: { writeText: async (value) => { window.__copiedText = value; } },
-    });
-  });
-  const usersResponse = page.waitForResponse((response) => new URL(response.url()).pathname === "/api/users" && response.request().method() === "GET");
-  await page.goto("/");
-  await usersResponse;
-  await channelRow(page, "general").click();
-  await page.getByTestId("rail-settings").click();
-  await expect(page.getByTestId("settings-page")).toBeVisible();
-  await page.getByRole("button", { name: "API" }).click();
-  await expect(page.getByTestId("api-reference-page")).toBeVisible();
-  await page.getByTestId("api-token-generate").click();
-  const apiToken = (await page.getByTestId("api-token-value").textContent())?.trim();
-  expect(apiToken).toBeTruthy();
-  await page.getByTestId("api-token-copy").click();
-  await expect(page.getByTestId("api-token-copy")).toHaveText("Copied!");
-  await page.getByTestId("rail-home").click();
-
-  const externalKey = uniqueSuffix("external");
-  const first = await rawApi(page, apiToken!, "/messages/upsert", {
-    method: "POST",
-    body: { channelName: "general", title: "Deploy started", status: "running", externalKey },
-  });
-  expect(first.status()).toBe(201);
-  const firstBody = await first.json();
-  await expect(messageById(page, firstBody.message.id)).toContainText("Deploy started");
-
-  const updated = await rawApi(page, apiToken!, "/messages/upsert", {
-    method: "POST",
-    body: { channelName: "general", title: "Deploy passed", status: "success", externalKey },
-  });
-  const updatedBody = await updated.json();
-  expect(updatedBody.message.id).toBe(firstBody.message.id);
-  await expect(messageById(page, firstBody.message.id)).toContainText("Deploy passed");
-
-  const idemKey = uniqueSuffix("idem");
-  const idemOne = await rawApi(page, apiToken!, "/messages/upsert", {
-    method: "POST",
-    headers: { "Idempotency-Key": idemKey },
-    body: { channelName: "general", body: "Only once" },
-  });
-  const idemTwo = await rawApi(page, apiToken!, "/messages/upsert", {
-    method: "POST",
-    headers: { "Idempotency-Key": idemKey },
-    body: { channelName: "general", body: "Duplicate retry" },
-  });
-  expect((await idemTwo.json()).message.id).toBe((await idemOne.json()).message.id);
-
-  const threadKey = uniqueSuffix("run");
-  const thread = await rawApi(page, apiToken!, "/messages/upsert", {
-    method: "POST",
-    body: { channelName: "general", threadKey, externalKey: `${threadKey}:tests`, title: "Tests failed" },
-  });
-  const threadBody = await thread.json();
-  expect(threadBody.message.parentId).toBeTruthy();
-  await expect(messageById(page, threadBody.message.parentId)).toBeVisible();
-});
-
 test("creates, delivers through, lists, and revokes an incoming webhook", async ({ page }) => {
   await page.goto("/");
   await channelRow(page, "general").click();

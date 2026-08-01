@@ -75,7 +75,7 @@ describe("RHSSO OpenID Connect flow", () => {
       usernameClaim: "preferred_username",
       displayNameClaim: "profile.display",
       redirectUri: "",
-      allowedClientOrigins: ["https://echo.example.test", "http://192.168.1.110:8090"],
+      allowedClientOrigins: ["https://echo.example.test", "http://localhost:8090"],
     });
     config.clientOrigin = "https://echo.example.test";
   });
@@ -127,16 +127,16 @@ describe("RHSSO OpenID Connect flow", () => {
 
   it("signs and reuses an allowed LAN callback origin", async () => {
     const { authorizationUrl, flowToken } = await beginRhssoLogin({
-      clientOrigin: "http://192.168.1.110:8090",
+      clientOrigin: "http://localhost:8090",
     });
     const authorization = new URL(authorizationUrl);
     const flow = jwt.verify(flowToken, config.jwtSecret);
     assert.equal(
       authorization.searchParams.get("redirect_uri"),
-      "http://192.168.1.110:8090/api/auth/rhsso/callback"
+      "http://localhost:8090/api/auth/rhsso/callback"
     );
-    assert.equal(flow.clientOrigin, "http://192.168.1.110:8090");
-    assert.equal(flow.redirectUri, "http://192.168.1.110:8090/api/auth/rhsso/callback");
+    assert.equal(flow.clientOrigin, "http://localhost:8090");
+    assert.equal(flow.redirectUri, "http://localhost:8090/api/auth/rhsso/callback");
 
     await assert.rejects(
       beginRhssoLogin({ clientOrigin: "https://attacker.example" }),

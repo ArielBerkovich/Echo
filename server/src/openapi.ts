@@ -4,7 +4,7 @@ export function openApiDocument() {
     info: {
       title: "Echo API",
       version: "0.1.0",
-      description: "REST API for Echo messaging and CI/CD automation.",
+      description: "REST API for Echo messaging and incoming webhooks.",
     },
     security: [{ bearerAuth: [] }],
     components: {
@@ -83,22 +83,50 @@ export function openApiDocument() {
           responses: { 200: { description: "Channel info" }, 404: { description: "Not found" } },
         },
       },
-      "/api/messages/upsert": {
+      "/api/channels/{channelName}/messages": {
         post: {
-          summary: "Create or update a CI/CD automation message",
-          parameters: [{ name: "Idempotency-Key", in: "header", schema: { type: "string" } }],
+          summary: "Send a message to a channel by name or id",
+          parameters: [{ name: "channelName", in: "path", required: true, schema: { type: "string" } }],
           requestBody: {
             required: true,
             content: {
               "application/json": {
-                schema: { $ref: "#/components/schemas/AutomationMessage" },
+                schema: {
+                  type: "object",
+                  required: ["body"],
+                  properties: {
+                    body: { type: "string" },
+                    parentId: { type: "string" },
+                    attachments: { type: "array" },
+                  },
+                },
               },
             },
           },
-          responses: {
-            200: { description: "Existing message returned or updated" },
-            201: { description: "Message created" },
+          responses: { 201: { description: "Message created" } },
+        },
+      },
+      "/api/users/{username}/messages": {
+        post: {
+          summary: "Send a direct message by username",
+          parameters: [{ name: "username", in: "path", required: true, schema: { type: "string" } }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["body"],
+                  properties: {
+                    body: { type: "string" },
+                    parentId: { type: "string" },
+                    attachments: { type: "array" },
+                  },
+                },
+              },
+            },
           },
+          responses: { 201: { description: "Direct message created" } },
         },
       },
       "/api/webhooks": {

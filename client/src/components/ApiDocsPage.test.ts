@@ -12,5 +12,5 @@ test("apiEndpointKey distinguishes endpoints that share a path", () => {
 });
 
 test("apiEndpointKey prefers an explicit id", () => {
-  assert.equal(apiEndpointKey({ id: "send-with-attachment", method: "POST", path: "/api/channels/:id/messages" }), "send-with-attachment");
+  assert.equal(apiEndpointKey({ id: "send-with-attachment", method: "POST", path: "/api/channels/:channelName/messages" }), "send-with-attachment");
 });

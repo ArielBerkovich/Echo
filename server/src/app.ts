@@ -13,7 +13,6 @@ import { searchRouter } from "./routes/search.js";
 import { scheduledRouter } from "./routes/scheduled.js";
 import { adminRouter } from "./routes/admin.js";
 import { savedRouter } from "./routes/saved.js";
-import { messagesRouter } from "./routes/messages.js";
 import { webhooksRouter } from "./routes/webhooks.js";
 import { openApiDocument } from "./openapi.js";
 import { desktopUpdatesRouter } from "./desktopUpdates.js";
@@ -47,7 +46,6 @@ export function createApp() {
   app.use("/api/scheduled", scheduledRouter);
   app.use("/api/admin", adminRouter);
   app.use("/api/saved", savedRouter);
-  app.use("/api/messages", messagesRouter);
   app.use("/api/webhooks", webhooksRouter);
 
   // Keep the process alive and return a consistent JSON payload on crashes.
