@@ -8157,6 +8157,11 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   box-shadow: 0 0 0 3px rgba(63, 165, 196, 0.16);
 }
 
+.auth-screen input:focus-visible {
+  outline: none;
+  outline-offset: 0;
+}
+
 .auth-submit {
   background: #12384a;
   box-shadow: 0 8px 18px rgba(18, 56, 74, 0.18);
