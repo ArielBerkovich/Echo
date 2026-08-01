@@ -616,7 +616,7 @@ export default function Login({ onAuthed, initialError = "" }) {
                 className="link"
                 onClick={() => switchMode("register")}
               >
-                Create one
+                Create account
               </button>
             </p>
           )}

@@ -8054,6 +8054,15 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   border-radius: 0;
 }
 
+.auth-card > * {
+  width: min(100%, 440px);
+  align-self: center;
+}
+
+.auth-card {
+  align-items: center;
+}
+
 .auth-hero {
   background:
     radial-gradient(110% 80% at 12% 12%, rgba(255, 255, 255, 0.2) 0%, transparent 52%),
