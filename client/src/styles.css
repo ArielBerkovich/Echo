@@ -1113,8 +1113,31 @@ input:focus {
   align-items: center;
   justify-content: center;
   gap: 26px;
-  background: radial-gradient(1200px 700px at 50% 42%, #1e40af 0%, #0f2748 55%, #081326 100%);
+  background: rgba(8, 19, 38, 0.16);
   animation: fadeIn 0.35s ease both;
+  pointer-events: none;
+}
+
+/* The two auth panels open away from the center like the covers of a book. */
+.auth-shell.is-signing-in {
+  overflow: visible;
+  perspective: 1400px;
+}
+.auth-shell.is-signing-in .auth-hero,
+.auth-shell.is-signing-in .auth-card {
+  animation-duration: 0.95s;
+  animation-timing-function: cubic-bezier(0.22, 0.72, 0.18, 1);
+  animation-fill-mode: both;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+}
+.auth-shell.is-signing-in .auth-hero {
+  transform-origin: right center;
+  animation-name: bookPageLeft;
+}
+.auth-shell.is-signing-in .auth-card {
+  transform-origin: left center;
+  animation-name: bookPageRight;
 }
 .success-mark {
   position: relative;
@@ -1152,6 +1175,10 @@ input:focus {
   from { opacity: 0; }
   to { opacity: 1; }
 }
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
@@ -1164,6 +1191,21 @@ input:focus {
 @keyframes successRipple {
   0% { transform: scale(1); opacity: 0.7; }
   100% { transform: scale(4.2); opacity: 0; }
+}
+@keyframes bookPageLeft {
+  0% { opacity: 1; transform: rotateY(0deg); }
+  100% { opacity: 0; transform: rotateY(-78deg) translateX(-4%); }
+}
+@keyframes bookPageRight {
+  0% { opacity: 1; transform: rotateY(0deg); }
+  100% { opacity: 0; transform: rotateY(78deg) translateX(4%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-shell.is-signing-in .auth-hero,
+  .auth-shell.is-signing-in .auth-card {
+    animation: fadeOut 0.2s ease both;
+  }
 }
 
 @keyframes floatLetter {
