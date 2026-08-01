@@ -1,10 +1,15 @@
-import ActivityFeed from "./ActivityFeed.js";
-import ChannelBrowser from "./ChannelBrowser.js";
-import ChannelView from "./ChannelView.js";
-import SavedFeed from "./SavedFeed.js";
-import SettingsModal from "./SettingsModal.js";
+import { lazy, Suspense } from "react";
 import SearchBox from "./SearchBox.js";
-import SearchResults from "./SearchResults.js";
+
+// Conversation history, feeds, and browse/search results pull in markdown,
+// sanitization, and message interaction code. Load each surface when selected
+// so the navigation shell can become interactive without that graph.
+const ActivityFeed = lazy(() => import("./ActivityFeed.js"));
+const ChannelBrowser = lazy(() => import("./ChannelBrowser.js"));
+const ChannelView = lazy(() => import("./ChannelView.js"));
+const SavedFeed = lazy(() => import("./SavedFeed.js"));
+const SearchResults = lazy(() => import("./SearchResults.js"));
+const SettingsModal = lazy(() => import("./SettingsModal.js"));
 
 export default function WorkspaceContent({ view, search, browse, feeds, conversation }) {
   const activeChannel = conversation.channel;
@@ -44,11 +49,11 @@ export default function WorkspaceContent({ view, search, browse, feeds, conversa
 }
 
 function ActiveWorkspaceView({ view, search, browse, feeds, conversation }) {
+  let content;
   if (search.query) {
-    return <SearchResults query={search.query} onJump={search.onJump} onClose={search.onClose} />;
-  }
-  if (view === "browse") {
-    return (
+    content = <SearchResults query={search.query} onJump={search.onJump} onClose={search.onClose} />;
+  } else if (view === "browse") {
+    content = (
       <ChannelBrowser
         joinedIds={browse.joinedIds}
         hiddenIds={browse.hiddenIds}
@@ -59,9 +64,8 @@ function ActiveWorkspaceView({ view, search, browse, feeds, conversation }) {
         onCounts={browse.onCounts}
       />
     );
-  }
-  if (view === "activity") {
-    return (
+  } else if (view === "activity") {
+    content = (
       <ActivityFeed
         user={feeds.user}
         users={feeds.users}
@@ -70,9 +74,8 @@ function ActiveWorkspaceView({ view, search, browse, feeds, conversation }) {
         onLoaded={feeds.onActivityLoaded}
       />
     );
-  }
-  if (view === "saved") {
-    return (
+  } else if (view === "saved") {
+    content = (
       <SavedFeed
         user={feeds.user}
         users={feeds.users}
@@ -81,18 +84,18 @@ function ActiveWorkspaceView({ view, search, browse, feeds, conversation }) {
         onUnsave={feeds.onUnsave}
       />
     );
-  }
-  if (view === "settings") {
-    return <SettingsModal {...feeds.settings} />;
-  }
-  if (!conversation.channel || (view !== "home" && conversation.channel.type !== "dm")) {
-    return (
+  } else if (view === "settings") {
+    content = <SettingsModal {...feeds.settings} />;
+  } else if (!conversation.channel || (view !== "home" && conversation.channel.type !== "dm")) {
+    content = (
       <div className="empty-pane">
         {view === "dms" ? "Select a conversation, or start a new one." : "Search to start a conversation."}
       </div>
     );
+  } else {
+    const { channel, ...props } = conversation;
+    content = <ChannelView key={channel.id} channel={channel} {...props} />;
   }
 
-  const { channel, ...props } = conversation;
-  return <ChannelView key={channel.id} channel={channel} {...props} />;
+  return <Suspense fallback={<div className="empty-state"><p>Loading…</p></div>}>{content}</Suspense>;
 }

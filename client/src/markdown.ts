@@ -1,7 +1,32 @@
 import { Marked } from "marked";
 import DOMPurify from "dompurify";
-import hljs from "highlight.js/lib/common";
+import hljs from "highlight.js/lib/core";
+import bash from "highlight.js/lib/languages/bash";
+import c from "highlight.js/lib/languages/c";
+import cpp from "highlight.js/lib/languages/cpp";
+import csharp from "highlight.js/lib/languages/csharp";
+import css from "highlight.js/lib/languages/css";
+import go from "highlight.js/lib/languages/go";
+import java from "highlight.js/lib/languages/java";
+import javascript from "highlight.js/lib/languages/javascript";
+import json from "highlight.js/lib/languages/json";
+import markdownLanguage from "highlight.js/lib/languages/markdown";
+import php from "highlight.js/lib/languages/php";
+import python from "highlight.js/lib/languages/python";
+import ruby from "highlight.js/lib/languages/ruby";
+import sql from "highlight.js/lib/languages/sql";
+import typescript from "highlight.js/lib/languages/typescript";
+import xml from "highlight.js/lib/languages/xml";
 import emojiData from "@emoji-mart/data";
+
+// Register the languages Echo advertises in chat. Importing highlight.js/lib/common
+// eagerly included dozens of rarely-used grammars in the main workspace chunk.
+for (const [name, language] of Object.entries({
+  bash, c, cpp, csharp, css, go, java, javascript, json, markdown: markdownLanguage,
+  php, python, ruby, sql, typescript, xml,
+})) {
+  hljs.registerLanguage(name, language);
+}
 
 function escapeHtml(s) {
   return String(s)
