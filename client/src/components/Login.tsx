@@ -263,7 +263,7 @@ export default function Login({ onAuthed, initialError = "" }) {
         <div className="auth-grid" />
       </div>
 
-      <div className={`auth-shell ${success ? "is-signing-in" : ""}`}>
+      <div className="auth-shell">
         {/* Brand / hero panel */}
         <aside className="auth-hero" aria-hidden="true">
           <div className="auth-letters">
