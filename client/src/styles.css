@@ -721,7 +721,7 @@ input:focus {
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  margin-bottom: 24px;
+  margin-bottom: 40px;
 }
 .auth-logo-sm {
   display: flex;
