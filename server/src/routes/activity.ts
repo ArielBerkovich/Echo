@@ -56,6 +56,31 @@ activityRouter.get("/", async (req, res) => {
     .filter((c) => c.members.some((m) => m.equals(me._id)))
     .map((c) => c._id);
   const visibleChanIds = visible.map((c) => c._id);
+
+  // A current membership alone is not enough to determine which historical
+  // @everyone broadcasts a user should see. For channels joined after they
+  // were created, use the latest join event as the notification boundary.
+  const joinEvents = await Message.find(
+    {
+      channel: { $in: memberChanIds },
+      author: me._id,
+      kind: "system",
+      body: "joined the channel",
+    },
+    { channel: 1, createdAt: 1 }
+  ).sort({ createdAt: -1 });
+  const joinedAtByChannel = new Map();
+  for (const event of joinEvents) {
+    const channelId = event.channel.toString();
+    if (!joinedAtByChannel.has(channelId)) joinedAtByChannel.set(channelId, event.createdAt);
+  }
+  const broadcastFilters = memberChanIds.map((channelId) => ({
+    channel: channelId,
+    mentionsEveryone: true,
+    ...(joinedAtByChannel.has(channelId.toString())
+      ? { createdAt: { $gte: joinedAtByChannel.get(channelId.toString()) } }
+      : {}),
+  }));
   const dismissedMessageIds = (me.dismissedActivityIds || [])
     .filter((key) => key.startsWith("message:"))
     .map((key) => key.slice("message:".length))
@@ -68,7 +93,7 @@ activityRouter.get("/", async (req, res) => {
     _id: { $nin: dismissedMessageIds },
     $or: [
       { mentionedUserIds: me._id },
-      { channel: { $in: memberChanIds }, mentionsEveryone: true },
+      ...broadcastFilters,
       { threadRootAuthor: me._id },
     ],
   })
