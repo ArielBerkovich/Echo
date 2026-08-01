@@ -346,8 +346,8 @@ export default function Login({ onAuthed, initialError = "" }) {
 
           {needsSetup && <div className="setup-badge">🛡 First-time setup</div>}
 
-          <div className="auth-subtitle-row">
-            {isRegister && !needsSetup && registerStep === 2 && (
+          {isRegister && !needsSetup && registerStep === 2 && (
+            <div className="auth-subtitle-row">
               <button
                 type="button"
                 className="auth-back"
@@ -357,15 +357,8 @@ export default function Login({ onAuthed, initialError = "" }) {
               >
                 <ArrowLeftIcon size={14} strokeWidth={2} />
               </button>
-            )}
-            <p className="subtitle">
-              {needsSetup
-                ? "Welcome to Echo! Create the admin account to set up your workspace."
-                : isRegister
-                ? "Create your account to get started."
-                : "Welcome back — sign in to continue."}
-            </p>
-          </div>
+            </div>
+          )}
 
           {needsSetup && (
             <div className="setup-callout">
