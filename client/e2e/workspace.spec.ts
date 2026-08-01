@@ -54,7 +54,7 @@ test("restores an authenticated session into the default channel", async ({ page
 
     await expect(page.getByTestId("rail-brand")).toBeVisible();
     await expect(page.getByText("#general", { exact: true })).toBeVisible();
-    await expect(page.locator(".composer-editor")).toBeVisible();
+    await expect(page.getByTestId("composer-editor")).toBeVisible();
   } finally {
     await requestAsToken(page, fixture.alice.token, `/channels/${earlierChannel.channel.id}`, {
       method: "DELETE",
@@ -198,17 +198,15 @@ test("keeps channel header actions inside the header when pinned panel is open",
   await page.getByText(fixture.projectChannel.name, { exact: true }).click();
   await page.getByRole("button", { name: "Pinned messages" }).click();
 
-  await expect(page.locator(".pinned-panel")).toBeVisible();
-  const bounds = await page.evaluate(() => {
-    const header = document.querySelector(".channel-header").getBoundingClientRect();
-    const leave = document.querySelector(".header-action.leave").getBoundingClientRect();
-    return {
-      headerRight: header.right,
-      leaveRight: leave.right,
-      documentWidth: document.documentElement.scrollWidth,
-      viewportWidth: window.innerWidth,
-    };
-  });
+  await expect(page.getByTestId("pinned-panel")).toBeVisible();
+  const header = await page.getByTestId("channel-header").boundingBox();
+  const leave = await page.getByTestId("channel-leave").boundingBox();
+  const bounds = {
+    headerRight: header.x + header.width,
+    leaveRight: leave.x + leave.width,
+    documentWidth: await page.evaluate(() => document.documentElement.scrollWidth),
+    viewportWidth: await page.evaluate(() => window.innerWidth),
+  };
 
   expect(bounds.leaveRight).toBeLessThanOrEqual(bounds.headerRight + 1);
   expect(bounds.documentWidth).toBeLessThanOrEqual(bounds.viewportWidth + 1);
@@ -221,27 +219,25 @@ test("aligns thread chrome with the conversation and labels replies clearly", as
 
   const root = messageById(page, fixture.messages.threadRoot.id);
   await root.hover();
-  await page.locator('[data-message-actions="true"]').getByTitle("Reply in thread").click();
+  await page.getByTestId(/-actions$/).getByTitle("Reply in thread").click();
 
   const thread = page.getByTestId("thread-panel");
   await expect(thread).toBeVisible();
-  await expect(thread.locator(".thread-context")).toHaveText(`in #${fixture.projectChannel.name}`);
+  await expect(thread.getByTestId("thread-context")).toHaveText(`in #${fixture.projectChannel.name}`);
   await expect(thread.getByTestId("composer-editor")).toHaveAttribute(
     "data-placeholder",
     "Reply to thread…"
   );
   await expect(thread.getByTestId("thread-reply-count")).toHaveText(/\d+ (?:reply|replies)/);
 
-  const offsets = await page.evaluate(() => {
-    const channelHeader = document.querySelector(".channel-header").getBoundingClientRect();
-    const threadHeader = document.querySelector(".thread-header").getBoundingClientRect();
-    const mainComposer = document.querySelector(".channel-main > .composer").getBoundingClientRect();
-    const threadComposer = document.querySelector(".thread-panel > .composer").getBoundingClientRect();
-    return {
-      headerBottom: Math.abs(channelHeader.bottom - threadHeader.bottom),
-      composerBottom: Math.abs(mainComposer.bottom - threadComposer.bottom),
-    };
-  });
+  const channelHeader = await page.getByTestId("channel-header").boundingBox();
+  const threadHeader = await page.getByTestId("thread-header").boundingBox();
+  const mainComposer = await page.getByTestId("composer").first().boundingBox();
+  const threadComposer = await thread.getByTestId("composer").boundingBox();
+  const offsets = {
+    headerBottom: Math.abs(channelHeader.y + channelHeader.height - (threadHeader.y + threadHeader.height)),
+    composerBottom: Math.abs(mainComposer.y + mainComposer.height - (threadComposer.y + threadComposer.height)),
+  };
 
   expect(offsets.headerBottom).toBeLessThanOrEqual(1);
   expect(offsets.composerBottom).toBeLessThanOrEqual(1);
@@ -265,11 +261,11 @@ test("copies the raw markdown body from a message", async ({ page }) => {
 
 test("pastes markdown into the composer as formatted content", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator(".composer-editor")).toBeVisible();
+  await expect(page.getByTestId("composer-editor")).toBeVisible();
 
-  await page.locator(".composer-editor").focus();
+  await page.getByTestId("composer-editor").focus();
   await page.evaluate((body) => {
-    const editor = document.querySelector(".composer-editor");
+    const editor = document.querySelector('[data-testid="composer-editor"]');
     const data = new DataTransfer();
     data.setData("text/plain", body);
     editor.dispatchEvent(
@@ -281,7 +277,7 @@ test("pastes markdown into the composer as formatted content", async ({ page }) 
     );
   }, fixture.messages.formatted.body);
 
-  const editor = page.locator(".composer-editor");
+  const editor = page.getByTestId("composer-editor");
   await expect(editor.locator("h1")).toHaveText("Heading 1");
   await expect(editor.locator("strong")).toHaveText("Bold text");
   await expect(editor.locator("s, del")).toHaveText("Strikethrough text");
@@ -350,7 +346,7 @@ test("clears message actions when leaving the message row but keeps them over th
   await expect(actions).toBeVisible();
 
   const messageBox = await message.boundingBox();
-  const messagesBox = await page.locator(".channel-main .messages").boundingBox();
+  const messagesBox = await page.getByTestId("messages").boundingBox();
   expect(messageBox).not.toBeNull();
   expect(messagesBox).not.toBeNull();
   await page.mouse.move(
@@ -364,13 +360,13 @@ test("keeps copy-and-paste message paragraphs flush with the composer", async ({
   const body = `Copy and paste ${fixture.suffix}`;
   const { message: source } = await openFreshGeneralMessage(page, "copy-paste", body);
   await source.hover();
-  await page.locator('[data-message-actions="true"]').getByTitle("More message actions").click();
+  await page.getByTestId(/-actions$/).getByTitle("More message actions").click();
   await page.getByRole("menuitem", { name: "Copy message" }).click();
 
-  const editor = page.locator(".composer-editor");
+  const editor = page.getByTestId("composer-editor");
   await editor.focus();
   await page.evaluate(() => {
-    const target = document.querySelector(".composer-editor");
+    const target = document.querySelector('[data-testid="composer-editor"]');
     const data = new DataTransfer();
     data.setData("text/plain", window.__copiedText || "");
     target.dispatchEvent(
@@ -389,7 +385,7 @@ test("keeps copy-and-paste message paragraphs flush with the composer", async ({
 test("uses Enter for new list items and Shift+Enter for list line breaks", async ({ page }) => {
   await page.goto("/");
 
-  const editor = page.locator(".composer-editor");
+  const editor = page.getByTestId("composer-editor");
   await expect(editor).toBeVisible();
 
   await editor.click();
@@ -412,7 +408,7 @@ test("uses Enter for new list items and Shift+Enter for list line breaks", async
 test("uses Shift+Enter for code newlines and Enter to exit the block", async ({ page }) => {
   await page.goto("/");
 
-  const editor = page.locator(".composer-editor");
+  const editor = page.getByTestId("composer-editor");
   await expect(editor).toBeVisible();
 
   await editor.click();
@@ -433,7 +429,7 @@ test("uses Shift+Enter for code newlines and Enter to exit the block", async ({ 
 test("uses an empty quoted line to exit a blockquote", async ({ page }) => {
   await page.goto("/");
 
-  const editor = page.locator(".composer-editor");
+  const editor = page.getByTestId("composer-editor");
   await editor.click();
   await page.getByTitle("Blockquote").click();
   await page.keyboard.type("Quoted text");
@@ -450,7 +446,7 @@ test("sends multiple messages from the same composer", async ({ page }) => {
   await channelRow(page, "general").click();
   await expect(page.getByTestId("channel-title")).toContainText("general");
 
-  const composer = page.locator(".composer-editor");
+  const composer = page.getByTestId("composer-editor");
   await expect(composer).toBeVisible();
 
   const first = `Multi-send regression 1 ${Date.now()}`;
@@ -638,7 +634,7 @@ test("opens a DM at the latest message when there is no unread history", async (
   await page.getByRole("button", { name: "DMs" }).click();
   await page.getByTestId("dm-self-open").click();
 
-  const scroller = page.locator(".channel-main .messages");
+  const scroller = page.getByTestId("messages");
   await expect.poll(async () => {
     return scroller.evaluate((el) => Math.round(el.scrollHeight - el.scrollTop - el.clientHeight));
   }).toBeLessThanOrEqual(2);
@@ -661,7 +657,7 @@ test("opens unread DMs at the new divider instead of restoring the old position"
   await expect(dmRow(page, fixture.bob.displayName)).toBeVisible();
   await dmRow(page, fixture.bob.displayName).locator(".dm-open").click();
 
-  const scroller = page.locator(".channel-main .messages");
+  const scroller = page.getByTestId("messages");
   await expect(scroller).toBeVisible();
   await expect.poll(async () => scroller.evaluate((el) => Math.max(0, el.scrollHeight - el.clientHeight))).toBeGreaterThan(180);
   await scroller.evaluate((el) => {

@@ -128,14 +128,14 @@ test("preserves an offline send draft and sends it exactly once after reconnecti
 
   await page.context().setOffline(true);
   try {
-    await expect(page.locator(".connection-banner")).toContainText("Reconnecting to Echo");
+    await expect(page.getByTestId("connection-banner")).toContainText("Reconnecting to Echo");
     await page.getByTestId("composer-send").click();
     await expect(page.locator(".channel-view .error")).toContainText("Your draft is still here");
     await expect(editor).toHaveText(body);
     await expect(messageByText(page, body)).toHaveCount(0);
 
     await page.context().setOffline(false);
-    await expect(page.locator(".connection-banner")).toHaveCount(0, { timeout: 20_000 });
+    await expect(page.getByTestId("connection-banner")).toHaveCount(0, { timeout: 20_000 });
     await page.getByTestId("composer-send").click();
     await expect(messageByText(page, body)).toHaveCount(1);
   } finally {
@@ -243,7 +243,7 @@ test("shows and permanently dismisses every supported Activity kind", async ({ b
       await bobPage.getByTestId("channel-row-general").click();
       const root = messageById(bobPage, reactionRoot.message.id);
       await root.hover();
-      await bobPage.locator('[data-message-actions="true"]').getByTitle("Add reaction").click();
+      await bobPage.getByTestId(/-actions$/).getByTitle("Add reaction").click();
       await bobPage.getByRole("button", { name: "React with 👍" }).click();
     } finally {
       await bobContext.close();
@@ -256,8 +256,9 @@ test("shows and permanently dismisses every supported Activity kind", async ({ b
     }).toEqual([...expectedKinds].sort());
 
     await page.goto("/");
+    await expect(page.getByTestId("rail-activity")).toBeVisible();
     await page.getByTestId("rail-activity").click();
-    await expect(page.getByTestId("activity-header")).toBeVisible();
+    await expect(page.getByTestId("activity-header")).toBeVisible({ timeout: 10_000 });
     const targets = [
       page.getByTestId("activity-item").filter({ hasText: mentionBody }),
       page.getByTestId("activity-item").filter({ hasText: `Broadcast ${stamp}` }),

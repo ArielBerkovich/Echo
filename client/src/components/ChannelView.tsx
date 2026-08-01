@@ -857,7 +857,7 @@ export default function ChannelView({
   const hasSidePanel = !!thread || showPinned;
 
   return (
-    <main className={`channel-view ${hasSidePanel ? "has-side-panel" : ""}`}>
+    <main className={`channel-view ${hasSidePanel ? "has-side-panel" : ""}`} data-testid="channel-view">
       <div className="channel-main" style={{ position: "relative" }}>
       {threadLightbox && (
         <LightboxImage
@@ -937,6 +937,7 @@ export default function ChannelView({
       <div className="messages-shell">
         <div
           className="messages"
+          data-testid="messages"
           ref={scrollerRef}
           onScroll={onMessagesScroll}
           onMouseLeave={(event) => {
@@ -1046,7 +1047,7 @@ export default function ChannelView({
             title={newMessageCount > 0 ? "View new messages" : "Jump to latest"}
           >
             {newMessageCount > 0 && (
-              <span className="new-messages-count" aria-hidden="true">
+              <span className="new-messages-count" data-testid="new-messages-count" aria-hidden="true">
                 {newMessageCount > 99 ? "99+" : newMessageCount}
               </span>
             )}
@@ -1080,10 +1081,10 @@ export default function ChannelView({
           );
         })()}
 
-      {error && <div className="error">{error}</div>}
+      {error && <div className="error" data-testid="channel-error">{error}</div>}
 
       {typingText && (
-        <div className="typing-indicator">
+        <div className="typing-indicator" data-testid="typing-indicator">
           <span className="typing-dots"><i /><i /><i /></span>
           {typingText}
         </div>
@@ -1221,7 +1222,7 @@ export default function ChannelView({
 
 function PinnedPanel({ messages, renderMarkdown, emojiMap, onUnpin, onClose }) {
   return (
-    <aside className="side-panel pinned-panel">
+    <aside className="side-panel pinned-panel" data-testid="pinned-panel">
       <div className="panel-header">
         <span className="panel-title">Pinned messages</span>
         <button className="panel-close" onClick={onClose} aria-label="Close">✕</button>

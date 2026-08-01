@@ -120,7 +120,7 @@ export default function LeftRail({ view, onSelect, badges = {}, user, onLogout, 
               <span className="rail-icon" data-testid="rail-icon">
                 <Icon />
                 {count > 0 && (
-                  <span className={`rail-badge ${key === "home" ? "dot" : ""}`} aria-hidden="true">
+                  <span className={`rail-badge ${key === "home" ? "dot" : ""}`} data-testid={`rail-badge-${key}`} aria-hidden="true">
                     {key === "home" ? null : count > 99 ? "99+" : count}
                   </span>
                 )}

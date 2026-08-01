@@ -142,8 +142,8 @@ test("opens a profile, marks Starred, starts a DM, protects it, and can message 
   await page.locator(".dm-self .dm-open").click();
   await expect(page.locator(".channel-header .ch-name")).toContainText(fixture.alice.displayName);
   const selfMessage = `Self note ${Date.now()}`;
-  await page.locator(".composer-editor").fill(selfMessage);
-  await page.locator(".composer-editor").press("Enter");
+  await page.getByTestId("composer-editor").fill(selfMessage);
+  await page.getByTestId("composer-editor").press("Enter");
   await expect(page.locator(".message").filter({ hasText: selfMessage })).toBeVisible();
 });
 
@@ -152,21 +152,21 @@ test("edits and deletes own messages", async ({ page }) => {
   await page.getByTestId(`channel-row-${slug(fixture.generalChannel.name)}`).click();
 
   const body = `Editable ${Date.now()}`;
-  const composer = page.locator(".composer-editor");
+  const composer = page.getByTestId("composer-editor");
   await composer.fill(body);
   await composer.press("Enter");
 
   const message = page.locator(".message").filter({ hasText: body }).first();
   await message.hover();
-  await page.locator('[data-message-actions="true"]').getByTitle("More message actions").click();
+  await page.getByTestId(/-actions$/).getByTitle("More message actions").click();
   await page.getByRole("menuitem", { name: "Edit message" }).click();
-  await message.locator(".msg-edit-input").fill(`${body} updated`);
-  await message.locator(".msg-edit-actions .btn-primary").click();
+  await message.getByTestId("message-edit-input").fill(`${body} updated`);
+  await message.getByTestId("message-edit-actions").getByRole("button", { name: "Save" }).click();
   await expect(message).toContainText("updated");
   await expect(message).toContainText("(edited)");
 
   await message.hover();
-  await page.locator('[data-message-actions="true"]').getByTitle("More message actions").click();
+  await page.getByTestId(/-actions$/).getByTitle("More message actions").click();
   await page.getByRole("menuitem", { name: "Delete message" }).click();
   await page.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(page.locator(".message").filter({ hasText: `${body} updated` })).toHaveCount(0);
@@ -182,7 +182,7 @@ test("toggles reactions and pins messages", async ({ page }) => {
   await message.hover();
   await expect(page.locator('[data-message-actions="true"] button[title="Add reaction"]')).toBeVisible();
 
-  await page.locator('[data-message-actions="true"]').getByTitle("More message actions").click();
+  await page.getByTestId(/-actions$/).getByTitle("More message actions").click();
   await page.getByRole("menuitem", { name: "Pin message" }).click();
   await page.getByRole("button", { name: "Pinned messages" }).click();
   const pinned = page.locator(".pinned-item").filter({ hasText: `API formatting test ${fixture.suffix}` });
@@ -199,7 +199,7 @@ test("forwards a message and jumps back to the original", async ({ page }) => {
     .filter({ hasText: `API formatting test ${fixture.suffix}` })
     .first();
   await message.hover();
-  await page.locator('[data-message-actions="true"]').getByTitle("Forward message").click();
+  await page.getByTestId(/-actions$/).getByTitle("Forward message").click();
 
   const forwardModal = page.locator(".modal").filter({ hasText: "Forward message" });
   await forwardModal
@@ -221,7 +221,7 @@ test("forwards a message and jumps back to the original", async ({ page }) => {
 test("handles mention autocomplete, @everyone, and attachments", async ({ page }) => {
   await page.goto("/");
 
-  const composer = page.locator(".composer-editor");
+  const composer = page.getByTestId("composer-editor");
   await composer.fill(`Hello @${fixture.bob.username}`);
   await expect(page.locator(".mention-popup")).toBeVisible();
   await page.locator(".mention-item").first().click();
@@ -369,7 +369,7 @@ test("keeps the channel pinned to the bottom after sending an image attachment",
   await page.reload();
   await expect(page.getByText("#general", { exact: true })).toBeVisible();
 
-  const scroller = page.locator(".messages");
+  const scroller = page.getByTestId("messages");
   await scroller.evaluate((el) => {
     el.scrollTop = el.scrollHeight;
   });
@@ -382,7 +382,7 @@ test("keeps the channel pinned to the bottom after sending an image attachment",
   await fileInput.setInputFiles({ name: "proof.png", mimeType: "image/png", buffer: ONE_BY_ONE_PNG });
 
   const body = `Scroll attach ${Date.now()}`;
-  const composer = page.locator(".composer-editor");
+  const composer = page.getByTestId("composer-editor");
   await composer.fill(body);
   await page.locator(".composer .send-btn").click();
 
@@ -396,7 +396,7 @@ test("keeps the channel pinned to the bottom after sending an image attachment",
 test("schedules a message and clears the banner after delivery", async ({ page }) => {
   await page.goto("/");
 
-  const composer = page.locator(".composer-editor");
+  const composer = page.getByTestId("composer-editor");
   const scheduledBody = `Scheduled ${Date.now()}`;
   await composer.fill(scheduledBody);
   await page.getByRole("button", { name: "Send options" }).click();
@@ -430,7 +430,7 @@ test("uses conversation wording for scheduled messages in DMs", async ({ page })
 test("shows invalid schedule times inside the schedule dialog", async ({ page }) => {
   await page.goto("/");
 
-  await page.locator(".composer-editor").fill(`Invalid schedule ${Date.now()}`);
+  await page.getByTestId("composer-editor").fill(`Invalid schedule ${Date.now()}`);
   await page.getByRole("button", { name: "Send options" }).click();
   await page.locator(".send-menu button").filter({ hasText: "Custom time…" }).click();
 
@@ -445,7 +445,7 @@ test("shows invalid schedule times inside the schedule dialog", async ({ page })
 test("edits and cancels a scheduled message", async ({ page }) => {
   await page.goto("/");
 
-  const composer = page.locator(".composer-editor");
+  const composer = page.getByTestId("composer-editor");
   const scheduledBody = `Scheduled ${Date.now()}`;
   await composer.fill(scheduledBody);
   await page.getByRole("button", { name: "Send options" }).click();
@@ -476,7 +476,7 @@ test("blocks private-channel mentions until the user chooses how to handle them"
   await page.reload();
   await page.getByTestId(`channel-row-${slug(privateChannelName)}`).click();
 
-  const composer = page.locator(".composer-editor");
+  const composer = page.getByTestId("composer-editor");
   await composer.fill(`Hello @${fixture.bob.username}`);
   await page.locator(".mention-item").filter({ hasText: fixture.bob.displayName }).click();
   await page.keyboard.press("Enter");
@@ -529,7 +529,7 @@ test("covers custom emoji upload, validation, and usage", async ({ page }) => {
   );
   await page.reload();
 
-  const composer = page.locator(".composer-editor");
+  const composer = page.getByTestId("composer-editor");
   const emojiMessage = `Look :${emojiName}:`;
   await composer.fill(emojiMessage);
   await composer.press("Enter");
@@ -540,14 +540,14 @@ test("covers custom emoji upload, validation, and usage", async ({ page }) => {
 
 test("opens a thread, replies, and jumps from Activity back to the thread", async ({ page }) => {
   await page.goto("/");
-  const composer = page.locator(".composer-editor");
+  const composer = page.getByTestId("composer-editor");
   const rootBody = `Thread root ${Date.now()}`;
   await composer.fill(rootBody);
   await composer.press("Enter");
   const root = page.locator(".message").filter({ hasText: rootBody }).first();
   await root.hover();
-  await page.locator('[data-message-actions="true"]').getByTitle("Reply in thread").click();
-  await expect(page.locator(".thread-panel")).toBeVisible();
+  await page.getByTestId(/-actions$/).getByTitle("Reply in thread").click();
+  await expect(page.getByTestId("thread-panel")).toBeVisible();
 
   const reply = `Thread follow-up ${Date.now()}`;
   await page.locator(".thread-panel .composer-editor").fill(reply);
@@ -563,15 +563,15 @@ test("pins a message from inside a thread", async ({ page }) => {
     .filter({ hasText: fixture.messages.threadRoot.body })
     .first();
   await root.hover();
-  await page.locator('[data-message-actions="true"]').getByTitle("Reply in thread").click();
-  await expect(page.locator(".thread-panel")).toBeVisible();
+  await page.getByTestId(/-actions$/).getByTitle("Reply in thread").click();
+  await expect(page.getByTestId("thread-panel")).toBeVisible();
 
   const reply = page
     .locator(".thread-panel .message")
     .filter({ hasText: fixture.messages.threadReply.body })
     .first();
   await reply.hover();
-  await page.locator('[data-message-actions="true"]').getByTitle("More message actions").click();
+  await page.getByTestId(/-actions$/).getByTitle("More message actions").click();
   await page.getByRole("menuitem", { name: "Pin message" }).click();
 
   await page.getByRole("button", { name: "Pinned messages" }).click();
@@ -587,15 +587,15 @@ test("opens the original thread when a thread reply is forwarded into the same c
     .filter({ hasText: fixture.messages.threadRoot.body })
     .first();
   await root.hover();
-  await page.locator('[data-message-actions="true"]').getByTitle("Reply in thread").click();
-  await expect(page.locator(".thread-panel")).toBeVisible();
+  await page.getByTestId(/-actions$/).getByTitle("Reply in thread").click();
+  await expect(page.getByTestId("thread-panel")).toBeVisible();
 
   const reply = page
     .locator(".thread-panel .message")
     .filter({ hasText: fixture.messages.threadReply.body })
     .first();
   await reply.hover();
-  await page.locator('[data-message-actions="true"]').getByTitle("Forward message").click();
+  await page.getByTestId(/-actions$/).getByTitle("Forward message").click();
 
   const forwardModal = page.locator(".modal").filter({ hasText: "Forward message" });
   await forwardModal
@@ -618,7 +618,7 @@ test("opens the original thread when a thread reply is forwarded into the same c
   await forwarded.hover();
   await forwarded.getByRole("button", { name: /View original/ }).click();
 
-  await expect(page.locator(".thread-panel")).toBeVisible();
+  await expect(page.getByTestId("thread-panel")).toBeVisible();
   await expect(page.locator(".thread-panel .message").filter({ hasText: fixture.messages.threadReply.body })).toBeVisible();
 });
 

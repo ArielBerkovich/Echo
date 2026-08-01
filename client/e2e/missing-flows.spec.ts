@@ -327,7 +327,7 @@ test("opens, zooms, and downloads authenticated attachments", async ({ page }) =
   const lightbox = page.getByTestId("attachment-lightbox");
   await expect(lightbox).toBeVisible();
   await lightbox.getByTestId("lightbox-zoom").fill("3");
-  await expect(lightbox.locator(".lb-zoom-label")).toHaveText("300%");
+  await expect(lightbox.getByTestId("lightbox-zoom-label")).toHaveText("300%");
   const imageDownload = page.waitForEvent("download");
   await lightbox.getByTestId("lightbox-download").click();
   await expect((await imageDownload).suggestedFilename()).toBe("lightbox.png");
@@ -349,7 +349,7 @@ test("saves and unsaves a message entirely through message actions", async ({ pa
   await page.goto("/");
   const message = messageById(page, created.message.id);
   await message.hover();
-  await page.locator('[data-message-actions="true"]').getByTitle("More message actions").click();
+  await page.getByTestId(/-actions$/).getByTitle("More message actions").click();
   await page.getByRole("menuitem", { name: "Save for later" }).click();
 
   await page.getByTestId("rail-saved").click();
@@ -358,7 +358,7 @@ test("saves and unsaves a message entirely through message actions", async ({ pa
   await saved.click();
   await expect(messageById(page, created.message.id)).toBeInViewport();
   await messageById(page, created.message.id).hover();
-  await page.locator('[data-message-actions="true"]').getByTitle("More message actions").click();
+  await page.getByTestId(/-actions$/).getByTitle("More message actions").click();
   await page.getByRole("menuitem", { name: "Remove from saved" }).click();
   await page.getByTestId("rail-saved").click();
   await expect(page.getByTestId("saved-item").filter({ hasText: body })).toHaveCount(0);

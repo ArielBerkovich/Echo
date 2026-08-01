@@ -79,6 +79,7 @@ function Message({
     <div className="msg-edit">
       <textarea
         className="msg-edit-input"
+        data-testid="message-edit-input"
         value={editing.draft}
         autoFocus
         rows={Math.min(8, editing.draft.split("\n").length + 1)}
@@ -92,13 +93,13 @@ function Message({
           }
         }}
       />
-      <div className="msg-edit-actions">
+      <div className="msg-edit-actions" data-testid="message-edit-actions">
         <button type="button" className="btn-secondary" onClick={onEditCancel}>Cancel</button>
         <button type="button" className="btn-primary" disabled={!editing.draft.trim()} onClick={onEditSave}>Save</button>
       </div>
     </div>
   ) : (
-    <div className="body markdown" dir="auto" onClick={onBodyClick}>
+    <div className="body markdown" data-testid="message-body" dir="auto" onClick={onBodyClick}>
       <span dangerouslySetInnerHTML={{ __html: renderMarkdown(m.body) }} />
       {m.editedAt && <span className="edited-label" title={formatTime(m.editedAt)}> (edited)</span>}
     </div>

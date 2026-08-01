@@ -228,7 +228,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
           />
 
           {debouncedQuery && (
-            <div className="forward-destination-list" id="forward-results" role="listbox" aria-label="Forward destinations">
+            <div className="forward-destination-list" id="forward-results" data-testid="forward-destination-list" role="listbox" aria-label="Forward destinations">
               {!resultGroups.length ? (
                 <div className="people-empty">No matches for “{debouncedQuery}”</div>
               ) : resultGroups.map((group) => (
@@ -264,7 +264,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
           )}
         </section>
 
-        <div className="forward-note-field">
+        <div className="forward-note-field" data-testid="forward-note-field">
           <span className="forward-field-heading">
             <span>Note <em>Optional</em></span>
           </span>
@@ -292,7 +292,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
         <div className="forward-live-region" aria-live="polite">
           {error && <div className="error forward-error" role="alert">{error}</div>}
         </div>
-        <ModalActions className="forward-actions">
+        <ModalActions className="forward-actions" data-testid="forward-actions">
           <button type="button" className="btn-secondary" onClick={onClose} disabled={status === "submitting"}>Cancel</button>
           <button
             type="button"

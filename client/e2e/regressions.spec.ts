@@ -90,7 +90,7 @@ test("shows a dot instead of a Home notification count", async ({ page }) => {
 test("does not offer DM removal in the dedicated DMs view", async ({ page }) => {
   await page.goto("/");
   await railItem(page, "dms").click();
-  await expect(page.locator(".sidebar")).toHaveClass(/dms-view/);
+  await expect(page.getByTestId("sidebar")).toHaveClass(/dms-view/);
 
   const row = dmRow(page, fixture.bob.displayName);
   await expect(row).toBeVisible();
@@ -107,7 +107,7 @@ test("opens a Home sidebar DM without switching to the DMs view", async ({ page 
   await expect(page.getByTestId("channel-title")).toContainText(fixture.bob.displayName);
   await expect(railItem(page, "home")).toHaveClass(/active/);
   await expect(railItem(page, "dms")).not.toHaveClass(/active/);
-  await expect(page.locator(".sidebar")).not.toHaveClass(/dms-view/);
+  await expect(page.getByTestId("sidebar")).not.toHaveClass(/dms-view/);
   await expect(page.getByTestId("channel-row-general")).toBeVisible();
 });
 
@@ -439,11 +439,11 @@ test("switches channels without flashing stale messages while images load", asyn
   await expect.poll(() => fileRequests).toBe(1);
 
   const before = await page.locator(".att-image").boundingBox();
-  const beforeScrollTop = await page.locator(".channel-main .messages").evaluate((el) => el.scrollTop);
+  const beforeScrollTop = await page.getByTestId("messages").evaluate((el) => el.scrollTop);
   releaseImage();
   await expect(page.locator(`.att-image img[alt="${seeded.attachment.name}"]`)).toBeVisible();
   const after = await page.locator(".att-image").boundingBox();
-  const afterScrollTop = await page.locator(".channel-main .messages").evaluate((el) => el.scrollTop);
+  const afterScrollTop = await page.getByTestId("messages").evaluate((el) => el.scrollTop);
 
   expect(before).not.toBeNull();
   expect(after).not.toBeNull();
@@ -481,7 +481,7 @@ test("shows a compact scroll-to-latest control only when away from the bottom", 
 
   await page.goto("/");
   await page.getByTestId(`channel-row-${slug(channelName)}`).click();
-  const scroller = page.locator(".channel-main .messages");
+  const scroller = page.getByTestId("messages");
   await expect(scroller).toBeVisible();
   await expect(page.getByText("scroll-control seed 27", { exact: false })).toBeVisible();
   await expect.poll(async () => scroller.evaluate((el) => el.scrollHeight - el.scrollTop - el.clientHeight)).toBeLessThanOrEqual(2);
@@ -517,7 +517,7 @@ test("scroll-to-latest reports unread count and returns to the live edge", async
 
   await page.goto("/");
   await page.getByTestId(`channel-row-${slug(channelName)}`).click();
-  const scroller = page.locator(".channel-main .messages");
+  const scroller = page.getByTestId("messages");
   await expect(page.getByText("scroll-unread seed 27", { exact: false })).toBeVisible();
   await expect.poll(async () => scroller.evaluate((el) => el.scrollHeight - el.scrollTop - el.clientHeight)).toBeLessThanOrEqual(2);
   await scroller.evaluate((el) => {
@@ -566,7 +566,7 @@ test("scrolls to the bottom after sending while reading older messages", async (
 
   await page.goto("/");
   await page.getByTestId(`channel-row-${slug(channelName)}`).click();
-  const scroller = page.locator(".channel-main .messages");
+  const scroller = page.getByTestId("messages");
   await expect(scroller).toBeVisible();
   await scroller.evaluate((el) => {
     el.scrollTop = Math.max(0, el.scrollHeight - el.clientHeight - 220);
@@ -599,7 +599,7 @@ test("threads offer new replies while scrolled up and follow your own reply", as
   await page.getByTestId(`channel-row-${slug(fixture.projectChannel.name)}`).click();
   await page.getByTestId(`message-${fixture.messages.threadRoot.id}-reply-count`).click();
 
-  const scroller = page.locator(".thread-body");
+  const scroller = page.getByTestId("thread-body");
   await expect(scroller).toBeVisible();
   await expect(page.getByText("Thread scroll seed 23", { exact: false })).toBeVisible();
   await scroller.evaluate((el) => {
@@ -691,7 +691,7 @@ test("shows a friendly message when login returns a server error", async ({ page
   await loginPage.goto("/");
 
   await loginPage.getByLabel("Username").fill("someone");
-  await loginPage.locator('input[name="password"]').fill("Password1");
+  await loginPage.getByTestId("auth-password").fill("Password1");
   await loginPage.getByRole("button", { name: "Sign in", exact: true }).click();
 
   await expect(loginPage.locator(".error")).toContainText("We couldn't sign you in right now. Please try again in a moment.");

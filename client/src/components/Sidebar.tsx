@@ -89,9 +89,10 @@ export default function Sidebar({
     const isStarred = starredIds.has(conv.withUser.id);
     const label = conv.isSelf ? `${conv.withUser.displayName} (you)` : conv.withUser.displayName;
     return (
-      <div key={conv.id} className={`channel-item dm-item ${active ? "active" : ""} ${unread ? "unread" : ""}`}>
+      <div key={conv.id} className={`channel-item dm-item ${active ? "active" : ""} ${unread ? "unread" : ""}`} data-testid={`dm-row-${slug(conv.withUser.displayName)}`}>
         <button
           className="dm-open"
+          data-testid={`dm-open-${slug(conv.withUser.displayName)}`}
           onClick={() => onOpenDm(conv.withUser, conv.isSelf)}
           onMouseEnter={() => onPrefetchDm?.(conv.id)}
           onFocus={() => onPrefetchDm?.(conv.id)}
@@ -107,6 +108,7 @@ export default function Sidebar({
         {unread && <span className="unread-badge">{conv.unread > 99 ? "99+" : conv.unread}</span>}
         <button
           className={`dm-remove ${isStarred ? "reserved" : ""}`}
+          data-testid={`dm-remove-${slug(conv.withUser.displayName)}`}
           title={isStarred ? undefined : "Remove conversation"}
           onClick={() => onHideDm(conv)}
           disabled={isStarred}
