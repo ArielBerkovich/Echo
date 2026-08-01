@@ -310,6 +310,7 @@ export default function Login({ onAuthed, initialError = "" }) {
             submit(event);
           }}
         >
+          <div className="auth-card-content">
           <div className="auth-card-head">
             <div className="auth-card-brand">
               <div className="auth-logo-sm">
@@ -642,6 +643,7 @@ export default function Login({ onAuthed, initialError = "" }) {
               </button>
             </p>
           )}
+          </div>
         </form>
       </div>
 

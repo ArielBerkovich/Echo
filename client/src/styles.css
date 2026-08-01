@@ -8070,7 +8070,27 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 
 .auth-card {
   align-items: center;
+  gap: 0;
   justify-content: center;
+}
+
+.auth-card-content {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 11px;
+  height: min(600px, calc(100dvh - 48px));
+  min-height: 0;
+}
+
+.auth-card-content > * {
+  width: 100%;
+}
+
+@media (max-width: 760px) {
+  .auth-card-content {
+    height: auto;
+  }
 }
 
 .auth-hero {
