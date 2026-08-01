@@ -82,6 +82,19 @@ export async function requestAsCurrentUser(page, path, options = {}) {
 }
 
 export async function requestAsToken(page, token, path, options = {}) {
+  if (path === "/messages/upsert") {
+    const channelId = options.body?.channelId;
+    if (!channelId) throw new Error("message fixture requests need a channelId");
+    path = `/channels/${channelId}/messages`;
+    options = {
+      ...options,
+      body: {
+        body: options.body?.body,
+        parentId: options.body?.parentId,
+        attachments: options.body?.attachments,
+      },
+    };
+  }
   const response = await page.request.fetch(`/api${path}`, {
     method: options.method || "GET",
     headers: {

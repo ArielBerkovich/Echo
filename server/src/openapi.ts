@@ -4,7 +4,7 @@ export function openApiDocument() {
     info: {
       title: "Echo API",
       version: "0.1.0",
-      description: "REST API for Echo messaging and CI/CD automation.",
+      description: "REST API for Echo messaging and incoming webhooks.",
     },
     security: [{ bearerAuth: [] }],
     components: {
@@ -81,24 +81,6 @@ export function openApiDocument() {
           summary: "Find a channel by name",
           parameters: [{ name: "name", in: "path", required: true, schema: { type: "string" } }],
           responses: { 200: { description: "Channel info" }, 404: { description: "Not found" } },
-        },
-      },
-      "/api/messages/upsert": {
-        post: {
-          summary: "Create or update a CI/CD automation message",
-          parameters: [{ name: "Idempotency-Key", in: "header", schema: { type: "string" } }],
-          requestBody: {
-            required: true,
-            content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/AutomationMessage" },
-              },
-            },
-          },
-          responses: {
-            200: { description: "Existing message returned or updated" },
-            201: { description: "Message created" },
-          },
         },
       },
       "/api/webhooks": {

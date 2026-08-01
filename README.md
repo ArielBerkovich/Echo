@@ -7,7 +7,7 @@
 <p align="center">A self-hosted communication workspace for teams that want fast collaboration and control of their data.</p>
 
 <p align="center">
-  Channels · DMs · threads · files · search · automation · web and desktop clients
+  Channels · DMs · threads · files · search · web and desktop clients
 </p>
 
 ## Highlights
@@ -15,7 +15,7 @@
 - Public and private channels, direct messages, threads, mentions, reactions, pins, and saved messages.
 - Rich messages with Markdown, code blocks, emoji, uploads, forwarding, and scheduled delivery.
 - Search across messages, people, and channels, plus activity and saved-message views.
-- API tokens, webhooks, idempotent upserts, thread keys, and an in-app OpenAPI reference.
+- API tokens, incoming webhooks, and an in-app OpenAPI reference.
 - Docker Compose and Helm deployments with MongoDB and S3-compatible storage.
 - Responsive web UI and Electron desktop apps with automatic updates.
 
@@ -108,13 +108,13 @@ Run checks with:
 
 The [Helm chart](helm/echo) can deploy Echo with bundled MongoDB and MinIO, or connect to existing services. Disable bundled dependencies with `mongodb.enabled=false` and `minio.enabled=false`, then configure `server.mongoUri` and the server S3 settings.
 
-For air-gapped environments, transfer the required container images and chart packages into the target network. Echo does not require external API calls for normal chat, uploads, search, or automation.
+For air-gapped environments, transfer the required container images and chart packages into the target network. Echo does not require external API calls for normal chat, uploads, or search.
 
 Prebuilt desktop packages and versioned deployment artifacts are published on the [Releases](https://github.com/ArielBerkovich/Echo/releases) page.
 
-## API and automation
+## API
 
-Sign in, open **API** from the lower-left rail, generate a token, and copy the ready-to-run curl examples. Echo supports posting by channel name or ID, updating messages with `externalKey`, retrying safely with `Idempotency-Key`, and grouping CI/CD updates with `threadKey`.
+Sign in, open **API** from the lower-left rail, generate a token, and copy the ready-to-run curl examples for channels, messages, users, files, and webhooks.
 
 ## Repository layout
 

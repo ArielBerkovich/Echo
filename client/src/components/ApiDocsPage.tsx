@@ -99,40 +99,6 @@ function buildGroups(token) {
       ],
     },
     {
-      title: "Automation",
-      note: "Use these for CI/CD status messages. externalKey updates the same logical message; Idempotency-Key dedupes retries; threadKey groups related updates in one thread.",
-      endpoints: [
-        {
-          method: "POST",
-          path: "/api/messages/upsert",
-          desc: "Create or update a structured CI/CD message by channelId or channelName. Body supports { body/text, status, title, fields, externalKey, idempotencyKey, threadKey }.",
-          curl: `curl -X POST ${ORIGIN}/api/messages/upsert \\
-  ${auth} \\
-  ${json} \\
-  -H "Idempotency-Key: github-run-123-attempt-1" \\
-  -d '{"channelName":"deploys","externalKey":"github:repo:run-123","status":"running","title":"Deploy started","fields":{"branch":"main","sha":"abc123"}}'`,
-        },
-        {
-          method: "POST",
-          path: "/api/messages/upsert",
-          desc: "Update the same CI/CD message later by reusing externalKey.",
-          curl: `curl -X POST ${ORIGIN}/api/messages/upsert \\
-  ${auth} \\
-  ${json} \\
-  -d '{"channelName":"deploys","externalKey":"github:repo:run-123","status":"success","title":"Deploy passed","fields":{"duration":"4m 12s"}}'`,
-        },
-        {
-          method: "POST",
-          path: "/api/messages/upsert",
-          desc: "Post related updates under a thread root by using threadKey. Use a different externalKey for each thread reply you want to upsert.",
-          curl: `curl -X POST ${ORIGIN}/api/messages/upsert \\
-  ${auth} \\
-  ${json} \\
-  -d '{"channelName":"deploys","threadKey":"github:repo:run-123","externalKey":"github:repo:run-123:test","status":"failed","title":"Tests failed","body":"See artifact logs for details."}'`,
-        },
-      ],
-    },
-    {
       title: "OpenAPI",
       endpoints: [
         {
