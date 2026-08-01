@@ -723,6 +723,9 @@ input:focus {
   gap: 6px;
   margin-bottom: 2px;
 }
+.auth-logo-sm {
+  display: flex;
+}
 .auth-card-brand {
   display: flex;
   flex-direction: column;
