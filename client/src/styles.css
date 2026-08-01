@@ -732,6 +732,14 @@ input:focus {
   align-items: center;
   gap: 3px;
 }
+.auth-card-name {
+  margin: 0;
+  color: #12384a;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
 .brand {
   margin: 0;
   text-align: center;
