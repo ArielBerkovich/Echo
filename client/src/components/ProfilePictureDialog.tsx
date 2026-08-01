@@ -18,6 +18,8 @@ export default function ProfilePictureDialog({
   onClose,
   title = "Update profile picture",
   previewAlt = "Profile preview",
+  preserveTransparency = false,
+  outputName = "profile-picture.jpg",
 }) {
   const imageRef = useRef(null);
   const fileRef = useRef(null);
@@ -109,8 +111,10 @@ export default function ProfilePictureDialog({
       canvas.width = OUTPUT_SIZE;
       canvas.height = OUTPUT_SIZE;
       const context = canvas.getContext("2d");
-      context.fillStyle = "#111827";
-      context.fillRect(0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
+      if (!preserveTransparency) {
+        context.fillStyle = "#111827";
+        context.fillRect(0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
+      }
       const outputScale = OUTPUT_SIZE / PREVIEW_SIZE;
       const outputWidth = displayWidth * outputScale;
       const outputHeight = displayHeight * outputScale;
@@ -122,9 +126,10 @@ export default function ProfilePictureDialog({
         outputHeight
       );
       const cropped = await new Promise((resolve, reject) => {
-        canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Could not crop image"))), "image/jpeg", 0.9);
+        const mimeType = preserveTransparency ? "image/png" : "image/jpeg";
+        canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Could not crop image"))), mimeType, preserveTransparency ? undefined : 0.9);
       });
-      await onSave(new File([cropped], "profile-picture.jpg", { type: "image/jpeg" }));
+      await onSave(new File([cropped], outputName, { type: preserveTransparency ? "image/png" : "image/jpeg" }));
     } catch (saveError) {
       setError(saveError.message || "Could not save profile picture");
       setSaving(false);

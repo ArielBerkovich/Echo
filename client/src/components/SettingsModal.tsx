@@ -265,7 +265,7 @@ export default function SettingsModal({
         </main>
       </div>
       {avatarDialogOpen && <ProfilePictureDialog file={avatarFile} currentSrc={avatarUrl} onFileSelected={onAvatarFileSelected} onSave={saveAvatar} onClose={() => { setAvatarFile(null); setAvatarDialogOpen(false); }} />}
-      {brandingDialogOpen && <ProfilePictureDialog file={brandingImageFile} currentSrc={brandingImageUrl} title="Update organization image" previewAlt="Organization preview" onFileSelected={onBrandingImageSelected} onSave={saveBrandingImage} onClose={() => { setBrandingImageFile(null); setBrandingDialogOpen(false); }} />}
+      {brandingDialogOpen && <ProfilePictureDialog file={brandingImageFile} currentSrc={brandingImageUrl} title="Update organization image" previewAlt="Organization preview" preserveTransparency outputName="organization-logo.png" onFileSelected={onBrandingImageSelected} onSave={saveBrandingImage} onClose={() => { setBrandingImageFile(null); setBrandingDialogOpen(false); }} />}
     </div>
   );
 }
