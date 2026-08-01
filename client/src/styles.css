@@ -737,7 +737,7 @@ input:focus {
   color: #12384a;
   font-size: 30px;
   font-weight: 800;
-  font-style: italic;
+  font-style: normal;
   letter-spacing: -0.02em;
   line-height: 1.1;
 }
