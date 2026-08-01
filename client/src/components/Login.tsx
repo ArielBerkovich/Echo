@@ -314,7 +314,7 @@ export default function Login({ onAuthed, initialError = "" }) {
           <div className="auth-card-head">
             <div className="auth-card-brand">
               <div className="auth-logo-sm">
-                <Logo size={44} />
+                <Logo size={56} />
               </div>
               <h1 className="auth-card-name">Echo</h1>
             </div>
