@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 export function FeedLayout({ title, subtitle, testId, actions, children }) {
   return (
     <main className="channel-view">
@@ -28,7 +30,7 @@ export function FeedContent({ loading, items, emptyTitle, emptyMessage, children
   return children;
 }
 
-export function FeedMessage({ author, context, time, body, renderMarkdown }) {
+export const FeedMessage = memo(function FeedMessage({ author, context, time, body, renderMarkdown }) {
   return (
     <>
       <div className="meta">
@@ -45,4 +47,4 @@ export function FeedMessage({ author, context, time, body, renderMarkdown }) {
       ) : null}
     </>
   );
-}
+});

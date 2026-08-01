@@ -184,6 +184,10 @@ test("keeps a failed scheduled message editable and creates it once on retry", a
 test("shows and permanently dismisses every supported Activity kind", async ({ browser, page }) => {
   const stamp = uniqueSuffix("activity");
   const mentionBody = `Mention ${stamp} @${fixture.alice.username}`;
+  const visibleMentionBody = mentionBody.replace(
+    `@${fixture.alice.username}`,
+    `@${fixture.alice.displayName}`
+  );
   const broadcastBody = `Broadcast ${stamp} @everyone`;
   const rootBody = `Reaction root ${stamp}`;
   const threadRootBody = `Thread root ${stamp}`;
@@ -260,7 +264,7 @@ test("shows and permanently dismisses every supported Activity kind", async ({ b
     await page.getByTestId("rail-activity").click();
     await expect(page.getByTestId("activity-header")).toBeVisible({ timeout: 10_000 });
     const targets = [
-      page.getByTestId("activity-item").filter({ hasText: mentionBody }),
+      page.getByTestId("activity-item").filter({ hasText: visibleMentionBody }),
       page.getByTestId("activity-item").filter({ hasText: `Broadcast ${stamp}` }),
       page.getByTestId("activity-item").filter({ hasText: `Thread reply ${stamp}` }),
       page.getByTestId("activity-item").filter({ hasText: rootBody }),

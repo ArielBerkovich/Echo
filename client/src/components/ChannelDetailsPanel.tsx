@@ -138,15 +138,14 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
                 </div>
                 <p className="channel-details-section-hint">People who can see and participate in this channel.</p>
               </div>
-              <div className="channel-details-section-actions">
-                {canAddPeople && (
-                  <button type="button" className="channel-details-add" onClick={onAddPeople}>
-                    <PlusIcon size={15} strokeWidth={2} />
-                    Add people
-                  </button>
-                )}
-              </div>
             </div>
+
+            {canAddPeople && (
+              <button type="button" className="channel-details-add channel-details-add-primary" onClick={onAddPeople}>
+                <PlusIcon size={17} strokeWidth={2.2} />
+                <span>Add people to this channel</span>
+              </button>
+            )}
 
             <div className="channel-details-search channel-details-member-filter">
               <SearchIcon size={16} strokeWidth={1.8} aria-hidden="true" />

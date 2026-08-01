@@ -10,9 +10,10 @@ describe("time formatting helpers", () => {
   });
 
   it("formats valid dates without throwing", () => {
-    assert.notEqual(formatTime("2026-06-04T12:34:00Z"), "");
-    assert.match(formatDateTime("2026-06-04T12:34:00Z"), /Jun|06|4/);
-    assert.match(formatDate("2026-06-04T12:34:00Z"), /2026/);
+    const evening = new Date(2026, 5, 4, 21, 34).toISOString();
+    assert.equal(formatTime(evening), "21:34");
+    assert.match(formatDateTime(evening), /Jun 4, 21:34/);
+    assert.match(formatDate(evening), /2026/);
   });
 
   it("detects calendar-day boundaries", () => {

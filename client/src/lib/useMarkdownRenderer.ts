@@ -7,8 +7,12 @@ export function useMarkdownRenderer(users = [], username, customEmojis = [], cha
     const map = new Map();
     for (const user of users) {
       const canonical = user.username.toLowerCase();
-      map.set(canonical, canonical);
-      for (const alias of user.aliases || []) map.set(String(alias).toLowerCase(), canonical);
+      const mentionUser = {
+        username: canonical,
+        displayName: user.displayName || user.username,
+      };
+      map.set(canonical, mentionUser);
+      for (const alias of user.aliases || []) map.set(String(alias).toLowerCase(), mentionUser);
     }
     return map;
   }, [users]);

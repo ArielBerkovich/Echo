@@ -145,11 +145,19 @@ export default function App() {
         .catch(() => {})
         .finally(() => queryClient.invalidateQueries({ queryKey: queryKeys.activity }));
     }
-    if (nextView === "home" || nextView === "dms") {
+    if (nextView === "dms") {
       setActiveChannel(null);
-      // Pass null explicitly. The active-channel ref is updated after render,
-      // so relying on setView's default here can preserve the chat we just left.
       setView(nextView, null);
+    } else if (nextView === "home") {
+      // Keep the last channel selected on desktop while visiting full-page
+      // views. On mobile, Home is the channel picker and must reveal the
+      // navigation drawer instead of leaving the active conversation open.
+      if (isMobileViewport()) {
+        setActiveChannel(null);
+        setView(nextView, null);
+      } else {
+        setView(nextView);
+      }
     } else {
       setView(nextView);
     }
@@ -338,9 +346,13 @@ export default function App() {
   // channel) once channels & DMs are loaded.
   function applyLocation(saved, chs, conversations) {
     let nextView = "home";
+    const rememberedChannel = activeChannelRef.current;
     let active = isMobileViewport()
       ? null
-      : chs.find((channel) => channel.name.toLowerCase() === "general") || chs[0] || null;
+      : rememberedChannel
+        || chs.find((channel) => channel.name.toLowerCase() === "general")
+        || chs[0]
+        || null;
     if (saved?.view === "browse") {
       nextView = "browse";
       active = chs.find((channel) => channel.id === saved.convId) || active;

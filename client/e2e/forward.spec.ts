@@ -51,6 +51,22 @@ test.describe("forwarding", () => {
     await expect(modal.getByTestId("forward-send-selected")).toBeDisabled();
   });
 
+  test("keeps Enter in the note editor from sending to its synthetic channel", async ({ page }) => {
+    await openForwardDialog(page);
+
+    const modal = forwardModal(page);
+    const note = "Forward context";
+    await modal.getByTestId("composer-editor").fill(note);
+    await modal.getByTestId("composer-editor").press("Enter");
+
+    await modal.getByTestId("forward-search").fill(fixture.projectChannel.name);
+    await destinationByLabel(modal, fixture.projectChannel.name).click();
+    await modal.getByTestId("forward-send-selected").click();
+
+    await expect(modal).toBeHidden();
+    await expectForwardedWithNote(page, fixture.projectChannel.id, note);
+  });
+
   test("searches all people and preserves the target selection", async ({ page }) => {
     await openForwardDialog(page);
 

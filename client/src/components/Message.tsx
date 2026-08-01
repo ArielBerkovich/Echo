@@ -1,5 +1,6 @@
 import { memo, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { ArrowUpRight } from "lucide-react";
 import Avatar from "./Avatar.js";
 import Attachments from "./Attachments.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
@@ -293,7 +294,8 @@ function Message({
                 </span>
                 {m.forwardedFrom.messageId && (canJumpToForward?.(m.forwardedFrom) ? (
                   <button type="button" className="forwarded-link" onClick={(event) => { event.currentTarget.blur(); onJump?.(m.forwardedFrom); }}>
-                    View original →
+                    <span>View original</span>
+                    <ArrowUpRight aria-hidden="true" />
                   </button>
                 ) : m.forwardedFrom.channelType === "public" ? (
                   <span className="forwarded-noaccess" title="You don't have access to the channel this was forwarded from">· original not accessible</span>

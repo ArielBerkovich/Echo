@@ -372,7 +372,7 @@ export function channelRow(page, name) {
 }
 
 export function dmRow(page, name) {
-  return page.getByTestId(`dm-row-${slug(name)}`);
+  return page.getByTestId(`dm-row-${slug(name)}`).first();
 }
 
 export function railItem(page, key) {
