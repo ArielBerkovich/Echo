@@ -35,7 +35,7 @@ The screenshots below reflect the current Echo interface and branding.
 
 ### API reference
 
-![Echo API reference](docs/images/api-reference-v4.png)
+![Echo API reference](docs/images/api-reference-v5.png)
 
 ## Quick start
 
