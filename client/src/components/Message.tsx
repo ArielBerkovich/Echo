@@ -223,13 +223,13 @@ function Message({
       data-mid={m.id}
       data-testid={`message-${mid}`}
       onMouseEnter={onActivate}
-      onContextMenu={(event) => {
-        if (window.matchMedia("(max-width: 760px)").matches) {
-          event.preventDefault();
-          onForward?.();
-        }
+      onClick={(event) => {
+        if (!window.matchMedia("(max-width: 760px)").matches) return;
+        if (event.target.closest?.("button, a, [data-message-actions]")) return;
+        onActivate?.();
       }}
       onMouseLeave={(event) => {
+        if (window.matchMedia("(max-width: 760px)").matches) return;
         const related = event.relatedTarget;
         if (!(related instanceof Node) || !actionsRef.current?.contains(related)) {
           onDeactivate?.();

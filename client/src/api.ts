@@ -157,6 +157,7 @@ export const api = {
     request(`/auth/username-options?firstName=${encodeURIComponent(firstName)}&lastName=${encodeURIComponent(lastName)}&username=${encodeURIComponent(username)}`),
   me: () => request("/auth/me"),
   listUsers: () => request("/users"),
+  getUser: (userId) => request(`/users/${encodeURIComponent(userId)}`),
   listChannels: () => request("/channels"),
   listAllChannels: () => request("/channels?scope=all"),
   browseChannels: ({ q = "", membership = "all", cursor = "", limit = 50 } = {}) => {
@@ -208,6 +209,7 @@ export const api = {
   hideDm: (id) => request(`/dms/${id}`, { method: "DELETE" }),
   getActivity: () => request("/activity"),
   markActivityRead: () => request("/activity/read", { method: "POST" }),
+  clearActivity: () => request("/activity", { method: "DELETE" }),
   deleteActivity: (id) => request(`/activity/${encodeURIComponent(id)}`, { method: "DELETE" }),
   getSaved: () => request("/saved"),
   toggleSaved: (messageId) => request(`/saved/${messageId}`, { method: "POST" }),

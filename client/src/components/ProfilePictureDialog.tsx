@@ -48,6 +48,8 @@ export default function ProfilePictureDialog({ file = null, currentSrc = null, o
     : 1;
   const displayWidth = (imageSize?.width || PREVIEW_SIZE) * scale;
   const displayHeight = (imageSize?.height || PREVIEW_SIZE) * scale;
+  const hasCropChanges = zoom !== 1 || offset.x !== 0 || offset.y !== 0;
+  const canSave = !!imageSize && (file || hasCropChanges) && !saving;
 
   function limitOffset(next, nextScale = scale) {
     const maxX = Math.max(0, (imageSize.width * nextScale - PREVIEW_SIZE) / 2);
@@ -93,7 +95,7 @@ export default function ProfilePictureDialog({ file = null, currentSrc = null, o
   }
 
   async function save() {
-    if (!imageRef.current || !imageSize || saving) return;
+    if (!canSave || !imageRef.current) return;
     setSaving(true);
     setError(null);
     try {
@@ -160,7 +162,7 @@ export default function ProfilePictureDialog({ file = null, currentSrc = null, o
       {error && <div className="error">{error}</div>}
       <ModalActions>
         <button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>Cancel</button>
-        <button type="button" className="btn-primary" onClick={save} disabled={!imageSize || saving}>{saving ? "Saving…" : "Use this picture"}</button>
+        <button type="button" className="btn-primary" onClick={save} disabled={!canSave}>{saving ? "Saving…" : "Use this picture"}</button>
       </ModalActions>
     </Modal>
   );

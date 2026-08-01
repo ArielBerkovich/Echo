@@ -1,10 +1,11 @@
-export function FeedLayout({ title, subtitle, testId, children }) {
+export function FeedLayout({ title, subtitle, testId, actions, children }) {
   return (
     <main className="channel-view">
       <div className="channel-main">
         <header className="channel-header" data-testid={`${testId}-header`}>
           <span className="ch-name">{title}</span>
           <span className="ch-meta">{subtitle}</span>
+          {actions ? <div className="header-actions">{actions}</div> : null}
         </header>
         <div className="messages activity-list" data-testid={`${testId}-list`}>
           {children}

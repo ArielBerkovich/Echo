@@ -83,7 +83,7 @@ test("manages channels, members, visibility, and leaving", async ({ page }) => {
   await addPeople.getByPlaceholder("Search people").fill(fixture.bob.username);
   await addPeople.getByTestId(`add-people-add-${fixture.bob.username}`).click();
   await addPeople.getByTestId("add-people-done").click();
-  await expect(details).toContainText(/Members ·\s*2/);
+  await expect(details).toContainText(/Members\s*2/);
 
   await details.getByRole("button", { name: "Close channel details" }).click();
   await page.getByRole("button", { name: "Leave channel" }).click();
@@ -416,14 +416,16 @@ test("uses conversation wording for scheduled messages in DMs", async ({ page })
   await page.goto("/");
   await page.locator(".dm-item").filter({ hasText: fixture.bob.displayName }).locator(".dm-open").click();
   const dmComposer = page.locator(".composer:not(.is-disabled) .composer-editor").first();
+  const dmComposerForm = dmComposer.locator("xpath=ancestor::form");
   await expect(dmComposer).toHaveAttribute("contenteditable", "true");
   await dmComposer.click();
   await dmComposer.pressSequentially(`DM scheduled ${Date.now()}`);
   await expect(dmComposer).not.toBeEmpty();
-  const sendOptions = page.getByRole("button", { name: "Send options" });
+  await expect(dmComposerForm.getByTestId("composer-send")).toBeEnabled();
+  const sendOptions = dmComposerForm.getByRole("button", { name: "Send options" });
   await expect(sendOptions).toBeEnabled();
   await sendOptions.click();
-  await page.locator(".composer:not(.is-disabled) .send-menu button").filter({ hasText: "Tomorrow, 9:00 AM" }).click();
+  await dmComposerForm.locator(".send-menu button:not(:disabled)").filter({ hasText: "Tomorrow, 9:00 AM" }).click();
   await expect(page.locator(".scheduled-banner")).toContainText("for this conversation");
 });
 

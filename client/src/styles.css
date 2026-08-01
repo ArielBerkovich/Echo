@@ -4502,6 +4502,14 @@ html[data-mode="dark"] .day-divider-label {
 .settings-content-api .api-inner {
   height: 100%;
 }
+
+@media (min-width: 761px) {
+  .settings-content-api .api-inner {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
 .settings-content-api .api-token-panel,
 .settings-content-api .api-groups .settings-section {
   background: transparent;
@@ -4788,12 +4796,17 @@ html[data-mode="dark"] .day-divider-label {
   background: var(--surface);
   color: var(--muted);
 }
+.channel-details-member-filter {
+  margin: 16px 0 14px;
+}
 .channel-details-search:focus-within {
   border-color: var(--active-bg);
   box-shadow: 0 0 0 2px var(--active-ring);
 }
 .channel-details-search input {
   width: 100%;
+  min-height: 0;
+  padding: 0;
   border: none;
   outline: none;
   background: transparent;
@@ -5718,6 +5731,31 @@ html[data-mode="dark"] .day-divider-label {
 .forward-note-field {
   margin: 12px 0 18px;
 }
+.forward-note-editor {
+  display: block;
+  width: 100%;
+  min-height: 74px;
+  max-height: 150px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  line-height: 1.45;
+  box-sizing: border-box;
+}
+.forward-note-editor:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 24%, transparent);
+}
+.forward-note-editor:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
 .forward-field-heading {
   align-items: center;
   justify-content: space-between;
@@ -6214,6 +6252,9 @@ html[data-mode="dark"] .channel-header {
   cursor: pointer;
   min-width: 0;
 }
+.channel-header .ch-name-btn {
+  text-align: left;
+}
 .channel-header .ch-name-btn:hover,
 .channel-header .ch-meta-btn:hover,
 .channel-header .ch-topic:hover {
@@ -6270,6 +6311,12 @@ html[data-mode="dark"] .channel-header {
 }
 .header-action.leave:hover {
   background: rgba(225, 29, 72, 0.1);
+}
+.activity-clear {
+  color: var(--muted);
+}
+.activity-clear:hover {
+  color: var(--danger, #dc2626);
 }
 .channel-view.has-side-panel .channel-header {
   gap: 8px;
@@ -6766,6 +6813,7 @@ html[data-mode="dark"] .new-messages-button:hover {
   background: #f4f4f4;
   border-radius: 50%;
   width: 36px;
+  cursor: pointer;
 }
 .icon-btn.plus:hover { background: #e6e6e6; }
 
@@ -7932,6 +7980,19 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     padding: 0;
     justify-content: center;
   }
+  .activity-clear {
+    width: auto;
+    min-width: 34px;
+    padding-inline: 8px;
+  }
+  .activity-clear span {
+    display: inline;
+  }
+  .activity-dismiss {
+    opacity: 1;
+    min-width: 34px;
+    min-height: 34px;
+  }
   .header-action-icon span,
   .header-action-visibility {
     display: none;
@@ -7986,12 +8047,19 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   }
   .composer-toolbar {
     gap: 1px;
-    padding-inline: 5px;
+    padding: 4px;
+    overflow-x: visible;
+    flex-wrap: wrap;
   }
   .composer-toolbar .icon-btn {
-    min-width: 32px;
-    width: 32px;
-    padding-inline: 4px;
+    width: 28px;
+    min-width: 28px;
+    height: 30px;
+    padding-inline: 0;
+  }
+  .composer-toolbar .tb-sep {
+    height: 18px;
+    margin-inline: 2px;
   }
   .composer-actions {
     padding-inline: 5px;
@@ -8282,7 +8350,10 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     border-radius: 18px 18px 0 0;
   }
   .forward-destination-list {
-    max-height: 30dvh;
+    flex: 1 1 auto;
+    min-height: 140px;
+    max-height: none;
+    margin-top: 10px;
   }
   .forward-actions {
     padding-bottom: env(safe-area-inset-bottom);
@@ -9169,5 +9240,463 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   .channel-browser-create {
     gap: 4px;
     padding-inline: 8px;
+  }
+}
+
+/* Final phone pass: this block intentionally comes after the desktop polish
+   rules above so the mobile geometry cannot be overwritten by later tiers. */
+@media (max-width: 760px) {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+    height: 100%;
+  }
+
+  .app-shell {
+    min-height: 100dvh;
+    height: 100dvh;
+  }
+
+  .auth-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-card {
+    width: 100%;
+    padding: 20px 20px max(20px, env(safe-area-inset-bottom));
+  }
+
+  .auth-card-content {
+    width: min(100%, 360px);
+  }
+
+  .auth-card-head {
+    margin-bottom: 18px;
+  }
+
+  .auth-card-name {
+    font-size: 30px;
+  }
+
+  .auth-tabs button,
+  .auth-submit,
+  .auth-sso {
+    min-height: 44px;
+  }
+
+  .input-wrap input {
+    min-height: 46px;
+    font-size: 16px;
+  }
+
+  .pane-search {
+    padding-top: max(8px, env(safe-area-inset-top));
+  }
+
+  .search-box-field input.search-input {
+    min-height: 42px;
+    font-size: 16px;
+  }
+
+  .settings-page {
+    overflow: auto;
+  }
+
+  .settings-layout {
+    min-height: 100%;
+    padding: 12px 12px calc(24px + env(safe-area-inset-bottom));
+  }
+
+  .settings-nav-list {
+    gap: 6px;
+  }
+
+  .settings-nav-item {
+    min-height: 44px;
+    gap: 6px;
+    padding: 8px 4px;
+    font-size: 12px;
+  }
+
+  .settings-nav-item span {
+    display: inline;
+  }
+
+  .settings-content {
+    padding: 16px 4px 8px;
+  }
+
+  .settings-name-row {
+    flex-wrap: wrap;
+  }
+
+  .settings-name-row .settings-input {
+    min-width: 0;
+    flex: 1 1 180px;
+  }
+
+  .settings-name-row .btn-primary {
+    min-height: 44px;
+  }
+
+  .activity-clear {
+    width: auto;
+    min-width: 94px;
+    height: 40px;
+    min-height: 40px;
+    padding: 0 11px;
+    gap: 6px;
+    justify-content: center;
+  }
+
+  .activity-clear span {
+    display: inline;
+    line-height: 1;
+  }
+
+  .modal-backdrop {
+    padding: 12px;
+    align-items: center;
+  }
+
+  .modal {
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+    padding: 20px 16px;
+  }
+
+  .modal-actions {
+    flex-wrap: wrap;
+  }
+
+  .modal-actions > button {
+    flex: 1 1 120px;
+  }
+}
+
+/* Mobile primary navigation: keep the rail reachable with one thumb while
+   the channel and DM list stays in the existing slide-out drawer. */
+@media (max-width: 760px) {
+  .app-nav {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 60;
+    width: 100%;
+    height: calc(72px + env(safe-area-inset-bottom));
+    transform: none;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.22);
+    pointer-events: none;
+  }
+
+  .app-nav .rail {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    flex-direction: row;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 8px max(6px, env(safe-area-inset-bottom));
+    border-right: 0;
+    border-top: 1px solid color-mix(in srgb, var(--on-navy) 10%, transparent);
+    pointer-events: auto;
+  }
+
+  .rail-brand {
+    display: none;
+  }
+
+  .rail-top {
+    width: auto;
+    flex: 1;
+    max-width: 360px;
+    flex-direction: row;
+    justify-content: center;
+    gap: 4px;
+    padding: 3px;
+    border-radius: 17px;
+  }
+
+  .rail-item {
+    width: 58px;
+    min-height: 54px;
+    flex: 1 1 0;
+    max-width: 64px;
+    border-radius: 14px;
+  }
+
+  .rail-active-indicator {
+    display: none;
+  }
+
+  .rail-account {
+    width: auto;
+    margin: 0;
+    padding: 0 0 0 4px;
+    flex-direction: row;
+    gap: 2px;
+  }
+
+  .rail-account-button {
+    width: 48px;
+    padding: 2px;
+  }
+
+  .rail-account-avatar .avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .rail-account-name {
+    display: none;
+  }
+
+  .rail-account-name-button {
+    display: none;
+  }
+
+  .rail-account-actions {
+    width: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .rail-account-action {
+    width: 36px;
+    height: 28px;
+    min-height: 28px;
+  }
+
+  .app-nav .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: calc(72px + env(safe-area-inset-bottom));
+    z-index: 1;
+    width: min(300px, calc(100vw - 88px));
+    transform: translateX(-105%);
+    transition: transform 0.24s ease;
+    box-shadow: var(--shadow-lg);
+    pointer-events: auto;
+  }
+
+  .app.nav-open .app-nav .sidebar {
+    transform: none;
+  }
+
+  .app.nav-open .app-nav {
+    pointer-events: auto;
+  }
+
+  .app.nav-open .app-nav .rail {
+    pointer-events: auto;
+  }
+
+  .app.nav-open .nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    background: rgba(0, 0, 0, 0.5);
+  }
+
+  .chat-pane {
+    margin: 0 0 calc(72px + env(safe-area-inset-bottom));
+    border-radius: 0;
+  }
+
+  .nav-toggle,
+  .app-nav .sidebar,
+  .nav-backdrop {
+    display: none !important;
+  }
+
+  .app[data-mobile-nav="true"] .app-nav .sidebar {
+    display: flex !important;
+    position: fixed;
+    inset: 0 0 calc(72px + env(safe-area-inset-bottom));
+    z-index: 1;
+    width: 100%;
+    max-width: none;
+    transform: none;
+    box-shadow: none;
+    pointer-events: auto;
+  }
+
+  .app[data-mobile-nav="true"] .app-nav .rail {
+    z-index: 2;
+  }
+
+  /* Keep the channel browser control easy to hit on a phone. */
+  .channel-header-actions .add-channel {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+  }
+
+  /* Channel details, pinned messages, and members are focused mobile views,
+     not narrow desktop sidebars. Keep the bottom rail available for navigation. */
+  .channel-view > .details-panel:not(.channel-details-dialog),
+  .channel-view > .pinned-panel,
+  .channel-view > .members-panel {
+    position: fixed;
+    inset: 0 0 calc(72px + env(safe-area-inset-bottom));
+    z-index: 70;
+    width: 100%;
+    max-width: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: 0 0 32px rgba(0, 0, 0, 0.28);
+  }
+
+  .channel-view > .pinned-panel .panel-header,
+  .channel-view > .members-panel .members-panel-header {
+    min-height: 68px;
+    padding: 12px 14px 12px 16px;
+  }
+
+  .channel-view > .pinned-panel .panel-body,
+  .channel-view > .members-panel .members-panel-body {
+    padding: 14px 12px 20px;
+  }
+
+  .channel-details-backdrop {
+    inset: 0 0 calc(72px + env(safe-area-inset-bottom));
+    align-items: stretch;
+    padding: 0;
+  }
+
+  .channel-details-dialog {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+  }
+
+  /* Hover-only member actions are ambiguous on touch screens. Keep profile
+     names separate from explicit, reachable management controls. */
+  .channel-details-person-actions {
+    gap: 6px;
+    align-self: center;
+    white-space: nowrap;
+  }
+
+  .channel-details-person-promote,
+  .channel-details-person-remove {
+    min-height: 24px;
+    padding: 3px 5px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 10px;
+    line-height: 1.1;
+    opacity: 1;
+  }
+
+  .channel-details-person-promote {
+    background: var(--active-soft);
+  }
+
+  .channel-details-person-remove {
+    background: color-mix(in srgb, var(--danger) 7%, transparent);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    padding-inline: 0;
+  }
+
+  .channel-details-remove-label {
+    display: none;
+  }
+
+  /* Threads become a focused, full-screen reading surface on phones. */
+  .thread-panel {
+    position: fixed;
+    inset: 0 0 calc(72px + env(safe-area-inset-bottom));
+    z-index: 70;
+    width: 100%;
+    max-width: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: 0 0 32px rgba(0, 0, 0, 0.28);
+  }
+
+  /* The animated channel view forms its own stacking context; lift it above
+     the bottom rail while a side panel is open so the composer is not covered. */
+  .channel-view.has-side-panel {
+    position: relative;
+    z-index: 61;
+  }
+
+  .thread-header {
+    min-height: 68px;
+    height: auto;
+    padding: 12px 14px 12px 16px;
+    background: var(--surface-2);
+  }
+
+  .thread-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .thread-title {
+    font-size: 19px;
+  }
+
+  .thread-context {
+    max-width: calc(100vw - 84px);
+    font-size: 13px;
+  }
+
+  .thread-close {
+    width: 40px;
+    height: 40px;
+    flex: none;
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    background: var(--surface);
+    font-size: 17px;
+  }
+
+  .thread-body {
+    min-height: 0;
+    padding: 14px 12px 20px;
+    gap: 8px;
+    overscroll-behavior: contain;
+  }
+
+  .thread-body > div > .message:first-child {
+    margin-bottom: 4px;
+    padding: 12px 10px;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--surface-2) 72%, var(--surface));
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--text) 6%, transparent);
+  }
+
+  .thread-divider {
+    padding: 12px 4px 8px;
+  }
+
+  .thread-panel .composer {
+    flex: 0 0 auto;
+    position: relative;
+    z-index: 2;
+    margin: 8px 10px calc(12px + env(safe-area-inset-bottom));
+  }
+
+  /* Message actions are portaled to document.body; keep them above the
+     full-screen thread surface on touch devices. */
+  .msg-actions {
+    z-index: 90;
+  }
+  .message.menu-open .msg-actions {
+    z-index: 91;
   }
 }

@@ -6,7 +6,7 @@ import SettingsModal from "./SettingsModal.js";
 import SearchBox from "./SearchBox.js";
 import SearchResults from "./SearchResults.js";
 
-export default function WorkspaceContent({ view, search, browse, feeds, conversation, onOpenNavigation }) {
+export default function WorkspaceContent({ view, search, browse, feeds, conversation }) {
   const activeChannel = conversation.channel;
   const addPeopleChannel = activeChannel &&
     activeChannel.type !== "dm" &&
@@ -18,11 +18,6 @@ export default function WorkspaceContent({ view, search, browse, feeds, conversa
   return (
     <div className="chat-pane">
       <div className="pane-search" data-testid="pane-search">
-        <button className="nav-toggle" onClick={onOpenNavigation} aria-label="Open navigation" title="Menu">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-            <path d="M3 5h14M3 10h14M3 15h14" />
-          </svg>
-        </button>
         <SearchBox
           ref={search.inputRef}
           channels={search.channels}

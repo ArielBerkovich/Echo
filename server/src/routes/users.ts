@@ -15,10 +15,15 @@ usersRouter.use(requireAuth);
 
 // GET /api/users — directory used to power @mention autocomplete.
 // Excludes the internal system account.
-usersRouter.get("/", async (_req, res) => {
+usersRouter.get("/", async (req, res) => {
   const users = await User.find({ username: { $ne: "system" } })
-    .sort({ displayName: 1 })
-    .limit(500);
+    .sort({ displayName: 1 });
+  // Keep the signed-in user discoverable even when a large directory pushes
+  // them past the autocomplete limit.
+  if (!users.some((user) => user._id.equals(req.user._id))) {
+    const currentUser = await User.findById(req.user._id);
+    if (currentUser && currentUser.username !== "system") users.push(currentUser);
+  }
   const aliases = await aliasesByUserId(users.map((u) => u._id));
   res.json({
     users: users.map((u) => ({
@@ -31,6 +36,16 @@ usersRouter.get("/", async (_req, res) => {
 // GET /api/users/vips — the ids of users the current user has marked VIP.
 usersRouter.get("/vips", (req, res) => {
   res.json({ vipIds: (req.user.vips || []).map((id) => id.toString()) });
+});
+
+// Resolve a directory entry for message authors that arrived before the
+// client refreshed its full user list.
+usersRouter.get("/:id", async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ error: "valid user id is required" });
+  const user = await User.findById(req.params.id);
+  if (!user || user.username === "system") return res.status(404).json({ error: "user not found" });
+  const aliases = await aliasesByUserId([user._id]);
+  res.json({ user: { ...user.toPublicJSON(), aliases: aliases.get(user._id.toString()) || [] } });
 });
 
 // POST /api/users/:id/vip — toggle whether :id is a VIP for the current user.

@@ -44,8 +44,9 @@ test.describe("forwarding", () => {
     await expect(modal).toContainText(fixture.messages.searchHit.body);
     await expect(modal).toContainText("Original message");
     await expect(modal.locator(".forward-note-field .forward-field-heading")).toContainText("Note");
-    await expect(modal.locator("textarea")).toHaveAttribute("placeholder", /Add context/);
-    await expect(modal.getByTestId("composer-editor")).toHaveAttribute("data-placeholder", "Add context for the recipients…");
+    await expect(modal.getByTestId("composer-editor")).toHaveAttribute("data-placeholder", "Add context for the recipient…");
+    await expect(modal.locator(".composer-toolbar")).toBeVisible();
+    await expect(modal.locator(".composer-actions")).toBeVisible();
     await expect(modal.getByTestId("composer-send-options")).toHaveCount(0);
     await expect(modal.getByTestId("forward-send-selected")).toBeDisabled();
   });

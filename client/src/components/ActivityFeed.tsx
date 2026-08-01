@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Trash2Icon } from "lucide-react";
 import { api } from "../api.js";
@@ -7,10 +7,12 @@ import { formatDateTime } from "../lib/time.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
 import { queryKeys } from "../lib/queryClient.js";
 import Avatar from "./Avatar.js";
+import ConfirmDialog from "./ConfirmDialog.js";
 import { FeedContent, FeedLayout, FeedMessage } from "./FeedLayout.js";
 
 // Feed of messages that @mention the current user. Clicking jumps to the channel.
 export default function ActivityFeed({ user, users = [], customEmojis = [], onJump, onLoaded }) {
+  const [confirmClear, setConfirmClear] = useState(false);
   const queryClient = useQueryClient();
   const renderMarkdown = useMarkdownRenderer(users, user.username, customEmojis);
   const { data: items = [], isPending: loading } = useQuery({
@@ -32,6 +34,19 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.activity }),
   });
+  const clearMutation = useMutation({
+    mutationFn: () => api.clearActivity(),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.activity });
+      const previous = queryClient.getQueryData(queryKeys.activity);
+      queryClient.setQueryData(queryKeys.activity, []);
+      return { previous };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous) queryClient.setQueryData(queryKeys.activity, context.previous);
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.activity }),
+  });
 
   useEffect(() => {
     onLoaded?.(items);
@@ -46,7 +61,25 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
   }, [queryClient]);
 
   return (
-    <FeedLayout title="Activity" subtitle="Mentions, replies & broadcasts · last 30 days" testId="activity">
+    <>
+      <FeedLayout
+      title="Activity"
+      subtitle="Mentions, replies & broadcasts · last 30 days"
+      testId="activity"
+      actions={items.length ? (
+        <button
+          type="button"
+          className="header-action activity-clear"
+          data-testid="activity-clear-all"
+          onClick={() => setConfirmClear(true)}
+          disabled={clearMutation.isPending}
+          title="Clear all activity"
+        >
+          <Trash2Icon size={15} strokeWidth={1.8} />
+          <span>{clearMutation.isPending ? "Clearing…" : "Clear all"}</span>
+        </button>
+      ) : null}
+    >
       <FeedContent
         loading={loading}
         items={items}
@@ -96,7 +129,21 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
           </div>
         ))}
       </FeedContent>
-    </FeedLayout>
+      </FeedLayout>
+      {confirmClear ? (
+        <ConfirmDialog
+          title="Clear all activity?"
+          message="This will remove all current activity from your feed. The original messages will not be deleted."
+          confirmLabel="Clear all"
+          danger
+          onCancel={() => setConfirmClear(false)}
+          onConfirm={() => {
+            setConfirmClear(false);
+            clearMutation.mutate();
+          }}
+        />
+      ) : null}
+    </>
   );
 }
 

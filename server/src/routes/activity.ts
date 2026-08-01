@@ -17,6 +17,42 @@ activityRouter.post("/read", async (req, res) => {
   res.json({ ok: true });
 });
 
+// DELETE /api/activity — dismiss the current user's complete rolling activity feed.
+activityRouter.delete("/", async (req, res) => {
+  const me = req.user;
+  const since = new Date(Date.now() - ACTIVITY_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+  const visible = await Channel.find(
+    { isArchived: { $ne: true }, $or: [{ type: "public" }, { members: me._id }] },
+    { _id: 1, members: 1 }
+  );
+  const visibleChanIds = visible.map((channel) => channel._id);
+  const memberChanIds = visible
+    .filter((channel) => channel.members.some((member) => member.equals(me._id)))
+    .map((channel) => channel._id);
+  const messages = await Message.find(
+    {
+      author: { $ne: me._id },
+      createdAt: { $gte: since },
+      channel: { $in: visibleChanIds },
+      $or: [
+        { mentionedUserIds: me._id },
+        { channel: { $in: memberChanIds }, mentionsEveryone: true },
+        { threadRootAuthor: me._id },
+      ],
+    },
+    { _id: 1 }
+  );
+  const dismissedIds = messages.map((message) => `message:${message._id.toString()}`);
+  const updates = [
+    ActivityEvent.deleteMany({ recipient: me._id }),
+    dismissedIds.length
+      ? User.updateOne({ _id: me._id }, { $addToSet: { dismissedActivityIds: { $each: dismissedIds } } })
+      : Promise.resolve(),
+  ];
+  await Promise.all(updates);
+  res.json({ ok: true });
+});
+
 // DELETE /api/activity/:id — dismiss one activity item for the current user.
 // Stored events can be removed directly; message-derived activity is hidden
 // with a per-user dismissal so the source message remains untouched.

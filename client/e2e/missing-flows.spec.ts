@@ -160,7 +160,9 @@ test("generates an API token and exercises idempotent, external-key, and threade
       value: { writeText: async (value) => { window.__copiedText = value; } },
     });
   });
+  const usersResponse = page.waitForResponse((response) => new URL(response.url()).pathname === "/api/users" && response.request().method() === "GET");
   await page.goto("/");
+  await usersResponse;
   await channelRow(page, "general").click();
   await page.getByTestId("rail-settings").click();
   await expect(page.getByTestId("settings-page")).toBeVisible();
@@ -405,9 +407,13 @@ test("paginates search results, hides inaccessible messages, and surfaces reques
 
 test("supports a core messaging, attachment, search, and settings flow on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 700 });
+  const usersResponse = page.waitForResponse((response) => new URL(response.url()).pathname === "/api/users" && response.request().method() === "GET");
   await page.goto("/");
+  await usersResponse;
+  await page.getByTestId("channel-row-general").click();
   const body = `Mobile flow ${uniqueSuffix("mobile")}`;
   await page.getByTestId("composer-editor").fill(body);
+  await page.getByTitle("Attach files").click();
   await page.getByTestId("composer-attachments").setInputFiles({
     name: "mobile.png",
     mimeType: "image/png",
@@ -417,7 +423,6 @@ test("supports a core messaging, attachment, search, and settings flow on mobile
   await expect(messageByText(page, body)).toBeVisible();
   await expect(messageByText(page, body).locator('img[alt="mobile.png"]')).toBeVisible();
 
-  await page.getByRole("button", { name: "Open navigation" }).click();
   await page.getByTestId("search-input").fill(body);
   await page.getByTestId("search-input").press("Enter");
   await expect(page.getByTestId("search-result").filter({ hasText: body })).toBeVisible();
