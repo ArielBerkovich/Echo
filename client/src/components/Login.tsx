@@ -297,6 +297,7 @@ export default function Login({ onAuthed, initialError = "" }) {
               </div>
               <Logo size={132} />
             </div>
+            <div className="auth-hero-name">Echo</div>
           </div>
         </aside>
 
