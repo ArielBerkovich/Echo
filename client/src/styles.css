@@ -6508,35 +6508,6 @@ html[data-mode="dark"] .channel-header {
   flex-direction: column;
   gap: 4px;
   background: linear-gradient(180deg, var(--bg), var(--surface) 120px);
-  /* The message pane uses a stable custom scrollbar below. Native overlay
-     scrollbars are inconsistent across platforms and can disappear entirely. */
-  scrollbar-width: none;
-}
-.messages::-webkit-scrollbar {
-  display: none;
-}
-.messages-scrollbar {
-  position: absolute;
-  z-index: 3;
-  top: 8px;
-  right: 6px;
-  bottom: 8px;
-  width: 8px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
-  pointer-events: none;
-}
-.messages-scrollbar-thumb {
-  position: absolute;
-  inset-inline: 0;
-  top: 0;
-  min-height: 34px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--accent) 68%, var(--muted));
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 12%, transparent);
-}
-.messages-scrollbar-thumb:hover {
-  background: color-mix(in srgb, var(--accent) 84%, var(--text));
 }
 
 @media (prefers-reduced-motion: reduce) {

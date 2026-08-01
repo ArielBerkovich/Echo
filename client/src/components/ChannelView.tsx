@@ -117,7 +117,6 @@ export default function ChannelView({
   const [loading, setLoading] = useState(!hasUsableCache); // initial history fetch for this channel in flight
   const [newMessageCount, setNewMessageCount] = useState(0);
   const [showScrollToLatest, setShowScrollToLatest] = useState(false);
-  const [messageScrollbar, setMessageScrollbar] = useState({ visible: false, size: 100, offset: 0 });
 
   const bottomRef = useRef(null);
   const scrollerRef = useRef(null); // the scrollable messages container
@@ -137,33 +136,6 @@ export default function ChannelView({
   const latestScrollFrameRef = useRef(null);
   const unreadScrollAppliedRef = useRef(false); // did we already anchor the current unread divider?
   const suppressGrowFollowRef = useRef(true); // while true, don't auto-follow until initial positioning settles
-
-  function updateMessageScrollbar(scroller = scrollerRef.current) {
-    if (!scroller) return;
-    const maxScrollTop = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
-    if (maxScrollTop <= 0) {
-      setMessageScrollbar((current) => current.visible ? { visible: false, size: 100, offset: 0 } : current);
-      return;
-    }
-    const size = Math.max(12, (scroller.clientHeight / scroller.scrollHeight) * 100);
-    const offset = (scroller.scrollTop / maxScrollTop) * (100 - size);
-    setMessageScrollbar({ visible: true, size, offset });
-  }
-
-  useLayoutEffect(() => {
-    const scroller = scrollerRef.current;
-    if (!scroller) return undefined;
-    const update = () => updateMessageScrollbar(scroller);
-    update();
-    window.addEventListener("resize", update);
-    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(update);
-    observer?.observe(scroller);
-    if (messagesInnerRef.current) observer?.observe(messagesInnerRef.current);
-    return () => {
-      window.removeEventListener("resize", update);
-      observer?.disconnect();
-    };
-  }, [channel.id, loading, messages.length]);
 
   const renderMarkdown = useMarkdownRenderer(users, user.username, customEmojis, channels);
   const emojiMap = useMemo(
@@ -557,7 +529,6 @@ export default function ChannelView({
 
   function onMessagesScroll(e) {
     const scroller = e.currentTarget;
-    updateMessageScrollbar(scroller);
     // On touch layouts the fixed action toolbar must not linger after its
     // message scrolls behind the composer. Desktop hover actions should keep
     // their existing behavior while the pointer remains over the message.
@@ -1101,14 +1072,6 @@ export default function ChannelView({
             <div ref={bottomRef} />
           </div>
         </div>
-        {messageScrollbar.visible && (
-          <div className="messages-scrollbar" aria-hidden="true">
-            <div
-              className="messages-scrollbar-thumb"
-              style={{ height: `${messageScrollbar.size}%`, transform: `translateY(${messageScrollbar.offset / messageScrollbar.size * 100}%)` }}
-            />
-          </div>
-        )}
         {(showScrollToLatest || newMessageCount > 0) && (
           <button
             type="button"
