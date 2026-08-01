@@ -28,11 +28,6 @@ const userSchema = new mongoose.Schema(
     migratedAt: { type: Date, default: null },
     // Object-storage key for the user's uploaded profile picture (optional).
     avatarKey: { type: String, default: null },
-    // Workspace branding is stored on the singleton admin account so it can
-    // be added without a data migration or a second workspace collection.
-    organizationName: { type: String, default: "Echo", trim: true, maxlength: 64 },
-    organizationImageKey: { type: String, default: null },
-    organizationBrandingEnabled: { type: Boolean, default: false },
     // The first registered user becomes the workspace admin.
     isAdmin: { type: Boolean, default: false },
     // Set when an admin issues a one-time password; the user must choose a new

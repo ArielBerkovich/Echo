@@ -21,7 +21,7 @@ function railNameFontSize(name) {
   return Math.max(6, Math.min(12, 68 / (longestWord * 0.66)));
 }
 
-export default function LeftRail({ view, onSelect, badges = {}, user, branding, onLogout, onUpdated }) {
+export default function LeftRail({ view, onSelect, badges = {}, user, onLogout, onUpdated }) {
   const [clicked, setClicked] = useState(null);
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
@@ -88,16 +88,15 @@ export default function LeftRail({ view, onSelect, badges = {}, user, branding, 
 
   return (
     <nav className="rail" aria-label="Primary navigation">
-      <div className="rail-brand" aria-label={branding?.enabled ? branding.name : "Echo"}>
-        {branding?.enabled ? <Avatar name={branding.name} src={branding.imageUrl} size={54} /> : <Logo size={54} />}
-        <span className="rail-brand-name">{branding?.enabled ? branding.name : "echo"}</span>
+      <div className="rail-brand" aria-label="Echo" data-testid="rail-brand">
+        <Logo size={54} />
       </div>
       <div
         ref={railTopRef}
         className="rail-top"
         style={{ "--rail-indicator-offset": indicatorOffset == null ? "0px" : `${indicatorOffset}px` }}
       >
-        {activeIndex >= 0 && indicatorOffset != null && <span className="rail-active-indicator" aria-hidden="true" />}
+        {activeIndex >= 0 && indicatorOffset != null && <span className="rail-active-indicator" data-testid="rail-active-indicator" aria-hidden="true" />}
         {ITEMS.map(({ key, label, Icon }) => {
           const count = badges[key] || 0;
           return (
@@ -118,7 +117,7 @@ export default function LeftRail({ view, onSelect, badges = {}, user, branding, 
                 onSelect(key);
               }}
             >
-              <span className="rail-icon">
+              <span className="rail-icon" data-testid="rail-icon">
                 <Icon />
                 {count > 0 && (
                   <span className={`rail-badge ${key === "home" ? "dot" : ""}`} aria-hidden="true">

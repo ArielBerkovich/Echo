@@ -10,17 +10,7 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(value, max));
 }
 
-export default function ProfilePictureDialog({
-  file = null,
-  currentSrc = null,
-  onFileSelected,
-  onSave,
-  onClose,
-  title = "Update profile picture",
-  previewAlt = "Profile preview",
-  preserveTransparency = false,
-  outputName = "profile-picture.jpg",
-}) {
+export default function ProfilePictureDialog({ file = null, currentSrc = null, onFileSelected, onSave, onClose }) {
   const imageRef = useRef(null);
   const fileRef = useRef(null);
   const [imageUrl, setImageUrl] = useState("");
@@ -111,10 +101,8 @@ export default function ProfilePictureDialog({
       canvas.width = OUTPUT_SIZE;
       canvas.height = OUTPUT_SIZE;
       const context = canvas.getContext("2d");
-      if (!preserveTransparency) {
-        context.fillStyle = "#111827";
-        context.fillRect(0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
-      }
+      context.fillStyle = "#111827";
+      context.fillRect(0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
       const outputScale = OUTPUT_SIZE / PREVIEW_SIZE;
       const outputWidth = displayWidth * outputScale;
       const outputHeight = displayHeight * outputScale;
@@ -126,10 +114,9 @@ export default function ProfilePictureDialog({
         outputHeight
       );
       const cropped = await new Promise((resolve, reject) => {
-        const mimeType = preserveTransparency ? "image/png" : "image/jpeg";
-        canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Could not crop image"))), mimeType, preserveTransparency ? undefined : 0.9);
+        canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Could not crop image"))), "image/jpeg", 0.9);
       });
-      await onSave(new File([cropped], outputName, { type: preserveTransparency ? "image/png" : "image/jpeg" }));
+      await onSave(new File([cropped], "profile-picture.jpg", { type: "image/jpeg" }));
     } catch (saveError) {
       setError(saveError.message || "Could not save profile picture");
       setSaving(false);
@@ -137,7 +124,7 @@ export default function ProfilePictureDialog({
   }
 
   return (
-    <Modal title={title} onClose={onClose} closeDisabled={saving} testId="profile-picture-dialog">
+    <Modal title="Update profile picture" onClose={onClose} closeDisabled={saving} testId="profile-picture-dialog">
       <input ref={fileRef} type="file" accept="image/*" hidden data-testid="profile-picture-import-input" onChange={importFile} />
       <div
         className={`profile-picture-crop${dragging ? " dragging" : ""}`}
@@ -150,7 +137,7 @@ export default function ProfilePictureDialog({
           <img
             ref={imageRef}
             src={sourceUrl}
-            alt={previewAlt}
+            alt="Profile preview"
             className="profile-picture-crop-image"
             style={{ width: displayWidth, height: displayHeight, transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))` }}
             onLoad={(event) => setImageSize({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })}

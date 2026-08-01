@@ -17,7 +17,6 @@ import { messagesRouter } from "./routes/messages.js";
 import { webhooksRouter } from "./routes/webhooks.js";
 import { openApiDocument } from "./openapi.js";
 import { desktopUpdatesRouter } from "./desktopUpdates.js";
-import { workspaceRouter } from "./routes/workspace.js";
 
 export function createApp() {
   const app = express();
@@ -37,7 +36,6 @@ export function createApp() {
   app.get("/api/openapi.json", (_req, res) => res.json(openApiDocument()));
   app.use("/api/desktop-updates", desktopUpdatesRouter(config.desktopUpdateDir));
   app.use("/api/auth", authRouter);
-  app.use("/api/workspace", workspaceRouter);
   app.use("/api/channels", channelsRouter);
   app.use("/api/users", usersRouter);
   app.use("/api/dms", dmsRouter);

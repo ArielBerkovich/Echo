@@ -35,8 +35,6 @@ export default function SettingsModal({
   mode = "dark",
   onSelectMode,
   onUpdated,
-  branding = { enabled: false, name: "Echo", imageUrl: null },
-  onBrandingUpdated,
 }) {
   const [displayName, setDisplayName] = useState(user.displayName);
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl || null);
@@ -46,11 +44,6 @@ export default function SettingsModal({
   const [activeTab, setActiveTab] = useState("account");
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
-  const [brandingName, setBrandingName] = useState(branding.name || "Echo");
-  const [brandingEnabled, setBrandingEnabled] = useState(!!branding.enabled);
-  const [brandingImageUrl, setBrandingImageUrl] = useState(branding.imageUrl || null);
-  const [brandingImageFile, setBrandingImageFile] = useState(null);
-  const [brandingDialogOpen, setBrandingDialogOpen] = useState(false);
 
   const nameChanged = displayName.trim() !== user.displayName;
 
@@ -58,12 +51,6 @@ export default function SettingsModal({
     setDisplayName(user.displayName);
     setAvatarUrl(user.avatarUrl || null);
   }, [user.displayName, user.avatarUrl]);
-
-  useEffect(() => {
-    setBrandingName(branding.name || "Echo");
-    setBrandingEnabled(!!branding.enabled);
-    setBrandingImageUrl(branding.imageUrl || null);
-  }, [branding.enabled, branding.imageUrl, branding.name]);
 
   function onAvatarFileSelected(file) {
     if (!file) return;
@@ -99,52 +86,6 @@ export default function SettingsModal({
       const { user: updated } = await api.updateProfile({ avatarKey: null });
       setAvatarUrl(null);
       onUpdated(updated);
-      flashSaved();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function onBrandingImageSelected(file) {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) return setError("Organization image must be an image");
-    const sizeError = uploadSizeError([file], undefined, "Organization images");
-    if (sizeError) return setError(sizeError);
-    setError(null);
-    setBrandingImageFile(file);
-  }
-
-  async function saveBrandingImage(file) {
-    setBusy(true);
-    try {
-      const { attachments } = await api.uploadFiles([file]);
-      const result = await api.updateWorkspaceBranding({ imageKey: attachments[0].key });
-      setBrandingImageUrl(result.branding.imageUrl);
-      onBrandingUpdated?.(result.branding);
-      setBrandingImageFile(null);
-      setBrandingDialogOpen(false);
-      flashSaved();
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function saveBrandingSettings() {
-    const nextName = brandingName.trim();
-    if (!nextName || nextName.length > MAX_DISPLAY_NAME_LENGTH) {
-      setError(`Organization name must be 1-${MAX_DISPLAY_NAME_LENGTH} characters`);
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    try {
-      const result = await api.updateWorkspaceBranding({ name: nextName, enabled: brandingEnabled });
-      onBrandingUpdated?.(result.branding);
       flashSaved();
     } catch (err) {
       setError(err.message);
@@ -218,24 +159,6 @@ export default function SettingsModal({
                 </div>
               </div>
             </section>
-            {user.isAdmin && <section className="settings-section settings-branding-section" data-testid="organization-branding">
-                <h3>Organization branding</h3>
-                <p className="settings-hint">Use your organization’s image and name at the top of the primary navigation for everyone.</p>
-                <div className="settings-avatar-row">
-                  <Avatar name={brandingName} src={brandingImageUrl} size={64} />
-                  <div className="settings-avatar-actions">
-                    <button type="button" className="btn-secondary" data-testid="organization-image-button" disabled={busy} onClick={() => setBrandingDialogOpen(true)}>{brandingImageUrl ? "Change" : "Upload"}</button>
-                  </div>
-                </div>
-                <label className="settings-branding-toggle">
-                  <input type="checkbox" checked={brandingEnabled} onChange={(event) => setBrandingEnabled(event.target.checked)} disabled={busy} />
-                  <span>Show organization branding in the primary navigation</span>
-                </label>
-                <div className="settings-name-row">
-                  <input className="settings-input" data-testid="organization-name" value={brandingName} maxLength={MAX_DISPLAY_NAME_LENGTH} onChange={(event) => setBrandingName(event.target.value)} />
-                  <button type="button" className="btn-primary" data-testid="organization-branding-save" disabled={busy} onClick={saveBrandingSettings}>Save</button>
-                </div>
-            </section>}
             <section className="settings-section">
               <h3>Desktop notifications</h3>
               <p className="settings-hint">Get a desktop alert for direct messages, @mentions, and Starred messages when Echo isn't focused.</p>
@@ -265,7 +188,6 @@ export default function SettingsModal({
         </main>
       </div>
       {avatarDialogOpen && <ProfilePictureDialog file={avatarFile} currentSrc={avatarUrl} onFileSelected={onAvatarFileSelected} onSave={saveAvatar} onClose={() => { setAvatarFile(null); setAvatarDialogOpen(false); }} />}
-      {brandingDialogOpen && <ProfilePictureDialog file={brandingImageFile} currentSrc={brandingImageUrl} title="Update organization image" previewAlt="Organization preview" preserveTransparency outputName="organization-logo.png" onFileSelected={onBrandingImageSelected} onSave={saveBrandingImage} onClose={() => { setBrandingImageFile(null); setBrandingDialogOpen(false); }} />}
     </div>
   );
 }
