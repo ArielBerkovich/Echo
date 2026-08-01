@@ -723,9 +723,6 @@ input:focus {
   gap: 6px;
   margin-bottom: 2px;
 }
-.auth-logo-sm {
-  display: flex;
-}
 .auth-card-brand {
   display: flex;
   flex-direction: column;
@@ -737,6 +734,7 @@ input:focus {
   color: #12384a;
   font-size: 24px;
   font-weight: 800;
+  font-style: italic;
   letter-spacing: -0.02em;
   line-height: 1.1;
 }
