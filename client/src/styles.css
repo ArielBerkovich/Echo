@@ -8061,6 +8061,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 
 .auth-card {
   align-items: center;
+  justify-content: center;
 }
 
 .auth-hero {
