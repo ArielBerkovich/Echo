@@ -8161,13 +8161,13 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 }
 
 .auth-submit {
-  background: linear-gradient(110deg, #197696 0%, #3fa5c4 48%, #e5a43d 100%);
-  box-shadow: 0 10px 22px rgba(31, 117, 143, 0.22);
+  background: #12384a;
+  box-shadow: 0 8px 18px rgba(18, 56, 74, 0.18);
 }
 
 .auth-submit:hover:not(:disabled) {
-  filter: saturate(1.08) brightness(1.03);
-  box-shadow: 0 13px 26px rgba(31, 117, 143, 0.28);
+  background: #1b5369;
+  box-shadow: 0 10px 22px rgba(18, 56, 74, 0.24);
 }
 
 .auth-sso {
