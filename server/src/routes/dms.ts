@@ -5,7 +5,7 @@ import { User } from "../models/User.js";
 import { Message } from "../models/Message.js";
 import { Read } from "../models/Read.js";
 import { requireAuth } from "../middleware/requireAuth.js";
-import { ensureDmChannel } from "../lib/dms.js";
+import { ensureDmChannel, ensureSelfDmChannel } from "../lib/dms.js";
 
 export const dmsRouter = Router();
 dmsRouter.use(requireAuth);
@@ -92,14 +92,7 @@ dmsRouter.post("/", async (req, res) => {
 
   let channel;
   if (isSelf) {
-    const name = `dm-self-${req.user._id}`;
-    channel = await Channel.findOne({ name });
-    if (channel) {
-      await Channel.updateOne({ _id: channel._id }, { $pull: { hiddenFor: req.user._id } });
-      channel = await Channel.findById(channel._id);
-    } else {
-      channel = await Channel.create({ name, type: "dm", members: [req.user._id], createdBy: req.user._id });
-    }
+    channel = await ensureSelfDmChannel(req.user._id);
   } else {
     channel = await ensureDmChannel(req.user._id, other._id);
   }

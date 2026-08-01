@@ -63,7 +63,7 @@ function buildGroups(token) {
     },
     {
       title: "Messages",
-      note: "Also available in real time over Socket.IO — emit message:send with { channelId, body, parentId?, attachments? }. The REST and socket paths behave identically.",
+      note: "Also available in real time over Socket.IO — emit message:send with { channelId, body, parentId?, attachments? }. Use a channel name or username when sending over REST.",
       formats: [
         { label: "Bold", syntax: "**bold text**" },
         { label: "Italic", syntax: "_italic text_" },
@@ -80,9 +80,9 @@ function buildGroups(token) {
       endpoints: [
         {
           method: "POST",
-          path: "/api/channels/:id/messages",
-          desc: "Send a message to a channel or DM (:id is its id). Body: { body, parentId?, attachments? }. parentId posts a thread reply.",
-          curl: `curl -X POST ${ORIGIN}/api/channels/CHANNEL_ID/messages \\
+          path: "/api/channels/:channelName/messages",
+          desc: "Send a message to a channel or DM by name (or pass its id). Body: { body, parentId?, attachments? }. parentId posts a thread reply.",
+          curl: `curl -X POST ${ORIGIN}/api/channels/general/messages \\
   ${auth} \\
   ${json} \\
   -d '{"body":"Hello from the Echo API"}'`,
@@ -95,6 +95,15 @@ function buildGroups(token) {
   ${auth} \\
   ${json} \\
   -d '{"userId":"USER_ID"}'`,
+        },
+        {
+          method: "POST",
+          path: "/api/users/:username/messages",
+          desc: "Send a direct message by username. The DM is created or reused automatically; use your own username for a personal notes conversation.",
+          curl: `curl -X POST ${ORIGIN}/api/users/bob.builder/messages \\
+  ${auth} \\
+  ${json} \\
+  -d '{"body":"Hello Bob"}'`,
         },
       ],
     },
@@ -123,7 +132,7 @@ function buildGroups(token) {
         {
           id: "send-with-attachment",
           method: "POST",
-          path: "/api/channels/:id/messages",
+          path: "/api/channels/:channelName/messages",
           desc: "Send a message WITH a file — upload it first, then include the returned attachment object(s) in \"attachments\".",
           curl: `# 1) upload the file → grab its "attachments" array
 curl -s -X POST ${ORIGIN}/api/uploads \\
@@ -132,7 +141,7 @@ curl -s -X POST ${ORIGIN}/api/uploads \\
 # → { "attachments": [ { "key": "...", "name": "file.png", "contentType": "image/png", "isImage": true } ] }
 
 # 2) send a message that includes it
-curl -X POST ${ORIGIN}/api/channels/CHANNEL_ID/messages \\
+curl -X POST ${ORIGIN}/api/channels/general/messages \\
   ${auth} \\
   ${json} \\
   -d '{"body":"See attached","attachments":[{"key":"UPLOADED_KEY","name":"file.png","contentType":"image/png","isImage":true}]}'`,

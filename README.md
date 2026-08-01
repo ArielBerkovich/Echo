@@ -114,7 +114,12 @@ Prebuilt desktop packages and versioned deployment artifacts are published on th
 
 ## API
 
-Sign in, open **API** from the lower-left rail, generate a token, and copy the ready-to-run curl examples for channels, messages, users, files, and webhooks.
+Sign in, open **API** from the lower-left rail, generate a token, and copy the ready-to-run curl examples for channels, messages, users, files, and webhooks. Messages can be sent directly by channel name or username:
+
+```text
+POST /api/channels/general/messages
+POST /api/users/bob.builder/messages
+```
 
 ## Repository layout
 

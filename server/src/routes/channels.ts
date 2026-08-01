@@ -723,15 +723,15 @@ channelsRouter.get("/:id/pinned", async (req, res) => {
 // POST /api/channels/:id/messages — send a message (REST equivalent of the
 // `message:send` socket event). Body: { body, parentId?, attachments? }.
 channelsRouter.post("/:id/messages", async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
-    return res.status(404).json({ error: "channel not found" });
-  }
   const text = String(req.body?.body || "").trim();
   const files = sanitizeAttachments(req.body?.attachments);
   if (!text && files.length === 0) {
     return res.status(400).json({ error: "message needs text or an attachment" });
   }
-  const channel = await Channel.findById(req.params.id);
+  const channelKey = decodeURIComponent(String(req.params.id));
+  const channel = mongoose.isValidObjectId(channelKey)
+    ? await Channel.findById(channelKey)
+    : await Channel.findOne({ name: normalizeChannelName(channelKey) });
   if (!channel || channel.isArchived) return res.status(404).json({ error: "channel not found" });
   if (channel.type !== "public" && !channel.members.some((m) => m.equals(req.user._id))) {
     return res.status(403).json({ error: "access denied" });

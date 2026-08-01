@@ -83,6 +83,52 @@ export function openApiDocument() {
           responses: { 200: { description: "Channel info" }, 404: { description: "Not found" } },
         },
       },
+      "/api/channels/{channelName}/messages": {
+        post: {
+          summary: "Send a message to a channel by name or id",
+          parameters: [{ name: "channelName", in: "path", required: true, schema: { type: "string" } }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["body"],
+                  properties: {
+                    body: { type: "string" },
+                    parentId: { type: "string" },
+                    attachments: { type: "array" },
+                  },
+                },
+              },
+            },
+          },
+          responses: { 201: { description: "Message created" } },
+        },
+      },
+      "/api/users/{username}/messages": {
+        post: {
+          summary: "Send a direct message by username",
+          parameters: [{ name: "username", in: "path", required: true, schema: { type: "string" } }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["body"],
+                  properties: {
+                    body: { type: "string" },
+                    parentId: { type: "string" },
+                    attachments: { type: "array" },
+                  },
+                },
+              },
+            },
+          },
+          responses: { 201: { description: "Direct message created" } },
+        },
+      },
       "/api/webhooks": {
         get: { summary: "List incoming webhooks", responses: { 200: { description: "Webhook list" } } },
         post: {
