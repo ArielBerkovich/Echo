@@ -8,12 +8,21 @@ test.beforeEach(async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
 });
 
-test("keeps the workspace usable on a phone and opens the navigation drawer", async ({ page }) => {
+test("keeps the workspace full-screen and usable on a phone", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.getByTestId("rail-home")).toBeVisible();
   await expect(page.getByTestId("rail-dms")).toBeVisible();
-  await expect(page.getByTestId("composer-editor")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Open navigation" })).toHaveCount(0);
+  const settingsBox = await page.getByTestId("rail-settings").boundingBox();
+  const signOutBox = await page.getByTestId("rail-logout").boundingBox();
+  expect(settingsBox).not.toBeNull();
+  expect(signOutBox).not.toBeNull();
+  expect(settingsBox.y).toBeLessThan(signOutBox.y);
+  await page.getByTestId("rail-account").click();
+  await expect(page.getByTestId("profile-picture-dialog")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Use this picture" })).toBeDisabled();
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
 
   const viewport = await page.evaluate(() => ({
     width: window.innerWidth,
@@ -21,11 +30,97 @@ test("keeps the workspace usable on a phone and opens the navigation drawer", as
   }));
   expect(viewport.documentWidth).toBeLessThanOrEqual(viewport.width + 1);
 
-  await page.getByRole("button", { name: "Open navigation" }).click();
-  await expect(page.getByTestId("app-root")).toHaveAttribute("data-nav-open", "true");
-  await expect(page.getByTestId("sidebar")).toBeVisible();
-  await expect(page.getByText(fixture.generalChannel.name, { exact: true })).toBeVisible();
-
-  await page.getByTestId("nav-backdrop").click({ position: { x: 360, y: 300 } });
   await expect(page.getByTestId("app-root")).toHaveAttribute("data-nav-open", "false");
+  await expect(page.getByTestId("pane-search")).toBeVisible();
+  await expect(page.getByTestId("sidebar")).toBeVisible();
+
+  await page.getByTestId("browse-channels").click();
+  await expect(page.getByTestId("channel-browser")).toBeVisible();
+  await page.getByTestId("rail-home").click();
+  await expect(page.getByTestId("sidebar")).toBeVisible();
+
+  await page.getByTestId(`channel-row-${fixture.projectChannel.name}`).click();
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
+  const composerToolbar = page.getByTestId("composer").locator(".composer-toolbar");
+  const toolbarWidth = await composerToolbar.evaluate((element) => ({
+    client: element.clientWidth,
+    scroll: element.scrollWidth,
+  }));
+  expect(toolbarWidth.scroll).toBeLessThanOrEqual(toolbarWidth.client + 1);
+  await page.getByTitle("Attach files").click();
+  await page.getByTestId("composer-attachments").setInputFiles({
+    name: "mobile-attachment.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from("mobile attachment"),
+  });
+  await expect(page.getByText("mobile-attachment.txt")).toBeVisible();
+
+  const navigationRail = page.getByTestId("rail-home");
+  const navigationRailBox = await navigationRail.boundingBox();
+  expect(navigationRailBox).not.toBeNull();
+  await page.getByTestId("channel-title").click();
+  const channelDetails = page.getByTestId("channel-details-dialog");
+  await expect(channelDetails).toBeVisible();
+  const detailsBox = await channelDetails.boundingBox();
+  expect(detailsBox.width).toBeGreaterThanOrEqual(380);
+  expect(detailsBox.y + detailsBox.height).toBeLessThanOrEqual(navigationRailBox.y + 1);
+  await page.getByRole("button", { name: "Close channel details" }).click();
+
+  await page.getByTestId("channel-pinned").click();
+  const pinnedPanel = page.getByTestId("pinned-panel");
+  await expect(pinnedPanel).toBeVisible();
+  const pinnedBox = await pinnedPanel.boundingBox();
+  expect(pinnedBox.width).toBeGreaterThanOrEqual(380);
+  expect(pinnedBox.y + pinnedBox.height).toBeLessThanOrEqual(navigationRailBox.y + 1);
+  await pinnedPanel.getByRole("button", { name: "Close" }).click();
+
+  await page.getByTestId("channel-members").click();
+  const membersPanel = page.getByTestId("members-panel");
+  await expect(membersPanel).toBeVisible();
+  const membersBox = await membersPanel.boundingBox();
+  expect(membersBox.width).toBeGreaterThanOrEqual(380);
+  expect(membersBox.y + membersBox.height).toBeLessThanOrEqual(navigationRailBox.y + 1);
+  await membersPanel.getByRole("button", { name: "Close members" }).click();
+
+  const threadRoot = page.getByTestId(`message-${fixture.messages.threadRoot.id}`);
+  await threadRoot.click();
+  await page.getByTestId(`message-${fixture.messages.threadRoot.id}-actions`).getByTitle("Reply in thread").click();
+  const threadPanel = page.getByTestId("thread-panel");
+  await expect(threadPanel).toBeVisible();
+  await expect(threadPanel.getByTestId("composer")).toBeVisible();
+  const composerBox = await threadPanel.getByTestId("composer").boundingBox();
+  const railBox = await page.getByTestId("rail-home").boundingBox();
+  expect(composerBox.y + composerBox.height).toBeLessThanOrEqual(railBox.y);
+  expect(composerBox.y + composerBox.height).toBeLessThanOrEqual(760);
+  await expect(page.getByTestId("rail-home")).toBeVisible();
+  const threadBox = await threadPanel.boundingBox();
+  expect(threadBox.width).toBeGreaterThanOrEqual(380);
+  await page.mouse.move(1, 1);
+  await threadPanel.getByTestId("message-body").first().click();
+  await expect(page.getByTestId(`message-${fixture.messages.threadRoot.id}-actions`)).toBeVisible();
+  await page.getByTestId("thread-close").click();
+  await expect(threadPanel).toHaveCount(0);
+
+  await page.goBack();
+  await expect(page.getByTestId("sidebar")).toBeVisible();
+
+  await page.getByTestId("rail-dms").click();
+  await expect(page.getByTestId("sidebar")).toBeVisible();
+  await page.getByTestId("dm-open-bob-builder").click();
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.bob.displayName);
+  await page.getByTestId("channel-title").click();
+  await expect(page.getByTestId("profile-modal")).toBeVisible();
+  await page.getByTestId("profile-close").click();
+  await page.getByTestId("rail-dms").click();
+  await page.getByTestId("dm-self-open").click();
+  await expect(page.getByTestId("messages")).toBeVisible();
+
+  await page.getByTestId("rail-home").click();
+  await expect(page.getByTestId("sidebar")).toBeVisible();
+
+  await page.getByTestId("rail-logout").click();
+  await expect(page.getByRole("heading", { name: "Sign out?" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Sign out?" })).toHaveCount(0);
 });

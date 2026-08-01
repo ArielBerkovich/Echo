@@ -528,6 +528,13 @@ export default function ChannelView({
 
   function onMessagesScroll(e) {
     const scroller = e.currentTarget;
+    // On touch layouts the fixed action toolbar must not linger after its
+    // message scrolls behind the composer. Desktop hover actions should keep
+    // their existing behavior while the pointer remains over the message.
+    if (window.matchMedia("(max-width: 760px)").matches) {
+      setActionsFor(null);
+      setMenuFor(null);
+    }
     const atBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120;
     setShowScrollToLatest(!atBottom);
     if (!jumpingRef.current && !(firstUnreadId && unreadScrollAppliedRef.current)) {
@@ -883,7 +890,15 @@ export default function ChannelView({
               </button>
             )}
             <Avatar name={dmAvatarName} src={dmAvatar} size={36} />
-            <span className="ch-name" data-testid="channel-title">{dmLabel}</span>
+            <button
+              type="button"
+              className="ch-name ch-name-btn dm-name-btn"
+              data-testid="channel-title"
+              title={`View ${dmLabel}'s profile`}
+              onClick={() => dmUser?.id && onOpenProfile?.(dmUser.id)}
+            >
+              {dmLabel}
+            </button>
           </>
         ) : (
           <>
@@ -1014,7 +1029,12 @@ export default function ChannelView({
                     menuOpen={menuFor === m.id}
                     onReact={(e) => openReact(m.id, e)}
                     onToggleReaction={(emoji) => toggleReaction(m.id, emoji)}
-                    onOpenThread={() => { setShowDetails(false); setThreadJumpTargetId(null); setThread(m); }}
+                    onOpenThread={() => {
+                      setActionsFor(null);
+                      setShowDetails(false);
+                      setThreadJumpTargetId(null);
+                      setThread(m);
+                    }}
                     onForward={() => setForwarding(m)}
                     onJump={onJumpToMessage}
                     onToggleMenu={() => setMenuFor((id) => (id === m.id ? null : m.id))}
@@ -1182,6 +1202,8 @@ export default function ChannelView({
           channels={channels}
           dms={dms}
           users={users}
+          customEmojis={customEmojis}
+          onAddCustomEmoji={onAddCustomEmoji}
           onForward={forwardTo}
           onSuccess={(destinations) => {
             if (destinations.length > 1 && destinations.some((destination) => destination.kind === "user")) {

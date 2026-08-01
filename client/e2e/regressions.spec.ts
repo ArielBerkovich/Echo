@@ -243,6 +243,7 @@ test("starts a conversation from the dedicated DMs button with the keyboard", as
 test("keeps the DM preview width stable when toggling Starred", async ({ page }) => {
   await page.goto("/");
   await railItem(page, "dms").click();
+  await expect(page.getByTestId("dms-header")).toBeVisible();
 
   const row = dmRow(page, fixture.bob.displayName);
   const preview = row.locator(".dm-preview");
@@ -289,12 +290,14 @@ test("adds a channel-message author to Starred without opening a DM first", asyn
   const before = await requestAsToken(page, fixture.alice.token, "/dms");
   expect(before.conversations.some((conversation) => conversation.withUser.id === candidate.user.id)).toBeFalsy();
 
+  const usersResponse = page.waitForResponse((response) => new URL(response.url()).pathname === "/api/users" && response.request().method() === "GET");
   await page.goto("/");
+  await usersResponse;
   await page.getByTestId(`message-${message.id}-author`).click();
 
   const profile = page.getByTestId("profile-modal");
-  await profile.getByRole("button", { name: "Mark as Starred" }).click();
-  await expect(profile.getByRole("button", { name: "Remove from Starred" })).toBeVisible();
+  await profile.getByTestId("profile-starred").click();
+  await expect(profile.getByTestId("profile-starred")).toHaveAttribute("aria-label", "Remove from Starred");
   await profile.getByTestId("profile-close").click();
 
   await expect(page.getByTestId("starred-toggle")).toBeVisible();

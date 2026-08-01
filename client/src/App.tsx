@@ -26,6 +26,10 @@ function loadHidden() {
 const RECENTS_KEY = "echo.recentSearches";
 const CONNECTION_BANNER_DELAY_MS = 1000;
 
+function isMobileViewport() {
+  return typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches;
+}
+
 function loadRecents() {
   return readJson(RECENTS_KEY, []);
 }
@@ -141,8 +145,15 @@ export default function App() {
         .catch(() => {})
         .finally(() => queryClient.invalidateQueries({ queryKey: queryKeys.activity }));
     }
-    setView(nextView);
-    setNavOpen(window.matchMedia("(max-width: 760px)").matches);
+    if (nextView === "home" || nextView === "dms") {
+      setActiveChannel(null);
+      // Pass null explicitly. The active-channel ref is updated after render,
+      // so relying on setView's default here can preserve the chat we just left.
+      setView(nextView, null);
+    } else {
+      setView(nextView);
+    }
+    setNavOpen(false);
   }
 
   function handleSidebarSelect(channel) {
@@ -327,19 +338,21 @@ export default function App() {
   // channel) once channels & DMs are loaded.
   function applyLocation(saved, chs, conversations) {
     let nextView = "home";
-    let active = chs.find((channel) => channel.name.toLowerCase() === "general") || chs[0] || null;
+    let active = isMobileViewport()
+      ? null
+      : chs.find((channel) => channel.name.toLowerCase() === "general") || chs[0] || null;
     if (saved?.view === "browse") {
       nextView = "browse";
       active = chs.find((channel) => channel.id === saved.convId) || active;
     } else if (saved?.view === "activity" || saved?.view === "saved" || saved?.view === "settings") {
       nextView = saved.view; // full-page views, no conversation needed
-    } else if (saved?.convType === "dm" && saved.convId) {
+    } else if (!isMobileViewport() && saved?.convType === "dm" && saved.convId) {
       const dm = conversations.find((d) => d.id === saved.convId);
       if (dm) {
         nextView = "dms";
         active = { id: dm.id, type: "dm", dmName: dm.withUser.displayName, dmUserId: dm.withUser.id };
       }
-    } else if (saved?.convId) {
+    } else if (!isMobileViewport() && saved?.convId) {
       const ch = chs.find((c) => c.id === saved.convId);
       if (ch) {
         nextView = saved.view === "dms" ? "dms" : "home";
@@ -347,6 +360,7 @@ export default function App() {
       }
     } else if (saved?.view === "dms") {
       nextView = "dms";
+      active = null;
     }
     setViewState(nextView);
     setActiveChannel(active);
@@ -606,6 +620,13 @@ export default function App() {
     upsertChannel(updated);
   }
 
+  function channelFallbackAfterRemoval(nextChannels) {
+    if (isMobileViewport()) return null;
+    return nextChannels.find((candidate) => candidate.name?.toLowerCase() === "general")
+      || nextChannels[0]
+      || null;
+  }
+
   async function handleLeaveChannel(channel, managerId) {
     // #general is the default channel — leaving it isn't allowed.
     if ((channel.name || "").toLowerCase() === "general") return;
@@ -617,7 +638,7 @@ export default function App() {
     const { channels } = await api.listChannels();
     setChannels(channels);
     if (activeChannel?.id === channel.id) {
-      const fallback = channels[0] || null;
+      const fallback = channelFallbackAfterRemoval(channels);
       setActiveChannel(fallback);
       setView("home", fallback);
     }
@@ -632,7 +653,7 @@ export default function App() {
     setChannels(channels);
     setAllChannels((prev) => prev.filter((candidate) => candidate.id !== channel.id));
     if (activeChannel?.id === channel.id) {
-      const fallback = channels[0] || null;
+      const fallback = channelFallbackAfterRemoval(channels);
       setActiveChannel(fallback);
       setView("home", fallback);
     }
@@ -641,7 +662,7 @@ export default function App() {
   // Open (or create) a direct message with another user.
   // Open a user's profile card, resolving by id (avatar/name click) or by
   // username (an @mention click).
-  function openProfile(idOrHandle) {
+  async function openProfile(idOrHandle) {
     const key = String(idOrHandle).toLowerCase();
     const u = users.find(
       (x) =>
@@ -650,6 +671,14 @@ export default function App() {
         (x.aliases || []).some((alias) => String(alias).toLowerCase() === key)
     );
     if (u) setProfileUser(u);
+    else if (idOrHandle) {
+      try {
+        const result = await api.getUser(idOrHandle);
+        if (result.user) setProfileUser(result.user);
+      } catch {
+        // The author may have been removed; keep the profile action a no-op.
+      }
+    }
   }
 
   function activeWorkspacePath() {
@@ -728,9 +757,8 @@ export default function App() {
     await api.hideDm(conv.id);
     setDms((prev) => prev.filter((d) => d.id !== conv.id));
     if (activeChannel?.id === conv.id) {
-      const fallback = channels[0] || null;
-      setActiveChannel(fallback);
-      setView("home", fallback);
+      setActiveChannel(null);
+      setView("dms", null);
     }
   }
 
@@ -1109,7 +1137,12 @@ export default function App() {
           </span>
         </div>
       )}
-      <div className={`app ${navOpen ? "nav-open" : ""}`} data-testid="app-root" data-nav-open={navOpen ? "true" : "false"}>
+      <div
+        className={`app ${navOpen ? "nav-open" : ""}`}
+        data-testid="app-root"
+        data-nav-open={navOpen ? "true" : "false"}
+        data-mobile-nav={isMobileViewport() && !activeChannel && !searchQuery && view !== "browse" ? "true" : "false"}
+      >
         <WorkspaceNavigation
           view={view}
           user={user}

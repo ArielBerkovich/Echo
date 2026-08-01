@@ -5,6 +5,7 @@ import { LeaveIcon } from "./Icons.js";
 import Logo from "./Logo.js";
 import ProfilePictureDialog from "./ProfilePictureDialog.js";
 import DisplayNameDialog from "./DisplayNameDialog.js";
+import ConfirmDialog from "./ConfirmDialog.js";
 import { api } from "../api.js";
 import { uploadSizeError } from "../lib/uploads.js";
 
@@ -26,6 +27,7 @@ export default function LeftRail({ view, onSelect, badges = {}, user, onLogout, 
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
   const [displayNameDialogOpen, setDisplayNameDialogOpen] = useState(false);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [indicatorOffset, setIndicatorOffset] = useState(null);
   const clickTimerRef = useRef(null);
   const railTopRef = useRef(null);
@@ -171,7 +173,7 @@ export default function LeftRail({ view, onSelect, badges = {}, user, onLogout, 
               type="button"
               className="rail-account-action rail-signout"
               data-testid="rail-logout"
-              onClick={onLogout}
+              onClick={() => setLogoutConfirmOpen(true)}
               title="Sign out"
               aria-label="Sign out"
             >
@@ -182,6 +184,19 @@ export default function LeftRail({ view, onSelect, badges = {}, user, onLogout, 
       )}
       {avatarDialogOpen && <ProfilePictureDialog file={avatarFile} currentSrc={user?.avatarUrl} onFileSelected={onAvatarFileSelected} onSave={saveAvatar} onClose={() => { setAvatarFile(null); setAvatarDialogOpen(false); }} />}
       {displayNameDialogOpen && <DisplayNameDialog value={user.displayName} onSave={saveDisplayName} onClose={() => setDisplayNameDialogOpen(false)} />}
+      {logoutConfirmOpen && (
+        <ConfirmDialog
+          title="Sign out?"
+          message="Are you sure you want to sign out of Echo?"
+          confirmLabel="Sign out"
+          danger
+          onCancel={() => setLogoutConfirmOpen(false)}
+          onConfirm={() => {
+            setLogoutConfirmOpen(false);
+            onLogout?.();
+          }}
+        />
+      )}
     </nav>
   );
 }

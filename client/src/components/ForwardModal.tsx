@@ -50,7 +50,7 @@ function PreviewAttachment({ attachment }) {
 
 // Multi-destination forward flow. It keeps the source conversation mounted and
 // performs one guarded forward request per selected destination.
-export default function ForwardModal({ message, channels = [], dms = [], users = [], onForward, onSuccess, onClose }) {
+export default function ForwardModal({ message, channels = [], dms = [], users = [], customEmojis = [], onAddCustomEmoji, onForward, onSuccess, onClose }) {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selected, setSelected] = useState([]);
@@ -168,6 +168,11 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
   const authorName = message?.author?.displayName || "Unknown person";
   const preview = String(message?.body || "").trim();
   const disabled = !selected.length || status === "submitting";
+  const noteChannel = useMemo(() => ({
+    id: `forward-note-${message?.id || "message"}`,
+    type: "dm",
+    dmName: "the recipient",
+  }), [message?.id]);
 
   return (
     <Modal title="Forward message" className="forward-modal" onClose={onClose}>
@@ -268,24 +273,20 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
           <span className="forward-field-heading">
             <span>Note <em>Optional</em></span>
           </span>
-          <textarea
-            className="sr-only"
-            tabIndex={-1}
-            aria-hidden="true"
-            value={note}
-            placeholder="Add context for the recipient…"
-            onChange={(event) => setNote(event.target.value.slice(0, 2000))}
-            data-testid="forward-note"
-          />
           <Composer
-            channel={{ id: "forward-note-draft", type: "dm", dmName: "recipient" }}
+            key={noteChannel.id}
+            channel={noteChannel}
             users={users}
-            placeholder="Add context for the recipients…"
-            showSchedule={false}
-            showSend={false}
-            disabled={status === "submitting"}
+            channels={channels}
+            customEmojis={customEmojis}
+            onAddCustomEmoji={onAddCustomEmoji}
             onDraftChange={(value) => setNote(value.slice(0, 2000))}
             onError={setError}
+            placeholder="Add context for the recipient…"
+            showSchedule={false}
+            showSend={false}
+            showAttachments={false}
+            disabled={status === "submitting"}
           />
         </div>
 

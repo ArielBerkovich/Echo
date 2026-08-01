@@ -9,6 +9,7 @@ import {
   LockKeyholeIcon,
   PlusIcon,
   SearchIcon,
+  Trash2Icon,
   UsersRoundIcon,
   XIcon,
 } from "lucide-react";
@@ -132,7 +133,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
               <div>
                 <div className="channel-details-section-title">
                   <UsersRoundIcon size={16} strokeWidth={1.9} aria-hidden="true" />
-                  <span>Members ·</span>
+                  <span>Members</span>
                   <span className="channel-details-count">{channel.memberCount ?? members.length}</span>
                 </div>
                 <p className="channel-details-section-hint">People who can see and participate in this channel.</p>
@@ -218,8 +219,10 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
                           data-testid={`channel-remove-${member.id}`}
                           onClick={() => removeMember(member)}
                           title={`Remove ${member.displayName} from the channel`}
+                          aria-label={`Remove ${member.displayName} from the channel`}
                         >
-                          Remove
+                          <Trash2Icon size={14} strokeWidth={1.9} aria-hidden="true" />
+                          <span className="channel-details-remove-label">Remove</span>
                         </button>
                       </div>
                     )}

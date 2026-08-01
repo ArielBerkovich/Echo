@@ -203,6 +203,12 @@ export default function ThreadPanel({
 
   function onBodyScroll(e) {
     const scroller = e.currentTarget;
+    // The mobile toolbar is portaled above the scrolling thread, so close it
+    // as soon as the user starts scrolling. Desktop keeps hover behavior.
+    if (window.matchMedia("(max-width: 760px)").matches) {
+      setActionsFor(null);
+      setMenuFor(null);
+    }
     const atBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120;
     stickToBottomRef.current = atBottom;
     if (atBottom) setNewMessageCount(0);

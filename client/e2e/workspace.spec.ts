@@ -98,6 +98,7 @@ test("sign out clears the session and returns to login", async ({ page }) => {
   await expect(page.getByText("#general", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Sign out" }).click({ force: true });
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
 
   await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
   await expect(page.evaluate(() => localStorage.getItem("echo.token"))).resolves.toBeNull();
@@ -113,6 +114,12 @@ test("opens API reference from Settings", async ({ page }) => {
   await expect(page.getByTestId("api-reference-page")).toBeVisible();
 
   await expect(page.getByText(/REST API/i)).toBeVisible();
+  const apiContent = page.locator(".settings-content-api");
+  const apiInner = apiContent.locator(".api-inner");
+  const contentBox = await apiContent.boundingBox();
+  const innerBox = await apiInner.boundingBox();
+  const contentPaddingLeft = await apiContent.evaluate((element) => parseFloat(getComputedStyle(element).paddingLeft));
+  expect(Math.abs(innerBox.x - contentBox.x - contentPaddingLeft)).toBeLessThanOrEqual(1);
 });
 
 test("browses, filters, and joins public channels while private channels stay invite-only", async ({ page }) => {
