@@ -32,7 +32,7 @@ export default function BackendConnectionModal({ backendUrl, onClose, onRetry })
           className="settings-input"
           value={value}
           onChange={(event) => setValue(event.target.value)}
-          placeholder="http://192.168.1.110:8090"
+          placeholder="http://localhost:8090"
           autoFocus
           disabled={saving}
         />

@@ -150,7 +150,7 @@ describe("api request helpers", () => {
 
   it("marks network failures without exposing request credentials", async () => {
     globalThis.window = {
-      echoDesktopConfig: { backendUrl: "http://192.168.1.110:8090", appVersion: "0.2.2" },
+      echoDesktopConfig: { backendUrl: "http://localhost:8090", appVersion: "0.2.2" },
       location: { href: "file:///client-dist/index.html" },
     };
     globalThis.fetch = async () => {
@@ -159,7 +159,7 @@ describe("api request helpers", () => {
 
     await assert.rejects(api.login({ username: "alice", password: "not-in-error" }), (error) => {
       assert.equal(error.isNetworkError, true);
-      assert.equal(error.backendUrl, "http://192.168.1.110:8090");
+      assert.equal(error.backendUrl, "http://localhost:8090");
       assert.equal(JSON.stringify(error).includes("not-in-error"), false);
       return true;
     });
