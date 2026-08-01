@@ -29,6 +29,17 @@ async function logSystem(channelId, authorId, body) {
   return msg;
 }
 
+// A newly added member should start with a clean channel timeline. Without a
+// read marker here, unread aggregation treats the channel's entire history as
+// unread, including @everyone broadcasts sent before the member joined.
+async function markChannelReadAtJoin(channelId, userId) {
+  await Read.updateOne(
+    { user: userId, channel: channelId, thread: null },
+    { $set: { lastReadAt: new Date() } },
+    { upsert: true }
+  );
+}
+
 // Attach an `unread` count (messages from others since the user last read) to
 // each channel doc, returning plain public objects.
 async function withUnread(channels, userId) {
@@ -253,7 +264,10 @@ channelsRouter.post("/:id/join", async (req, res) => {
     { _id: channel._id },
     { $addToSet: { members: req.user._id } }
   );
-  if (!already) await logSystem(channel._id, req.user._id, "joined the channel");
+  if (!already) {
+    await logSystem(channel._id, req.user._id, "joined the channel");
+    await markChannelReadAtJoin(channel._id, req.user._id);
+  }
   const updated = await Channel.findById(channel._id);
   joinUserToChannel(req.user._id.toString(), channel._id.toString());
   const updatedPayload = updated.toPublicJSON();
@@ -313,6 +327,7 @@ channelsRouter.post("/:id/members", async (req, res) => {
       emitToUser(target._id.toString(), "activity:bump");
     }
     await logSystem(channel._id, target._id, "joined the channel");
+    await markChannelReadAtJoin(channel._id, target._id);
   }
   const updated = await Channel.findById(channel._id);
   const updatedPayload = updated.toPublicJSON();

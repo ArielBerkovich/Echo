@@ -38,7 +38,9 @@ for (const [alias, id] of Object.entries(emojiData.aliases || {})) {
 
 // Build a Markdown renderer that also turns @mentions and public #channel tags
 // into highlighted, clickable pills.
-// `knownUsernames` is a Set of handles or an alias->canonical Map.
+// `knownUsernames` is a Set of handles or a handle->mention-user Map. The map
+// keeps the canonical username for storage/profile lookup while also carrying
+// the display name used by the rendered mention pill.
 // Matches an emoji incl. ZWJ sequences and variation selectors.
 const EMOJI_RE = /\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic})*/gu;
 const HAS_EMOJI = /\p{Extended_Pictographic}/u;
@@ -86,6 +88,12 @@ function wrapEmojis(html) {
 
 // `customEmojis` is an array of { name, url } for workspace custom emoji/GIFs.
 export function createRenderer(knownUsernames, me, customEmojis = [], channels = []) {
+  // Message feeds are frequently unmounted and remounted while navigating
+  // between workspace views. Keep rendered HTML for the lifetime of this
+  // renderer so revisiting a feed does not repeat Markdown parsing, sanitizing,
+  // and emoji DOM processing for unchanged message bodies.
+  const renderedCache = new Map();
+  const RENDER_CACHE_LIMIT = 500;
   const customMap = new Map(customEmojis.map((e) => [e.name.toLowerCase(), e.url]));
   const publicChannels = new Set(
     channels.filter((channel) => channel.type === "public").map((channel) => channel.name.toLowerCase())
@@ -134,9 +142,13 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
             return `<span class="mention mention--broadcast">📣 @${token.handle}</span>`;
           }
           if (!knownUsernames.has(handle)) return token.raw; // not a real user
-          const canonical = knownUsernames instanceof Map ? knownUsernames.get(handle) : handle;
+          const mentionUser = knownUsernames instanceof Map ? knownUsernames.get(handle) : null;
+          const canonical = typeof mentionUser === "string" ? mentionUser : mentionUser?.username || handle;
+          const displayName = typeof mentionUser === "object"
+            ? mentionUser.displayName || canonical
+            : canonical;
           const mine = canonical === String(me).toLowerCase() ? " mention--me" : "";
-          return `<span class="mention${mine}" data-mention="${canonical}">@${canonical}</span>`;
+          return `<span class="mention${mine}" data-mention="${escapeHtml(canonical)}">@${escapeHtml(displayName)}</span>`;
         },
       },
       {
@@ -184,7 +196,11 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
   });
 
   return (text) => {
-    const html = marked.parse(text ?? "");
+    const source = text ?? "";
+    const cached = renderedCache.get(source);
+    if (cached !== undefined) return cached;
+
+    const html = marked.parse(source);
     // Sanitize: allow only the safe subset markdown produces. `class` is kept so
     // our mention pills stay styled; links open safely in a new tab.
     const safe = DOMPurify.sanitize(html, {
@@ -205,6 +221,11 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
       /<a\b(?![^>]*\btarget=)/gi,
       '<a target="_blank" rel="noopener noreferrer"'
     );
-    return wrapEmojis(linksOpenSafely).trim();
+    const rendered = wrapEmojis(linksOpenSafely).trim();
+    if (renderedCache.size >= RENDER_CACHE_LIMIT) {
+      renderedCache.delete(renderedCache.keys().next().value);
+    }
+    renderedCache.set(source, rendered);
+    return rendered;
   };
 }

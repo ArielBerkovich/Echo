@@ -13,6 +13,7 @@ import { passwordProblem } from "../password.js";
 import { usernameCandidate, usernameFromName } from "../lib/usernames.js";
 import { config } from "../config.js";
 import { usernameIsReserved } from "../lib/userAliases.js";
+import { clearUserActivity } from "../lib/activity.js";
 import {
   clearMigrationIntentCookie,
   completeMigration,
@@ -438,6 +439,7 @@ authRouter.post("/register", authRateLimit, async (req, res) => {
     }
     // Every member of the workspace belongs to #general.
     await Channel.updateOne({ name: "general" }, { $addToSet: { members: user._id } });
+    await clearUserActivity(user._id);
     // Let everyone's client pick up the new user live (search, @mentions) so
     // they don't have to refresh to find them.
     emitAll("user:new", user.toPublicJSON());

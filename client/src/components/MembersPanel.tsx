@@ -91,6 +91,12 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
       </header>
 
       <div className="members-panel-body">
+        {canAddPeople && (
+          <button type="button" className="members-panel-add" onClick={onAddPeople}>
+            + Add people
+          </button>
+        )}
+
         <div className="channel-details-search members-panel-search">
           <SearchIcon size={16} strokeWidth={1.8} aria-hidden="true" />
           <input
@@ -100,12 +106,6 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
             aria-label="Search members"
           />
         </div>
-
-        {canAddPeople && (
-          <button type="button" className="members-panel-add" onClick={onAddPeople}>
-            + Add people
-          </button>
-        )}
 
         {removeError && <div className="error members-panel-error">{removeError}</div>}
 

@@ -100,7 +100,7 @@ test("does not offer DM removal in the dedicated DMs view", async ({ page }) => 
 test("opens a Home sidebar DM without switching to the DMs view", async ({ page }) => {
   await page.goto("/");
 
-  const homeDm = page.locator(".dm-item").filter({ hasText: fixture.bob.displayName });
+  const homeDm = page.locator(".dm-item").filter({ hasText: fixture.bob.displayName }).first();
   await expect(homeDm).toBeVisible();
   await homeDm.locator(".dm-open").click();
 
@@ -204,14 +204,15 @@ test("activates the Composer after selecting a new message recipient", async ({ 
   await expect(modal.getByTestId("composer-send-options")).toHaveCount(0);
 });
 
-test("keeps list markers beside text without a trailing paragraph", async ({ page }) => {
+test("starts a new list after existing composer text", async ({ page }) => {
   await page.goto("/");
   const editor = page.getByTestId("composer-editor").first();
-  await editor.fill("List item");
+  await editor.fill("Regular text");
   await page.getByTitle("Bulleted list").first().click();
+  await page.keyboard.type("List item");
+  await expect(editor.locator(":scope > p")).toHaveText("Regular text");
   await expect(editor).toContainText("List item");
   await expect(editor.locator(":scope > ul > li")).toHaveCount(1);
-  await expect(editor.locator(":scope > p")).toHaveCount(0);
 });
 
 test("starts a conversation from the dedicated DMs button with the keyboard", async ({ page }) => {
@@ -335,6 +336,20 @@ test("opens people and channels searched from Activity and Saved", async ({ page
   await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
 });
 
+test("restores the last channel after visiting Saved and Activity", async ({ page }) => {
+  await page.goto("/");
+  await page.getByTestId(`channel-row-${slug(fixture.projectChannel.name)}`).click();
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
+
+  await page.getByTestId("rail-saved").click();
+  await expect(page.getByTestId("saved-header")).toBeVisible();
+  await page.getByTestId("rail-activity").click();
+  await expect(page.getByTestId("activity-header")).toBeVisible();
+  await page.getByTestId("rail-home").click();
+
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
+});
+
 test("creates the channel creator as a manager and lets them promote a member", async ({ page }) => {
   const channelName = `manager-regression-${fixture.suffix}`;
   const created = await requestAsToken(page, fixture.alice.token, "/channels", {
@@ -414,7 +429,7 @@ test("switches channels without flashing stale messages while images load", asyn
   });
 
   await page.goto("/");
-  await page.locator(".dm-item").filter({ hasText: fixture.bob.displayName }).locator(".dm-open").click();
+  await page.locator(".dm-item").filter({ hasText: fixture.bob.displayName }).first().locator(".dm-open").click();
   const staleMessage = page.getByTestId(`message-${fixture.messages.dmMessage.id}`);
   await expect(staleMessage).toBeVisible();
   await page.evaluate(
@@ -679,7 +694,7 @@ test("keeps a hidden DM visible after marking the other user Starred", async ({ 
     `expected visible DM ${fixture.dmChannel.id}`
   ).toBeTruthy();
   await page.goto("/");
-  const starredDm = page.locator(".dm-item").filter({ hasText: fixture.bob.displayName });
+  const starredDm = page.locator(".dm-item").filter({ hasText: fixture.bob.displayName }).first();
   await expect(starredDm).toBeVisible();
   await expect(page.getByTestId("starred-toggle")).toBeVisible();
 

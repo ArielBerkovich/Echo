@@ -412,6 +412,26 @@ test("uses Enter for new list items and Shift+Enter for list line breaks", async
   await expect(items.nth(1).locator("br")).toHaveCount(1);
 });
 
+test("starts lists after existing composer text", async ({ page }) => {
+  await page.goto("/");
+
+  const editor = page.getByTestId("composer-editor");
+  await expect(editor).toBeVisible();
+
+  for (const [title, listSelector] of [["Ordered list", "ol"], ["Bulleted list", "ul"]]) {
+    await editor.fill("Regular text");
+    await page.getByTitle(title).click();
+    await page.keyboard.type("First item");
+    await page.keyboard.press("Enter");
+    await page.keyboard.type("Second item");
+
+    await expect(editor.locator(":scope > p")).toHaveText("Regular text");
+    await expect(editor.locator(`:scope > ${listSelector} > li`)).toHaveCount(2);
+    await expect(editor.locator(`:scope > ${listSelector}`)).toContainText("First item");
+    await expect(editor.locator(`:scope > ${listSelector}`)).toContainText("Second item");
+  }
+});
+
 test("uses Shift+Enter for code newlines and Enter to exit the block", async ({ page }) => {
   await page.goto("/");
 
@@ -500,7 +520,11 @@ test("opens the exact message from Activity", async ({ page }) => {
   await page.reload();
 
   await expect(page.getByTestId("activity-header")).toBeVisible();
-  const mentionText = page.getByText(fixture.messages.mention.body, { exact: false }).first();
+  const visibleMentionBody = fixture.messages.mention.body.replace(
+    `@${fixture.alice.username}`,
+    `@${fixture.alice.displayName}`
+  );
+  const mentionText = page.getByText(visibleMentionBody, { exact: false }).first();
   await expect(mentionText).toBeVisible();
   await mentionText.click();
 
@@ -519,6 +543,10 @@ test("opens a public-channel mention even when the user is not in the channel", 
     body: { name: channelName, type: "public" },
   });
   const mentionBody = `Public activity mention ${stamp} @${fixture.alice.username}`;
+  const visibleMentionBody = mentionBody.replace(
+    `@${fixture.alice.username}`,
+    `@${fixture.alice.displayName}`
+  );
   const mention = await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
     method: "POST",
     body: {
@@ -529,7 +557,7 @@ test("opens a public-channel mention even when the user is not in the channel", 
   });
 
   await railItem(page, "activity").click();
-  const activityEntry = page.getByText(mentionBody, { exact: false }).first();
+  const activityEntry = page.getByText(visibleMentionBody, { exact: false }).first();
   await expect(activityEntry).toBeVisible();
   await activityEntry.click();
 

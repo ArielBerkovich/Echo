@@ -125,7 +125,8 @@ test("opens a profile, marks Starred, starts a DM, protects it, and can message 
 
   const bobMention = page
     .locator(".message")
-    .filter({ hasText: `Heads up @${fixture.alice.username}` });
+    .filter({ hasText: `Heads up @${fixture.alice.displayName}` })
+    .first();
   await bobMention.locator(".author-btn").click();
 
   const profile = page.locator(".profile-modal");
@@ -135,7 +136,7 @@ test("opens a profile, marks Starred, starts a DM, protects it, and can message 
   await expect(page.locator(".channel-header .ch-name")).toHaveText(fixture.bob.displayName);
 
   await page.getByRole("button", { name: "DMs" }).click();
-  const starredDm = page.locator(".dm-rich").filter({ hasText: fixture.bob.displayName });
+  const starredDm = page.locator(".dm-rich").filter({ hasText: fixture.bob.displayName }).first();
   await expect(starredDm).toBeVisible();
   await expect(starredDm.getByTitle("Remove conversation")).toHaveCount(0);
 
@@ -228,7 +229,7 @@ test("handles mention autocomplete, @everyone, and attachments", async ({ page }
   await page.keyboard.press("Enter");
   const bobMessage = page.locator(".message").filter({ hasText: "Hello" }).last();
   await expect(bobMessage.locator(`.mention[data-mention="${fixture.bob.username}"]`)).toHaveText(
-    `@${fixture.bob.username}`
+    `@${fixture.bob.displayName}`
   );
 
   await composer.fill("@e");
@@ -414,18 +415,18 @@ test("schedules a message and clears the banner after delivery", async ({ page }
 
 test("uses conversation wording for scheduled messages in DMs", async ({ page }) => {
   await page.goto("/");
-  await page.locator(".dm-item").filter({ hasText: fixture.bob.displayName }).locator(".dm-open").click();
+  await page.locator(".dm-item").filter({ hasText: fixture.bob.displayName }).first().locator(".dm-open").click();
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.bob.displayName);
   const dmComposer = page.locator(".composer:not(.is-disabled) .composer-editor").first();
   const dmComposerForm = dmComposer.locator("xpath=ancestor::form");
   await expect(dmComposer).toHaveAttribute("contenteditable", "true");
-  await dmComposer.click();
-  await dmComposer.pressSequentially(`DM scheduled ${Date.now()}`);
+  await dmComposer.fill(`DM scheduled ${Date.now()}`);
   await expect(dmComposer).not.toBeEmpty();
   await expect(dmComposerForm.getByTestId("composer-send")).toBeEnabled();
   const sendOptions = dmComposerForm.getByRole("button", { name: "Send options" });
   await expect(sendOptions).toBeEnabled();
   await sendOptions.click();
-  await dmComposerForm.locator(".send-menu button:not(:disabled)").filter({ hasText: "Tomorrow, 9:00 AM" }).click();
+  await dmComposerForm.locator(".send-menu button:not(:disabled)").filter({ hasText: "Tomorrow, 21:00" }).click();
   await expect(page.locator(".scheduled-banner")).toContainText("for this conversation");
 });
 
@@ -451,7 +452,7 @@ test("edits and cancels a scheduled message", async ({ page }) => {
   const scheduledBody = `Scheduled ${Date.now()}`;
   await composer.fill(scheduledBody);
   await page.getByRole("button", { name: "Send options" }).click();
-  await page.locator(".send-menu button").filter({ hasText: "Tomorrow, 9:00 AM" }).click();
+  await page.locator(".send-menu button").filter({ hasText: "Tomorrow, 21:00" }).click();
 
   await expect(page.getByText(/scheduled message/i)).toBeVisible();
   await page.getByText(/scheduled message/i).click();
@@ -486,7 +487,7 @@ test("blocks private-channel mentions until the user chooses how to handle them"
   const gate = page.locator(".modal").filter({ hasText: `Add to #${privateChannelName}?` });
   await expect(gate).toBeVisible();
   await gate.getByRole("button", { name: "Send without adding" }).click();
-  await expect(page.locator(".message").filter({ hasText: `@${fixture.bob.username}` }).last()).toBeVisible();
+  await expect(page.locator(".message").filter({ hasText: `@${fixture.bob.displayName}` }).last()).toBeVisible();
 });
 
 test("covers custom emoji upload, validation, and usage", async ({ page }) => {
@@ -538,6 +539,18 @@ test("covers custom emoji upload, validation, and usage", async ({ page }) => {
   const sent = page.locator(".message").filter({ hasText: "Look" }).last();
   await expect(sent).toContainText("Look");
   await expect(sent.locator("img.custom-emoji")).toBeVisible();
+});
+
+test("closes the emoji picker when typing in the composer", async ({ page }) => {
+  await page.goto("/");
+  const composer = page.getByTestId("composer-editor");
+  await page.getByRole("button", { name: "Emoji", exact: true }).click();
+  await expect(page.locator(".emoji-popup-wrap")).toBeVisible();
+
+  await composer.press("x");
+
+  await expect(page.locator(".emoji-popup-wrap")).toBeHidden();
+  await expect(composer).toHaveText("x");
 });
 
 test("opens a thread, replies, and jumps from Activity back to the thread", async ({ page }) => {

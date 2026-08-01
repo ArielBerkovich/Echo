@@ -133,6 +133,7 @@ export default function ChannelView({
   const handledBottomScrollRequestRef = useRef(0); // last handled open-at-bottom request id
   const jumpingRef = useRef(false); // a jump scroll is in flight — pause scroll-up pagination
   const jumpSettleRef = useRef(null); // timer that re-enables pagination after a jump lands
+  const latestScrollFrameRef = useRef(null);
   const unreadScrollAppliedRef = useRef(false); // did we already anchor the current unread divider?
   const suppressGrowFollowRef = useRef(true); // while true, don't auto-follow until initial positioning settles
 
@@ -562,7 +563,23 @@ export default function ChannelView({
     setNewMessageCount(0);
     setShowScrollToLatest(false);
     stickToBottomRef.current = true;
-    requestAnimationFrame(() => scrollToExactBottom("smooth"));
+    requestAnimationFrame(() => {
+      const scroller = scrollerRef.current;
+      if (!scroller) return;
+      cancelAnimationFrame(latestScrollFrameRef.current);
+
+      const startTop = scroller.scrollTop;
+      const targetTop = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+      const startedAt = performance.now();
+      const duration = 180;
+      const animate = (now) => {
+        const progress = Math.min(1, (now - startedAt) / duration);
+        const eased = 1 - (1 - progress) ** 3;
+        scroller.scrollTop = startTop + (targetTop - startTop) * eased;
+        if (progress < 1) latestScrollFrameRef.current = requestAnimationFrame(animate);
+      };
+      latestScrollFrameRef.current = requestAnimationFrame(animate);
+    });
   }
 
   function rememberCurrentScroll() {

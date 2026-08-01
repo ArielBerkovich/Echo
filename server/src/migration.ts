@@ -13,6 +13,7 @@ import { MigrationIntent } from "./models/MigrationIntent.js";
 import { Message } from "./models/Message.js";
 import { UserMigrationAudit } from "./models/UserMigrationAudit.js";
 import { usernameIsReserved } from "./lib/userAliases.js";
+import { clearUserActivity } from "./lib/activity.js";
 
 const INTENT_TTL_SECONDS = 10 * 60;
 const INTENT_COOKIE = "echo_migration_intent";
@@ -63,13 +64,14 @@ export function verifyIntentToken(token) {
   return payload;
 }
 
-function sourceEligible(user) {
+export function sourceEligible(user) {
   const origin = user?.authOrigin || (user?.rhssoIssuer || user?.rhssoSubject ? "rhsso" : "local");
   return !!user &&
     origin === "local" &&
     !user.rhssoIssuer &&
     !user.rhssoSubject &&
     !user.isAdmin &&
+    user.username !== "admin" &&
     user.username !== "system" &&
     !user.migratedAt &&
     !user.mustResetPassword;
@@ -246,6 +248,7 @@ export async function completeRhssoSignup(token) {
         { $addToSet: { members: completedUser._id } },
         { session }
       );
+      await clearUserActivity(completedUser._id, { session });
       intent.status = "consumed";
       intent.consumedUser = completedUser._id;
       await intent.save({ session });

@@ -116,6 +116,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
 
   // Tell others we're typing (throttled), and auto-clear after a short pause.
   function signalTyping() {
+    if (!showSend) return;
     if (!typingActiveRef.current) {
       typingActiveRef.current = true;
       getSocket().emit("typing", { channelId: channel.id, typing: true });
@@ -253,6 +254,12 @@ export default function Composer({ channel, parentId = null, users = [], channel
   }
 
   function handleKeyDown(e) {
+    // Once the user starts typing, get the picker out of the way. The picker
+    // keeps the editor focused when it opens, so printable keys arrive here;
+    // keys pressed inside the picker itself do not.
+    if (emojiOpen && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      setEmojiOpen(false);
+    }
     if (mention && suggestions.length) {
       if (e.key === "ArrowDown") {
         e.preventDefault();
@@ -292,6 +299,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
         || editor.isActive("orderedList")
         || editor.isActive("blockquote")
       ) return;
+      if (!showSend) return;
       e.preventDefault();
       handleSend();
     }
@@ -337,7 +345,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   }
 
-  // Tomorrow at 9:00 AM (local), used by the quick "Tomorrow" send option.
+  // Tomorrow at 21:00 (local), used by the quick "Tomorrow" send option.
   function tomorrow9am() {
     const d = new Date();
     d.setDate(d.getDate() + 1);
@@ -445,6 +453,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
 
   function handleSend(e) {
     e?.preventDefault();
+    if (!showSend) return;
     const hasText = !!editor && editor.getText().trim() !== "";
     if (!hasText && pending.length === 0) return; // nothing to send
     if (uploading) return; // wait for in-flight uploads
@@ -463,6 +472,24 @@ export default function Composer({ channel, parentId = null, users = [], channel
   pasteHandlerRef.current = handlePaste;
 
   const keepFocus = (e) => e.preventDefault();
+
+  function toggleList(kind) {
+    if (!editor) return;
+
+    const { selection } = editor.state;
+    const currentBlock = selection.$from.parent;
+    const shouldStartNewList = !selection.empty
+      ? false
+      : !editor.isActive("bulletList")
+        && !editor.isActive("orderedList")
+        && currentBlock.isTextblock
+        && currentBlock.textContent.trim().length > 0
+        && selection.$from.parentOffset > 0;
+
+    const chain = editor.chain().focus();
+    if (shouldStartNewList && editor.can().splitBlock()) chain.splitBlock();
+    (kind === "ordered" ? chain.toggleOrderedList() : chain.toggleBulletList()).run();
+  }
 
   return (
     <form
@@ -732,10 +759,10 @@ export default function Composer({ channel, parentId = null, users = [], channel
             <LinkIcon />
           </button>
           <span className="tb-sep" />
-          <button type="button" className={`icon-btn ${active.ol ? "active" : ""}`} title="Ordered list" onMouseDown={keepFocus} onClick={() => editor?.chain().focus().toggleOrderedList().run()}>
+          <button type="button" className={`icon-btn ${active.ol ? "active" : ""}`} title="Ordered list" onMouseDown={keepFocus} onClick={() => toggleList("ordered")}>
             <OrderedListIcon />
           </button>
-          <button type="button" className={`icon-btn ${active.ul ? "active" : ""}`} title="Bulleted list" onMouseDown={keepFocus} onClick={() => editor?.chain().focus().toggleBulletList().run()}>
+          <button type="button" className={`icon-btn ${active.ul ? "active" : ""}`} title="Bulleted list" onMouseDown={keepFocus} onClick={() => toggleList("bullet")}>
             <BulletListIcon />
           </button>
           <button type="button" className="icon-btn" title="Blockquote" onMouseDown={keepFocus} onClick={() => editor?.chain().focus().toggleBlockquote().run()}>
@@ -803,7 +830,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
                   disabled={!canSend && pending.length === 0}
                   title={!canSend && pending.length === 0 ? "Write a message first" : undefined}
                 >
-                  <span>Tomorrow, 9:00 AM</span>
+                  <span>Tomorrow, 21:00</span>
                   <span className="send-menu-sub">
                     {tomorrow9am().toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" })}
                   </span>

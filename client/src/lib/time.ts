@@ -1,9 +1,9 @@
 // Shared date/time formatting helpers. All are forgiving: a bad/missing input
 // yields an empty string rather than throwing.
 
-const TIME = { hour: "2-digit", minute: "2-digit" };
+const TIME = { hour: "2-digit", minute: "2-digit", hour12: false };
 
-// "3:42 PM" — used for message timestamps.
+// "21:42" — used for message timestamps.
 export function formatTime(iso) {
   try {
     return new Date(iso).toLocaleTimeString([], TIME);
@@ -12,7 +12,7 @@ export function formatTime(iso) {
   }
 }
 
-// "Jun 4, 3:42 PM" — used in activity/search feeds. Pass a locale when a
+// "Jun 4, 21:42" — used in activity/search feeds. Pass a locale when a
 // screen needs stable wording instead of the device's locale.
 export function formatDateTime(iso, locale = []) {
   try {
