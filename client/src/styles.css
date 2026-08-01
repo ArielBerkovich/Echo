@@ -349,32 +349,29 @@ html[data-mode="dark"] .mention--broadcast {
 
 * {
   box-sizing: border-box;
-  /* Keep scroll affordances visible on Firefox instead of relying on the
-     platform's low-contrast overlay scrollbar. */
-  scrollbar-width: auto;
-  scrollbar-color: color-mix(in srgb, var(--accent) 72%, var(--muted)) var(--surface-2);
+  /* Keep the scrollbar compact on Firefox while making the thumb visible. */
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--accent) 78%, var(--muted)) transparent;
 }
 *::-webkit-scrollbar {
-  width: 14px;
-  height: 14px;
+  width: 11px;
+  height: 11px;
 }
 *::-webkit-scrollbar-track {
-  background: color-mix(in srgb, var(--surface-2) 78%, transparent);
-  border-radius: 999px;
+  background: transparent;
 }
 *::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--accent) 72%, var(--muted));
-  border: 3px solid var(--surface-2);
+  background: color-mix(in srgb, var(--accent) 78%, var(--muted));
+  border: 2px solid transparent;
   border-radius: 999px;
   background-clip: padding-box;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in srgb, var(--accent) 88%, var(--text));
+  background: color-mix(in srgb, var(--accent) 94%, var(--text));
   background-clip: padding-box;
 }
 .channel-list::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--accent) 68%, #ffffff);
-  border-color: var(--navy-900);
+  background: color-mix(in srgb, var(--accent) 76%, #ffffff);
 }
 
 html,
