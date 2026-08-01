@@ -8087,6 +8087,15 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   width: 100%;
 }
 
+.auth-subtitle-row {
+  min-height: 26px;
+  justify-content: flex-start;
+}
+
+.auth-subtitle-row .auth-back {
+  position: static;
+}
+
 @media (max-width: 760px) {
   .auth-card-content {
     height: auto;
