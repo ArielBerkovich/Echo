@@ -8118,21 +8118,10 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 
 .auth-hero {
   background:
-    radial-gradient(110% 80% at 12% 12%, rgba(255, 255, 255, 0.14) 0%, transparent 52%),
-    radial-gradient(80% 72% at 90% 88%, rgba(214, 165, 77, 0.18) 0%, transparent 58%),
-    linear-gradient(145deg, #244957 0%, #2d6470 52%, #8f7650 100%);
+    radial-gradient(110% 80% at 12% 12%, rgba(255, 255, 255, 0.2) 0%, transparent 52%),
+    radial-gradient(80% 72% at 90% 88%, rgba(255, 118, 109, 0.38) 0%, transparent 58%),
+    linear-gradient(145deg, #174b69 0%, #237d98 48%, #e6a83f 100%);
   animation: heroShift 18s ease-in-out infinite alternate;
-}
-
-.auth-hero-name {
-  position: relative;
-  z-index: 1;
-  margin-top: 14px;
-  color: rgba(255, 255, 255, 0.86);
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-align: center;
 }
 
 .auth-hero::after {
