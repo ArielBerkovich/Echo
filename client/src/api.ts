@@ -156,8 +156,6 @@ export const api = {
   usernameOptions: (firstName, lastName, username) =>
     request(`/auth/username-options?firstName=${encodeURIComponent(firstName)}&lastName=${encodeURIComponent(lastName)}&username=${encodeURIComponent(username)}`),
   me: () => request("/auth/me"),
-  getWorkspaceBranding: () => request("/workspace/branding"),
-  updateWorkspaceBranding: (payload) => request("/workspace/branding", { method: "PATCH", body: payload }),
   listUsers: () => request("/users"),
   listChannels: () => request("/channels"),
   listAllChannels: () => request("/channels?scope=all"),

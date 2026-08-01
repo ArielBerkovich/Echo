@@ -541,17 +541,21 @@ export default function ChannelView({
     if (scroller.scrollTop < 150) loadOlder();
   }
 
-  function scrollToExactBottom() {
+  function scrollToExactBottom(behavior = "auto") {
     const scroller = scrollerRef.current;
     if (!scroller) return;
-    scroller.scrollTop = scroller.scrollHeight;
+    if (behavior === "smooth") {
+      scroller.scrollTo({ top: scroller.scrollHeight, behavior });
+    } else {
+      scroller.scrollTop = scroller.scrollHeight;
+    }
   }
 
   function scrollToLatest() {
     setNewMessageCount(0);
     setShowScrollToLatest(false);
     stickToBottomRef.current = true;
-    requestAnimationFrame(scrollToExactBottom);
+    requestAnimationFrame(() => scrollToExactBottom("smooth"));
   }
 
   function rememberCurrentScroll() {

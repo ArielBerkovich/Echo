@@ -1911,16 +1911,11 @@ html[data-mode="dark"] .backend-connection-error {
   filter: drop-shadow(0 7px 16px rgba(0, 0, 0, 0.24));
 }
 .rail-brand-name {
-  width: 68px;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.2em;
   line-height: 1;
   text-transform: uppercase;
-  text-align: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .rail-top {
   position: relative;
@@ -1969,6 +1964,13 @@ html[data-mode="dark"] .backend-connection-error {
   background: transparent;
   border-color: transparent;
   box-shadow: none;
+}
+.rail-account-avatar {
+  transition: transform 160ms ease, filter 160ms ease;
+}
+.rail-account-button:is(:hover, :focus-visible) .rail-account-avatar {
+  transform: scale(1.08);
+  filter: brightness(1.08);
 }
 .rail-account-button:hover,
 .rail-account-action:hover {
@@ -2460,6 +2462,7 @@ html[data-mode="dark"] .sidebar {
 }
 .dms-view .sidebar-header {
   height: 70px;
+  border-bottom: none;
 }
 .sidebar-header .brand-sm {
   font-weight: 700;
@@ -2721,17 +2724,21 @@ html[data-mode="dark"] .sidebar {
   align-items: center;
   gap: 6px;
   margin-top: 10px;
-  padding: 0 12px 8px;
+  padding: 0 14px 10px;
 }
 .sidebar:not(.dms-view) > .dm-find {
-  margin-top: 21px;
+  margin-top: 20px;
 }
 .dm-find input {
   flex: 1;
+  box-sizing: border-box;
+  height: 40px;
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.14);
   color: #fff;
-  padding: 8px 12px;
+  padding: 9px 12px;
+  border-radius: 9px;
+  line-height: 1.4;
 }
 .dm-find input::placeholder {
   color: var(--on-navy-muted);
@@ -2740,8 +2747,8 @@ html[data-mode="dark"] .sidebar {
   border-color: var(--cyan);
   box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
 }
-.sidebar-header .start-conversation {
-  margin-left: auto;
+.dm-find .start-conversation {
+  flex: none;
 }
 .dm-rich {
   display: flex;
@@ -3045,6 +3052,8 @@ html[data-mode="dark"] .sidebar {
   align-items: center;
   gap: 8px;
   width: 100%;
+  box-sizing: border-box;
+  height: 40px;
   padding: 9px 12px;
   border: 1px solid transparent;
   border-radius: 9px;
@@ -3960,23 +3969,6 @@ html[data-mode="dark"] .day-divider-label {
   display: flex;
   align-items: center;
   gap: 10px;
-}
-.settings-branding-toggle {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin: 14px 0;
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.35;
-}
-.settings-branding-toggle input {
-  flex: none;
-  width: 16px;
-  height: 16px;
-  margin: 1px 0 0;
-  accent-color: var(--active-bg);
 }
 .link-danger {
   background: none;
@@ -6380,6 +6372,20 @@ html[data-mode="dark"] .channel-header {
   .att-image.is-loading {
     animation: none;
   }
+  .new-messages-button.timeline-jump-button {
+    animation: none;
+  }
+}
+
+@keyframes timelineJumpButtonIn {
+  from {
+    opacity: 0;
+    transform: translateY(7px) scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .new-messages-button {
@@ -6423,6 +6429,7 @@ html[data-mode="dark"] .channel-header {
   height: 34px;
   gap: 0;
   transform: none;
+  animation: timelineJumpButtonIn 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .new-messages-count {
   position: absolute;

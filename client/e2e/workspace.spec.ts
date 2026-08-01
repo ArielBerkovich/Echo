@@ -32,15 +32,15 @@ async function openFreshGeneralMessage(page, key, body) {
   return { id: created.message.id, message };
 }
 
-async function expectRailIndicatorAligned(page) {
-  const centers = await page.evaluate(() => {
-    const indicator = document.querySelector(".rail-active-indicator")?.getBoundingClientRect();
-    const icon = document.querySelector(".rail-item.active .rail-icon")?.getBoundingClientRect();
-    return {
-      indicator: indicator ? indicator.top + indicator.height / 2 : 0,
-      icon: icon ? icon.top + icon.height / 2 : 0,
-    };
-  });
+async function expectRailIndicatorAligned(page, view = "home") {
+  const [indicatorBox, iconBox] = await Promise.all([
+    page.getByTestId("rail-active-indicator").boundingBox(),
+    page.getByTestId(`rail-${view}`).getByTestId("rail-icon").boundingBox(),
+  ]);
+  const centers = {
+    indicator: indicatorBox ? indicatorBox.y + indicatorBox.height / 2 : 0,
+    icon: iconBox ? iconBox.y + iconBox.height / 2 : 0,
+  };
   expect(Math.abs(centers.indicator - centers.icon), JSON.stringify(centers)).toBeLessThan(1);
 }
 
@@ -52,7 +52,7 @@ test("restores an authenticated session into the default channel", async ({ page
   try {
     await page.goto("/");
 
-    await expect(page.getByText("Echo").first()).toBeVisible();
+    await expect(page.getByTestId("rail-brand")).toBeVisible();
     await expect(page.getByText("#general", { exact: true })).toBeVisible();
     await expect(page.locator(".composer-editor")).toBeVisible();
   } finally {
@@ -68,20 +68,20 @@ test("supports direct workspace routes and browser history", async ({ page }) =>
 
   await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
   await expect(page).toHaveURL(new RegExp(`/channels/${fixture.projectChannel.name}$`));
-  await expectRailIndicatorAligned(page);
+  await expectRailIndicatorAligned(page, "home");
   await page.setViewportSize({ width: 1600, height: 900 });
   await page.waitForTimeout(450);
-  await expectRailIndicatorAligned(page);
+  await expectRailIndicatorAligned(page, "home");
   await page.setViewportSize({ width: 1280, height: 720 });
 
   await railItem(page, "activity").click();
   await expect(page).toHaveURL(/\/activity$/);
   await expect(railItem(page, "activity")).toHaveClass(/active/);
   await page.waitForTimeout(450);
-  await expectRailIndicatorAligned(page);
+  await expectRailIndicatorAligned(page, "activity");
   await page.setViewportSize({ width: 1600, height: 900 });
   await page.waitForTimeout(450);
-  await expectRailIndicatorAligned(page);
+  await expectRailIndicatorAligned(page, "activity");
   await page.setViewportSize({ width: 1280, height: 720 });
 
   await page.goBack();

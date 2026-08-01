@@ -257,13 +257,14 @@ test("shows and permanently dismisses every supported Activity kind", async ({ b
 
     await page.goto("/");
     await page.getByTestId("rail-activity").click();
+    await expect(page.getByTestId("activity-header")).toBeVisible();
     const targets = [
-      page.locator('[data-activity-kind="mention"]').filter({ hasText: mentionBody }),
-      page.locator('[data-activity-kind="broadcast"]').filter({ hasText: `Broadcast ${stamp}` }),
-      page.locator('[data-activity-kind="reply"]').filter({ hasText: `Thread reply ${stamp}` }),
-      page.locator('[data-activity-kind="reaction"]').filter({ hasText: rootBody }),
-      page.locator('[data-activity-kind="channel_add"]').filter({ hasText: addedChannel.channel.name }),
-      page.locator('[data-activity-kind="channel_remove"]').filter({ hasText: removedChannel.channel.name }),
+      page.getByTestId("activity-item").filter({ hasText: mentionBody }),
+      page.getByTestId("activity-item").filter({ hasText: `Broadcast ${stamp}` }),
+      page.getByTestId("activity-item").filter({ hasText: `Thread reply ${stamp}` }),
+      page.getByTestId("activity-item").filter({ hasText: rootBody }),
+      page.getByTestId("activity-item").filter({ hasText: addedChannel.channel.name }),
+      page.getByTestId("activity-item").filter({ hasText: removedChannel.channel.name }),
     ];
     for (const target of targets) {
       await expect(target).toBeVisible();

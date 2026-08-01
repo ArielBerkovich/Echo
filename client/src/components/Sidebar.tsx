@@ -120,14 +120,12 @@ export default function Sidebar({
   };
 
   return (
-    <aside className={`sidebar ${dmsOnly ? "dms-view" : ""}`}>
+    <aside className={`sidebar ${dmsOnly ? "dms-view" : ""}`} data-testid="sidebar">
       {dmsOnly && (
-        <div className="sidebar-header">
+        <div className="sidebar-header" data-testid="dms-header">
           <span className="brand-sm">Direct messages</span>
-          <StartConversationButton onClick={onStartConversation} />
         </div>
       )}
-
       <div className="dm-find">
         <input
           data-testid="sidebar-filter"
@@ -135,6 +133,7 @@ export default function Sidebar({
           onChange={(e) => setFilter(e.target.value)}
           placeholder={dmsOnly ? "Find a DM" : "Filter channels & DMs"}
         />
+        {dmsOnly && <StartConversationButton onClick={onStartConversation} />}
       </div>
 
       {dmsOnly ? (
@@ -261,7 +260,7 @@ export default function Sidebar({
             </>
           )}
 
-          <div className="section-label dm-label section-toggle">
+          <div className="section-label dm-label section-toggle" data-testid="home-dm-section">
             <button
               type="button"
               className="sl-collapse"
