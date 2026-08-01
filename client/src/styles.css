@@ -349,29 +349,28 @@ html[data-mode="dark"] .mention--broadcast {
 
 * {
   box-sizing: border-box;
-  /* Keep the scrollbar compact on Firefox while making the thumb visible. */
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--accent) 78%, var(--muted)) transparent;
+  scrollbar-color: rgba(140, 155, 185, 0.32) transparent;
 }
 *::-webkit-scrollbar {
-  width: 11px;
-  height: 11px;
+  width: 10px;
+  height: 10px;
 }
 *::-webkit-scrollbar-track {
   background: transparent;
 }
 *::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--accent) 78%, var(--muted));
-  border: 2px solid transparent;
+  background: rgba(140, 155, 185, 0.28);
+  border: 3px solid transparent;
   border-radius: 999px;
   background-clip: padding-box;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in srgb, var(--accent) 94%, var(--text));
+  background: rgba(140, 155, 185, 0.5);
   background-clip: padding-box;
 }
 .channel-list::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--accent) 76%, #ffffff);
+  background: rgba(255, 255, 255, 0.16);
 }
 
 html,
