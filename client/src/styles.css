@@ -8120,7 +8120,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   background:
     radial-gradient(110% 80% at 12% 12%, rgba(255, 255, 255, 0.14) 0%, transparent 52%),
     radial-gradient(80% 72% at 90% 88%, rgba(214, 165, 77, 0.18) 0%, transparent 58%),
-    linear-gradient(145deg, #2f5d6d 0%, #3b7f8b 52%, #b0925d 100%);
+    linear-gradient(145deg, #244957 0%, #2d6470 52%, #8f7650 100%);
   animation: heroShift 18s ease-in-out infinite alternate;
 }
 
