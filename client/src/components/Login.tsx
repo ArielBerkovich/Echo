@@ -311,10 +311,12 @@ export default function Login({ onAuthed, initialError = "" }) {
           }}
         >
           <div className="auth-card-head">
-            <div className="auth-logo-sm">
-              <Logo size={44} />
+            <div className="auth-card-brand">
+              <div className="auth-logo-sm">
+                <Logo size={44} />
+              </div>
+              <h1 className="brand">Echo</h1>
             </div>
-            <h1 className="brand">Echo</h1>
             <p className="auth-card-sub">Sign in to pick up where your conversations left off.</p>
           </div>
 

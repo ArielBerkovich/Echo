@@ -726,6 +726,12 @@ input:focus {
 .auth-logo-sm {
   display: flex;
 }
+.auth-card-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
 .brand {
   margin: 0;
   text-align: center;
