@@ -1,12 +1,16 @@
+import { lazy, Suspense } from "react";
 import { BUILT_IN_GIT_EMOJIS } from "../lib/gitEmojis.js";
-import AddEmojiModal from "./AddEmojiModal.js";
-import AddPeopleModal from "./AddPeopleModal.js";
-import ApiDocsPage from "./ApiDocsPage.js";
-import CreateChannelModal from "./CreateChannelModal.js";
-import SettingsModal from "./SettingsModal.js";
-import NewMessageModal from "./NewMessageModal.js";
-import UserProfileModal from "./UserProfileModal.js";
-import Walkthrough from "./Walkthrough.js";
+
+// These surfaces are interaction-driven and are not needed to paint the
+// workspace. Keep them out of the initial route chunk until they are opened.
+const AddEmojiModal = lazy(() => import("./AddEmojiModal.js"));
+const AddPeopleModal = lazy(() => import("./AddPeopleModal.js"));
+const ApiDocsPage = lazy(() => import("./ApiDocsPage.js"));
+const CreateChannelModal = lazy(() => import("./CreateChannelModal.js"));
+const SettingsModal = lazy(() => import("./SettingsModal.js"));
+const NewMessageModal = lazy(() => import("./NewMessageModal.js"));
+const UserProfileModal = lazy(() => import("./UserProfileModal.js"));
+const Walkthrough = lazy(() => import("./Walkthrough.js"));
 
 export default function WorkspaceOverlays({
   user,
@@ -44,7 +48,7 @@ export default function WorkspaceOverlays({
   const canAddPeople = activeChannel && activeChannel.type !== "dm" && activeChannel.name?.toLowerCase() !== "general";
 
   return (
-    <>
+    <Suspense fallback={null}>
       {showCreate ? <CreateChannelModal onCreate={onCreateChannel} onClose={onClose.create} /> : null}
       {showNewMessage ? (
         <NewMessageModal
@@ -95,6 +99,6 @@ export default function WorkspaceOverlays({
       ) : null}
       {showTour ? <Walkthrough onClose={onFinishTour} /> : null}
       {toast ? <div className="toast" role="status" onClick={onClose.toast}>{toast}</div> : null}
-    </>
+    </Suspense>
   );
 }
