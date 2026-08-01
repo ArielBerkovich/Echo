@@ -8162,6 +8162,22 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   outline-offset: 0;
 }
 
+.auth-screen .input-wrap {
+  overflow: hidden;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.auth-screen .input-wrap input,
+.auth-screen .input-wrap input:focus {
+  border: 0;
+  border-radius: inherit;
+  box-shadow: none;
+  outline: none !important;
+}
+
 .auth-submit {
   background: #12384a;
   box-shadow: 0 8px 18px rgba(18, 56, 74, 0.18);
