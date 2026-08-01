@@ -8107,37 +8107,38 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 
 .auth-hero {
   background:
-    radial-gradient(90% 75% at 84% 84%, rgba(247, 198, 74, 0.14) 0%, transparent 62%),
-    #12384a;
-  animation: none;
+    radial-gradient(110% 80% at 12% 12%, rgba(255, 255, 255, 0.2) 0%, transparent 52%),
+    radial-gradient(80% 72% at 90% 88%, rgba(255, 118, 109, 0.38) 0%, transparent 58%),
+    linear-gradient(145deg, #174b69 0%, #237d98 48%, #e6a83f 100%);
+  animation: heroShift 18s ease-in-out infinite alternate;
 }
 
 .auth-hero::after {
-  display: none;
+  display: block;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  opacity: 0.35;
 }
 
 .auth-hero-glow {
   background: radial-gradient(
     circle,
-    rgba(63, 165, 196, 0.2) 0%,
-    rgba(247, 198, 74, 0.1) 38%,
+    rgba(255, 255, 255, 0.38) 0%,
+    rgba(247, 198, 74, 0.2) 38%,
     transparent 72%
   );
-  animation: none;
 }
 
 .auth-ripple {
-  border-color: rgba(255, 255, 255, 0.2);
-  animation: none;
-  opacity: 0.5;
+  border-color: rgba(255, 255, 255, 0.56);
 }
 
 .brand {
-  color: #12384a;
-  background: none;
-  -webkit-background-clip: initial;
-  background-clip: initial;
-  -webkit-text-fill-color: currentColor;
+  background: linear-gradient(110deg, #197696 0%, #3fa5c4 42%, #e7a83f 76%, #ee6d68 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .auth-tabs {
@@ -8160,13 +8161,13 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 }
 
 .auth-submit {
-  background: #12384a;
-  box-shadow: 0 8px 18px rgba(18, 56, 74, 0.18);
+  background: linear-gradient(110deg, #197696 0%, #3fa5c4 48%, #e5a43d 100%);
+  box-shadow: 0 10px 22px rgba(31, 117, 143, 0.22);
 }
 
 .auth-submit:hover:not(:disabled) {
-  background: #1b5369;
-  box-shadow: 0 10px 22px rgba(18, 56, 74, 0.24);
+  filter: saturate(1.08) brightness(1.03);
+  box-shadow: 0 13px 26px rgba(31, 117, 143, 0.28);
 }
 
 .auth-sso {
