@@ -349,28 +349,32 @@ html[data-mode="dark"] .mention--broadcast {
 
 * {
   box-sizing: border-box;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(140, 155, 185, 0.32) transparent;
+  /* Keep scroll affordances visible on Firefox instead of relying on the
+     platform's low-contrast overlay scrollbar. */
+  scrollbar-width: auto;
+  scrollbar-color: color-mix(in srgb, var(--accent) 72%, var(--muted)) var(--surface-2);
 }
 *::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 14px;
+  height: 14px;
 }
 *::-webkit-scrollbar-track {
-  background: transparent;
+  background: color-mix(in srgb, var(--surface-2) 78%, transparent);
+  border-radius: 999px;
 }
 *::-webkit-scrollbar-thumb {
-  background: rgba(140, 155, 185, 0.28);
-  border: 3px solid transparent;
+  background: color-mix(in srgb, var(--accent) 72%, var(--muted));
+  border: 3px solid var(--surface-2);
   border-radius: 999px;
   background-clip: padding-box;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: rgba(140, 155, 185, 0.5);
+  background: color-mix(in srgb, var(--accent) 88%, var(--text));
   background-clip: padding-box;
 }
 .channel-list::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.16);
+  background: color-mix(in srgb, var(--accent) 68%, #ffffff);
+  border-color: var(--navy-900);
 }
 
 html,
