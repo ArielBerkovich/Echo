@@ -57,7 +57,6 @@ export default function Login({ onAuthed, initialError = "" }) {
   });
   const [showPw, setShowPw] = useState(false);
   const [serverError, setServerError] = useState(initialError || null);
-  const [success, setSuccess] = useState(false);
   const [needsSetup, setNeedsSetup] = useState(false); // no users yet → create the admin
   const [registerStep, setRegisterStep] = useState(1);
   const [usernameSuggestions, setUsernameSuggestions] = useState([]);
@@ -216,9 +215,7 @@ export default function Login({ onAuthed, initialError = "" }) {
             }
           : { username: values.username, password: values.password };
         const result = isRegister ? await api.register(payload) : await api.login(payload);
-        // Play the ripple-burst welcome, then hand off to the app.
-        setSuccess(true);
-        setTimeout(() => onAuthed(result), 1150);
+        onAuthed(result);
       } catch (err) {
         const issue = desktopConnectionIssue(err);
         if (issue) {
@@ -313,12 +310,14 @@ export default function Login({ onAuthed, initialError = "" }) {
             submit(event);
           }}
         >
+          <div className="auth-card-content">
           <div className="auth-card-head">
-            <div className="auth-logo-sm">
-              <Logo size={44} />
+            <div className="auth-card-brand">
+              <div className="auth-logo-sm">
+                <Logo size={56} />
+              </div>
+              <h1 className="auth-card-name">Echo</h1>
             </div>
-            <h1 className="brand">Echo</h1>
-            <p className="auth-card-sub">Sign in to pick up where your conversations left off.</p>
           </div>
 
           {!needsSetup && (
@@ -347,8 +346,8 @@ export default function Login({ onAuthed, initialError = "" }) {
 
           {needsSetup && <div className="setup-badge">🛡 First-time setup</div>}
 
-          <div className="auth-subtitle-row">
-            {isRegister && !needsSetup && registerStep === 2 && (
+          {isRegister && !needsSetup && registerStep === 2 && (
+            <div className="auth-subtitle-row">
               <button
                 type="button"
                 className="auth-back"
@@ -358,15 +357,8 @@ export default function Login({ onAuthed, initialError = "" }) {
               >
                 <ArrowLeftIcon size={14} strokeWidth={2} />
               </button>
-            )}
-            <p className="subtitle">
-              {needsSetup
-                ? "Welcome to Echo! Create the admin account to set up your workspace."
-                : isRegister
-                ? "Create your account to get started."
-                : "Welcome back — sign in to continue."}
-            </p>
-          </div>
+            </div>
+          )}
 
           {needsSetup && (
             <div className="setup-callout">
@@ -619,7 +611,7 @@ export default function Login({ onAuthed, initialError = "" }) {
                 className="link"
                 onClick={() => switchMode("register")}
               >
-                Create one
+                Create account
               </button>
             </p>
           )}
@@ -644,6 +636,7 @@ export default function Login({ onAuthed, initialError = "" }) {
               </button>
             </p>
           )}
+          </div>
         </form>
       </div>
 
@@ -659,17 +652,6 @@ export default function Login({ onAuthed, initialError = "" }) {
         />
       ) : null}
 
-      {success && (
-        <div className="auth-success">
-          <div className="success-mark">
-            <span className="success-ripple" />
-            <span className="success-ripple" />
-            <span className="success-ripple" />
-            <Logo size={104} />
-          </div>
-          <div className="success-text">Welcome to Echo</div>
-        </div>
-      )}
       {connectionIssue ? (
         <BackendConnectionModal
           backendUrl={connectionIssue.backendUrl}
