@@ -43,6 +43,11 @@ server:
   service:
     type: ClusterIP
     port: 4000
+    # Socket.IO's polling handshake needs connection affinity. WebSocket
+    # upgrades and Mongo-backed broadcasts still allow the server replicas to
+    # scale; set to None only when the ingress explicitly provides stickiness
+    # or the clients are configured for WebSocket-only transport.
+    sessionAffinity: ClientIP
   clientOrigin: ""
   mongoUri: ""
   # Pre-install hook Secret consumed by the Echo server.

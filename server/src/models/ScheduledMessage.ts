@@ -21,6 +21,9 @@ const scheduledMessageSchema = new mongoose.Schema(
       },
     ],
     scheduledFor: { type: Date, required: true, index: true },
+    // Temporary ownership marker used by the distributed scheduler. It is
+    // intentionally not exposed by toPublicJSON().
+    dispatchLeaseUntil: { type: Date, default: null, index: true },
   },
   { timestamps: true }
 );
