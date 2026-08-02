@@ -21,9 +21,9 @@ export function SystemMessage({ m }) {
   );
 }
 
-// A single channel message: header, forwarded banner, body (or inline editor),
-// attachments, reactions, thread indicator, hover actions, and the edit/delete
-// menu. All behaviour is delegated to handlers passed by the parent.
+// A single channel message: header, forwarded banner, body, attachments,
+// reactions, thread indicator, hover actions, and the edit/delete menu. All
+// behaviour is delegated to handlers passed by the parent.
 function Message({
   m,
   grouped,

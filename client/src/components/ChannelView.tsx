@@ -397,7 +397,7 @@ export default function ChannelView({
   // ---- Edit / delete / forward ----
   function startEdit(m) {
     setMenuFor(null);
-    setEditing({ id: m.id, draft: m.body });
+    setEditing({ id: m.id, draft: m.body, attachments: m.attachments || [] });
   }
 
   function saveEdit() {
@@ -1042,7 +1042,7 @@ export default function ChannelView({
                       setMenuFor((openId) => (openId && openId !== m.id ? null : openId));
                     }}
                     onDeactivate={() => setActionsFor((activeId) => (activeId === m.id ? null : activeId))}
-                    editing={editing?.id === m.id ? editing : null}
+                    editing={null}
                     menuOpen={menuFor === m.id}
                     onReact={(e) => openReact(m.id, e)}
                     onToggleReaction={(emoji) => toggleReaction(m.id, emoji)}
@@ -1150,6 +1150,12 @@ export default function ChannelView({
           onError={setError}
           onChannelUpdated={onChannelUpdated}
           captureScreenDrops={!thread}
+          editing={editing}
+          onEditSave={() => setEditing(null)}
+          onEditCancel={() => {
+            setEditing(null);
+            setError(null);
+          }}
         />
       )}
       </div>

@@ -161,8 +161,11 @@ test("edits and deletes own messages", async ({ page }) => {
   await message.hover();
   await page.getByTestId(/-actions$/).getByTitle("More message actions").click();
   await page.getByRole("menuitem", { name: "Edit message" }).click();
-  await message.getByTestId("message-edit-input").fill(`${body} updated`);
-  await message.getByTestId("message-edit-actions").getByRole("button", { name: "Save" }).click();
+  const editComposer = page.getByTestId("composer-editor");
+  await expect(page.getByTestId("composer-editing")).toBeVisible();
+  await expect(editComposer).toHaveText(body);
+  await editComposer.fill(`${body} updated`);
+  await page.getByTestId("composer-send").click();
   await expect(message).toContainText("updated");
   await expect(message).toContainText("(edited)");
 
@@ -171,6 +174,43 @@ test("edits and deletes own messages", async ({ page }) => {
   await page.getByRole("menuitem", { name: "Delete message" }).click();
   await page.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(page.locator(".message").filter({ hasText: `${body} updated` })).toHaveCount(0);
+});
+
+test("edits message attachments from the composer", async ({ page }) => {
+  await page.goto("/");
+  const body = "Attachment edit " + Date.now();
+  const editor = page.getByTestId("composer-editor");
+  await editor.fill(body);
+  await page.locator(".composer input[type='file']").first().setInputFiles({
+    name: "original.png",
+    mimeType: "image/png",
+    buffer: ONE_BY_ONE_PNG,
+  });
+  await expect(page.locator('.pending-att img[alt="original.png"]')).toBeVisible();
+  await expect(page.locator(".pending-att.uploading")).toHaveCount(0);
+  await expect(page.getByTestId("composer-send")).toBeEnabled();
+  await page.getByTestId("composer-send").click();
+
+  const message = page.locator(".message").filter({ hasText: body }).first();
+  await expect(message).toBeVisible();
+  await expect(message.locator('[data-testid^="image-attachment-"]')).toHaveCount(1);
+  await message.hover();
+  await page.getByTestId(/-actions$/).getByTitle("More message actions").click();
+  await page.getByRole("menuitem", { name: "Edit message" }).click();
+  await expect(page.locator('.pending-att img[alt="original.png"]')).toBeVisible();
+  await page.locator('.pending-att img[alt="original.png"]').locator("xpath=..").getByTitle("Remove").click();
+  await expect(page.locator('.pending-att img[alt="original.png"]')).toHaveCount(0);
+  await page.locator(".composer input[type='file']").first().setInputFiles({
+    name: "replacement.png",
+    mimeType: "image/png",
+    buffer: ONE_BY_ONE_PNG,
+  });
+  await expect(page.locator('.pending-att img[alt="replacement.png"]')).toBeVisible();
+  await page.getByTestId("composer-send").click();
+
+  await expect(message.locator('[data-testid^="image-attachment-"]')).toHaveCount(1);
+  await expect(message.locator('[title="replacement.png"]')).toBeVisible();
+  await expect(message.locator('[title="original.png"]')).toHaveCount(0);
 });
 
 test("toggles reactions and pins messages", async ({ page }) => {

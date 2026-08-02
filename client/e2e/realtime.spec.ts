@@ -93,8 +93,11 @@ test("bumps unread counts and reflects live edits and deletes", async ({ browser
     await liveMessageOnBob.hover();
     await bobPage.page.getByTestId(/-actions$/).getByTitle("More message actions").click();
     await bobPage.page.getByRole("menuitem", { name: "Edit message" }).click();
-    await bobPage.page.getByTestId("message-edit-input").fill(`${liveBody} updated`);
-    await bobPage.page.getByTestId("message-edit-actions").getByRole("button", { name: "Save" }).click();
+    const editComposer = bobPage.page.getByTestId("composer-editor");
+    await expect(bobPage.page.getByTestId("composer-editing")).toBeVisible();
+    await expect(editComposer).toHaveText(liveBody);
+    await editComposer.fill(`${liveBody} updated`);
+    await bobPage.page.getByTestId("composer-send").click();
     await expect(liveMessage).toContainText("updated");
     await expect(liveMessage).toContainText("(edited)");
 

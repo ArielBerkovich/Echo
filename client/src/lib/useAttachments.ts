@@ -163,6 +163,16 @@ export function useAttachments({ captureScreenDrops, onError }) {
     });
   }, []);
 
+  const replacePending = useCallback((attachments = []) => {
+    setPending((previous) => {
+      previous.forEach(revokePreview);
+      return attachments.map((attachment) => ({
+        ...attachment,
+        tempId: attachment.tempId || attachment.key,
+      }));
+    });
+  }, []);
+
   return {
     pending,
     uploading,
@@ -172,5 +182,6 @@ export function useAttachments({ captureScreenDrops, onError }) {
     onPickFiles,
     removePending,
     clearAttachments,
+    replacePending,
   };
 }
