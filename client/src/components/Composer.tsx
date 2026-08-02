@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
+import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import { api } from "../api.js";
@@ -51,6 +51,14 @@ export default function Composer({ channel, parentId = null, users = [], channel
   const [scheduledMsgs, setScheduledMsgs] = useState([]); // pending scheduled messages for this channel
   const [showScheduled, setShowScheduled] = useState(false); // manage-scheduled modal
   const [editingSched, setEditingSched] = useState(null); // { id, body, at } being edited
+  const [editorState, setEditorState] = useState({
+    canSend: false,
+    bold: false,
+    italic: false,
+    strikethrough: false,
+    ul: false,
+    ol: false,
+  });
 
   const keyDownHandlerRef = useRef(null);
   const pasteHandlerRef = useRef(null);
@@ -101,7 +109,10 @@ export default function Composer({ channel, parentId = null, users = [], channel
     },
     onCreate: ({ editor: currentEditor }) => syncEditorState(currentEditor),
     onUpdate: ({ editor: currentEditor }) => syncEditorState(currentEditor),
-    onSelectionUpdate: ({ editor: currentEditor }) => syncMentionContext(currentEditor),
+    onSelectionUpdate: ({ editor: currentEditor }) => {
+      syncMentionContext(currentEditor);
+      setEditorState(readEditorState(currentEditor));
+    },
   }, [channel.id, parentId, placeholder, disabled]);
   useEffect(() => {
     editor?.setEditable(!disabled);
@@ -120,23 +131,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
       if (!editor.isDestroyed) editor.commands.focus("end");
     });
   }, [editor, editing?.id, replacePending]);
-  const editorState = useEditorState({
-    editor,
-    selector: ({ editor: currentEditor }) => {
-      if (!currentEditor?.isInitialized || !currentEditor?.state?.doc) {
-        return { canSend: false, bold: false, italic: false, strikethrough: false, ul: false, ol: false };
-      }
-      return {
-        canSend: currentEditor.getText().trim().length > 0,
-        bold: currentEditor.isActive("bold"),
-        italic: currentEditor.isActive("italic"),
-        strikethrough: currentEditor.isActive("strike"),
-        ul: currentEditor.isActive("bulletList"),
-        ol: currentEditor.isActive("orderedList"),
-      };
-    },
-  });
-  const { canSend = false, ...active } = editorState || {};
+  const { canSend = false, ...active } = editorState;
 
   // Tell others we're typing (throttled), and auto-clear after a short pause.
   function signalTyping() {
@@ -202,10 +197,25 @@ export default function Composer({ channel, parentId = null, users = [], channel
   // ---- Tiptap editor integration ----
 
   function syncEditorState(currentEditor) {
+    setEditorState(readEditorState(currentEditor));
     const hasText = currentEditor.getText().trim().length > 0;
     hasText ? signalTyping() : stopTyping();
     syncMentionContext(currentEditor);
     onDraftChange?.(htmlToMarkdown(currentEditor.getHTML()));
+  }
+
+  function readEditorState(currentEditor) {
+    if (!currentEditor?.isInitialized || !currentEditor?.state?.doc) {
+      return { canSend: false, bold: false, italic: false, strikethrough: false, ul: false, ol: false };
+    }
+    return {
+      canSend: currentEditor.getText().trim().length > 0,
+      bold: currentEditor.isActive("bold"),
+      italic: currentEditor.isActive("italic"),
+      strikethrough: currentEditor.isActive("strike"),
+      ul: currentEditor.isActive("bulletList"),
+      ol: currentEditor.isActive("orderedList"),
+    };
   }
 
   function syncMentionContext(currentEditor) {
