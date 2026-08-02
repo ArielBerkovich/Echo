@@ -57,4 +57,4 @@ else
 fi
 
 echo "Rebuilding and starting Echo..."
-"${COMPOSE[@]}" up -d --build
+"${COMPOSE[@]}" up -d --build --scale server=3

@@ -69,7 +69,8 @@ services:
     build:
       context: .
       dockerfile: server/Dockerfile
-    container_name: echo-server
+    # Keep this service scalable with `docker-compose up --scale server=3`.
+    # A fixed container_name would prevent Compose from creating replicas.
     restart: unless-stopped
     environment:
       - PORT=4000
@@ -87,7 +88,7 @@ services:
       - RHSSO_CLIENT_ID=echo
       - RHSSO_USERNAME_CLAIM=preferred_username
       - RHSSO_DISPLAY_NAME_CLAIM=name
-      - RHSSO_ALLOWED_CLIENT_ORIGINS=http://localhost:8090,http://${ECHO_PUBLIC_HOST:-localhost}:8090
+      - RHSSO_ALLOWED_CLIENT_ORIGINS=http://localhost:8090,http://127.0.0.1:8090,http://${ECHO_PUBLIC_HOST:-localhost}:8090
     depends_on:
       mongo:
         condition: service_healthy

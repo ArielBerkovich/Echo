@@ -7,6 +7,7 @@ metadata:
     app.kubernetes.io/component: server
 spec:
   type: {{ .Values.server.service.type }}
+  sessionAffinity: {{ .Values.server.service.sessionAffinity | default "ClientIP" }}
   ports:
     - name: http
       port: {{ .Values.server.service.port }}

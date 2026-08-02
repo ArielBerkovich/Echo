@@ -42,7 +42,7 @@ The screenshots below reflect the current Echo interface and branding.
 Requirements: Docker with Compose.
 
 ```bash
-docker compose up -d --build
+docker compose up -d --build --scale server=3
 ```
 
 Open [http://localhost:8090](http://localhost:8090). The first account created becomes the workspace administrator.

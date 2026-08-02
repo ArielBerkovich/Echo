@@ -1,4 +1,6 @@
 import { Server } from "socket.io";
+import mongoose from "mongoose";
+import { createAdapter } from "@socket.io/mongo-adapter";
 import { verifyToken } from "./auth.js";
 import { config } from "./config.js";
 import { User } from "./models/User.js";
@@ -18,26 +20,33 @@ export function attachSocket(httpServer) {
       credentials: true,
     },
   });
+
+  // Use MongoDB as the Socket.IO event bus when the database is available.
+  // This keeps the single-process development setup working while allowing
+  // multiple HTTP/Socket.IO replicas to share rooms and broadcasts.
+  const mongoClient = mongoose.connection.getClient?.();
+  const topologyType = mongoClient?.topology?.description?.type;
+  if (mongoose.connection.readyState === 1 && topologyType !== "Single" && process.env.SOCKET_IO_MONGO_ADAPTER !== "false") {
+    const events = mongoClient.db().collection("echo-socket-events");
+    io.adapter(createAdapter(events, { addCreatedAtField: true }));
+    // Keep adapter events bounded. The adapter itself remains usable if index
+    // creation is delayed or permissions do not allow index management.
+    events.createIndex({ createdAt: 1 }, { expireAfterSeconds: 3600 }).catch((err) => {
+      console.warn("Could not create Socket.IO adapter TTL index:", err.message);
+    });
+    console.log("Socket.IO MongoDB adapter enabled");
+  } else {
+    console.warn("Socket.IO MongoDB adapter unavailable; using process-local realtime events");
+  }
   setIO(io); // let REST routes emit real-time events too
 
-  // Presence: a user is "online" while they have at least one connected socket
-  // (multiple tabs are ref-counted). We broadcast the full online list only on
-  // the transitions that matter (first connect / last disconnect).
-  const onlineCounts = new Map(); // userId -> open socket count
-  const onlineIds = () => [...onlineCounts.keys()];
-  function goOnline(id) {
-    const n = (onlineCounts.get(id) || 0) + 1;
-    onlineCounts.set(id, n);
-    if (n === 1) io.emit("presence", { online: onlineIds() });
-  }
-  function goOffline(id) {
-    const n = (onlineCounts.get(id) || 0) - 1;
-    if (n <= 0) {
-      onlineCounts.delete(id);
-      io.emit("presence", { online: onlineIds() });
-    } else {
-      onlineCounts.set(id, n);
-    }
+  // Presence is calculated from the adapter's cluster-wide socket view rather
+  // than a process-local map, so it remains correct when replicas are added.
+  async function broadcastPresence() {
+    const sockets = await io.fetchSockets().catch(() => []);
+    const online = [...new Set(sockets.map((s) => s.data?.userId).filter(Boolean))];
+    io.emit("presence", { online });
+    return online;
   }
 
   function connectionError(message, code) {
@@ -78,9 +87,13 @@ export function attachSocket(httpServer) {
 
     // Mark online, and hand the newcomer the current online roster.
     const uid = socket.user._id.toString();
-    goOnline(uid);
-    socket.emit("presence", { online: onlineIds() });
-    socket.on("disconnect", () => goOffline(uid));
+    socket.data.userId = uid;
+    broadcastPresence().then((online) => {
+      socket.emit("presence", { online });
+    }).catch(() => {});
+    socket.on("disconnect", () => {
+      broadcastPresence().catch(() => {});
+    });
 
     // Join rooms for every channel the user belongs to, so they receive live
     // messages (and notifications) across all their channels and DMs.
