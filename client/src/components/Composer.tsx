@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
+import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import { api } from "../api.js";
@@ -9,6 +9,7 @@ import { markdownTextToComposerHtml } from "../markdownPaste.js";
 import { formatSize } from "../lib/format.js";
 import { formatDateTime } from "../lib/time.js";
 import { useAttachments } from "../lib/useAttachments.js";
+import { useAuthUrl } from "../lib/useAuthUrl.js";
 import Avatar from "./Avatar.js";
 import EmojiPicker from "./EmojiPicker.js";
 import Modal, { ModalActions } from "./Modal.js";
@@ -24,10 +25,18 @@ const SCHEDULE_PRESETS = [
   { label: "In 3 hours", minutes: 180 },
 ];
 
+function composerContent(body) {
+  const html = markdownTextToComposerHtml(body || "");
+  if (!html) return "<p></p>";
+  return /^<(p|ul|ol|blockquote|pre|h[1-3]|hr)\b/i.test(html.trim())
+    ? html
+    : `<p>${html}</p>`;
+}
+
 // Rich-text message composer: @mention autocomplete, a formatting toolbar,
 // emoji, and file attachments. Owns all of its own editor state — mount it with
 // a `key={channel.id}` so switching channels yields a fresh, empty composer.
-export default function Composer({ channel, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, onDraftChange, placeholder: customPlaceholder, mode = "light", captureScreenDrops = false, showSchedule = true, showSend = true, showAttachments = true, disabled = false }) {
+export default function Composer({ channel, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, onDraftChange, onEditSave, onEditCancel, editing = null, placeholder: customPlaceholder, mode = "light", captureScreenDrops = false, showSchedule = true, showSend = true, showAttachments = true, disabled = false }) {
   const isThread = !!parentId; // a thread reply composer (hides channel-level scheduling)
   const [mention, setMention] = useState(null); // { trigger, query, from, to } or null
   const [activeIdx, setActiveIdx] = useState(0);
@@ -42,6 +51,14 @@ export default function Composer({ channel, parentId = null, users = [], channel
   const [scheduledMsgs, setScheduledMsgs] = useState([]); // pending scheduled messages for this channel
   const [showScheduled, setShowScheduled] = useState(false); // manage-scheduled modal
   const [editingSched, setEditingSched] = useState(null); // { id, body, at } being edited
+  const [editorState, setEditorState] = useState({
+    canSend: false,
+    bold: false,
+    italic: false,
+    strikethrough: false,
+    ul: false,
+    ol: false,
+  });
 
   const keyDownHandlerRef = useRef(null);
   const pasteHandlerRef = useRef(null);
@@ -56,6 +73,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
     onPickFiles,
     removePending,
     clearAttachments,
+    replacePending,
   } = useAttachments({ captureScreenDrops, onError });
 
   const isDm = channel.type === "dm";
@@ -91,28 +109,29 @@ export default function Composer({ channel, parentId = null, users = [], channel
     },
     onCreate: ({ editor: currentEditor }) => syncEditorState(currentEditor),
     onUpdate: ({ editor: currentEditor }) => syncEditorState(currentEditor),
-    onSelectionUpdate: ({ editor: currentEditor }) => syncMentionContext(currentEditor),
+    onSelectionUpdate: ({ editor: currentEditor }) => {
+      syncMentionContext(currentEditor);
+      setEditorState(readEditorState(currentEditor));
+    },
   }, [channel.id, parentId, placeholder, disabled]);
   useEffect(() => {
     editor?.setEditable(!disabled);
   }, [disabled, editor]);
-  const editorState = useEditorState({
-    editor,
-    selector: ({ editor: currentEditor }) => {
-      if (!currentEditor?.isInitialized || !currentEditor?.state?.doc) {
-        return { canSend: false, bold: false, italic: false, strikethrough: false, ul: false, ol: false };
-      }
-      return {
-        canSend: currentEditor.getText().trim().length > 0,
-        bold: currentEditor.isActive("bold"),
-        italic: currentEditor.isActive("italic"),
-        strikethrough: currentEditor.isActive("strike"),
-        ul: currentEditor.isActive("bulletList"),
-        ol: currentEditor.isActive("orderedList"),
-      };
-    },
-  });
-  const { canSend = false, ...active } = editorState || {};
+  useEffect(() => {
+    if (!editor) return;
+    if (!editing) {
+      editor.commands.clearContent(true);
+      replacePending([]);
+      return;
+    }
+
+    editor.commands.setContent(composerContent(editing.draft), false);
+    replacePending(editing.attachments || []);
+    requestAnimationFrame(() => {
+      if (!editor.isDestroyed) editor.commands.focus("end");
+    });
+  }, [editor, editing?.id, replacePending]);
+  const { canSend = false, ...active } = editorState;
 
   // Tell others we're typing (throttled), and auto-clear after a short pause.
   function signalTyping() {
@@ -178,10 +197,25 @@ export default function Composer({ channel, parentId = null, users = [], channel
   // ---- Tiptap editor integration ----
 
   function syncEditorState(currentEditor) {
+    setEditorState(readEditorState(currentEditor));
     const hasText = currentEditor.getText().trim().length > 0;
     hasText ? signalTyping() : stopTyping();
     syncMentionContext(currentEditor);
     onDraftChange?.(htmlToMarkdown(currentEditor.getHTML()));
+  }
+
+  function readEditorState(currentEditor) {
+    if (!currentEditor?.isInitialized || !currentEditor?.state?.doc) {
+      return { canSend: false, bold: false, italic: false, strikethrough: false, ul: false, ol: false };
+    }
+    return {
+      canSend: currentEditor.getText().trim().length > 0,
+      bold: currentEditor.isActive("bold"),
+      italic: currentEditor.isActive("italic"),
+      strikethrough: currentEditor.isActive("strike"),
+      ul: currentEditor.isActive("bulletList"),
+      ol: currentEditor.isActive("orderedList"),
+    };
   }
 
   function syncMentionContext(currentEditor) {
@@ -254,6 +288,11 @@ export default function Composer({ channel, parentId = null, users = [], channel
   }
 
   function handleKeyDown(e) {
+    if (editing && e.key === "Escape") {
+      e.preventDefault();
+      onEditCancel?.();
+      return;
+    }
     // Once the user starts typing, get the picker out of the way. The picker
     // keeps the editor focused when it opens, so printable keys arrive here;
     // keys pressed inside the picker itself do not.
@@ -458,6 +497,23 @@ export default function Composer({ channel, parentId = null, users = [], channel
     if (!hasText && pending.length === 0) return; // nothing to send
     if (uploading) return; // wait for in-flight uploads
     const body = hasText ? htmlToMarkdown(editor.getHTML()) : "";
+    if (editing) {
+      if (!body.trim() && pending.length === 0) return;
+      onError?.(null);
+      getSocket().emit("message:edit", {
+        messageId: editing.id,
+        body: body.trim(),
+        attachments: pending,
+      }, (res) => {
+        if (res?.error) {
+          onError?.(res.error);
+          return;
+        }
+        resetComposer();
+        onEditSave?.();
+      });
+      return;
+    }
     const attachments = pending;
     const proceed = () => {
       stopTyping();
@@ -502,7 +558,18 @@ export default function Composer({ channel, parentId = null, users = [], channel
           Drop files to attach
         </div>
       )}
-      {!isThread && scheduledMsgs.length > 0 && (
+      {editing && (
+        <div className="composer-editing" data-testid="composer-editing">
+          <div>
+            <strong>Editing message</strong>
+            <span>Press Enter to save · Shift+Enter for a new line</span>
+          </div>
+          <button type="button" className="composer-edit-cancel" onClick={onEditCancel}>
+            Cancel
+          </button>
+        </div>
+      )}
+      {!editing && !isThread && scheduledMsgs.length > 0 && (
         <button
           type="button"
           className="scheduled-banner"
@@ -515,7 +582,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
         </button>
       )}
 
-      {scheduleAt !== null && (
+      {!editing && scheduleAt !== null && (
         <Modal
           title="Schedule message"
           className="schedule-modal"
@@ -576,7 +643,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
         </Modal>
       )}
 
-      {showScheduled && (
+      {!editing && showScheduled && (
         <Modal
           title="Scheduled messages"
           className="scheduled-modal"
@@ -727,7 +794,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
           {pending.map((a) => (
             <div className={`pending-att ${a.isImage ? "is-image" : "is-file"}`} key={a.key}>
               {a.isImage ? (
-                <img src={a.previewUrl || a.url} alt={a.name} />
+                <PendingImage attachment={a} />
               ) : (
                 <div className="pending-file">
                   <span className="pending-file-name">{a.name}</span>
@@ -802,12 +869,13 @@ export default function Composer({ channel, parentId = null, users = [], channel
             className={`icon-btn send-btn ${canSend || pending.length ? "ready" : ""}`}
             data-testid="composer-send"
             disabled={(!canSend && pending.length === 0) || uploading}
-            aria-label="Send"
+            aria-label={editing ? "Save edit" : "Send"}
+            title={editing ? "Save edit" : "Send message"}
           >
             <SendIcon />
           </button>}
-          {!isThread && showSchedule && showSend && <span className="tb-sep" />}
-          {!isThread && showSchedule && showSend && (
+          {!editing && !isThread && showSchedule && showSend && <span className="tb-sep" />}
+          {!editing && !isThread && showSchedule && showSend && (
             <button
               type="button"
               className="icon-btn chevron-btn"
@@ -819,7 +887,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
               <ChevronIcon />
             </button>
           )}
-          {!isThread && showSchedule && showSend && sendMenuOpen && (
+          {!editing && !isThread && showSchedule && showSend && sendMenuOpen && (
             <>
               <div className="menu-overlay" onClick={() => setSendMenuOpen(false)} />
               <div className="send-menu">
@@ -850,4 +918,9 @@ export default function Composer({ channel, parentId = null, users = [], channel
       </div>
     </form>
   );
+}
+
+function PendingImage({ attachment }) {
+  const src = useAuthUrl(attachment.previewUrl || attachment.url);
+  return <img src={src || undefined} alt={attachment.name} />;
 }

@@ -226,10 +226,13 @@ export function attachSocket(httpServer) {
     });
 
     // Edit one of your own messages; broadcast the new body to the room.
-    socket.on("message:edit", async ({ messageId, body } = {}, ack) => {
+    socket.on("message:edit", async ({ messageId, body, attachments } = {}, ack) => {
       try {
         const text = String(body || "").trim();
-        if (!messageId || !text) return ack?.({ error: "messageId and body are required" });
+        const files = sanitizeAttachments(attachments);
+        if (!messageId || (!text && files.length === 0)) {
+          return ack?.({ error: "messageId and body or attachments are required" });
+        }
 
         const message = await Message.findById(messageId);
         if (!message) return ack?.({ error: "message not found" });
@@ -243,6 +246,7 @@ export function attachSocket(httpServer) {
         }
 
         message.body = text;
+        message.attachments = files;
         message.editedAt = new Date();
         await message.save();
 
@@ -251,6 +255,7 @@ export function attachSocket(httpServer) {
           channelId: message.channel.toString(),
           parentId: message.parentId ? message.parentId.toString() : null,
           body: message.body,
+          attachments: message.toPublicJSON().attachments,
           editedAt: message.editedAt,
         });
         ack?.({ ok: true });

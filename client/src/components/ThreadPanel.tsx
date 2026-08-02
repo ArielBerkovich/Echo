@@ -111,9 +111,13 @@ export default function ThreadPanel({
     };
     // Keep root + replies in sync with edits/deletes/reactions from anywhere.
     const onUpdate = (u) => {
-      setRootMsg((prev) => (prev.id === u.id ? { ...prev, body: u.body, editedAt: u.editedAt } : prev));
+      setRootMsg((prev) => (prev.id === u.id
+        ? { ...prev, body: u.body, editedAt: u.editedAt, attachments: u.attachments ?? prev.attachments }
+        : prev));
       setReplies((prev) =>
-        prev.map((r) => (r.id === u.id ? { ...r, body: u.body, editedAt: u.editedAt } : r))
+        prev.map((r) => (r.id === u.id
+          ? { ...r, body: u.body, editedAt: u.editedAt, attachments: u.attachments ?? r.attachments }
+          : r))
       );
     };
     const onDeleted = ({ id }) => setReplies((prev) => prev.filter((r) => r.id !== id));
@@ -241,7 +245,7 @@ export default function ThreadPanel({
   }
   function startEdit(m) {
     setMenuFor(null);
-    setEditing({ id: m.id, draft: m.body });
+    setEditing({ id: m.id, draft: m.body, attachments: m.attachments || [] });
   }
   function saveEdit() {
     if (!editing) return;
@@ -304,7 +308,7 @@ export default function ThreadPanel({
                   setMenuFor((openId) => (openId && openId !== m.id ? null : openId));
                 }}
                 onDeactivate={() => setActionsFor((activeId) => (activeId === m.id ? null : activeId))}
-                editing={editing?.id === m.id ? editing : null}
+                editing={null}
                 menuOpen={menuFor === m.id}
                 onReact={(e) => openReact(m.id, e)}
                 onToggleReaction={(emoji) => toggleReaction(m.id, emoji)}
@@ -381,6 +385,12 @@ export default function ThreadPanel({
         onError={setError}
         onChannelUpdated={onChannelUpdated}
         captureScreenDrops
+        editing={editing}
+        onEditSave={() => setEditing(null)}
+        onEditCancel={() => {
+          setEditing(null);
+          setError(null);
+        }}
       />
 
       {confirmDelete && (
