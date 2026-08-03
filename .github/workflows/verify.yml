@@ -109,11 +109,18 @@ jobs:
         run: npm run build
 
   e2e:
-    name: E2E
+    name: E2E (${{ matrix.shard }})
     runs-on: ubuntu-latest
     needs:
       - unit
       - compile
+    strategy:
+      fail-fast: false
+      matrix:
+        shard:
+          - 1/3
+          - 2/3
+          - 3/3
     services:
       minio:
         image: minio/minio:latest
@@ -206,7 +213,7 @@ jobs:
       - name: Run E2E tests
         env:
           E2E_WORKERS: 2
-        run: npm run test:e2e
+        run: npm run test:e2e -- --shard=${{ matrix.shard }}
 
   e2e-rhsso:
     name: E2E (RHSSO)
