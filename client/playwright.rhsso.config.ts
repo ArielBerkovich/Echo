@@ -11,8 +11,10 @@ export default defineConfig({
   testMatch: "rhsso.spec.ts",
   timeout: 60_000,
   expect: { timeout: 10_000 },
+  // Keep tests in a file ordered while running independent files in parallel.
+  // The worker count is configurable because Keycloak-backed runs are heavier.
   fullyParallel: false,
-  workers: 1,
+  workers: Number(process.env.E2E_WORKERS || 2),
   reporter: "list",
   use: {
     baseURL: process.env.ECHO_URL || "http://localhost:8091",

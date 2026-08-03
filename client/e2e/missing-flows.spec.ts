@@ -172,6 +172,11 @@ test("creates, delivers through, lists, and revokes an incoming webhook", async 
   });
   expect(delivered.status()).toBe(201);
   const deliveredBody = await delivered.json();
+  // Incoming webhooks persist a message but do not promise a websocket event
+  // to the current browser session. Refresh the channel before asserting the
+  // persisted delivery so this test is deterministic under parallel E2E load.
+  await page.reload();
+  await expect(page.getByTestId("channel-title")).toContainText("general");
   await expect(messageById(page, deliveredBody.message.id)).toContainText("Webhook deploy");
   const retry = await rawApi(page, "", `/webhooks/${token}`, {
     method: "POST",
