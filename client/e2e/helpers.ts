@@ -57,7 +57,9 @@ async function ensureWorkspaceAdmin(page) {
   const response = await page.request.post("/api/auth/register", {
     data: { username: "admin", password: DEFAULT_PASSWORD },
   });
-  expect(response.ok(), "failed to bootstrap workspace admin").toBeTruthy();
+  // Multiple workers can observe setup at the same time. One registration
+  // wins and the others should continue once the admin exists.
+  expect(response.ok() || response.status() === 409, "failed to bootstrap workspace admin").toBeTruthy();
 }
 
 export async function loginAndSeedToken(page, username, password) {

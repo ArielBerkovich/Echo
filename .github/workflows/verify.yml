@@ -204,6 +204,8 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run E2E tests
+        env:
+          E2E_WORKERS: 2
         run: npm run test:e2e
 
   e2e-rhsso:
