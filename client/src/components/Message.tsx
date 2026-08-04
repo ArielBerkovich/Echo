@@ -76,7 +76,6 @@ function Message({
   const hoverGenerationRef = useRef(0);
   const menuOpenRef = useRef(menuOpen);
   const pickerOpenRef = useRef(pickerOpen);
-  const pickerWasOpenRef = useRef(pickerOpen);
   menuOpenRef.current = menuOpen;
   pickerOpenRef.current = pickerOpen;
   const mid = m.id;
@@ -105,16 +104,11 @@ function Message({
   }
 
   useEffect(() => {
-    const pickerJustClosed = pickerWasOpenRef.current && !pickerOpen;
-    if (menuOpen || pickerOpen || pickerJustClosed) {
-      hoverGenerationRef.current += 1;
-      if (hoverLeaveTimerRef.current) window.clearTimeout(hoverLeaveTimerRef.current);
-      hoverLeaveTimerRef.current = null;
+    if (menuOpen || pickerOpen) {
       messageRef.current?.classList.add("actions-hovered");
     } else if (!showActions) {
       messageRef.current?.classList.remove("actions-hovered");
     }
-    pickerWasOpenRef.current = pickerOpen;
   }, [showActions, menuOpen, pickerOpen]);
 
   useEffect(() => () => {
