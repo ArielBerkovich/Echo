@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { api } from "../api.js";
 import Avatar from "./Avatar.js";
@@ -46,6 +46,9 @@ function snippet(body, query) {
 
 // Dedicated results pane for full-text message search (triggered on Enter).
 export default function SearchResults({ query, onJump, onClose }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const paneRef = useRef(null);
+  const resultRefs = useRef([]);
   const parsed = useMemo(() => parseSearchQuery(query), [query]);
   const {
     data,
@@ -61,9 +64,70 @@ export default function SearchResults({ query, onJump, onClose }) {
     getNextPageParam: (lastPage, pages) => lastPage.hasMore ? pages.length : undefined,
   });
   const results = data?.pages.flatMap((page) => page.results || []) || [];
+  const resultIndex = useMemo(
+    () => new Map(results.map((result, index) => [result.id, index])),
+    [results]
+  );
+  const groupedResults = useMemo(() => {
+    const groups = [];
+    const byConversation = new Map();
+    results.forEach((result) => {
+      const key = result.channelId || "unknown";
+      let group = byConversation.get(key);
+      if (!group) {
+        group = {
+          key,
+          label: result.channelType === "dm" ? "Direct message" : `#${result.channelName || "unknown"}`,
+          results: [],
+        };
+        byConversation.set(key, group);
+        groups.push(group);
+      }
+      group.results.push(result);
+    });
+    return groups;
+  }, [results]);
+
+  useEffect(() => {
+    setActiveIndex(0);
+    resultRefs.current = [];
+    paneRef.current?.focus();
+  }, [query]);
+
+  useEffect(() => {
+    resultRefs.current[activeIndex]?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex]);
+
+  function onResultsKeyDown(event) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onClose();
+      return;
+    }
+    if (!results.length) return;
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveIndex((index) => {
+        const delta = event.key === "ArrowDown" ? 1 : -1;
+        return (index + delta + results.length) % results.length;
+      });
+      return;
+    }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      onJump(results[activeIndex]);
+    }
+  }
 
   return (
-    <main className="channel-view">
+    <main
+      className="channel-view"
+      ref={paneRef}
+      data-testid="search-results-pane"
+      tabIndex={-1}
+      onKeyDown={onResultsKeyDown}
+      aria-label="Search results"
+    >
       <div className="channel-main">
         <header className="channel-header" data-testid="search-results-header">
           <span className="ch-name">Search</span>
@@ -75,6 +139,11 @@ export default function SearchResults({ query, onJump, onClose }) {
             ))}
             {parsed.text && <span className="search-chip-text">“{parsed.text}”</span>}
           </div>
+          {!loading && !error && results.length > 0 && (
+            <span className="search-result-count" data-testid="search-result-count">
+              {results.length} {results.length === 1 ? "result" : "results"}
+            </span>
+          )}
           <button className="ch-meta ch-meta-btn search-close-btn" data-testid="search-results-clear" onClick={onClose}>
             Clear
           </button>
@@ -88,29 +157,48 @@ export default function SearchResults({ query, onJump, onClose }) {
           ) : results.length === 0 ? (
             <div className="empty-state">
               <h3>No messages found</h3>
-              <p>Nothing matched “{query}”. Try different words.</p>
+              <p>Nothing matched “{query}”. Try a shorter phrase or remove a filter.</p>
+              <p className="search-empty-hint">Tip: use <code>in:channel</code>, <code>from:@user</code>, or <code>has:file</code>.</p>
             </div>
           ) : (
             <>
-              {results.map((r) => (
-                <button key={r.id} className="search-result" data-testid="search-result" onClick={() => onJump(r)}>
-                  <Avatar name={r.author?.displayName || "?"} src={r.author?.avatarUrl} size={36} />
-                  <div className="content">
-                    <div className="meta">
-                      <span className="author">{r.author?.displayName || "unknown"}</span>
-                      <span className="activity-where">
-                        {r.channelType === "dm" ? "in a DM" : `in #${r.channelName}`}
-                        {r.parentId ? " · in thread" : ""}
-                      </span>
-                      <span className="time">{formatDateTime(r.createdAt, "en-US")}</span>
-                    </div>
-                    <div
-                      className="body markdown"
-                      dir="auto"
-                      dangerouslySetInnerHTML={{ __html: snippet(r.body, parsed.text) }}
-                    />
-                  </div>
-                </button>
+              {groupedResults.map((group) => (
+                <section className="search-result-group" key={group.key} aria-label={group.label}>
+                  <div className="search-result-group-title">{group.label}</div>
+                  {group.results.map((r) => {
+                    const index = resultIndex.get(r.id);
+                    return (
+                      <button
+                        key={r.id}
+                        ref={(element) => { resultRefs.current[index] = element; }}
+                        className={`search-result ${index === activeIndex ? "active" : ""}`}
+                        data-testid="search-result"
+                        data-search-index={index}
+                        aria-current={index === activeIndex ? "true" : undefined}
+                        tabIndex={index === activeIndex ? 0 : -1}
+                        onMouseEnter={() => setActiveIndex(index)}
+                        onClick={() => onJump(r)}
+                      >
+                        <Avatar name={r.author?.displayName || "?"} src={r.author?.avatarUrl} size={36} />
+                        <div className="content">
+                          <div className="meta">
+                            <span className="author">{r.author?.displayName || "unknown"}</span>
+                            <span className="activity-where">
+                              {r.channelType === "dm" ? "in a DM" : `in #${r.channelName}`}
+                              {r.parentId ? " · in thread" : ""}
+                            </span>
+                            <span className="time">{formatDateTime(r.createdAt, "en-US")}</span>
+                          </div>
+                          <div
+                            className="body markdown"
+                            dir="auto"
+                            dangerouslySetInnerHTML={{ __html: snippet(r.body, parsed.text) }}
+                          />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </section>
               ))}
               {hasMore && (
                 <button className="btn-secondary search-more" data-testid="search-load-more" disabled={loadingMore} onClick={() => fetchNextPage()}>
