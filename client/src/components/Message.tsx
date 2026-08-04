@@ -104,7 +104,9 @@ function Message({
   }
 
   useEffect(() => {
-    if (!showActions && !menuOpen && !pickerOpen) {
+    if (menuOpen || pickerOpen) {
+      messageRef.current?.classList.add("actions-hovered");
+    } else if (!showActions) {
       messageRef.current?.classList.remove("actions-hovered");
     }
   }, [showActions, menuOpen, pickerOpen]);
