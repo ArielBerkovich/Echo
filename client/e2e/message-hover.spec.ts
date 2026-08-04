@@ -68,6 +68,34 @@ test("keeps a message active through reaction selection", async ({ page }) => {
   await expect(message).toHaveClass(/actions-hovered/);
 });
 
+test("keeps long-message actions below the channel header while scrolling", async ({ page }) => {
+  await page.goto("/");
+  await channelRow(page, "general").click();
+
+  const message = messageById(page, fixture.messages.formatted.id);
+  await expect(message).toBeVisible();
+  const messages = page.getByTestId("messages");
+  const header = page.getByTestId("channel-header");
+
+  await messages.evaluate((container, messageId) => {
+    const target = container.querySelector(`[data-testid="message-${messageId}"]`);
+    const headerElement = document.querySelector('[data-testid="channel-header"]');
+    if (!target || !headerElement) throw new Error("message header layout not found");
+    const targetRect = target.getBoundingClientRect();
+    const headerRect = headerElement.getBoundingClientRect();
+    container.scrollTop += targetRect.top - headerRect.bottom + 20;
+  }, fixture.messages.formatted.id);
+
+  await message.hover();
+  const actions = page.getByTestId(`message-${fixture.messages.formatted.id}-actions`);
+  await expect(actions).toBeVisible();
+  const actionsBox = await actions.boundingBox();
+  const headerBox = await header.boundingBox();
+  expect(actionsBox).not.toBeNull();
+  expect(headerBox).not.toBeNull();
+  expect(actionsBox.y).toBeGreaterThanOrEqual(headerBox.y + headerBox.height);
+});
+
 for (const viewport of [
   { name: "desktop", width: 1280, height: 800 },
   { name: "mobile", width: 390, height: 844 },

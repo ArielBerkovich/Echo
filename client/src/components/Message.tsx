@@ -151,8 +151,15 @@ function Message({
       const message = messageRef.current;
       if (!message) return;
       const rect = message.getBoundingClientRect();
+      const header = message.closest(".channel-view")?.querySelector(".channel-header")
+        || message.closest(".thread-panel")?.querySelector(".thread-header");
+      const topBoundary = header ? header.getBoundingClientRect().bottom + 6 : 8;
+      const toolbarHeight = 38;
       setActionsPosition({
-        top: rect.top + 2,
+        top: Math.min(
+          Math.max(rect.top + 2, topBoundary),
+          Math.max(topBoundary, window.innerHeight - toolbarHeight - 8)
+        ),
         right: window.innerWidth - rect.right + 18,
       });
     };
