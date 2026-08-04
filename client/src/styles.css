@@ -6864,7 +6864,8 @@ html[data-mode="dark"] .channel-header {
   font-size: 13px;
   color: var(--muted);
   text-align: left;
-  flex: 1 1 150px;
+  flex: 0 1 auto;
+  width: fit-content;
   max-width: 340px;
   min-width: 72px;
   overflow: hidden;
