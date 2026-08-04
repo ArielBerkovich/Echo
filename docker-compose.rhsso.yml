@@ -88,15 +88,6 @@ services:
         condition: service_healthy
       rhsso:
         condition: service_started
-    healthcheck:
-      test:
-        - CMD
-        - node
-        - -e
-        - "fetch('http://127.0.0.1:4000/api/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
-      interval: 5s
-      timeout: 5s
-      retries: 20
 
   client:
     build: ./client
@@ -106,8 +97,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
-      server:
-        condition: service_healthy
+      - server
 
 volumes:
   rhsso-mongo-data:
