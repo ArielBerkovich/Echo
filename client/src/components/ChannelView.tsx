@@ -117,6 +117,7 @@ export default function ChannelView({
   const [loading, setLoading] = useState(!hasUsableCache); // initial history fetch for this channel in flight
   const [newMessageCount, setNewMessageCount] = useState(0);
   const [showScrollToLatest, setShowScrollToLatest] = useState(false);
+  const [roomJoined, setRoomJoined] = useState(false);
 
   const bottomRef = useRef(null);
   const scrollerRef = useRef(null); // the scrollable messages container
@@ -186,6 +187,7 @@ export default function ChannelView({
   // Load history + subscribe to live messages whenever the active channel changes.
   useEffect(() => {
     let cancelled = false;
+    setRoomJoined(false);
     const socket = getSocket();
     const myId = user.id;
 
@@ -221,7 +223,9 @@ export default function ChannelView({
         setHistoryReady(true);
       });
 
-    socket.emit("channel:join", channel.id);
+    socket.emit("channel:join", channel.id, (result) => {
+      if (!cancelled && result?.ok) setRoomJoined(true);
+    });
     // Members (and DM participants) stay in their conversation rooms for the
     // whole session — they joined them on connect — so unread/notifications
     // keep working after navigating away. Only previews of non-member channels
@@ -881,7 +885,11 @@ export default function ChannelView({
   const hasSidePanel = !!thread || showPinned;
 
   return (
-    <main className={`channel-view ${hasSidePanel ? "has-side-panel" : ""}`} data-testid="channel-view">
+    <main
+      className={`channel-view ${hasSidePanel ? "has-side-panel" : ""}`}
+      data-testid="channel-view"
+      data-channel-joined={roomJoined ? "true" : "false"}
+    >
       <div className="channel-main" style={{ position: "relative" }}>
       {threadLightbox && (
         <LightboxImage

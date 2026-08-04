@@ -483,13 +483,18 @@ test("reuses protected attachment media when revisiting a channel", async ({ pag
   await page.goto("/");
   const channelRow = page.getByTestId(`channel-row-${slug(seeded.channelName)}`);
   await channelRow.click();
-  const image = page.locator(`.att-image img[alt="${seeded.attachment.name}"]`);
+  await expect(page.getByTestId("channel-title")).toContainText(seeded.channelName);
+  const message = page.getByTestId(`message-${seeded.message.id}`);
+  await expect(message).toBeVisible();
+  const image = message.locator(`.att-image img[alt="${seeded.attachment.name}"]`);
   await expect(image).toBeVisible();
   await expect.poll(() => fileRequests).toBe(1);
 
   await page.getByTestId("channel-row-general").click();
   await expect(page.getByTestId("channel-title")).toContainText("general");
   await channelRow.click();
+  await expect(page.getByTestId("channel-title")).toContainText(seeded.channelName);
+  await expect(message).toBeVisible();
   await expect(image).toBeVisible();
   await expect.poll(() => fileRequests).toBe(1);
 });

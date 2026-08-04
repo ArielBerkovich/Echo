@@ -81,11 +81,23 @@ test("bumps unread counts and reflects live edits and deletes", async ({ browser
   const { alice, bob, projectChannel } = fixture;
   await withAliceBobPages(browser, async ({ alicePage, bobPage }) => {
     await channelRow(alicePage.page, projectChannel.name).click();
+    await expect(alicePage.page.getByTestId("channel-view")).toHaveAttribute("data-channel-joined", "true");
+    await expect(alicePage.page.getByTestId("connection-banner")).toHaveCount(0);
     await channelRow(bobPage.page, "general").click();
+    await expect(bobPage.page.getByTestId("channel-view")).toHaveAttribute("data-channel-joined", "true");
+    await expect(bobPage.page.getByTestId("connection-banner")).toHaveCount(0);
 
     const liveBody = `Realtime ${Date.now()}`;
-    await bobPage.page.getByTestId("composer-editor").fill(liveBody);
-    await bobPage.page.getByTestId("composer-editor").press("Enter");
+    // Use the authenticated API for the producer so this assertion focuses on
+    // delivery to Alice rather than racing the composer/socket send path.
+    await requestAsToken(page, bob.token, "/messages/upsert", {
+      method: "POST",
+      body: {
+        channelId: fixture.generalChannel.id,
+        body: liveBody,
+        externalKey: `realtime-${slug(liveBody)}`,
+      },
+    });
 
     await expect(
       channelRow(alicePage.page, "general").locator(".unread-badge")
