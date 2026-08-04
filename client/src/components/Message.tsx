@@ -73,6 +73,10 @@ function Message({
   const menuRef = useRef(null);
   const menuTriggerRef = useRef(null);
   const hoverLeaveTimerRef = useRef(null);
+  const menuOpenRef = useRef(menuOpen);
+  const pickerOpenRef = useRef(pickerOpen);
+  menuOpenRef.current = menuOpen;
+  pickerOpenRef.current = pickerOpen;
   const mid = m.id;
   function activateMessage() {
     if (hoverLeaveTimerRef.current) window.clearTimeout(hoverLeaveTimerRef.current);
@@ -88,6 +92,7 @@ function Message({
     if (hoverLeaveTimerRef.current) window.clearTimeout(hoverLeaveTimerRef.current);
     hoverLeaveTimerRef.current = window.setTimeout(() => {
       hoverLeaveTimerRef.current = null;
+      if (menuOpenRef.current || pickerOpenRef.current) return;
       if (document.querySelector("[data-message-actions]:hover")) return;
       messageRef.current?.classList.remove("actions-hovered");
       onDeactivate?.();

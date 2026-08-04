@@ -62,6 +62,7 @@ test("keeps a message active through reaction selection", async ({ page }) => {
   const picker = page.getByRole("dialog", { name: "Choose a reaction" });
   await expect(picker).toBeVisible();
   await expect(message).toHaveClass(/reaction-open/);
+  await expect(message).toHaveClass(/actions-hovered/);
 
   await picker.getByRole("button", { name: "React with 👍" }).click();
   await expect(picker).toBeHidden();
