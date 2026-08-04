@@ -2835,6 +2835,9 @@ html[data-mode="dark"] .sidebar {
 .dm-label {
   margin-top: 14px;
 }
+.dm-label-after-starred {
+  margin-top: 26px;
+}
 .dm-item {
   padding-right: 6px;
 }

@@ -262,7 +262,7 @@ export default function Sidebar({
             </>
           )}
 
-          <div className="section-label dm-label section-toggle" data-testid="home-dm-section">
+          <div className={`section-label dm-label section-toggle ${starredDms.length > 0 ? "dm-label-after-starred" : ""}`} data-testid="home-dm-section">
             <button
               type="button"
               className="sl-collapse"
