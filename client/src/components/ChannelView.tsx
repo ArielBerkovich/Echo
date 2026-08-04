@@ -1049,6 +1049,7 @@ export default function ChannelView({
                     onDeactivate={() => setActionsFor((activeId) => (activeId === m.id ? null : activeId))}
                     editing={null}
                     menuOpen={menuFor === m.id}
+                    pickerOpen={reactingTo?.id === m.id}
                     onReact={(e) => openReact(m.id, e)}
                     onToggleReaction={(emoji) => toggleReaction(m.id, emoji)}
                     onOpenThread={() => {

@@ -38,6 +38,7 @@ function Message({
   onToggleSave,
   editing, // the edit draft for this message, or null
   menuOpen,
+  pickerOpen = false,
   onReact,
   onToggleReaction,
   onOpenThread,
@@ -81,7 +82,7 @@ function Message({
   }
 
   function deactivateMessage(event) {
-    if (menuOpen) return;
+    if (menuOpen || pickerOpen) return;
     const related = event?.relatedTarget;
     if (related instanceof Element && related.closest("[data-message-actions]")) return;
     if (hoverLeaveTimerRef.current) window.clearTimeout(hoverLeaveTimerRef.current);
@@ -239,7 +240,7 @@ function Message({
 
   return (
     <div
-      className={`message ${grouped ? "grouped" : ""} ${highlighted ? "flash" : ""} ${menuOpen ? "menu-open" : ""}`}
+      className={`message ${grouped ? "grouped" : ""} ${highlighted ? "flash" : ""} ${menuOpen ? "menu-open" : ""} ${pickerOpen ? "reaction-open" : ""}`}
       ref={messageRef}
       data-mid={m.id}
       data-testid={`message-${mid}`}
@@ -425,7 +426,7 @@ function Message({
           } : { visibility: "hidden" }}
           onMouseEnter={activateMessage}
           onMouseLeave={(event) => {
-            if (menuOpen) return;
+            if (menuOpen || pickerOpen) return;
             const related = event.relatedTarget;
             if (related instanceof Node && messageRef.current?.contains(related)) return;
             deactivateMessage(event);
@@ -531,6 +532,7 @@ function areMessagePropsEqual(prev, next) {
     prev.saved === next.saved &&
     prev.editing === next.editing &&
     prev.menuOpen === next.menuOpen &&
+    prev.pickerOpen === next.pickerOpen &&
     prev.showActions === next.showActions
   );
 }

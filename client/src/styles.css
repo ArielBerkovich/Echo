@@ -7185,7 +7185,8 @@ html[data-mode="dark"] .new-messages-button:hover {
 }
 .message:hover,
 .message.menu-open,
-.message.actions-hovered {
+.message.actions-hovered,
+.message.reaction-open {
   background: var(--surface-2);
   box-shadow: inset 2px 0 0 var(--accent);
 }
