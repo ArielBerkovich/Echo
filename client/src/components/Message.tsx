@@ -73,12 +73,14 @@ function Message({
   const menuRef = useRef(null);
   const menuTriggerRef = useRef(null);
   const hoverLeaveTimerRef = useRef(null);
+  const hoverGenerationRef = useRef(0);
   const menuOpenRef = useRef(menuOpen);
   const pickerOpenRef = useRef(pickerOpen);
   menuOpenRef.current = menuOpen;
   pickerOpenRef.current = pickerOpen;
   const mid = m.id;
   function activateMessage() {
+    hoverGenerationRef.current += 1;
     if (hoverLeaveTimerRef.current) window.clearTimeout(hoverLeaveTimerRef.current);
     hoverLeaveTimerRef.current = null;
     messageRef.current?.classList.add("actions-hovered");
@@ -90,8 +92,10 @@ function Message({
     const related = event?.relatedTarget;
     if (related instanceof Element && related.closest("[data-message-actions]")) return;
     if (hoverLeaveTimerRef.current) window.clearTimeout(hoverLeaveTimerRef.current);
+    const generation = hoverGenerationRef.current;
     hoverLeaveTimerRef.current = window.setTimeout(() => {
       hoverLeaveTimerRef.current = null;
+      if (generation !== hoverGenerationRef.current) return;
       if (menuOpenRef.current || pickerOpenRef.current) return;
       if (document.querySelector("[data-message-actions]:hover")) return;
       messageRef.current?.classList.remove("actions-hovered");
