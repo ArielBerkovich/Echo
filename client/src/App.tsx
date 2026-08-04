@@ -98,6 +98,22 @@ export default function App() {
   const viewRef = useRef(view);
   const activeChannelRef = useRef(activeChannel);
 
+  // Use the workspace search pane for the familiar browser find shortcut.
+  // This is intentionally global so it works from conversations, feeds, and
+  // while the composer is focused, just like in Slack and similar clients.
+  useEffect(() => {
+    function onFindShortcut(event) {
+      if (!user || event.defaultPrevented || event.altKey) return;
+      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "f") return;
+
+      event.preventDefault();
+      searchRef.current?.focus();
+    }
+
+    window.addEventListener("keydown", onFindShortcut);
+    return () => window.removeEventListener("keydown", onFindShortcut);
+  }, [user]);
+
   useEffect(() => void (viewRef.current = view), [view]);
   useEffect(() => void (activeChannelRef.current = activeChannel), [activeChannel]);
 
