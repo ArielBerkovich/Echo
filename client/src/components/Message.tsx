@@ -71,7 +71,27 @@ function Message({
   const actionsRef = useRef(null);
   const menuRef = useRef(null);
   const menuTriggerRef = useRef(null);
+  const hoverLeaveTimerRef = useRef(null);
   const mid = m.id;
+  function activateMessage() {
+    if (hoverLeaveTimerRef.current) window.clearTimeout(hoverLeaveTimerRef.current);
+    hoverLeaveTimerRef.current = null;
+    messageRef.current?.classList.add("actions-hovered");
+    onActivate?.();
+  }
+
+  function deactivateMessage(event) {
+    if (menuOpen) return;
+    const related = event?.relatedTarget;
+    if (related instanceof Element && related.closest("[data-message-actions]")) return;
+    if (hoverLeaveTimerRef.current) window.clearTimeout(hoverLeaveTimerRef.current);
+    hoverLeaveTimerRef.current = window.setTimeout(() => {
+      hoverLeaveTimerRef.current = null;
+      if (document.querySelector("[data-message-actions]:hover")) return;
+      messageRef.current?.classList.remove("actions-hovered");
+      onDeactivate?.();
+    }, 180);
+  }
   // Messages carry an author snapshot, but profile changes arrive separately
   // over the realtime user:update event. Resolve the latest directory entry so
   // an already-open conversation updates without waiting for a new message.
@@ -223,18 +243,18 @@ function Message({
       ref={messageRef}
       data-mid={m.id}
       data-testid={`message-${mid}`}
-      onMouseEnter={onActivate}
+      onMouseEnter={activateMessage}
       onClick={(event) => {
         if (!window.matchMedia("(max-width: 760px)").matches) return;
         if (event.target.closest?.("button, a, [data-message-actions]")) return;
-        onActivate?.();
+          activateMessage();
       }}
       onMouseLeave={(event) => {
         if (window.matchMedia("(max-width: 760px)").matches) return;
         if (menuOpen) return;
         const related = event.relatedTarget;
         if (!(related instanceof Node) || !actionsRef.current?.contains(related)) {
-          onDeactivate?.();
+          deactivateMessage(event);
         }
       }}
     >
@@ -403,24 +423,23 @@ function Message({
             top: actionsPosition.top,
             right: actionsPosition.right,
           } : { visibility: "hidden" }}
-          onMouseEnter={onActivate}
+          onMouseEnter={activateMessage}
           onMouseLeave={(event) => {
             if (menuOpen) return;
             const related = event.relatedTarget;
-            if (!(related instanceof Node) || !messageRef.current?.contains(related)) {
-              onDeactivate?.();
-            }
+            if (related instanceof Node && messageRef.current?.contains(related)) return;
+            deactivateMessage(event);
           }}
         >
-          <button className="react-toggle" data-testid={`message-${mid}-add-reaction-action`} title="Add reaction" onClick={onReact}>
+          <button className="react-toggle" data-testid={`message-${mid}-add-reaction-action`} title="Add reaction" onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onReact}>
             <EmojiAddIcon />
           </button>
           {!inThread && (
-            <button data-testid={`message-${mid}-reply`} title="Reply in thread" onClick={onOpenThread}>
+            <button data-testid={`message-${mid}-reply`} title="Reply in thread" onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onOpenThread}>
               <ReplyIcon />
             </button>
           )}
-          <button data-testid={`message-${mid}-forward`} title="Forward message" onClick={onForward}>
+          <button data-testid={`message-${mid}-forward`} title="Forward message" onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onForward}>
             <ShareIcon />
           </button>
           <button
@@ -430,6 +449,8 @@ function Message({
             aria-label="More message actions"
             aria-expanded={menuOpen}
             className={menuOpen ? "active" : ""}
+            onMouseEnter={activateMessage}
+            onMouseOver={activateMessage}
             onClick={onToggleMenu}
             ref={menuTriggerRef}
           >

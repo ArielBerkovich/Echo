@@ -980,9 +980,6 @@ export default function ChannelView({
           data-testid="messages"
           ref={scrollerRef}
           onScroll={onMessagesScroll}
-          onMouseLeave={(event) => {
-            if (!menuFor && !event.relatedTarget?.closest?.("[data-message-actions]")) setActionsFor(null);
-          }}
         >
           <div ref={messagesInnerRef}>
           {loadingOlder && <div className="older-loader">Loading earlier messages…</div>}

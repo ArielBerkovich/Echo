@@ -7184,7 +7184,8 @@ html[data-mode="dark"] .new-messages-button:hover {
   transition: background 0.15s ease, box-shadow 0.15s ease;
 }
 .message:hover,
-.message.menu-open {
+.message.menu-open,
+.message.actions-hovered {
   background: var(--surface-2);
   box-shadow: inset 2px 0 0 var(--accent);
 }
