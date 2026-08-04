@@ -2033,16 +2033,16 @@ html[data-mode="dark"] .backend-connection-error {
   color: var(--on-navy);
 }
 .rail-brand .echo-logo {
-  width: 62px;
-  height: 62px;
+  width: 54px;
+  height: 54px;
   flex: none;
   object-fit: contain;
   filter: drop-shadow(0 7px 16px rgba(0, 0, 0, 0.24));
 }
 .rail-brand-slot {
   display: block;
-  width: 62px;
-  height: 62px;
+  width: 54px;
+  height: 54px;
   flex: none;
 }
 .rail-brand.ready > * {
