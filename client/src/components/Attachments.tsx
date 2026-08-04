@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { DownloadIcon, FileIcon } from "lucide-react";
+import { DownloadIcon, ExpandIcon, FileIcon } from "lucide-react";
 import { formatSize } from "../lib/format.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
+import { highlightFile, languageForFilename } from "../lib/syntaxHighlight.js";
 
 // Renders a message's attachments: images inline, everything else as a
 // downloadable file chip. Pass onOpenLightbox(src, name) to delegate image
@@ -14,10 +15,19 @@ export default function Attachments({ attachments = [], onOpenLightbox }) {
       {attachments.map((a) =>
         a.isImage
           ? <ImageAttachment key={a.key} a={a} onOpenLightbox={onOpenLightbox} />
+          : isTextAttachment(a)
+            ? <TextAttachment key={a.key} a={a} />
           : <FileAttachment key={a.key} a={a} />
       )}
     </div>
   );
+}
+
+const TEXT_EXTENSIONS = /\.(txt|csv|tsv|log|md|markdown|json|xml|yaml|yml|toml|ini|conf|env|css|js|jsx|ts|tsx|html)$/i;
+
+function isTextAttachment(a) {
+  const type = String(a.contentType || "").toLowerCase();
+  return type.startsWith("text/") || ["application/json", "application/xml"].includes(type) || TEXT_EXTENSIONS.test(a.name || "");
 }
 
 const MIN_SCALE = 1;
@@ -214,5 +224,107 @@ function FileAttachment({ a }) {
         <span className="att-file-meta">{formatSize(a.size)}</span>
       </span>
     </a>
+  );
+}
+
+function TextAttachment({ a }) {
+  const [expanded, setExpanded] = useState(false);
+  const [open, setOpen] = useState(false);
+  const src = useAuthUrl(a.url);
+  const [text, setText] = useState(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!src) return undefined;
+    fetch(src)
+      .then((response) => {
+        if (!response.ok) throw new Error("preview failed");
+        return response.text();
+      })
+      .then((value) => {
+        if (!cancelled) setText(value.slice(0, 120_000));
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
+    return () => { cancelled = true; };
+  }, [src]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open]);
+
+  const preview = text?.slice(0, 1_600);
+  const truncated = text != null && text.length > 1_600;
+  const language = languageForFilename(a.name);
+  const languageLabel = language === "plaintext" ? "Text" : language[0].toUpperCase() + language.slice(1);
+  // Syntax highlighting is intentionally deferred until the full-screen
+  // viewer is opened; attachment cards should stay cheap in long timelines.
+  const highlightedText = open && text != null ? highlightFile(text, a.name) : null;
+  return (
+    <>
+      <div className="att-text" data-testid={`text-attachment-${a.key}`}>
+      <div className="att-text-head">
+        <button
+          type="button"
+          className="att-text-toggle"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((value) => !value)}
+        >
+          <span className="att-file-icon"><FileIcon size={20} strokeWidth={1.5} /></span>
+          <span className="att-file-info">
+            <span className="att-file-name">{a.name}</span>
+            <span className="att-file-meta">{languageLabel} · {formatSize(a.size)}</span>
+          </span>
+          <span className="att-text-chevron" aria-hidden="true">{expanded ? "⌃" : "⌄"}</span>
+        </button>
+        <a
+          className="att-text-download"
+          href={src || undefined}
+          download={a.name}
+          title="Download file"
+          aria-label={`Download ${a.name}`}
+        >
+          <DownloadIcon size={17} strokeWidth={2} />
+        </a>
+        <button
+          type="button"
+          className="att-text-open att-text-header-open"
+          onClick={() => setOpen(true)}
+          title="Open full-screen preview"
+          aria-label={`Open full-screen preview of ${a.name}`}
+        >
+          <ExpandIcon size={16} strokeWidth={2} aria-hidden="true" />
+        </button>
+      </div>
+      {expanded && <pre className="att-text-preview">{preview ?? (failed ? "Preview unavailable" : "Loading preview…")}{truncated ? "\n…" : ""}</pre>}
+      {expanded && text != null && (
+        <div className="att-text-footer">
+          <span className="att-text-limit">{truncated ? "Preview truncated" : "Text preview"}</span>
+        </div>
+      )}
+      </div>
+      {open && createPortal(
+        <div className="text-viewer-backdrop" role="dialog" aria-modal="true" aria-label={`Preview ${a.name}`} onClick={() => setOpen(false)}>
+          <div className="text-viewer" onClick={(event) => event.stopPropagation()}>
+            <div className="text-viewer-head">
+              <strong>{a.name}</strong>
+              <div className="text-viewer-actions">
+                <a href={src || undefined} download={a.name}>Download</a>
+                <button type="button" onClick={() => setOpen(false)} aria-label="Close preview" title="Close preview">×</button>
+              </div>
+            </div>
+            <pre className="text-viewer-content">{highlightedText ? <code dangerouslySetInnerHTML={{ __html: highlightedText }} /> : "Loading preview…"}</pre>
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
   );
 }

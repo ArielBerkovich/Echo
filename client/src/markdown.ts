@@ -1,53 +1,11 @@
 import { Marked } from "marked";
 import DOMPurify from "dompurify";
-import hljs from "highlight.js/lib/core";
-import bash from "highlight.js/lib/languages/bash";
-import c from "highlight.js/lib/languages/c";
-import cpp from "highlight.js/lib/languages/cpp";
-import csharp from "highlight.js/lib/languages/csharp";
-import css from "highlight.js/lib/languages/css";
-import go from "highlight.js/lib/languages/go";
-import java from "highlight.js/lib/languages/java";
-import javascript from "highlight.js/lib/languages/javascript";
-import json from "highlight.js/lib/languages/json";
-import markdownLanguage from "highlight.js/lib/languages/markdown";
-import php from "highlight.js/lib/languages/php";
-import python from "highlight.js/lib/languages/python";
-import ruby from "highlight.js/lib/languages/ruby";
-import sql from "highlight.js/lib/languages/sql";
-import typescript from "highlight.js/lib/languages/typescript";
-import xml from "highlight.js/lib/languages/xml";
 import emojiData from "@emoji-mart/data";
-
-// Register the languages Echo advertises in chat. Importing highlight.js/lib/common
-// eagerly included dozens of rarely-used grammars in the main workspace chunk.
-for (const [name, language] of Object.entries({
-  bash, c, cpp, csharp, css, go, java, javascript, json, markdown: markdownLanguage,
-  php, python, ruby, sql, typescript, xml,
-})) {
-  hljs.registerLanguage(name, language);
-}
-
-function escapeHtml(s) {
-  return String(s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
+import { escapeHtml, highlightCode } from "./lib/syntaxHighlight.js";
 
 // Syntax-highlight a fenced code block. Uses the declared language (```python)
 // when given/known, otherwise auto-detects across the common languages
 // (Java, Bash, Python, JS, Go, SQL, …).
-function highlightCode(text, lang) {
-  try {
-    if (lang && hljs.getLanguage(lang)) {
-      return hljs.highlight(text, { language: lang, ignoreIllegals: true }).value;
-    }
-    return hljs.highlightAuto(text).value;
-  } catch {
-    return escapeHtml(text);
-  }
-}
 
 // Build a ":shortcode:" -> native-emoji map from the emoji-mart dataset
 // (covers every emoji and its aliases, e.g. :smile:, :rocket:, :+1:).
