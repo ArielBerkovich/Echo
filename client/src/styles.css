@@ -47,6 +47,11 @@
   --code-bg: #eef1f5;
   --code-text: #1f2937;
   --code-border: #d3d9e2;
+
+  /* Shared visual language for custom hover/focus hints. */
+  --tooltip-bg: var(--rail-bg);
+  --tooltip-fg: var(--on-navy);
+  --tooltip-border: color-mix(in srgb, var(--accent) 42%, var(--border));
 }
 
 /* Light/dark is a MODE, independent of the colour theme: the mode sets the
@@ -69,6 +74,85 @@ html[data-mode="dark"] {
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 10px 28px rgba(0, 0, 0, 0.55);
   --shadow-lg: 0 24px 56px rgba(0, 0, 0, 0.6);
+}
+
+.echo-tooltip {
+  position: fixed;
+  z-index: 10000;
+  width: max-content;
+  max-width: min(280px, calc(100vw - 24px));
+  padding: 7px 10px;
+  border: 1px solid var(--tooltip-border);
+  border-radius: 8px;
+  background: var(--tooltip-bg);
+  color: var(--tooltip-fg);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--rail-bg) 38%, transparent);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+  animation: echo-tooltip-in 120ms ease-out both;
+}
+.echo-tooltip-below {
+  transform: translateX(-50%);
+}
+.echo-tooltip-left {
+  transform: translate(-100%, -50%);
+}
+.echo-tooltip-right {
+  transform: translateY(-50%);
+}
+.echo-tooltip::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  width: 8px;
+  height: 8px;
+  border-right: 1px solid var(--tooltip-border);
+  border-bottom: 1px solid var(--tooltip-border);
+  background: var(--tooltip-bg);
+  transform: translateX(-50%) rotate(45deg);
+}
+.echo-tooltip-below::after {
+  top: -5px;
+  bottom: auto;
+  border-top: 1px solid var(--tooltip-border);
+  border-left: 1px solid var(--tooltip-border);
+  border-right: 0;
+  border-bottom: 0;
+}
+.echo-tooltip-left::after,
+.echo-tooltip-right::after {
+  top: 50%;
+  bottom: auto;
+  border: 0;
+  transform: translateY(-50%) rotate(45deg);
+}
+.echo-tooltip-left::after {
+  right: -5px;
+  left: auto;
+  border-top: 1px solid var(--tooltip-border);
+  border-right: 1px solid var(--tooltip-border);
+}
+.echo-tooltip-right::after {
+  left: -5px;
+  border-left: 1px solid var(--tooltip-border);
+  border-bottom: 1px solid var(--tooltip-border);
+}
+.echo-tooltip-right-anchor::after {
+  left: auto;
+  right: 10px;
+  transform: rotate(45deg);
+}
+@keyframes echo-tooltip-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .echo-tooltip { animation: none; }
 }
 
 /* Aubergine — warm stone highlights against deep wine navigation. */
@@ -8457,8 +8541,8 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   max-width: 240px;
   padding: 7px 11px;
   border-radius: 10px;
-  background: #11161f;
-  color: #fff;
+  background: var(--tooltip-bg);
+  color: var(--tooltip-fg);
   font-size: 12.5px;
   font-weight: 500;
   line-height: 1.45;
@@ -8473,7 +8557,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   left: 50%;
   transform: translateX(-50%);
   border: 6px solid transparent;
-  border-top-color: #11161f;
+  border-top-color: var(--tooltip-bg);
   z-index: 60;
   pointer-events: none;
 }
