@@ -16,6 +16,10 @@ export function getSocket() {
   socket = io(getBackendUrl() || undefined, {
     auth: { token: getToken() },
     autoConnect: true,
+    // The Compose/Helm server can run multiple replicas. WebSocket-only
+    // transport avoids Socket.IO's polling handshake requiring sticky
+    // sessions at the client proxy.
+    transports: ["websocket"],
   });
   // A session token can be replaced without recreating the page (login,
   // password change, SSO callback). Always use the latest token when the

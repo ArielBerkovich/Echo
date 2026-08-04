@@ -16,7 +16,7 @@ import { roomFor, userRoom } from "./lib/rooms.js";
 export function attachSocket(httpServer) {
   const io = new Server(httpServer, {
     cors: {
-      origin: (origin, callback) => callback(null, !origin || origin === "null" || origin === config.clientOrigin),
+      origin: (origin, callback) => callback(null, !origin || origin === "null" || config.clientOrigins.includes(origin)),
       credentials: true,
     },
   });
@@ -124,6 +124,18 @@ export function attachSocket(httpServer) {
       const channel = await Channel.findById(channelId).catch(() => null);
       if (!channel || !canAccess(channel, socket.user._id)) return;
       socket.leave(roomFor(channelId));
+    });
+
+    // Tell the caller that a direct-call invite was declined.
+    socket.on("call:decline", async ({ channelId, to } = {}) => {
+      if (!channelId || !to || !mongoose.isValidObjectId(channelId) || !mongoose.isValidObjectId(to)) return;
+      const channel = await Channel.findById(channelId).catch(() => null);
+      if (!channel || channel.type !== "dm" || !canAccess(channel, socket.user._id)) return;
+      if (!channel.members.some((member) => member.equals(to))) return;
+      io.to(userRoom(to)).emit("call:declined", {
+        channelId: channel._id.toString(),
+        from: { id: socket.user._id.toString(), displayName: socket.user.displayName },
+      });
     });
 
     // Relay an ephemeral typing signal to everyone else in the channel.

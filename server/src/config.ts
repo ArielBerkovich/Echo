@@ -14,6 +14,10 @@ export const config = {
       : "mongodb://localhost:27017/echo"),
   jwtSecret: required("JWT_SECRET"),
   clientOrigin: process.env.CLIENT_ORIGIN || "http://localhost:8080",
+  clientOrigins: String(process.env.CLIENT_ORIGINS || process.env.CLIENT_ORIGIN || "http://localhost:8080")
+    .split(",")
+    .map((origin) => origin.trim().replace(/\/+$/, ""))
+    .filter(Boolean),
   // Optional directory containing electron-builder update manifests and artifacts.
   desktopUpdateDir: process.env.DESKTOP_UPDATE_DIR || "",
   rhsso: {
@@ -32,6 +36,12 @@ export const config = {
       .split(",")
       .map((origin) => origin.trim().replace(/\/+$/, ""))
       .filter(Boolean),
+  },
+  livekit: {
+    url: String(process.env.LIVEKIT_URL || "").replace(/\/+$/, ""),
+    apiUrl: String(process.env.LIVEKIT_API_URL || process.env.LIVEKIT_URL || "").replace(/\/+$/, ""),
+    apiKey: process.env.LIVEKIT_API_KEY || "",
+    apiSecret: process.env.LIVEKIT_API_SECRET || "",
   },
   // How many messages to return per history page.
   messagePageSize: 50,

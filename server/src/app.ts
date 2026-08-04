@@ -16,6 +16,7 @@ import { savedRouter } from "./routes/saved.js";
 import { webhooksRouter } from "./routes/webhooks.js";
 import { openApiDocument } from "./openapi.js";
 import { desktopUpdatesRouter } from "./desktopUpdates.js";
+import { callsRouter } from "./routes/calls.js";
 
 export function createApp() {
   const app = express();
@@ -26,7 +27,7 @@ export function createApp() {
     })
   );
   app.use(cors({
-    origin: (origin, callback) => callback(null, !origin || origin === "null" || origin === config.clientOrigin),
+    origin: (origin, callback) => callback(null, !origin || origin === "null" || config.clientOrigins.includes(origin)),
     credentials: true,
   }));
   app.use(express.json({ limit: "50kb" }));
@@ -47,6 +48,7 @@ export function createApp() {
   app.use("/api/admin", adminRouter);
   app.use("/api/saved", savedRouter);
   app.use("/api/webhooks", webhooksRouter);
+  app.use("/api/calls", callsRouter);
 
   // Keep the process alive and return a consistent JSON payload on crashes.
   app.use((err, _req, res, _next) => {

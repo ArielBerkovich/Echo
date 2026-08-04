@@ -24,7 +24,7 @@ import LeaveChannelDialog from "./LeaveChannelDialog.js";
 import { LeaveIcon, PinIcon } from "./Icons.js";
 import { formatDayDivider, isDifferentDay } from "../lib/time.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
-import { ChevronsDownIcon, StarIcon, UsersRoundIcon } from "lucide-react";
+import { ChevronsDownIcon, PhoneIcon, StarIcon, UsersRoundIcon } from "lucide-react";
 import { queryKeys } from "../lib/queryClient.js";
 
 // Shimmering placeholder rows shown while a channel's history loads, so the
@@ -88,6 +88,8 @@ export default function ChannelView({
   openThreadId = null,
   openThreadJumpMessageId = null,
   onThreadOpened,
+  onStartCall,
+  isCallActive,
   mode = "light",
 }) {
   const queryClient = useQueryClient();
@@ -862,6 +864,13 @@ export default function ChannelView({
   const dmAvatarName = dmUser?.displayName || channel.dmName || "?";
   const dmLabel = channel.dmName || dmAvatarName;
   const dmAvatar = dmUser?.avatarUrl || null;
+  const isSelfDm = isDm && (
+    channel.isSelf === true
+    || String(channel.dmUserId || "") === String(user.id || user._id || "")
+    || String(dmUser?.id || "") === String(user.id || user._id || "")
+    || channel.name?.startsWith("dm-self-")
+    || channel.dmName?.endsWith(" (you)")
+  );
   const isMember = isDm || (channel.members || []).includes(user.id);
   const isCreator = !isDm && channel.createdBy === user.id;
   const canToggleStarred = isDm && !!dmUser?.id && dmUser.id !== user.id;
@@ -916,6 +925,20 @@ export default function ChannelView({
             >
               {dmLabel}
             </button>
+            <div className="header-actions">
+              {!isSelfDm && (
+              <button
+                type="button"
+                className="header-action header-action-icon"
+                data-testid="dm-call"
+                title={isCallActive?.(channel.id) ? "Join video call" : "Start video call"}
+                aria-label={isCallActive?.(channel.id) ? "Join video call" : "Start video call"}
+                onClick={() => !isSelfDm && onStartCall?.(channel)}
+              >
+                <PhoneIcon size={16} strokeWidth={1.8} />
+              </button>
+              )}
+            </div>
           </>
         ) : (
           <>
@@ -1148,6 +1171,9 @@ export default function ChannelView({
           mode={mode}
           onAddCustomEmoji={onAddCustomEmoji}
           onError={setError}
+          onStartCall={isDm && !isSelfDm ? onStartCall : undefined}
+          callsEnabled={isDm && !isSelfDm}
+          callActive={!isSelfDm && isCallActive?.(channel.id)}
           onChannelUpdated={onChannelUpdated}
           captureScreenDrops={!thread}
           editing={editing}

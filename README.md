@@ -82,6 +82,13 @@ Useful defaults:
 
 Set `MONGO_URI` to use an external MongoDB replica set or cluster. Set `ECHO_PUBLIC_HOST` when the RHSSO demo is accessed from another machine.
 
+The Compose stack includes a local LiveKit development server, so voice and
+video calls work out of the box at `ws://localhost:7880`. It uses the
+development credentials `devkey` / `secret`. For production, replace
+`LIVEKIT_URL`, `LIVEKIT_API_KEY`, and `LIVEKIT_API_SECRET` with runtime secrets
+from a separately deployed LiveKit instance. Echo issues short-lived room
+tokens after checking DM membership.
+
 ## Development
 
 Run the UI against the Docker services:

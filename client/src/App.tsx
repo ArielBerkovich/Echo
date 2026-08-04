@@ -17,6 +17,7 @@ import { useConversationCache } from "./lib/useConversationCache.js";
 import { useWorkspaceQueries, workspaceKeys } from "./lib/useWorkspaceQueries.js";
 import { queryKeys } from "./lib/queryClient.js";
 import { currentRoute, workspacePath } from "./lib/workspaceRoutes.js";
+import { useCall } from "./lib/useCall.js";
 
 const HIDDEN_KEY = "echo.hiddenChannels";
 function loadHidden() {
@@ -100,6 +101,16 @@ export default function App() {
 
   useEffect(() => void (viewRef.current = view), [view]);
   useEffect(() => void (activeChannelRef.current = activeChannel), [activeChannel]);
+
+  const {
+    callChannel,
+    incomingCall,
+    isCallActive,
+    startCall,
+    closeCall,
+    acceptCall,
+    declineCall,
+  } = useCall(user, setToast, activeChannel);
 
   function markNavDuringRestore() {
     if (!restoredRef.current) navDuringRestoreRef.current = true;
@@ -362,7 +373,7 @@ export default function App() {
       const dm = conversations.find((d) => d.id === saved.convId);
       if (dm) {
         nextView = "dms";
-        active = { id: dm.id, type: "dm", dmName: dm.withUser.displayName, dmUserId: dm.withUser.id };
+        active = { id: dm.id, type: "dm", dmName: dm.withUser.displayName, dmUserId: dm.withUser.id, isSelf: dm.isSelf };
       }
     } else if (!isMobileViewport() && saved?.convId) {
       const ch = chs.find((c) => c.id === saved.convId);
@@ -425,6 +436,7 @@ export default function App() {
           dmName: dm.withUser.displayName,
           dmUsername: dm.withUser.username,
           dmUserId: dm.withUser.id,
+          isSelf: dm.isSelf || dm.withUser.id === user.id,
         };
         setActiveChannel(activeDm);
         if (route.convId === dm.id) {
@@ -1292,6 +1304,8 @@ export default function App() {
             openThreadId: activeChannel && openThreadReq?.channelId === activeChannel.id ? openThreadReq.rootId : null,
             openThreadJumpMessageId: activeChannel && openThreadReq?.channelId === activeChannel.id ? openThreadReq.messageId : null,
             onThreadOpened: () => setOpenThreadReq(null),
+            onStartCall: startCall,
+            isCallActive,
           }}
         />
       </div>
@@ -1314,6 +1328,8 @@ export default function App() {
         profileUser={profileUser}
         showTour={showTour}
         toast={toast}
+        callChannel={callChannel}
+        incomingCall={incomingCall}
         onCreateChannel={handleCreateChannel}
         onStartDm={handleStartDm}
         onPrepareDm={handlePrepareDm}
@@ -1329,6 +1345,9 @@ export default function App() {
         }}
         onOpenApiDocs={openApiDocs}
         onFinishTour={finishTour}
+        onCloseCall={closeCall}
+        onAcceptCall={acceptCall}
+        onDeclineCall={declineCall}
         onClose={{
           create: () => setShowCreate(false),
           newMessage: () => setShowNewMessage(false),

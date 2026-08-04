@@ -29,3 +29,44 @@ server {
         try_files $uri $uri/ /index.html;
     }
 }
+
+server {
+    listen 8443 ssl;
+    server_name _;
+
+    ssl_certificate /etc/nginx/certs/echo.crt;
+    ssl_certificate_key /etc/nginx/certs/echo.key;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    location /api/ {
+        proxy_pass http://${SERVER_HOST}:4000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        client_max_body_size 30m;
+    }
+
+    location /socket.io/ {
+        proxy_pass http://${SERVER_HOST}:4000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_read_timeout 86400;
+    }
+
+    # Secure WebSocket endpoint for LiveKit signaling.
+    location /rtc {
+        proxy_pass http://host.docker.internal:7880;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_read_timeout 86400;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}

@@ -228,6 +228,8 @@ export const api = {
     request(`/scheduled${channelId ? `?channelId=${encodeURIComponent(channelId)}` : ""}`),
   updateScheduled: (id, payload) => request(`/scheduled/${id}`, { method: "PATCH", body: payload }),
   cancelScheduled: (id) => request(`/scheduled/${id}`, { method: "DELETE" }),
+  getCallToken: (channelId) => request("/calls/token", { method: "POST", body: { channelId } }),
+  getCallStatus: (channelId) => request(`/calls/status?channelId=${encodeURIComponent(channelId)}`),
   uploadFiles,
   listEmojis: () => request("/emojis"),
   createEmoji,

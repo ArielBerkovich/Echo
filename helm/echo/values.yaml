@@ -46,7 +46,8 @@ server:
     # Socket.IO's polling handshake needs connection affinity. WebSocket
     # upgrades and Mongo-backed broadcasts still allow the server replicas to
     # scale; set to None only when the ingress explicitly provides stickiness
-    # or the clients are configured for WebSocket-only transport.
+    # or the clients are configured for WebSocket-only transport (Echo does
+    # this by default).
     sessionAffinity: ClientIP
   clientOrigin: ""
   mongoUri: ""

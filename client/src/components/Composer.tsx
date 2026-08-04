@@ -36,7 +36,7 @@ function composerContent(body) {
 // Rich-text message composer: @mention autocomplete, a formatting toolbar,
 // emoji, and file attachments. Owns all of its own editor state — mount it with
 // a `key={channel.id}` so switching channels yields a fresh, empty composer.
-export default function Composer({ channel, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, onDraftChange, onEditSave, onEditCancel, editing = null, placeholder: customPlaceholder, mode = "light", captureScreenDrops = false, showSchedule = true, showSend = true, showAttachments = true, disabled = false }) {
+export default function Composer({ channel, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onStartCall, callsEnabled = true, callActive = false, onSent, onDraftChange, onEditSave, onEditCancel, editing = null, placeholder: customPlaceholder, mode = "light", captureScreenDrops = false, showSchedule = true, showSend = true, showAttachments = true, disabled = false }) {
   const isThread = !!parentId; // a thread reply composer (hides channel-level scheduling)
   const [mention, setMention] = useState(null); // { trigger, query, from, to } or null
   const [activeIdx, setActiveIdx] = useState(0);
@@ -175,6 +175,10 @@ export default function Composer({ channel, parentId = null, users = [], channel
   const suggestions = useMemo(() => {
     if (!mention) return [];
     const q = mention.query.toLowerCase();
+    if (mention.trigger === "/") {
+      if (!callsEnabled || !isDm || isThread || !"talk".startsWith(q)) return [];
+      return [{ id: "command:talk", command: "talk", displayName: callActive ? "Join video call" : "Start a video call", description: callActive ? "Join this DM call" : "Call this DM" }];
+    }
     if (mention.trigger === "#") {
       return channels
         .filter((item) => item.type === "public")
@@ -192,7 +196,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
       .filter((u) => u.username.toLowerCase().includes(q) || u.displayName.toLowerCase().includes(q))
       .slice(0, 6);
     return [...specials, ...people].slice(0, 8);
-  }, [mention, users, channels, isDm]);
+  }, [mention, users, channels, isDm, isThread, callsEnabled, callActive]);
 
   // ---- Tiptap editor integration ----
 
@@ -223,7 +227,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
     if (!selection.empty) return setMention(null);
     const { $from, from } = selection;
     const before = $from.parent.textBetween(0, $from.parentOffset, "\n", "\0");
-    const match = before.match(/(?:^|\s)([@#])([\w.-]*)$/);
+    const match = before.match(/(?:^|\s)([@#\/])([\w.-]*)$/);
     if (!match) return setMention(null);
     setMention({
       trigger: match[1],
@@ -253,7 +257,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
 
   function applyMention(picked) {
     if (!mention || !editor) return;
-    const value = mention.trigger === "#" ? `#${picked.name}` : `@${picked.username}`;
+    const value = mention.trigger === "/" ? `/${picked.command}` : mention.trigger === "#" ? `#${picked.name}` : `@${picked.username}`;
     editor.chain().focus().insertContentAt({ from: mention.from, to: mention.to }, `${value} `).run();
     setMention(null);
   }
@@ -497,6 +501,12 @@ export default function Composer({ channel, parentId = null, users = [], channel
     if (!hasText && pending.length === 0) return; // nothing to send
     if (uploading) return; // wait for in-flight uploads
     const body = hasText ? htmlToMarkdown(editor.getHTML()) : "";
+    if (!editing && !isThread && callsEnabled && isDm && body.trim().toLowerCase() === "/talk" && pending.length === 0) {
+      onError?.(null);
+      resetComposer();
+      onStartCall?.(channel);
+      return;
+    }
     if (editing) {
       if (!body.trim() && pending.length === 0) return;
       onError?.(null);
@@ -752,7 +762,9 @@ export default function Composer({ channel, parentId = null, users = [], channel
 
       {mention && suggestions.length > 0 && (
         <div className="mention-popup">
-          <div className="mention-popup-head">{mention.trigger === "#" ? "Public channels" : "People"}</div>
+          <div className="mention-popup-head">
+            {mention.trigger === "/" ? "Commands" : mention.trigger === "#" ? "Public channels" : "People"}
+          </div>
           {suggestions.map((u, idx) => (
             <button
               type="button"
@@ -762,15 +774,17 @@ export default function Composer({ channel, parentId = null, users = [], channel
               onMouseDown={keepFocus}
               onClick={() => applyMention(u)}
             >
-              {u.channelTag ? (
+              {u.command ? (
+                <span className="mention-mega">📹</span>
+              ) : u.channelTag ? (
                 <span className="mention-channel-mark">#</span>
               ) : u.broadcast ? (
                 <span className="mention-mega">📣</span>
               ) : (
                 <Avatar name={u.displayName} src={u.avatarUrl} size={26} />
               )}
-              <span className="mi-name">{u.channelTag ? `#${u.name}` : u.broadcast ? `@${u.username}` : u.displayName}</span>
-              <span className="mi-handle">{u.channelTag ? "Public channel" : u.broadcast ? u.displayName : `@${u.username}`}</span>
+              <span className="mi-name">{u.command ? `/${u.command}` : u.channelTag ? `#${u.name}` : u.broadcast ? `@${u.username}` : u.displayName}</span>
+              <span className="mi-handle">{u.command ? u.description : u.channelTag ? "Public channel" : u.broadcast ? u.displayName : `@${u.username}`}</span>
             </button>
           ))}
         </div>

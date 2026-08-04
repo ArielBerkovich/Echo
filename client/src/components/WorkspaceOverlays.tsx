@@ -11,6 +11,7 @@ const SettingsModal = lazy(() => import("./SettingsModal.js"));
 const NewMessageModal = lazy(() => import("./NewMessageModal.js"));
 const UserProfileModal = lazy(() => import("./UserProfileModal.js"));
 const Walkthrough = lazy(() => import("./Walkthrough.js"));
+const CallOverlay = lazy(() => import("./CallOverlay.js"));
 
 export default function WorkspaceOverlays({
   user,
@@ -31,6 +32,8 @@ export default function WorkspaceOverlays({
   profileUser,
   showTour,
   toast,
+  callChannel,
+  incomingCall,
   onCreateChannel,
   onStartDm,
   onPrepareDm,
@@ -43,6 +46,9 @@ export default function WorkspaceOverlays({
   onOpenDm,
   onOpenApiDocs,
   onFinishTour,
+  onCloseCall,
+  onAcceptCall,
+  onDeclineCall,
   onClose,
 }) {
   const canAddPeople = activeChannel && activeChannel.type !== "dm" && activeChannel.name?.toLowerCase() !== "general";
@@ -98,6 +104,19 @@ export default function WorkspaceOverlays({
         />
       ) : null}
       {showTour ? <Walkthrough onClose={onFinishTour} /> : null}
+      {callChannel ? <CallOverlay channel={callChannel} onClose={onCloseCall} /> : null}
+      {incomingCall ? (
+        <div className="incoming-call" role="alertdialog" aria-label="Incoming call">
+          <div className="incoming-call-copy">
+            <strong>{incomingCall.from.displayName} is calling</strong>
+            <span>Direct message</span>
+          </div>
+          <div className="incoming-call-actions">
+            <button type="button" className="incoming-call-decline" onClick={onDeclineCall}>Decline</button>
+            <button type="button" className="btn-primary" onClick={onAcceptCall}>Answer</button>
+          </div>
+        </div>
+      ) : null}
       {toast ? <div className="toast" role="status" onClick={onClose.toast}>{toast}</div> : null}
     </Suspense>
   );
