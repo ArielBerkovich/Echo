@@ -16,7 +16,9 @@ async function openForwardDialog(page: Page) {
   const source = messageById(page, fixture.messages.searchHit.id);
   await expect(source).toBeVisible();
   await source.hover();
-  await page.getByTestId(`message-${fixture.messages.searchHit.id}-forward`).click();
+  const forward = page.getByTestId(`message-${fixture.messages.searchHit.id}-forward`);
+  await expect(forward).toBeVisible();
+  await forward.click({ force: true });
   await expect(forwardModal(page)).toBeVisible();
 }
 

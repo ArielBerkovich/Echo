@@ -32,8 +32,14 @@ async function withAliceBobPages(browser, fn) {
   const bobPage = await newAuthedPage(browser, bob.token);
 
   try {
-    await alicePage.page.goto("/");
-    await bobPage.page.goto("/");
+    const aliceSocket = alicePage.page.waitForEvent("websocket", {
+      predicate: (socket) => socket.url().includes("/socket.io/"),
+    });
+    const bobSocket = bobPage.page.waitForEvent("websocket", {
+      predicate: (socket) => socket.url().includes("/socket.io/"),
+    });
+    await Promise.all([alicePage.page.goto("/"), bobPage.page.goto("/")]);
+    await Promise.all([aliceSocket, bobSocket]);
     await fn({ alicePage, bobPage, alice, bob });
   } finally {
     await alicePage.context.close();
