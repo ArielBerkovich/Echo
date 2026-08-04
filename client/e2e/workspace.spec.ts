@@ -63,6 +63,19 @@ test("restores an authenticated session into the default channel", async ({ page
   }
 });
 
+test("does not allow Echo images to start native drags", async ({ page }) => {
+  await page.goto("/");
+  const logo = page.getByTestId("rail-brand").locator("img");
+  await expect(logo).toBeVisible();
+
+  const dragWasAllowed = await logo.evaluate((image) => {
+    const event = new DragEvent("dragstart", { bubbles: true, cancelable: true });
+    return image.dispatchEvent(event);
+  });
+
+  expect(dragWasAllowed).toBe(false);
+});
+
 test("opens the workspace search pane with Ctrl+F", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByTestId("composer-editor")).toBeVisible();
