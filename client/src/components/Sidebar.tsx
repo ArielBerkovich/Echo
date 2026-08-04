@@ -246,7 +246,7 @@ export default function Sidebar({
           )}
           {starredDms.length > 0 && (
             <>
-              <div className="section-label section-toggle">
+              <div className="section-label section-toggle starred-section-label">
                 <button
                   type="button"
                   className="sl-collapse"

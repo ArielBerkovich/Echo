@@ -1912,6 +1912,9 @@ html[data-mode="dark"] .backend-connection-error {
   filter: drop-shadow(0 0 3px color-mix(in srgb, var(--beam) 46%, transparent));
 }
 /* Gold Starred section header in the sidebar. */
+.starred-section-label {
+  margin-top: 18px;
+}
 .starred-label {
   color: var(--beam);
 }
