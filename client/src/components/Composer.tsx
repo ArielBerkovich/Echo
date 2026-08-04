@@ -63,6 +63,9 @@ export default function Composer({ channel, parentId = null, users = [], channel
     strikethrough: false,
     ul: false,
     ol: false,
+    blockquote: false,
+    code: false,
+    codeBlock: false,
   });
 
   const keyDownHandlerRef = useRef(null);
@@ -219,7 +222,17 @@ export default function Composer({ channel, parentId = null, users = [], channel
 
   function readEditorState(currentEditor) {
     if (!currentEditor?.isInitialized || !currentEditor?.state?.doc) {
-      return { canSend: false, bold: false, italic: false, strikethrough: false, ul: false, ol: false };
+      return {
+        canSend: false,
+        bold: false,
+        italic: false,
+        strikethrough: false,
+        ul: false,
+        ol: false,
+        blockquote: false,
+        code: false,
+        codeBlock: false,
+      };
     }
     return {
       canSend: currentEditor.getText().trim().length > 0,
@@ -228,6 +241,9 @@ export default function Composer({ channel, parentId = null, users = [], channel
       strikethrough: currentEditor.isActive("strike"),
       ul: currentEditor.isActive("bulletList"),
       ol: currentEditor.isActive("orderedList"),
+      blockquote: currentEditor.isActive("blockquote"),
+      code: currentEditor.isActive("code"),
+      codeBlock: currentEditor.isActive("codeBlock"),
     };
   }
 
@@ -544,6 +560,12 @@ export default function Composer({ channel, parentId = null, users = [], channel
 
   const keepFocus = (e) => e.preventDefault();
 
+  function runFormatting(action) {
+    if (!editor) return;
+    action(editor.chain().focus()).run();
+    syncEditorState(editor);
+  }
+
   function toggleList(kind) {
     if (!editor) return;
 
@@ -560,6 +582,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
     const chain = editor.chain().focus();
     if (shouldStartNewList && editor.can().splitBlock()) chain.splitBlock();
     (kind === "ordered" ? chain.toggleOrderedList() : chain.toggleBulletList()).run();
+    syncEditorState(editor);
   }
 
   return (
@@ -827,13 +850,13 @@ export default function Composer({ channel, parentId = null, users = [], channel
 
       {showFormatting && (
         <div className="composer-toolbar">
-          <button type="button" className={`icon-btn fmt fmt-b ${active.bold ? "active" : ""}`} title="Bold" onMouseDown={keepFocus} onClick={() => editor?.chain().focus().toggleBold().run()}>
+          <button type="button" className={`icon-btn fmt fmt-b ${active.bold ? "active" : ""}`} data-testid="composer-bold" title="Bold" onMouseDown={keepFocus} onClick={() => runFormatting((chain) => chain.toggleBold())}>
             B
           </button>
-          <button type="button" className={`icon-btn fmt fmt-i ${active.italic ? "active" : ""}`} title="Italic" onMouseDown={keepFocus} onClick={() => editor?.chain().focus().toggleItalic().run()}>
+          <button type="button" className={`icon-btn fmt fmt-i ${active.italic ? "active" : ""}`} data-testid="composer-italic" title="Italic" onMouseDown={keepFocus} onClick={() => runFormatting((chain) => chain.toggleItalic())}>
             I
           </button>
-          <button type="button" className={`icon-btn fmt fmt-s ${active.strikethrough ? "active" : ""}`} title="Strikethrough" onMouseDown={keepFocus} onClick={() => editor?.chain().focus().toggleStrike().run()}>
+          <button type="button" className={`icon-btn fmt fmt-s ${active.strikethrough ? "active" : ""}`} data-testid="composer-strikethrough" title="Strikethrough" onMouseDown={keepFocus} onClick={() => runFormatting((chain) => chain.toggleStrike())}>
             S
           </button>
           <span className="tb-sep" />
@@ -847,14 +870,14 @@ export default function Composer({ channel, parentId = null, users = [], channel
           <button type="button" className={`icon-btn ${active.ul ? "active" : ""}`} title="Bulleted list" onMouseDown={keepFocus} onClick={() => toggleList("bullet")}>
             <BulletListIcon />
           </button>
-          <button type="button" className="icon-btn" title="Blockquote" onMouseDown={keepFocus} onClick={() => editor?.chain().focus().toggleBlockquote().run()}>
+          <button type="button" className={`icon-btn ${active.blockquote ? "active" : ""}`} data-testid="composer-blockquote" title="Blockquote" onMouseDown={keepFocus} onClick={() => runFormatting((chain) => chain.toggleBlockquote())}>
             <QuoteIcon />
           </button>
           <span className="tb-sep" />
-          <button type="button" className="icon-btn" title="Code" onMouseDown={keepFocus} onClick={() => editor?.chain().focus().toggleCode().run()}>
+          <button type="button" className={`icon-btn ${active.code ? "active" : ""}`} data-testid="composer-code" title="Code" onMouseDown={keepFocus} onClick={() => runFormatting((chain) => chain.toggleCode())}>
             <CodeIcon />
           </button>
-          <button type="button" className="icon-btn" title="Code block" onMouseDown={keepFocus} onClick={() => editor?.chain().focus().toggleCodeBlock().run()}>
+          <button type="button" className={`icon-btn ${active.codeBlock ? "active" : ""}`} data-testid="composer-code-block" title="Code block" onMouseDown={keepFocus} onClick={() => runFormatting((chain) => chain.toggleCodeBlock())}>
             <CodeBlockIcon />
           </button>
         </div>

@@ -497,6 +497,21 @@ test("uses Shift+Enter for code newlines and Enter to exit the block", async ({ 
   await expect(editor.locator("p").filter({ hasText: "After code" })).toHaveText("After code");
 });
 
+test("updates composer formatting buttons immediately", async ({ page }) => {
+  await page.goto("/");
+
+  const editor = page.getByTestId("composer-editor");
+  await editor.click();
+
+  for (const testId of ["composer-bold", "composer-italic", "composer-strikethrough", "composer-blockquote", "composer-code", "composer-code-block"]) {
+    const button = page.getByTestId(testId);
+    await button.click();
+    await expect(button).toHaveClass(/active/);
+    await button.click();
+    await expect(button).not.toHaveClass(/active/);
+  }
+});
+
 test("uses an empty quoted line to exit a blockquote", async ({ page }) => {
   await page.goto("/");
 
