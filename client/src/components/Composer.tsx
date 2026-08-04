@@ -8,6 +8,7 @@ import { htmlToMarkdown } from "../htmlToMarkdown.js";
 import { markdownTextToComposerHtml } from "../markdownPaste.js";
 import { formatSize } from "../lib/format.js";
 import { formatDateTime } from "../lib/time.js";
+import { readString, writeString } from "../lib/storage.js";
 import { useAttachments } from "../lib/useAttachments.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
 import Avatar from "./Avatar.js";
@@ -24,6 +25,10 @@ const SCHEDULE_PRESETS = [
   { label: "In 1 hour", minutes: 60 },
   { label: "In 3 hours", minutes: 180 },
 ];
+
+function draftStorageKey(channelId, isThread) {
+  return isThread ? null : `echo.composer-draft.v1.${channelId}`;
+}
 
 function composerContent(body) {
   const html = markdownTextToComposerHtml(body || "");
@@ -62,6 +67,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
 
   const keyDownHandlerRef = useRef(null);
   const pasteHandlerRef = useRef(null);
+  const draftReadyRef = useRef(false);
   const typingActiveRef = useRef(false); // are we currently flagged as typing?
   const typingStopRef = useRef(null); // timer that clears the typing flag
   const {
@@ -120,17 +126,21 @@ export default function Composer({ channel, parentId = null, users = [], channel
   useEffect(() => {
     if (!editor) return;
     if (!editing) {
-      editor.commands.clearContent(true);
+      const key = draftStorageKey(channel.id, isThread);
+      const draft = key ? readString(key, "") : "";
+      editor.commands.setContent(draft ? composerContent(draft) : "<p></p>", false);
       replacePending([]);
+      draftReadyRef.current = true;
       return;
     }
 
+    draftReadyRef.current = false;
     editor.commands.setContent(composerContent(editing.draft), false);
     replacePending(editing.attachments || []);
     requestAnimationFrame(() => {
       if (!editor.isDestroyed) editor.commands.focus("end");
     });
-  }, [editor, editing?.id, replacePending]);
+  }, [channel.id, editor, editing?.id, isThread, replacePending]);
   const { canSend = false, ...active } = editorState;
 
   // Tell others we're typing (throttled), and auto-clear after a short pause.
@@ -201,7 +211,10 @@ export default function Composer({ channel, parentId = null, users = [], channel
     const hasText = currentEditor.getText().trim().length > 0;
     hasText ? signalTyping() : stopTyping();
     syncMentionContext(currentEditor);
-    onDraftChange?.(htmlToMarkdown(currentEditor.getHTML()));
+    const draft = htmlToMarkdown(currentEditor.getHTML());
+    onDraftChange?.(draft);
+    const key = draftStorageKey(channel.id, isThread);
+    if (draftReadyRef.current && !editing && key) writeString(key, draft.trim() ? draft : null);
   }
 
   function readEditorState(currentEditor) {
@@ -376,6 +389,8 @@ export default function Composer({ channel, parentId = null, users = [], channel
     clearAttachments();
     setMention(null);
     setEmojiOpen(false);
+    const key = draftStorageKey(channel.id, isThread);
+    if (key) writeString(key, null);
   }
 
   // Format a Date as a local "YYYY-MM-DDTHH:MM:SS" string for <input datetime-local>.
@@ -861,6 +876,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
           <button type="button" className={`icon-btn emoji-toggle ${emojiOpen ? "active" : ""}`} data-testid="composer-emoji-toggle" title="Emoji" onMouseDown={keepFocus} onClick={() => setEmojiOpen((v) => !v)}>
             <SmileyIcon />
           </button>
+          {showSend && !editing && <span className="composer-hint">Enter to send · Shift+Enter for a new line</span>}
         </div>
 
         <div className="right">
