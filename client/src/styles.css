@@ -2345,6 +2345,38 @@ html[data-mode="dark"] .backend-connection-error {
 .search-result:hover {
   background: var(--surface-2);
 }
+.search-result.active {
+  background: var(--surface-2);
+  outline: 2px solid color-mix(in srgb, var(--blue-500) 55%, transparent);
+  outline-offset: -2px;
+}
+.search-result-group + .search-result-group {
+  margin-top: 12px;
+}
+.search-result-group-title {
+  padding: 8px 10px 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.search-result-count {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.search-empty-hint {
+  color: var(--muted);
+  font-size: 13px;
+}
+.search-empty-hint code {
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--text);
+}
 .search-result .content {
   min-width: 0;
 }

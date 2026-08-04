@@ -775,3 +775,19 @@ test("searches messages with filters and displays results", async ({ page }) => 
     `q=Welcome in:general from:@${fixture.alice.username} has:link`
   );
 });
+
+test("navigates grouped search results with the keyboard", async ({ page }) => {
+  await page.goto("/");
+  const searchInput = page.getByTestId("search-input");
+  await searchInput.fill(fixture.messages.searchHit.body);
+  await searchInput.press("Enter");
+
+  const pane = page.getByTestId("search-results-pane");
+  await expect(pane).toBeFocused();
+  await expect(page.getByTestId("search-result-count")).toContainText("1 result");
+  const result = page.getByTestId("search-result").first();
+  await expect(result).toHaveClass(/active/);
+
+  await pane.press("Enter");
+  await expect(messageById(page, fixture.messages.searchHit.id)).toBeVisible();
+});
