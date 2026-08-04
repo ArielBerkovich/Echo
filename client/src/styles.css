@@ -1912,6 +1912,9 @@ html[data-mode="dark"] .backend-connection-error {
   filter: drop-shadow(0 0 3px color-mix(in srgb, var(--beam) 46%, transparent));
 }
 /* Gold Starred section header in the sidebar. */
+.starred-section-label {
+  margin-top: 12px;
+}
 .starred-label {
   color: var(--beam);
 }
@@ -2035,6 +2038,8 @@ html[data-mode="dark"] .backend-connection-error {
 .rail-brand .echo-logo {
   width: 54px;
   height: 54px;
+  flex: none;
+  object-fit: contain;
   filter: drop-shadow(0 7px 16px rgba(0, 0, 0, 0.24));
 }
 .rail-brand-slot {
@@ -2042,14 +2047,6 @@ html[data-mode="dark"] .backend-connection-error {
   width: 54px;
   height: 54px;
   flex: none;
-}
-.rail-brand-slot.is-workspace-logo {
-  width: 62px;
-  height: 62px;
-}
-.rail-brand .workspace-logo-mark {
-  width: 62px;
-  height: 62px;
 }
 .rail-brand.ready > * {
   animation: rail-brand-fade-in 240ms ease-out both;
@@ -2837,6 +2834,9 @@ html[data-mode="dark"] .sidebar {
 /* Direct Messages section */
 .dm-label {
   margin-top: 14px;
+}
+.dm-label-after-starred {
+  margin-top: 18px;
 }
 .dm-item {
   padding-right: 6px;
@@ -6848,8 +6848,7 @@ html[data-mode="dark"] .channel-header {
   min-width: 0;
 }
 .channel-header .ch-name-btn,
-.channel-header .ch-meta-btn,
-.channel-header .ch-topic {
+.channel-header .ch-meta-btn {
   background: none;
   color: inherit;
   border-radius: 6px;
@@ -6862,14 +6861,16 @@ html[data-mode="dark"] .channel-header {
   text-align: left;
 }
 .channel-header .ch-name-btn:hover,
-.channel-header .ch-meta-btn:hover,
-.channel-header .ch-topic:hover {
+.channel-header .ch-meta-btn:hover {
   background: var(--surface-2);
 }
 .channel-header .ch-topic {
   font-size: 13px;
   color: var(--muted);
-  flex: 1 1 150px;
+  cursor: default;
+  text-align: left;
+  flex: 0 1 auto;
+  width: fit-content;
   max-width: 340px;
   min-width: 72px;
   overflow: hidden;
@@ -7183,7 +7184,10 @@ html[data-mode="dark"] .new-messages-button:hover {
   box-shadow: inset 2px 0 0 transparent;
   transition: background 0.15s ease, box-shadow 0.15s ease;
 }
-.message:hover {
+.message:hover,
+.message.menu-open,
+.message.actions-hovered,
+.message.reaction-open {
   background: var(--surface-2);
   box-shadow: inset 2px 0 0 var(--accent);
 }
@@ -7560,12 +7564,6 @@ html[data-mode="dark"] .new-messages-button:hover {
 }
 .composer-actions .right {
   position: relative;
-}
-.composer-hint {
-  margin-left: 6px;
-  color: var(--muted);
-  font-size: 11px;
-  white-space: nowrap;
 }
 .send-btn {
   padding-inline: 10px;
@@ -8675,9 +8673,6 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   .composer-actions .right {
     min-width: 0;
   }
-  .composer-hint {
-    display: none;
-  }
   .send-menu {
     max-width: calc(100vw - 32px);
   }
@@ -9239,10 +9234,6 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   .rail-brand {
     gap: 8px;
     margin-bottom: 28px;
-  }
-  .rail-brand .echo-logo {
-    width: 62px;
-    height: 62px;
   }
   .rail-brand-name {
     font-size: 11px;

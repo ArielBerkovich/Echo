@@ -63,6 +63,19 @@ test("restores an authenticated session into the default channel", async ({ page
   }
 });
 
+test("does not allow Echo images to start native drags", async ({ page }) => {
+  await page.goto("/");
+  const logo = page.getByTestId("rail-brand").locator("img");
+  await expect(logo).toBeVisible();
+
+  const dragWasAllowed = await logo.evaluate((image) => {
+    const event = new DragEvent("dragstart", { bubbles: true, cancelable: true });
+    return image.dispatchEvent(event);
+  });
+
+  expect(dragWasAllowed).toBe(false);
+});
+
 test("opens the workspace search pane with Ctrl+F", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByTestId("composer-editor")).toBeVisible();
@@ -76,13 +89,12 @@ test("opens the workspace search pane with Ctrl+F", async ({ page }) => {
   await expect(page.getByTestId("search-hint")).toBeVisible();
 });
 
-test("preserves composer drafts per channel and explains send shortcuts", async ({ page }) => {
+test("preserves composer drafts per channel", async ({ page }) => {
   await page.goto("/");
   const editor = page.getByTestId("composer-editor");
   const draft = `Draft for general ${fixture.suffix}`;
   await editor.fill(draft);
 
-  await expect(page.getByText("Enter to send · Shift+Enter for a new line")).toBeVisible();
   await channelRow(page, fixture.projectChannel.name).click();
   await channelRow(page, "general").click();
   await expect(editor).toHaveText(draft);
@@ -234,6 +246,7 @@ test("keeps channel header actions inside the header when pinned panel is open",
   await page.setViewportSize({ width: 1120, height: 760 });
   await page.goto("/");
   await page.getByText(fixture.projectChannel.name, { exact: true }).click();
+  await expect(page.getByTestId("channel-topic")).toHaveCSS("text-align", "left");
   await page.getByRole("button", { name: "Pinned messages" }).click();
 
   await expect(page.getByTestId("pinned-panel")).toBeVisible();
@@ -482,6 +495,21 @@ test("uses Shift+Enter for code newlines and Enter to exit the block", async ({ 
   await expect(editor.locator("pre code")).toContainText("const value = 1;");
   await expect(editor.locator("pre code")).toContainText("console.log(value);");
   await expect(editor.locator("p").filter({ hasText: "After code" })).toHaveText("After code");
+});
+
+test("updates composer formatting buttons immediately", async ({ page }) => {
+  await page.goto("/");
+
+  const editor = page.getByTestId("composer-editor");
+  await editor.click();
+
+  for (const testId of ["composer-bold", "composer-italic", "composer-strikethrough", "composer-blockquote", "composer-code", "composer-code-block"]) {
+    const button = page.getByTestId(testId);
+    await button.click();
+    await expect(button).toHaveClass(/active/);
+    await button.click();
+    await expect(button).not.toHaveClass(/active/);
+  }
 });
 
 test("uses an empty quoted line to exit a blockquote", async ({ page }) => {

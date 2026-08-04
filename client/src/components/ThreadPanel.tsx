@@ -310,7 +310,11 @@ export default function ThreadPanel({
                 onDeactivate={() => setActionsFor((activeId) => (activeId === m.id ? null : activeId))}
                 editing={null}
                 menuOpen={menuFor === m.id}
-                onReact={(e) => openReact(m.id, e)}
+                pickerOpen={reactingTo?.id === m.id}
+                onReact={(e) => {
+                  setActionsFor(m.id);
+                  openReact(m.id, e);
+                }}
                 onToggleReaction={(emoji) => toggleReaction(m.id, emoji)}
                 onOpenThread={() => {}}
                 onForward={() => onForward?.(m)}

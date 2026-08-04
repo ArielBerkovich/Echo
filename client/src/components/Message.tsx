@@ -1,4 +1,4 @@
-import { memo, useLayoutEffect, useRef, useState } from "react";
+import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ArrowUpRight } from "lucide-react";
 import Avatar from "./Avatar.js";
@@ -38,6 +38,7 @@ function Message({
   onToggleSave,
   editing, // the edit draft for this message, or null
   menuOpen,
+  pickerOpen = false,
   onReact,
   onToggleReaction,
   onOpenThread,
@@ -71,7 +72,49 @@ function Message({
   const actionsRef = useRef(null);
   const menuRef = useRef(null);
   const menuTriggerRef = useRef(null);
+  const hoverLeaveTimerRef = useRef(null);
+  const hoverGenerationRef = useRef(0);
+  const menuOpenRef = useRef(menuOpen);
+  const pickerOpenRef = useRef(pickerOpen);
+  menuOpenRef.current = menuOpen;
+  pickerOpenRef.current = pickerOpen;
   const mid = m.id;
+  function activateMessage() {
+    hoverGenerationRef.current += 1;
+    if (hoverLeaveTimerRef.current) window.clearTimeout(hoverLeaveTimerRef.current);
+    hoverLeaveTimerRef.current = null;
+    messageRef.current?.classList.add("actions-hovered");
+    onActivate?.();
+  }
+
+  function deactivateMessage(event) {
+    if (menuOpen || pickerOpen) return;
+    const related = event?.relatedTarget;
+    if (related instanceof Element && related.closest("[data-message-actions]")) return;
+    if (hoverLeaveTimerRef.current) window.clearTimeout(hoverLeaveTimerRef.current);
+    const generation = hoverGenerationRef.current;
+    hoverLeaveTimerRef.current = window.setTimeout(() => {
+      hoverLeaveTimerRef.current = null;
+      if (generation !== hoverGenerationRef.current) return;
+      if (menuOpenRef.current || pickerOpenRef.current) return;
+      if (document.querySelector("[data-message-actions]:hover")) return;
+      messageRef.current?.classList.remove("actions-hovered");
+      onDeactivate?.();
+    }, 180);
+  }
+
+  useEffect(() => {
+    if (menuOpen || pickerOpen) {
+      messageRef.current?.classList.add("actions-hovered");
+    } else if (!showActions) {
+      messageRef.current?.classList.remove("actions-hovered");
+    }
+  }, [showActions, menuOpen, pickerOpen]);
+
+  useEffect(() => () => {
+    if (hoverLeaveTimerRef.current) window.clearTimeout(hoverLeaveTimerRef.current);
+  }, []);
+
   // Messages carry an author snapshot, but profile changes arrive separately
   // over the realtime user:update event. Resolve the latest directory entry so
   // an already-open conversation updates without waiting for a new message.
@@ -119,8 +162,15 @@ function Message({
       const message = messageRef.current;
       if (!message) return;
       const rect = message.getBoundingClientRect();
+      const header = message.closest(".channel-view")?.querySelector(".channel-header")
+        || message.closest(".thread-panel")?.querySelector(".thread-header");
+      const topBoundary = header ? header.getBoundingClientRect().bottom + 6 : 8;
+      const toolbarHeight = 38;
       setActionsPosition({
-        top: rect.top + 2,
+        top: Math.min(
+          Math.max(rect.top + 2, topBoundary),
+          Math.max(topBoundary, window.innerHeight - toolbarHeight - 8)
+        ),
         right: window.innerWidth - rect.right + 18,
       });
     };
@@ -219,21 +269,22 @@ function Message({
 
   return (
     <div
-      className={`message ${grouped ? "grouped" : ""} ${highlighted ? "flash" : ""} ${menuOpen ? "menu-open" : ""}`}
+      className={`message ${grouped ? "grouped" : ""} ${highlighted ? "flash" : ""} ${menuOpen ? "menu-open" : ""} ${pickerOpen ? "reaction-open" : ""}`}
       ref={messageRef}
       data-mid={m.id}
       data-testid={`message-${mid}`}
-      onMouseEnter={onActivate}
+      onMouseEnter={activateMessage}
       onClick={(event) => {
         if (!window.matchMedia("(max-width: 760px)").matches) return;
         if (event.target.closest?.("button, a, [data-message-actions]")) return;
-        onActivate?.();
+          activateMessage();
       }}
       onMouseLeave={(event) => {
         if (window.matchMedia("(max-width: 760px)").matches) return;
+        if (menuOpen) return;
         const related = event.relatedTarget;
         if (!(related instanceof Node) || !actionsRef.current?.contains(related)) {
-          onDeactivate?.();
+          deactivateMessage(event);
         }
       }}
     >
@@ -402,23 +453,33 @@ function Message({
             top: actionsPosition.top,
             right: actionsPosition.right,
           } : { visibility: "hidden" }}
-          onMouseEnter={onActivate}
+          onMouseEnter={activateMessage}
           onMouseLeave={(event) => {
+            if (menuOpen || pickerOpen) return;
             const related = event.relatedTarget;
-            if (!(related instanceof Node) || !messageRef.current?.contains(related)) {
-              onDeactivate?.();
-            }
+            if (related instanceof Node && messageRef.current?.contains(related)) return;
+            deactivateMessage(event);
           }}
         >
-          <button className="react-toggle" data-testid={`message-${mid}-add-reaction-action`} title="Add reaction" onClick={onReact}>
+          <button
+            className="react-toggle"
+            data-testid={`message-${mid}-add-reaction-action`}
+            title="Add reaction"
+            onMouseEnter={activateMessage}
+            onMouseOver={activateMessage}
+            onClick={(event) => {
+              activateMessage();
+              onReact(event);
+            }}
+          >
             <EmojiAddIcon />
           </button>
           {!inThread && (
-            <button data-testid={`message-${mid}-reply`} title="Reply in thread" onClick={onOpenThread}>
+            <button data-testid={`message-${mid}-reply`} title="Reply in thread" onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onOpenThread}>
               <ReplyIcon />
             </button>
           )}
-          <button data-testid={`message-${mid}-forward`} title="Forward message" onClick={onForward}>
+          <button data-testid={`message-${mid}-forward`} title="Forward message" onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onForward}>
             <ShareIcon />
           </button>
           <button
@@ -428,6 +489,8 @@ function Message({
             aria-label="More message actions"
             aria-expanded={menuOpen}
             className={menuOpen ? "active" : ""}
+            onMouseEnter={activateMessage}
+            onMouseOver={activateMessage}
             onClick={onToggleMenu}
             ref={menuTriggerRef}
           >
@@ -508,6 +571,7 @@ function areMessagePropsEqual(prev, next) {
     prev.saved === next.saved &&
     prev.editing === next.editing &&
     prev.menuOpen === next.menuOpen &&
+    prev.pickerOpen === next.pickerOpen &&
     prev.showActions === next.showActions
   );
 }

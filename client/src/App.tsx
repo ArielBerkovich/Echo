@@ -121,6 +121,19 @@ export default function App() {
     return () => window.removeEventListener("keydown", onFindShortcut);
   }, [user]);
 
+  // Echo's own images should not become native drag sources. This keeps
+  // logos, avatars, and message images from being dropped into the composer;
+  // files dragged from outside the app still arrive through the file-drop
+  // handlers.
+  useEffect(() => {
+    function preventInternalImageDrag(event) {
+      if (event.target instanceof HTMLImageElement) event.preventDefault();
+    }
+
+    document.addEventListener("dragstart", preventInternalImageDrag, true);
+    return () => document.removeEventListener("dragstart", preventInternalImageDrag, true);
+  }, []);
+
   useEffect(() => void (viewRef.current = view), [view]);
   useEffect(() => void (activeChannelRef.current = activeChannel), [activeChannel]);
 

@@ -97,7 +97,7 @@ export default function LeftRail({ view, onSelect, badges = {}, user, workspace,
         {workspaceLoading || (workspace?.logoUrl && !workspaceLogoSrc)
           ? <span className={`rail-brand-slot${workspace?.logoUrl ? " is-workspace-logo" : ""}`} aria-hidden="true" />
           : workspaceLogoSrc
-          ? <img src={workspaceLogoSrc} width={62} height={62} className="echo-logo workspace-logo-mark" alt="" />
+          ? <img src={workspaceLogoSrc} width={54} height={54} className="echo-logo workspace-logo-mark" alt="" />
           : <Logo size={54} />}
         {!workspaceLoading && workspace?.name && workspace.name !== "Echo" && <span className="rail-brand-name">{workspace.name}</span>}
       </div>

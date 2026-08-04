@@ -936,9 +936,9 @@ export default function ChannelView({
               {channel.type === "private" ? "🔒" : "#"} {channel.name}
             </button>
             {channel.topic && (
-              <button className="ch-topic" data-testid="channel-topic" title="View channel details" onClick={() => { setThread(null); setThreadJumpTargetId(null); setShowMembers(false); setShowDetails(true); }}>
+              <span className="ch-topic" data-testid="channel-topic">
                 {channel.topic}
-              </button>
+              </span>
             )}
             <div className="header-actions">
               <button className="header-action header-action-icon" data-testid="channel-pinned" onClick={openPinnedPanel} title="Pinned messages" aria-label="Pinned messages">
@@ -980,9 +980,6 @@ export default function ChannelView({
           data-testid="messages"
           ref={scrollerRef}
           onScroll={onMessagesScroll}
-          onMouseLeave={(event) => {
-            if (!menuFor && !event.relatedTarget?.closest?.("[data-message-actions]")) setActionsFor(null);
-          }}
         >
           <div ref={messagesInnerRef}>
           {loadingOlder && <div className="older-loader">Loading earlier messages…</div>}
@@ -1052,7 +1049,11 @@ export default function ChannelView({
                     onDeactivate={() => setActionsFor((activeId) => (activeId === m.id ? null : activeId))}
                     editing={null}
                     menuOpen={menuFor === m.id}
-                    onReact={(e) => openReact(m.id, e)}
+                    pickerOpen={reactingTo?.id === m.id}
+                    onReact={(e) => {
+                      setActionsFor(m.id);
+                      openReact(m.id, e);
+                    }}
                     onToggleReaction={(emoji) => toggleReaction(m.id, emoji)}
                     onOpenThread={() => {
                       setActionsFor(null);
