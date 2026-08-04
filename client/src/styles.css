@@ -2033,23 +2033,17 @@ html[data-mode="dark"] .backend-connection-error {
   color: var(--on-navy);
 }
 .rail-brand .echo-logo {
-  width: 54px;
-  height: 54px;
+  width: 62px;
+  height: 62px;
+  flex: none;
+  object-fit: contain;
   filter: drop-shadow(0 7px 16px rgba(0, 0, 0, 0.24));
 }
 .rail-brand-slot {
   display: block;
-  width: 54px;
-  height: 54px;
+  width: 62px;
+  height: 62px;
   flex: none;
-}
-.rail-brand-slot.is-workspace-logo {
-  width: 62px;
-  height: 62px;
-}
-.rail-brand .workspace-logo-mark {
-  width: 62px;
-  height: 62px;
 }
 .rail-brand.ready > * {
   animation: rail-brand-fade-in 240ms ease-out both;
@@ -9242,10 +9236,6 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   .rail-brand {
     gap: 8px;
     margin-bottom: 28px;
-  }
-  .rail-brand .echo-logo {
-    width: 62px;
-    height: 62px;
   }
   .rail-brand-name {
     font-size: 11px;
