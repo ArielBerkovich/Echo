@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Code2Icon, PaletteIcon, UserRoundIcon } from "lucide-react";
+import { Building2Icon, Code2Icon, PaletteIcon, UserRoundIcon } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { api } from "../api.js";
@@ -10,6 +10,7 @@ import ProfilePictureDialog from "./ProfilePictureDialog.js";
 import { PASSWORD_RULE } from "../lib/password.js";
 import { passwordPairSchema } from "../lib/formSchemas.js";
 import { uploadSizeError } from "../lib/uploads.js";
+import { useAuthUrl } from "../lib/useAuthUrl.js";
 import {
   notifySupported,
   notifyPermission,
@@ -22,12 +23,15 @@ import {
 const SETTINGS_TABS = [
   { id: "account", label: "Account", Icon: UserRoundIcon },
   { id: "appearance", label: "Appearance", Icon: PaletteIcon },
+  { id: "workspace", label: "Workspace", Icon: Building2Icon, adminOnly: true },
   { id: "api", label: "API", Icon: Code2Icon },
 ];
 
 // User settings: profile picture, display name, and a copyable API token.
 export default function SettingsModal({
   user,
+  workspace = { name: "Echo", logoUrl: null },
+  onWorkspaceUpdated,
   users = [],
   theme,
   themes = [],
@@ -44,6 +48,10 @@ export default function SettingsModal({
   const [activeTab, setActiveTab] = useState("account");
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
+  const [workspaceName, setWorkspaceName] = useState(workspace.name ?? "Echo");
+  const [workspaceLogoUrl, setWorkspaceLogoUrl] = useState(workspace.logoUrl || null);
+  const [workspaceLogoFile, setWorkspaceLogoFile] = useState(null);
+  const workspaceLogoSrc = useAuthUrl(workspaceLogoUrl);
 
   const nameChanged = displayName.trim() !== user.displayName;
 
@@ -51,6 +59,13 @@ export default function SettingsModal({
     setDisplayName(user.displayName);
     setAvatarUrl(user.avatarUrl || null);
   }, [user.displayName, user.avatarUrl]);
+
+  useEffect(() => {
+    setWorkspaceName(workspace.name ?? "Echo");
+    setWorkspaceLogoUrl(workspace.logoUrl || null);
+  }, [workspace.name, workspace.logoUrl]);
+
+  const visibleTabs = SETTINGS_TABS.filter((tab) => !tab.adminOnly || user.isAdmin);
 
   function onAvatarFileSelected(file) {
     if (!file) return;
@@ -120,6 +135,58 @@ export default function SettingsModal({
     setTimeout(() => setSaved(false), 1500);
   }
 
+  function onWorkspaceLogoSelected(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+      setError("Workspace logo must be a PNG, JPEG, or WebP image");
+      return;
+    }
+    const sizeError = uploadSizeError([file], undefined, "Workspace logos");
+    if (sizeError) return setError(sizeError);
+    setError(null);
+    setWorkspaceLogoFile(file);
+    setWorkspaceLogoUrl(URL.createObjectURL(file));
+  }
+
+  async function saveWorkspace() {
+    const nextName = workspaceName.trim();
+    if (nextName.length > 80) return setError("Organization name must be at most 80 characters");
+    setBusy(true);
+    setError(null);
+    try {
+      let logoKey;
+      if (workspaceLogoFile) {
+        const result = await api.uploadFiles([workspaceLogoFile]);
+        logoKey = result.attachments[0].key;
+      }
+      const result = await api.updateWorkspace({ name: nextName, ...(logoKey ? { logoKey } : {}) });
+      onWorkspaceUpdated?.(result.workspace);
+      setWorkspaceLogoFile(null);
+      flashSaved();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeWorkspaceLogo() {
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await api.updateWorkspace({ logoKey: null });
+      onWorkspaceUpdated?.(result.workspace);
+      setWorkspaceLogoFile(null);
+      setWorkspaceLogoUrl(null);
+      flashSaved();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="settings-page" data-testid="settings-page">
       <div className="settings-layout">
@@ -128,7 +195,7 @@ export default function SettingsModal({
             <span className="settings-nav-username">@{user.username}</span>
           </div>
           <nav className="settings-nav-list">
-            {SETTINGS_TABS.map(({ id, label, Icon }) => (
+            {visibleTabs.map(({ id, label, Icon }) => (
               <button key={id} type="button" className={`settings-nav-item${activeTab === id ? " active" : ""}`} onClick={() => setActiveTab(id)} aria-current={activeTab === id ? "page" : undefined}>
                 <Icon size={17} strokeWidth={1.8} /><span>{label}</span>
               </button>
@@ -181,10 +248,49 @@ export default function SettingsModal({
             </div>
           </section>}
 
+          {activeTab === "workspace" && user.isAdmin && <section className="settings-section workspace-branding-section">
+            <h3>Workspace identity</h3>
+            <p className="settings-hint">Set the name and logo your team sees in the Echo navigation.</p>
+            <div className="workspace-branding-layout">
+              <div className="workspace-branding-showcase">
+                <div className="workspace-branding-preview">
+                  <div className="workspace-branding-logo">
+                    {workspaceLogoSrc ? <img src={workspaceLogoSrc} alt="" /> : <span className="workspace-branding-fallback">E</span>}
+                  </div>
+                  <div className="workspace-branding-preview-copy">
+                    <span>Preview</span>
+                    <strong>{workspaceName.trim() || "Your organization"}</strong>
+                    <small>Shown in the navigation and browser title.</small>
+                  </div>
+                </div>
+              </div>
+              <div className="workspace-branding-form">
+                <div className="workspace-branding-field">
+                  <label className="settings-profile-field-label" htmlFor="workspace-name">Organization name</label>
+                  <input id="workspace-name" className="settings-input" value={workspaceName} maxLength={80} onChange={(event) => setWorkspaceName(event.target.value)} />
+                </div>
+                <div className="workspace-branding-field">
+                  <span className="settings-profile-field-label">Logo</span>
+                  <div className="workspace-logo-picker">
+                    <label className="workspace-upload-button" htmlFor="workspace-logo">Choose image</label>
+                    <span>{workspaceLogoFile?.name || (workspaceLogoUrl ? "Current logo selected" : "No logo selected")}</span>
+                    <input id="workspace-logo" className="workspace-logo-input" type="file" accept="image/png,image/jpeg,image/webp" onChange={onWorkspaceLogoSelected} disabled={busy} />
+                  </div>
+                  <p className="settings-hint">PNG, JPEG, or WebP · up to 10 MB.</p>
+                </div>
+                <div className="workspace-branding-actions">
+                  <button type="button" className="btn-primary" disabled={busy} onClick={saveWorkspace}>Save branding</button>
+                  {workspaceLogoUrl && <button type="button" className="link-danger" disabled={busy} onClick={removeWorkspaceLogo}>Remove logo</button>}
+                  {saved && <span className="workspace-save-status">Saved ✓</span>}
+                </div>
+              </div>
+            </div>
+          </section>}
+
           {activeTab === "api" && <ApiDocsPage embedded />}
 
           {error && <div className="error">{error}</div>}
-          {saved && <div className="settings-saved">Saved ✓</div>}
+          {saved && activeTab !== "workspace" && <div className="settings-saved">Saved ✓</div>}
         </main>
       </div>
       {avatarDialogOpen && <ProfilePictureDialog file={avatarFile} currentSrc={avatarUrl} onFileSelected={onAvatarFileSelected} onSave={saveAvatar} onClose={() => { setAvatarFile(null); setAvatarDialogOpen(false); }} />}

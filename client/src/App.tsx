@@ -65,6 +65,9 @@ export default function App() {
     users,
     setUsers,
     usersQuery,
+    workspace,
+    setWorkspace,
+    workspaceQuery,
     customEmojis,
     setCustomEmojis,
     savedIds,
@@ -91,6 +94,10 @@ export default function App() {
   const [toast, setToast] = useState(null); // transient notice (e.g. no access)
   const [connectionBannerVisible, setConnectionBannerVisible] = useState(false);
   const searchRef = useRef(null);
+
+  useEffect(() => {
+    document.title = workspace?.name && workspace.name !== "Echo" ? `Echo · ${workspace.name}` : "Echo";
+  }, [workspace?.name]);
   const markReadAtRef = useRef({}); // channelId -> last markRead time (throttle)
   const restoredRef = useRef(false); // have we restored the saved location yet?
   const restoredUserRef = useRef(null);
@@ -1174,6 +1181,8 @@ export default function App() {
         <WorkspaceNavigation
           view={view}
           user={user}
+          workspace={workspace}
+          workspaceLoading={workspaceQuery.isLoading}
           channels={channels}
           dms={dms}
           hidden={hidden}
@@ -1254,6 +1263,8 @@ export default function App() {
             }),
             settings: {
               user,
+              workspace,
+              onWorkspaceUpdated: setWorkspace,
               users,
               theme,
               themes: THEMES,

@@ -12,7 +12,7 @@ import { config } from "./config.js";
 
 // Every stored object is tagged with a category. A tag-filtered lifecycle rule
 // expires only "attachment" objects; "avatar" and "emoji" objects never expire.
-export const FILE_CATEGORY = { ATTACHMENT: "attachment", AVATAR: "avatar", EMOJI: "emoji" };
+export const FILE_CATEGORY = { ATTACHMENT: "attachment", AVATAR: "avatar", EMOJI: "emoji", BRAND: "brand" };
 
 // One client, pointed at MinIO (or any S3-compatible endpoint). Path-style
 // addressing is required for MinIO (no virtual-host buckets).

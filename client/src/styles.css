@@ -1953,11 +1953,41 @@ html[data-mode="dark"] .backend-connection-error {
   height: 54px;
   filter: drop-shadow(0 7px 16px rgba(0, 0, 0, 0.24));
 }
+.rail-brand-slot {
+  display: block;
+  width: 54px;
+  height: 54px;
+  flex: none;
+}
+.rail-brand-slot.is-workspace-logo {
+  width: 62px;
+  height: 62px;
+}
+.rail-brand .workspace-logo-mark {
+  width: 62px;
+  height: 62px;
+}
+.rail-brand.ready > * {
+  animation: rail-brand-fade-in 240ms ease-out both;
+}
+@keyframes rail-brand-fade-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rail-brand.ready > * { animation: none; }
+}
 .rail-brand-name {
+  display: block;
+  width: 68px;
+  max-width: 68px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  text-align: center;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.2em;
-  line-height: 1;
+  line-height: 1.05;
   text-transform: uppercase;
 }
 .rail-top {
@@ -4405,6 +4435,160 @@ html[data-mode="dark"] .day-divider-label {
   color: var(--green-600, #16a34a);
   font-size: 13px;
   font-weight: 600;
+}
+
+.workspace-branding-section {
+  width: 100%;
+  max-width: none;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none;
+}
+.workspace-branding-section h3 {
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.workspace-branding-layout {
+  display: block;
+  margin-top: 16px;
+}
+.workspace-branding-showcase {
+  min-width: 0;
+}
+.workspace-branding-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 92px;
+  width: min(100%, 560px);
+  margin: 0 0 20px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, var(--surface-2)), var(--surface-2));
+}
+.workspace-branding-form {
+  min-width: 0;
+  padding-left: 0;
+  border-left: 0;
+}
+.workspace-branding-logo {
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.workspace-branding-preview img,
+.workspace-branding-fallback {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  border-radius: 10px;
+  object-fit: contain;
+}
+.workspace-branding-fallback {
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: white;
+  font-size: 22px;
+  font-weight: 800;
+}
+.workspace-branding-preview-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.workspace-branding-preview-copy > span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.workspace-branding-preview-copy strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 17px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.workspace-branding-preview-copy small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.workspace-branding-field {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+.workspace-logo-picker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.workspace-upload-button {
+  flex: none;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.workspace-upload-button:hover {
+  background: var(--border);
+}
+.workspace-logo-picker > span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.workspace-logo-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.workspace-branding-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 20px;
+}
+.workspace-save-status {
+  color: var(--green-600, #16a34a);
+  font-size: 13px;
+  font-weight: 650;
+}
+@media (max-width: 760px) {
+  .workspace-branding-layout {
+    display: block;
+  }
+  .workspace-branding-form {
+    padding-top: 0;
+    padding-left: 0;
+    border-top: 0;
+    border-left: 0;
+  }
 }
 
 /* Focused settings workspace: standard category navigation keeps each panel
