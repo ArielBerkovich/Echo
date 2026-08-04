@@ -1913,7 +1913,7 @@ html[data-mode="dark"] .backend-connection-error {
 }
 /* Gold Starred section header in the sidebar. */
 .starred-section-label {
-  margin-top: 18px;
+  margin-top: 12px;
 }
 .starred-label {
   color: var(--beam);
@@ -2836,7 +2836,7 @@ html[data-mode="dark"] .sidebar {
   margin-top: 14px;
 }
 .dm-label-after-starred {
-  margin-top: 26px;
+  margin-top: 18px;
 }
 .dm-item {
   padding-right: 6px;
