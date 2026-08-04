@@ -255,8 +255,8 @@ test("opens, zooms, and downloads authenticated attachments", async ({ page }) =
     buffer: ONE_BY_ONE_PNG,
   })).attachments[0];
   const file = (await uploadAsToken(page, fixture.alice.token, {
-    name: "download.txt",
-    mimeType: "text/plain",
+    name: "download.bin",
+    mimeType: "application/octet-stream",
     buffer: Buffer.from("protected attachment", "utf8"),
   })).attachments[0];
   const sent = await rawApi(page, fixture.alice.token, `/channels/${fixture.generalChannel.id}/messages`, {
@@ -280,7 +280,7 @@ test("opens, zooms, and downloads authenticated attachments", async ({ page }) =
 
   const fileDownload = page.waitForEvent("download");
   await row.getByTestId(`file-attachment-${file.key}`).click();
-  await expect((await fileDownload).suggestedFilename()).toBe("download.txt");
+  await expect((await fileDownload).suggestedFilename()).toBe("download.bin");
   const anonymous = await page.request.get(`/api/files/${file.key}`);
   expect(anonymous.status()).toBe(401);
 });
