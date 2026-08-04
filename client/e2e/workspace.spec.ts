@@ -233,6 +233,7 @@ test("keeps channel header actions inside the header when pinned panel is open",
   await page.setViewportSize({ width: 1120, height: 760 });
   await page.goto("/");
   await page.getByText(fixture.projectChannel.name, { exact: true }).click();
+  await expect(page.getByTestId("channel-topic")).toHaveCSS("text-align", "left");
   await page.getByRole("button", { name: "Pinned messages" }).click();
 
   await expect(page.getByTestId("pinned-panel")).toBeVisible();

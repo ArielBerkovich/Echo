@@ -6863,6 +6863,7 @@ html[data-mode="dark"] .channel-header {
 .channel-header .ch-topic {
   font-size: 13px;
   color: var(--muted);
+  text-align: left;
   flex: 1 1 150px;
   max-width: 340px;
   min-width: 72px;
