@@ -83,7 +83,7 @@ test("keeps a message active after selecting from the full emoji picker", async 
 
   const fullPicker = page.locator(".emoji-popup-wrap");
   await expect(fullPicker).toBeVisible();
-  await fullPicker.locator("[data-emoji]").first().click();
+  await fullPicker.getByRole("button", { name: "😀", exact: true }).first().click();
 
   await expect(fullPicker).toBeHidden();
   await expect(message).toHaveClass(/actions-hovered/);

@@ -105,6 +105,9 @@ function Message({
 
   useEffect(() => {
     if (menuOpen || pickerOpen) {
+      hoverGenerationRef.current += 1;
+      if (hoverLeaveTimerRef.current) window.clearTimeout(hoverLeaveTimerRef.current);
+      hoverLeaveTimerRef.current = null;
       messageRef.current?.classList.add("actions-hovered");
     } else if (!showActions) {
       messageRef.current?.classList.remove("actions-hovered");
