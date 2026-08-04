@@ -231,6 +231,7 @@ function Message({
       }}
       onMouseLeave={(event) => {
         if (window.matchMedia("(max-width: 760px)").matches) return;
+        if (menuOpen) return;
         const related = event.relatedTarget;
         if (!(related instanceof Node) || !actionsRef.current?.contains(related)) {
           onDeactivate?.();
@@ -404,6 +405,7 @@ function Message({
           } : { visibility: "hidden" }}
           onMouseEnter={onActivate}
           onMouseLeave={(event) => {
+            if (menuOpen) return;
             const related = event.relatedTarget;
             if (!(related instanceof Node) || !messageRef.current?.contains(related)) {
               onDeactivate?.();
