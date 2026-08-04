@@ -8,6 +8,7 @@ import DisplayNameDialog from "./DisplayNameDialog.js";
 import ConfirmDialog from "./ConfirmDialog.js";
 import { api } from "../api.js";
 import { uploadSizeError } from "../lib/uploads.js";
+import { useAuthUrl } from "../lib/useAuthUrl.js";
 
 const icon = (Icon) => () => <Icon size={22} strokeWidth={2} />;
 const ITEMS = [
@@ -22,7 +23,7 @@ function railNameFontSize(name) {
   return Math.max(6, Math.min(12, 68 / (longestWord * 0.66)));
 }
 
-export default function LeftRail({ view, onSelect, badges = {}, user, onLogout, onUpdated }) {
+export default function LeftRail({ view, onSelect, badges = {}, user, workspace, workspaceLoading = false, onLogout, onUpdated }) {
   const [clicked, setClicked] = useState(null);
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
@@ -32,6 +33,8 @@ export default function LeftRail({ view, onSelect, badges = {}, user, onLogout, 
   const clickTimerRef = useRef(null);
   const railTopRef = useRef(null);
   const itemRefs = useRef(new Map());
+  const workspaceLogoSrc = useAuthUrl(workspace?.logoUrl);
+  const brandReady = !workspaceLoading && (!workspace?.logoUrl || !!workspaceLogoSrc);
 
   const activeIndex = ITEMS.findIndex((item) => item.key === view);
 
@@ -90,8 +93,13 @@ export default function LeftRail({ view, onSelect, badges = {}, user, onLogout, 
 
   return (
     <nav className="rail" aria-label="Primary navigation">
-      <div className="rail-brand" aria-label="Echo" data-testid="rail-brand">
-        <Logo size={54} />
+      <div className={`rail-brand${brandReady ? " ready" : ""}`} aria-label={workspace?.name || "Echo"} data-testid="rail-brand">
+        {workspaceLoading || (workspace?.logoUrl && !workspaceLogoSrc)
+          ? <span className={`rail-brand-slot${workspace?.logoUrl ? " is-workspace-logo" : ""}`} aria-hidden="true" />
+          : workspaceLogoSrc
+          ? <img src={workspaceLogoSrc} width={62} height={62} className="echo-logo workspace-logo-mark" alt="" />
+          : <Logo size={54} />}
+        {!workspaceLoading && workspace?.name && workspace.name !== "Echo" && <span className="rail-brand-name">{workspace.name}</span>}
       </div>
       <div
         ref={railTopRef}

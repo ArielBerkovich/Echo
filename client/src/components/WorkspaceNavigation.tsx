@@ -4,6 +4,8 @@ import Sidebar from "./Sidebar.js";
 export default function WorkspaceNavigation({
   view,
   user,
+  workspace,
+  workspaceLoading = false,
   channels,
   dms,
   hidden,
@@ -42,37 +44,39 @@ export default function WorkspaceNavigation({
         view={view === "browse" ? "home" : view}
         onSelect={onSelectView}
         user={user}
+        workspace={workspace}
+        workspaceLoading={workspaceLoading}
         onLogout={onLogout}
         onUpdated={onUpdated}
         badges={badges}
       />
       {showSidebar ? (
-        <Sidebar
-          user={user}
-          channels={channels}
-          dms={dms}
-          hidden={hidden}
-          starredIds={starredIds}
-          onlineIds={onlineIds}
-          activeChannel={activeChannel}
-          mode={view === "dms" ? "dms" : "home"}
-          onSelect={onSelectChannel}
-          onPrefetchChannel={onPrefetchChannel}
-          onNewChannel={onCreateChannel}
-          onBrowseChannels={onBrowseChannels}
-          browsingChannels={view === "browse"}
-          publicChannelCount={publicChannelCount}
-          onStartConversation={onStartConversation}
-          onOpenDm={onOpenDm}
-          onPrefetchDm={onPrefetchChannel}
-          onHideDm={onHideDm}
-          onHideChannel={onHideChannel}
-          onLogout={onLogout}
-          onOpenSettings={onOpenSettings}
-          onOpenApiDocs={onOpenApiDocs}
-          themeMode={mode}
-          onToggleTheme={onToggleMode}
-        />
+          <Sidebar
+            user={user}
+            channels={channels}
+            dms={dms}
+            hidden={hidden}
+            starredIds={starredIds}
+            onlineIds={onlineIds}
+            activeChannel={activeChannel}
+            mode={view === "dms" ? "dms" : "home"}
+            onSelect={onSelectChannel}
+            onPrefetchChannel={onPrefetchChannel}
+            onNewChannel={onCreateChannel}
+            onBrowseChannels={onBrowseChannels}
+            browsingChannels={view === "browse"}
+            publicChannelCount={publicChannelCount}
+            onStartConversation={onStartConversation}
+            onOpenDm={onOpenDm}
+            onPrefetchDm={onPrefetchChannel}
+            onHideDm={onHideDm}
+            onHideChannel={onHideChannel}
+            onLogout={onLogout}
+            onOpenSettings={onOpenSettings}
+            onOpenApiDocs={onOpenApiDocs}
+            themeMode={mode}
+            onToggleTheme={onToggleMode}
+          />
       ) : null}
     </div>
   );

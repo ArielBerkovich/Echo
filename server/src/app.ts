@@ -16,6 +16,7 @@ import { savedRouter } from "./routes/saved.js";
 import { webhooksRouter } from "./routes/webhooks.js";
 import { openApiDocument } from "./openapi.js";
 import { desktopUpdatesRouter } from "./desktopUpdates.js";
+import { workspaceRouter } from "./routes/workspace.js";
 
 export function createApp() {
   const app = express();
@@ -37,6 +38,7 @@ export function createApp() {
   app.use("/api/auth", authRouter);
   app.use("/api/channels", channelsRouter);
   app.use("/api/users", usersRouter);
+  app.use("/api/workspace", workspaceRouter);
   app.use("/api/dms", dmsRouter);
   app.use("/api/activity", activityRouter);
   app.use("/api/uploads", uploadsRouter);

@@ -11,6 +11,7 @@ export const workspaceKeys = {
   channels: ["workspace", "channels"] as const,
   dms: ["workspace", "dms"] as const,
   users: ["workspace", "users"] as const,
+  settings: ["workspace", "settings"] as const,
   emojis: ["workspace", "emojis"] as const,
   starred: ["workspace", "starred"] as const,
 };
@@ -44,6 +45,12 @@ export function useWorkspaceQueries(enabled) {
     async () => (await api.listUsers()).users || [],
     enabled,
     EMPTY_LIST,
+  );
+  const [workspace, setWorkspace, workspaceQuery] = useQueryState(
+    workspaceKeys.settings,
+    async () => (await api.getWorkspace()).workspace || { name: "Echo", logoUrl: null },
+    enabled,
+    { name: "Echo", logoUrl: null },
   );
   const [customEmojis, setCustomEmojis] = useQueryState(
     workspaceKeys.emojis,
@@ -79,6 +86,9 @@ export function useWorkspaceQueries(enabled) {
     users,
     setUsers,
     usersQuery,
+    workspace,
+    setWorkspace,
+    workspaceQuery,
     customEmojis,
     setCustomEmojis,
     savedIds,
