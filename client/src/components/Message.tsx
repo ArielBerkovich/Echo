@@ -455,7 +455,17 @@ function Message({
             deactivateMessage(event);
           }}
         >
-          <button className="react-toggle" data-testid={`message-${mid}-add-reaction-action`} title="Add reaction" onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onReact}>
+          <button
+            className="react-toggle"
+            data-testid={`message-${mid}-add-reaction-action`}
+            title="Add reaction"
+            onMouseEnter={activateMessage}
+            onMouseOver={activateMessage}
+            onClick={(event) => {
+              activateMessage();
+              onReact(event);
+            }}
+          >
             <EmojiAddIcon />
           </button>
           {!inThread && (
