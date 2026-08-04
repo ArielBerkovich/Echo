@@ -18,6 +18,9 @@ async function openFreshMessage(page, key, body) {
   });
 
   await page.goto("/");
+  if ((await page.viewportSize())?.width <= 760) {
+    await page.getByTestId("rail-home").click();
+  }
   await channelRow(page, "general").click();
   const message = messageById(page, created.message.id);
   await expect(message).toBeVisible();
