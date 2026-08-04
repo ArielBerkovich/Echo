@@ -7261,6 +7261,15 @@ html[data-mode="dark"] .new-messages-button:hover {
 .composer-actions .right {
   position: relative;
 }
+.composer-hint {
+  margin-left: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.send-btn {
+  padding-inline: 10px;
+}
 
 /* "Send options" popover */
 .send-menu {
@@ -8365,6 +8374,9 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   .composer-actions .left,
   .composer-actions .right {
     min-width: 0;
+  }
+  .composer-hint {
+    display: none;
   }
   .send-menu {
     max-width: calc(100vw - 32px);

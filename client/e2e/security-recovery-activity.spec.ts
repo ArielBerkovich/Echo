@@ -262,6 +262,7 @@ test("shows and permanently dismisses every supported Activity kind", async ({ b
     await page.goto("/");
     await expect(page.getByTestId("rail-activity")).toBeVisible();
     await page.getByTestId("rail-activity").click();
+    await expect(page).toHaveURL(/\/activity$/);
     await expect(page.getByTestId("activity-header")).toBeVisible({ timeout: 10_000 });
     const targets = [
       page.getByTestId("activity-item").filter({ hasText: visibleMentionBody }),

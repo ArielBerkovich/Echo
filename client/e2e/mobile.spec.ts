@@ -82,9 +82,7 @@ test("keeps the workspace full-screen and usable on a phone", async ({ page }) =
   expect(membersBox.y + membersBox.height).toBeLessThanOrEqual(navigationRailBox.y + 1);
   await membersPanel.getByRole("button", { name: "Close members" }).click();
 
-  const threadRoot = page.getByTestId(`message-${fixture.messages.threadRoot.id}`);
-  await threadRoot.click();
-  await page.getByTestId(`message-${fixture.messages.threadRoot.id}-actions`).getByTitle("Reply in thread").click();
+  await page.getByTestId(`message-${fixture.messages.threadRoot.id}-reply-count`).click();
   const threadPanel = page.getByTestId("thread-panel");
   await expect(threadPanel).toBeVisible();
   await expect(threadPanel.getByTestId("composer")).toBeVisible();

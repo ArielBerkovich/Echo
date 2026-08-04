@@ -4,6 +4,7 @@ import {
   channelRow,
   dmRow,
   messageById,
+  messageByText,
   railItem,
   requestAsToken,
   seedWorkspaceFixture,
@@ -73,6 +74,23 @@ test("opens the workspace search pane with Ctrl+F", async ({ page }) => {
 
   await expect(searchInput).toBeFocused();
   await expect(page.getByTestId("search-hint")).toBeVisible();
+});
+
+test("preserves composer drafts per channel and explains send shortcuts", async ({ page }) => {
+  await page.goto("/");
+  const editor = page.getByTestId("composer-editor");
+  const draft = `Draft for general ${fixture.suffix}`;
+  await editor.fill(draft);
+
+  await expect(page.getByText("Enter to send · Shift+Enter for a new line")).toBeVisible();
+  await channelRow(page, fixture.projectChannel.name).click();
+  await channelRow(page, "general").click();
+  await expect(editor).toHaveText(draft);
+
+  const sent = `Sent once ${fixture.suffix}`;
+  await editor.fill(sent);
+  await page.getByTestId("composer-send").click();
+  await expect(messageByText(page, sent)).toHaveCount(1);
 });
 
 test("supports direct workspace routes and browser history", async ({ page }) => {
