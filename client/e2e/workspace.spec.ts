@@ -76,13 +76,12 @@ test("opens the workspace search pane with Ctrl+F", async ({ page }) => {
   await expect(page.getByTestId("search-hint")).toBeVisible();
 });
 
-test("preserves composer drafts per channel and explains send shortcuts", async ({ page }) => {
+test("preserves composer drafts per channel", async ({ page }) => {
   await page.goto("/");
   const editor = page.getByTestId("composer-editor");
   const draft = `Draft for general ${fixture.suffix}`;
   await editor.fill(draft);
 
-  await expect(page.getByText("Enter to send · Shift+Enter for a new line")).toBeVisible();
   await channelRow(page, fixture.projectChannel.name).click();
   await channelRow(page, "general").click();
   await expect(editor).toHaveText(draft);

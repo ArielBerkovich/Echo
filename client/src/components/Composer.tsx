@@ -876,7 +876,6 @@ export default function Composer({ channel, parentId = null, users = [], channel
           <button type="button" className={`icon-btn emoji-toggle ${emojiOpen ? "active" : ""}`} data-testid="composer-emoji-toggle" title="Emoji" onMouseDown={keepFocus} onClick={() => setEmojiOpen((v) => !v)}>
             <SmileyIcon />
           </button>
-          {showSend && !editing && <span className="composer-hint">Enter to send · Shift+Enter for a new line</span>}
         </div>
 
         <div className="right">
