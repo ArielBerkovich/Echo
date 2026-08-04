@@ -64,3 +64,29 @@ test("keeps a message active through reaction selection", async ({ page }) => {
   await expect(picker).toBeHidden();
   await expect(message).toHaveClass(/actions-hovered/);
 });
+
+for (const viewport of [
+  { name: "desktop", width: 1280, height: 800 },
+  { name: "mobile", width: 390, height: 844 },
+]) {
+  test(`moves message hover state to the next message on ${viewport.name}`, async ({ page }) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    const first = await openFreshMessage(
+      page,
+      `hover-handoff-first-${viewport.name}`,
+      `First hover handoff ${viewport.name} ${fixture.suffix}`
+    );
+    const second = await openFreshMessage(
+      page,
+      `hover-handoff-second-${viewport.name}`,
+      `Second hover handoff ${viewport.name} ${fixture.suffix}`
+    );
+
+    await first.message.hover();
+    await expect(first.message).toHaveClass(/actions-hovered/);
+    await second.message.hover();
+
+    await expect(second.message).toHaveClass(/actions-hovered/);
+    await expect(first.message).not.toHaveClass(/actions-hovered/);
+  });
+}

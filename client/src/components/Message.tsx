@@ -1,4 +1,4 @@
-import { memo, useLayoutEffect, useRef, useState } from "react";
+import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ArrowUpRight } from "lucide-react";
 import Avatar from "./Avatar.js";
@@ -93,6 +93,17 @@ function Message({
       onDeactivate?.();
     }, 180);
   }
+
+  useEffect(() => {
+    if (!showActions && !menuOpen && !pickerOpen) {
+      messageRef.current?.classList.remove("actions-hovered");
+    }
+  }, [showActions, menuOpen, pickerOpen]);
+
+  useEffect(() => () => {
+    if (hoverLeaveTimerRef.current) window.clearTimeout(hoverLeaveTimerRef.current);
+  }, []);
+
   // Messages carry an author snapshot, but profile changes arrive separately
   // over the realtime user:update event. Resolve the latest directory entry so
   // an already-open conversation updates without waiting for a new message.
