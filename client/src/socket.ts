@@ -15,6 +15,10 @@ export function getSocket() {
   }
   socket = io(getBackendUrl() || undefined, {
     auth: { token: getToken() },
+    // Keep each realtime connection on the server replica that accepted it.
+    // Polling first would require sticky sessions during the upgrade phase;
+    // the client proxy already supports direct WebSocket upgrades.
+    transports: ["websocket"],
     autoConnect: true,
   });
   // A session token can be replaced without recreating the page (login,

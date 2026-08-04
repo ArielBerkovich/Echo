@@ -62,6 +62,19 @@ test("restores an authenticated session into the default channel", async ({ page
   }
 });
 
+test("opens the workspace search pane with Ctrl+F", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByTestId("composer-editor")).toBeVisible();
+
+  const searchInput = page.getByTestId("search-input");
+  await expect(searchInput).not.toBeFocused();
+
+  await page.keyboard.press("Control+f");
+
+  await expect(searchInput).toBeFocused();
+  await expect(page.getByTestId("search-hint")).toBeVisible();
+});
+
 test("supports direct workspace routes and browser history", async ({ page }) => {
   // Legacy ID links remain valid, but are replaced with the readable canonical URL.
   await page.goto(`/channels/${fixture.projectChannel.id}`);
