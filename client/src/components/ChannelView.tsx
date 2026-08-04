@@ -390,6 +390,7 @@ export default function ChannelView({
 
   function toggleReaction(messageId, emoji) {
     getSocket().emit("reaction:toggle", { messageId, emoji }, () => {});
+    setActionsFor(messageId);
     setReactingTo(null);
   }
 

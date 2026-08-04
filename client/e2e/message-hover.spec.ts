@@ -69,6 +69,26 @@ test("keeps a message active through reaction selection", async ({ page }) => {
   await expect(message).toHaveClass(/actions-hovered/);
 });
 
+test("keeps a message active after selecting from the full emoji picker", async ({ page }) => {
+  const { id, message } = await openFreshMessage(
+    page,
+    "hover-full-reaction",
+    `Hover full reaction picker ${fixture.suffix}`
+  );
+  const actions = page.getByTestId(`message-${id}-actions`);
+
+  await message.hover();
+  await actions.getByTestId(`message-${id}-add-reaction-action`).click();
+  await page.getByRole("button", { name: "More emojis" }).click();
+
+  const fullPicker = page.locator(".emoji-popup-wrap");
+  await expect(fullPicker).toBeVisible();
+  await fullPicker.locator("[data-emoji]").first().click();
+
+  await expect(fullPicker).toBeHidden();
+  await expect(message).toHaveClass(/actions-hovered/);
+});
+
 test("keeps long-message actions below the channel header while scrolling", async ({ page }) => {
   await page.goto("/");
   await channelRow(page, "general").click();

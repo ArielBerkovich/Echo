@@ -238,6 +238,7 @@ export default function ThreadPanel({
 
   function toggleReaction(messageId, emoji) {
     getSocket().emit("reaction:toggle", { messageId, emoji }, () => {});
+    setActionsFor(messageId);
     setReactingTo(null);
   }
   function openReact(messageId, e) {
