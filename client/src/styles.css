@@ -6842,8 +6842,7 @@ html[data-mode="dark"] .channel-header {
   min-width: 0;
 }
 .channel-header .ch-name-btn,
-.channel-header .ch-meta-btn,
-.channel-header .ch-topic {
+.channel-header .ch-meta-btn {
   background: none;
   color: inherit;
   border-radius: 6px;
@@ -6856,13 +6855,13 @@ html[data-mode="dark"] .channel-header {
   text-align: left;
 }
 .channel-header .ch-name-btn:hover,
-.channel-header .ch-meta-btn:hover,
-.channel-header .ch-topic:hover {
+.channel-header .ch-meta-btn:hover {
   background: var(--surface-2);
 }
 .channel-header .ch-topic {
   font-size: 13px;
   color: var(--muted);
+  cursor: default;
   text-align: left;
   flex: 0 1 auto;
   width: fit-content;

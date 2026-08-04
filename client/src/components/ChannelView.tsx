@@ -936,9 +936,9 @@ export default function ChannelView({
               {channel.type === "private" ? "🔒" : "#"} {channel.name}
             </button>
             {channel.topic && (
-              <button className="ch-topic" data-testid="channel-topic" title="View channel details" onClick={() => { setThread(null); setThreadJumpTargetId(null); setShowMembers(false); setShowDetails(true); }}>
+              <span className="ch-topic" data-testid="channel-topic">
                 {channel.topic}
-              </button>
+              </span>
             )}
             <div className="header-actions">
               <button className="header-action header-action-icon" data-testid="channel-pinned" onClick={openPinnedPanel} title="Pinned messages" aria-label="Pinned messages">
