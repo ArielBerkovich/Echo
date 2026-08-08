@@ -21,7 +21,7 @@ import {
 } from "./ComposerIcons.js";
 
 const SCHEDULE_PRESETS = [
-  { label: "In 15 min", getWhen: () => new Date(Date.now() + 15 * 60 * 1000) },
+  { label: "In 30 min", getWhen: () => new Date(Date.now() + 30 * 60 * 1000) },
   { label: "In 1 hour", getWhen: () => new Date(Date.now() + 60 * 60 * 1000) },
   { label: "Tomorrow, 09:00", getWhen: tomorrow9am },
 ];
