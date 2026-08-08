@@ -468,7 +468,7 @@ test("uses conversation wording for scheduled messages in DMs", async ({ page })
   const sendOptions = dmComposerForm.getByRole("button", { name: "Send options" });
   await expect(sendOptions).toBeEnabled();
   await sendOptions.click();
-  await dmComposerForm.locator(".send-menu button:not(:disabled)").filter({ hasText: "Tomorrow, 9:00 AM" }).click();
+  await dmComposerForm.locator(".send-menu button:not(:disabled)").filter({ hasText: "Tomorrow, 09:00" }).click();
   await expect(page.locator(".scheduled-banner")).toContainText("for this conversation");
 });
 
@@ -522,7 +522,7 @@ test("edits and cancels a scheduled message", async ({ page }) => {
   const scheduledBody = `Scheduled ${Date.now()}`;
   await composer.fill(scheduledBody);
   await page.getByRole("button", { name: "Send options" }).click();
-  await page.locator(".send-menu button").filter({ hasText: "Tomorrow, 9:00 AM" }).click();
+  await page.locator(".send-menu button").filter({ hasText: "Tomorrow, 09:00" }).click();
 
   await expect(page.getByText(/scheduled message/i)).toBeVisible();
   await page.getByText(/scheduled message/i).click();

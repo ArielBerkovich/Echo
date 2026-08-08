@@ -38,6 +38,17 @@ function composerContent(body) {
     : `<p>${html}</p>`;
 }
 
+function formatScheduleTime(date) {
+  return date.toLocaleString([], {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
 // Rich-text message composer: @mention autocomplete, a formatting toolbar,
 // emoji, and file attachments. Owns all of its own editor state — mount it with
 // a `key={channel.id}` so switching channels yields a fresh, empty composer.
@@ -669,7 +680,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
           </label>
           <div className="schedule-preview-time">
             <span>Will send</span>
-            <strong>{scheduleAt ? new Date(scheduleAt).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "Pick a time"}</strong>
+            <strong>{scheduleAt ? formatScheduleTime(new Date(scheduleAt)) : "Pick a time"}</strong>
           </div>
           {scheduleError && <div className="error schedule-error" role="alert">{scheduleError}</div>}
           <ModalActions>
@@ -945,7 +956,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
                   disabled={!canSend && pending.length === 0}
                   title={!canSend && pending.length === 0 ? "Write a message first" : undefined}
                 >
-                  <span>Tomorrow, 9:00 AM</span>
+                  <span>Tomorrow, 09:00</span>
                   <span className="send-menu-sub">
                     {tomorrow9am().toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" })}
                   </span>
