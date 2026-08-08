@@ -620,7 +620,7 @@ channelsRouter.get("/:id/messages", async (req, res) => {
     return res.status(404).json({ error: "channel not found" });
   }
   const channel = await Channel.findById(req.params.id);
-  if (!channel) return res.status(404).json({ error: "channel not found" });
+  if (!channel || channel.isArchived) return res.status(404).json({ error: "channel not found" });
 
   // Enforce access: private channels and DMs are members-only.
   if (channel.type !== "public" && !channel.members.some((m) => m.equals(req.user._id))) {
@@ -687,14 +687,17 @@ channelsRouter.get("/:id/messages/:msgId/thread", async (req, res) => {
     return res.status(404).json({ error: "not found" });
   }
   const channel = await Channel.findById(req.params.id);
-  if (!channel) return res.status(404).json({ error: "channel not found" });
+  if (!channel || channel.isArchived) return res.status(404).json({ error: "channel not found" });
   if (channel.type !== "public" && !channel.members.some((m) => m.equals(req.user._id))) {
     return res.status(403).json({ error: "access denied" });
   }
 
-  const root = await Message.findById(req.params.msgId).populate("author");
+  // Bind the message lookup to the requested channel. Without this condition,
+  // a caller who knows a message id could read a private channel's thread by
+  // routing the request through any public channel they can access.
+  const root = await Message.findOne({ _id: req.params.msgId, channel: channel._id }).populate("author");
   if (!root) return res.status(404).json({ error: "message not found" });
-  const replies = await Message.find({ parentId: root._id })
+  const replies = await Message.find({ parentId: root._id, channel: channel._id })
     .sort({ createdAt: 1 })
     .populate("author");
 
