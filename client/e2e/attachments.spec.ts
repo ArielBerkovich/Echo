@@ -7,6 +7,29 @@ test.beforeEach(async ({ page }) => {
   fixture = await seedWorkspaceFixture(page);
 });
 
+test("explains and rejects an eleventh message attachment before uploading", async ({ page }) => {
+  let uploadRequests = 0;
+  await page.route("**/api/uploads", async (route) => {
+    uploadRequests += 1;
+    await route.continue();
+  });
+  await page.goto("/");
+
+  const files = Array.from({ length: 11 }, (_, index) => ({
+    name: `attachment-${index + 1}.txt`,
+    mimeType: "text/plain",
+    buffer: Buffer.from(`attachment ${index + 1}`, "utf8"),
+  }));
+  await page.getByTestId("composer-attachments").setInputFiles(files);
+
+  await expect(page.getByTestId("channel-error")).toContainText(
+    "A message can have up to 10 files, images, or attachments"
+  );
+  await expect(page.getByTestId("channel-error")).toContainText("You selected 11");
+  await expect(page.locator(".pending-att")).toHaveCount(0);
+  expect(uploadRequests).toBe(0);
+});
+
 test("keeps code attachments compact until expanded and highlights them full-screen", async ({ page }) => {
   const attachment = (await uploadAsToken(page, fixture.alice.token, {
     name: "preview.ts",

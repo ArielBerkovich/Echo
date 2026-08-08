@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { enableClipboardStub, requestAsToken, seedWorkspaceFixture, slug } from "./helpers.js";
+import { enableClipboardStub, requestAsToken, seedWorkspaceFixture, slug, uniqueSuffix } from "./helpers.js";
 
 const ONE_BY_ONE_PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAEklEQVR42mP8/5+hHgAHggJ/PFvdcQAAAABJRU5ErkJggg==",
@@ -43,7 +43,10 @@ async function messageId(page, channelName, body) {
 
 function toLocalDatetimeInput(date) {
   const pad = (n) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  return {
+    date: `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
+    time: `${pad(date.getHours())}:${pad(date.getMinutes())}`,
+  };
 }
 
 test("manages channels, members, visibility, and leaving", async ({ page }) => {
@@ -435,6 +438,7 @@ test("keeps the channel pinned to the bottom after sending an image attachment",
 });
 
 test("schedules a message and clears the banner after delivery", async ({ page }) => {
+  test.setTimeout(90_000);
   await page.goto("/");
 
   const composer = page.getByTestId("composer-editor");
@@ -442,9 +446,11 @@ test("schedules a message and clears the banner after delivery", async ({ page }
   await composer.fill(scheduledBody);
   await page.getByRole("button", { name: "Send options" }).click();
   await page.locator(".send-menu button").filter({ hasText: "Custom time…" }).click();
-  const scheduleInput = page.locator(".schedule-input");
-  await scheduleInput.fill(toLocalDatetimeInput(new Date(Date.now() + 5_000)));
-  await scheduleInput.press("Enter");
+  const scheduleWhen = toLocalDatetimeInput(new Date(Date.now() + 60_000));
+  const scheduleModal = page.locator(".modal").filter({ hasText: "Schedule message" });
+  await scheduleModal.locator('input[type="date"]').fill(scheduleWhen.date);
+  await scheduleModal.locator('input[type="time"]').fill(scheduleWhen.time);
+  await scheduleModal.getByRole("button", { name: "Schedule" }).click();
 
   await expect(page.getByText(/scheduled message/i)).toBeVisible();
   await expect(page.locator(".message").filter({ hasText: scheduledBody })).toHaveCount(0);
@@ -466,8 +472,36 @@ test("uses conversation wording for scheduled messages in DMs", async ({ page })
   const sendOptions = dmComposerForm.getByRole("button", { name: "Send options" });
   await expect(sendOptions).toBeEnabled();
   await sendOptions.click();
-  await dmComposerForm.locator(".send-menu button:not(:disabled)").filter({ hasText: "Tomorrow, 21:00" }).click();
+  await dmComposerForm.locator(".send-menu button:not(:disabled)").filter({ hasText: "Tomorrow, 9:00 AM" }).click();
   await expect(page.locator(".scheduled-banner")).toContainText("for this conversation");
+});
+
+test("makes custom scheduling clear and submits the selected local date and time", async ({ page }) => {
+  await page.goto("/");
+  const body = `Custom schedule ${uniqueSuffix("e2e")}`;
+  await page.getByTestId("composer-editor").fill(body);
+  await page.getByRole("button", { name: "Send options" }).click();
+  await page.locator(".send-menu button").filter({ hasText: "Custom time…" }).click();
+
+  const modal = page.locator(".modal").filter({ hasText: "Schedule message" });
+  const date = "2099-12-31";
+  const time = "14:35";
+  await expect(modal.getByText("Pick a date and time. Echo will send it in your local time.")).toBeVisible();
+  await modal.locator('input[type="date"]').fill(date);
+  await modal.locator('input[type="time"]').fill(time);
+  await expect(modal.locator(".schedule-preview-time")).toContainText("Dec 31");
+
+  const responsePromise = page.waitForResponse(
+    (response) => response.url().includes("/api/scheduled") && response.request().method() === "POST"
+  );
+  await modal.getByRole("button", { name: "Schedule" }).click();
+  const response = await responsePromise;
+  expect(response.status()).toBe(201);
+  const request = response.request().postDataJSON();
+  const expected = await page.evaluate(() => new Date("2099-12-31T14:35").toISOString());
+  expect(request.scheduledFor).toBe(expected);
+  expect(request.body).toBe(body);
+  await expect(page.locator(".scheduled-banner")).toContainText("1 scheduled message");
 });
 
 test("shows invalid schedule times inside the schedule dialog", async ({ page }) => {
@@ -478,7 +512,9 @@ test("shows invalid schedule times inside the schedule dialog", async ({ page })
   await page.locator(".send-menu button").filter({ hasText: "Custom time…" }).click();
 
   const scheduleModal = page.locator(".modal").filter({ hasText: "Schedule message" });
-  await scheduleModal.locator(".schedule-input").fill(toLocalDatetimeInput(new Date(Date.now() - 60_000)));
+  const invalidWhen = toLocalDatetimeInput(new Date(Date.now() - 60_000));
+  await scheduleModal.locator('input[type="date"]').fill(invalidWhen.date);
+  await scheduleModal.locator('input[type="time"]').fill(invalidWhen.time);
   await scheduleModal.getByRole("button", { name: "Schedule" }).click();
 
   await expect(scheduleModal.locator(".schedule-error")).toHaveText("Pick a time in the future.");
@@ -492,7 +528,7 @@ test("edits and cancels a scheduled message", async ({ page }) => {
   const scheduledBody = `Scheduled ${Date.now()}`;
   await composer.fill(scheduledBody);
   await page.getByRole("button", { name: "Send options" }).click();
-  await page.locator(".send-menu button").filter({ hasText: "Tomorrow, 21:00" }).click();
+  await page.locator(".send-menu button").filter({ hasText: "Tomorrow, 9:00 AM" }).click();
 
   await expect(page.getByText(/scheduled message/i)).toBeVisible();
   await page.getByText(/scheduled message/i).click();
