@@ -535,7 +535,7 @@ test("edits and cancels a scheduled message", async ({ page }) => {
   await edit.getByRole("button", { name: "Save" }).click();
   await expect(scheduledModal).toContainText("updated");
   await scheduledItem.locator(".scheduled-actions .link-danger").click();
-  await expect(page.locator(".scheduled-banner")).toHaveCount(0);
+  await expect(scheduledItem).toHaveCount(0);
 });
 
 test("blocks private-channel mentions until the user chooses how to handle them", async ({
