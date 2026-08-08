@@ -69,8 +69,6 @@ Compose includes development defaults. Set strong values before sharing a deploy
 JWT_SECRET=change-me
 MINIO_ROOT_USER=echo
 MINIO_ROOT_PASSWORD=change-me
-# Optional Bearer token for the Prometheus endpoint when it is not private.
-METRICS_TOKEN=change-me
 ```
 
 Useful defaults:
@@ -85,7 +83,7 @@ Useful defaults:
 Set `MONGO_URI` to use an external MongoDB replica set or cluster. Set `ECHO_PUBLIC_HOST` when the RHSSO demo is accessed from another machine.
 
 The server exposes Prometheus metrics at `/metrics`. Keep that endpoint on an
-internal network, or set `METRICS_TOKEN` and scrape it with a Bearer token.
+internal network.
 
 ## Development
 

@@ -7,7 +7,6 @@ import {
   httpRequestDuration,
   httpRequests,
   httpMetricsMiddleware,
-  metricsHandler,
   processUptime,
   recordSocketError,
   socketErrors,
@@ -50,39 +49,4 @@ describe("Prometheus metrics", () => {
     assert.match(output, /echo_process_uptime_seconds /);
   });
 
-  it("supports protecting the metrics endpoint with a bearer token", async () => {
-    const previousToken = process.env.METRICS_TOKEN;
-    process.env.METRICS_TOKEN = "test-metrics-token";
-
-    try {
-      const response = {
-        statusCode: 200,
-        headers: {},
-        body: "",
-        setHeader(name: string, value: string) {
-          this.headers[name] = value;
-        },
-        status(code: number) {
-          this.statusCode = code;
-          return this;
-        },
-        end(body = "") {
-          this.body = body;
-        },
-      };
-      const request = { get: () => undefined };
-
-      await metricsHandler(request as any, response as any, () => {});
-      assert.equal(response.statusCode, 401);
-
-      response.statusCode = 200;
-      request.get = () => "Bearer test-metrics-token";
-      await metricsHandler(request as any, response as any, () => {});
-      assert.equal(response.statusCode, 200);
-      assert.match(response.body, /# HELP echo_/);
-    } finally {
-      if (previousToken === undefined) delete process.env.METRICS_TOKEN;
-      else process.env.METRICS_TOKEN = previousToken;
-    }
-  });
 });
