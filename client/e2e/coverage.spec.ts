@@ -534,7 +534,7 @@ test("edits and cancels a scheduled message", async ({ page }) => {
   await edit.locator("textarea").fill(`${scheduledBody} updated`);
   await edit.getByRole("button", { name: "Save" }).click();
   await expect(scheduledModal).toContainText("updated");
-  await scheduledModal.locator(".scheduled-actions .link-danger").click();
+  await scheduledItem.locator(".scheduled-actions .link-danger").click();
   await expect(page.locator(".scheduled-banner")).toHaveCount(0);
 });
 
