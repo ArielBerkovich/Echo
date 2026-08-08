@@ -60,7 +60,10 @@
       "icon": "../client/src/assets/echo-logo.png"
     },
     "nsis": {
-      "deleteAppDataOnUninstall": true
+      "deleteAppDataOnUninstall": true,
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "include": "installer.nsh"
     }
   }
 }
