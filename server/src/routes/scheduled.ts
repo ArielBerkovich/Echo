@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import { Channel } from "../models/Channel.js";
 import { ScheduledMessage } from "../models/ScheduledMessage.js";
 import { requireAuth } from "../middleware/requireAuth.js";
-import { sanitizeAttachments } from "../deliver.js";
+import { sanitizeAttachments, MAX_MESSAGE_ATTACHMENTS } from "../deliver.js";
 
 export const scheduledRouter = Router();
 scheduledRouter.use(requireAuth);
@@ -15,6 +15,9 @@ scheduledRouter.post("/", async (req, res) => {
     return res.status(400).json({ error: "invalid channel" });
   }
   const text = String(body || "").trim();
+  if (Array.isArray(attachments) && attachments.length > MAX_MESSAGE_ATTACHMENTS) {
+    return res.status(400).json({ error: `A message can have up to ${MAX_MESSAGE_ATTACHMENTS} files, images, or attachments.` });
+  }
   const files = sanitizeAttachments(attachments);
   if (!text && files.length === 0) {
     return res.status(400).json({ error: "message needs text or an attachment" });

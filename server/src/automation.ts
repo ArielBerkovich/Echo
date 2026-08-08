@@ -4,7 +4,7 @@ import { Channel } from "./models/Channel.js";
 import { Message } from "./models/Message.js";
 import { User } from "./models/User.js";
 import { emitToChannel } from "./realtime.js";
-import { sanitizeAttachments } from "./deliver.js";
+import { sanitizeAttachments, MAX_MESSAGE_ATTACHMENTS } from "./deliver.js";
 import { buildMessageActivityMetadata } from "./lib/messageActivity.js";
 
 const STATUS_ICONS = {
@@ -125,6 +125,11 @@ export async function postAutomationMessage({
   idempotencyKey,
 }) {
   const body = renderAutomationBody(payload);
+  if (Array.isArray(payload.attachments) && payload.attachments.length > MAX_MESSAGE_ATTACHMENTS) {
+    const err = new Error(`A message can have up to ${MAX_MESSAGE_ATTACHMENTS} files, images, or attachments.`);
+    err.status = 400;
+    throw err;
+  }
   const files = sanitizeAttachments(payload.attachments);
   if (!body && files.length === 0) {
     const err = new Error("message needs text or an attachment");

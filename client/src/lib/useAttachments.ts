@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../api.js";
 import { uploadSizeError } from "./uploads.js";
 
+export const MAX_MESSAGE_ATTACHMENTS = 10;
+
 function readImageSize(file) {
   return new Promise((resolve) => {
     if (!file.type.startsWith("image/")) return resolve(null);
@@ -59,6 +61,17 @@ export function useAttachments({ captureScreenDrops, onError }) {
   const stageFiles = useCallback(async (files) => {
     if (!files.length) return;
     onErrorRef.current?.(null);
+    const available = MAX_MESSAGE_ATTACHMENTS - pendingRef.current.length;
+    if (files.length > available) {
+      const requested = files.length;
+      const detail = available > 0
+        ? ` You can add ${available} more.`
+        : " Remove an attachment before adding another.";
+      onErrorRef.current?.(
+        `A message can have up to ${MAX_MESSAGE_ATTACHMENTS} files, images, or attachments. You selected ${requested}, but only ${available} can be added.${detail}`
+      );
+      return;
+    }
     const sizeError = uploadSizeError(files);
     if (sizeError) return onErrorRef.current?.(sizeError);
 

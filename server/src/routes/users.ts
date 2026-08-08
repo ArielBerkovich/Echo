@@ -10,7 +10,7 @@ import { passwordProblem } from "../password.js";
 import { ensureDmChannel } from "../lib/dms.js";
 import { aliasesByUserId } from "../lib/userAliases.js";
 import { ensureDmChannel, ensureSelfDmChannel } from "../lib/dms.js";
-import { deliverMessage, sanitizeAttachments } from "../deliver.js";
+import { deliverMessage, sanitizeAttachments, MAX_MESSAGE_ATTACHMENTS } from "../deliver.js";
 
 export const usersRouter = Router();
 usersRouter.use(requireAuth);
@@ -51,6 +51,9 @@ usersRouter.post("/:username/messages", async (req, res) => {
     ? await ensureSelfDmChannel(req.user._id)
     : await ensureDmChannel(req.user._id, recipient._id);
   const text = String(req.body?.body || "").trim();
+  if (Array.isArray(req.body?.attachments) && req.body.attachments.length > MAX_MESSAGE_ATTACHMENTS) {
+    return res.status(400).json({ error: `A message can have up to ${MAX_MESSAGE_ATTACHMENTS} files, images, or attachments.` });
+  }
   const attachments = sanitizeAttachments(req.body?.attachments);
   if (!text && attachments.length === 0) {
     return res.status(400).json({ error: "message needs text or an attachment" });
