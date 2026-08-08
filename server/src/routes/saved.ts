@@ -17,6 +17,9 @@ savedRouter.post("/:messageId", async (req, res) => {
   const me = req.user;
   const msg = await Message.findById(req.params.messageId);
   if (!msg) return res.status(404).json({ error: "message not found" });
+  const channel = await Channel.findById(msg.channel);
+  if (!channel || channel.isArchived) return res.status(404).json({ error: "message not found" });
+  if (!canAccess(channel, me._id)) return res.status(403).json({ error: "access denied" });
 
   const idx = me.savedMessages.findIndex((m) => m.equals(msg._id));
   let saved;
