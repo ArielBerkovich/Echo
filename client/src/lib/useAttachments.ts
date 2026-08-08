@@ -63,13 +63,7 @@ export function useAttachments({ captureScreenDrops, onError }) {
     onErrorRef.current?.(null);
     const available = MAX_MESSAGE_ATTACHMENTS - pendingRef.current.length;
     if (files.length > available) {
-      const requested = files.length;
-      const detail = available > 0
-        ? ` You can add ${available} more.`
-        : " Remove an attachment before adding another.";
-      onErrorRef.current?.(
-        `A message can have up to ${MAX_MESSAGE_ATTACHMENTS} files, images, or attachments. You selected ${requested}, but only ${available} can be added.${detail}`
-      );
+      onErrorRef.current?.(`A message can have up to ${MAX_MESSAGE_ATTACHMENTS} attachments`);
       return;
     }
     const sizeError = uploadSizeError(files);

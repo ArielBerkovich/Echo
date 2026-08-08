@@ -66,7 +66,7 @@ describe("attachmentLimitError", () => {
     assert.equal(attachmentLimitError(Array.from({ length: 10 }, () => ({ key: "file.txt" }))), null);
     assert.equal(
       attachmentLimitError(Array.from({ length: 11 }, () => ({ key: "file.txt" }))),
-      "A message can have up to 10 files, images, or attachments."
+      "A message can have up to 10 attachments"
     );
   });
 });

@@ -23,9 +23,8 @@ test("explains and rejects an eleventh message attachment before uploading", asy
   await page.getByTestId("composer-attachments").setInputFiles(files);
 
   await expect(page.getByTestId("channel-error")).toContainText(
-    "A message can have up to 10 files, images, or attachments"
+    "A message can have up to 10 attachments"
   );
-  await expect(page.getByTestId("channel-error")).toContainText("You selected 11");
   await expect(page.locator(".pending-att")).toHaveCount(0);
   expect(uploadRequests).toBe(0);
 });

@@ -8,7 +8,7 @@ export const MAX_MESSAGE_ATTACHMENTS = 10;
 
 export function attachmentLimitError(attachments) {
   if (!Array.isArray(attachments) || attachments.length <= MAX_MESSAGE_ATTACHMENTS) return null;
-  return `A message can have up to ${MAX_MESSAGE_ATTACHMENTS} files, images, or attachments.`;
+  return `A message can have up to ${MAX_MESSAGE_ATTACHMENTS} attachments`;
 }
 
 // Validate and normalise client-supplied attachment descriptors before they're
