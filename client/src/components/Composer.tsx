@@ -412,7 +412,18 @@ export default function Composer({ channel, parentId = null, users = [], channel
   // Format a Date as a local "YYYY-MM-DDTHH:MM:SS" string for <input datetime-local>.
   function toLocalInput(d) {
     const pad = (n) => String(n).padStart(2, "0");
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  function scheduleParts(value) {
+    const [date = "", time = ""] = String(value || "").split("T");
+    return { date, time: time.slice(0, 5) };
+  }
+
+  function updateSchedulePart(part, value) {
+    const current = scheduleParts(scheduleAt);
+    setScheduleError(null);
+    setScheduleAt(`${part === "date" ? value : current.date}T${part === "time" ? value : current.time}`);
   }
 
   // Tomorrow at 21:00 (local), used by the quick "Tomorrow" send option.
@@ -466,7 +477,9 @@ export default function Composer({ channel, parentId = null, users = [], channel
       onError?.("Write a message before scheduling it.");
       return;
     }
-    setScheduleAt(toLocalInput(new Date(Date.now() + 60 * 60 * 1000)));
+    const next = new Date(Date.now() + 60 * 60 * 1000);
+    next.setMinutes(Math.ceil(next.getMinutes() / 5) * 5, 0, 0);
+    setScheduleAt(toLocalInput(next));
   }
 
   function scheduleTomorrow9() {
@@ -629,7 +642,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
             setScheduleError(null);
           }}
         >
-          <p className="settings-hint">Choose when this message should be sent.</p>
+          <p className="settings-hint">Pick a date and time. Echo will send it in your local time.</p>
           <div className="schedule-presets">
             {SCHEDULE_PRESETS.map(({ label, minutes }) => (
               <button
@@ -644,24 +657,36 @@ export default function Composer({ channel, parentId = null, users = [], channel
               </button>
             ))}
           </div>
-          <input
-            className="settings-input schedule-input"
-            type="datetime-local"
-            step={1}
-            value={scheduleAt}
-            min={toLocalInput(new Date(Date.now() + 60 * 1000))}
-            onChange={(e) => {
-              setScheduleError(null);
-              setScheduleAt(e.target.value);
-            }}
-            onKeyDown={(e) => {
-    if (e.key === "Enter") {
-      if (!showSend) return;
-                e.preventDefault();
-                confirmSchedule();
-              }
-            }}
-          />
+          <div className="schedule-fields">
+            <label className="schedule-field">
+              <span>Date</span>
+              <input
+                className="settings-input schedule-input"
+                type="date"
+                value={scheduleParts(scheduleAt).date}
+                min={toLocalInput(new Date()).slice(0, 10)}
+                onChange={(e) => updateSchedulePart("date", e.target.value)}
+              />
+            </label>
+            <label className="schedule-field">
+              <span>Time</span>
+              <input
+                className="settings-input schedule-input"
+                type="time"
+                step={300}
+                value={scheduleParts(scheduleAt).time}
+                onChange={(e) => updateSchedulePart("time", e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    if (!showSend) return;
+                    e.preventDefault();
+                    confirmSchedule();
+                  }
+                }}
+              />
+            </label>
+          </div>
+          <div className="schedule-preview-time">Scheduled for {scheduleAt ? new Date(scheduleAt).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "—"}</div>
           {scheduleError && <div className="error schedule-error" role="alert">{scheduleError}</div>}
           <ModalActions>
             <button
@@ -936,7 +961,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
                   disabled={!canSend && pending.length === 0}
                   title={!canSend && pending.length === 0 ? "Write a message first" : undefined}
                 >
-                  <span>Tomorrow, 21:00</span>
+                  <span>Tomorrow, 9:00 AM</span>
                   <span className="send-menu-sub">
                     {tomorrow9am().toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" })}
                   </span>
