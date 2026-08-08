@@ -25,6 +25,10 @@ export const socketErrors = new Counter({
   labelNames: ["type"],
 });
 
+export function recordSocketError(type: string) {
+  socketErrors.inc({ type });
+}
+
 export const processUptime = new Gauge({
   name: "echo_process_uptime_seconds",
   help: "Time that the Echo process has been running in seconds.",
@@ -56,8 +60,12 @@ export function httpMetricsMiddleware(req: Request, res: Response, next: NextFun
   next();
 }
 
-export async function metricsHandler(_req: Request, res: Response, next: NextFunction) {
+export async function metricsHandler(req: Request, res: Response, next: NextFunction) {
   try {
+    const metricsToken = process.env.METRICS_TOKEN;
+    if (metricsToken && req.get("authorization") !== `Bearer ${metricsToken}`) {
+      return res.status(401).end();
+    }
     res.setHeader("Content-Type", register.contentType);
     res.end(await register.metrics());
   } catch (err) {
