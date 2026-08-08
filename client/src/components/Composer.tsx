@@ -21,9 +21,9 @@ import {
 } from "./ComposerIcons.js";
 
 const SCHEDULE_PRESETS = [
-  { label: "In 30 min", minutes: 30 },
-  { label: "In 1 hour", minutes: 60 },
-  { label: "In 3 hours", minutes: 180 },
+  { label: "In 15 min", getWhen: () => new Date(Date.now() + 15 * 60 * 1000) },
+  { label: "In 1 hour", getWhen: () => new Date(Date.now() + 60 * 60 * 1000) },
+  { label: "Tomorrow, 09:00", getWhen: tomorrow9am },
 ];
 
 function draftStorageKey(channelId, isThread) {
@@ -644,13 +644,13 @@ export default function Composer({ channel, parentId = null, users = [], channel
         >
           <p className="settings-hint">Choose a quick option or pick an exact time. Echo uses your local time.</p>
           <div className="schedule-presets">
-            {SCHEDULE_PRESETS.map(({ label, minutes }) => (
+            {SCHEDULE_PRESETS.map(({ label, getWhen }) => (
               <button
                 type="button"
                 key={label}
                 onClick={() => {
                   setScheduleError(null);
-                  setScheduleAt(toLocalInput(new Date(Date.now() + minutes * 60 * 1000)));
+                  setScheduleAt(toLocalInput(getWhen()));
                 }}
               >
                 {label}
