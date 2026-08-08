@@ -15,6 +15,7 @@ import Avatar from "./Avatar.js";
 import EmojiPicker from "./EmojiPicker.js";
 import Modal, { ModalActions } from "./Modal.js";
 import { useMentionGate } from "../lib/useMentionGate.js";
+import { CalendarClock, ChevronRight } from "lucide-react";
 import {
   LinkIcon, OrderedListIcon, BulletListIcon, QuoteIcon, CodeIcon, CodeBlockIcon,
   PlusIcon, SmileyIcon, SendIcon, ChevronIcon,
@@ -623,12 +624,23 @@ export default function Composer({ channel, parentId = null, users = [], channel
         <button
           type="button"
           className="scheduled-banner"
+          aria-label={`View ${scheduledMsgs.length} scheduled message${scheduledMsgs.length === 1 ? "" : "s"} for ${scheduledTargetLabel}`}
           onClick={() => {
             refreshScheduled();
             setShowScheduled(true);
           }}
         >
-          🗓 {scheduledMsgs.length} scheduled message{scheduledMsgs.length === 1 ? "" : "s"} for {scheduledTargetLabel} — view
+          <span className="scheduled-banner-icon" aria-hidden="true">
+            <CalendarClock size={17} strokeWidth={2} />
+          </span>
+          <span className="scheduled-banner-copy">
+            <strong>{scheduledMsgs.length} scheduled message{scheduledMsgs.length === 1 ? "" : "s"}</strong>
+            <span>for {scheduledTargetLabel}</span>
+          </span>
+          <span className="scheduled-banner-action">
+            View
+            <ChevronRight size={15} strokeWidth={2.2} aria-hidden="true" />
+          </span>
         </button>
       )}
 
@@ -711,11 +723,20 @@ export default function Composer({ channel, parentId = null, users = [], channel
           }}
         >
           {scheduleError && <div className="error schedule-error" role="alert">{scheduleError}</div>}
+          {scheduledMsgs.length > 0 && (
+            <div className="scheduled-modal-intro">
+              <span className="scheduled-modal-count">{scheduledMsgs.length}</span>
+              <div>
+                <strong>Queued for {scheduledTargetLabel}</strong>
+                <span>These messages will be sent automatically at their scheduled time.</span>
+              </div>
+            </div>
+          )}
           {scheduledMsgs.length === 0 ? (
             <p className="settings-hint">No scheduled messages for {scheduledTargetLabel}.</p>
           ) : (
             <div className="scheduled-list">
-              {scheduledMsgs.map((s) =>
+              {scheduledMsgs.map((s, index) =>
                 editingSched?.id === s.id ? (
                   <div className="scheduled-item editing" key={s.id}>
                     <div className="scheduled-edit">
@@ -744,12 +765,21 @@ export default function Composer({ channel, parentId = null, users = [], channel
                     </div>
                   </div>
                 ) : (
-                  <div className="scheduled-item" key={s.id}>
+                  <div className={`scheduled-item${index === 0 ? " is-next" : ""}`} key={s.id}>
+                    <span className="scheduled-item-marker" aria-hidden="true">
+                      <CalendarClock size={15} strokeWidth={2} />
+                    </span>
                     <div className="scheduled-body">
-                      <div className="scheduled-when">{formatDateTime(s.scheduledFor)}</div>
+                      <div className="scheduled-when">
+                        {index === 0 && <span className="scheduled-next-label">Next up</span>}
+                        {formatDateTime(s.scheduledFor)}
+                      </div>
                       <div className="scheduled-preview" dir="auto">
                         {s.body || `${s.attachments.length} attachment(s)`}
                       </div>
+                      {!!s.attachments?.length && (
+                        <span className="scheduled-attachments">{s.attachments.length} attachment{s.attachments.length === 1 ? "" : "s"}</span>
+                      )}
                     </div>
                     <div className="scheduled-actions">
                       <button type="button" className="scheduled-edit-btn" onClick={() => startSchedEdit(s)}>
