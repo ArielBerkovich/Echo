@@ -43,10 +43,7 @@ async function messageId(page, channelName, body) {
 
 function toLocalDatetimeInput(date) {
   const pad = (n) => String(n).padStart(2, "0");
-  return {
-    date: `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
-    time: `${pad(date.getHours())}:${pad(date.getMinutes())}`,
-  };
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 test("manages channels, members, visibility, and leaving", async ({ page }) => {
@@ -448,8 +445,7 @@ test("schedules a message and clears the banner after delivery", async ({ page }
   await page.locator(".send-menu button").filter({ hasText: "Custom time…" }).click();
   const scheduleWhen = toLocalDatetimeInput(new Date(Date.now() + 60_000));
   const scheduleModal = page.locator(".modal").filter({ hasText: "Schedule message" });
-  await scheduleModal.locator('input[type="date"]').fill(scheduleWhen.date);
-  await scheduleModal.locator('input[type="time"]').fill(scheduleWhen.time);
+  await scheduleModal.locator('input[type="datetime-local"]').fill(scheduleWhen);
   await scheduleModal.getByRole("button", { name: "Schedule" }).click();
 
   await expect(page.getByText(/scheduled message/i)).toBeVisible();
@@ -486,9 +482,8 @@ test("makes custom scheduling clear and submits the selected local date and time
   const modal = page.locator(".modal").filter({ hasText: "Schedule message" });
   const date = "2099-12-31";
   const time = "14:35";
-  await expect(modal.getByText("Pick a date and time. Echo will send it in your local time.")).toBeVisible();
-  await modal.locator('input[type="date"]').fill(date);
-  await modal.locator('input[type="time"]').fill(time);
+  await expect(modal.getByText("Choose a quick option or pick an exact time. Echo uses your local time.")).toBeVisible();
+  await modal.locator('input[type="datetime-local"]').fill(`${date}T${time}`);
   await expect(modal.locator(".schedule-preview-time")).toContainText("Dec 31");
 
   const responsePromise = page.waitForResponse(
@@ -513,8 +508,7 @@ test("shows invalid schedule times inside the schedule dialog", async ({ page })
 
   const scheduleModal = page.locator(".modal").filter({ hasText: "Schedule message" });
   const invalidWhen = toLocalDatetimeInput(new Date(Date.now() - 60_000));
-  await scheduleModal.locator('input[type="date"]').fill(invalidWhen.date);
-  await scheduleModal.locator('input[type="time"]').fill(invalidWhen.time);
+  await scheduleModal.locator('input[type="datetime-local"]').fill(invalidWhen);
   await scheduleModal.getByRole("button", { name: "Schedule" }).click();
 
   await expect(scheduleModal.locator(".schedule-error")).toHaveText("Pick a time in the future.");

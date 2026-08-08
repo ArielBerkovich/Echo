@@ -160,8 +160,7 @@ test("keeps a failed scheduled message editable and creates it once on retry", a
   await page.getByTestId("composer-send-options").click();
   await page.locator(".send-menu button").filter({ hasText: "Custom time…" }).click();
   const modal = page.locator(".modal").filter({ hasText: "Schedule message" });
-  await expect(modal.locator('.schedule-field input[type="date"]')).not.toHaveValue("");
-  await expect(modal.locator('.schedule-field input[type="time"]')).not.toHaveValue("");
+  await expect(modal.locator('.schedule-input[type="datetime-local"]')).not.toHaveValue("");
   await modal.getByRole("button", { name: "Schedule" }).click();
   await expect(modal.locator(".schedule-error")).toContainText("Something went wrong on our end");
   await expect(page.getByTestId("composer-editor")).toHaveText(body);

@@ -415,17 +415,6 @@ export default function Composer({ channel, parentId = null, users = [], channel
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
-  function scheduleParts(value) {
-    const [date = "", time = ""] = String(value || "").split("T");
-    return { date, time: time.slice(0, 5) };
-  }
-
-  function updateSchedulePart(part, value) {
-    const current = scheduleParts(scheduleAt);
-    setScheduleError(null);
-    setScheduleAt(`${part === "date" ? value : current.date}T${part === "time" ? value : current.time}`);
-  }
-
   // Tomorrow at 21:00 (local), used by the quick "Tomorrow" send option.
   function tomorrow9am() {
     const d = new Date();
@@ -642,7 +631,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
             setScheduleError(null);
           }}
         >
-          <p className="settings-hint">Pick a date and time. Echo will send it in your local time.</p>
+          <p className="settings-hint">Choose a quick option or pick an exact time. Echo uses your local time.</p>
           <div className="schedule-presets">
             {SCHEDULE_PRESETS.map(({ label, minutes }) => (
               <button
@@ -657,36 +646,31 @@ export default function Composer({ channel, parentId = null, users = [], channel
               </button>
             ))}
           </div>
-          <div className="schedule-fields">
-            <label className="schedule-field">
-              <span>Date</span>
-              <input
-                className="settings-input schedule-input"
-                type="date"
-                value={scheduleParts(scheduleAt).date}
-                min={toLocalInput(new Date()).slice(0, 10)}
-                onChange={(e) => updateSchedulePart("date", e.target.value)}
-              />
-            </label>
-            <label className="schedule-field">
-              <span>Time</span>
-              <input
-                className="settings-input schedule-input"
-                type="time"
-                step={300}
-                value={scheduleParts(scheduleAt).time}
-                onChange={(e) => updateSchedulePart("time", e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    if (!showSend) return;
-                    e.preventDefault();
-                    confirmSchedule();
-                  }
-                }}
-              />
-            </label>
+          <label className="schedule-custom-field">
+            <span>Custom date and time</span>
+            <input
+              className="settings-input schedule-input"
+              type="datetime-local"
+              step={300}
+              value={scheduleAt}
+              min={toLocalInput(new Date(Date.now() + 60 * 1000))}
+              onChange={(e) => {
+                setScheduleError(null);
+                setScheduleAt(e.target.value);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  if (!showSend) return;
+                  e.preventDefault();
+                  confirmSchedule();
+                }
+              }}
+            />
+          </label>
+          <div className="schedule-preview-time">
+            <span>Will send</span>
+            <strong>{scheduleAt ? new Date(scheduleAt).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "Pick a time"}</strong>
           </div>
-          <div className="schedule-preview-time">Scheduled for {scheduleAt ? new Date(scheduleAt).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "—"}</div>
           {scheduleError && <div className="error schedule-error" role="alert">{scheduleError}</div>}
           <ModalActions>
             <button
