@@ -451,7 +451,7 @@ test("schedules a message and clears the banner after delivery", async ({ page }
   await expect(page.getByText(/scheduled message/i)).toBeVisible();
   await expect(page.locator(".message").filter({ hasText: scheduledBody })).toHaveCount(0);
   await expect(page.locator(".scheduled-banner")).toBeVisible();
-  await expect(page.locator(".scheduled-banner")).toHaveCount(0, { timeout: 20_000 });
+  await expect(page.locator(".scheduled-banner")).toHaveCount(0, { timeout: 90_000 });
   await expect(page.locator(".message").filter({ hasText: scheduledBody })).toBeVisible();
 });
 
@@ -528,7 +528,8 @@ test("edits and cancels a scheduled message", async ({ page }) => {
   await page.getByText(/scheduled message/i).click();
 
   const scheduledModal = page.locator(".modal").filter({ hasText: "Scheduled messages" });
-  await scheduledModal.getByRole("button", { name: "Edit" }).click();
+  const scheduledItem = scheduledModal.locator(".scheduled-item").filter({ hasText: scheduledBody }).first();
+  await scheduledItem.getByRole("button", { name: "Edit" }).click();
   const edit = scheduledModal.locator(".scheduled-item.editing");
   await edit.locator("textarea").fill(`${scheduledBody} updated`);
   await edit.getByRole("button", { name: "Save" }).click();

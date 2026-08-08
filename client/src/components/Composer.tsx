@@ -26,6 +26,13 @@ const SCHEDULE_PRESETS = [
   { label: "Tomorrow, 09:00", getWhen: tomorrow9am },
 ];
 
+function tomorrow9am() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  d.setHours(9, 0, 0, 0);
+  return d;
+}
+
 function draftStorageKey(channelId, isThread) {
   return isThread ? null : `echo.composer-draft.v1.${channelId}`;
 }
@@ -424,14 +431,6 @@ export default function Composer({ channel, parentId = null, users = [], channel
   function toLocalInput(d) {
     const pad = (n) => String(n).padStart(2, "0");
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  }
-
-  // Tomorrow at 21:00 (local), used by the quick "Tomorrow" send option.
-  function tomorrow9am() {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    d.setHours(9, 0, 0, 0);
-    return d;
   }
 
   // Schedule the composed message for a given Date (shared by the quick option
