@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { roomFor, userRoom } from "./lib/rooms.js";
-import { sanitizeAttachments } from "./deliver.js";
+import { attachmentLimitError, sanitizeAttachments } from "./deliver.js";
 
 describe("room helpers", () => {
   it("build channel and user room names", () => {
@@ -57,5 +57,16 @@ describe("sanitizeAttachments", () => {
 
     assert.equal(result.length, 10);
     assert.equal(result.at(-1).key, "file-9.txt");
+  });
+});
+
+describe("attachmentLimitError", () => {
+  it("returns the shared user-facing error only above the limit", () => {
+    assert.equal(attachmentLimitError([]), null);
+    assert.equal(attachmentLimitError(Array.from({ length: 10 }, () => ({ key: "file.txt" }))), null);
+    assert.equal(
+      attachmentLimitError(Array.from({ length: 11 }, () => ({ key: "file.txt" }))),
+      "A message can have up to 10 files, images, or attachments."
+    );
   });
 });

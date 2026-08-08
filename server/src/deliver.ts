@@ -6,6 +6,11 @@ import { buildMessageActivityMetadata } from "./lib/messageActivity.js";
 
 export const MAX_MESSAGE_ATTACHMENTS = 10;
 
+export function attachmentLimitError(attachments) {
+  if (!Array.isArray(attachments) || attachments.length <= MAX_MESSAGE_ATTACHMENTS) return null;
+  return `A message can have up to ${MAX_MESSAGE_ATTACHMENTS} files, images, or attachments.`;
+}
+
 // Validate and normalise client-supplied attachment descriptors before they're
 // persisted on a message: keep at most 10, require a safe storage key, and cap
 // the free-text fields. Shared by every message-creation path.
