@@ -11,6 +11,7 @@ import { setIO } from "./realtime.js";
 import { deliverMessage, sanitizeAttachments } from "./deliver.js";
 import { buildMessageActivityMetadata } from "./lib/messageActivity.js";
 import { roomFor, userRoom } from "./lib/rooms.js";
+import { activeConnections, socketErrors } from "./metrics.js";
 
 // Wire up the real-time messaging layer on top of the HTTP server.
 export function attachSocket(httpServer) {
@@ -60,15 +61,20 @@ export function attachSocket(httpServer) {
     let payload;
     try {
       const token = socket.handshake.auth?.token;
-      if (!token) return next(connectionError("Missing token", "AUTH_INVALID"));
+      if (!token) {
+        socketErrors.inc({ type: "authentication" });
+        return next(connectionError("Missing token", "AUTH_INVALID"));
+      }
       payload = verifyToken(token);
     } catch {
+      socketErrors.inc({ type: "authentication" });
       return next(connectionError("Authentication failed", "AUTH_INVALID"));
     }
 
     try {
       const user = await User.findById(payload.sub);
       if (!user || (payload.tv ?? 0) !== (user.tokenVersion ?? 0)) {
+        socketErrors.inc({ type: "authentication" });
         return next(connectionError("Authentication failed", "AUTH_INVALID"));
       }
       socket.user = user;
@@ -76,11 +82,15 @@ export function attachSocket(httpServer) {
     } catch {
       // A database/server startup failure is recoverable and must not be
       // presented to the client as an expired login.
+      socketErrors.inc({ type: "authentication" });
       next(connectionError("Echo is temporarily unavailable", "TEMPORARY_UNAVAILABLE"));
     }
   });
 
   io.on("connection", (socket) => {
+    activeConnections.inc();
+    socket.on("error", () => socketErrors.inc({ type: "connection" }));
+
     // A personal room so we can reach this user's sockets later (e.g. to pull
     // them into a DM created after they connected).
     socket.join(userRoom(socket.user._id.toString()));
@@ -92,6 +102,7 @@ export function attachSocket(httpServer) {
       socket.emit("presence", { online });
     }).catch(() => {});
     socket.on("disconnect", () => {
+      activeConnections.dec();
       broadcastPresence().catch(() => {});
     });
 
