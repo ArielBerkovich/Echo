@@ -4,7 +4,7 @@ import { Channel } from "./models/Channel.js";
 import { Message } from "./models/Message.js";
 import { User } from "./models/User.js";
 import { emitToChannel } from "./realtime.js";
-import { sanitizeAttachments } from "./deliver.js";
+import { sanitizeAttachments, attachmentLimitError } from "./deliver.js";
 import { buildMessageActivityMetadata } from "./lib/messageActivity.js";
 
 const STATUS_ICONS = {
@@ -125,6 +125,12 @@ export async function postAutomationMessage({
   idempotencyKey,
 }) {
   const body = renderAutomationBody(payload);
+  const attachmentError = attachmentLimitError(payload.attachments);
+  if (attachmentError) {
+    const err = new Error(attachmentError);
+    err.status = 400;
+    throw err;
+  }
   const files = sanitizeAttachments(payload.attachments);
   if (!body && files.length === 0) {
     const err = new Error("message needs text or an attachment");

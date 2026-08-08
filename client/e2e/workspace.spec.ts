@@ -805,14 +805,12 @@ test("searches messages with filters and displays results", async ({ page }) => 
 });
 
 test("navigates grouped search results with the keyboard", async ({ page }) => {
-  await page.goto("/");
-  const searchInput = page.getByTestId("search-input");
-  await searchInput.fill(fixture.messages.searchHit.body);
-  await searchInput.press("Enter");
+  await page.goto(`/search?q=${encodeURIComponent(fixture.messages.searchHit.body)}`);
 
   const pane = page.getByTestId("search-results-pane");
   await expect(pane).toBeFocused();
-  await expect(page.getByTestId("search-result-count")).toContainText("1 result");
+  await expect(page.getByTestId("search-result")).toHaveCount(1);
+  await expect(page.getByTestId("search-result-count")).toHaveText("1 result");
   const result = page.getByTestId("search-result").first();
   await expect(result).toHaveClass(/active/);
 

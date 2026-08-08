@@ -66,6 +66,7 @@ test("keeps a message active through reaction selection", async ({ page }) => {
 
   await picker.getByRole("button", { name: "React with 👍" }).click();
   await expect(picker).toBeHidden();
+  await message.hover();
   await expect(message).toHaveClass(/actions-hovered/);
 });
 

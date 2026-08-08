@@ -4,6 +4,13 @@ import { getIO } from "./realtime.js";
 import { roomFor, userRoom } from "./lib/rooms.js";
 import { buildMessageActivityMetadata } from "./lib/messageActivity.js";
 
+export const MAX_MESSAGE_ATTACHMENTS = 10;
+
+export function attachmentLimitError(attachments) {
+  if (!Array.isArray(attachments) || attachments.length <= MAX_MESSAGE_ATTACHMENTS) return null;
+  return `A message can have up to ${MAX_MESSAGE_ATTACHMENTS} attachments`;
+}
+
 // Validate and normalise client-supplied attachment descriptors before they're
 // persisted on a message: keep at most 10, require a safe storage key, and cap
 // the free-text fields. Shared by every message-creation path.
@@ -11,7 +18,7 @@ export function sanitizeAttachments(attachments) {
   if (!Array.isArray(attachments)) return [];
   return attachments
     .filter((a) => a && typeof a.key === "string" && /^[a-z0-9-]+\.[a-z0-9]+$/i.test(a.key))
-    .slice(0, 10)
+    .slice(0, MAX_MESSAGE_ATTACHMENTS)
     .map((a) => ({
       key: a.key,
       name: String(a.name || "file").slice(0, 255),

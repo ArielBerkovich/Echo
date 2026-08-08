@@ -11,7 +11,7 @@ import {
   joinUserToChannel,
   removeUserFromChannel,
 } from "../realtime.js";
-import { deliverMessage, sanitizeAttachments } from "../deliver.js";
+import { deliverMessage, sanitizeAttachments, attachmentLimitError } from "../deliver.js";
 import { normalizeChannelName } from "../automation.js";
 import { ActivityEvent } from "../models/ActivityEvent.js";
 
@@ -724,6 +724,8 @@ channelsRouter.get("/:id/pinned", async (req, res) => {
 // `message:send` socket event). Body: { body, parentId?, attachments? }.
 channelsRouter.post("/:id/messages", async (req, res) => {
   const text = String(req.body?.body || "").trim();
+  const attachmentError = attachmentLimitError(req.body?.attachments);
+  if (attachmentError) return res.status(400).json({ error: attachmentError });
   const files = sanitizeAttachments(req.body?.attachments);
   if (!text && files.length === 0) {
     return res.status(400).json({ error: "message needs text or an attachment" });

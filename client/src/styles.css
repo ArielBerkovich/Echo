@@ -7661,6 +7661,32 @@ html[data-mode="dark"] .new-messages-button:hover {
 .schedule-input {
   width: 100%;
 }
+.schedule-custom-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.schedule-preview-time {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 9px 11px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--blue-500) 10%, var(--surface-2));
+  color: var(--blue-500);
+  font-size: 13px;
+  font-weight: 600;
+}
+.schedule-preview-time strong {
+  color: var(--text);
+  font-weight: 700;
+}
 
 /* Manage-scheduled list */
 .scheduled-list {

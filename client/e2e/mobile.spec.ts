@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { seedWorkspaceFixture } from "./helpers.js";
+import { dmRow, seedWorkspaceFixture } from "./helpers.js";
 
 let fixture: Awaited<ReturnType<typeof seedWorkspaceFixture>>;
 
@@ -104,7 +104,7 @@ test("keeps the workspace full-screen and usable on a phone", async ({ page }) =
 
   await page.getByTestId("rail-dms").click();
   await expect(page.getByTestId("sidebar")).toBeVisible();
-  await page.getByTestId("dm-open-bob-builder").click();
+  await dmRow(page, fixture.bob.displayName).locator(".dm-open").click();
   await expect(page.getByTestId("channel-title")).toContainText(fixture.bob.displayName);
   await page.getByTestId("channel-title").click();
   await expect(page.getByTestId("profile-modal")).toBeVisible();

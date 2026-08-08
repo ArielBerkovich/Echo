@@ -21,10 +21,17 @@ import {
 } from "./ComposerIcons.js";
 
 const SCHEDULE_PRESETS = [
-  { label: "In 30 min", minutes: 30 },
-  { label: "In 1 hour", minutes: 60 },
-  { label: "In 3 hours", minutes: 180 },
+  { label: "In 30 min", getWhen: () => new Date(Date.now() + 30 * 60 * 1000) },
+  { label: "In 1 hour", getWhen: () => new Date(Date.now() + 60 * 60 * 1000) },
+  { label: "Tomorrow, 09:00", getWhen: tomorrow9am },
 ];
+
+function tomorrow9am() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  d.setHours(9, 0, 0, 0);
+  return d;
+}
 
 function draftStorageKey(channelId, isThread) {
   return isThread ? null : `echo.composer-draft.v1.${channelId}`;
@@ -36,6 +43,17 @@ function composerContent(body) {
   return /^<(p|ul|ol|blockquote|pre|h[1-3]|hr)\b/i.test(html.trim())
     ? html
     : `<p>${html}</p>`;
+}
+
+function formatScheduleTime(date) {
+  return date.toLocaleString([], {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 }
 
 // Rich-text message composer: @mention autocomplete, a formatting toolbar,
@@ -412,15 +430,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
   // Format a Date as a local "YYYY-MM-DDTHH:MM:SS" string for <input datetime-local>.
   function toLocalInput(d) {
     const pad = (n) => String(n).padStart(2, "0");
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-  }
-
-  // Tomorrow at 21:00 (local), used by the quick "Tomorrow" send option.
-  function tomorrow9am() {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    d.setHours(9, 0, 0, 0);
-    return d;
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
   // Schedule the composed message for a given Date (shared by the quick option
@@ -466,7 +476,9 @@ export default function Composer({ channel, parentId = null, users = [], channel
       onError?.("Write a message before scheduling it.");
       return;
     }
-    setScheduleAt(toLocalInput(new Date(Date.now() + 60 * 60 * 1000)));
+    const next = new Date(Date.now() + 60 * 60 * 1000);
+    next.setMinutes(Math.ceil(next.getMinutes() / 5) * 5, 0, 0);
+    setScheduleAt(toLocalInput(next));
   }
 
   function scheduleTomorrow9() {
@@ -629,39 +641,46 @@ export default function Composer({ channel, parentId = null, users = [], channel
             setScheduleError(null);
           }}
         >
-          <p className="settings-hint">Choose when this message should be sent.</p>
+          <p className="settings-hint">Choose a quick option or pick an exact time. Echo uses your local time.</p>
           <div className="schedule-presets">
-            {SCHEDULE_PRESETS.map(({ label, minutes }) => (
+            {SCHEDULE_PRESETS.map(({ label, getWhen }) => (
               <button
                 type="button"
                 key={label}
                 onClick={() => {
                   setScheduleError(null);
-                  setScheduleAt(toLocalInput(new Date(Date.now() + minutes * 60 * 1000)));
+                  setScheduleAt(toLocalInput(getWhen()));
                 }}
               >
                 {label}
               </button>
             ))}
           </div>
-          <input
-            className="settings-input schedule-input"
-            type="datetime-local"
-            step={1}
-            value={scheduleAt}
-            min={toLocalInput(new Date(Date.now() + 60 * 1000))}
-            onChange={(e) => {
-              setScheduleError(null);
-              setScheduleAt(e.target.value);
-            }}
-            onKeyDown={(e) => {
-    if (e.key === "Enter") {
-      if (!showSend) return;
-                e.preventDefault();
-                confirmSchedule();
-              }
-            }}
-          />
+          <label className="schedule-custom-field">
+            <span>Custom date and time</span>
+            <input
+              className="settings-input schedule-input"
+              type="datetime-local"
+              step={300}
+              value={scheduleAt}
+              min={toLocalInput(new Date(Date.now() + 60 * 1000))}
+              onChange={(e) => {
+                setScheduleError(null);
+                setScheduleAt(e.target.value);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  if (!showSend) return;
+                  e.preventDefault();
+                  confirmSchedule();
+                }
+              }}
+            />
+          </label>
+          <div className="schedule-preview-time">
+            <span>Will send</span>
+            <strong>{scheduleAt ? formatScheduleTime(new Date(scheduleAt)) : "Pick a time"}</strong>
+          </div>
           {scheduleError && <div className="error schedule-error" role="alert">{scheduleError}</div>}
           <ModalActions>
             <button
@@ -936,7 +955,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
                   disabled={!canSend && pending.length === 0}
                   title={!canSend && pending.length === 0 ? "Write a message first" : undefined}
                 >
-                  <span>Tomorrow, 21:00</span>
+                  <span>Tomorrow, 09:00</span>
                   <span className="send-menu-sub">
                     {tomorrow9am().toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" })}
                   </span>

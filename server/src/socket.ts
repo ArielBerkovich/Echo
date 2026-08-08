@@ -8,7 +8,7 @@ import { Channel } from "./models/Channel.js";
 import { Message } from "./models/Message.js";
 import { ActivityEvent } from "./models/ActivityEvent.js";
 import { setIO } from "./realtime.js";
-import { deliverMessage, sanitizeAttachments } from "./deliver.js";
+import { deliverMessage, sanitizeAttachments, attachmentLimitError } from "./deliver.js";
 import { buildMessageActivityMetadata } from "./lib/messageActivity.js";
 import { roomFor, userRoom } from "./lib/rooms.js";
 import { activeConnections, recordSocketError } from "./metrics.js";
@@ -220,6 +220,8 @@ export function attachSocket(httpServer) {
     socket.on("message:send", async ({ channelId, body, parentId, attachments } = {}, ack) => {
       try {
         const text = String(body || "").trim();
+        const attachmentError = attachmentLimitError(attachments);
+        if (attachmentError) return ackError(ack, "message_send", attachmentError);
         const files = sanitizeAttachments(attachments);
         if (!text && files.length === 0) {
           return ackError(ack, "message_send", "message needs text or an attachment");
@@ -251,6 +253,8 @@ export function attachSocket(httpServer) {
     socket.on("message:edit", async ({ messageId, body, attachments } = {}, ack) => {
       try {
         const text = String(body || "").trim();
+        const attachmentError = attachmentLimitError(attachments);
+        if (attachmentError) return ackError(ack, "message_edit", attachmentError);
         const files = sanitizeAttachments(attachments);
         if (!messageId || (!text && files.length === 0)) {
           return ackError(ack, "message_edit", "messageId and body or attachments are required");
