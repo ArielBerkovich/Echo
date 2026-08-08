@@ -17,6 +17,7 @@ import { webhooksRouter } from "./routes/webhooks.js";
 import { openApiDocument } from "./openapi.js";
 import { desktopUpdatesRouter } from "./desktopUpdates.js";
 import { workspaceRouter } from "./routes/workspace.js";
+import { httpMetricsMiddleware } from "./metrics.js";
 
 export function createApp() {
   const app = express();
@@ -31,6 +32,7 @@ export function createApp() {
     credentials: true,
   }));
   app.use(express.json({ limit: "50kb" }));
+  app.use(httpMetricsMiddleware);
 
   app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
   app.get("/api/openapi.json", (_req, res) => res.json(openApiDocument()));

@@ -10,6 +10,7 @@ import { Message } from "./models/Message.js";
 import { UserAlias } from "./models/UserAlias.js";
 import { MigrationIntent } from "./models/MigrationIntent.js";
 import { UserMigrationAudit } from "./models/UserMigrationAudit.js";
+import { createMetricsApp } from "./metrics.js";
 
 async function start() {
   await connectDb();
@@ -22,11 +23,15 @@ async function start() {
 
   const app = createApp();
   const httpServer = http.createServer(app);
+  const metricsServer = http.createServer(createMetricsApp());
   attachSocket(httpServer);
   startScheduler();
 
   httpServer.listen(config.port, () => {
     console.log(`Echo server listening on port ${config.port}`);
+  });
+  metricsServer.listen(config.metricsPort, () => {
+    console.log(`Echo metrics listening on port ${config.metricsPort}`);
   });
 }
 

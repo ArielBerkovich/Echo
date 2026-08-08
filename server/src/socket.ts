@@ -11,6 +11,7 @@ import { setIO } from "./realtime.js";
 import { deliverMessage, sanitizeAttachments } from "./deliver.js";
 import { buildMessageActivityMetadata } from "./lib/messageActivity.js";
 import { roomFor, userRoom } from "./lib/rooms.js";
+import { activeConnections, recordSocketError } from "./metrics.js";
 
 // Wire up the real-time messaging layer on top of the HTTP server.
 export function attachSocket(httpServer) {
@@ -55,20 +56,30 @@ export function attachSocket(httpServer) {
     return error;
   }
 
+  function ackError(ack, type, message) {
+    recordSocketError(type);
+    ack?.({ error: message });
+  }
+
   // Authenticate every socket from the handshake before it can do anything.
   io.use(async (socket, next) => {
     let payload;
     try {
       const token = socket.handshake.auth?.token;
-      if (!token) return next(connectionError("Missing token", "AUTH_INVALID"));
+      if (!token) {
+        recordSocketError("authentication");
+        return next(connectionError("Missing token", "AUTH_INVALID"));
+      }
       payload = verifyToken(token);
     } catch {
+      recordSocketError("authentication");
       return next(connectionError("Authentication failed", "AUTH_INVALID"));
     }
 
     try {
       const user = await User.findById(payload.sub);
       if (!user || (payload.tv ?? 0) !== (user.tokenVersion ?? 0)) {
+        recordSocketError("authentication");
         return next(connectionError("Authentication failed", "AUTH_INVALID"));
       }
       socket.user = user;
@@ -76,11 +87,15 @@ export function attachSocket(httpServer) {
     } catch {
       // A database/server startup failure is recoverable and must not be
       // presented to the client as an expired login.
+      recordSocketError("authentication");
       next(connectionError("Echo is temporarily unavailable", "TEMPORARY_UNAVAILABLE"));
     }
   });
 
   io.on("connection", (socket) => {
+    activeConnections.inc();
+    socket.on("error", () => recordSocketError("connection"));
+
     // A personal room so we can reach this user's sockets later (e.g. to pull
     // them into a DM created after they connected).
     socket.join(userRoom(socket.user._id.toString()));
@@ -92,6 +107,7 @@ export function attachSocket(httpServer) {
       socket.emit("presence", { online });
     }).catch(() => {});
     socket.on("disconnect", () => {
+      activeConnections.dec();
       broadcastPresence().catch(() => {});
     });
 
@@ -105,23 +121,26 @@ export function attachSocket(httpServer) {
     socket.on("channel:join", async (channelId, ack) => {
       try {
         const channel = await Channel.findById(channelId);
-        if (!channel) return ack?.({ error: "channel not found" });
+        if (!channel) return ackError(ack, "channel_join", "channel not found");
         if (
           channel.type !== "public" &&
           !channel.members.some((m) => m.equals(socket.user._id))
         ) {
-          return ack?.({ error: "access denied" });
+          return ackError(ack, "channel_join", "access denied");
         }
         socket.join(roomFor(channelId));
         ack?.({ ok: true });
       } catch {
-        ack?.({ error: "could not join channel" });
+        ackError(ack, "channel_join", "could not join channel");
       }
     });
 
     socket.on("channel:leave", async (channelId) => {
       if (!channelId) return;
-      const channel = await Channel.findById(channelId).catch(() => null);
+      const channel = await Channel.findById(channelId).catch(() => {
+        recordSocketError("channel_leave");
+        return null;
+      });
       if (!channel || !canAccess(channel, socket.user._id)) return;
       socket.leave(roomFor(channelId));
     });
@@ -129,7 +148,10 @@ export function attachSocket(httpServer) {
     // Relay an ephemeral typing signal to everyone else in the channel.
     socket.on("typing", async ({ channelId, typing } = {}) => {
       if (!channelId) return;
-      const channel = await Channel.findById(channelId).catch(() => null);
+      const channel = await Channel.findById(channelId).catch(() => {
+        recordSocketError("typing");
+        return null;
+      });
       if (!channel || !canAccess(channel, socket.user._id)) return;
       socket.to(roomFor(channelId)).emit("typing", {
         channelId,
@@ -141,15 +163,15 @@ export function attachSocket(httpServer) {
     // Toggle the current user's emoji reaction on a message.
     socket.on("reaction:toggle", async ({ messageId, emoji } = {}, ack) => {
       try {
-        if (!messageId || !emoji) return ack?.({ error: "messageId and emoji required" });
+        if (!messageId || !emoji) return ackError(ack, "reaction", "messageId and emoji required");
         const message = await Message.findById(messageId);
-        if (!message) return ack?.({ error: "message not found" });
+        if (!message) return ackError(ack, "reaction", "message not found");
         const channel = await Channel.findById(message.channel);
         if (
           !channel ||
           (channel.type !== "public" && !channel.members.some((m) => m.equals(socket.user._id)))
         ) {
-          return ack?.({ error: "access denied" });
+          return ackError(ack, "reaction", "access denied");
         }
 
         const uid = socket.user._id;
@@ -190,7 +212,7 @@ export function attachSocket(httpServer) {
         });
         ack?.({ ok: true });
       } catch (err) {
-        ack?.({ error: err.message || "could not react" });
+        ackError(ack, "reaction", err.message || "could not react");
       }
     });
 
@@ -200,16 +222,16 @@ export function attachSocket(httpServer) {
         const text = String(body || "").trim();
         const files = sanitizeAttachments(attachments);
         if (!text && files.length === 0) {
-          return ack?.({ error: "message needs text or an attachment" });
+          return ackError(ack, "message_send", "message needs text or an attachment");
         }
 
         const channel = await Channel.findById(channelId);
-        if (!channel) return ack?.({ error: "channel not found" });
+        if (!channel) return ackError(ack, "message_send", "channel not found");
         if (
           channel.type !== "public" &&
           !channel.members.some((m) => m.equals(socket.user._id))
         ) {
-          return ack?.({ error: "access denied" });
+          return ackError(ack, "message_send", "access denied");
         }
 
         const payload = await deliverMessage({
@@ -221,7 +243,7 @@ export function attachSocket(httpServer) {
         });
         ack?.({ ok: true, message: payload });
       } catch (err) {
-        ack?.({ error: err.message || "could not send message" });
+        ackError(ack, "message_send", err.message || "could not send message");
       }
     });
 
@@ -231,18 +253,18 @@ export function attachSocket(httpServer) {
         const text = String(body || "").trim();
         const files = sanitizeAttachments(attachments);
         if (!messageId || (!text && files.length === 0)) {
-          return ack?.({ error: "messageId and body or attachments are required" });
+          return ackError(ack, "message_edit", "messageId and body or attachments are required");
         }
 
         const message = await Message.findById(messageId);
-        if (!message) return ack?.({ error: "message not found" });
-        if (message.kind === "system") return ack?.({ error: "system messages cannot be edited" });
+        if (!message) return ackError(ack, "message_edit", "message not found");
+        if (message.kind === "system") return ackError(ack, "message_edit", "system messages cannot be edited");
         if (!message.author.equals(socket.user._id)) {
-          return ack?.({ error: "you can only edit your own messages" });
+          return ackError(ack, "message_edit", "you can only edit your own messages");
         }
         const editChannel = await Channel.findById(message.channel);
         if (!editChannel || !canAccess(editChannel, socket.user._id)) {
-          return ack?.({ error: "access denied" });
+          return ackError(ack, "message_edit", "access denied");
         }
 
         message.body = text;
@@ -260,23 +282,23 @@ export function attachSocket(httpServer) {
         });
         ack?.({ ok: true });
       } catch (err) {
-        ack?.({ error: err.message || "could not edit message" });
+        ackError(ack, "message_edit", err.message || "could not edit message");
       }
     });
 
     // Delete one of your own messages (and any thread replies under it).
     socket.on("message:delete", async ({ messageId } = {}, ack) => {
       try {
-        if (!messageId) return ack?.({ error: "messageId is required" });
+        if (!messageId) return ackError(ack, "message_delete", "messageId is required");
 
         const message = await Message.findById(messageId);
-        if (!message) return ack?.({ error: "message not found" });
+        if (!message) return ackError(ack, "message_delete", "message not found");
         if (!message.author.equals(socket.user._id)) {
-          return ack?.({ error: "you can only delete your own messages" });
+          return ackError(ack, "message_delete", "you can only delete your own messages");
         }
         const deleteChannel = await Channel.findById(message.channel);
         if (!deleteChannel || !canAccess(deleteChannel, socket.user._id)) {
-          return ack?.({ error: "access denied" });
+          return ackError(ack, "message_delete", "access denied");
         }
 
         const channelId = message.channel.toString();
@@ -292,20 +314,20 @@ export function attachSocket(httpServer) {
         });
         ack?.({ ok: true });
       } catch (err) {
-        ack?.({ error: err.message || "could not delete message" });
+        ackError(ack, "message_delete", err.message || "could not delete message");
       }
     });
 
     // Pin or unpin a message — any channel member can do this.
     socket.on("message:pin", async ({ messageId } = {}, ack) => {
       try {
-        if (!messageId) return ack?.({ error: "messageId is required" });
+        if (!messageId) return ackError(ack, "message_pin", "messageId is required");
         const message = await Message.findById(messageId).populate("author");
-        if (!message) return ack?.({ error: "message not found" });
-        if (message.kind === "system") return ack?.({ error: "system messages cannot be pinned" });
+        if (!message) return ackError(ack, "message_pin", "message not found");
+        if (message.kind === "system") return ackError(ack, "message_pin", "system messages cannot be pinned");
         const channel = await Channel.findById(message.channel);
         if (!channel || !canAccess(channel, socket.user._id)) {
-          return ack?.({ error: "access denied" });
+          return ackError(ack, "message_pin", "access denied");
         }
 
         const alreadyPinned = !!message.pinnedAt;
@@ -321,7 +343,7 @@ export function attachSocket(httpServer) {
         });
         ack?.({ ok: true });
       } catch (err) {
-        ack?.({ error: err.message || "could not pin message" });
+        ackError(ack, "message_pin", err.message || "could not pin message");
       }
     });
 
@@ -329,22 +351,22 @@ export function attachSocket(httpServer) {
     socket.on("message:forward", async ({ messageId, channelId, note = "" } = {}, ack) => {
       try {
         if (!messageId || !channelId) {
-          return ack?.({ error: "messageId and channelId are required" });
+          return ackError(ack, "message_forward", "messageId and channelId are required");
         }
 
         const source = await Message.findById(messageId);
-        if (!source) return ack?.({ error: "message not found" });
-        if (source.kind === "system") return ack?.({ error: "cannot forward this message" });
+        if (!source) return ackError(ack, "message_forward", "message not found");
+        if (source.kind === "system") return ackError(ack, "message_forward", "cannot forward this message");
 
         const sourceChannel = await Channel.findById(source.channel);
         if (!sourceChannel || !canAccess(sourceChannel, socket.user._id)) {
-          return ack?.({ error: "access denied" });
+          return ackError(ack, "message_forward", "access denied");
         }
 
         const target = await Channel.findById(channelId);
-        if (!target) return ack?.({ error: "destination not found" });
+        if (!target) return ackError(ack, "message_forward", "destination not found");
         if (!canAccess(target, socket.user._id)) {
-          return ack?.({ error: "access denied to destination" });
+          return ackError(ack, "message_forward", "access denied to destination");
         }
 
         const author = await User.findById(source.author);
@@ -385,7 +407,7 @@ export function attachSocket(httpServer) {
         io.to(roomFor(target._id.toString())).emit("message:new", payload);
         ack?.({ ok: true, message: payload });
       } catch (err) {
-        ack?.({ error: err.message || "could not forward message" });
+        ackError(ack, "message_forward", err.message || "could not forward message");
       }
     });
   });

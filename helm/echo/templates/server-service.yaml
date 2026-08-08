@@ -12,6 +12,9 @@ spec:
     - name: http
       port: {{ .Values.server.service.port }}
       targetPort: http
+    - name: metrics
+      port: {{ .Values.server.service.metricsPort }}
+      targetPort: metrics
   selector:
     {{- include "echo.selectorLabels" . | nindent 4 }}
     app.kubernetes.io/component: server
