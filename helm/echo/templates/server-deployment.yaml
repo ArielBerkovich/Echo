@@ -40,9 +40,13 @@ spec:
           ports:
             - name: http
               containerPort: {{ .Values.server.service.port }}
+            - name: metrics
+              containerPort: {{ .Values.server.service.metricsPort }}
           env:
             - name: PORT
               value: {{ .Values.server.service.port | quote }}
+            - name: METRICS_PORT
+              value: {{ .Values.server.service.metricsPort | quote }}
             - name: MONGO_URI
               {{- if or .Values.server.mongoUri (not .Values.mongodb.enabled) }}
               value: {{ required "server.mongoUri is required when mongodb.enabled is false" .Values.server.mongoUri | quote }}

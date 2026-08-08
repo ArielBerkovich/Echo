@@ -7,6 +7,7 @@ function required(name) {
 // Central configuration, sourced from environment with sensible local defaults.
 export const config = {
   port: Number(process.env.PORT) || 4000,
+  metricsPort: Number(process.env.METRICS_PORT) || 8091,
   mongoUri:
     process.env.MONGO_URI ||
     (process.env.MONGO_HOST && process.env.MONGO_USER && process.env.MONGO_PASSWORD

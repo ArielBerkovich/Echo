@@ -43,6 +43,7 @@ server:
   service:
     type: ClusterIP
     port: 4000
+    metricsPort: 8091
     # Echo uses WebSocket-only transport, so each connection stays on the pod
     # that accepted it. Let Kubernetes distribute new connections normally;
     # use ingress-level cookie stickiness only if reconnects must return to the

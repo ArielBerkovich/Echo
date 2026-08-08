@@ -1,4 +1,4 @@
-import type { Request, Response, NextFunction } from "express";
+import express, { type Request, type Response, type NextFunction } from "express";
 import { Counter, Gauge, Histogram, register } from "prom-client";
 
 export const httpRequests = new Counter({
@@ -67,4 +67,10 @@ export async function metricsHandler(_req: Request, res: Response, next: NextFun
   } catch (err) {
     next(err);
   }
+}
+
+export function createMetricsApp() {
+  const app = express();
+  app.get("/metrics", metricsHandler);
+  return app;
 }

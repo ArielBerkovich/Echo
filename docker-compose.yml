@@ -72,8 +72,11 @@ services:
     # Keep this service scalable with `docker-compose up --scale server=3`.
     # A fixed container_name would prevent Compose from creating replicas.
     restart: unless-stopped
+    ports:
+      - "8091:8091"
     environment:
       - PORT=4000
+      - METRICS_PORT=8091
       - MONGO_URI=${MONGO_URI:-mongodb://mongo:27017/echo?replicaSet=rs0}
       - JWT_SECRET=${JWT_SECRET:?JWT_SECRET env var must be set}
       - CLIENT_ORIGIN=http://localhost:8090
