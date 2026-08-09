@@ -198,7 +198,7 @@ export default function ApiDocsPage({ onClose, embedded = false }) {
             <h3>Your API token</h3>
             <p className="settings-hint">
               Bearer token for the REST API at <code>{ORIGIN}/api</code>. Every curl below includes
-              it. Valid for one year — keep it secret.
+              it. Valid for three years — keep it secret.
             </p>
             {token ? (
               <div className="token-box" data-testid="api-token-box">
