@@ -151,6 +151,10 @@ export default function Composer({ channel, parentId = null, users = [], channel
       const key = draftStorageKey(channel.id, isThread);
       const draft = key ? readString(key, "") : "";
       editor.commands.setContent(draft ? composerContent(draft) : "<p></p>", false);
+      setEditorState((current) => ({
+        ...current,
+        canSend: editor.getText().trim().length > 0,
+      }));
       replacePending([]);
       draftReadyRef.current = true;
       return;
@@ -240,7 +244,7 @@ export default function Composer({ channel, parentId = null, users = [], channel
   }
 
   function readEditorState(currentEditor) {
-    if (!currentEditor?.isInitialized || !currentEditor?.state?.doc) {
+    if (!currentEditor?.state?.doc) {
       return {
         canSend: false,
         bold: false,
