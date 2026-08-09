@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import { config } from "./config.js";
 
 const TOKEN_TTL = "30d";
-const API_TOKEN_TTL = "365d"; // long-lived token for programmatic API access
+const API_TOKEN_TTL = "1095d"; // three-year token for programmatic API access
 
 export function signToken(user) {
   return jwt.sign({ sub: user._id.toString(), tv: user.tokenVersion ?? 0 }, config.jwtSecret, {
