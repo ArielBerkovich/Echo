@@ -100,6 +100,14 @@ test("preserves composer drafts per channel", async ({ page }) => {
   await channelRow(page, "general").click();
   await expect(editor).toHaveText(draft);
 
+  await page.reload();
+  await expect(editor).toHaveText(draft);
+  await expect(page.getByTestId("composer-send")).toBeEnabled();
+  await page.getByTestId("composer-send-options").click();
+  await expect(page.getByRole("button", { name: /Tomorrow/ })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Custom time…" })).toBeEnabled();
+  await page.locator(".menu-overlay").click({ position: { x: 1, y: 1 } });
+
   const sent = `Sent once ${fixture.suffix}`;
   await editor.fill(sent);
   await page.getByTestId("composer-send").click();
