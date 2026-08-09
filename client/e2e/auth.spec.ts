@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { registerUser, requestAsToken, uniqueSuffix } from "./helpers.js";
+import { openLocalAuth, registerUser, requestAsToken, uniqueSuffix } from "./helpers.js";
 
 const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD || "Password1";
 
@@ -61,6 +61,7 @@ test("forgot password delivers Echo's one-time-password instructions to the admi
 
   await page.addInitScript(() => localStorage.clear());
   await page.goto("/");
+  await openLocalAuth(page);
   await page.getByLabel("Username").fill(requestedUser.user.username);
   await page.getByRole("button", { name: "Forgot password?" }).click();
   await expect(page.getByRole("status")).toContainText("workspace admin has been notified");
@@ -130,6 +131,7 @@ test("login displays server errors", async ({ page }) => {
   }
 
   await page.goto("/");
+  await openLocalAuth(page);
   await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
 
   await page.getByLabel("Username").fill(username);
@@ -164,6 +166,7 @@ test("create account tab submits registration payload", async ({ page }) => {
   try {
     await registerPage.addInitScript(() => localStorage.clear());
     await registerPage.goto("/");
+    await openLocalAuth(registerPage);
     await expect(registerPage.getByRole("tab", { name: "Create account" })).toBeVisible();
 
     await registerPage.getByRole("tab", { name: "Create account" }).click();
@@ -192,6 +195,7 @@ test("signup keeps password confirmation errors on the fields", async ({ page })
   if (needsSetup) {
     await expect(page.getByLabel("Admin username")).toBeVisible();
   } else {
+    await openLocalAuth(page);
     await page.getByRole("tab", { name: "Create account" }).click();
     await page.getByLabel("First name").fill("Signup");
     await page.getByLabel("Last name").fill("Tester");

@@ -3,6 +3,7 @@ import {
   channelRow,
   messageById,
   messageByText,
+  openLocalAuth,
   registerUser,
   requestAsToken,
   seedToken,
@@ -92,6 +93,7 @@ test("registers a new user, completes onboarding, sends a message, and restores 
   const page = await context.newPage();
   try {
     await page.goto("/");
+    await openLocalAuth(page);
     await page.getByRole("tab", { name: "Create account" }).click();
     await page.getByLabel("First name").fill(firstName);
     await page.getByLabel("Last name").fill("Tester");

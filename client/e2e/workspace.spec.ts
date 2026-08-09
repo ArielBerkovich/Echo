@@ -5,6 +5,7 @@ import {
   dmRow,
   messageById,
   messageByText,
+  openLocalAuth,
   railItem,
   requestAsToken,
   seedWorkspaceFixture,
@@ -143,6 +144,7 @@ test("sign out clears the session and returns to login", async ({ page }) => {
   await page.getByRole("button", { name: "Sign out" }).click({ force: true });
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
 
+  await openLocalAuth(page);
   await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
   await expect(page.evaluate(() => localStorage.getItem("echo.token"))).resolves.toBeNull();
 });

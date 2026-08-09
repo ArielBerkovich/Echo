@@ -68,8 +68,10 @@ export default function Login({ onAuthed, initialError = "" }) {
   const [passwordHelpError, setPasswordHelpError] = useState("");
   const [connectionIssue, setConnectionIssue] = useState(null);
   const [setupStatusAttempt, setSetupStatusAttempt] = useState(0);
+  const [showLocalAuth, setShowLocalAuth] = useState(false);
 
   const isRegister = needsSetup || mode === "register";
+  const ssoLanding = rhssoEnabled && !needsSetup && !isRegister && !showLocalAuth;
   const resolver = useMemo(
     () => zodResolver(authSchema(needsSetup ? "admin" : isRegister ? "register" : "login")),
     [isRegister, needsSetup]
@@ -176,6 +178,16 @@ export default function Login({ onAuthed, initialError = "" }) {
       setValue("password", "", { shouldValidate: false });
       setShowPw(false);
     }
+  }
+
+  function showLocalLogin() {
+    setServerError(null);
+    setShowLocalAuth(true);
+  }
+
+  function backToSso() {
+    switchMode("login");
+    setShowLocalAuth(false);
   }
 
   async function requestPasswordHelp() {
@@ -320,7 +332,21 @@ export default function Login({ onAuthed, initialError = "" }) {
             </div>
           </div>
 
-          {!needsSetup && (
+          {rhssoEnabled && showLocalAuth && !isRegister && (
+            <div className="auth-local-heading">
+              <button
+                type="button"
+                className="auth-back"
+                onClick={backToSso}
+                title="Back to sign-in options"
+                aria-label="Back to sign-in options"
+              >
+                <ArrowLeftIcon size={14} strokeWidth={2} />
+              </button>
+            </div>
+          )}
+
+          {!needsSetup && (!rhssoEnabled || showLocalAuth) && (
             <div className="auth-tabs" role="tablist">
               <button
                 type="button"
@@ -346,6 +372,23 @@ export default function Login({ onAuthed, initialError = "" }) {
 
           {needsSetup && <div className="setup-badge">🛡 First-time setup</div>}
 
+          {ssoLanding ? (
+            <div className="auth-sso-landing">
+              <button
+                type="button"
+                className="auth-sso auth-sso-primary"
+                onClick={() => window.location.assign(rhssoLoginUrl())}
+              >
+                Sign in with RHSSO
+              </button>
+              <div className="auth-divider"><span>or</span></div>
+              <button type="button" className="auth-local-link" onClick={showLocalLogin}>
+                Sign in with local account
+              </button>
+              {serverError && <span className="field-hint error" data-testid="auth-error">{serverError}</span>}
+            </div>
+          ) : null}
+
           {isRegister && !needsSetup && registerStep === 2 && (
             <div className="auth-subtitle-row">
               <button
@@ -367,6 +410,7 @@ export default function Login({ onAuthed, initialError = "" }) {
             </div>
           )}
 
+          {!ssoLanding && <>
           {isRegister && !needsSetup && registerStep === 1 && (
             <>
               <label className="field">
@@ -590,20 +634,9 @@ export default function Login({ onAuthed, initialError = "" }) {
             )}
           </button>
 
-          {!needsSetup && !isRegister && rhssoEnabled && (
-            <>
-              <div className="auth-divider"><span>or</span></div>
-              <button
-                type="button"
-                className="auth-sso"
-                onClick={() => window.location.assign(rhssoLoginUrl())}
-              >
-                Sign in with RHSSO
-              </button>
-            </>
-          )}
           </>}
-          {!needsSetup && !isRegister && (
+          </>}
+          {!needsSetup && !isRegister && !ssoLanding && (
             <p className="auth-switch">
               New to Echo?{" "}
               <button

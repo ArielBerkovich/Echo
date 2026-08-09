@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import {
   dmRow,
   railItem,
+  openLocalAuth,
   registerUser,
   requestAsToken,
   seedWorkspaceFixture,
@@ -712,6 +713,7 @@ test("shows a friendly message when login returns a server error", async ({ page
     route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ error: "internal details" }) })
   );
   await loginPage.goto("/");
+  await openLocalAuth(loginPage);
 
   await loginPage.getByLabel("Username").fill("someone");
   await loginPage.getByTestId("auth-password").fill("Password1");

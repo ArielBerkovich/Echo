@@ -92,9 +92,15 @@ test.describe("RHSSO login flows (Mocked, runs in every test run)", () => {
     // 3. Navigate to the client.
     await page.goto("/");
 
-    // 4. Local login remains available and RHSSO starts only after an explicit click.
-    await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
+    // 4. RHSSO is the primary option; local login is available on the next view.
+    await expect(page.getByRole("button", { name: "Sign in with RHSSO" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Sign in with local account" })).toBeVisible();
     expect(redirectAttempted).toBe(false);
+    await page.getByRole("button", { name: "Sign in with local account" }).click();
+    await expect(page.getByRole("button", { name: "Back to sign-in options" })).toBeVisible();
+    await expect(page.getByLabel("Username")).toBeVisible();
+    await page.getByRole("button", { name: "Back to sign-in options" }).click();
+    await expect(page.getByRole("button", { name: "Sign in with local account" })).toBeVisible();
     await page.getByRole("button", { name: "Sign in with RHSSO" }).click();
     await expect.poll(() => redirectAttempted).toBe(true);
   });
@@ -167,7 +173,7 @@ test.describe("RHSSO login flows (Real integration, runs only when Keycloak is u
 
   test("opens Keycloak only after choosing RHSSO (Real)", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Sign in with RHSSO" })).toBeVisible();
     await page.getByRole("button", { name: "Sign in with RHSSO" }).click();
     await page.waitForURL((url) => url.hostname !== "localhost" || url.port === "8180", {
       timeout: 15_000,
@@ -231,7 +237,7 @@ test.describe("RHSSO login flows (Real integration, runs only when Keycloak is u
     await page.getByTestId("rail-logout").click();
     await page.getByRole("button", { name: "Sign out", exact: true }).click();
 
-    await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("button", { name: "Sign in with RHSSO" })).toBeVisible({ timeout: 10_000 });
 
     await page.waitForTimeout(3_000);
 
@@ -298,7 +304,7 @@ test.describe("RHSSO login flows (Real integration, runs only when Keycloak is u
     if (await skipTour.isVisible().catch(() => false)) await skipTour.click();
     await page.getByTestId("rail-logout").click();
     await page.getByRole("button", { name: "Sign out", exact: true }).click();
-    await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Sign in with RHSSO" })).toBeVisible();
     await expect(page.getByText("This migration attempt expired. Please start again.")).toHaveCount(0);
     expect(new URL(page.url()).hash).toBe("");
   });

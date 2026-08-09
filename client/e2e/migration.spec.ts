@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { registerUser, uniqueSuffix } from "./helpers.js";
+import { openLocalAuth, registerUser, uniqueSuffix } from "./helpers.js";
 
 test("a logged-out local account can become a new local identity without losing its profile", async ({ page }) => {
   const suffix = uniqueSuffix("migration").replace(/[^a-z0-9]/gi, "").slice(-16);
@@ -92,6 +92,7 @@ test("the account-creation UI migrates a logged-out local user", async ({ page }
 
   await page.addInitScript(() => localStorage.clear());
   await page.goto("/?local=true");
+  await openLocalAuth(page);
   await expect(page.getByRole("button", { name: "Bring its history" })).toHaveCount(0);
   await page.getByRole("tab", { name: "Create account" }).click();
   await page.getByLabel("First name").fill("Migration");
