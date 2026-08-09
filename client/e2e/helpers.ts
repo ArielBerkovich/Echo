@@ -9,6 +9,12 @@ export function uniqueSuffix(prefix = "e2e") {
   return `${prefix}-${Date.now()}-${crypto.randomBytes(3).toString("hex")}`;
 }
 
+export async function openLocalAuth(page) {
+  const localAccount = page.getByRole("button", { name: "Sign in with local account" });
+  await localAccount.waitFor({ state: "visible" });
+  await localAccount.click();
+}
+
 export async function registerUser(page, { username, password = DEFAULT_PASSWORD, displayName }) {
   const [firstName, ...lastParts] = String(displayName || "Test User").split(/\s+/);
   const response = await page.request.post("/api/auth/register", {

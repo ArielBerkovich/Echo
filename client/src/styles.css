@@ -1197,6 +1197,56 @@ input:focus {
 .auth-sso:hover {
   border-color: var(--accent);
 }
+.auth-sso-landing {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 12px;
+}
+.auth-sso-primary {
+  min-height: 54px;
+  border: 0;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 750;
+  background: linear-gradient(135deg, #174b69 0%, #237d98 55%, #2e9db1 100%);
+  box-shadow: 0 14px 26px rgba(35, 125, 152, 0.28);
+}
+.auth-sso-primary:hover {
+  border-color: transparent;
+  box-shadow: 0 16px 30px rgba(35, 125, 152, 0.36);
+  transform: translateY(-1px);
+}
+.auth-sso-landing .auth-divider {
+  gap: 12px;
+}
+.auth-local-link {
+  align-self: center;
+  padding: 0;
+  color: var(--blue-500, #2563eb);
+  background: none;
+  font-size: 13px;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.auth-local-link:hover {
+  color: var(--navy-600, #1e3a5f);
+}
+.auth-local-heading {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 26px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 650;
+}
+.auth-local-heading .auth-back {
+  position: absolute;
+  left: 0;
+}
 
 .spinner {
   width: 18px;
@@ -9102,6 +9152,16 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 .auth-sso:hover {
   background: rgba(63, 165, 196, 0.08);
   border-color: #3fa5c4;
+}
+.auth-sso.auth-sso-primary {
+  border-color: transparent;
+  color: #fff;
+  background: linear-gradient(135deg, #174b69 0%, #237d98 55%, #2e9db1 100%);
+}
+.auth-sso.auth-sso-primary:hover {
+  border-color: transparent;
+  color: #fff;
+  background: linear-gradient(135deg, #12384a 0%, #1f7088 55%, #2b91a5 100%);
 }
 
 .setup-badge {

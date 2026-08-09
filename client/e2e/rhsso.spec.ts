@@ -92,9 +92,15 @@ test.describe("RHSSO login flows (Mocked, runs in every test run)", () => {
     // 3. Navigate to the client.
     await page.goto("/");
 
-    // 4. Local login remains available and RHSSO starts only after an explicit click.
-    await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
+    // 4. RHSSO is the primary option; local login is available on the next view.
+    await expect(page.getByRole("button", { name: "Sign in with RHSSO" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Sign in with local account" })).toBeVisible();
     expect(redirectAttempted).toBe(false);
+    await page.getByRole("button", { name: "Sign in with local account" }).click();
+    await expect(page.getByRole("button", { name: "Back to sign-in options" })).toBeVisible();
+    await expect(page.getByLabel("Username")).toBeVisible();
+    await page.getByRole("button", { name: "Back to sign-in options" }).click();
+    await expect(page.getByRole("button", { name: "Sign in with local account" })).toBeVisible();
     await page.getByRole("button", { name: "Sign in with RHSSO" }).click();
     await expect.poll(() => redirectAttempted).toBe(true);
   });
