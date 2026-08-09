@@ -60,6 +60,7 @@
       "icon": "../client/src/assets/echo-logo.png"
     },
     "nsis": {
+      "warningsAsErrors": false,
       "deleteAppDataOnUninstall": true,
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
