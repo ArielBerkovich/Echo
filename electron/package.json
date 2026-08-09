@@ -1,7 +1,7 @@
 {
   "name": "echo-desktop",
   "productName": "Echo",
-  "version": "0.2.0",
+  "version": "0.17.0",
   "private": true,
   "description": "Electron desktop shell for Echo",
   "homepage": "https://github.com/ArielBerkovich/Echo",
