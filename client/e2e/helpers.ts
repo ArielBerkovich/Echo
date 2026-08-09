@@ -10,6 +10,10 @@ export function uniqueSuffix(prefix = "e2e") {
 }
 
 export async function openLocalAuth(page) {
+  const statusResponse = await page.request.get("/api/auth/setup-status");
+  const { rhssoEnabled } = await statusResponse.json();
+  if (!rhssoEnabled) return;
+
   const localAccount = page.getByRole("button", { name: "Sign in with local account" });
   await localAccount.waitFor({ state: "visible" });
   await localAccount.click();
