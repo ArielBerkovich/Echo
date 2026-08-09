@@ -9,49 +9,9 @@ permissions:
   contents: read
 
 jobs:
-  sync-version:
-    name: Sync component versions
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout main
-        uses: actions/checkout@v4
-        with:
-          ref: main
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Update component manifests
-        env:
-          RELEASE_VERSION: ${{ github.ref_name }}
-        run: |
-          version="${RELEASE_VERSION#v}"
-          npm --prefix client version "$version" --no-git-tag-version --allow-same-version
-          npm --prefix server version "$version" --no-git-tag-version --allow-same-version
-          npm --prefix electron version "$version" --no-git-tag-version --allow-same-version
-
-      - name: Commit and push version update
-        env:
-          RELEASE_VERSION: ${{ github.ref_name }}
-        run: |
-          if git diff --quiet -- client/package.json client/package-lock.json server/package.json server/package-lock.json electron/package.json electron/package-lock.json; then
-            exit 0
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add client/package.json client/package-lock.json server/package.json server/package-lock.json electron/package.json electron/package-lock.json
-          git commit -m "chore(release): sync component versions with ${RELEASE_VERSION}"
-          git push origin HEAD:main
-
   desktop:
     name: Desktop (${{ matrix.name }})
     runs-on: ${{ matrix.runner }}
-    needs: sync-version
     strategy:
       fail-fast: false
       matrix:
