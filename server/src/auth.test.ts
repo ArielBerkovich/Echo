@@ -26,7 +26,7 @@ describe("auth tokens", () => {
     assert.equal(decoded.sub, "user-1");
     assert.equal(decoded.tv, 3);
     assert.equal(decoded.kind, "api");
-    assert.ok(decoded.exp - decoded.iat > 300 * 24 * 60 * 60);
+    assert.ok(decoded.exp - decoded.iat >= 3 * 365 * 24 * 60 * 60);
   });
 
   it("defaults missing token versions to zero", () => {
