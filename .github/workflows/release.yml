@@ -70,6 +70,18 @@ jobs:
         working-directory: electron
         run: npx electron-builder ${{ matrix.target }} --publish never
 
+      - name: Verify desktop update manifest version
+        working-directory: electron
+        env:
+          RELEASE_VERSION: ${{ github.ref_name }}
+        run: |
+          version="${RELEASE_VERSION#v}"
+          manifest="dist/latest.yml"
+          if [[ "${{ matrix.name }}" == "Ubuntu" ]]; then
+            manifest="dist/latest-linux.yml"
+          fi
+          grep -Fxq "version: ${version}" "$manifest"
+
       - name: Upload desktop packages
         uses: actions/upload-artifact@v4
         with:

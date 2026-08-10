@@ -2,6 +2,17 @@ import { readString, writeString } from "./lib/storage.js";
 
 // Thin fetch wrapper that attaches the auth token and unwraps JSON / errors.
 const TOKEN_KEY = "echo.token";
+const authExpiredListeners = new Set();
+
+export function subscribeAuthExpired(listener) {
+  authExpiredListeners.add(listener);
+  return () => authExpiredListeners.delete(listener);
+}
+
+function notifyAuthExpired(path) {
+  if (!getToken() || (path.startsWith("/auth/") && path !== "/auth/me")) return;
+  for (const listener of authExpiredListeners) listener();
+}
 
 export function getToken() {
   return readString(TOKEN_KEY);
@@ -76,6 +87,7 @@ function friendlyErrorMessage(status, serverMessage, path, errorLabel) {
 async function parseResponse(res, errorLabel, path) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
+    if (res.status === 401) notifyAuthExpired(path);
     const error = new Error(friendlyErrorMessage(res.status, data.error, path, errorLabel));
     error.status = res.status;
     Object.assign(error, data);
