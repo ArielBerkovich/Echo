@@ -10,7 +10,7 @@ export function subscribeAuthExpired(listener) {
 }
 
 function notifyAuthExpired(path) {
-  if (!getToken() || path.startsWith("/auth/")) return;
+  if (!getToken() || (path.startsWith("/auth/") && path !== "/auth/me")) return;
   for (const listener of authExpiredListeners) listener();
 }
 
