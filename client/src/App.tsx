@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router";
-import { api, consumeRhssoCallback, getToken, setToken } from "./api.js";
+import { api, consumeRhssoCallback, getToken, setToken, subscribeAuthExpired } from "./api.js";
 import { disconnectSocket } from "./socket.js";
 import { useRealtime } from "./lib/useRealtime.js";
 import Login from "./components/Login.js";
@@ -9,6 +9,7 @@ import ForcePasswordReset from "./components/ForcePasswordReset.js";
 import WorkspaceNavigation from "./components/WorkspaceNavigation.js";
 import WorkspaceOverlays from "./components/WorkspaceOverlays.js";
 import WorkspaceContent from "./components/WorkspaceContent.js";
+import SessionExpiredDialog from "./components/SessionExpiredDialog.js";
 import { readJson, writeJson } from "./lib/storage.js";
 import { notifyPermission, notifySupported, requestNotifyPermission, setNotifyPref } from "./lib/notify.js";
 import { BUILT_IN_GIT_EMOJIS } from "./lib/gitEmojis.js";
@@ -42,6 +43,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [startupUnavailable, setStartupUnavailable] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [allChannels, setAllChannels] = useState([]); // bounded cache of public channel summaries
   const [catalogCounts, setCatalogCounts] = useState(null);
   const [activeChannel, setActiveChannel] = useState(null);
@@ -78,6 +80,8 @@ export default function App() {
   } = useWorkspaceQueries(!!user);
   const [navOpen, setNavOpen] = useState(false); // mobile: rail+sidebar drawer open?
   const [showTour, setShowTour] = useState(false); // first-run walkthrough
+
+  useEffect(() => subscribeAuthExpired(() => setSessionExpired(true)), []);
   const { theme, setTheme, mode, setMode, toggleMode } = useThemePreferences();
   const {
     scrollStates,
@@ -291,7 +295,7 @@ export default function App() {
       setProfileUser,
       refreshChannels,
       refreshDms,
-      onAuthInvalid: handleLogout,
+      onAuthInvalid: () => setSessionExpired(true),
     });
 
   const hasConnectionIssue =
@@ -330,9 +334,7 @@ export default function App() {
       } catch (error) {
         if (cancelled) return;
         if (error?.status === 401) {
-          // Only a confirmed authentication rejection should destroy a stored
-          // session. Network/server failures are temporary and retried below.
-          setToken(null);
+          // Keep the session visible until the user acknowledges the expiry.
           setStartupUnavailable(false);
           setLoading(false);
           return;
@@ -588,6 +590,7 @@ export default function App() {
   }
 
   function handleLogout() {
+    setSessionExpired(false);
     sessionStorage.setItem("echo.ssoBypass", "true");
     setToken(null);
     disconnectSocket();
@@ -1148,20 +1151,33 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="centered" role="status">
-        {startupUnavailable ? "Echo is restarting… reconnecting automatically." : "Loading…"}
-      </div>
+      <>
+        <div className="centered" role="status">
+          {startupUnavailable ? "Echo is restarting… reconnecting automatically." : "Loading…"}
+        </div>
+        {sessionExpired ? <SessionExpiredDialog onSignOut={handleLogout} /> : null}
+      </>
     );
   }
-  if (!user) return <Login onAuthed={handleAuthed} initialError={rhssoError} />;
+  if (!user) {
+    return (
+      <>
+        <Login onAuthed={handleAuthed} initialError={rhssoError} />
+        {sessionExpired ? <SessionExpiredDialog onSignOut={handleLogout} /> : null}
+      </>
+    );
+  }
   // Account is on an admin-issued one-time password — force a new one first.
   if (user.mustResetPassword) {
     return (
-      <ForcePasswordReset
-        user={user}
-        onDone={(updated) => setUser((prev) => ({ ...prev, ...updated }))}
-        onCancel={handleLogout}
-      />
+      <>
+        <ForcePasswordReset
+          user={user}
+          onDone={(updated) => setUser((prev) => ({ ...prev, ...updated }))}
+          onCancel={handleLogout}
+        />
+        {sessionExpired ? <SessionExpiredDialog onSignOut={handleLogout} /> : null}
+      </>
     );
   }
 
@@ -1380,6 +1396,7 @@ export default function App() {
           toast: () => setToast(null),
         }}
       />
+      {sessionExpired ? <SessionExpiredDialog onSignOut={handleLogout} /> : null}
     </div>
   );
 }
