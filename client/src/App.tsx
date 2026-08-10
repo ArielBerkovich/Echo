@@ -335,6 +335,7 @@ export default function App() {
         if (cancelled) return;
         if (error?.status === 401) {
           // Keep the session visible until the user acknowledges the expiry.
+          setSessionExpired(true);
           setStartupUnavailable(false);
           setLoading(false);
           return;
