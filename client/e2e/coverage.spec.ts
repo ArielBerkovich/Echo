@@ -631,6 +631,7 @@ test("opens a thread, replies, and jumps from Activity back to the thread", asyn
   await composer.fill(rootBody);
   await composer.press("Enter");
   const root = page.locator(".message").filter({ hasText: rootBody }).first();
+  await expect(root).toBeVisible({ timeout: 15_000 });
   await root.hover();
   await page.getByTestId(/-actions$/).getByTitle("Reply in thread").click();
   await expect(page.getByTestId("thread-panel")).toBeVisible();

@@ -338,8 +338,7 @@ test("opens people and channels searched from Activity and Saved", async ({ page
 });
 
 test("restores the last channel after visiting Saved and Activity", async ({ page }) => {
-  await page.goto("/");
-  await page.getByTestId(`channel-row-${slug(fixture.projectChannel.name)}`).click();
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
   await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
 
   await page.getByTestId("rail-saved").click();
@@ -483,7 +482,9 @@ test("reuses protected attachment media when revisiting a channel", async ({ pag
 
   await page.goto("/");
   const channelRow = page.getByTestId(`channel-row-${slug(seeded.channelName)}`);
+  await expect(channelRow).toBeVisible();
   await channelRow.click();
+  await expect(channelRow).toHaveClass(/active/);
   await expect(page.getByTestId("channel-title")).toContainText(seeded.channelName);
   const message = page.getByTestId(`message-${seeded.message.id}`);
   await expect(message).toBeVisible();

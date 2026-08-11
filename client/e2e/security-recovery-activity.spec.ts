@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import {
   messageById,
   messageByText,
+  openLocalAuth,
   registerUser,
   requestAsToken,
   seedToken,
@@ -86,7 +87,8 @@ test("shows the expired-session dialog and returns to login without stale worksp
     await expect(sessionPage.getByTestId("session-expired-dialog")).toBeVisible();
     await expect(sessionPage.getByTestId("composer-editor")).toHaveCount(0);
     await sessionPage.getByTestId("session-expired-signout").click();
-    await expect(sessionPage.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
+    await openLocalAuth(sessionPage);
+    await expect(sessionPage.getByRole("button", { name: "Sign in", exact: true })).toBeVisible({ timeout: 10_000 });
     await expect.poll(() => sessionPage.evaluate(() => localStorage.getItem("echo.token"))).toBeNull();
   } finally {
     await context.close();
