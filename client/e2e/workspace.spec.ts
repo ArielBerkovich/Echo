@@ -27,8 +27,8 @@ async function openFreshGeneralMessage(page, key, body) {
       externalKey: `${key}-${fixture.suffix}`,
     },
   });
-  await page.goto("/");
-  await channelRow(page, "general").click();
+  await page.goto("/channels/general");
+  await expect(page.getByTestId("channel-title")).toContainText("general");
   const message = messageById(page, created.message.id);
   await expect(message).toBeVisible();
   return { id: created.message.id, message };
@@ -318,6 +318,36 @@ test("copies the raw markdown body from a message", async ({ page }) => {
   await page.getByRole("menuitem", { name: "Copy message" }).click();
 
   await expect.poll(() => page.evaluate(() => window.__copiedText)).toBe(fixture.messages.formatted.body);
+});
+
+test("quotes a message into the composer", async ({ page }) => {
+  await page.goto(`/dms/${fixture.bob.username}`);
+  const message = messageById(page, fixture.messages.dmMessage.id);
+  await expect(message).toBeVisible();
+
+  await message.hover();
+  const moreActions = page.getByTestId(/message-.*-actions/).getByTitle("More message actions");
+  await expect(moreActions).toBeVisible();
+  await moreActions.click();
+  await page.getByRole("menuitem", { name: "Quote message" }).click();
+
+  const editor = page.getByTestId("composer-editor");
+  await expect(editor.locator("blockquote")).toContainText("Bob Builder said:");
+  await expect(editor.locator("blockquote")).toContainText("Bob's DM hello");
+
+  const reply = `Follow up ${fixture.suffix}`;
+  await editor.type(reply);
+  await page.getByTestId("composer-send").click();
+  await expect(page.getByText(reply)).toBeVisible();
+
+  const { messages } = await requestAsToken(
+    page,
+    fixture.alice.token,
+    `/channels/${fixture.dmChannel.id}/messages`
+  );
+  const sent = messages.find((message) => message.body.includes(reply));
+  expect(sent?.body).toContain(`> Bob Builder said:`);
+  expect(sent?.body).toContain("Bob's DM hello");
 });
 
 test("pastes markdown into the composer as formatted content", async ({ page }) => {

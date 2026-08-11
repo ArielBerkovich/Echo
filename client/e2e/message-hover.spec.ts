@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { channelRow, messageById, requestAsToken, seedWorkspaceFixture } from "./helpers.js";
+import { messageById, requestAsToken, seedWorkspaceFixture } from "./helpers.js";
 
 let fixture: Awaited<ReturnType<typeof seedWorkspaceFixture>>;
 
@@ -17,11 +17,10 @@ async function openFreshMessage(page, key, body) {
     },
   });
 
-  await page.goto("/");
-  if ((await page.viewportSize())?.width <= 760) {
-    await page.getByTestId("rail-home").click();
-  }
-  await channelRow(page, "general").click();
+  // Navigate directly to the conversation so this interaction test is not
+  // coupled to the responsive sidebar drawer state.
+  await page.goto("/channels/general");
+  await expect(page.getByTestId("channel-title")).toContainText("general");
   const message = messageById(page, created.message.id);
   await expect(message).toBeVisible();
   return { id: created.message.id, message };
@@ -37,6 +36,7 @@ test("keeps a message active while hovering and opening its action menu", async 
 
   await message.hover();
   await expect(actions).toBeVisible();
+  await expect(actions.getByTestId(`message-${id}-quote`)).toHaveCount(0);
 
   await actions.getByTestId(`message-${id}-forward`).hover();
   await expect(message).toHaveClass(/actions-hovered/);
@@ -71,8 +71,8 @@ test("keeps a message active through reaction selection", async ({ page }) => {
 });
 
 test("keeps long-message actions below the channel header while scrolling", async ({ page }) => {
-  await page.goto("/");
-  await channelRow(page, "general").click();
+  await page.goto("/channels/general");
+  await expect(page.getByTestId("channel-title")).toContainText("general");
 
   const message = messageById(page, fixture.messages.formatted.id);
   await expect(message).toBeVisible();
