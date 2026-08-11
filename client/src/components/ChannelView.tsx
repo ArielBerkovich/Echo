@@ -122,6 +122,7 @@ export default function ChannelView({
   const bottomRef = useRef(null);
   const scrollerRef = useRef(null); // the scrollable messages container
   const messagesInnerRef = useRef(null); // content wrapper used for resize-based auto-follow
+  const composerRef = useRef(null); // main channel composer, for quote insertion
   const typingTimersRef = useRef({}); // per-user safety timers to clear stale typing
   const firstUnreadRef = useRef(null); // the "New messages" divider, for initial scroll
   const initialScrolledRef = useRef(false); // did we position the initial scroll yet?
@@ -1061,6 +1062,11 @@ export default function ChannelView({
                       setThreadJumpTargetId(null);
                       setThread(m);
                     }}
+                    onQuote={() => {
+                      setActionsFor(null);
+                      setMenuFor(null);
+                      composerRef.current?.quoteMessage(m);
+                    }}
                     onForward={() => setForwarding(m)}
                     onJump={onJumpToMessage}
                     onToggleMenu={() => setMenuFor((id) => (id === m.id ? null : m.id))}
@@ -1073,6 +1079,7 @@ export default function ChannelView({
                     onTogglePin={() => togglePin(m)}
                     onIssuePasswordHelp={() => issuePasswordHelp(m.id)}
                     canPin={!isDm}
+                    canQuote={isDm}
                   />
                 </Fragment>
               );
@@ -1149,6 +1156,7 @@ export default function ChannelView({
 
       {isMember && (
         <Composer
+          ref={composerRef}
           key={channel.id}
           channel={channel}
           users={users}

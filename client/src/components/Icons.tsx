@@ -7,6 +7,7 @@ import {
   MoreHorizontal,
   Pencil,
   Pin,
+  Quote,
   SmilePlus,
   Trash2,
   UserPlus,
@@ -25,3 +26,4 @@ export const BookmarkIcon = icon(Bookmark);
 export const PersonAddIcon = icon(UserPlus);
 export const PinIcon = icon(Pin, 15);
 export const LeaveIcon = icon(LogOut);
+export const QuoteIcon = icon(Quote);

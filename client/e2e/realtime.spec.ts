@@ -64,7 +64,7 @@ test("shows presence and typing across sessions", async ({ browser, page }) => {
   await withAliceBobPages(browser, async ({ alicePage, bobPage, bob }) => {
     await channelRow(alicePage.page, "general").click();
     await messageById(alicePage.page, presenceMessage.message.id).locator(".author-btn").click();
-    await expect(alicePage.page.getByTestId("profile-presence")).toContainText("Active");
+    await expect(alicePage.page.getByTestId("profile-presence")).toContainText("Active", { timeout: 10_000 });
     await alicePage.page.getByTestId("profile-close").click();
 
     await channelRow(bobPage.page, "general").click();

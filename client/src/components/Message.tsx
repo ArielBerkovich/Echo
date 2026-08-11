@@ -6,7 +6,7 @@ import Attachments from "./Attachments.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
 import { formatTime } from "../lib/time.js";
 import {
-  ShareIcon, EmojiAddIcon, ReplyIcon, BookmarkIcon, PencilIcon, TrashIcon, PinIcon, CopyIcon, MoreIcon,
+  ShareIcon, EmojiAddIcon, ReplyIcon, BookmarkIcon, PencilIcon, TrashIcon, PinIcon, CopyIcon, MoreIcon, QuoteIcon,
 } from "./Icons.js";
 
 // A "joined the channel" / "created this channel" log line.
@@ -42,6 +42,7 @@ function Message({
   onReact,
   onToggleReaction,
   onOpenThread,
+  onQuote,
   onForward,
   onJump,
   onToggleMenu,
@@ -60,6 +61,7 @@ function Message({
   onTogglePin,
   onIssuePasswordHelp,
   canPin = true,
+  canQuote = false,
 }) {
   const isMine = m.author?.id === currentUserId;
   const actionsVisible = showActions;
@@ -479,6 +481,11 @@ function Message({
               <ReplyIcon />
             </button>
           )}
+          {canQuote && (
+            <button data-testid={`message-${mid}-quote`} title="Quote message" onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onQuote}>
+              <QuoteIcon />
+            </button>
+          )}
           <button data-testid={`message-${mid}-forward`} title="Forward message" onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onForward}>
             <ShareIcon />
           </button>
@@ -513,6 +520,9 @@ function Message({
           >
             <button type="button" role="menuitem" data-testid={`message-${mid}-copy`} onClick={() => { copyMessage(); onCloseMenu(); }}>
               <CopyIcon /> Copy message
+            </button>
+            <button type="button" role="menuitem" data-testid={`message-${mid}-quote`} disabled={!canQuote} onClick={() => { onQuote(); onCloseMenu(); }}>
+              <QuoteIcon /> Quote message
             </button>
             <button
               type="button"

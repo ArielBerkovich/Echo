@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -11,6 +11,7 @@ import { formatDateTime } from "../lib/time.js";
 import { readString, writeString } from "../lib/storage.js";
 import { useAttachments } from "../lib/useAttachments.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
+import { buildQuoteMarkdown } from "../lib/quote.js";
 import Avatar from "./Avatar.js";
 import EmojiPicker from "./EmojiPicker.js";
 import Modal, { ModalActions } from "./Modal.js";
@@ -60,7 +61,7 @@ function formatScheduleTime(date) {
 // Rich-text message composer: @mention autocomplete, a formatting toolbar,
 // emoji, and file attachments. Owns all of its own editor state — mount it with
 // a `key={channel.id}` so switching channels yields a fresh, empty composer.
-export default function Composer({ channel, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, onDraftChange, onEditSave, onEditCancel, editing = null, placeholder: customPlaceholder, mode = "light", captureScreenDrops = false, showSchedule = true, showSend = true, showAttachments = true, disabled = false }) {
+const Composer = forwardRef(function Composer({ channel, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, onDraftChange, onEditSave, onEditCancel, editing = null, placeholder: customPlaceholder, mode = "light", captureScreenDrops = false, showSchedule = true, showSend = true, showAttachments = true, disabled = false }, ref) {
   const isThread = !!parentId; // a thread reply composer (hides channel-level scheduling)
   const [mention, setMention] = useState(null); // { trigger, query, from, to } or null
   const [activeIdx, setActiveIdx] = useState(0);
@@ -142,6 +143,13 @@ export default function Composer({ channel, parentId = null, users = [], channel
       setEditorState(readEditorState(currentEditor));
     },
   }, [channel.id, parentId, placeholder, disabled]);
+  useImperativeHandle(ref, () => ({
+    quoteMessage(message) {
+      if (!editor || editing) return;
+      const html = `${markdownTextToComposerHtml(buildQuoteMarkdown(message))}<p></p>`;
+      editor.chain().focus().insertContent(html).run();
+    },
+  }), [editor, editing]);
   useEffect(() => {
     editor?.setEditable(!disabled);
   }, [disabled, editor]);
@@ -1009,7 +1017,9 @@ export default function Composer({ channel, parentId = null, users = [], channel
       </div>
     </form>
   );
-}
+});
+
+export default Composer;
 
 function PendingImage({ attachment }) {
   const src = useAuthUrl(attachment.previewUrl || attachment.url);

@@ -47,6 +47,7 @@ export default function ThreadPanel({
   const bottomRef = useRef(null);
   const scrollerRef = useRef(null);
   const bodyInnerRef = useRef(null); // content wrapper used to track height changes
+  const composerRef = useRef(null); // thread reply composer, for quote insertion
   const stickToBottomRef = useRef(true); // should later layout changes keep us pinned?
   const initialScrolledRef = useRef(false); // has the panel been positioned yet?
   const prevReplyCountRef = useRef(0); // reply count last render
@@ -317,6 +318,11 @@ export default function ThreadPanel({
                 }}
                 onToggleReaction={(emoji) => toggleReaction(m.id, emoji)}
                 onOpenThread={() => {}}
+                onQuote={() => {
+                  setActionsFor(null);
+                  setMenuFor(null);
+                  composerRef.current?.quoteMessage(m);
+                }}
                 onForward={() => onForward?.(m)}
                 onJump={onJumpToMessage}
                 onToggleMenu={() => setMenuFor((id) => (id === m.id ? null : m.id))}
@@ -329,6 +335,7 @@ export default function ThreadPanel({
                 onOpenLightbox={onOpenLightbox}
                 onTogglePin={() => onTogglePin?.(m)}
                 canPin={canPin}
+                canQuote={channel.type === "dm"}
               />
               {index === 0 && (
                 <div className="thread-divider" data-testid="thread-reply-count">
@@ -379,6 +386,7 @@ export default function ThreadPanel({
       {error && <div className="error">{error}</div>}
 
       <Composer
+        ref={composerRef}
         key={`thread-${root.id}`}
         channel={channel}
         parentId={root.id}
