@@ -7543,9 +7543,6 @@ html[data-mode="dark"] .new-messages-button:hover {
 }
 .composer-editor p {
   margin: 0 0 4px;
-  /* Determine bidi ordering from each paragraph's own text. This prevents a
-     quoted RTL message from making newly typed LTR text reorder punctuation. */
-  unicode-bidi: plaintext;
 }
 .composer-editor p:last-child {
   margin-bottom: 0;
@@ -8225,9 +8222,6 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
 }
 .markdown p {
   margin: 0 0 4px;
-  /* Keep punctuation ordered by this paragraph's own text, even when a
-     surrounding quote starts in the opposite writing direction. */
-  unicode-bidi: plaintext;
 }
 .markdown p:last-child {
   margin-bottom: 0;

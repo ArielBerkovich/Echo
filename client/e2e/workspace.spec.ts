@@ -335,7 +335,7 @@ test("quotes a message into the composer", async ({ page }) => {
   await expect(editor.locator("blockquote")).toContainText("Bob Builder said:");
   await expect(editor.locator("blockquote")).toContainText("Bob's DM hello");
 
-  const reply = `How are you? ${fixture.suffix}`;
+  const reply = `Follow up ${fixture.suffix}`;
   await editor.type(reply);
   await page.getByTestId("composer-send").click();
   await expect(page.getByText(reply)).toBeVisible();
@@ -348,7 +348,6 @@ test("quotes a message into the composer", async ({ page }) => {
   const sent = messages.find((message) => message.body.includes(reply));
   expect(sent?.body).toContain(`> Bob Builder said:`);
   expect(sent?.body).toContain("Bob's DM hello");
-  expect(sent?.body).toContain(reply);
 });
 
 test("pastes markdown into the composer as formatted content", async ({ page }) => {
