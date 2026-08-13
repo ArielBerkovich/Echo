@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { decryptAzureDevOpsToken, encryptAzureDevOpsToken, hashAzureDevOpsToken, messageBody, notificationKind } from "./azureDevOps.js";
+import { decryptAzureDevOpsToken, encryptAzureDevOpsToken, hashAzureDevOpsToken, messageBody, notificationKind, rootReaction } from "./azureDevOps.js";
 
 describe("Azure DevOps integration", () => {
   it("classifies the supported notification events", () => {
@@ -56,5 +56,15 @@ describe("Azure DevOps integration", () => {
     assert.equal(messageBody("pullRequestApprovalReset", {}), "🔄 Approval reset");
     assert.match(messageBody("buildValidationSucceeded", {}), /^✅/);
     assert.match(messageBody("buildValidationFailed", {}), /^❌/);
+  });
+
+  it("maps Azure states to root-message reactions", () => {
+    assert.equal(rootReaction("pullRequestCreated"), ":git-pull-request:");
+    assert.equal(rootReaction("pullRequestCompleted"), ":merged:");
+    assert.equal(rootReaction("pullRequestAbandoned"), ":git-pull-request-closed:");
+    assert.equal(rootReaction("pullRequestApproved"), "👍");
+    assert.equal(rootReaction("buildValidationSucceeded"), "✅");
+    assert.equal(rootReaction("buildValidationFailed"), "❌");
+    assert.equal(rootReaction("pullRequestCommented"), null);
   });
 });

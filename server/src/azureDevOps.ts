@@ -1,11 +1,61 @@
 import crypto from "crypto";
 import { AzureDevOpsEvent } from "./models/AzureDevOpsEvent.js";
 import { AzureDevOpsIntegration } from "./models/AzureDevOpsIntegration.js";
+import { Message } from "./models/Message.js";
 import { User } from "./models/User.js";
 import { ensureDmChannel } from "./lib/dms.js";
 import { deliverMessage } from "./deliver.js";
+import { emitToChannel } from "./realtime.js";
 
 const AZURE_USERNAME = "azure";
+
+export function rootReaction(kind) {
+  if (kind === "pullRequestCreated" || kind === "pullRequestReactivated") return ":git-pull-request:";
+  if (kind === "pullRequestAbandoned" || kind === "pullRequestRejected") return ":git-pull-request-closed:";
+  if (kind === "pullRequestCompleted") return ":merged:";
+  if (kind === "pullRequestApproved") return "👍";
+  if (kind === "buildValidationSucceeded") return "✅";
+  if (kind === "buildValidationFailed") return "❌";
+  return null;
+}
+
+function rootReactionGroup(kind) {
+  if (["pullRequestApproved", "pullRequestApprovalReset"].includes(kind)) return ["👍"];
+  if (["buildValidationSucceeded", "buildValidationFailed"].includes(kind)) return ["✅", "❌"];
+  if (["pullRequestCreated", "pullRequestReactivated", "pullRequestAbandoned", "pullRequestRejected", "pullRequestCompleted"].includes(kind)) {
+    return [":git-pull-request:", ":git-pull-request-closed:", ":merged:"];
+  }
+  return null;
+}
+
+async function syncRootReaction(messageId, azureUserId, kind) {
+  const desired = rootReaction(kind);
+  const group = rootReactionGroup(kind);
+  if (!group) return null;
+  const message = await Message.findById(messageId);
+  if (!message) return null;
+  const controlled = new Set(group);
+  for (const reaction of message.reactions) {
+    if (!controlled.has(reaction.emoji)) continue;
+    reaction.users = reaction.users.filter((userId) => !userId.equals(azureUserId));
+  }
+  let entry = message.reactions.find((reaction) => reaction.emoji === desired);
+  if (!entry) {
+    message.reactions.push({ emoji: desired, users: [azureUserId] });
+  } else if (!entry.users.some((userId) => userId.equals(azureUserId))) {
+    entry.users.push(azureUserId);
+  }
+  message.reactions = message.reactions.filter((reaction) => reaction.users.length > 0);
+  await message.save();
+  emitToChannel(message.channel.toString(), "message:reaction", {
+    messageId: message._id.toString(),
+    reactions: message.reactions.map((reaction) => ({
+      emoji: reaction.emoji,
+      users: reaction.users.map((userId) => userId.toString()),
+    })),
+  });
+  return message;
+}
 
 export function createAzureDevOpsToken() {
   return crypto.randomBytes(32).toString("base64url");
@@ -310,6 +360,7 @@ export async function processAzureDevOpsEvent(integration, payload) {
       body: messageBody(kind, value),
       parentId: kind === "pullRequestCreated" ? null : root.messageId,
     });
+    await syncRootReaction(kind === "pullRequestCreated" ? message.id : root.messageId, azure._id, kind);
     await AzureDevOpsEvent.updateOne({ _id: event._id }, { $set: { status: "delivered", messageId: message.id, processedAt: new Date(), lastError: null } });
     await AzureDevOpsIntegration.updateOne(
       { _id: integration._id },
