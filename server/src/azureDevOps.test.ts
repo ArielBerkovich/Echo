@@ -53,6 +53,7 @@ describe("Azure DevOps integration", () => {
     assert.match(messageBody("pullRequestCommented", { repository: { name: "echo" }, pullRequestId: 1, content: "A comment" }), /^📝/);
     assert.match(messageBody("pullRequestCompleted", { repository: { name: "echo" }, pullRequestId: 1, title: "Add integration" }), /^:merged:/);
     assert.match(messageBody("pullRequestApproved", {}), /^👍/);
+    assert.equal(messageBody("pullRequestApprovalReset", {}), "🔄 Approval reset");
     assert.match(messageBody("buildValidationSucceeded", {}), /^✅/);
     assert.match(messageBody("buildValidationFailed", {}), /^❌/);
   });
