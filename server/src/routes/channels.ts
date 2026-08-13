@@ -1,6 +1,6 @@
 import { Router } from "express";
 import mongoose from "mongoose";
-import { Channel } from "../models/Channel.js";
+import { canPostToChannel, Channel, isChannelManager } from "../models/Channel.js";
 import { Message } from "../models/Message.js";
 import { User } from "../models/User.js";
 import { Read } from "../models/Read.js";
@@ -119,6 +119,7 @@ async function listCatalogPage(req, res) {
         type: 1,
         topic: { $ifNull: ["$topic", ""] },
         description: { $ifNull: ["$description", ""] },
+        readOnly: { $eq: ["$readOnly", true] },
         createdAt: 1,
         memberCount: { $size: { $ifNull: ["$members", []] } },
         joined: { $in: [req.user._id, { $ifNull: ["$members", []] }] },
@@ -158,6 +159,7 @@ async function listCatalogPage(req, res) {
       type: channel.type,
       topic: channel.topic,
       description: channel.description,
+      readOnly: channel.readOnly,
       memberCount: channel.memberCount,
       joined: channel.joined,
       createdAt: channel.createdAt,
@@ -215,8 +217,11 @@ channelsRouter.get("/by-name/:name", async (req, res) => {
 
 // POST /api/channels — create a channel; creator becomes the first member and manager.
 channelsRouter.post("/", async (req, res) => {
-  const { name, type } = req.body || {};
+  const { name, type, readOnly = false } = req.body || {};
   if (!name) return res.status(400).json({ error: "channel name is required" });
+  if (typeof readOnly !== "boolean") {
+    return res.status(400).json({ error: "readOnly must be a boolean" });
+  }
 
   // Only the two supported visibilities; anything else is rejected.
   const visibility = type === "private" ? "private" : "public";
@@ -232,6 +237,7 @@ channelsRouter.post("/", async (req, res) => {
       members: [req.user._id],
       createdBy: req.user._id,
       managers: [req.user._id],
+      readOnly,
     });
     await logSystem(channel._id, req.user._id, "created this channel");
     joinUserToChannel(req.user._id.toString(), channel._id.toString());
@@ -540,15 +546,26 @@ channelsRouter.post("/:id/read", async (req, res) => {
 // PATCH /api/channels/:id — update channel settings.
 //   { type }                  → change visibility (creator only)
 //   { topic } / { description } → update info (any member)
+//   { readOnly }              → restrict posting to the creator/managers
 channelsRouter.patch("/:id", async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) {
     return res.status(404).json({ error: "channel not found" });
   }
-  const { type, topic, description } = req.body || {};
+  const { type, topic, description, readOnly } = req.body || {};
   const channel = await Channel.findById(req.params.id);
   if (!channel) return res.status(404).json({ error: "channel not found" });
   if (channel.type === "dm") {
     return res.status(400).json({ error: "cannot change a direct message" });
+  }
+
+  if (readOnly !== undefined) {
+    if (typeof readOnly !== "boolean") {
+      return res.status(400).json({ error: "readOnly must be a boolean" });
+    }
+    if (!isChannelManager(channel, req.user._id)) {
+      return res.status(403).json({ error: "only the channel creator or a manager can change posting settings" });
+    }
+    channel.readOnly = readOnly;
   }
 
   // Visibility changes are creator-only.
@@ -740,6 +757,9 @@ channelsRouter.post("/:id/messages", async (req, res) => {
   if (!channel || channel.isArchived) return res.status(404).json({ error: "channel not found" });
   if (channel.type !== "public" && !channel.members.some((m) => m.equals(req.user._id))) {
     return res.status(403).json({ error: "access denied" });
+  }
+  if (!canPostToChannel(channel, req.user._id)) {
+    return res.status(403).json({ error: "only channel managers can post in this read-only channel" });
   }
   const parentId =
     req.body?.parentId && mongoose.isValidObjectId(req.body.parentId) ? req.body.parentId : null;

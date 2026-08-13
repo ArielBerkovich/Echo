@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import mongoose from "mongoose";
-import { Channel } from "./models/Channel.js";
+import { canPostToChannel, Channel } from "./models/Channel.js";
 import { Message } from "./models/Message.js";
 import { User } from "./models/User.js";
 import { emitToChannel } from "./realtime.js";
@@ -83,6 +83,11 @@ export async function resolveAutomationChannel({ userId, channelId, channelName,
   }
   if (channel.type !== "public" && !channel.members.some((m) => m.equals(userId))) {
     const err = new Error("access denied");
+    err.status = 403;
+    throw err;
+  }
+  if (!canPostToChannel(channel, userId)) {
+    const err = new Error("only channel managers can post in this read-only channel");
     err.status = 403;
     throw err;
   }

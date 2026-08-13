@@ -92,6 +92,7 @@ export default function ChannelView({
 }) {
   const queryClient = useQueryClient();
   const hasUsableCache = cachedMessages !== null && !hasUnread;
+  const canPost = channel.type === "dm" || !channel.readOnly || channel.createdBy === user.id || (channel.managers || []).includes(user.id);
   const [messages, setMessages] = useState(() => hasUsableCache ? cachedMessages : []);
   const [error, setError] = useState(null);
   const [thread, setThread] = useState(null); // open thread root message, or null
@@ -1154,7 +1155,7 @@ export default function ChannelView({
         </div>
       )}
 
-      {isMember && (
+      {isMember && canPost && (
         <Composer
           ref={composerRef}
           key={channel.id}
@@ -1174,6 +1175,12 @@ export default function ChannelView({
             setError(null);
           }}
         />
+      )}
+      {isMember && !canPost && (
+        <div className="channel-readonly-notice" role="status" data-testid="channel-readonly-notice">
+          <strong>Managers only</strong>
+          <span>This channel is read-only. Only the channel creator and managers can post.</span>
+        </div>
       )}
       </div>
 
@@ -1200,6 +1207,7 @@ export default function ChannelView({
             onClose={() => { setThread(null); setThreadJumpTargetId(null); setThreadLightbox(null); }}
             onThreadRead={onThreadRead}
             onChannelUpdated={onChannelUpdated}
+            canPost={canPost}
             onOpenLightbox={(src, name) => setThreadLightbox({ src, name })}
             openThreadJumpMessageId={threadJumpTargetId || openThreadJumpMessageId}
           />

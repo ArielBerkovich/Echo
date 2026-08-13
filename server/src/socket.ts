@@ -4,7 +4,7 @@ import { createAdapter } from "@socket.io/mongo-adapter";
 import { verifyToken } from "./auth.js";
 import { config } from "./config.js";
 import { User } from "./models/User.js";
-import { Channel } from "./models/Channel.js";
+import { canPostToChannel, Channel } from "./models/Channel.js";
 import { Message } from "./models/Message.js";
 import { ActivityEvent } from "./models/ActivityEvent.js";
 import { setIO } from "./realtime.js";
@@ -235,6 +235,9 @@ export function attachSocket(httpServer) {
         ) {
           return ackError(ack, "message_send", "access denied");
         }
+        if (!canPostToChannel(channel, socket.user._id)) {
+          return ackError(ack, "message_send", "only channel managers can post in this read-only channel");
+        }
 
         const payload = await deliverMessage({
           channel,
@@ -269,6 +272,9 @@ export function attachSocket(httpServer) {
         const editChannel = await Channel.findById(message.channel);
         if (!editChannel || !canAccess(editChannel, socket.user._id)) {
           return ackError(ack, "message_edit", "access denied");
+        }
+        if (!canPostToChannel(editChannel, socket.user._id)) {
+          return ackError(ack, "message_edit", "only channel managers can edit messages in this read-only channel");
         }
 
         message.body = text;
@@ -371,6 +377,9 @@ export function attachSocket(httpServer) {
         if (!target) return ackError(ack, "message_forward", "destination not found");
         if (!canAccess(target, socket.user._id)) {
           return ackError(ack, "message_forward", "access denied to destination");
+        }
+        if (!canPostToChannel(target, socket.user._id)) {
+          return ackError(ack, "message_forward", "only channel managers can post in this read-only channel");
         }
 
         const author = await User.findById(source.author);

@@ -73,6 +73,7 @@ export const channelSchema = z.object({
     .transform(normalizeChannelNameInput)
     .pipe(z.string().min(1, "Channel name is required").max(64, "Channel name must be 64 characters or fewer").regex(/^[a-z0-9_-]+$/, "Channel name can only contain lowercase letters, numbers, -, and _")),
   type: z.enum(["public", "private"]),
+  readOnly: z.boolean().default(false),
 });
 
 export function emojiNameSchema(existing = []) {

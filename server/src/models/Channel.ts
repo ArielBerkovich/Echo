@@ -22,6 +22,8 @@ const channelSchema = new mongoose.Schema(
     hiddenFor: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     managers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    // When enabled, only the channel creator and delegated managers can post.
+    readOnly: { type: Boolean, default: false },
     isArchived: { type: Boolean, default: false },
   },
   { timestamps: true }
@@ -43,9 +45,22 @@ channelSchema.methods.toPublicJSON = function () {
     members: this.members.map((m) => m.toString()),
     createdBy: this.createdBy.toString(),
     managers: (this.managers || []).map((m) => m.toString()),
+    readOnly: !!this.readOnly,
     createdAt: this.createdAt,
     isArchived: this.isArchived,
   };
 };
+
+export function isChannelManager(channel, userId) {
+  const id = userId?.toString();
+  return !!id && (
+    channel.createdBy?.toString() === id ||
+    (channel.managers || []).some((managerId) => managerId.toString() === id)
+  );
+}
+
+export function canPostToChannel(channel, userId) {
+  return !channel.readOnly || isChannelManager(channel, userId);
+}
 
 export const Channel = mongoose.model("Channel", channelSchema);

@@ -613,8 +613,8 @@ export default function App() {
     });
   }
 
-  async function handleCreateChannel(name, type) {
-    const { channel } = await api.createChannel(name, type);
+  async function handleCreateChannel(name, type, readOnly = false) {
+    const { channel } = await api.createChannel(name, type, readOnly);
     upsertChannel(channel);
     setActiveChannel(channel);
     setView("home", channel);
