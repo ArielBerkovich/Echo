@@ -25,7 +25,8 @@ describe("Azure DevOps integration", () => {
   });
 
   it("ignores unrelated Azure events", () => {
-    assert.equal(notificationKind({ eventType: "git.pullrequest.commented", resource: {} }), null);
+    assert.equal(notificationKind({ eventType: "git.push", resource: {} }), null);
+    assert.equal(notificationKind({ eventType: "git.pullrequest.commented", resource: {} }), "pullRequestCommented");
   });
 
   it("uses the link from a native Azure DevOps build service-hook event", () => {
@@ -38,11 +39,20 @@ describe("Azure DevOps integration", () => {
   });
 
   it("renders a reactivated pull-request notification", () => {
-    assert.match(messageBody("pullRequestReactivated", { repository: { name: "echo" }, pullRequestId: 9, title: "Restore integration" }), /Pull request reactivated/);
+    assert.match(messageBody("pullRequestReactivated", { repository: { name: "echo" }, pullRequestId: 9, title: "Restore integration" }), /Pull request recreated/);
   });
 
   it("recognizes approval and approval reset payload states", () => {
     assert.equal(notificationKind({ eventType: "git.pullrequest.updated", resource: { status: "active", reviewers: [{ vote: 10 }] } }), "pullRequestApproved");
-    assert.equal(notificationKind({ eventType: "git.pullrequest.updated", resource: { status: "active", reviewers: [{ vote: 0 }] } }), null);
+    assert.equal(notificationKind({ eventType: "git.pullrequest.updated", resource: { status: "active", reviewers: [{ vote: 0 }] } }), "pullRequestApprovalReset");
+    assert.equal(notificationKind({ eventType: "git.pullrequest.updated", resource: { status: "active", reviewers: [{ vote: -10 }] } }), "pullRequestRejected");
+  });
+
+  it("uses Echo Git emoji shortcodes and requested status icons", () => {
+    assert.match(messageBody("pullRequestCreated", { repository: { name: "echo" }, pullRequestId: 1, title: "Add integration" }), /^:git-pull-request:/);
+    assert.match(messageBody("pullRequestCompleted", { repository: { name: "echo" }, pullRequestId: 1, title: "Add integration" }), /^:merged:/);
+    assert.match(messageBody("pullRequestApproved", {}), /^👍/);
+    assert.match(messageBody("buildValidationSucceeded", {}), /^✅/);
+    assert.match(messageBody("buildValidationFailed", {}), /^❌/);
   });
 });

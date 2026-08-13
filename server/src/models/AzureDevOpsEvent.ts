@@ -7,6 +7,7 @@ const azureDevOpsEventSchema = new mongoose.Schema(
     eventType: { type: String, required: true },
     notificationKind: { type: String, default: null },
     approvalState: { type: Boolean, default: null },
+    approvalStatus: { type: String, enum: ["approved", "reset", "rejected", null], default: null },
     status: { type: String, enum: ["processing", "delivered", "ignored", "unmatched", "failed"], default: "processing" },
     attempts: { type: Number, default: 1 },
     lastError: { type: String, default: null, maxlength: 500 },

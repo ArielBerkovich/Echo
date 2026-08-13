@@ -95,6 +95,9 @@ azureDevOpsRouter.patch("/:id", async (req, res) => {
     for (const key of [
       "pullRequestCreated",
       "pullRequestApproved",
+      "pullRequestApprovalReset",
+      "pullRequestRejected",
+      "pullRequestCommented",
       "pullRequestCompleted",
       "pullRequestAbandoned",
       "pullRequestReactivated",
