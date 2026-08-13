@@ -1,6 +1,6 @@
 import { Router } from "express";
 import mongoose from "mongoose";
-import { Channel } from "../models/Channel.js";
+import { canPostToChannel, Channel } from "../models/Channel.js";
 import { ScheduledMessage } from "../models/ScheduledMessage.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { sanitizeAttachments, attachmentLimitError } from "../deliver.js";
@@ -30,6 +30,9 @@ scheduledRouter.post("/", async (req, res) => {
   if (!channel) return res.status(404).json({ error: "channel not found" });
   if (channel.type !== "public" && !channel.members.some((m) => m.equals(req.user._id))) {
     return res.status(403).json({ error: "access denied" });
+  }
+  if (!canPostToChannel(channel, req.user._id)) {
+    return res.status(403).json({ error: "only channel managers can post in this read-only channel" });
   }
 
   const doc = await ScheduledMessage.create({

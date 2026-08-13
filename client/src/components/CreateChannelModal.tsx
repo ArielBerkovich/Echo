@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
-import { Check, Globe2, LockKeyhole } from "lucide-react";
+import { Check, ChevronDown, Globe2, LockKeyhole } from "lucide-react";
 import Modal, { ModalActions } from "./Modal.js";
 import { channelSchema, normalizeChannelNameInput } from "../lib/formSchemas.js";
 
 // "Create a channel" dialog with a name field and public/private choice.
 export default function CreateChannelModal({ onCreate, onClose }) {
   const [error, setError] = useState(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const inputRef = useRef(null);
   const {
     register,
@@ -21,12 +22,15 @@ export default function CreateChannelModal({ onCreate, onClose }) {
     defaultValues: {
       name: "",
       type: "public",
+      readOnly: false,
     },
   });
   const name = useWatch({ control, name: "name" }) || "";
   const type = useWatch({ control, name: "type" }) || "public";
+  const readOnly = !!useWatch({ control, name: "readOnly" });
   const nameField = register("name");
   const typeField = register("type");
+  const readOnlyField = register("readOnly");
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -38,7 +42,7 @@ export default function CreateChannelModal({ onCreate, onClose }) {
   const submit = handleSubmit(async (values) => {
     setError(null);
     try {
-      await onCreate(values.name, values.type);
+      await onCreate(values.name, values.type, !!values.readOnly);
       onClose();
     } catch (err) {
       setError(err.message);
@@ -117,6 +121,38 @@ export default function CreateChannelModal({ onCreate, onClose }) {
           </div>
           <p className="visibility-note">You can make a private channel public later, but public channels can’t be made private.</p>
         </fieldset>
+
+        <section className="channel-advanced-options">
+          <button
+            type="button"
+            className={`channel-advanced-toggle${showAdvanced ? " is-open" : ""}`}
+            aria-expanded={showAdvanced}
+            onClick={() => setShowAdvanced((open) => !open)}
+          >
+            <span>Advanced options</span>
+            <ChevronDown size={16} strokeWidth={2} aria-hidden="true" />
+          </button>
+          {showAdvanced && (
+            <div className="channel-advanced-panel">
+              <label className={`channel-readonly-toggle${readOnly ? " is-enabled" : ""}`}>
+                <input
+                  {...readOnlyField}
+                  type="checkbox"
+                  data-testid="create-channel-readonly-toggle"
+                  aria-label="Managers only"
+                />
+                <span className="channel-readonly-switch" aria-hidden="true">
+                  <span className="channel-readonly-switch-thumb" />
+                </span>
+                <span className="channel-readonly-toggle-copy">
+                  <span>Managers only</span>
+                  <span className="channel-readonly-toggle-state">{readOnly ? "On" : "Off"}</span>
+                </span>
+              </label>
+              <p className="channel-advanced-hint">Only the channel creator and managers can post messages and replies.</p>
+            </div>
+          )}
+        </section>
 
         {error && <div className="error">{error}</div>}
 

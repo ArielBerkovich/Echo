@@ -187,8 +187,11 @@ export const api = {
   },
   getChannelByName: (name) => request(`/channels/by-name/${encodeURIComponent(name)}`),
   getChannel: (id) => request(`/channels/${id}`),
-  createChannel: (name, type = "public") =>
-    request("/channels", { method: "POST", body: { name, type } }),
+  createChannel: (name, type = "public", readOnly = false) =>
+    request("/channels", {
+      method: "POST",
+      body: { name, type, ...(readOnly ? { readOnly: true } : {}) },
+    }),
   joinChannel: (id) => request(`/channels/${id}/join`, { method: "POST" }),
   addChannelMember: (id, userId) =>
     request(`/channels/${id}/members`, { method: "POST", body: { userId } }),

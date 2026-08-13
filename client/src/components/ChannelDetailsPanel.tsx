@@ -33,6 +33,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
   const isMember = memberIds.has(user.id);
   const isCreator = channel.createdBy === user.id;
   const isManager = (channel.managers || []).includes(user.id);
+  const canManagePosting = channel.type !== "dm" && (isCreator || isManager);
   const canManageMembers = isCreator || isManager;
   const canAddPeople = isMember && channel.type !== "dm" && channel.name?.toLowerCase() !== "general";
   const q = memberQuery.trim().toLowerCase();
@@ -127,6 +128,39 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
               onSave={(value) => save({ description: value })}
             />
           </div>
+
+          {canManagePosting && (
+            <section className="channel-details-section channel-details-posting-section cd-section">
+              <div className="channel-details-section-head">
+                <div>
+                  <div className="channel-details-section-title">Posting permissions</div>
+                  <p className="channel-details-section-hint">
+                    {channel.readOnly
+                      ? "Only the channel creator and managers can post messages and replies."
+                      : "Everyone in this channel can post messages and replies."}
+                  </p>
+                </div>
+                <label className={`channel-readonly-toggle${channel.readOnly ? " is-enabled" : ""}`}>
+                  <input
+                    type="checkbox"
+                    checked={!!channel.readOnly}
+                    data-testid="channel-readonly-toggle"
+                    aria-label="Managers only"
+                    onChange={(event) => {
+                      void save({ readOnly: event.target.checked }).catch(() => {});
+                    }}
+                  />
+                  <span className="channel-readonly-switch" aria-hidden="true">
+                    <span className="channel-readonly-switch-thumb" />
+                  </span>
+                  <span className="channel-readonly-toggle-copy">
+                    <span>Managers only</span>
+                    <span className="channel-readonly-toggle-state">{channel.readOnly ? "On" : "Off"}</span>
+                  </span>
+                </label>
+              </div>
+            </section>
+          )}
 
           <section className="channel-details-section channel-details-members-section cd-section">
             <div className="channel-details-section-head">

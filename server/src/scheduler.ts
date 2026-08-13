@@ -1,5 +1,5 @@
 import { ScheduledMessage } from "./models/ScheduledMessage.js";
-import { Channel } from "./models/Channel.js";
+import { canPostToChannel, Channel } from "./models/Channel.js";
 import { deliverMessage } from "./deliver.js";
 
 const TICK_MS = Math.max(250, Number(process.env.SCHEDULER_TICK_MS) || 15000); // check for due messages on a fixed cadence
@@ -24,7 +24,8 @@ async function dispatchDue() {
     const channel = await Channel.findById(sm.channel).catch(() => null);
     const canSend =
       channel &&
-      (channel.type === "public" || channel.members.some((m) => m.equals(sm.author)));
+      (channel.type === "public" || channel.members.some((m) => m.equals(sm.author))) &&
+      canPostToChannel(channel, sm.author);
     // Drop messages that can no longer be delivered (channel gone / left).
     if (!canSend) {
       await ScheduledMessage.deleteOne({ _id: sm._id, dispatchLeaseUntil: leaseUntil });

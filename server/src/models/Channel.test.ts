@@ -2,7 +2,31 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import mongoose from "mongoose";
 
-import { Channel } from "./Channel.js";
+import { canPostToChannel, Channel, isChannelManager } from "./Channel.js";
+
+describe("Channel posting permissions", () => {
+  it("allows everyone in normal channels and only managers in read-only channels", () => {
+    const creator = new mongoose.Types.ObjectId();
+    const manager = new mongoose.Types.ObjectId();
+    const member = new mongoose.Types.ObjectId();
+    const channel = new Channel({
+      name: "announcements",
+      members: [creator, manager, member],
+      createdBy: creator,
+      managers: [manager],
+      readOnly: true,
+    });
+
+    assert.equal(isChannelManager(channel, creator), true);
+    assert.equal(isChannelManager(channel, manager), true);
+    assert.equal(canPostToChannel(channel, creator), true);
+    assert.equal(canPostToChannel(channel, manager), true);
+    assert.equal(canPostToChannel(channel, member), false);
+
+    channel.readOnly = false;
+    assert.equal(canPostToChannel(channel, member), true);
+  });
+});
 
 describe("Channel.toPublicJSON", () => {
   it("serializes channel metadata and member ids", () => {
@@ -28,6 +52,7 @@ describe("Channel.toPublicJSON", () => {
     assert.equal(json.memberCount, 2);
     assert.deepEqual(json.members, members.map((id) => id.toString()));
     assert.equal(json.createdBy, createdBy.toString());
+    assert.equal(json.readOnly, false);
     assert.equal(json.isArchived, true);
   });
 

@@ -30,6 +30,7 @@ export default function ThreadPanel({
   onAddCustomEmoji,
   onClose,
   onThreadRead,
+  canPost = true,
   onChannelUpdated,
   onOpenLightbox,
   openThreadJumpMessageId = null,
@@ -385,7 +386,7 @@ export default function ThreadPanel({
 
       {error && <div className="error">{error}</div>}
 
-      <Composer
+      {canPost ? <Composer
         ref={composerRef}
         key={`thread-${root.id}`}
         channel={channel}
@@ -403,7 +404,12 @@ export default function ThreadPanel({
           setEditing(null);
           setError(null);
         }}
-      />
+      /> : (
+        <div className="channel-readonly-notice thread-readonly-notice" role="status">
+          <strong>Managers only</strong>
+          <span>Only the channel creator and managers can reply.</span>
+        </div>
+      )}
 
       {confirmDelete && (
         <ConfirmDialog
