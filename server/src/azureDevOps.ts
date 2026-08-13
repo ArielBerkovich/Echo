@@ -231,7 +231,7 @@ export function messageBody(kind, value) {
   const link = webLink(value);
   const suffix = link ? "\n[Open in Azure DevOps](" + link + ")" : "";
   const comment = clean(value?.comment?.content || value?.comment?.text || value?.content, 2000);
-  if (kind === "pullRequestCreated") return ":git-pull-request: Pull request created in **" + repo + "**" + (number ? " (#" + number + ")" : "") + ": **" + label + "**" + suffix;
+  if (kind === "pullRequestCreated") return ":git-pull-request: Pull request created\n**" + repo + "**" + (number ? " · PR #" + number : "") + "\n**" + label + "**" + suffix;
   if (kind === "pullRequestApproved") return "👍 Pull request approved in **" + repo + "**" + (number ? " (#" + number + ")" : "") + ": **" + label + "**" + suffix;
   if (kind === "pullRequestApprovalReset") return "🔄 Approval reset";
   if (kind === "pullRequestRejected") return ":git-pull-request-closed: Pull request rejected in **" + repo + "**" + (number ? " (#" + number + ")" : "") + ": **" + label + "**" + suffix;
