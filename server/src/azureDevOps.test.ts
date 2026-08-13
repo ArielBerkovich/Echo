@@ -50,6 +50,7 @@ describe("Azure DevOps integration", () => {
 
   it("uses Echo Git emoji shortcodes and requested status icons", () => {
     assert.match(messageBody("pullRequestCreated", { repository: { name: "echo" }, pullRequestId: 1, title: "Add integration" }), /^:git-pull-request:/);
+    assert.match(messageBody("pullRequestCommented", { repository: { name: "echo" }, pullRequestId: 1, content: "A comment" }), /^📝/);
     assert.match(messageBody("pullRequestCompleted", { repository: { name: "echo" }, pullRequestId: 1, title: "Add integration" }), /^:merged:/);
     assert.match(messageBody("pullRequestApproved", {}), /^👍/);
     assert.match(messageBody("buildValidationSucceeded", {}), /^✅/);

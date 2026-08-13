@@ -185,7 +185,7 @@ export function messageBody(kind, value) {
   if (kind === "pullRequestApproved") return "👍 Pull request approved in **" + repo + "**" + (number ? " (#" + number + ")" : "") + ": **" + label + "**" + suffix;
   if (kind === "pullRequestApprovalReset") return ":git-pull-request: Pull request approval reset in **" + repo + "**" + (number ? " (#" + number + ")" : "") + ": **" + label + "**" + suffix;
   if (kind === "pullRequestRejected") return ":git-pull-request-closed: Pull request rejected in **" + repo + "**" + (number ? " (#" + number + ")" : "") + ": **" + label + "**" + suffix;
-  if (kind === "pullRequestCommented") return ":git-pull-request: New pull request comment in **" + repo + "**" + (number ? " (#" + number + ")" : "") + (comment ? "\n\n> " + comment.replace(/\n/g, "\n> ") : "") + suffix;
+  if (kind === "pullRequestCommented") return "📝 New pull request comment in **" + repo + "**" + (number ? " (#" + number + ")" : "") + (comment ? "\n\n> " + comment.replace(/\n/g, "\n> ") : "") + suffix;
   if (kind === "pullRequestCompleted") return ":merged: Pull request merged in **" + repo + "**" + (number ? " (#" + number + ")" : "") + ": **" + label + "**" + suffix;
   if (kind === "pullRequestAbandoned") return ":git-pull-request-closed: Pull request abandoned in **" + repo + "**" + (number ? " (#" + number + ")" : "") + ": **" + label + "**" + suffix;
   if (kind === "pullRequestReactivated") return ":git-pull-request: Pull request recreated in **" + repo + "**" + (number ? " (#" + number + ")" : "") + ": **" + label + "**" + suffix;
