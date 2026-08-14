@@ -4695,6 +4695,7 @@ html[data-mode="dark"] .day-divider-label {
   border: 1px solid color-mix(in srgb, #1684d8 18%, var(--border));
 }
 .integration-card-icon img { width: 38px; height: 38px; }
+.integration-card-icon img.azure-integration-icon { width: 44px; height: 44px; }
 .integration-card-copy { min-width: 0; }
 .integration-card-copy h3 { margin: 0 0 3px; font-size: 17px; color: var(--text); }
 .integration-card-copy > span { color: var(--muted); font-size: 12px; }
@@ -4718,6 +4719,7 @@ html[data-mode="dark"] .day-divider-label {
 .integration-dialog-header { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 20px 22px; border-bottom: 1px solid var(--border); }
 .integration-dialog-title { display: flex; align-items: center; gap: 12px; }
 .integration-dialog-title img { width: 38px; height: 38px; }
+.integration-dialog-title img.azure-integration-icon { width: 44px; height: 44px; }
 .integration-dialog-title h3 { margin: 0; color: var(--text); font-size: 17px; }
 .integration-dialog-title p { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
 .integration-dialog-body { display: grid; flex: 1 1 auto; min-height: 0; gap: 18px; overflow-x: hidden; overflow-y: auto; padding: 22px; }
