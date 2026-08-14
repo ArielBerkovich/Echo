@@ -177,6 +177,10 @@ export const api = {
     request(`/integrations/azure-devops/${encodeURIComponent(id)}/token`, { method: "POST" }),
   updateAzureDevOpsIntegration: (id, payload) =>
     request(`/integrations/azure-devops/${encodeURIComponent(id)}`, { method: "PATCH", body: payload }),
+  getJenkinsIntegration: () => request("/integrations/jenkins"),
+  createJenkinsIntegration: (name = "Jenkins") => request("/integrations/jenkins", { method: "POST", body: { name } }),
+  regenerateJenkinsToken: (id) => request(`/integrations/jenkins/${encodeURIComponent(id)}/token`, { method: "POST" }),
+  updateJenkinsIntegration: (id, payload) => request(`/integrations/jenkins/${encodeURIComponent(id)}`, { method: "PATCH", body: payload }),
   listUsers: () => request("/users"),
   getUser: (userId) => request(`/users/${encodeURIComponent(userId)}`),
   listChannels: () => request("/channels"),
