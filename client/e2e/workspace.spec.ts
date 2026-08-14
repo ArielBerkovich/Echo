@@ -846,7 +846,9 @@ test("searches messages with filters and displays results", async ({ page }) => 
 });
 
 test("navigates grouped search results with the keyboard", async ({ page }) => {
-  await page.goto(`/search?q=${encodeURIComponent(fixture.messages.searchHit.body)}`);
+  const uniqueSearchToken = fixture.messages.searchHit.body.match(/only-token-[^ ]+/)?.[0];
+  expect(uniqueSearchToken).toBeTruthy();
+  await page.goto(`/search?q=${encodeURIComponent(uniqueSearchToken)}`);
 
   const pane = page.getByTestId("search-results-pane");
   await expect(pane).toBeFocused();

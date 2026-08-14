@@ -148,6 +148,11 @@ test("preserves an offline send draft and sends it exactly once after reconnecti
 });
 
 test("keeps a failed scheduled message editable and creates it once on retry", async ({ page }) => {
+  const channel = await requestAsToken(page, fixture.alice.token, "/channels", {
+    method: "POST",
+    body: { name: `schedule-retry-${uniqueSuffix("channel")}`, type: "private" },
+  });
+  await page.goto(`/channels/${channel.channel.id}`);
   let scheduleAttempts = 0;
   await page.route("**/api/scheduled", async (route) => {
     if (route.request().method() !== "POST") return route.continue();

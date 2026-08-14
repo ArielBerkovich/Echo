@@ -37,8 +37,7 @@ test.describe("Azure DevOps integration", () => {
   test("regular users do not see Azure integration administration", async ({ page }) => {
     const fixture = await seedWorkspaceFixture(page);
     await seedToken(page, fixture.alice.token);
-    await page.goto("/");
-    await page.getByTestId("rail-settings").click();
+    await page.goto("/settings");
     await expect(page.getByTestId("settings-page")).toBeVisible();
     await expect(page.getByRole("button", { name: "Integrations" })).toHaveCount(0);
   });

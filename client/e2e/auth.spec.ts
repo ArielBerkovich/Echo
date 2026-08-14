@@ -70,9 +70,17 @@ test("forgot password delivers Echo's one-time-password instructions to the admi
   const adminPage = await adminContext.newPage();
   await adminPage.addInitScript((token) => localStorage.setItem("echo.token", token), admin.token);
   try {
-    await adminPage.goto("/");
+    const dms = await requestAsToken(page, admin.token, "/dms");
+    const echoConversation = dms.conversations?.find((conversation) => conversation.withUser?.displayName === "Echo");
+    expect(echoConversation?.id).toBeTruthy();
+    await adminPage.goto(`/dms/${echoConversation.id}`);
     const echoDm = adminPage.getByRole("button", { name: "Offline Echo" });
-    await expect(echoDm).toBeVisible();
+    await expect(echoDm).toBeVisible({ timeout: 15_000 }).catch(async () => {
+      // The password-help notification is delivered asynchronously. A reload
+      // refreshes the DM list when the initial workspace query raced delivery.
+      await adminPage.reload();
+      await expect(echoDm).toBeVisible({ timeout: 15_000 });
+    });
     await echoDm.click();
     const notification = adminPage.getByTestId(/^message-[a-f0-9]+$/).filter({
       hasText: `Password help requested for @${requestedUser.user.username}`,
