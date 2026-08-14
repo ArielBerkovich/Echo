@@ -5,6 +5,7 @@
       <stop offset="1" stop-color="#50A9F2"/>
     </linearGradient>
   </defs>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#fff"/>
   <path fill="url(#azure-blue)" d="M32 6 8 56h12l5.1-11h13.8L44 56h12L32 6Zm0 18.2L36.2 36h-8.4L32 24.2Z"/>
   <path fill="#0078D4" d="M24.1 45H39l-3.2-7.2h-8.4L24.1 45Z"/>
 </svg>
