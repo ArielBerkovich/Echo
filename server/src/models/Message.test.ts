@@ -114,6 +114,22 @@ describe("Message.toPublicJSON", () => {
     });
   });
 
+  it("serializes messages whose author account was deleted", () => {
+    const message = new Message({
+      channel: new mongoose.Types.ObjectId(),
+      author: new mongoose.Types.ObjectId(),
+      body: "legacy message",
+    });
+    Object.defineProperty(message, "author", { value: null });
+
+    assert.deepEqual(message.toPublicJSON().author, {
+      id: null,
+      username: "deleted-user",
+      displayName: "Deleted user",
+      avatarUrl: null,
+    });
+  });
+
   it("serializes fallback author ids and nullable optional fields", () => {
     const author = new mongoose.Types.ObjectId();
     const message = new Message({

@@ -41,7 +41,6 @@ const AZURE_NOTIFY_OPTIONS = [
   ["buildValidationSucceeded", "Build passed"],
   ["buildValidationFailed", "Build failed"],
 ];
-
 function backendOrigin() {
   return getBackendUrl() || (typeof window !== "undefined" ? window.location.origin : "");
 }
@@ -399,7 +398,7 @@ export default function SettingsModal({
             {!azureLoading && !azureIntegration && <button type="button" className="btn-primary" onClick={createAzureIntegration}>Enable Azure DevOps</button>}
             {azureIntegration && <article className="integration-card">
               <button type="button" className="integration-card-main" onClick={() => setAzureOptionsOpen(true)}>
-                <div className="integration-card-icon"><img src="/azure-devops-icon.svg" alt="" /></div>
+                <div className="integration-card-icon"><img className="azure-integration-icon" src="/azure-devops-icon.svg" alt="" /></div>
                 <div className="integration-card-copy">
                   <h3>Azure DevOps</h3>
                   <span>dev.azure.com</span>
@@ -418,7 +417,7 @@ export default function SettingsModal({
             {azureOptionsOpen && azureIntegration && <div className="integration-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setAzureOptionsOpen(false); }}>
               <section className="integration-dialog" role="dialog" aria-modal="true" aria-labelledby="azure-integration-title">
                 <div className="integration-dialog-header">
-                  <div className="integration-dialog-title"><img src="/azure-devops-icon.svg" alt="" /><div><h3 id="azure-integration-title">Azure DevOps</h3><p>Integration settings</p></div></div>
+                  <div className="integration-dialog-title"><img className="azure-integration-icon" src="/azure-devops-icon.svg" alt="" /><div><h3 id="azure-integration-title">Azure DevOps</h3><p>Integration settings</p></div></div>
                   <button type="button" className="settings-close" onClick={() => setAzureOptionsOpen(false)} aria-label="Close integration settings">✕</button>
                 </div>
                 <div className="integration-dialog-body">

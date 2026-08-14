@@ -201,7 +201,9 @@ messageSchema.methods.toPublicJSON = function () {
     author:
       author && author.toPublicJSON
         ? author.toPublicJSON()
-        : { id: author.toString() },
+        : author
+          ? { id: author.toString() }
+          : { id: null, username: "deleted-user", displayName: "Deleted user", avatarUrl: null },
   };
 };
 

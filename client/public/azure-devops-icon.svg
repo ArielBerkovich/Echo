@@ -1,4 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Azure DevOps">
-  <rect width="64" height="64" rx="14" fill="#0078d4"/>
-  <path fill="#fff" d="M14 18h10l18 7v22H29l-15-7 8-5 10 4V29l-10-4v19l-8-4V18Zm28 7 8-4v27l-8-1V25Z"/>
+  <defs>
+    <linearGradient id="azure-blue" x1="12" y1="56" x2="52" y2="8" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0078D4"/>
+      <stop offset="1" stop-color="#50A9F2"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#fff"/>
+  <path fill="url(#azure-blue)" d="M32 6 8 56h12l5.1-11h13.8L44 56h12L32 6Zm0 18.2L36.2 36h-8.4L32 24.2Z"/>
+  <path fill="#0078D4" d="M24.1 45H39l-3.2-7.2h-8.4L24.1 45Z"/>
 </svg>
