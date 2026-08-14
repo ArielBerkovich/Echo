@@ -8,7 +8,6 @@ import { deliverMessage } from "./deliver.js";
 import { emitToChannel } from "./realtime.js";
 
 const AZURE_USERNAME = "azure-bot";
-const AZURE_LEGACY_USERNAME = "azure";
 const AZURE_DISPLAY_NAME = "azure bot";
 
 export function rootReaction(kind) {
@@ -120,7 +119,6 @@ export function decryptAzureDevOpsToken(value) {
 
 async function ensureAzureUser() {
   let user = await User.findOne({ username: AZURE_USERNAME });
-  if (!user) user = await User.findOne({ username: AZURE_LEGACY_USERNAME });
   if (!user) {
     user = await User.create({
       username: AZURE_USERNAME,
