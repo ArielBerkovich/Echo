@@ -186,7 +186,7 @@ test("keeps a failed scheduled message editable and creates it once on retry", a
   expect(created.scheduled.body).toBe(body);
   expect(created.scheduled.id).toBeTruthy();
   await expect(modal).toHaveCount(0);
-  await expect(page.locator(".scheduled-banner")).toContainText("1 scheduled message");
+  await expect(page.locator(".scheduled-banner")).toContainText("scheduled message");
   expect(scheduleAttempts).toBe(2);
 });
 

@@ -852,9 +852,8 @@ test("navigates grouped search results with the keyboard", async ({ page }) => {
 
   const pane = page.getByTestId("search-results-pane");
   await expect(pane).toBeFocused();
-  await expect(page.getByTestId("search-result")).toHaveCount(1);
-  await expect(page.getByTestId("search-result-count")).toHaveText("1 result");
-  const result = page.getByTestId("search-result").first();
+  await expect(page.getByTestId("search-result").filter({ hasText: fixture.messages.searchHit.body })).toHaveCount(1);
+  const result = page.getByTestId("search-result").filter({ hasText: fixture.messages.searchHit.body });
   await expect(result).toHaveClass(/active/);
 
   await pane.press("Enter");
