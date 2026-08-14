@@ -234,7 +234,7 @@ export async function seedWorkspaceFixture(page) {
       method: "POST",
       body: {
         channelId: general.channel.id,
-        body: `Welcome search result ${suffix} with a https://example.com link`,
+        body: `Welcome search result ${suffix} only-token-${suffix} with a https://example.com link`,
         externalKey: `search-${suffix}`,
       },
     });

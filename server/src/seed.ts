@@ -4,6 +4,11 @@ import { User } from "./models/User.js";
 // Ensure a default #general channel exists and that every (non-system) user
 // belongs to it. Runs on startup; registration also adds new users to #general.
 export async function ensureDefaultChannel() {
+  // Keep the non-login system identity branded everywhere it appears.
+  await User.updateMany(
+    { username: "system" },
+    { $set: { displayName: "Echo", avatarUrlOverride: "/echo-logo.png" } }
+  );
   let general = await Channel.findOne({ name: "general" });
 
   if (!general) {
@@ -14,6 +19,7 @@ export async function ensureDefaultChannel() {
         displayName: "Echo",
         // Placeholder hash; the system account cannot log in.
         passwordHash: "x",
+        avatarUrlOverride: "/echo-logo.png",
       });
     }
     general = await Channel.create({

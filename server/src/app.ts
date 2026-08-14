@@ -18,6 +18,7 @@ import { openApiDocument } from "./openapi.js";
 import { desktopUpdatesRouter } from "./desktopUpdates.js";
 import { workspaceRouter } from "./routes/workspace.js";
 import { httpMetricsMiddleware } from "./metrics.js";
+import { azureDevOpsRouter } from "./routes/azureDevOps.js";
 
 export function createApp() {
   const app = express();
@@ -51,6 +52,7 @@ export function createApp() {
   app.use("/api/admin", adminRouter);
   app.use("/api/saved", savedRouter);
   app.use("/api/webhooks", webhooksRouter);
+  app.use("/api/integrations/azure-devops", azureDevOpsRouter);
 
   // Keep the process alive and return a consistent JSON payload on crashes.
   app.use((err, _req, res, _next) => {

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Building2Icon, Code2Icon, PaletteIcon, UserRoundIcon } from "lucide-react";
+import { Building2Icon, Code2Icon, GitPullRequestIcon, PaletteIcon, UserRoundIcon } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { api } from "../api.js";
+import { api, getBackendUrl } from "../api.js";
 import Avatar from "./Avatar.js";
 import { MAX_DISPLAY_NAME_LENGTH } from "../lib/profile.js";
 import ApiDocsPage from "./ApiDocsPage.js";
@@ -24,8 +24,27 @@ const SETTINGS_TABS = [
   { id: "account", label: "Account", Icon: UserRoundIcon },
   { id: "appearance", label: "Appearance", Icon: PaletteIcon },
   { id: "workspace", label: "Workspace", Icon: Building2Icon, adminOnly: true },
+  { id: "integrations", label: "Integrations", Icon: GitPullRequestIcon, adminOnly: true },
   { id: "api", label: "API", Icon: Code2Icon },
 ];
+
+const AZURE_NOTIFY_OPTIONS = [
+  ["pullRequestCreated", "Pull request created"],
+  ["pullRequestTitleChanged", "Title changed"],
+  ["pullRequestCommented", "Comments"],
+  ["pullRequestApproved", "Approved"],
+  ["pullRequestApprovalReset", "Approval reset"],
+  ["pullRequestRejected", "Rejected"],
+  ["pullRequestCompleted", "Merged"],
+  ["pullRequestAbandoned", "Abandoned"],
+  ["pullRequestReactivated", "Reopened"],
+  ["buildValidationSucceeded", "Build passed"],
+  ["buildValidationFailed", "Build failed"],
+];
+
+function backendOrigin() {
+  return getBackendUrl() || (typeof window !== "undefined" ? window.location.origin : "");
+}
 
 // User settings: profile picture, display name, and a copyable API token.
 export default function SettingsModal({
@@ -51,6 +70,10 @@ export default function SettingsModal({
   const [workspaceName, setWorkspaceName] = useState(workspace.name ?? "Echo");
   const [workspaceLogoUrl, setWorkspaceLogoUrl] = useState(workspace.logoUrl || null);
   const [workspaceLogoFile, setWorkspaceLogoFile] = useState(null);
+  const [azureIntegration, setAzureIntegration] = useState(null);
+  const [azureEndpoint, setAzureEndpoint] = useState("");
+  const [azureLoading, setAzureLoading] = useState(false);
+  const [azureOptionsOpen, setAzureOptionsOpen] = useState(false);
   const workspaceLogoSrc = useAuthUrl(workspaceLogoUrl);
 
   const nameChanged = displayName.trim() !== user.displayName;
@@ -64,6 +87,22 @@ export default function SettingsModal({
     setWorkspaceName(workspace.name ?? "Echo");
     setWorkspaceLogoUrl(workspace.logoUrl || null);
   }, [workspace.name, workspace.logoUrl]);
+
+  useEffect(() => {
+    if (activeTab !== "integrations" || !user.isAdmin) return;
+    let cancelled = false;
+    setAzureLoading(true);
+    api.getAzureDevOpsIntegration()
+      .then(({ integrations = [] }) => {
+        if (cancelled) return;
+        const integration = integrations[0] || null;
+        setAzureIntegration(integration);
+        setAzureEndpoint(integration?.endpoint ? `${backendOrigin()}${integration.endpoint}` : "");
+      })
+      .catch((err) => !cancelled && setError(err.message))
+      .finally(() => !cancelled && setAzureLoading(false));
+    return () => { cancelled = true; };
+  }, [activeTab, user.isAdmin]);
 
   const visibleTabs = SETTINGS_TABS.filter((tab) => !tab.adminOnly || user.isAdmin);
 
@@ -187,6 +226,68 @@ export default function SettingsModal({
     }
   }
 
+  async function createAzureIntegration() {
+    setAzureLoading(true);
+    setError(null);
+    try {
+      const result = await api.createAzureDevOpsIntegration();
+      setAzureIntegration(result.integration);
+      setAzureEndpoint(`${backendOrigin()}${result.endpointPath}`);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setAzureLoading(false);
+    }
+  }
+
+  async function regenerateAzureToken() {
+    if (!azureIntegration) return;
+    setAzureLoading(true);
+    setError(null);
+    try {
+      const result = await api.regenerateAzureDevOpsToken(azureIntegration.id);
+      setAzureEndpoint(`${backendOrigin()}${result.endpoint}`);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setAzureLoading(false);
+    }
+  }
+
+  async function copyAzureEndpoint() {
+    if (!azureEndpoint) return;
+    await navigator.clipboard?.writeText(azureEndpoint);
+    flashSaved();
+  }
+
+  async function setAzureActive(active) {
+    if (!azureIntegration) return;
+    setAzureLoading(true);
+    setError(null);
+    try {
+      const { integration } = await api.updateAzureDevOpsIntegration(azureIntegration.id, { active });
+      setAzureIntegration(integration);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setAzureLoading(false);
+    }
+  }
+
+  async function setAzureNotification(key, enabled) {
+    if (!azureIntegration) return;
+    setAzureLoading(true);
+    setError(null);
+    try {
+      const { integration } = await api.updateAzureDevOpsIntegration(azureIntegration.id, { notify: { [key]: enabled } });
+      setAzureIntegration(integration);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setAzureLoading(false);
+    }
+  }
+
   return (
     <div className="settings-page" data-testid="settings-page">
       <div className="settings-layout">
@@ -285,6 +386,50 @@ export default function SettingsModal({
                 </div>
               </div>
             </div>
+          </section>}
+
+          {activeTab === "integrations" && user.isAdmin && <section className="integration-page">
+            <div className="integration-page-heading">
+              <div>
+                <h2>Integrations and connected apps</h2>
+                <p>Connect the tools your team uses every day.</p>
+              </div>
+            </div>
+            {azureLoading && !azureIntegration && <p className="settings-hint">Loading integration…</p>}
+            {!azureLoading && !azureIntegration && <button type="button" className="btn-primary" onClick={createAzureIntegration}>Enable Azure DevOps</button>}
+            {azureIntegration && <article className="integration-card">
+              <button type="button" className="integration-card-main" onClick={() => setAzureOptionsOpen(true)}>
+                <div className="integration-card-icon"><img src="/azure-devops-icon.svg" alt="" /></div>
+                <div className="integration-card-copy">
+                  <h3>Azure DevOps</h3>
+                  <span>dev.azure.com</span>
+                  <p>Bring pull requests, comments, approvals, and build status into Echo.</p>
+                </div>
+              </button>
+              <div className="integration-card-footer">
+                <button type="button" className="btn-secondary" onClick={() => setAzureOptionsOpen(true)}>View integration</button>
+                <label className={`integration-switch${azureIntegration.active ? " is-on" : ""}`}>
+                  <input type="checkbox" checked={!!azureIntegration.active} disabled={azureLoading} onChange={(event) => setAzureActive(event.target.checked)} />
+                  <span className="integration-switch-track"><span /></span>
+                  <span className="sr-only">{azureIntegration.active ? "Disable" : "Enable"} Azure DevOps</span>
+                </label>
+              </div>
+            </article>}
+            {azureOptionsOpen && azureIntegration && <div className="integration-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setAzureOptionsOpen(false); }}>
+              <section className="integration-dialog" role="dialog" aria-modal="true" aria-labelledby="azure-integration-title">
+                <div className="integration-dialog-header">
+                  <div className="integration-dialog-title"><img src="/azure-devops-icon.svg" alt="" /><div><h3 id="azure-integration-title">Azure DevOps</h3><p>Integration settings</p></div></div>
+                  <button type="button" className="settings-close" onClick={() => setAzureOptionsOpen(false)} aria-label="Close integration settings">✕</button>
+                </div>
+                <div className="integration-dialog-body">
+                  <div className="integration-option-row"><div><strong>Integration status</strong><span>{azureIntegration.active ? "Azure events are enabled" : "Azure events are disabled"}</span></div><label className={`integration-switch${azureIntegration.active ? " is-on" : ""}`}><input type="checkbox" checked={!!azureIntegration.active} disabled={azureLoading} onChange={(event) => setAzureActive(event.target.checked)} /><span className="integration-switch-track"><span /></span></label></div>
+                  <div className="integration-dialog-section"><h4>Webhook endpoint</h4><p className="settings-hint">Add this URL to an Azure DevOps Service Hook.</p><input id="azure-webhook-endpoint" className="settings-input" value={azureEndpoint} readOnly /><div className="integration-actions"><button type="button" className="btn-secondary" disabled={!azureEndpoint} onClick={copyAzureEndpoint}>Copy endpoint</button><button type="button" className="btn-secondary" disabled={azureLoading} onClick={regenerateAzureToken}>Regenerate token</button></div></div>
+                  <div className="integration-dialog-section"><h4>Events to send</h4><div className="integration-notify-grid">{AZURE_NOTIFY_OPTIONS.map(([key, label]) => <label key={key} className="integration-notify-option"><span>{label}</span><span className={`integration-switch integration-notify-switch${azureIntegration.notify?.[key] !== false ? " is-on" : ""}`}><input type="checkbox" checked={azureIntegration.notify?.[key] !== false} disabled={azureLoading || !azureIntegration.active} onChange={(event) => setAzureNotification(key, event.target.checked)} /><span className="integration-switch-track"><span /></span></span></label>)}</div></div>
+                  {azureIntegration.lastReceivedAt && <p className="settings-hint">Last event: {new Date(azureIntegration.lastReceivedAt).toLocaleString()}</p>}
+                  {azureIntegration.lastError && <p className="error">{azureIntegration.lastError}</p>}
+                </div>
+              </section>
+            </div>}
           </section>}
 
           {activeTab === "api" && <ApiDocsPage embedded />}

@@ -4,6 +4,10 @@ import { describe, it } from "node:test";
 import { User } from "./User.js";
 
 describe("User.toPublicJSON", () => {
+  it("exposes built-in avatar overrides", () => {
+    const user = new User({ username: "azure", displayName: "Azure", passwordHash: "x", avatarUrlOverride: "/azure-devops-icon.svg" });
+    assert.equal(user.toPublicJSON().avatarUrl, "/azure-devops-icon.svg");
+  });
   it("serializes public user fields and hides sensitive data", () => {
     const user = new User({
       username: "alice",

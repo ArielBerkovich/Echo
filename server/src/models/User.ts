@@ -28,6 +28,8 @@ const userSchema = new mongoose.Schema(
     migratedAt: { type: Date, default: null },
     // Object-storage key for the user's uploaded profile picture (optional).
     avatarKey: { type: String, default: null },
+    // Built-in avatar asset used by service identities such as Azure DevOps.
+    avatarUrlOverride: { type: String, default: null },
     // The first registered user becomes the workspace admin.
     isAdmin: { type: Boolean, default: false },
     // Set when an admin issues a one-time password; the user must choose a new
@@ -59,7 +61,7 @@ userSchema.methods.toPublicJSON = function () {
     id: this._id.toString(),
     username: this.username,
     displayName: this.displayName,
-    avatarUrl: this.avatarKey ? `/api/files/${this.avatarKey}` : null,
+    avatarUrl: this.avatarUrlOverride || (this.avatarKey ? `/api/files/${this.avatarKey}` : null),
     isAdmin: !!this.isAdmin,
     mustResetPassword: !!this.mustResetPassword,
     onboarded: !!this.onboarded,

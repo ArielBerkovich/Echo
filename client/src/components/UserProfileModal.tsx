@@ -22,10 +22,12 @@ export default function UserProfileModal({ user, currentUserId, online, isStarre
         <Avatar name={user.displayName} src={user.avatarUrl} size={96} />
         <div className="profile-name" dir="auto">{user.displayName}</div>
         <div className="profile-handle">@{user.username}</div>
-        <div className={`profile-presence ${online ? "online" : ""}`} data-testid="profile-presence">
-          <span className="profile-dot" />
-          {online ? "Active" : "Away"}
-        </div>
+        {!(["azure", "system"].includes(user.username)) && (
+          <div className={`profile-presence ${online ? "online" : ""}`} data-testid="profile-presence">
+            <span className="profile-dot" />
+            {online ? "Active" : "Away"}
+          </div>
+        )}
       </div>
       {!isSelf && (
         <div className="profile-actions">

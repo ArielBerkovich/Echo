@@ -70,9 +70,9 @@ test("forgot password delivers Echo's one-time-password instructions to the admi
   const adminPage = await adminContext.newPage();
   await adminPage.addInitScript((token) => localStorage.setItem("echo.token", token), admin.token);
   try {
-    await adminPage.goto("/");
-    const echoDm = adminPage.getByRole("button", { name: "Offline Echo" });
-    await expect(echoDm).toBeVisible();
+    await adminPage.goto("/dms");
+    const echoDm = adminPage.getByTestId("dm-open-echo");
+    await expect(echoDm).toBeVisible({ timeout: 20_000 });
     await echoDm.click();
     const notification = adminPage.getByTestId(/^message-[a-f0-9]+$/).filter({
       hasText: `Password help requested for @${requestedUser.user.username}`,

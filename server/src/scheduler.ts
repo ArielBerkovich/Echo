@@ -1,6 +1,7 @@
 import { ScheduledMessage } from "./models/ScheduledMessage.js";
 import { canPostToChannel, Channel } from "./models/Channel.js";
 import { deliverMessage } from "./deliver.js";
+import { retryPendingAzureDevOpsEvents } from "./azureDevOps.js";
 
 const TICK_MS = Math.max(250, Number(process.env.SCHEDULER_TICK_MS) || 15000); // check for due messages on a fixed cadence
 const LEASE_MS = Math.max(TICK_MS * 2, 60_000);
@@ -58,6 +59,7 @@ export function startScheduler() {
     running = true;
     try {
       await dispatchDue();
+      await retryPendingAzureDevOpsEvents();
     } catch (err) {
       console.error("scheduler tick error:", err.message);
     } finally {
