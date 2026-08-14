@@ -265,10 +265,11 @@ export default function ChannelView({
         }
         setMessages((prev) => [...prev, msg]);
       }
-      // Stay read while viewing — but only for the main timeline. A thread
-      // reply isn't visible here (it's behind the "N replies" link), so it
-      // must not mark the channel read; it's read when its thread is opened.
-      if (!msg.parentId && msg.author?.id !== user.id) {
+      // Stay read while viewing. Thread replies aren't visible in the main
+      // timeline, so channel replies remain separate Activity items. For DMs,
+      // however, the conversation itself was being viewed and must not become
+      // unread when we navigate away after a reply arrives.
+      if ((!msg.parentId || channel.type === "dm") && msg.author?.id !== user.id) {
         onRead?.(channel.id);
       }
     };
