@@ -4664,7 +4664,6 @@ html[data-mode="dark"] .day-divider-label {
   color: var(--muted);
   font-size: 14px;
 }
-.integration-divider { height: 1px; width: min(100%, 430px); margin: 24px 0; background: var(--border); }
 .integration-card {
   width: min(100%, 430px);
   overflow: hidden;

@@ -19,7 +19,6 @@ import { desktopUpdatesRouter } from "./desktopUpdates.js";
 import { workspaceRouter } from "./routes/workspace.js";
 import { httpMetricsMiddleware } from "./metrics.js";
 import { azureDevOpsRouter } from "./routes/azureDevOps.js";
-import { jenkinsRouter } from "./routes/jenkins.js";
 
 export function createApp() {
   const app = express();
@@ -54,7 +53,6 @@ export function createApp() {
   app.use("/api/saved", savedRouter);
   app.use("/api/webhooks", webhooksRouter);
   app.use("/api/integrations/azure-devops", azureDevOpsRouter);
-  app.use("/api/integrations/jenkins", jenkinsRouter);
 
   // Keep the process alive and return a consistent JSON payload on crashes.
   app.use((err, _req, res, _next) => {

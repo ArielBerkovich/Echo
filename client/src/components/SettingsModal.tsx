@@ -11,7 +11,6 @@ import { PASSWORD_RULE } from "../lib/password.js";
 import { passwordPairSchema } from "../lib/formSchemas.js";
 import { uploadSizeError } from "../lib/uploads.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
-import { filterJenkinsChannels } from "../lib/jenkins.js";
 import {
   notifySupported,
   notifyPermission,
@@ -42,14 +41,6 @@ const AZURE_NOTIFY_OPTIONS = [
   ["buildValidationSucceeded", "Build passed"],
   ["buildValidationFailed", "Build failed"],
 ];
-const JENKINS_NOTIFY_OPTIONS = [
-  ["buildStarted", "Build started"],
-  ["buildSucceeded", "Build passed"],
-  ["buildFailed", "Build failed"],
-  ["buildUnstable", "Build unstable"],
-  ["buildAborted", "Build aborted"],
-];
-
 function backendOrigin() {
   return getBackendUrl() || (typeof window !== "undefined" ? window.location.origin : "");
 }
@@ -82,12 +73,6 @@ export default function SettingsModal({
   const [azureEndpoint, setAzureEndpoint] = useState("");
   const [azureLoading, setAzureLoading] = useState(false);
   const [azureOptionsOpen, setAzureOptionsOpen] = useState(false);
-  const [jenkinsIntegration, setJenkinsIntegration] = useState(null);
-  const [jenkinsEndpoint, setJenkinsEndpoint] = useState("");
-  const [jenkinsLoading, setJenkinsLoading] = useState(false);
-  const [jenkinsOptionsOpen, setJenkinsOptionsOpen] = useState(false);
-  const [jenkinsChannels, setJenkinsChannels] = useState([]);
-  const [jenkinsChannelFilter, setJenkinsChannelFilter] = useState("");
   const workspaceLogoSrc = useAuthUrl(workspaceLogoUrl);
 
   const nameChanged = displayName.trim() !== user.displayName;
@@ -115,19 +100,6 @@ export default function SettingsModal({
       })
       .catch((err) => !cancelled && setError(err.message))
       .finally(() => !cancelled && setAzureLoading(false));
-    setJenkinsLoading(true);
-    api.getJenkinsIntegration()
-      .then(({ integrations = [] }) => {
-        if (cancelled) return;
-        const integration = integrations[0] || null;
-        setJenkinsIntegration(integration);
-        setJenkinsEndpoint(integration?.endpoint ? `${backendOrigin()}${integration.endpoint}` : "");
-      })
-      .catch((err) => !cancelled && setError(err.message))
-      .finally(() => !cancelled && setJenkinsLoading(false));
-    api.listAllChannels()
-      .then(({ channels = [] }) => !cancelled && setJenkinsChannels(channels.filter((channel) => channel.type === "public" && !channel.isArchived)))
-      .catch((err) => !cancelled && setError(err.message));
     return () => { cancelled = true; };
   }, [activeTab, user.isAdmin]);
 
@@ -315,36 +287,6 @@ export default function SettingsModal({
     }
   }
 
-  async function createJenkinsIntegration() {
-    setJenkinsLoading(true); setError(null);
-    try { const result = await api.createJenkinsIntegration(); setJenkinsIntegration(result.integration); setJenkinsEndpoint(`${backendOrigin()}${result.endpointPath}`); }
-    catch (err) { setError(err.message); } finally { setJenkinsLoading(false); }
-  }
-  async function regenerateJenkinsToken() {
-    if (!jenkinsIntegration) return;
-    setJenkinsLoading(true); setError(null);
-    try { const result = await api.regenerateJenkinsToken(jenkinsIntegration.id); setJenkinsEndpoint(`${backendOrigin()}${result.endpoint}`); }
-    catch (err) { setError(err.message); } finally { setJenkinsLoading(false); }
-  }
-  async function setJenkinsActive(active) {
-    if (!jenkinsIntegration) return;
-    setJenkinsLoading(true); setError(null);
-    try { const { integration } = await api.updateJenkinsIntegration(jenkinsIntegration.id, { active }); setJenkinsIntegration(integration); }
-    catch (err) { setError(err.message); } finally { setJenkinsLoading(false); }
-  }
-  async function setJenkinsNotification(key, enabled) {
-    if (!jenkinsIntegration) return;
-    setJenkinsLoading(true); setError(null);
-    try { const { integration } = await api.updateJenkinsIntegration(jenkinsIntegration.id, { notify: { [key]: enabled } }); setJenkinsIntegration(integration); }
-    catch (err) { setError(err.message); } finally { setJenkinsLoading(false); }
-  }
-  async function setJenkinsChannel(channelId) {
-    if (!jenkinsIntegration || !channelId) return;
-    setJenkinsLoading(true); setError(null);
-    try { const { integration } = await api.updateJenkinsIntegration(jenkinsIntegration.id, { channelId }); setJenkinsIntegration(integration); }
-    catch (err) { setError(err.message); } finally { setJenkinsLoading(false); }
-  }
-
   return (
     <div className="settings-page" data-testid="settings-page">
       <div className="settings-layout">
@@ -484,30 +426,6 @@ export default function SettingsModal({
                   <div className="integration-dialog-section"><h4>Events to send</h4><div className="integration-notify-grid">{AZURE_NOTIFY_OPTIONS.map(([key, label]) => <label key={key} className="integration-notify-option"><span>{label}</span><span className={`integration-switch integration-notify-switch${azureIntegration.notify?.[key] !== false ? " is-on" : ""}`}><input type="checkbox" checked={azureIntegration.notify?.[key] !== false} disabled={azureLoading || !azureIntegration.active} onChange={(event) => setAzureNotification(key, event.target.checked)} /><span className="integration-switch-track"><span /></span></span></label>)}</div></div>
                   {azureIntegration.lastReceivedAt && <p className="settings-hint">Last event: {new Date(azureIntegration.lastReceivedAt).toLocaleString()}</p>}
                   {azureIntegration.lastError && <p className="error">{azureIntegration.lastError}</p>}
-                </div>
-              </section>
-            </div>}
-            <div className="integration-divider" />
-            {jenkinsLoading && !jenkinsIntegration && <p className="settings-hint">Loading Jenkins integration…</p>}
-            {!jenkinsLoading && !jenkinsIntegration && <button type="button" className="btn-primary" onClick={createJenkinsIntegration}>Enable Jenkins</button>}
-            {jenkinsIntegration && <article className="integration-card">
-              <button type="button" className="integration-card-main" onClick={() => setJenkinsOptionsOpen(true)}>
-                <div className="integration-card-icon"><img src="/jenkins-icon.svg" alt="" /></div>
-                <div className="integration-card-copy"><h3>Jenkins</h3><span>localhost:8080</span><p>Bring build status from Jenkins into Echo.</p></div>
-              </button>
-              <div className="integration-card-footer"><button type="button" className="btn-secondary" onClick={() => setJenkinsOptionsOpen(true)}>View integration</button><label className={`integration-switch${jenkinsIntegration.active ? " is-on" : ""}`}><input type="checkbox" checked={!!jenkinsIntegration.active} disabled={jenkinsLoading} onChange={(event) => setJenkinsActive(event.target.checked)} /><span className="integration-switch-track"><span /></span><span className="sr-only">{jenkinsIntegration.active ? "Disable" : "Enable"} Jenkins</span></label></div>
-            </article>}
-            {jenkinsOptionsOpen && jenkinsIntegration && <div className="integration-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setJenkinsOptionsOpen(false); }}>
-              <section className="integration-dialog" role="dialog" aria-modal="true" aria-labelledby="jenkins-integration-title">
-                <div className="integration-dialog-header"><div className="integration-dialog-title"><img src="/jenkins-icon.svg" alt="" /><div><h3 id="jenkins-integration-title">Jenkins</h3><p>Integration settings</p></div></div><button type="button" className="settings-close" onClick={() => setJenkinsOptionsOpen(false)} aria-label="Close Jenkins integration settings">✕</button></div>
-                <div className="integration-dialog-body">
-                  <div className="integration-option-row"><div><strong>Integration status</strong><span>{jenkinsIntegration.active ? "Jenkins events are enabled" : "Jenkins events are disabled"}</span></div><label className={`integration-switch${jenkinsIntegration.active ? " is-on" : ""}`}><input type="checkbox" checked={!!jenkinsIntegration.active} disabled={jenkinsLoading} onChange={(event) => setJenkinsActive(event.target.checked)} /><span className="integration-switch-track"><span /></span></label></div>
-                  <div className="integration-dialog-section"><h4>Webhook endpoint</h4><p className="settings-hint">Add this URL to a Jenkins webhook notification.</p><input id="jenkins-webhook-endpoint" className="settings-input" value={jenkinsEndpoint} readOnly /><div className="integration-actions"><button type="button" className="btn-secondary" disabled={!jenkinsEndpoint} onClick={async () => { await navigator.clipboard?.writeText(jenkinsEndpoint); flashSaved(); }}>Copy endpoint</button><button type="button" className="btn-secondary" disabled={jenkinsLoading} onClick={regenerateJenkinsToken}>Regenerate token</button></div></div>
-                  <div className="integration-dialog-section"><h4>Destination channel</h4><p className="settings-hint">Post Jenkins build notifications to a shared Echo channel, like Slack.</p><input className="settings-input" type="search" value={jenkinsChannelFilter} placeholder="Filter public channels" aria-label="Filter public channels" onChange={(event) => setJenkinsChannelFilter(event.target.value)} /><select className="settings-input" value={jenkinsIntegration.channelId || ""} disabled={jenkinsLoading || !jenkinsChannels.length} onChange={(event) => setJenkinsChannel(event.target.value)}><option value="" disabled>Select a public channel</option>{filterJenkinsChannels(jenkinsChannels, jenkinsChannelFilter, jenkinsIntegration.channelId).map((channel) => <option key={channel.id} value={channel.id}>#{channel.name}</option>)}</select>{jenkinsChannels.length > 0 && !filterJenkinsChannels(jenkinsChannels, jenkinsChannelFilter).length && <p className="settings-hint">No public channels match this filter.</p>}</div>
-                  <div className="integration-dialog-section"><h4>Events to send</h4><div className="integration-notify-grid">{JENKINS_NOTIFY_OPTIONS.map(([key, label]) => <label key={key} className="integration-notify-option"><span>{label}</span><span className={`integration-switch integration-notify-switch${jenkinsIntegration.notify?.[key] !== false ? " is-on" : ""}`}><input type="checkbox" checked={jenkinsIntegration.notify?.[key] !== false} disabled={jenkinsLoading || !jenkinsIntegration.active} onChange={(event) => setJenkinsNotification(key, event.target.checked)} /><span className="integration-switch-track"><span /></span></span></label>)}</div></div>
-                  <p className="settings-hint">Jenkins posts build notifications to the selected public Echo channel.</p>
-                  {jenkinsIntegration.lastReceivedAt && <p className="settings-hint">Last event: {new Date(jenkinsIntegration.lastReceivedAt).toLocaleString()}</p>}
-                  {jenkinsIntegration.lastError && <p className="error">{jenkinsIntegration.lastError}</p>}
                 </div>
               </section>
             </div>}
