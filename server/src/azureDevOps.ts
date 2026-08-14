@@ -7,7 +7,9 @@ import { ensureDmChannel } from "./lib/dms.js";
 import { deliverMessage } from "./deliver.js";
 import { emitToChannel } from "./realtime.js";
 
-const AZURE_USERNAME = "azure";
+const AZURE_USERNAME = "azure-bot";
+const AZURE_LEGACY_USERNAME = "azure";
+const AZURE_DISPLAY_NAME = "azure bot";
 
 export function rootReaction(kind) {
   if (kind === "pullRequestAbandoned" || kind === "pullRequestRejected") return ":git-pull-request-closed:";
@@ -118,15 +120,17 @@ export function decryptAzureDevOpsToken(value) {
 
 async function ensureAzureUser() {
   let user = await User.findOne({ username: AZURE_USERNAME });
+  if (!user) user = await User.findOne({ username: AZURE_LEGACY_USERNAME });
   if (!user) {
     user = await User.create({
       username: AZURE_USERNAME,
-      displayName: "Azure",
+      displayName: AZURE_DISPLAY_NAME,
       passwordHash: "x",
       avatarUrlOverride: "/azure-devops-icon.svg",
     });
-  } else if (user.displayName !== "Azure" || user.avatarUrlOverride !== "/azure-devops-icon.svg") {
-    user.displayName = "Azure";
+  } else if (user.username !== AZURE_USERNAME || user.displayName !== AZURE_DISPLAY_NAME || user.avatarUrlOverride !== "/azure-devops-icon.svg") {
+    user.username = AZURE_USERNAME;
+    user.displayName = AZURE_DISPLAY_NAME;
     user.avatarUrlOverride = "/azure-devops-icon.svg";
     await user.save();
   }

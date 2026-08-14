@@ -5,7 +5,9 @@ import { User } from "./models/User.js";
 import { Channel } from "./models/Channel.js";
 import { deliverMessage } from "./deliver.js";
 
-const JENKINS_USERNAME = "jenkins";
+const JENKINS_USERNAME = "jenkins-bot";
+const JENKINS_LEGACY_USERNAME = "jenkins";
+const JENKINS_DISPLAY_NAME = "jenkins bot";
 
 export const JENKINS_NOTIFY_KEYS = ["buildStarted", "buildSucceeded", "buildFailed", "buildUnstable", "buildAborted"];
 
@@ -43,8 +45,9 @@ export function messageBody(kind, payload) {
 
 async function ensureJenkinsUser() {
   let user = await User.findOne({ username: JENKINS_USERNAME });
-  if (!user) user = await User.create({ username: JENKINS_USERNAME, displayName: "Jenkins", passwordHash: "x", avatarUrlOverride: "/jenkins-icon.svg" });
-  else if (user.displayName !== "Jenkins" || user.avatarUrlOverride !== "/jenkins-icon.svg") { user.displayName = "Jenkins"; user.avatarUrlOverride = "/jenkins-icon.svg"; await user.save(); }
+  if (!user) user = await User.findOne({ username: JENKINS_LEGACY_USERNAME });
+  if (!user) user = await User.create({ username: JENKINS_USERNAME, displayName: JENKINS_DISPLAY_NAME, passwordHash: "x", avatarUrlOverride: "/jenkins-icon.svg" });
+  else if (user.username !== JENKINS_USERNAME || user.displayName !== JENKINS_DISPLAY_NAME || user.avatarUrlOverride !== "/jenkins-icon.svg") { user.username = JENKINS_USERNAME; user.displayName = JENKINS_DISPLAY_NAME; user.avatarUrlOverride = "/jenkins-icon.svg"; await user.save(); }
   return user;
 }
 

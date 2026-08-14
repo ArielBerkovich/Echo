@@ -5,7 +5,7 @@ import { User } from "./User.js";
 
 describe("User.toPublicJSON", () => {
   it("exposes built-in avatar overrides", () => {
-    const user = new User({ username: "azure", displayName: "Azure", passwordHash: "x", avatarUrlOverride: "/azure-devops-icon.svg" });
+    const user = new User({ username: "azure-bot", displayName: "azure bot", passwordHash: "x", avatarUrlOverride: "/azure-devops-icon.svg" });
     assert.equal(user.toPublicJSON().avatarUrl, "/azure-devops-icon.svg");
   });
   it("serializes public user fields and hides sensitive data", () => {
