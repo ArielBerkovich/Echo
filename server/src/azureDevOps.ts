@@ -10,21 +10,22 @@ import { emitToChannel } from "./realtime.js";
 const AZURE_USERNAME = "azure";
 
 export function rootReaction(kind) {
-  if (kind === "pullRequestCreated" || kind === "pullRequestReactivated") return ":git-pull-request:";
   if (kind === "pullRequestAbandoned" || kind === "pullRequestRejected") return ":git-pull-request-closed:";
   if (kind === "pullRequestCompleted") return ":merged:";
   if (kind === "pullRequestApproved") return "👍";
+  if (kind === "pullRequestCommented") return "📝";
   if (kind === "buildValidationSucceeded") return "✅";
   if (kind === "buildValidationFailed") return "❌";
   return null;
 }
 
 function rootReactionGroup(kind) {
-  if (["pullRequestApproved", "pullRequestApprovalReset"].includes(kind)) return ["👍"];
-  if (["buildValidationSucceeded", "buildValidationFailed"].includes(kind)) return ["✅", "❌"];
-  if (["pullRequestCreated", "pullRequestReactivated", "pullRequestAbandoned", "pullRequestRejected", "pullRequestCompleted"].includes(kind)) {
-    return [":git-pull-request:", ":git-pull-request-closed:", ":merged:"];
+  if (["pullRequestApproved", "pullRequestApprovalReset", "pullRequestRejected", "pullRequestAbandoned", "pullRequestReactivated", "pullRequestCompleted"].includes(kind)) {
+    return ["👍", ":git-pull-request:", ":git-pull-request-closed:", ":merged:"];
   }
+  if (["buildValidationSucceeded", "buildValidationFailed"].includes(kind)) return ["✅", "❌"];
+  if (kind === "pullRequestCommented") return ["📝"];
+  if (kind === "pullRequestCreated") return ["👍", ":git-pull-request:", ":git-pull-request-closed:", ":merged:"];
   return null;
 }
 
@@ -32,21 +33,48 @@ async function syncRootReaction(messageId, azureUserId, kind) {
   const desired = rootReaction(kind);
   const group = rootReactionGroup(kind);
   if (!group) return null;
-  const message = await Message.findById(messageId);
+  const reactionMap = {
+    $map: {
+      input: { $ifNull: ["$reactions", []] },
+      as: "reaction",
+      in: {
+        $cond: [
+          { $in: ["$$reaction.emoji", group] },
+          {
+            $mergeObjects: [
+              "$$reaction",
+              { users: { $filter: { input: "$$reaction.users", as: "user", cond: { $ne: ["$$user", azureUserId] } } } },
+            ],
+          },
+          "$$reaction",
+        ],
+      },
+    },
+  };
+  const pipeline = [
+    { $set: { reactions: reactionMap } },
+    { $set: { reactions: { $filter: { input: "$reactions", as: "reaction", cond: { $gt: [{ $size: "$$reaction.users" }, 0] } } } } },
+  ];
+  if (desired) {
+    pipeline.push({
+      $set: {
+        reactions: {
+          $let: {
+            vars: { matches: { $filter: { input: "$reactions", as: "reaction", cond: { $eq: ["$$reaction.emoji", desired] } } } },
+            in: {
+              $cond: [
+                { $gt: [{ $size: "$$matches" }, 0] },
+                { $map: { input: "$reactions", as: "reaction", in: { $cond: [{ $eq: ["$$reaction.emoji", desired] }, { $mergeObjects: ["$$reaction", { users: { $setUnion: ["$$reaction.users", [azureUserId]] } }] }, "$$reaction"] } } },
+                { $concatArrays: ["$reactions", [{ emoji: desired, users: [azureUserId] }]] },
+              ],
+            },
+          },
+        },
+      },
+    });
+  }
+  const message = await Message.findOneAndUpdate({ _id: messageId }, pipeline, { new: true });
   if (!message) return null;
-  const controlled = new Set(group);
-  for (const reaction of message.reactions) {
-    if (!controlled.has(reaction.emoji)) continue;
-    reaction.users = reaction.users.filter((userId) => !userId.equals(azureUserId));
-  }
-  let entry = message.reactions.find((reaction) => reaction.emoji === desired);
-  if (!entry) {
-    message.reactions.push({ emoji: desired, users: [azureUserId] });
-  } else if (!entry.users.some((userId) => userId.equals(azureUserId))) {
-    entry.users.push(azureUserId);
-  }
-  message.reactions = message.reactions.filter((reaction) => reaction.users.length > 0);
-  await message.save();
   emitToChannel(message.channel.toString(), "message:reaction", {
     messageId: message._id.toString(),
     reactions: message.reactions.map((reaction) => ({
@@ -123,7 +151,7 @@ function resource(payload) {
 }
 
 function identityFor(value) {
-  return value?.pullRequest?.createdBy || value?.createdBy || value?.requestedFor || value?.requestedBy || null;
+  return value?.pullRequest?.createdBy || value?.pullRequest?.pullRequest?.createdBy || value?.createdBy || value?.requestedFor || value?.requestedBy || null;
 }
 
 function usernameCandidates(identity) {
@@ -148,11 +176,20 @@ async function resolveRecipient(identity) {
 }
 
 function repositoryName(value) {
-  return clean(value?.repository?.name || value?.repository?.project?.name, 160) || "repository";
+  const repository = value?.repository || value?.pullRequest?.repository || value?.pullRequest?.pullRequest?.repository;
+  return clean(repository?.name || repository?.project?.name, 160) || "repository";
 }
 
 function pullRequestNumber(value) {
-  return value?.pullRequestId ?? value?.pullrequestId ?? value?.pullRequest?.pullRequestId ?? buildPullRequestNumber(value);
+  return value?.pullRequestId ?? value?.pullrequestId ?? value?.pullRequest?.pullRequestId ?? value?.pullRequest?.pullrequestId ?? value?.pullRequest?.id ?? value?.pullRequest?.pullRequest?.pullRequestId ?? buildPullRequestNumber(value);
+}
+
+function pullRequestNumberFromPayload(payload) {
+  const text = [payload?.message?.text, payload?.message?.markdown, payload?.detailedMessage?.text, payload?.detailedMessage?.markdown]
+    .filter(Boolean)
+    .join(" ");
+  const match = text.match(/pullrequest\/(\d+)/i);
+  return match ? Number(match[1]) : null;
 }
 
 function buildPullRequestNumber(value) {
@@ -161,11 +198,19 @@ function buildPullRequestNumber(value) {
 }
 
 function webLink(value) {
-  return clean(value?._links?.web?.href || value?.url || value?.remoteUrl, 1000);
+  return clean(
+    value?._links?.web?.href ||
+      value?.pullRequest?._links?.web?.href ||
+      value?.pullRequest?.pullRequest?._links?.web?.href ||
+      value?._links?.pullRequests?.href ||
+      value?.url ||
+      value?.remoteUrl,
+    1000
+  );
 }
 
 function title(value) {
-  return clean(value?.title || value?.definition?.name || value?.buildNumber, 200) || "Untitled";
+  return clean(value?.title || value?.pullRequest?.title || value?.pullRequest?.pullRequest?.title || value?.definition?.name || value?.buildNumber, 200) || "Untitled";
 }
 
 function buildResult(value) {
@@ -173,7 +218,24 @@ function buildResult(value) {
 }
 
 function reviewers(value) {
-  return value?.reviewers || value?.pullRequest?.reviewers;
+  return value?.reviewers || value?.pullRequest?.reviewers || value?.pullRequest?.pullRequest?.reviewers;
+}
+
+function approvedBy(value) {
+  const reviewer = reviewers(value)?.find((item) => Number(item?.vote) >= 10);
+  return clean(reviewer?.displayName || reviewer?.identity?.displayName || reviewer?.uniqueName, 160);
+}
+
+function isTitleChange(payload) {
+  if (eventType(payload) !== "git.pullrequest.updated") return false;
+  const text = eventMessage(payload);
+  if (/approved|rejected|voted|reviewer|approval/.test(text)) return false;
+  const value = resource(payload);
+  return /title\s+changed|changed.*title|renamed\s+pull\s+request|updated\s+pull\s+request/.test(text) || /title\s+changed/i.test(String(value?.changeType || value?.notificationType || ""));
+}
+
+function hasReviewerAction(payload) {
+  return /approved|rejected|voted|reviewer|approval/.test(eventMessage(payload));
 }
 
 function approvalStatus(payload) {
@@ -195,7 +257,8 @@ export function notificationKind(payload) {
     if (status === "completed") return "pullRequestCompleted";
     if (status === "abandoned") return "pullRequestAbandoned";
     if (type === "git.pullrequest.updated") {
-      const status = approvalStatus({ eventType: type, resource: value });
+      if (isTitleChange(payload)) return "pullRequestTitleChanged";
+      const status = (!eventMessage(payload) || hasReviewerAction(payload)) ? approvalStatus({ eventType: type, resource: value }) : null;
       if (status === "approved") return "pullRequestApproved";
       if (status === "rejected") return "pullRequestRejected";
       if (status === "reset") return "pullRequestApprovalReset";
@@ -212,10 +275,18 @@ export function notificationKind(payload) {
   return null;
 }
 
-function eventKey(payload, kind) {
+export function eventKey(payload, kind, prNumber = null) {
   const value = resource(payload);
   const commentId = value?.comment?.id || value?.comment?.commentId || "";
   const commentText = value?.comment?.content || value?.comment?.text || value?.content || "";
+  const buildId = value?.id || value?.buildId || value?.buildNumber || "";
+  if (prNumber && kind === "pullRequestTitleChanged") return `semantic:${kind}:${prNumber}:${title(value)}`;
+  if (prNumber && ["pullRequestCreated", "pullRequestApproved", "pullRequestApprovalReset", "pullRequestRejected", "pullRequestAbandoned", "pullRequestReactivated", "pullRequestCompleted"].includes(kind)) {
+    return `semantic:${kind}:${prNumber}`;
+  }
+  if (prNumber && ["buildValidationSucceeded", "buildValidationFailed"].includes(kind)) {
+    return `semantic:${kind}:${prNumber}:${buildId || buildResult(value)}`;
+  }
   return clean(
     payload?.id ||
       payload?.notificationId ||
@@ -231,9 +302,10 @@ export function messageBody(kind, value) {
   const link = webLink(value);
   const suffix = link ? "\n[Open in Azure DevOps](" + link + ")" : "";
   const comment = clean(value?.comment?.content || value?.comment?.text || value?.content, 2000);
-  if (kind === "pullRequestCreated") return ":git-pull-request: Pull request created\n**" + repo + "**" + (number ? " · PR #" + number : "") + "\n**" + label + "**" + suffix;
-  if (kind === "pullRequestApproved") return "👍 Pull request approved in **" + repo + "**" + (number ? " (#" + number + ")" : "") + ": **" + label + "**" + suffix;
+  if (kind === "pullRequestCreated") return ":git-pull-request: Pull request created\nRepository: **" + repo + "**" + (number ? " · PR #" + number : "") + "\nTitle: **" + label + "**" + suffix;
+  if (kind === "pullRequestApproved") return "👍 Pull request approved in **" + repo + "**" + (number ? " (#" + number + ")" : "") + ": **" + label + "**" + (approvedBy(value) ? "\nApproved by: **" + approvedBy(value) + "**" : "") + suffix;
   if (kind === "pullRequestApprovalReset") return "🔄 Approval reset";
+  if (kind === "pullRequestTitleChanged") return "✏️ Pull request title changed\nNew title: **" + label + "**" + suffix;
   if (kind === "pullRequestRejected") return ":git-pull-request-closed: Pull request rejected in **" + repo + "**" + (number ? " (#" + number + ")" : "") + ": **" + label + "**" + suffix;
   if (kind === "pullRequestCommented") return "📝 New pull request comment in **" + repo + "**" + (number ? " (#" + number + ")" : "") + (comment ? "\n\n> " + comment.replace(/\n/g, "\n> ") : "") + suffix;
   if (kind === "pullRequestCompleted") return ":merged: Pull request merged in **" + repo + "**" + (number ? " (#" + number + ")" : "") + ": **" + label + "**" + suffix;
@@ -244,13 +316,45 @@ export function messageBody(kind, value) {
 }
 
 const PROCESSING_LEASE_MS = 5 * 60 * 1000;
+const RETRY_WINDOW_MS = 60 * 1000;
+const RETRY_DELAYS_MS = [5_000, 15_000, 30_000];
+
+function pendingRetryAt(createdAt, attempts) {
+  const age = Date.now() - new Date(createdAt || Date.now()).getTime();
+  if (age >= RETRY_WINDOW_MS) return null;
+  const index = Math.min(Math.max(Number(attempts || 1) - 1, 0), RETRY_DELAYS_MS.length - 1);
+  return new Date(Date.now() + RETRY_DELAYS_MS[index]);
+}
+
+async function deferAzureEvent(event, payload, reason) {
+  const retryAt = pendingRetryAt(event.createdAt, event.attempts);
+  await AzureDevOpsEvent.updateOne(
+    { _id: event._id },
+    { $set: { status: retryAt ? "pending" : "unmatched", payload: retryAt ? payload : null, nextRetryAt: retryAt, lastError: reason, processedAt: new Date() } }
+  );
+  return retryAt ? { pending: true, retryAt } : { ignored: true, reason };
+}
+
+export async function retryPendingAzureDevOpsEvents() {
+  const pending = await AzureDevOpsEvent.find({ status: "pending", nextRetryAt: { $lte: new Date() }, payload: { $ne: null } }).limit(50);
+  for (const event of pending) {
+    const integration = await AzureDevOpsIntegration.findById(event.integration);
+    if (!integration?.active) continue;
+    try {
+      await processAzureDevOpsEvent(integration, event.payload);
+    } catch (error) {
+      console.error("Azure pending event retry failed:", error?.message || error);
+    }
+  }
+}
 
 export async function processAzureDevOpsEvent(integration, payload) {
   let kind = notificationKind(payload);
   const value = resource(payload);
-  const prNumber = pullRequestNumber(value) || buildPullRequestNumber(value);
+  const prNumber = pullRequestNumber(value) || buildPullRequestNumber(value) || pullRequestNumberFromPayload(payload);
   const currentApprovalStatus = approvalStatus(payload);
-  if (!kind && prNumber && eventType(payload) === "git.pullrequest.updated" && String(value.status || "").toLowerCase() === "active" && /reactivat|reopen/.test(eventMessage(payload))) {
+  const isActiveReactivation = prNumber && eventType(payload) === "git.pullrequest.updated" && String(value.status || "").toLowerCase() === "active" && /reactivat|reopen/.test(eventMessage(payload));
+  if (isActiveReactivation) {
     kind = "pullRequestReactivated";
   }
   if (!kind && prNumber && eventType(payload) === "git.pullrequest.updated" && String(value.status || "").toLowerCase() === "active") {
@@ -263,7 +367,7 @@ export async function processAzureDevOpsEvent(integration, payload) {
   }
   if (!kind) return { ignored: true, reason: "unsupported event" };
 
-  const key = eventKey(payload, kind);
+  const key = eventKey(payload, kind, prNumber);
   if (!key) return { ignored: true, reason: "missing event id" };
   let event;
   try {
@@ -272,6 +376,7 @@ export async function processAzureDevOpsEvent(integration, payload) {
       eventKey: key,
       eventType: eventType(payload),
       notificationKind: kind,
+      payload,
       approvalState: currentApprovalStatus === null ? null : currentApprovalStatus === "approved",
       approvalStatus: currentApprovalStatus,
     });
@@ -282,11 +387,11 @@ export async function processAzureDevOpsEvent(integration, payload) {
       const status = event.status || "delivered"; // Legacy records predate event states.
       const updatedAt = new Date(event.updatedAt || event.createdAt).getTime();
       const stale = Date.now() - updatedAt >= PROCESSING_LEASE_MS;
-      if (!["failed", "unmatched"].includes(status) && !(status === "processing" && stale)) {
+      if (!["failed", "unmatched", "pending"].includes(status) && !(status === "processing" && stale)) {
         return { duplicate: true };
       }
       const claimed = await AzureDevOpsEvent.updateOne(
-        { _id: event._id, status: { $in: ["failed", "unmatched", "processing"] }, ...(status === "processing" ? { updatedAt: { $lt: new Date(Date.now() - PROCESSING_LEASE_MS) } } : {}) },
+        { _id: event._id, status: { $in: ["failed", "unmatched", "pending", "processing"] }, ...(status === "processing" ? { updatedAt: { $lt: new Date(Date.now() - PROCESSING_LEASE_MS) } } : {}) },
         { $set: { status: "processing", lastError: null }, $inc: { attempts: 1 } }
       );
       if (!claimed.modifiedCount) return { duplicate: true };
@@ -323,8 +428,8 @@ export async function processAzureDevOpsEvent(integration, payload) {
     recipient = await resolveRecipient(identityFor(value));
   }
   if (!recipient) {
-    await AzureDevOpsEvent.updateOne({ _id: event._id }, { $set: { status: "unmatched", pullRequestNumber: prNumber, lastError: "PR opener could not be matched" } });
-    return { ignored: true, reason: "PR opener could not be matched" };
+    await AzureDevOpsEvent.updateOne({ _id: event._id }, { $set: { pullRequestNumber: prNumber } });
+    return deferAzureEvent(event, payload, "PR opener could not be matched");
   }
   await AzureDevOpsEvent.updateOne(
     { _id: event._id },
@@ -342,7 +447,7 @@ export async function processAzureDevOpsEvent(integration, payload) {
   }
   try {
     const channel = await ensureDmChannel(azure._id, recipient._id);
-    const root = prNumber
+    let root = prNumber
       ? await AzureDevOpsEvent.findOne({
           integration: integration._id,
           pullRequestNumber: prNumber,
@@ -350,9 +455,70 @@ export async function processAzureDevOpsEvent(integration, payload) {
           messageId: { $ne: null },
         }).sort({ createdAt: 1 })
       : null;
+    if (kind === "pullRequestCreated" && root?.messageId) {
+      const existingMessage = await Message.findById(root.messageId);
+      await AzureDevOpsEvent.updateOne(
+        { _id: event._id },
+        { $set: { status: "delivered", messageId: root.messageId, processedAt: new Date(), lastError: null } }
+      );
+      return { duplicate: true, message: existingMessage };
+    }
+    if (kind === "pullRequestCommented" && prNumber && !root?.messageId) {
+      const commentPullRequest = value?.pullRequest?.pullRequest || value?.pullRequest;
+      if (commentPullRequest) {
+        const rootBody = messageBody("pullRequestCreated", commentPullRequest);
+        const rootPayload = { ...payload, eventType: "git.pullrequest.created", resource: commentPullRequest };
+        const rootKey = eventKey(rootPayload, "pullRequestCreated", prNumber);
+        const existingRootEvent = await AzureDevOpsEvent.findOne({ integration: integration._id, eventKey: rootKey });
+        if (existingRootEvent?.messageId) {
+          root = existingRootEvent;
+        } else if (existingRootEvent?.status === "processing") {
+          return deferAzureEvent(event, payload, "PR root message is being created");
+        } else {
+          let reservedRootEvent;
+          try {
+            reservedRootEvent = await AzureDevOpsEvent.findOneAndUpdate(
+              { integration: integration._id, eventKey: rootKey, status: { $ne: "processing" } },
+              {
+                $set: {
+                  eventType: "git.pullrequest.created",
+                  notificationKind: "pullRequestCreated",
+                  payload: rootPayload,
+                  status: "processing",
+                  attempts: 1,
+                  pullRequestNumber: prNumber,
+                  recipient: recipient._id,
+                  lastError: null,
+                },
+                $setOnInsert: { integration: integration._id, eventKey: rootKey },
+              },
+              { upsert: true, new: true }
+            );
+          } catch (error) {
+            if (error?.code === 11000) return deferAzureEvent(event, payload, "PR root message is being created");
+            throw error;
+          }
+          if (reservedRootEvent?.messageId) {
+            root = reservedRootEvent;
+          } else {
+            const rootMessage = await deliverMessage({
+              channel,
+              authorId: azure._id,
+              body: rootBody,
+              parentId: null,
+            });
+            root = await AzureDevOpsEvent.findOneAndUpdate(
+              { _id: reservedRootEvent._id },
+              { $set: { status: "delivered", messageId: rootMessage.id, processedAt: new Date(), lastError: null } },
+              { new: true }
+            );
+          }
+        }
+      }
+    }
     if (kind !== "pullRequestCreated" && !root?.messageId) {
-      await AzureDevOpsEvent.updateOne({ _id: event._id }, { $set: { status: "unmatched", pullRequestNumber: prNumber, recipient: recipient._id, lastError: "PR root message not found" } });
-      return { ignored: true, reason: "PR root message not found" };
+      await AzureDevOpsEvent.updateOne({ _id: event._id }, { $set: { pullRequestNumber: prNumber, recipient: recipient._id } });
+      return deferAzureEvent(event, payload, "PR root message not found");
     }
     const message = await deliverMessage({
       channel,

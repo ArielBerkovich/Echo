@@ -10,6 +10,7 @@ const azureDevOpsIntegrationSchema = new mongoose.Schema(
     notify: {
       pullRequestCreated: { type: Boolean, default: true },
       pullRequestApproved: { type: Boolean, default: true },
+      pullRequestTitleChanged: { type: Boolean, default: true },
       pullRequestApprovalReset: { type: Boolean, default: true },
       pullRequestRejected: { type: Boolean, default: true },
       pullRequestCommented: { type: Boolean, default: true },

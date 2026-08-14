@@ -94,6 +94,7 @@ azureDevOpsRouter.patch("/:id", async (req, res) => {
   if (req.body?.notify && typeof req.body.notify === "object") {
     for (const key of [
       "pullRequestCreated",
+      "pullRequestTitleChanged",
       "pullRequestApproved",
       "pullRequestApprovalReset",
       "pullRequestRejected",

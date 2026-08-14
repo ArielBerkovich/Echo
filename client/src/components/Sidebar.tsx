@@ -25,11 +25,11 @@ function preview(body) {
 }
 
 // An avatar with a presence dot in the corner (green = online, grey = offline).
-function PresenceAvatar({ name, src, size, online }) {
+function PresenceAvatar({ name, src, size, online, showPresence = true }) {
   return (
     <span className="avatar-wrap">
       <Avatar name={name} src={src} size={size} />
-      <span className={`presence-dot ${online ? "online" : "offline"}`} title={online ? "Online" : "Offline"} />
+      {showPresence && <span className={`presence-dot ${online ? "online" : "offline"}`} title={online ? "Online" : "Offline"} />}
     </span>
   );
 }
@@ -102,6 +102,7 @@ export default function Sidebar({
             src={conv.withUser.avatarUrl}
             size={20}
             online={onlineIds.has(conv.withUser.id)}
+            showPresence={!(["azure", "system"].includes(conv.withUser.username))}
           />
           <span className="dm-name">{label}</span>
         </button>
@@ -164,6 +165,7 @@ export default function Sidebar({
                     src={conv.withUser.avatarUrl}
                     size={38}
                     online={onlineIds.has(conv.withUser.id)}
+                    showPresence={!(["azure", "system"].includes(conv.withUser.username))}
                   />
                   <div className="dm-text">
                     <div className="dm-row-top">

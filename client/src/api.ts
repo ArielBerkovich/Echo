@@ -170,6 +170,13 @@ export const api = {
   me: () => request("/auth/me"),
   getWorkspace: () => request("/workspace"),
   updateWorkspace: (payload) => request("/workspace", { method: "PATCH", body: payload }),
+  getAzureDevOpsIntegration: () => request("/integrations/azure-devops"),
+  createAzureDevOpsIntegration: (name = "Azure DevOps") =>
+    request("/integrations/azure-devops", { method: "POST", body: { name } }),
+  regenerateAzureDevOpsToken: (id) =>
+    request(`/integrations/azure-devops/${encodeURIComponent(id)}/token`, { method: "POST" }),
+  updateAzureDevOpsIntegration: (id, payload) =>
+    request(`/integrations/azure-devops/${encodeURIComponent(id)}`, { method: "PATCH", body: payload }),
   listUsers: () => request("/users"),
   getUser: (userId) => request(`/users/${encodeURIComponent(userId)}`),
   listChannels: () => request("/channels"),
