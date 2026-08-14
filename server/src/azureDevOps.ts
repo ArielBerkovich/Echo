@@ -175,6 +175,23 @@ async function resolveRecipient(identity) {
   });
 }
 
+async function resolveEventRecipient(integration, payload, value, prNumber) {
+  const directIdentity = eventType(payload) === "build.complete" ? null : identityFor(value);
+  let recipient = await resolveRecipient(directIdentity);
+  if (!recipient && prNumber) {
+    const previous = await AzureDevOpsEvent.findOne({
+      integration: integration._id,
+      pullRequestNumber: prNumber,
+      recipient: { $ne: null },
+    }).sort({ createdAt: -1 });
+    recipient = previous?.recipient ? await User.findById(previous.recipient) : null;
+  }
+  if (!recipient && eventType(payload) === "build.complete") {
+    recipient = await resolveRecipient(identityFor(value));
+  }
+  return recipient;
+}
+
 function repositoryName(value) {
   const repository = value?.repository || value?.pullRequest?.repository || value?.pullRequest?.pullRequest?.repository;
   return clean(repository?.name || repository?.project?.name, 160) || "repository";
@@ -367,6 +384,12 @@ export async function processAzureDevOpsEvent(integration, payload) {
   }
   if (!kind) return { ignored: true, reason: "unsupported event" };
 
+  // Events for Azure identities that do not exist in Echo are filtered before
+  // they are persisted or scheduled for retry. Existing PR recipient mappings
+  // still allow subsequent events for that PR to be delivered.
+  const recipient = await resolveEventRecipient(integration, payload, value, prNumber);
+  if (!recipient) return { ignored: true, reason: "PR opener could not be matched" };
+
   const key = eventKey(payload, kind, prNumber);
   if (!key) return { ignored: true, reason: "missing event id" };
   let event;
@@ -414,23 +437,6 @@ export async function processAzureDevOpsEvent(integration, payload) {
     throw error;
   }
 
-  const directIdentity = eventType(payload) === "build.complete" ? null : identityFor(value);
-  let recipient = await resolveRecipient(directIdentity);
-  if (!recipient && prNumber) {
-    const previous = await AzureDevOpsEvent.findOne({
-      integration: integration._id,
-      pullRequestNumber: prNumber,
-      recipient: { $ne: null },
-    }).sort({ createdAt: -1 });
-    recipient = previous?.recipient ? await User.findById(previous.recipient) : null;
-  }
-  if (!recipient && eventType(payload) === "build.complete") {
-    recipient = await resolveRecipient(identityFor(value));
-  }
-  if (!recipient) {
-    await AzureDevOpsEvent.updateOne({ _id: event._id }, { $set: { pullRequestNumber: prNumber } });
-    return deferAzureEvent(event, payload, "PR opener could not be matched");
-  }
   await AzureDevOpsEvent.updateOne(
     { _id: event._id },
     { $set: { pullRequestNumber: prNumber, recipient: recipient._id } }
