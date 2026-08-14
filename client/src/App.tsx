@@ -103,6 +103,7 @@ export default function App() {
     document.title = workspace?.name && workspace.name !== "Echo" ? `Echo · ${workspace.name}` : "Echo";
   }, [workspace?.name]);
   const markReadAtRef = useRef({}); // channelId -> last markRead time (throttle)
+  const markReadTimerRef = useRef({}); // channelId -> trailing markRead timer
   const restoredRef = useRef(false); // have we restored the saved location yet?
   const restoredUserRef = useRef(null);
   const navDuringRestoreRef = useRef(false); // user navigated before the initial restore finished
@@ -372,7 +373,16 @@ export default function App() {
     // Opening the conversation clears its activity items (server marks them read).
     clearChannelActivity(channelId);
     const now = Date.now();
-    if (now - (markReadAtRef.current[channelId] || 0) < 1500) return;
+    const elapsed = now - (markReadAtRef.current[channelId] || 0);
+    if (elapsed < 1500) {
+      clearTimeout(markReadTimerRef.current[channelId]);
+      markReadTimerRef.current[channelId] = setTimeout(() => {
+        markReadTimerRef.current[channelId] = null;
+        markReadAtRef.current[channelId] = Date.now();
+        api.markRead(channelId).catch(() => {});
+      }, 1500 - elapsed);
+      return;
+    }
     markReadAtRef.current[channelId] = now;
     try {
       await api.markRead(channelId);
