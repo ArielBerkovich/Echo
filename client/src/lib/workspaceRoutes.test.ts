@@ -5,7 +5,7 @@ import { currentRoute, parseWorkspacePath, workspacePath } from "./workspaceRout
 describe("workspace routes", () => {
   it("builds stable paths for workspace views and conversations", () => {
     assert.equal(workspacePath({ view: "activity" }), "/activity");
-    assert.equal(workspacePath({ view: "settings" }), "/settings");
+    assert.equal(workspacePath({ view: "settings" }), "/settings/account");
     assert.equal(workspacePath({ view: "home", convId: "id-1", convName: "channel 1", convType: "public" }), "/channels/channel%201");
     assert.equal(workspacePath({ view: "dms", convId: "id-2", convName: "alice", convType: "dm" }), "/dms/alice");
     assert.equal(workspacePath({ view: "home", convId: "id-2", convName: "alice", convType: "dm" }), "/home/dms/alice");
@@ -26,7 +26,7 @@ describe("workspace routes", () => {
   it("treats settings as a first-class workspace view", () => {
     assert.deepEqual(
       currentRoute({ pathname: "/settings", search: "", state: { workspacePath: "/dms/direct-1" } }),
-      { overlay: null, view: "settings", convId: null, convType: null, searchQuery: null }
+      { overlay: null, view: "settings", settingsTab: "account", convId: null, convType: null, searchQuery: null }
     );
   });
 });

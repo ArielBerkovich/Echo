@@ -2,6 +2,10 @@ node_modules/
 dist/
 test-results/
 .env
+.allure-credentials
+allure-demo-results/
+allure-results/
+allure-reports/
 *.log
 .DS_Store
 .claude/

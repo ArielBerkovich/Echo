@@ -756,17 +756,20 @@ export default function App() {
   // Route-backed overlays retain the workspace path underneath, so Back closes
   // them and a refresh still has a deterministic fallback.
   function openSettings() {
-    navigate("/settings", { state: { workspacePath: activeWorkspacePath() } });
+    navigate("/settings/account", { state: { workspacePath: activeWorkspacePath() } });
   }
   function closeSettings() {
-    if (location.pathname === "/settings" && location.state?.workspacePath) navigate(-1);
-    else if (location.pathname === "/settings") navigate(workspacePath({
+    if (location.pathname.startsWith("/settings") && location.state?.workspacePath) navigate(-1);
+    else if (location.pathname.startsWith("/settings")) navigate(workspacePath({
       view: activeChannel?.type === "dm" ? "dms" : "home",
       convId: activeChannel?.id || null,
       convName: conversationRouteName(activeChannel),
       convType: activeChannel?.type || null,
     }), { replace: true });
     else setShowSettings(false);
+  }
+  function changeSettingsTab(tab) {
+    navigate(`/settings/${tab}`, { replace: true, state: { workspacePath: location.state?.workspacePath || activeWorkspacePath() } });
   }
   function openApiDocs() {
     navigate("/api-docs", { state: { workspacePath: activeWorkspacePath() } });
@@ -1313,7 +1316,10 @@ export default function App() {
               mode,
               onSelectMode: setMode,
               onUpdated: (updated) => setUser((previous) => ({ ...previous, ...updated })),
+              onIntegrationsChanged: () => queryClient.invalidateQueries({ queryKey: workspaceKeys.channels }),
               onClose: closeSettings,
+              settingsTab: currentRoute(location).settingsTab || "account",
+              onSettingsTabChange: changeSettingsTab,
               onOpenApiDocs: openApiDocs,
             },
           }}

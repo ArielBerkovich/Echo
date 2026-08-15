@@ -10,6 +10,7 @@ const ChannelView = lazy(() => import("./ChannelView.js"));
 const SavedFeed = lazy(() => import("./SavedFeed.js"));
 const SearchResults = lazy(() => import("./SearchResults.js"));
 const SettingsModal = lazy(() => import("./SettingsModal.js"));
+const AllureReport = lazy(() => import("./AllureReport.js"));
 
 export default function WorkspaceContent({ view, search, browse, feeds, conversation }) {
   const activeChannel = conversation.channel;
@@ -94,7 +95,9 @@ function ActiveWorkspaceView({ view, search, browse, feeds, conversation }) {
     );
   } else {
     const { channel, ...props } = conversation;
-    content = <ChannelView key={channel.id} channel={channel} {...props} />;
+    content = channel.external?.type === "allure"
+      ? <AllureReport channel={channel} />
+      : <ChannelView key={channel.id} channel={channel} {...props} />;
   }
 
   return <Suspense fallback={<div className="empty-state"><p>Loading…</p></div>}>{content}</Suspense>;

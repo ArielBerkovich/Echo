@@ -7,6 +7,7 @@ import Avatar from "./Avatar.js";
 import { MAX_DISPLAY_NAME_LENGTH } from "../lib/profile.js";
 import ApiDocsPage from "./ApiDocsPage.js";
 import ProfilePictureDialog from "./ProfilePictureDialog.js";
+import ConfirmDialog from "./ConfirmDialog.js";
 import { PASSWORD_RULE } from "../lib/password.js";
 import { passwordPairSchema } from "../lib/formSchemas.js";
 import { uploadSizeError } from "../lib/uploads.js";
@@ -57,13 +58,16 @@ export default function SettingsModal({
   mode = "dark",
   onSelectMode,
   onUpdated,
+  onIntegrationsChanged,
+  settingsTab = "account",
+  onSettingsTabChange,
 }) {
   const [displayName, setDisplayName] = useState(user.displayName);
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl || null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [saved, setSaved] = useState(false);
-  const [activeTab, setActiveTab] = useState("account");
+  const [activeTab, setActiveTab] = useState(settingsTab);
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
   const [workspaceName, setWorkspaceName] = useState(workspace.name ?? "Echo");
@@ -73,9 +77,24 @@ export default function SettingsModal({
   const [azureEndpoint, setAzureEndpoint] = useState("");
   const [azureLoading, setAzureLoading] = useState(false);
   const [azureOptionsOpen, setAzureOptionsOpen] = useState(false);
+  const [allureIntegration, setAllureIntegration] = useState(null);
+  const [allureUrl, setAllureUrl] = useState("");
+  const [allureUsername, setAllureUsername] = useState("");
+  const [allurePassword, setAllurePassword] = useState("");
+  const [allureLoading, setAllureLoading] = useState(false);
+  const [allureOptionsOpen, setAllureOptionsOpen] = useState(false);
+  const [allureResetOpen, setAllureResetOpen] = useState(false);
+  const [allureProjects, setAllureProjects] = useState([]);
+  const [allureSelectedProjects, setAllureSelectedProjects] = useState([]);
+  const [allureError, setAllureError] = useState(null);
+  const [allureSaved, setAllureSaved] = useState(false);
   const workspaceLogoSrc = useAuthUrl(workspaceLogoUrl);
 
   const nameChanged = displayName.trim() !== user.displayName;
+
+  useEffect(() => {
+    setActiveTab(settingsTab);
+  }, [settingsTab]);
 
   useEffect(() => {
     setDisplayName(user.displayName);
@@ -100,6 +119,25 @@ export default function SettingsModal({
       })
       .catch((err) => !cancelled && setError(err.message))
       .finally(() => !cancelled && setAzureLoading(false));
+    return () => { cancelled = true; };
+  }, [activeTab, user.isAdmin]);
+
+  useEffect(() => {
+    if (activeTab !== "integrations" || !user.isAdmin) return;
+    let cancelled = false;
+    setAllureLoading(true);
+    api.getAllureIntegration()
+      .then(({ allure }) => {
+        if (cancelled) return;
+        setAllureIntegration(allure || null);
+        setAllureUrl(allure?.url || "");
+        setAllureUsername(allure?.username || "");
+        const currentProjects = (allure?.projects || []).map((project) => project.id);
+        setAllureProjects(currentProjects);
+        setAllureSelectedProjects(allure?.selectedProjectIds?.length ? allure.selectedProjectIds : currentProjects);
+      })
+      .catch((err) => !cancelled && setError(err.message))
+      .finally(() => !cancelled && setAllureLoading(false));
     return () => { cancelled = true; };
   }, [activeTab, user.isAdmin]);
 
@@ -259,6 +297,89 @@ export default function SettingsModal({
     flashSaved();
   }
 
+  async function saveAllure() {
+    setAllureLoading(true);
+    setError(null);
+      setAllureError(null);
+      setAllureSaved(false);
+    try {
+      const payload = { url: allureUrl, username: allureUsername, enabled: !!allureUrl.trim(), projectIds: allureSelectedProjects };
+      // An empty username means the admin is switching to an unsecured
+      // service, so clear any previously stored password too. When a username
+      // remains, an empty password keeps the saved secret.
+      if (allurePassword || !allureUsername.trim()) payload.password = allurePassword;
+      const result = await api.updateAllureIntegration(payload);
+      setAllureIntegration(result.allure);
+      setAllurePassword("");
+      onIntegrationsChanged?.();
+      setAllureSaved(true);
+      setAllureOptionsOpen(false);
+    } catch (err) {
+      setAllureError(err.message);
+    } finally {
+      setAllureLoading(false);
+    }
+  }
+
+  async function resetAllure() {
+    setAllureLoading(true);
+    setError(null);
+    setAllureError(null);
+    try {
+      const result = await api.updateAllureIntegration({ url: "", username: "", password: "", enabled: false, projectIds: [] });
+      setAllureIntegration(result.allure);
+      setAllureUrl("");
+      setAllureUsername("");
+      setAllurePassword("");
+      setAllureProjects([]);
+      setAllureSelectedProjects([]);
+      setAllureResetOpen(false);
+      setAllureOptionsOpen(false);
+      onIntegrationsChanged?.();
+      setAllureSaved(true);
+    } catch (err) {
+      setAllureError(err.message);
+    } finally {
+      setAllureLoading(false);
+    }
+  }
+
+  async function discoverAllureProjects() {
+    setAllureLoading(true);
+    setError(null);
+    setAllureError(null);
+    try {
+      const result = await api.discoverAllureProjects({ url: allureUrl, username: allureUsername, password: allurePassword });
+      setAllureProjects(result.projects || []);
+      setAllureSelectedProjects((previous) => {
+        const existing = new Set(previous);
+        const kept = (result.projects || []).filter((projectId) => existing.has(projectId));
+        return kept.length ? kept : result.projects || [];
+      });
+    } catch (err) {
+      setAllureError(err.message);
+    } finally {
+      setAllureLoading(false);
+    }
+  }
+
+  async function syncAllure() {
+    setAllureLoading(true);
+    setError(null);
+    setAllureError(null);
+    setAllureSaved(false);
+    try {
+      const result = await api.syncAllureIntegration();
+      setAllureIntegration((previous) => ({ ...previous, projects: result.projects, lastSyncedAt: result.lastSyncedAt }));
+      onIntegrationsChanged?.();
+      setAllureSaved(true);
+    } catch (err) {
+      setAllureError(err.message);
+    } finally {
+      setAllureLoading(false);
+    }
+  }
+
   async function setAzureActive(active) {
     if (!azureIntegration) return;
     setAzureLoading(true);
@@ -296,7 +417,7 @@ export default function SettingsModal({
           </div>
           <nav className="settings-nav-list">
             {visibleTabs.map(({ id, label, Icon }) => (
-              <button key={id} type="button" className={`settings-nav-item${activeTab === id ? " active" : ""}`} onClick={() => setActiveTab(id)} aria-current={activeTab === id ? "page" : undefined}>
+                <button key={id} type="button" className={`settings-nav-item${activeTab === id ? " active" : ""}`} onClick={() => { setActiveTab(id); onSettingsTabChange?.(id); }} aria-current={activeTab === id ? "page" : undefined}>
                 <Icon size={17} strokeWidth={1.8} /><span>{label}</span>
               </button>
             ))}
@@ -394,8 +515,23 @@ export default function SettingsModal({
                 <p>Connect the tools your team uses every day.</p>
               </div>
             </div>
-            {azureLoading && !azureIntegration && <p className="settings-hint">Loading integration…</p>}
-            {!azureLoading && !azureIntegration && <button type="button" className="btn-primary" onClick={createAzureIntegration}>Enable Azure DevOps</button>}
+            <div className="integration-card-grid">
+            <article className="integration-card allure-integration-card">
+              <button type="button" className="integration-card-main" onClick={() => setAllureOptionsOpen(true)}>
+                <div className="integration-card-icon"><span className="allure-integration-mark">A</span></div>
+                <div className="integration-card-copy">
+                  <h3>Allure reports</h3>
+                  <span>{allureIntegration?.enabled ? `${allureIntegration.projects?.length || 0} project channels` : "Not configured"}</span>
+                  <p>{allureIntegration?.enabled ? "Latest reports are available in read-only Echo channels." : "Connect an Allure service to create report channels."}</p>
+                </div>
+              </button>
+              <div className="integration-card-footer">
+                <button type="button" className="btn-secondary" onClick={() => setAllureOptionsOpen(true)}>{allureIntegration?.enabled ? "Configure" : "Connect"}</button>
+                <span className="integration-card-status">{allureIntegration?.enabled ? "Connected" : "Disabled"}</span>
+              </div>
+            </article>
+            {azureLoading && !azureIntegration && <article className="integration-card integration-card-placeholder"><p className="settings-hint">Loading integration…</p></article>}
+            {!azureLoading && !azureIntegration && <article className="integration-card integration-card-placeholder"><div><h3>Azure DevOps</h3><p className="settings-hint">Connect Azure DevOps to bring pull requests, comments, approvals, and build status into Echo.</p><button type="button" className="btn-primary" onClick={createAzureIntegration}>Enable Azure DevOps</button></div></article>}
             {azureIntegration && <article className="integration-card">
               <button type="button" className="integration-card-main" onClick={() => setAzureOptionsOpen(true)}>
                 <div className="integration-card-icon"><img className="azure-integration-icon" src="/azure-devops-icon.svg" alt="" /></div>
@@ -414,6 +550,39 @@ export default function SettingsModal({
                 </label>
               </div>
             </article>}
+            </div>
+            {allureOptionsOpen && <div className="integration-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setAllureOptionsOpen(false); }}>
+              <section className="integration-dialog" role="dialog" aria-modal="true" aria-labelledby="allure-integration-title">
+                <div className="integration-dialog-header">
+                  <div className="integration-dialog-title"><span className="allure-integration-mark">A</span><div><h3 id="allure-integration-title">Allure reports</h3><p>Integration settings</p></div></div>
+                  <button type="button" className="settings-close" onClick={() => setAllureOptionsOpen(false)} aria-label="Close integration settings">✕</button>
+                </div>
+                <div className="integration-dialog-body allure-settings-body">
+                  <label className="settings-profile-field-label" htmlFor="allure-url">Allure service URL</label>
+                  <input id="allure-url" className="settings-input" value={allureUrl} onChange={(event) => setAllureUrl(event.target.value)} placeholder="http://allure:5050" />
+                  <label className="settings-profile-field-label" htmlFor="allure-username">Username <span>(optional)</span></label>
+                  <input id="allure-username" className="settings-input" value={allureUsername} onChange={(event) => setAllureUsername(event.target.value)} autoComplete="new-password" />
+                  <label className="settings-profile-field-label" htmlFor="allure-password">Password <span>(optional)</span></label>
+                  <input id="allure-password" className="settings-input" type="password" value={allurePassword} onChange={(event) => setAllurePassword(event.target.value)} autoComplete="new-password" />
+                  <p className="settings-hint">Leave the password blank to keep the saved password when using a username. To use an unsecured Allure service, clear both credentials. Credentials are stored encrypted on the Echo server and are never sent to users. When Echo runs in Docker, use a URL reachable from the Echo container, such as <code>http://172.17.0.1:5050</code>.</p>
+                  <div className="allure-project-picker">
+                    <div className="allure-project-picker-header"><div><strong>Projects to sync</strong><span>{allureProjects.length ? `${allureSelectedProjects.length} of ${allureProjects.length} selected` : "Choose which projects become Echo channels"}</span></div><button type="button" className="btn-secondary" disabled={allureLoading || !allureUrl.trim()} onClick={discoverAllureProjects}>Discover projects</button></div>
+                    {allureProjects.length > 0 ? <div className="allure-project-list">{allureProjects.map((projectId) => <label key={projectId} className={`allure-project-option${allureSelectedProjects.includes(projectId) ? " is-selected" : ""}`}><input type="checkbox" checked={allureSelectedProjects.includes(projectId)} onChange={(event) => setAllureSelectedProjects((previous) => event.target.checked ? [...new Set([...previous, projectId])] : previous.filter((id) => id !== projectId))} /><span className="allure-project-check" aria-hidden="true">✓</span><span className="allure-project-name">{projectId}</span></label>)}</div> : <div className="allure-project-empty"><span className="allure-project-empty-icon">✦</span><div><strong>No projects discovered yet</strong><p>Enter your Allure URL, then discover projects to choose what to sync.</p></div></div>}
+                    {allureProjects.length > 1 && <div className="allure-project-picker-actions"><button type="button" className="link-button" onClick={() => setAllureSelectedProjects([...allureProjects])}>Select all</button><button type="button" className="link-button" onClick={() => setAllureSelectedProjects([])}>Clear all</button></div>}
+                  </div>
+                  <div className="integration-actions">
+                    <button type="button" className="btn-primary" disabled={allureLoading || !allureProjects.length || (!allureIntegration?.enabled && !allureSelectedProjects.length)} title={!allureProjects.length ? "Discover projects before connecting" : undefined} onClick={saveAllure}>{allureIntegration?.enabled ? "Save and sync" : "Connect Allure"}</button>
+                    {allureIntegration?.enabled && <button type="button" className="btn-secondary" disabled={allureLoading} onClick={syncAllure}>Sync projects</button>}
+                  </div>
+                  <div className="integration-danger-zone"><div><strong>Reset integration</strong><span>Remove the connection and archive its Echo channels.</span></div><button type="button" className="btn-danger-outline" disabled={allureLoading} onClick={() => setAllureResetOpen(true)}>Reset</button></div>
+                  {allureSaved && <div className="allure-dialog-feedback is-success">Allure settings saved successfully.</div>}
+                  {allureError && <div className="allure-dialog-feedback is-error" role="alert">{allureError}</div>}
+                  {allureIntegration?.lastError && <p className="error">{allureIntegration.lastError}</p>}
+                  {allureIntegration?.projects?.length > 0 && <p className="settings-hint">Created channels: {allureIntegration.projects.map((project) => `#${project.channel}`).join(", ")}</p>}
+                </div>
+              </section>
+            </div>}
+            {allureResetOpen && <ConfirmDialog title="Reset Allure integration?" message="This clears the saved URL and credentials, removes the project selection, and archives the Allure channels. You can reconnect later." confirmLabel="Reset integration" danger onConfirm={resetAllure} onCancel={() => setAllureResetOpen(false)} />}
             {azureOptionsOpen && azureIntegration && <div className="integration-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setAzureOptionsOpen(false); }}>
               <section className="integration-dialog" role="dialog" aria-modal="true" aria-labelledby="azure-integration-title">
                 <div className="integration-dialog-header">

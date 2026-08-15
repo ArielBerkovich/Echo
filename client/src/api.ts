@@ -68,6 +68,7 @@ function friendlyErrorMessage(status, serverMessage, path, errorLabel) {
   if (status >= 500) {
     if (path === "/auth/login") return "We couldn't sign you in right now. Please try again in a moment.";
     if (path === "/auth/register") return "We couldn't create your account right now. Please try again in a moment.";
+    if (path.startsWith("/integrations/allure")) return serverMessage || "Allure could not be reached. Check the service URL and credentials.";
     return "Something went wrong on our end. Please try again in a moment.";
   }
   if (status === 401) {
@@ -171,6 +172,12 @@ export const api = {
   getWorkspace: () => request("/workspace"),
   updateWorkspace: (payload) => request("/workspace", { method: "PATCH", body: payload }),
   getAzureDevOpsIntegration: () => request("/integrations/azure-devops"),
+  getAllureIntegration: () => request("/integrations/allure"),
+  discoverAllureProjects: (payload) => request("/integrations/allure/discover", { method: "POST", body: payload }),
+  updateAllureIntegration: (payload) => request("/integrations/allure", { method: "PATCH", body: payload }),
+  syncAllureIntegration: () => request("/integrations/allure/sync", { method: "POST" }),
+  getAllureReportUrl: (projectId) => request(`/integrations/allure/projects/${encodeURIComponent(projectId)}/report-url`),
+  getAllureReportVersion: (projectId) => request(`/integrations/allure/projects/${encodeURIComponent(projectId)}/report-version`),
   createAzureDevOpsIntegration: (name = "Azure DevOps") =>
     request("/integrations/azure-devops", { method: "POST", body: { name } }),
   regenerateAzureDevOpsToken: (id) =>
