@@ -1,12 +1,13 @@
 const STATIC_VIEWS = new Set(["browse", "activity", "saved", "dms", "settings"]);
+const SETTINGS_TABS = new Set(["account", "appearance", "workspace", "integrations", "api"]);
 
-export function workspacePath({ view = "home", convId = null, convName = null, convType = null, searchQuery = null } = {}) {
+export function workspacePath({ view = "home", convId = null, convName = null, convType = null, searchQuery = null, settingsTab = "account" } = {}) {
   const conversation = convName || convId;
   if (searchQuery) return `/search?q=${encodeURIComponent(searchQuery)}`;
   if (view === "browse") return "/browse";
   if (view === "activity") return "/activity";
   if (view === "saved") return "/saved";
-  if (view === "settings") return "/settings";
+  if (view === "settings") return `/settings/${SETTINGS_TABS.has(settingsTab) ? settingsTab : "account"}`;
   if (view === "dms") return conversation && convType === "dm" ? `/dms/${encodeURIComponent(conversation)}` : "/dms";
   if (conversation) {
     if (convType === "dm") return `/home/dms/${encodeURIComponent(conversation)}`;
@@ -39,6 +40,9 @@ export function parseWorkspacePath(pathname = "/", search = "") {
   }
   if (section === "dms") {
     return { overlay: null, view: "dms", convId: id || null, convType: id ? "dm" : null, searchQuery: null };
+  }
+  if (section === "settings") {
+    return { overlay: null, view: "settings", settingsTab: SETTINGS_TABS.has(id) ? id : "account", convId: null, convType: null, searchQuery: null };
   }
   if (STATIC_VIEWS.has(section)) {
     return { overlay: null, view: section, convId: null, convType: null, searchQuery: null };

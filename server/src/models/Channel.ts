@@ -25,6 +25,10 @@ const channelSchema = new mongoose.Schema(
     // When enabled, only the channel creator and delegated managers can post.
     readOnly: { type: Boolean, default: false },
     isArchived: { type: Boolean, default: false },
+    external: {
+      type: { type: String, enum: ["allure"], default: null },
+      projectId: { type: String, trim: true, maxlength: 200, default: null },
+    },
   },
   { timestamps: true }
 );
@@ -48,6 +52,13 @@ channelSchema.methods.toPublicJSON = function () {
     readOnly: !!this.readOnly,
     createdAt: this.createdAt,
     isArchived: this.isArchived,
+    external: this.external?.type ? {
+      type: this.external.type,
+      projectId: this.external.projectId,
+      reportUrl: this.external.type === "allure"
+        ? `/api/integrations/allure/projects/${encodeURIComponent(this.external.projectId)}/report-url`
+        : null,
+    } : null,
   };
 };
 
