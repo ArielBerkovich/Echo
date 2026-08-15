@@ -2,6 +2,23 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { htmlToMarkdown } from "./htmlToMarkdown.js";
 import { markdownTextToComposerHtml } from "./markdownPaste.js";
+import { tokenizeEmojiShortcodes } from "./markdown.js";
+
+describe("tokenizeEmojiShortcodes", () => {
+  it("expands native and custom emoji while leaving markdown plain", () => {
+    const tokens = tokenizeEmojiShortcodes("Hello :smile: :party_blob: **safe**", [
+      { name: "party_blob", url: "blob:emoji" },
+    ]);
+
+    assert.deepEqual(tokens, [
+      { type: "text", value: "Hello " },
+      { type: "native", value: "😄" },
+      { type: "text", value: " " },
+      { type: "custom", value: "blob:emoji", alt: ":party_blob:" },
+      { type: "text", value: " **safe**" },
+    ]);
+  });
+});
 
 describe("markdownTextToComposerHtml", () => {
   it("keeps a simple pasted message inline", () => {

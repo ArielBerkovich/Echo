@@ -1225,6 +1225,7 @@ export default function App() {
           workspaceLoading={workspaceQuery.isLoading}
           channels={channels}
           dms={dms}
+          customEmojis={emojis}
           hidden={hidden}
           starredIds={starredIds}
           onlineIds={onlineIds}

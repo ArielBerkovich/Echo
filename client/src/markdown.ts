@@ -28,6 +28,29 @@ for (const [alias, id] of Object.entries(emojiData.aliases || {})) {
 const EMOJI_RE = /\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic})*/gu;
 const HAS_EMOJI = /\p{Extended_Pictographic}/u;
 
+// Split preview text into safe React-renderable pieces. Unlike the full
+// Markdown renderer, this deliberately recognizes only emoji shortcodes;
+// everything else remains plain text.
+export function tokenizeEmojiShortcodes(text, customEmojis = []) {
+  const customMap = new Map(customEmojis.map((emoji) => [String(emoji.name).toLowerCase(), emoji.url]));
+  const shortcode = /:([a-z0-9_+.-]+):/gi;
+  const tokens = [];
+  let last = 0;
+  let match;
+  while ((match = shortcode.exec(String(text ?? "")))) {
+    if (match.index > last) tokens.push({ type: "text", value: String(text).slice(last, match.index) });
+    const code = match[1];
+    const native = shortcodeToNative.get(code.toLowerCase());
+    const customUrl = customMap.get(code.toLowerCase());
+    if (native) tokens.push({ type: "native", value: native });
+    else if (customUrl) tokens.push({ type: "custom", value: customUrl, alt: `:${code}:` });
+    else tokens.push({ type: "text", value: match[0] });
+    last = match.index + match[0].length;
+  }
+  if (last < String(text ?? "").length) tokens.push({ type: "text", value: String(text).slice(last) });
+  return tokens;
+}
+
 // Wrap emoji characters in styled spans so they render larger than body text.
 // Emoji-only messages get a "jumbo" size.
 function wrapEmojis(html) {

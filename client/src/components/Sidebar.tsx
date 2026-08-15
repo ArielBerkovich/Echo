@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronDownIcon, CompassIcon, LockKeyholeIcon, SquarePenIcon } from "lucide-react";
 import Avatar from "./Avatar.js";
 import { relativeTime } from "../lib/time.js";
+import { useAuthUrls } from "../lib/useAuthUrl.js";
+import { tokenizeEmojiShortcodes } from "../markdown.js";
 
 function StartConversationButton({ onClick }) {
   return (
@@ -18,10 +20,25 @@ function StartConversationButton({ onClick }) {
   );
 }
 
-// Plain-text preview of a (markdown) message body for the DM list.
-function preview(body) {
+// Keep previews compact while allowing each emoji image to occupy one slot.
+function Preview({ body, customEmojis }) {
   if (!body) return "No messages yet";
-  return body.replace(/\s+/g, " ").trim().slice(0, 40);
+  const normalized = body.replace(/\s+/g, " ").trim();
+  const tokens = tokenizeEmojiShortcodes(normalized, customEmojis);
+  const output = [];
+  let length = 0;
+  for (const token of tokens) {
+    if (length >= 40) break;
+    if (token.type === "custom") {
+      output.push(<img key={`custom-${output.length}`} className="custom-emoji" src={token.value} alt={token.alt} title={token.alt} />);
+      length += 1;
+      continue;
+    }
+    const value = token.value.slice(0, 40 - length);
+    output.push(value);
+    length += value.length;
+  }
+  return output;
 }
 
 // An avatar with a presence dot in the corner (green = online, grey = offline).
@@ -62,12 +79,18 @@ export default function Sidebar({
   onPrefetchDm,
   onHideDm,
   onHideChannel,
+  customEmojis = [],
 }) {
   const dmsOnly = mode === "dms";
   const [filter, setFilter] = useState("");
   const [chCollapsed, setChCollapsed] = useState(false); // Channels section collapsed?
   const [starredCollapsed, setStarredCollapsed] = useState(false); // Starred section collapsed?
   const [dmCollapsed, setDmCollapsed] = useState(false); // DMs section collapsed?
+  const emojiUrls = useMemo(() => customEmojis.map((emoji) => emoji.url), [customEmojis]);
+  const authUrls = useAuthUrls(emojiUrls);
+  const previewEmojis = customEmojis
+    .map((emoji) => ({ ...emoji, url: authUrls.get(emoji.url) }))
+    .filter((emoji) => emoji.url);
   const hiddenSet = hidden || new Set();
   const f = filter.trim().toLowerCase();
   // A filter overrides a collapsed section so matches are always visible.
@@ -175,7 +198,7 @@ export default function Sidebar({
                     </div>
                     <div className="dm-preview" dir="auto">
                       {conv.lastFromMe ? "You: " : ""}
-                      {preview(conv.lastBody)}
+                      <Preview body={conv.lastBody} customEmojis={previewEmojis} />
                     </div>
                   </div>
                 </button>

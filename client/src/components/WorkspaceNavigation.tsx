@@ -8,6 +8,7 @@ export default function WorkspaceNavigation({
   workspaceLoading = false,
   channels,
   dms,
+  customEmojis = [],
   hidden,
   starredIds,
   onlineIds,
@@ -55,6 +56,7 @@ export default function WorkspaceNavigation({
             user={user}
             channels={channels}
             dms={dms}
+            customEmojis={customEmojis}
             hidden={hidden}
             starredIds={starredIds}
             onlineIds={onlineIds}
