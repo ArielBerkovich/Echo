@@ -1,0 +1,2 @@
+<?jelly escape-by-default='true'?>
+<div>Jenkins Pipeline step for sending notifications to Echo.</div>

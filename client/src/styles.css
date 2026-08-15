@@ -4724,6 +4724,7 @@ html[data-mode="dark"] .day-divider-label {
 .integration-card-icon img { width: 38px; height: 38px; }
 .integration-card-icon img.azure-integration-icon { width: 44px; height: 44px; }
 .integration-card-icon img.allure-integration-icon { width: 42px; height: 42px; max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+.jenkins-integration-mark { width: 52px; height: 52px; display: grid; place-items: center; color: #d33833; font: 800 50px/.9 Arial, sans-serif; }
 .integration-card-copy { min-width: 0; }
 .integration-card-copy h3 { margin: 0 0 3px; font-size: 17px; color: var(--text); }
 .integration-card-copy > span { color: var(--muted); font-size: 12px; }
@@ -4751,6 +4752,7 @@ html[data-mode="dark"] .day-divider-label {
 .integration-dialog-title img { width: 38px; height: 38px; }
 .integration-dialog-title img.azure-integration-icon { width: 44px; height: 44px; }
 .integration-dialog-title img.allure-integration-icon { width: 40px; height: 40px; max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+.integration-dialog-title .jenkins-integration-mark { width: 56px; height: 56px; }
 .integration-dialog-title h3 { margin: 0; color: var(--text); font-size: 17px; }
 .integration-dialog-title p { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
 .integration-dialog-body { display: grid; flex: 1 1 auto; min-height: 0; gap: 18px; overflow-x: hidden; overflow-y: auto; padding: 22px; }
@@ -4760,6 +4762,8 @@ html[data-mode="dark"] .day-divider-label {
 .integration-option-row > div > span { margin-top: 4px; color: var(--muted); font-size: 12px; }
 .integration-dialog-section { padding-top: 2px; }
 .integration-dialog-section h4 { margin: 0 0 6px; color: var(--text); font-size: 13px; }
+.jenkins-settings-body { gap: 22px; }
+.integration-code-block { margin: 10px 0 0; padding: 14px; overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); color: var(--text); font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre; }
 .integration-notify-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
 .integration-notify-option { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 12px; cursor: pointer; }
 .integration-notify-option:has(input:checked) { border-color: color-mix(in srgb, #1684d8 45%, var(--border)); background: color-mix(in srgb, #1684d8 8%, var(--surface)); }
