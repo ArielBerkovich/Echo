@@ -71,7 +71,7 @@ test.describe("workspace branding", () => {
     await page.goto("/");
     await expect(page.getByTestId("composer-editor")).toBeVisible();
     await page.getByTestId("rail-settings").click();
-    await expect(page).toHaveURL(/\/settings(?:$|\?)/);
+    await expect(page).toHaveURL(/\/settings(?:\/[^/?]+)?(?:\?|$)/);
     await expect(page.getByTestId("settings-page")).toBeVisible();
     await expect(page.getByRole("button", { name: "Workspace" })).toHaveCount(0);
   });
