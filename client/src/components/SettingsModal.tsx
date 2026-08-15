@@ -46,6 +46,10 @@ function backendOrigin() {
   return getBackendUrl() || (typeof window !== "undefined" ? window.location.origin : "");
 }
 
+function JenkinsIntegrationIcon() {
+  return <span className="jenkins-integration-mark" aria-hidden="true">J</span>;
+}
+
 // User settings: profile picture, display name, and a copyable API token.
 export default function SettingsModal({
   user,
@@ -88,6 +92,9 @@ export default function SettingsModal({
   const [allureSelectedProjects, setAllureSelectedProjects] = useState([]);
   const [allureError, setAllureError] = useState(null);
   const [allureSaved, setAllureSaved] = useState(false);
+  const [jenkinsOptionsOpen, setJenkinsOptionsOpen] = useState(false);
+  const [jenkinsDownloading, setJenkinsDownloading] = useState(false);
+  const [jenkinsDownloadError, setJenkinsDownloadError] = useState(null);
   const workspaceLogoSrc = useAuthUrl(workspaceLogoUrl);
 
   const nameChanged = displayName.trim() !== user.displayName;
@@ -380,6 +387,26 @@ export default function SettingsModal({
     }
   }
 
+  async function downloadJenkinsPlugin() {
+    setJenkinsDownloading(true);
+    setJenkinsDownloadError(null);
+    try {
+      const { blob, filename } = await api.downloadJenkinsPlugin();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setJenkinsDownloadError(err.message);
+    } finally {
+      setJenkinsDownloading(false);
+    }
+  }
+
   async function setAzureActive(active) {
     if (!azureIntegration) return;
     setAzureLoading(true);
@@ -516,18 +543,18 @@ export default function SettingsModal({
               </div>
             </div>
             <div className="integration-card-grid">
-            <article className="integration-card allure-integration-card">
-              <button type="button" className="integration-card-main" onClick={() => setAllureOptionsOpen(true)}>
-                <div className="integration-card-icon"><img className="allure-integration-icon" src="/allure-docker-icon.png" alt="" /></div>
+            <article className="integration-card jenkins-integration-card">
+              <button type="button" className="integration-card-main" onClick={() => { setJenkinsDownloadError(null); setJenkinsOptionsOpen(true); }}>
+                <div className="integration-card-icon"><JenkinsIntegrationIcon /></div>
                 <div className="integration-card-copy">
-                  <h3>allure docker service</h3>
-                  <span>{allureIntegration?.enabled ? `${allureIntegration.projects?.length || 0} project channels` : "Not configured"}</span>
-                  <p>{allureIntegration?.enabled ? "Latest reports are available in read-only Echo channels." : "Connect an Allure service to create report channels."}</p>
+                  <h3>Jenkins</h3>
+                  <span>Pipeline notifications</span>
+                  <p>Send Jenkins build notifications to Echo channels or individual users.</p>
                 </div>
               </button>
               <div className="integration-card-footer">
-                <button type="button" className="btn-secondary" onClick={() => setAllureOptionsOpen(true)}>{allureIntegration?.enabled ? "Configure" : "Connect"}</button>
-                <span className="integration-card-status">{allureIntegration?.enabled ? "Connected" : "Disabled"}</span>
+                <button type="button" className="btn-secondary" onClick={() => { setJenkinsDownloadError(null); setJenkinsOptionsOpen(true); }}>Configure</button>
+                <span className="integration-card-status">Available</span>
               </div>
             </article>
             {azureLoading && !azureIntegration && <article className="integration-card integration-card-placeholder"><p className="settings-hint">Loading integration…</p></article>}
@@ -545,7 +572,56 @@ export default function SettingsModal({
                 <button type="button" className="btn-secondary" onClick={() => setAzureOptionsOpen(true)}>Configure</button>
               </div>
             </article>}
+            <article className="integration-card allure-integration-card">
+              <button type="button" className="integration-card-main" onClick={() => setAllureOptionsOpen(true)}>
+                <div className="integration-card-icon"><img className="allure-integration-icon" src="/allure-docker-icon.png" alt="" /></div>
+                <div className="integration-card-copy">
+                  <h3>allure docker service</h3>
+                  <span>{allureIntegration?.enabled ? `${allureIntegration.projects?.length || 0} project channels` : "Not configured"}</span>
+                  <p>{allureIntegration?.enabled ? "Latest reports are available in read-only Echo channels." : "Connect an Allure service to create report channels."}</p>
+                </div>
+              </button>
+              <div className="integration-card-footer">
+                <button type="button" className="btn-secondary" onClick={() => setAllureOptionsOpen(true)}>{allureIntegration?.enabled ? "Configure" : "Connect"}</button>
+                <span className="integration-card-status">{allureIntegration?.enabled ? "Connected" : "Disabled"}</span>
+              </div>
+            </article>
             </div>
+            {jenkinsOptionsOpen && <div className="integration-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setJenkinsOptionsOpen(false); }}>
+              <section className="integration-dialog" role="dialog" aria-modal="true" aria-labelledby="jenkins-integration-title">
+                <div className="integration-dialog-header">
+                  <div className="integration-dialog-title"><JenkinsIntegrationIcon /><div><h3 id="jenkins-integration-title">Jenkins</h3><p>Pipeline notifications</p></div></div>
+                  <button type="button" className="settings-close" onClick={() => setJenkinsOptionsOpen(false)} aria-label="Close Jenkins configuration">✕</button>
+                </div>
+                <div className="integration-dialog-body jenkins-settings-body">
+                  <div className="integration-dialog-section">
+                    <h4>What it does</h4>
+                    <p>Use the Echo Jenkins plugin to post build messages to a channel or send a direct message to a specific Echo user.</p>
+                  </div>
+                  <div className="integration-dialog-section">
+                    <h4>1. Install the plugin</h4>
+                    <p>Download the plugin, then open <strong>Manage Jenkins → Plugins → Advanced</strong> and upload the HPI file.</p>
+                    <button type="button" className="btn-primary" disabled={jenkinsDownloading} onClick={downloadJenkinsPlugin}>
+                      {jenkinsDownloading ? "Preparing download…" : "Download Jenkins plugin"}
+                    </button>
+                    {jenkinsDownloadError && <p className="error" role="alert">{jenkinsDownloadError}</p>}
+                  </div>
+                  <div className="integration-dialog-section">
+                    <h4>2. Configure Echo in Jenkins</h4>
+                    <p>Under <strong>Manage Jenkins → System → Echo Notifier</strong>, set the Echo server URL and choose a Jenkins Secret Text credential containing an Echo API token.</p>
+                  </div>
+                  <div className="integration-dialog-section">
+                    <h4>3. Send from a Pipeline</h4>
+                    <pre className="integration-code-block"><code>{`echoSend(
+  channel: 'builds',
+  message: 'Build completed',
+  status: 'success'
+)`}</code></pre>
+                    <p className="settings-hint">Use <code>recipient: 'username'</code> instead of <code>channel</code> to send a direct message.</p>
+                  </div>
+                </div>
+              </section>
+            </div>}
             {allureOptionsOpen && <div className="integration-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setAllureOptionsOpen(false); }}>
               <section className="integration-dialog" role="dialog" aria-modal="true" aria-labelledby="allure-integration-title">
                 <div className="integration-dialog-header">

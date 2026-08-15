@@ -1,3 +1,10 @@
+FROM maven:3.9.9-eclipse-temurin-21 AS jenkins-plugin-build
+
+WORKDIR /jenkins-plugin
+COPY jenkins-plugin/pom.xml ./
+COPY jenkins-plugin/src ./src
+RUN mvn -B package -DskipTests -Dspotless.check.skip=true
+
 FROM node:24-alpine AS build
 
 WORKDIR /app
@@ -17,6 +24,7 @@ COPY server/package*.json ./
 RUN npm ci --omit=dev
 
 COPY --from=build /app/dist ./dist
+COPY --from=jenkins-plugin-build /jenkins-plugin/target/echo-notifier.hpi ./jenkins-plugin/echo-notifier.hpi
 COPY desktop-updates ./desktop-updates
 
 # Keep UID 1000 as the local default while allowing OpenShift to assign any

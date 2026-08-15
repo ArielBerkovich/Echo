@@ -3,5 +3,8 @@
 !server/**
 !desktop-updates/
 !desktop-updates/**
+!jenkins-plugin/
+!jenkins-plugin/**
+jenkins-plugin/target/
 server/node_modules/
 server/dist/

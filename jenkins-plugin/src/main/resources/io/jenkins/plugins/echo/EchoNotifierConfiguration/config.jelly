@@ -1,0 +1,11 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="jelly:stapler" xmlns="jelly:core">
+  <f:section title="Echo Notifier">
+    <f:entry field="serverUrl" title="Echo server URL">
+      <f:textbox />
+    </f:entry>
+    <f:entry field="credentialId" title="Default API token credential">
+      <f:select />
+    </f:entry>
+  </f:section>
+</j:jelly>

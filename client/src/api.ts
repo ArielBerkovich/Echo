@@ -133,6 +133,29 @@ async function requestMultipart(path, form, errorLabel) {
   }
 }
 
+async function download(path, errorLabel) {
+  const requestUrl = apiUrl(path);
+  try {
+    const res = await fetch(requestUrl, {
+      method: "GET",
+      credentials: "include",
+      headers: authHeaders(),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      const error = new Error(friendlyErrorMessage(res.status, data.error, path, errorLabel));
+      error.status = res.status;
+      throw error;
+    }
+    const contentDisposition = res.headers.get("Content-Disposition") || "";
+    const filename = contentDisposition.match(/filename="?([^";]+)"?/i)?.[1] || "echo-notifier.hpi";
+    return { blob: await res.blob(), filename };
+  } catch (error) {
+    if (error.status) throw error;
+    throw unreachableError();
+  }
+}
+
 // Multipart upload (kept separate from `request` so the browser sets the
 // multipart boundary itself — don't add a Content-Type header here).
 async function uploadFiles(files) {
@@ -173,6 +196,7 @@ export const api = {
   updateWorkspace: (payload) => request("/workspace", { method: "PATCH", body: payload }),
   getAzureDevOpsIntegration: () => request("/integrations/azure-devops"),
   getAllureIntegration: () => request("/integrations/allure"),
+  downloadJenkinsPlugin: () => download("/integrations/jenkins/download", "Jenkins plugin download"),
   discoverAllureProjects: (payload) => request("/integrations/allure/discover", { method: "POST", body: payload }),
   updateAllureIntegration: (payload) => request("/integrations/allure", { method: "PATCH", body: payload }),
   syncAllureIntegration: () => request("/integrations/allure/sync", { method: "POST" }),
