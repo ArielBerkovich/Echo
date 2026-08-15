@@ -518,9 +518,9 @@ export default function SettingsModal({
             <div className="integration-card-grid">
             <article className="integration-card allure-integration-card">
               <button type="button" className="integration-card-main" onClick={() => setAllureOptionsOpen(true)}>
-                <div className="integration-card-icon"><span className="allure-integration-mark">A</span></div>
+                <div className="integration-card-icon"><img className="allure-integration-icon" src="/allure-docker-icon.png" alt="" /></div>
                 <div className="integration-card-copy">
-                  <h3>Allure reports</h3>
+                  <h3>allure docker service</h3>
                   <span>{allureIntegration?.enabled ? `${allureIntegration.projects?.length || 0} project channels` : "Not configured"}</span>
                   <p>{allureIntegration?.enabled ? "Latest reports are available in read-only Echo channels." : "Connect an Allure service to create report channels."}</p>
                 </div>
@@ -542,19 +542,14 @@ export default function SettingsModal({
                 </div>
               </button>
               <div className="integration-card-footer">
-                <button type="button" className="btn-secondary" onClick={() => setAzureOptionsOpen(true)}>View integration</button>
-                <label className={`integration-switch${azureIntegration.active ? " is-on" : ""}`}>
-                  <input type="checkbox" checked={!!azureIntegration.active} disabled={azureLoading} onChange={(event) => setAzureActive(event.target.checked)} />
-                  <span className="integration-switch-track"><span /></span>
-                  <span className="sr-only">{azureIntegration.active ? "Disable" : "Enable"} Azure DevOps</span>
-                </label>
+                <button type="button" className="btn-secondary" onClick={() => setAzureOptionsOpen(true)}>Configure</button>
               </div>
             </article>}
             </div>
             {allureOptionsOpen && <div className="integration-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setAllureOptionsOpen(false); }}>
               <section className="integration-dialog" role="dialog" aria-modal="true" aria-labelledby="allure-integration-title">
                 <div className="integration-dialog-header">
-                  <div className="integration-dialog-title"><span className="allure-integration-mark">A</span><div><h3 id="allure-integration-title">Allure reports</h3><p>Integration settings</p></div></div>
+                  <div className="integration-dialog-title"><img className="allure-integration-icon" src="/allure-docker-icon.png" alt="" /><div><h3 id="allure-integration-title">allure docker service</h3><p>Integration settings</p></div></div>
                   <button type="button" className="settings-close" onClick={() => setAllureOptionsOpen(false)} aria-label="Close integration settings">✕</button>
                 </div>
                 <div className="integration-dialog-body allure-settings-body">
