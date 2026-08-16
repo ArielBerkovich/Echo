@@ -28,6 +28,23 @@ for (const [alias, id] of Object.entries(emojiData.aliases || {})) {
 const EMOJI_RE = /\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic})*/gu;
 const HAS_EMOJI = /\p{Extended_Pictographic}/u;
 
+const ECHO_DATETIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/;
+
+export function formatEchoDateTime(value) {
+  const iso = String(value || "");
+  const match = ECHO_DATETIME_RE.exec(iso);
+  if (!match) return null;
+  const date = new Date(iso);
+  if (!Number.isFinite(date.getTime())) return null;
+  const [year, month, day, hour, minute, second] = [
+    Number(iso.slice(0, 4)), Number(iso.slice(5, 7)), Number(iso.slice(8, 10)),
+    Number(iso.slice(11, 13)), Number(iso.slice(14, 16)), Number(iso.slice(17, 19)),
+  ];
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() + 1 !== month || date.getUTCDate() !== day
+    || date.getUTCHours() !== hour || date.getUTCMinutes() !== minute || date.getUTCSeconds() !== second) return null;
+  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "medium" }).format(date);
+}
+
 // Split preview text into safe React-renderable pieces. Unlike the full
 // Markdown renderer, this deliberately recognizes only emoji shortcodes;
 // everything else remains plain text.
@@ -198,6 +215,26 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
           return `<img class="custom-emoji" src="${token.customUrl}" alt=":${token.code}:" title=":${token.code}:" />`;
         },
       },
+      {
+        // Echo's localized datetime token. The strict ISO format and unusual
+        // delimiters keep this separate from ordinary user text.
+        name: "echoDatetime",
+        level: "inline",
+        start(src) {
+          const i = src.indexOf("⟦datetime:");
+          return i < 0 ? undefined : i;
+        },
+        tokenizer(src) {
+          const m = /^⟦datetime:([^⟧]+)⟧/.exec(src);
+          if (!m || !formatEchoDateTime(m[1])) return undefined;
+          return { type: "echoDatetime", raw: m[0], iso: m[1] };
+        },
+        renderer(token) {
+          const formatted = formatEchoDateTime(token.iso);
+          if (!formatted) return token.raw;
+          return `<time class="localized-datetime" datetime="${escapeHtml(token.iso)}">${escapeHtml(formatted)}</time>`;
+        },
+      },
     ],
   });
 
@@ -212,9 +249,9 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
     const safe = DOMPurify.sanitize(html, {
       ALLOWED_TAGS: [
         "p", "br", "strong", "em", "del", "code", "pre", "blockquote",
-        "ul", "ol", "li", "a", "span", "h1", "h2", "h3", "hr", "img",
+        "ul", "ol", "li", "a", "span", "time", "h1", "h2", "h3", "hr", "img",
       ],
-      ALLOWED_ATTR: ["class", "href", "title", "target", "rel", "src", "alt", "data-channel-tag"],
+      ALLOWED_ATTR: ["class", "datetime", "href", "title", "target", "rel", "src", "alt", "data-channel-tag"],
       // Authenticated custom emoji are rendered through local blob URLs before
       // this HTML is inserted into the chat. Keep those URLs while retaining
       // a narrow allowlist for markdown links and image sources.

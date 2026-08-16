@@ -46,6 +46,11 @@ function backendOrigin() {
   return getBackendUrl() || (typeof window !== "undefined" ? window.location.origin : "");
 }
 
+function defaultAllureChannelName(projectId) {
+  const slug = String(projectId || "").toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 55) || "default";
+  return `allure-${slug}`;
+}
+
 function JenkinsIntegrationIcon() {
   return <span className="jenkins-integration-mark" aria-hidden="true">J</span>;
 }
@@ -90,6 +95,7 @@ export default function SettingsModal({
   const [allureResetOpen, setAllureResetOpen] = useState(false);
   const [allureProjects, setAllureProjects] = useState([]);
   const [allureSelectedProjects, setAllureSelectedProjects] = useState([]);
+  const [allureChannelMappings, setAllureChannelMappings] = useState({});
   const [allureError, setAllureError] = useState(null);
   const [allureSaved, setAllureSaved] = useState(false);
   const [jenkinsOptionsOpen, setJenkinsOptionsOpen] = useState(false);
@@ -142,6 +148,7 @@ export default function SettingsModal({
         const currentProjects = (allure?.projects || []).map((project) => project.id);
         setAllureProjects(currentProjects);
         setAllureSelectedProjects(allure?.selectedProjectIds?.length ? allure.selectedProjectIds : currentProjects);
+        setAllureChannelMappings(Object.fromEntries((allure?.projects || []).map((project) => [project.id, project.channel || defaultAllureChannelName(project.id)])));
       })
       .catch((err) => !cancelled && setError(err.message))
       .finally(() => !cancelled && setAllureLoading(false));
@@ -310,7 +317,13 @@ export default function SettingsModal({
       setAllureError(null);
       setAllureSaved(false);
     try {
-      const payload = { url: allureUrl, username: allureUsername, enabled: !!allureUrl.trim(), projectIds: allureSelectedProjects };
+      const payload = {
+        url: allureUrl,
+        username: allureUsername,
+        enabled: !!allureUrl.trim(),
+        projectIds: allureSelectedProjects,
+        channelMappings: allureProjects.map((projectId) => ({ projectId, channelName: allureChannelMappings[projectId] || defaultAllureChannelName(projectId) })),
+      };
       // An empty username means the admin is switching to an unsecured
       // service, so clear any previously stored password too. When a username
       // remains, an empty password keeps the saved secret.
@@ -340,6 +353,7 @@ export default function SettingsModal({
       setAllurePassword("");
       setAllureProjects([]);
       setAllureSelectedProjects([]);
+      setAllureChannelMappings({});
       setAllureResetOpen(false);
       setAllureOptionsOpen(false);
       onIntegrationsChanged?.();
@@ -358,6 +372,7 @@ export default function SettingsModal({
     try {
       const result = await api.discoverAllureProjects({ url: allureUrl, username: allureUsername, password: allurePassword });
       setAllureProjects(result.projects || []);
+      setAllureChannelMappings((previous) => Object.fromEntries((result.projects || []).map((projectId) => [projectId, previous[projectId] || defaultAllureChannelName(projectId)])));
       setAllureSelectedProjects((previous) => {
         const existing = new Set(previous);
         const kept = (result.projects || []).filter((projectId) => existing.has(projectId));
@@ -637,8 +652,8 @@ export default function SettingsModal({
                   <input id="allure-password" className="settings-input" type="password" value={allurePassword} onChange={(event) => setAllurePassword(event.target.value)} autoComplete="new-password" />
                   <p className="settings-hint">Leave the password blank to keep the saved password when using a username. To use an unsecured Allure service, clear both credentials. Credentials are stored encrypted on the Echo server and are never sent to users. When Echo runs in Docker, use a URL reachable from the Echo container, such as <code>http://172.17.0.1:5050</code>.</p>
                   <div className="allure-project-picker">
-                    <div className="allure-project-picker-header"><div><strong>Projects to sync</strong><span>{allureProjects.length ? `${allureSelectedProjects.length} of ${allureProjects.length} selected` : "Choose which projects become Echo channels"}</span></div><button type="button" className="btn-secondary" disabled={allureLoading || !allureUrl.trim()} onClick={discoverAllureProjects}>Discover projects</button></div>
-                    {allureProjects.length > 0 ? <div className="allure-project-list">{allureProjects.map((projectId) => <label key={projectId} className={`allure-project-option${allureSelectedProjects.includes(projectId) ? " is-selected" : ""}`}><input type="checkbox" checked={allureSelectedProjects.includes(projectId)} onChange={(event) => setAllureSelectedProjects((previous) => event.target.checked ? [...new Set([...previous, projectId])] : previous.filter((id) => id !== projectId))} /><span className="allure-project-check" aria-hidden="true">✓</span><span className="allure-project-name">{projectId}</span></label>)}</div> : <div className="allure-project-empty"><span className="allure-project-empty-icon">✦</span><div><strong>No projects discovered yet</strong><p>Enter your Allure URL, then discover projects to choose what to sync.</p></div></div>}
+                    <div className="allure-project-picker-header"><div><strong>Projects to sync</strong><span>{allureProjects.length ? `${allureSelectedProjects.length} of ${allureProjects.length} selected · set an Echo channel for each project` : "Choose which projects become Echo channels"}</span></div><button type="button" className="btn-secondary" disabled={allureLoading || !allureUrl.trim()} onClick={discoverAllureProjects}>Discover projects</button></div>
+                    {allureProjects.length > 0 ? <div className="allure-project-list">{allureProjects.map((projectId) => <div key={projectId} className={`allure-project-option${allureSelectedProjects.includes(projectId) ? " is-selected" : ""}`}><label className="allure-project-option-toggle"><input type="checkbox" checked={allureSelectedProjects.includes(projectId)} onChange={(event) => setAllureSelectedProjects((previous) => event.target.checked ? [...new Set([...previous, projectId])] : previous.filter((id) => id !== projectId))} /><span className="allure-project-check" aria-hidden="true">✓</span><span className="allure-project-name">{projectId}</span></label><label className="allure-project-channel-field"><span>Echo channel</span><input className="allure-project-channel-input" aria-label={`Echo channel for ${projectId}`} value={allureChannelMappings[projectId] || defaultAllureChannelName(projectId)} onChange={(event) => setAllureChannelMappings((previous) => ({ ...previous, [projectId]: event.target.value }))} placeholder={defaultAllureChannelName(projectId)} /></label></div>)}</div> : <div className="allure-project-empty"><span className="allure-project-empty-icon">✦</span><div><strong>No projects discovered yet</strong><p>Enter your Allure URL, then discover projects to choose what becomes an Echo channel.</p></div></div>}
                     {allureProjects.length > 1 && <div className="allure-project-picker-actions"><button type="button" className="link-button" onClick={() => setAllureSelectedProjects([...allureProjects])}>Select all</button><button type="button" className="link-button" onClick={() => setAllureSelectedProjects([])}>Clear all</button></div>}
                   </div>
                   <div className="integration-actions">

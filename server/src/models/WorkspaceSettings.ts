@@ -11,6 +11,14 @@ const workspaceSettingsSchema = new mongoose.Schema(
       passwordCiphertext: { type: String, default: null },
       enabled: { type: Boolean, default: false },
       selectedProjectIds: { type: [String], default: [] },
+      channelMappings: {
+        type: [{
+          _id: false,
+          projectId: { type: String, trim: true, maxlength: 200 },
+          channelName: { type: String, trim: true, maxlength: 64 },
+        }],
+        default: [],
+      },
       selectionConfigured: { type: Boolean, default: false },
       lastSyncedAt: { type: Date, default: null },
       lastError: { type: String, default: null, maxlength: 500 },

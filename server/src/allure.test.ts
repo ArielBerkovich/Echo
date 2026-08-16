@@ -10,6 +10,8 @@ import {
   encryptAllureSecret,
   listAllureProjects,
   createAllureReportToken,
+  allureReportStatus,
+  summarizeAllureReport,
   verifyAllureReportToken,
 } from "./allure.js";
 
@@ -86,5 +88,33 @@ describe("Allure integration adapter", () => {
     assert.equal(verifyAllureReportToken(token, "echo-ui"), true);
     assert.equal(verifyAllureReportToken(token, "echo-api"), false);
     assert.equal(verifyAllureReportToken("invalid", "echo-ui"), false);
+  });
+
+  it("summarizes Allure widget results", () => {
+    assert.equal(
+      summarizeAllureReport({
+        statistic: { total: 12, passed: 9, failed: 2, skipped: 1 },
+        time: { duration: 12500, stop: 1760000000000 },
+      }),
+      "**12 tests**\n\n**Results**\n- Passed: **9** (75%)\n- Failed: **2** (17%)\n- Skipped: **1** (8%)\n- Completed: **⟦datetime:2025-10-09T08:53:20.000Z⟧**\n- Duration: **13s**"
+    );
+  });
+
+  it("shows only nonzero result statuses", () => {
+    const summary = summarizeAllureReport({
+      statistic: { total: 100, passed: 90, skipped: 10, failed: 0, broken: 0, unknown: 0 },
+    });
+
+    assert.equal(summary, "**100 tests**\n\n**Results**\n- Passed: **90** (90%)\n- Skipped: **10** (10%)");
+    assert.doesNotMatch(summary, /Failed|Broken|Unknown/);
+    assert.doesNotMatch(summary, /\*\*0\*\*/);
+  });
+
+  it("classifies report status for notification indicators", () => {
+    assert.deepEqual(allureReportStatus({ statistic: { passed: 3, failed: 0, broken: 0, unknown: 0 } }), { emoji: "✅", label: "Passed" });
+    assert.deepEqual(allureReportStatus({ statistic: { passed: 0, failed: 0, broken: 0, skipped: 10, unknown: 0 } }), { emoji: "✅", label: "Passed" });
+    assert.deepEqual(allureReportStatus({ statistic: { passed: 2, failed: 1, broken: 0, unknown: 0 } }), { emoji: "❌", label: "Failed" });
+    assert.deepEqual(allureReportStatus({ statistic: { passed: 2, failed: 0, broken: 1, unknown: 0 } }), { emoji: "❌", label: "Failed" });
+    assert.deepEqual(allureReportStatus({ statistic: { passed: 2, failed: 0, broken: 0, unknown: 1 } }), { emoji: "⚠️", label: "Warning" });
   });
 });
