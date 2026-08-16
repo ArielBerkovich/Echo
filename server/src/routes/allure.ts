@@ -21,6 +21,27 @@ import { postAutomationMessage } from "../automation.js";
 
 export const allureRouter = Router();
 
+const ALLURE_BOT_USERNAME = "allure-reports-bot";
+const ALLURE_BOT_DISPLAY_NAME = "Allure Reports Bot";
+const ALLURE_BOT_AVATAR = "/allure-docker-icon.png";
+
+async function ensureAllureReportsBot() {
+  let bot = await User.findOne({ username: ALLURE_BOT_USERNAME });
+  if (!bot) {
+    bot = await User.create({
+      username: ALLURE_BOT_USERNAME,
+      displayName: ALLURE_BOT_DISPLAY_NAME,
+      passwordHash: "x",
+      avatarUrlOverride: ALLURE_BOT_AVATAR,
+    });
+  } else if (bot.displayName !== ALLURE_BOT_DISPLAY_NAME || bot.avatarUrlOverride !== ALLURE_BOT_AVATAR) {
+    bot.displayName = ALLURE_BOT_DISPLAY_NAME;
+    bot.avatarUrlOverride = ALLURE_BOT_AVATAR;
+    await bot.save();
+  }
+  return bot;
+}
+
 async function settings() {
   return (await WorkspaceSettings.findById("workspace")) || WorkspaceSettings.create({ _id: "workspace" });
 }
@@ -182,11 +203,10 @@ allureRouter.get("/projects/:projectId/report-url", requireAuth, async (req, res
 export async function notifyAllureReports() {
   const doc = await settings();
   if (!doc.allure?.enabled || !doc.allure?.url) return;
-  const [system, channels] = await Promise.all([
-    User.findOne({ username: "system" }),
+  const [allureBot, channels] = await Promise.all([
+    ensureAllureReportsBot(),
     Channel.find({ "external.type": "allure", isArchived: false }),
   ]);
-  if (!system) return;
 
   for (const channel of channels) {
     const projectId = channel.external?.projectId;
@@ -211,11 +231,14 @@ export async function notifyAllureReports() {
       };
       const version = crypto.createHash("sha256").update(JSON.stringify(stableSummary)).digest("hex");
       const externalKey = `allure:${projectId}:${version}`;
-      if (await Message.exists({ channel: channel._id, author: system._id, externalKey })) continue;
+      // Keep the report fingerprint unique across author identities so
+      // introducing the dedicated bot does not repost an already-delivered
+      // report that was previously authored by Echo.
+      if (await Message.exists({ channel: channel._id, externalKey })) continue;
       const reportUrl = `/api/integrations/allure/projects/${encodeURIComponent(projectId)}/report/${encodeURIComponent(reportId)}/index.html?token=${encodeURIComponent(createAllureReportToken(projectId, "30d"))}`;
       await postAutomationMessage({
         channel,
-        authorId: system._id,
+        authorId: allureBot._id,
         source: "allure",
         externalKey,
         payload: {
