@@ -10894,49 +10894,6 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     z-index: 91;
   }
 }
-.allure-report-frame {
-  border: 0;
-  display: block;
-  height: 100%;
-  inset: 0;
-  position: absolute;
-  width: 100%;
-  background: #fff;
-}
-
-.allure-report-view .channel-main,
-.allure-report-container {
-  min-height: 0;
-}
-
-.allure-report-container {
-  display: flex;
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  position: relative;
-}
-
-.allure-report-container > .empty-state {
-  margin: auto;
-}
-
-.allure-report-view .header-action-button {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  color: var(--text);
-  font-size: 12px;
-  font-weight: 600;
-  margin-left: auto;
-  padding: 6px 10px;
-  text-decoration: none;
-}
-
-.allure-report-view .header-action-button:hover {
-  background: var(--border);
-}
-
 .allure-settings-body {
   display: grid;
   gap: 8px;
@@ -10949,7 +10906,12 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 .allure-project-list { display: grid; min-width: 0; gap: 6px; max-height: 170px; overflow-x: hidden; overflow-y: auto; padding: 2px; }
 .allure-project-option { position: relative; display: flex; align-items: center; min-width: 0; gap: 10px; padding: 9px 10px; border: 1px solid transparent; border-radius: 8px; color: var(--text); font-size: 13px; cursor: pointer; transition: border-color .15s ease, background .15s ease; }
 .allure-project-option:hover, .allure-project-option.is-selected { border-color: color-mix(in srgb, var(--accent) 35%, var(--border)); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+.allure-project-option-toggle { display: flex; align-items: center; min-width: 0; flex: 1 1 auto; gap: 10px; cursor: pointer; }
+.allure-project-channel-field { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; color: var(--muted); font-size: 11px; }
+.allure-project-channel-input { width: 150px; min-width: 0; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); font: inherit; font-size: 12px; }
+.allure-project-channel-input:focus { outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: 1px; }
 .allure-project-option input { position: absolute; opacity: 0; pointer-events: none; }
+.allure-project-option .allure-project-channel-input { position: relative; opacity: 1; pointer-events: auto; }
 .allure-project-check { display: grid; place-items: center; width: 17px; height: 17px; flex: 0 0 auto; border: 1px solid var(--border); border-radius: 5px; color: transparent; font-size: 12px; font-weight: 800; }
 .allure-project-option.is-selected .allure-project-check { border-color: var(--accent); background: var(--accent); color: #fff; }
 .allure-project-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

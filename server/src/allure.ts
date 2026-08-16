@@ -69,8 +69,8 @@ export async function allureFetch(settings, path, options = {}) {
   return fetchWithTimeout(`${base}${path.startsWith("/") ? path : `/${path}`}`, { ...options, headers });
 }
 
-export function createAllureReportToken(projectId) {
-  return jwt.sign({ purpose: "allure-report", projectId: String(projectId) }, config.jwtSecret, { expiresIn: "15m" });
+export function createAllureReportToken(projectId, expiresIn = "15m") {
+  return jwt.sign({ purpose: "allure-report", projectId: String(projectId) }, config.jwtSecret, { expiresIn });
 }
 
 export function verifyAllureReportToken(token, projectId) {
@@ -89,4 +89,49 @@ export async function listAllureProjects(settings) {
   // Allure's built-in default project is an implementation detail and should
   // never become an Echo channel or appear in the project picker.
   return Object.keys(payload?.data?.projects || {}).filter((projectId) => projectId !== "default");
+}
+
+export function summarizeAllureReport(summary) {
+  const statistic = summary?.statistic || summary?.data?.statistic || {};
+  const statuses = ["passed", "failed", "broken", "skipped", "unknown"];
+  const total = Number(statistic.total);
+  const totalText = Number.isFinite(total) ? `**${total} tests**` : "the latest test run";
+  const resultLines = statuses.map((status) => {
+    const count = Number(statistic[status]) || 0;
+    const percentage = total > 0 ? ` (${Math.round((count / total) * 100)}%)` : "";
+    return `- ${status[0].toUpperCase()}${status.slice(1)}: **${count}**${percentage}`;
+  }).filter((line) => !line.includes("**0**"));
+  const time = summary?.time || summary?.data?.time || {};
+  const duration = Number(time.duration);
+  const timing = Number.isFinite(duration) && duration >= 0
+    ? `- Duration: **${formatDuration(duration)}**`
+    : null;
+  const completedAt = formatReportTimestamp(time.stop);
+  if (completedAt) resultLines.push(`- Completed: **⟦datetime:${new Date(Number(time.stop)).toISOString()}⟧**`);
+  if (timing) resultLines.push(timing);
+  return `${totalText}\n\n**Results**\n${resultLines.join("\n")}`;
+}
+
+export function allureReportStatus(summary) {
+  const statistic = summary?.statistic || summary?.data?.statistic || {};
+  const failed = Number(statistic.failed) || 0;
+  const broken = Number(statistic.broken) || 0;
+  const unknown = Number(statistic.unknown) || 0;
+  if (failed > 0 || broken > 0) return { emoji: "❌", label: "Failed" };
+  if (unknown > 0) return { emoji: "⚠️", label: "Warning" };
+  return { emoji: "✅", label: "Passed" };
+}
+
+function formatDuration(milliseconds) {
+  const seconds = Math.round(milliseconds / 1000);
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  const remainder = seconds % 60;
+  return remainder ? `${minutes}m ${remainder}s` : `${minutes}m`;
+}
+
+function formatReportTimestamp(value) {
+  const timestamp = Number(value);
+  if (!Number.isFinite(timestamp) || timestamp <= 0) return "";
+  return new Date(timestamp).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, " UTC");
 }

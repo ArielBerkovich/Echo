@@ -1,6 +1,7 @@
 import { Router } from "express";
 import crypto from "crypto";
 import { Channel } from "../models/Channel.js";
+import { Message } from "../models/Message.js";
 import { User } from "../models/User.js";
 import { WorkspaceSettings } from "../models/WorkspaceSettings.js";
 import { requireAuth } from "../middleware/requireAuth.js";
@@ -11,9 +12,12 @@ import {
   createAllureReportToken,
   decryptAllureSecret,
   encryptAllureSecret,
+  allureReportStatus,
   listAllureProjects,
+  summarizeAllureReport,
   verifyAllureReportToken,
 } from "../allure.js";
+import { postAutomationMessage } from "../automation.js";
 
 export const allureRouter = Router();
 
@@ -26,12 +30,17 @@ function projectChannelName(projectId) {
   return `allure-${slug}`;
 }
 
+function configuredProjectChannelName(settingsDoc, projectId) {
+  const mapping = (settingsDoc.allure?.channelMappings || []).find((item) => item.projectId === projectId);
+  return mapping?.channelName || projectChannelName(projectId);
+}
+
 async function syncProjects(settingsDoc, projectIds, creatorId) {
-  const users = await User.find({}, { _id: 1 }).lean();
+  const admins = await User.find({ isAdmin: true }, { _id: 1 }).lean();
   const projectSet = new Set(projectIds);
   const channels = [];
   for (const projectId of projectIds) {
-    const name = projectChannelName(projectId);
+    const name = configuredProjectChannelName(settingsDoc, projectId);
     const channel = await Channel.findOneAndUpdate(
       { "external.type": "allure", "external.projectId": projectId },
       {
@@ -39,10 +48,10 @@ async function syncProjects(settingsDoc, projectIds, creatorId) {
           name,
           type: "public",
           topic: `Allure report for ${projectId}`,
-          description: "Read-only channel backed by the latest Allure report.",
-          readOnly: true,
+          description: "Channel for Allure report updates and discussion.",
+          readOnly: false,
           isArchived: false,
-          members: users.map((user) => user._id),
+          members: admins.map((user) => user._id),
           managers: [creatorId],
         },
         $setOnInsert: { createdBy: creatorId, external: { type: "allure", projectId } },
@@ -101,6 +110,7 @@ allureRouter.patch("/", requireAuth, requireAdmin, async (req, res) => {
     doc.allure.enabled = false;
     doc.allure.lastError = null;
     doc.allure.selectedProjectIds = [];
+    doc.allure.channelMappings = [];
     doc.allure.selectionConfigured = false;
     await syncProjects(doc, [], req.user._id);
     await doc.save();
@@ -116,6 +126,20 @@ allureRouter.patch("/", requireAuth, requireAdmin, async (req, res) => {
         : discoveredProjectIds);
     if (requestedProjectIds) doc.allure.selectionConfigured = true;
     doc.allure.selectedProjectIds = projectIds;
+    const requestedMappings = Array.isArray(body.channelMappings)
+      ? body.channelMappings.reduce((map, item) => {
+        if (item?.projectId && item?.channelName) map.set(String(item.projectId), String(item.channelName).trim().toLowerCase().replace(/^#/, ""));
+        return map;
+      }, new Map())
+      : new Map((doc.allure.channelMappings || []).map((item) => [item.projectId, item.channelName]));
+    const channelNames = new Set();
+    doc.allure.channelMappings = projectIds.map((projectId) => {
+      const channelName = requestedMappings.get(projectId) || projectChannelName(projectId);
+      if (!/^[a-z0-9_-]{1,64}$/.test(channelName)) throw new Error(`Invalid channel name for Allure project ${projectId}`);
+      if (channelNames.has(channelName)) throw new Error(`Allure channel name is used more than once: ${channelName}`);
+      channelNames.add(channelName);
+      return { projectId, channelName };
+    });
     const channels = await syncProjects(doc, projectIds, req.user._id);
     doc.allure.lastSyncedAt = new Date();
     doc.allure.lastError = null;
@@ -155,6 +179,57 @@ allureRouter.get("/projects/:projectId/report-url", requireAuth, async (req, res
   res.json({ url: `/api/integrations/allure/projects/${encodeURIComponent(req.params.projectId)}/report/index.html?token=${encodeURIComponent(createAllureReportToken(req.params.projectId))}` });
 });
 
+export async function notifyAllureReports() {
+  const doc = await settings();
+  if (!doc.allure?.enabled || !doc.allure?.url) return;
+  const [system, channels] = await Promise.all([
+    User.findOne({ username: "system" }),
+    Channel.find({ "external.type": "allure", isArchived: false }),
+  ]);
+  if (!system) return;
+
+  for (const channel of channels) {
+    const projectId = channel.external?.projectId;
+    if (!projectId) continue;
+    try {
+      const projectResponse = await allureFetch(doc, `/projects/${encodeURIComponent(projectId)}`);
+      if (!projectResponse.ok) continue;
+      const project = await projectResponse.json();
+      const reportId = project?.data?.project?.reports_id?.[1];
+      if (!reportId) continue;
+      const upstream = await allureFetch(doc, `/projects/${encodeURIComponent(projectId)}/reports/${encodeURIComponent(reportId)}/widgets/summary.json`);
+      if (!upstream.ok) continue;
+      const body = Buffer.from(await upstream.arrayBuffer());
+      const summary = JSON.parse(body.toString("utf8"));
+      const reportStatus = allureReportStatus(summary);
+      // Allure rewrites report timing fields when it regenerates the latest
+      // report. Those timestamps are not a new result, so exclude them from
+      // the notification fingerprint to avoid repeating the same message.
+      const stableSummary = {
+        reportName: summary?.reportName || summary?.data?.reportName || "",
+        statistic: summary?.statistic || summary?.data?.statistic || {},
+      };
+      const version = crypto.createHash("sha256").update(JSON.stringify(stableSummary)).digest("hex");
+      const externalKey = `allure:${projectId}:${version}`;
+      if (await Message.exists({ channel: channel._id, author: system._id, externalKey })) continue;
+      const reportUrl = `/api/integrations/allure/projects/${encodeURIComponent(projectId)}/report/${encodeURIComponent(reportId)}/index.html?token=${encodeURIComponent(createAllureReportToken(projectId, "30d"))}`;
+      await postAutomationMessage({
+        channel,
+        authorId: system._id,
+        source: "allure",
+        externalKey,
+        payload: {
+          title: `${reportStatus.emoji} ${reportStatus.label} Allure report for ${projectId}`,
+          externalKey,
+          body: `${summarizeAllureReport(summary)}\n\n[Open Allure report](${reportUrl})`,
+        },
+      });
+    } catch (error) {
+      console.error(`Allure notification failed for ${projectId}:`, error.message);
+    }
+  }
+}
+
 allureRouter.get("/projects/:projectId/report-version", requireAuth, async (req, res) => {
   const channel = await Channel.findOne({ "external.type": "allure", "external.projectId": req.params.projectId, isArchived: false });
   if (!channel) return res.status(404).json({ error: "Allure project not found" });
@@ -162,8 +237,7 @@ allureRouter.get("/projects/:projectId/report-version", requireAuth, async (req,
   if (!doc.allure?.enabled || !doc.allure?.url) return res.status(404).json({ error: "Allure is not configured" });
   try {
     // index.html is a mostly static report shell. Hash the dynamic summary
-    // instead so result uploads and regenerated reports trigger the iframe to
-    // reload in the Echo channel.
+    // instead so result uploads and regenerated reports get a new notification.
     let upstream = await allureFetch(doc, `/projects/${encodeURIComponent(req.params.projectId)}/reports/latest/widgets/summary.json`);
     if (!upstream.ok) upstream = await allureFetch(doc, `/projects/${encodeURIComponent(req.params.projectId)}/reports/latest/index.html`);
     if (!upstream.ok) return res.status(upstream.status).json({ error: `Allure report request failed (${upstream.status})` });
@@ -174,9 +248,9 @@ allureRouter.get("/projects/:projectId/report-version", requireAuth, async (req,
   }
 });
 
-// The iframe has no Echo Authorization header, so it receives a short-lived,
-// signed URL from the authenticated endpoint above. Allure credentials remain
-// on the server and are never sent to the browser.
+// Report pages have no Echo Authorization header, so they receive a signed URL
+// from the authenticated endpoint above. Allure credentials remain on the
+// server and are never sent to the browser.
 function reportCookieName(projectId) {
   return `echo_allure_report_${Buffer.from(String(projectId)).toString("base64url")}`;
 }
@@ -195,8 +269,11 @@ allureRouter.get("/projects/:projectId/report/*", async (req, res) => {
   if (!verifyAllureReportToken(token, req.params.projectId)) return res.status(401).send("Invalid or expired report link");
   const doc = await settings();
   if (!doc.allure?.enabled || !doc.allure?.url) return res.status(404).send("Allure is not configured");
-  const path = req.params[0] || "index.html";
-  const upstream = await allureFetch(doc, `/projects/${encodeURIComponent(req.params.projectId)}/reports/latest/${path}`, { redirect: "follow" });
+  const requestedPath = req.params[0] || "index.html";
+  const parts = requestedPath.split("/");
+  const reportId = /^\d+$/.test(parts[0]) ? parts.shift() : "latest";
+  const path = parts.join("/") || "index.html";
+  const upstream = await allureFetch(doc, `/projects/${encodeURIComponent(req.params.projectId)}/reports/${reportId}/${path}`, { redirect: "follow" });
   if (!upstream.ok) return res.status(upstream.status).send(await upstream.text());
   res.status(upstream.status);
   const contentType = upstream.headers.get("content-type");
