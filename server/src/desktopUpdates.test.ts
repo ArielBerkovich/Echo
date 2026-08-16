@@ -6,7 +6,7 @@ import path from "node:path";
 import { afterEach, describe, it } from "node:test";
 import express from "express";
 
-import { desktopUpdatesRouter } from "./desktopUpdates.js";
+import { desktopDownloadsRouter, desktopUpdatesRouter } from "./desktopUpdates.js";
 
 const temporaryDirectories: string[] = [];
 
@@ -72,5 +72,32 @@ describe("desktopUpdatesRouter", () => {
       const response = await fetch(`${baseUrl}/api/desktop-updates/%2e%2e/package.json`);
       assert.equal(response.status, 404);
     });
+  });
+});
+
+describe("desktopDownloadsRouter", () => {
+  it("describes embedded installers from the update manifests", async () => {
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), "echo-downloads-"));
+    fs.mkdirSync(path.join(directory, "windows"));
+    fs.mkdirSync(path.join(directory, "linux"));
+    fs.writeFileSync(path.join(directory, "windows", "latest.yml"), "version: 0.3.0\nfiles:\n  - url: Echo Setup 0.3.0.exe\n");
+    fs.writeFileSync(path.join(directory, "linux", "latest-linux.yml"), "version: 0.3.0\nfiles:\n  - url: Echo-0.3.0.AppImage\n");
+
+    const app = express();
+    app.use("/api/desktop-downloads", desktopDownloadsRouter(directory));
+    const server = await new Promise((resolve) => {
+      const listener = app.listen(0, () => resolve(listener));
+    });
+    try {
+      const address = server.address();
+      const response = await fetch(`http://127.0.0.1:${address.port}/api/desktop-downloads`);
+      assert.deepEqual(await response.json(), {
+        version: "0.3.0",
+        windows: { available: true, version: "0.3.0", url: "/api/desktop-updates/windows/Echo%20Setup%200.3.0.exe" },
+        linux: { available: true, version: "0.3.0", url: "/api/desktop-updates/linux/Echo-0.3.0.AppImage" },
+      });
+    } finally {
+      server.close();
+    }
   });
 });
