@@ -1,5 +1,5 @@
 const STATIC_VIEWS = new Set(["browse", "activity", "saved", "dms", "settings"]);
-const SETTINGS_TABS = new Set(["account", "appearance", "workspace", "integrations", "api"]);
+const SETTINGS_TABS = new Set(["account", "appearance", "workspace", "integrations", "desktop", "api"]);
 
 export function workspacePath({ view = "home", convId = null, convName = null, convType = null, searchQuery = null, settingsTab = "account" } = {}) {
   const conversation = convName || convId;

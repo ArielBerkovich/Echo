@@ -15,7 +15,7 @@ import { adminRouter } from "./routes/admin.js";
 import { savedRouter } from "./routes/saved.js";
 import { webhooksRouter } from "./routes/webhooks.js";
 import { openApiDocument } from "./openapi.js";
-import { desktopUpdatesRouter } from "./desktopUpdates.js";
+import { desktopDownloadsRouter, desktopUpdatesRouter } from "./desktopUpdates.js";
 import { workspaceRouter } from "./routes/workspace.js";
 import { httpMetricsMiddleware } from "./metrics.js";
 import { azureDevOpsRouter } from "./routes/azureDevOps.js";
@@ -39,6 +39,7 @@ export function createApp() {
 
   app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
   app.get("/api/openapi.json", (_req, res) => res.json(openApiDocument()));
+  app.use("/api/desktop-downloads", desktopDownloadsRouter(config.desktopUpdateDir));
   app.use("/api/desktop-updates", desktopUpdatesRouter(config.desktopUpdateDir));
   app.use("/api/auth", authRouter);
   app.use("/api/channels", channelsRouter);

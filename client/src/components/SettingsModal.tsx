@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Building2Icon, Code2Icon, GitPullRequestIcon, PaletteIcon, UserRoundIcon } from "lucide-react";
+import { Building2Icon, Code2Icon, DownloadIcon, GitPullRequestIcon, PaletteIcon, UserRoundIcon } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { api, getBackendUrl } from "../api.js";
@@ -26,6 +26,7 @@ const SETTINGS_TABS = [
   { id: "appearance", label: "Appearance", Icon: PaletteIcon },
   { id: "workspace", label: "Workspace", Icon: Building2Icon, adminOnly: true },
   { id: "integrations", label: "Integrations", Icon: GitPullRequestIcon, adminOnly: true },
+  { id: "desktop", label: "Desktop", Icon: DownloadIcon },
   { id: "api", label: "API", Icon: Code2Icon },
 ];
 
@@ -101,9 +102,25 @@ export default function SettingsModal({
   const [jenkinsOptionsOpen, setJenkinsOptionsOpen] = useState(false);
   const [jenkinsDownloading, setJenkinsDownloading] = useState(false);
   const [jenkinsDownloadError, setJenkinsDownloadError] = useState(null);
+  const [desktopDownloads, setDesktopDownloads] = useState(null);
+  const [desktopDownloadsError, setDesktopDownloadsError] = useState(null);
   const workspaceLogoSrc = useAuthUrl(workspaceLogoUrl);
 
   const nameChanged = displayName.trim() !== user.displayName;
+
+  useEffect(() => {
+    if (activeTab !== "desktop") return;
+    let cancelled = false;
+    setDesktopDownloadsError(null);
+    fetch(`${backendOrigin()}/api/desktop-downloads`, { credentials: "include" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Desktop downloads are unavailable");
+        return response.json();
+      })
+      .then((downloads) => !cancelled && setDesktopDownloads(downloads))
+      .catch((err) => !cancelled && setDesktopDownloadsError(err.message));
+    return () => { cancelled = true; };
+  }, [activeTab]);
 
   useEffect(() => {
     setActiveTab(settingsTab);
@@ -688,12 +705,41 @@ export default function SettingsModal({
 
           {activeTab === "api" && <ApiDocsPage embedded />}
 
+          {activeTab === "desktop" && <DesktopDownloads downloads={desktopDownloads} error={desktopDownloadsError} />}
+
           {error && <div className="error">{error}</div>}
           {saved && activeTab !== "workspace" && <div className="settings-saved">Saved ✓</div>}
         </main>
       </div>
       {avatarDialogOpen && <ProfilePictureDialog file={avatarFile} currentSrc={avatarUrl} onFileSelected={onAvatarFileSelected} onSave={saveAvatar} onClose={() => { setAvatarFile(null); setAvatarDialogOpen(false); }} />}
     </div>
+  );
+}
+
+function DesktopDownloads({ downloads, error }) {
+  if (error) return <section className="settings-section"><h3>Desktop apps</h3><p className="error">{error}</p></section>;
+  if (!downloads) return <section className="settings-section"><h3>Desktop apps</h3><p className="settings-hint">Loading download options…</p></section>;
+
+  const platforms = [
+    { key: "windows", label: "Windows", description: "Install the native Echo desktop app for Windows." },
+    { key: "linux", label: "Linux", description: "Download the portable Echo AppImage for Linux." },
+  ];
+  return (
+    <section className="settings-section desktop-downloads-section">
+      <h3>Desktop apps</h3>
+      <p className="settings-hint">These installers are provided by this Echo server and are available without internet access.</p>
+      <div className="desktop-download-grid">
+        {platforms.map(({ key, label, description }) => {
+          const download = downloads[key];
+          return <article className="desktop-download-card" key={key}>
+            <h4>{label}</h4>
+            <p>{description}</p>
+            {download?.available ? <a className="btn-primary desktop-download-button" href={`${backendOrigin()}${download.url}`} download>{`Download for ${label}`}</a> : <span className="settings-hint">Not included in this deployment.</span>}
+          </article>;
+        })}
+      </div>
+      {downloads.version && <p className="settings-hint">Package version: {downloads.version}</p>}
+    </section>
   );
 }
 

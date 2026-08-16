@@ -5167,6 +5167,27 @@ html[data-mode="dark"] .day-divider-label {
   background: transparent;
   box-shadow: none;
 }
+.settings-content-desktop {
+  grid-template-columns: minmax(0, 720px);
+}
+.desktop-downloads-section {
+  width: min(720px, 100%);
+}
+.desktop-download-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+.desktop-download-card {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+.desktop-download-card h4 { margin: 0 0 8px; }
+.desktop-download-card p { min-height: 42px; margin: 0 0 16px; color: var(--muted); font-size: 13px; }
+.desktop-download-button { display: inline-block; text-decoration: none; }
 .settings-appearance-card {
   width: min(720px, 100%);
 }
@@ -5201,6 +5222,7 @@ html[data-mode="dark"] .day-divider-label {
   .settings-content-account {
     grid-template-columns: 1fr;
   }
+  .desktop-download-grid { grid-template-columns: 1fr; }
   .settings-profile-fields {
     gap: 18px;
   }
