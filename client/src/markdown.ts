@@ -30,6 +30,41 @@ const HAS_EMOJI = /\p{Extended_Pictographic}/u;
 
 const ECHO_DATETIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/;
 
+// Markdown treats any number of consecutive blank lines as one paragraph
+// break. Echo's composer lets users intentionally add several blank lines,
+// so preserve the extras as empty paragraphs before parsing. Fenced code is
+// excluded because whitespace inside code blocks is significant already.
+export function preserveMarkdownBlankLines(text) {
+  const lines = String(text ?? "").split(/\r?\n/);
+  const output = [];
+  let inFence = false;
+
+  for (let i = 0; i < lines.length;) {
+    const line = lines[i];
+    const fence = /^\s{0,3}(`{3,}|~{3,})/.exec(line);
+    if (fence) inFence = !inFence;
+
+    if (inFence || line.trim() !== "") {
+      output.push(line);
+      i += 1;
+      continue;
+    }
+
+    let end = i;
+    while (end < lines.length && lines[end].trim() === "") end += 1;
+    const count = end - i;
+    output.push("");
+    if (!inFence && i > 0 && end < lines.length) {
+      for (let extra = 1; extra < count; extra += 1) {
+        output.push("<p><br></p>", "");
+      }
+    }
+    i = end;
+  }
+
+  return output.join("\n");
+}
+
 export function formatEchoDateTime(value) {
   const iso = String(value || "");
   const match = ECHO_DATETIME_RE.exec(iso);
@@ -243,7 +278,7 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
     const cached = renderedCache.get(source);
     if (cached !== undefined) return cached;
 
-    const html = marked.parse(source);
+    const html = marked.parse(preserveMarkdownBlankLines(source));
     // Sanitize: allow only the safe subset markdown produces. `class` is kept so
     // our mention pills stay styled; links open safely in a new tab.
     const safe = DOMPurify.sanitize(html, {

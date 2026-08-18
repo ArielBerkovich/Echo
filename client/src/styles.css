@@ -8540,7 +8540,7 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
   vertical-align: -0.2em;
 }
 .markdown p {
-  margin: 0 0 4px;
+  margin: 0 0 10px;
   /* Keep punctuation ordered by this paragraph's own text, even when a
      surrounding quote starts in the opposite writing direction. */
   unicode-bidi: plaintext;
