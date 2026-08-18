@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain, Menu, Notification } = require("electron");
+const { app, BrowserWindow, dialog, ipcMain, Menu, Notification, shell } = require("electron");
 const { autoUpdater } = require("electron-updater");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -65,6 +65,30 @@ function backendUrl() {
   return explicit?.startsWith("--echo-server-url=")
     ? explicit.slice("--echo-server-url=".length)
     : explicit || configuredUrl();
+}
+
+function openExternalUrl(value) {
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    return false;
+  }
+
+  if (!["http:", "https:", "mailto:", "tel:"].includes(url.protocol)) return false;
+  void shell.openExternal(url.toString()).catch((error) => {
+    console.warn("Could not open external link:", error?.message || error);
+  });
+  return true;
+}
+
+function isAppUrl(value, uiUrl) {
+  if (!uiUrl) return value.startsWith("file:");
+  try {
+    return new URL(value).origin === new URL(uiUrl).origin;
+  } catch {
+    return false;
+  }
 }
 
 function desktopUpdatePlatform() {
@@ -155,6 +179,15 @@ function createWindow(url, uiUrl = null) {
         `--echo-was-updated=${launchedAfterUpdate}`,
       ],
     },
+  });
+
+  mainWindow.webContents.setWindowOpenHandler(({ url: targetUrl }) => {
+    openExternalUrl(targetUrl);
+    return { action: "deny" };
+  });
+  mainWindow.webContents.on("will-navigate", (event, targetUrl) => {
+    if (isAppUrl(targetUrl, uiUrl)) return;
+    if (openExternalUrl(targetUrl)) event.preventDefault();
   });
 
   if (uiUrl) mainWindow.loadURL(uiUrl);
