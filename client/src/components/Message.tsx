@@ -146,7 +146,7 @@ function Message({
     </div>
   ) : (
     <div className="body markdown" data-testid="message-body" dir="auto" onClick={onBodyClick}>
-      <span dangerouslySetInnerHTML={{ __html: renderMarkdown(m.body) }} />
+      <div dangerouslySetInnerHTML={{ __html: renderMarkdown(m.body) }} />
       {m.editedAt && <span className="edited-label" title={formatTime(m.editedAt)}> (edited)</span>}
     </div>
   );
