@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router";
-import { api, consumeRhssoCallback, getToken, setToken, subscribeAuthExpired } from "./api.js";
+import { api, consumeRhssoCallback, getToken, restoreNativeToken, setToken, subscribeAuthExpired } from "./api.js";
 import { disconnectSocket } from "./socket.js";
 import { useRealtime } from "./lib/useRealtime.js";
 import Login from "./components/Login.js";
@@ -317,16 +317,20 @@ export default function App() {
 
   // Restore the session on load if a token is present.
   useEffect(() => {
-    if (!getToken()) {
-      setLoading(false);
-      return;
-    }
     let cancelled = false;
     let retryTimer = null;
     let retryDelay = 1000;
 
     const restore = async () => {
       try {
+        // Electron localStorage can be reset when its file origin changes
+        // (for example after an installed-app update). Recover the session
+        // from the native encrypted store before deciding that login is needed.
+        await restoreNativeToken();
+        if (!getToken()) {
+          if (!cancelled) setLoading(false);
+          return;
+        }
         const { user } = await api.me();
         if (cancelled) return;
         setUser(user);

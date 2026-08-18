@@ -13,5 +13,10 @@ declare global {
       saveBackendUrl(value: string): Promise<{ ok: boolean; error?: string }>;
       changeBackendUrl(value: string): Promise<{ ok: boolean; error?: string }>;
     };
+    echoDesktopAuth?: {
+      loadToken(): Promise<string | null>;
+      saveToken(token: string): Promise<{ ok: boolean }>;
+      clearToken(): Promise<{ ok: boolean }>;
+    };
   }
 }

@@ -20,6 +20,24 @@ export function getToken() {
 
 export function setToken(token) {
   writeString(TOKEN_KEY, token || null);
+  if (typeof window !== "undefined" && window.echoDesktopAuth) {
+    const operation = token
+      ? window.echoDesktopAuth.saveToken(token)
+      : window.echoDesktopAuth.clearToken();
+    // Persisting native credentials must never delay or break the UI auth flow.
+    Promise.resolve(operation).catch(() => {});
+  }
+}
+
+export async function restoreNativeToken() {
+  if (typeof window === "undefined" || !window.echoDesktopAuth || getToken()) return getToken();
+  try {
+    const token = await window.echoDesktopAuth.loadToken();
+    if (token) writeString(TOKEN_KEY, token);
+  } catch {
+    /* Native credential storage is an optional recovery path. */
+  }
+  return getToken();
 }
 
 function authHeaders(extra = {}) {

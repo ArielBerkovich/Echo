@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain, Menu, Notification, shell } = require("electron");
+const { app, BrowserWindow, dialog, ipcMain, Menu, Notification, safeStorage, shell } = require("electron");
 const { autoUpdater } = require("electron-updater");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -27,6 +27,40 @@ function configPath() {
 
 function pendingUpdatePath() {
   return path.join(app.getPath("userData"), "pending-update.json");
+}
+
+function authTokenPath() {
+  return path.join(app.getPath("userData"), "auth-token.json");
+}
+
+function readStoredAuthToken() {
+  try {
+    const stored = JSON.parse(fs.readFileSync(authTokenPath(), "utf8"));
+    if (!stored?.encrypted || !safeStorage.isEncryptionAvailable()) return null;
+    return safeStorage.decryptString(Buffer.from(stored.encrypted, "base64"));
+  } catch (error) {
+    if (error?.code !== "ENOENT") console.warn("Could not read the saved Echo session:", error?.message || error);
+    return null;
+  }
+}
+
+function saveAuthToken(token) {
+  if (!token || !safeStorage.isEncryptionAvailable()) return;
+  try {
+    fs.mkdirSync(path.dirname(authTokenPath()), { recursive: true });
+    const encrypted = safeStorage.encryptString(String(token)).toString("base64");
+    fs.writeFileSync(authTokenPath(), JSON.stringify({ encrypted }));
+  } catch (error) {
+    console.warn("Could not save the Echo session:", error?.message || error);
+  }
+}
+
+function clearAuthToken() {
+  try {
+    fs.rmSync(authTokenPath(), { force: true });
+  } catch (error) {
+    console.warn("Could not clear the saved Echo session:", error?.message || error);
+  }
 }
 
 function markPendingUpdate(version) {
@@ -261,6 +295,16 @@ ipcMain.handle("echo:change-backend-url", (_event, value) => {
     app.relaunch();
     app.exit(0);
   }, 150);
+  return { ok: true };
+});
+
+ipcMain.handle("echo:load-auth-token", () => readStoredAuthToken());
+ipcMain.handle("echo:save-auth-token", (_event, token) => {
+  saveAuthToken(token);
+  return { ok: true };
+});
+ipcMain.handle("echo:clear-auth-token", () => {
+  clearAuthToken();
   return { ok: true };
 });
 
