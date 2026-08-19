@@ -40,7 +40,9 @@ export function notifyPermission() {
   return notifySupported() ? Notification.permission : "denied";
 }
 export function notifyPref() {
-  return readString(PREF_KEY) === "on";
+  // Notifications are opt-out: an unset preference is the default-on state.
+  // Keep an explicit "off" value so users can still disable them from Settings.
+  return readString(PREF_KEY, "on") !== "off";
 }
 export function setNotifyPref(on) {
   writeString(PREF_KEY, on ? "on" : "off");
@@ -57,7 +59,7 @@ export async function requestNotifyPermission() {
 
 // Notifications fire only when enabled in settings AND permission is granted.
 export function notificationsActive() {
-  return notifySupported() && Notification.permission === "granted" && notifyPref();
+  return notifySupported() && notifyPermission() === "granted" && notifyPref();
 }
 
 // Show one notification; clicking it focuses the app and runs onClick (e.g. to
