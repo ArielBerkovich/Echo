@@ -27,3 +27,15 @@ contextBridge.exposeInMainWorld("echoDesktopConfig", {
     return ipcRenderer.invoke("echo:change-backend-url", value);
   },
 });
+
+contextBridge.exposeInMainWorld("echoDesktopAuth", {
+  loadToken() {
+    return ipcRenderer.invoke("echo:load-auth-token");
+  },
+  saveToken(token) {
+    return ipcRenderer.invoke("echo:save-auth-token", token);
+  },
+  clearToken() {
+    return ipcRenderer.invoke("echo:clear-auth-token");
+  },
+});
