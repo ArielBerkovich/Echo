@@ -243,6 +243,53 @@ test("updates an open members panel when another user joins from Browse", async 
   });
 });
 
+test("uses distinct system messages for self-joins and added members", async ({ browser, page }) => {
+  const { alice, bob } = fixture;
+  const selfJoinName = `system-self-join-${Date.now()}`;
+  const addedMemberName = `system-added-member-${Date.now()}`;
+  const selfJoinChannel = await requestAsToken(page, bob.token, "/channels", {
+    method: "POST",
+    body: { name: selfJoinName, type: "public" },
+  });
+  const addedMemberChannel = await requestAsToken(page, bob.token, "/channels", {
+    method: "POST",
+    body: { name: addedMemberName, type: "public" },
+  });
+
+  await withAliceBobPages(browser, async ({ alicePage, bobPage }) => {
+    await alicePage.page.getByTestId("browse-channels").click();
+    await alicePage.page.getByTestId("channel-browser-search").fill(selfJoinName);
+    await alicePage.page
+      .getByTestId(`browse-channel-${selfJoinName}`)
+      .getByRole("button", { name: `Join #${selfJoinName}` })
+      .click();
+
+    const selfJoinMessages = await requestAsToken(
+      page,
+      alice.token,
+      `/channels/${selfJoinChannel.channel.id}/messages`
+    );
+    expect(selfJoinMessages.messages.filter((message) => message.kind === "system").at(-1).body)
+      .toBe("joined");
+
+    await channelRow(bobPage.page, addedMemberName).click();
+    await requestAsToken(page, bob.token, `/channels/${addedMemberChannel.channel.id}/members`, {
+      method: "POST",
+      body: { userId: alice.id },
+    });
+
+    await expect(alicePage.page.getByTestId(`channel-row-${addedMemberName}`)).toBeVisible();
+    await alicePage.page.getByTestId(`channel-row-${addedMemberName}`).click();
+    const addedMemberMessages = await requestAsToken(
+      page,
+      alice.token,
+      `/channels/${addedMemberChannel.channel.id}/messages`
+    );
+    expect(addedMemberMessages.messages.filter((message) => message.kind === "system").at(-1).body)
+      .toBe("was added");
+  });
+});
+
 test("updates the typing indicator after a display name change", async ({ browser, page }) => {
   const { alice } = fixture;
   await withAliceBobPages(browser, async ({ alicePage, bobPage }) => {
