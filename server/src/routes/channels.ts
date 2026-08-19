@@ -266,16 +266,18 @@ channelsRouter.post("/:id/join", async (req, res) => {
   if (channel.type !== "public" && !already) {
     return res.status(403).json({ error: "private channels are invite-only" });
   }
+  // Join the realtime room before logging the membership event so the new
+  // member receives the system message immediately.
+  joinUserToChannel(req.user._id.toString(), channel._id.toString());
   await Channel.updateOne(
     { _id: channel._id },
     { $addToSet: { members: req.user._id } }
   );
   if (!already) {
-    await logSystem(channel._id, req.user._id, "joined the channel");
+    await logSystem(channel._id, req.user._id, "joined");
     await markChannelReadAtJoin(channel._id, req.user._id);
   }
   const updated = await Channel.findById(channel._id);
-  joinUserToChannel(req.user._id.toString(), channel._id.toString());
   const updatedPayload = updated.toPublicJSON();
   if (!already) {
     // Existing members may have the members panel open. Keep it in sync with
@@ -332,7 +334,7 @@ channelsRouter.post("/:id/members", async (req, res) => {
       ).catch(() => {});
       emitToUser(target._id.toString(), "activity:bump");
     }
-    await logSystem(channel._id, target._id, "joined the channel");
+    await logSystem(channel._id, target._id, "was added");
     await markChannelReadAtJoin(channel._id, target._id);
   }
   const updated = await Channel.findById(channel._id);
