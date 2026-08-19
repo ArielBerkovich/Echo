@@ -48,6 +48,7 @@ describe("notification preferences", () => {
   });
 
   it("stores notification preferences", () => {
+    assert.equal(notifyPref(), true);
     setNotifyPref(true);
     assert.equal(notifyPref(), true);
     setNotifyPref(false);
@@ -77,6 +78,8 @@ describe("notification preferences", () => {
     globalThis.window = { Notification: true };
     globalThis.Notification = { permission: "granted" };
 
+    assert.equal(notificationsActive(), true);
+    setNotifyPref(false);
     assert.equal(notificationsActive(), false);
     setNotifyPref(true);
     assert.equal(notificationsActive(), true);
@@ -132,6 +135,7 @@ describe("notification preferences", () => {
       }
     };
 
+    setNotifyPref(false);
     assert.equal(showTestNotification(), false);
     setNotifyPref(true);
     assert.equal(showTestNotification(), true);

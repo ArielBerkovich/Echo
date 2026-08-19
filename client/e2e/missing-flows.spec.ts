@@ -195,7 +195,7 @@ test("creates, delivers through, lists, and revokes an incoming webhook", async 
   expect(revoked.status()).toBe(404);
 });
 
-test("enables desktop notifications, filters events, and navigates when one is clicked", async ({ page }) => {
+test("defaults desktop notifications on, filters events, and navigates when one is clicked", async ({ page }) => {
   await page.addInitScript(() => {
     const notifications = [];
     class FakeNotification {
@@ -218,7 +218,6 @@ test("enables desktop notifications, filters events, and navigates when one is c
   await page.goto("/");
   await page.getByTestId("rail-settings").click();
   await expect(page.getByTestId("settings-page")).toBeVisible();
-  await page.getByTestId("notification-toggle").click();
   await expect(page.getByText("On ✓")).toBeVisible();
   await page.evaluate(() => { window.__e2eNotifications.length = 0; });
   await page.getByTestId("rail-home").click();
