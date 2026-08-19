@@ -16,7 +16,7 @@ import Avatar from "./Avatar.js";
 import EmojiPicker from "./EmojiPicker.js";
 import Modal, { ModalActions } from "./Modal.js";
 import { useMentionGate } from "../lib/useMentionGate.js";
-import { CalendarClock, ChevronRight } from "lucide-react";
+import { CalendarClock, ChartNoAxesColumnIncreasing, ChevronRight } from "lucide-react";
 import {
   LinkIcon, OrderedListIcon, BulletListIcon, QuoteIcon, CodeIcon, CodeBlockIcon,
   PlusIcon, SmileyIcon, SendIcon, ChevronIcon,
@@ -76,6 +76,7 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
   const [scheduledMsgs, setScheduledMsgs] = useState([]); // pending scheduled messages for this channel
   const [showScheduled, setShowScheduled] = useState(false); // manage-scheduled modal
   const [editingSched, setEditingSched] = useState(null); // { id, body, at } being edited
+  const [surveyDraft, setSurveyDraft] = useState(null);
   const [editorState, setEditorState] = useState({
     canSend: false,
     bold: false,
@@ -405,19 +406,33 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
   }
 
   // Actually emit the message and reset the composer.
-  function doSend(body, attachments) {
+  function doSend(body, attachments, survey = null) {
     onError?.(null);
     const socket = getSocket();
     if (!socket.connected) {
       onError?.("Echo is reconnecting. Your draft is still here — send it when the connection returns.");
       return false;
     }
-    socket.emit("message:send", { channelId: channel.id, body, attachments, parentId }, (res) => {
+    socket.emit("message:send", { channelId: channel.id, body, attachments, parentId, survey }, (res) => {
       if (res?.error) onError?.(res.error);
       else onSent?.();
     });
     resetComposer();
     return true;
+  }
+
+  function sendSurvey() {
+    if (!surveyDraft) return;
+    const question = surveyDraft.question.trim();
+    const options = surveyDraft.options.map((label) => label.trim()).filter(Boolean);
+    if (!question || options.length < 2) {
+      setSurveyDraft((draft) => ({ ...draft, error: "Add a question and at least two options." }));
+      return;
+    }
+    if (doSend(question, [], { question, options: options.map((label) => ({ label })), allowMultiple: surveyDraft.allowMultiple })) {
+      setSurveyDraft(null);
+      dismissMobileKeyboard();
+    }
   }
 
   // On phones, keeping focus after sending leaves the virtual keyboard open and
@@ -724,6 +739,40 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
         </Modal>
       )}
 
+      {!editing && surveyDraft && (
+        <Modal title="Send a survey" className="survey-modal" testId="survey-modal" onClose={() => setSurveyDraft(null)}>
+          <label className="schedule-custom-field">
+            <span>Question</span>
+            <input className="settings-input" autoFocus value={surveyDraft.question} placeholder="What should we do?" onChange={(e) => setSurveyDraft((d) => ({ ...d, question: e.target.value, error: null }))} />
+          </label>
+          <div className="schedule-custom-field">
+            <span>Options</span>
+            {surveyDraft.options.map((option, index) => (
+              <input key={index} className="settings-input" value={option} placeholder={`Option ${index + 1}`} onChange={(e) => setSurveyDraft((d) => ({ ...d, options: d.options.map((v, i) => i === index ? e.target.value : v), error: null }))} />
+            ))}
+            {surveyDraft.options.length < 10 && <button type="button" className="btn-secondary" onClick={() => setSurveyDraft((d) => ({ ...d, options: [...d.options, ""] }))}>Add option</button>}
+          </div>
+          <label className={`survey-multiple-toggle${surveyDraft.allowMultiple ? " is-enabled" : ""}`}>
+            <input
+              type="checkbox"
+              checked={surveyDraft.allowMultiple}
+              aria-label="Allow multiple selections"
+              onChange={(e) => setSurveyDraft((d) => ({ ...d, allowMultiple: e.target.checked }))}
+            />
+            <span className="survey-multiple-switch" aria-hidden="true"><span /></span>
+            <span className="survey-multiple-copy">
+              <span>Multiple selections</span>
+              <span className="survey-multiple-state">{surveyDraft.allowMultiple ? "On" : "Off"}</span>
+            </span>
+          </label>
+          {surveyDraft.error && <div className="error" role="alert">{surveyDraft.error}</div>}
+          <ModalActions>
+            <button type="button" className="btn-secondary" onClick={() => setSurveyDraft(null)}>Cancel</button>
+            <button type="button" className="btn-primary" onClick={sendSurvey}>Send survey</button>
+          </ModalActions>
+        </Modal>
+      )}
+
       {!editing && showScheduled && (
         <Modal
           title="Scheduled messages"
@@ -954,6 +1003,7 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
           {showAttachments && <button type="button" className="icon-btn plus" title="Attach files" onMouseDown={keepFocus} onClick={() => fileInputRef.current?.click()}>
             <PlusIcon />
           </button>}
+          {!editing && !isThread && <button type="button" className="icon-btn survey-compose-btn" data-testid="composer-survey" title="Create survey" aria-label="Create survey" onMouseDown={keepFocus} onClick={() => setSurveyDraft({ question: "", options: ["", ""], allowMultiple: false, error: null })}><ChartNoAxesColumnIncreasing size={18} strokeWidth={1.8} /></button>}
           <button type="button" className={`icon-btn aa ${showFormatting ? "active" : ""}`} title="Formatting" onMouseDown={keepFocus} onClick={() => setShowFormatting((v) => !v)}>
             Aa
           </button>

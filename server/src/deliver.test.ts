@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { roomFor, userRoom } from "./lib/rooms.js";
-import { attachmentLimitError, sanitizeAttachments } from "./deliver.js";
+import { attachmentLimitError, sanitizeAttachments, sanitizeSurvey, surveyError } from "./deliver.js";
 
 describe("room helpers", () => {
   it("build channel and user room names", () => {
@@ -68,5 +68,25 @@ describe("attachmentLimitError", () => {
       attachmentLimitError(Array.from({ length: 11 }, () => ({ key: "file.txt" }))),
       "A message can have up to 10 attachments"
     );
+  });
+});
+
+describe("surveys", () => {
+  it("normalizes valid surveys and removes duplicate or empty options", () => {
+    const result = sanitizeSurvey({
+      question: "  Lunch? ",
+      multipleChoice: true,
+      options: [{ label: "Pizza" }, { label: "" }, { label: "pizza" }, { label: "Salad" }],
+    });
+    assert.equal(result.question, "Lunch?");
+    assert.equal(result.allowMultiple, true);
+    assert.deepEqual(result.options.map((option) => option.label), ["Pizza", "Salad"]);
+    assert.ok(result.options.every((option) => option.votes.length === 0 && option.id.length > 0));
+  });
+
+  it("rejects surveys without a question or two distinct options", () => {
+    assert.equal(surveyError({ question: "Pick one", options: [{ label: "Only" }] }) !== null, true);
+    assert.equal(surveyError({ question: "", options: [{ label: "A" }, { label: "B" }] }) !== null, true);
+    assert.equal(surveyError(undefined), null);
   });
 });

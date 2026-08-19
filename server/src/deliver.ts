@@ -3,8 +3,77 @@ import { Message } from "./models/Message.js";
 import { getIO } from "./realtime.js";
 import { roomFor, userRoom } from "./lib/rooms.js";
 import { buildMessageActivityMetadata } from "./lib/messageActivity.js";
+import mongoose from "mongoose";
 
 export const MAX_MESSAGE_ATTACHMENTS = 10;
+
+export function sanitizeSurvey(survey) {
+  if (!survey || typeof survey !== "object") return null;
+  const question = String(survey.question || "").trim().slice(0, 500);
+  const rawOptions = Array.isArray(survey.options) ? survey.options : [];
+  const options = rawOptions
+    .map((option) => ({ label: String(option?.label || "").trim().slice(0, 200) }))
+    .filter((option) => option.label)
+    .filter((option, index, all) => all.findIndex((item) => item.label.toLowerCase() === option.label.toLowerCase()) === index)
+    .slice(0, 10)
+    .map((option) => ({ id: new mongoose.Types.ObjectId().toString(), label: option.label, votes: [] }));
+  if (!question || options.length < 2) return null;
+  return { question, allowMultiple: !!(survey.allowMultiple ?? survey.multipleChoice), options };
+}
+
+export function surveyError(survey) {
+  if (survey === undefined || survey === null) return null;
+  return sanitizeSurvey(survey) ? null : "a survey needs a question and at least two options";
+}
+
+// Apply one user's complete selection atomically. The update removes only
+// this user's previous votes, so simultaneous votes by different users cannot
+// overwrite one another.
+export async function applySurveyVote(message, userId, optionIds) {
+  if (!message?.survey) throw new Error("survey not found");
+  const ids = [...new Set((Array.isArray(optionIds) ? optionIds : [optionIds]).filter((id) => id != null).map(String))];
+  const valid = message.survey.options.filter((option) => ids.includes(option.id));
+  if ((ids.length > 0 && !valid.length) || (!message.survey.allowMultiple && valid.length > 1)) {
+    throw new Error("choose a valid option");
+  }
+  const uid = new mongoose.Types.ObjectId(userId);
+  // Use one aggregation update pipeline because MongoDB rejects a $pull and
+  // $addToSet that target the same nested array in a single update document.
+  const selectedIds = valid.map((option) => option.id);
+  return Message.findOneAndUpdate(
+    { _id: message._id, "survey.options.id": { $exists: true } },
+    [{
+      $set: {
+        "survey.options": {
+          $map: {
+            input: "$survey.options",
+            as: "option",
+            in: {
+              $mergeObjects: [
+                "$$option",
+                {
+                  votes: {
+                    $setUnion: [
+                      {
+                        $filter: {
+                          input: { $ifNull: ["$$option.votes", []] },
+                          as: "vote",
+                          cond: { $ne: ["$$vote", uid] },
+                        },
+                      },
+                      { $cond: [{ $in: ["$$option.id", selectedIds] }, [uid], []] },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+    }],
+    { new: true }
+  );
+}
 
 export function attachmentLimitError(attachments) {
   if (!Array.isArray(attachments) || attachments.length <= MAX_MESSAGE_ATTACHMENTS) return null;
@@ -34,7 +103,7 @@ export function sanitizeAttachments(attachments) {
 // channel room, DM room joins so both participants receive it, and
 // `activity:bump` to anyone it's "activity" for. Shared by the live socket
 // sender and the scheduled-message dispatcher so both behave identically.
-export async function deliverMessage({ channel, authorId, body, parentId, attachments, idempotencyKey, passwordHelpRequest }) {
+export async function deliverMessage({ channel, authorId, body, parentId, attachments, survey, idempotencyKey, passwordHelpRequest }) {
   const io = getIO();
   const cid = channel._id.toString();
 
@@ -45,6 +114,7 @@ export async function deliverMessage({ channel, authorId, body, parentId, attach
     body: body || "",
     parentId: parentId || null,
     attachments: attachments || [],
+    survey: survey || null,
     passwordHelpRequest: passwordHelpRequest || null,
     ...activityMetadata,
   };

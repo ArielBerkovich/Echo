@@ -98,6 +98,15 @@ export function openApiDocument() {
                     body: { type: "string" },
                     parentId: { type: "string" },
                     attachments: { type: "array" },
+                    survey: {
+                      type: "object",
+                      required: ["question", "options"],
+                      properties: {
+                        question: { type: "string", maxLength: 500 },
+                        allowMultiple: { type: "boolean" },
+                        options: { type: "array", minItems: 2, maxItems: 10, items: { type: "object", properties: { label: { type: "string" } } } },
+                      },
+                    },
                   },
                 },
               },
@@ -121,12 +130,35 @@ export function openApiDocument() {
                     body: { type: "string" },
                     parentId: { type: "string" },
                     attachments: { type: "array" },
+                    survey: { $ref: "#/paths/~1api~1channels~1{channelName}~1messages/post/requestBody/content/application~1json/schema/properties/survey" },
                   },
                 },
               },
             },
           },
           responses: { 201: { description: "Direct message created" } },
+        },
+      },
+      "/api/channels/{channelId}/messages/{messageId}/survey-vote": {
+        post: {
+          summary: "Vote on a survey",
+          parameters: [
+            { name: "channelId", in: "path", required: true, schema: { type: "string" } },
+            { name: "messageId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["optionIds"],
+                  properties: { optionIds: { type: "array", items: { type: "string" } } },
+                },
+              },
+            },
+          },
+          responses: { 200: { description: "Updated survey" }, 400: { description: "Invalid selection" } },
         },
       },
       "/api/webhooks": {

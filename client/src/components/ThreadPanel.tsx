@@ -137,6 +137,12 @@ export default function ThreadPanel({
     socket.on("message:update", onUpdate);
     socket.on("message:deleted", onDeleted);
     socket.on("message:reaction", onReaction);
+    const onSurvey = ({ messageId, survey }) => {
+      if (!survey) return;
+      setRootMsg((prev) => (prev.id === messageId ? { ...prev, survey } : prev));
+      setReplies((prev) => prev.map((r) => (r.id === messageId ? { ...r, survey } : r)));
+    };
+    socket.on("message:survey", onSurvey);
     socket.on("message:pin", onPin);
 
     return () => {
@@ -145,6 +151,7 @@ export default function ThreadPanel({
       socket.off("message:update", onUpdate);
       socket.off("message:deleted", onDeleted);
       socket.off("message:reaction", onReaction);
+      socket.off("message:survey", onSurvey);
       socket.off("message:pin", onPin);
     };
   }, [channel.id, root.id, user.id, recoveryEpoch]);

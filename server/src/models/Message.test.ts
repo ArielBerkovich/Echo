@@ -5,6 +5,23 @@ import mongoose from "mongoose";
 import { Message } from "./Message.js";
 
 describe("Message.toPublicJSON", () => {
+  it("serializes survey options with vote counts and voter ids", () => {
+    const voter = new mongoose.Types.ObjectId();
+    const message = new Message({
+      channel: new mongoose.Types.ObjectId(),
+      author: new mongoose.Types.ObjectId(),
+      body: "Lunch?",
+      survey: {
+        question: "Lunch?",
+        options: [{ id: "pizza", label: "Pizza", votes: [voter] }, { id: "salad", label: "Salad", votes: [] }],
+      },
+    });
+    const json = message.toPublicJSON();
+    assert.equal(json.survey.question, "Lunch?");
+    assert.equal(json.survey.options[0].voteCount, 1);
+    assert.deepEqual(json.survey.options[0].votes, [voter.toString()]);
+  });
+
   it("serializes message metadata, attachments, forwarding, pins, and reactions", () => {
     const author = {
       _id: new mongoose.Types.ObjectId(),
