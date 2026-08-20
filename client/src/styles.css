@@ -6988,11 +6988,11 @@ html[data-mode="dark"] .day-divider-label {
 .survey-card {
   margin: 12px 0 5px;
   width: min(440px, 100%);
-  padding: 15px;
-  border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
-  border-radius: 14px;
-  background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 7%, var(--surface)), var(--surface));
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--navy-900) 7%, transparent);
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border));
+  border-radius: 16px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 8%, var(--surface)), var(--surface) 68%);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--navy-900) 9%, transparent);
 }
 
 .survey-card-header,
@@ -7012,7 +7012,7 @@ html[data-mode="dark"] .day-divider-label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: var(--accent);
+  color: color-mix(in srgb, var(--accent) 88%, var(--text));
   font-size: 11px;
   font-weight: 800;
   letter-spacing: .08em;
@@ -7027,13 +7027,15 @@ html[data-mode="dark"] .day-divider-label {
 
 .survey-question {
   display: block;
-  margin-bottom: 13px;
+  margin-bottom: 14px;
   color: var(--text);
   font-size: 16px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
   line-height: 1.35;
 }
 
-.survey-options { display: grid; gap: 8px; }
+.survey-options { display: grid; gap: 9px; }
 
 .survey-option {
   position: relative;
@@ -7041,23 +7043,24 @@ html[data-mode="dark"] .day-divider-label {
   width: 100%;
   min-height: 42px;
   padding: 0;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: var(--surface-2);
+  border: 1px solid color-mix(in srgb, var(--text) 16%, var(--border));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--surface) 78%, var(--surface-2));
   color: var(--text);
   text-align: start;
   cursor: pointer;
   transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
 }
 
-.survey-option:hover:not(:disabled) { border-color: color-mix(in srgb, var(--accent) 62%, var(--border)); transform: translateY(-1px); }
+.survey-option:hover:not(:disabled) { border-color: color-mix(in srgb, var(--accent) 68%, var(--border)); background: color-mix(in srgb, var(--accent) 5%, var(--surface)); transform: translateY(-1px); }
 .survey-option:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.survey-option.selected { border-color: color-mix(in srgb, var(--accent) 72%, var(--border)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent); }
+.survey-option.selected { border-color: color-mix(in srgb, var(--accent) 76%, var(--border)); background: color-mix(in srgb, var(--accent) 6%, var(--surface)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent), 0 2px 8px color-mix(in srgb, var(--accent) 10%, transparent); }
 .survey-option:disabled { cursor: wait; opacity: .78; }
 .survey-option-progress { position: absolute; inset: 0 auto 0 0; max-width: 100%; background: color-mix(in srgb, var(--accent) 13%, transparent); transition: width .25s ease; }
 .survey-option.selected .survey-option-progress { background: color-mix(in srgb, var(--accent) 22%, transparent); }
 .survey-option-content { position: relative; z-index: 1; width: 100%; min-height: 42px; gap: 8px; padding: 8px 10px; }
-.survey-option-check { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border: 1px solid var(--border); border-radius: 50%; color: var(--accent); flex: 0 0 18px; }
+.survey-option-check { display: inline-flex; align-items: center; justify-content: center; width: 19px; height: 19px; border: 2px solid color-mix(in srgb, var(--text) 38%, var(--border)); border-radius: 50%; background: var(--surface); color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--surface) 82%, transparent), inset 0 0 0 1px color-mix(in srgb, var(--text) 10%, transparent); flex: 0 0 19px; transition: border-color .15s ease, background .15s ease, box-shadow .15s ease; }
+.survey-option:hover:not(:disabled) .survey-option-check { border-color: color-mix(in srgb, var(--accent) 72%, var(--text)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 10%, transparent), inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent); }
 .survey-option.selected .survey-option-check { border-color: var(--accent); background: var(--accent); color: var(--active-fg); }
 .survey-option-label { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
 .survey-option-count { color: var(--text); font-size: 12px; font-weight: 800; }
@@ -7066,6 +7069,51 @@ html[data-mode="dark"] .day-divider-label {
 .survey-spinner { animation: survey-spin .8s linear infinite; }
 .survey-error { display: block; margin-top: 8px; color: var(--danger); font-size: 12px; }
 .survey-compose-btn { color: var(--accent); }
+
+/* Survey composer */
+.modal.survey-modal {
+  width: min(520px, calc(100vw - 40px));
+  padding: 26px;
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
+  background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 6%, var(--surface)), var(--surface) 54%);
+}
+.survey-modal .modal-header {
+  margin-bottom: 20px;
+}
+.survey-modal .modal-header h2 {
+  letter-spacing: -0.025em;
+}
+.survey-modal .schedule-custom-field {
+  gap: 8px;
+  margin-top: 0;
+  color: var(--text);
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.survey-modal .schedule-custom-field + .schedule-custom-field {
+  margin-top: 18px;
+}
+.survey-modal .schedule-custom-field > .settings-input + .settings-input {
+  margin-top: 2px;
+}
+.survey-modal .settings-input {
+  min-height: 44px;
+  border-color: color-mix(in srgb, var(--text) 17%, var(--border));
+  background: color-mix(in srgb, var(--surface) 90%, var(--surface-2));
+}
+.survey-modal .settings-input::placeholder {
+  color: color-mix(in srgb, var(--muted) 78%, var(--surface));
+}
+.survey-modal .btn-secondary {
+  min-height: 40px;
+  padding-inline: 14px;
+}
+.survey-modal .modal-actions {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid color-mix(in srgb, var(--text) 9%, var(--border));
+}
 .survey-multiple-toggle {
   position: relative;
   display: flex;
