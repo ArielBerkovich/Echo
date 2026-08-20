@@ -26,7 +26,10 @@ export function messageLink(channel, messageId) {
 // Markdown links and bare URLs both remain detectable because this runs on
 // the source text rather than the sanitized HTML.
 export function findMessageLink(body) {
-  const candidates = String(body || "").match(/(?:https?:\/\/[^\s<>]+|\/(?:channels|dms|home\/dms)\/[^\s<>]+)/gi) || [];
+  // Keep Markdown delimiters out of the URL. The composer may store a pasted
+  // link as `[url](url)`, and a greedy match would combine both URLs and make
+  // the message query parameter invalid.
+  const candidates = String(body || "").match(/(?:https?:\/\/[^\s<>\]\)]+|\/(?:channels|dms|home\/dms)\/[^\s<>\]\)]+)/gi) || [];
   for (const candidate of candidates) {
     try {
       const cleaned = candidate.replace(/[),.!?;:]+$/, "");
