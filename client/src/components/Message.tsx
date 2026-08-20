@@ -25,7 +25,7 @@ export function SystemMessage({ m }) {
   );
 }
 
-function MessageLinkPreview({ messageId, currentMessageId, onJump }) {
+function MessageLinkPreview({ messageId, currentMessageId, initialMessage = null, channel = null, onJump }) {
   const previewQuery = useQuery({
     queryKey: ["message-preview", messageId],
     queryFn: () => api.getMessagePreview(messageId),
@@ -33,7 +33,9 @@ function MessageLinkPreview({ messageId, currentMessageId, onJump }) {
     staleTime: 5 * 60 * 1000,
     retry: false,
   });
-  const preview = previewQuery.data;
+  const preview = previewQuery.data || (initialMessage && channel
+    ? { message: initialMessage, channel }
+    : null);
   if (!preview || !preview.message || !preview.channel) return null;
   const channelLabel = preview.channel.type === "dm" ? "Direct message" : `#${preview.channel.name}`;
   return (
@@ -66,6 +68,7 @@ function MessageLinkPreview({ messageId, currentMessageId, onJump }) {
 function Message({
   m,
   channel,
+  availableMessages = [],
   grouped,
   highlighted,
   currentUserId,
@@ -125,6 +128,7 @@ function Message({
   pickerOpenRef.current = pickerOpen;
   const mid = m.id;
   const linkedMessageId = findMessageLink(m.body);
+  const linkedMessage = linkedMessageId && availableMessages.find((message) => message.id === linkedMessageId);
   useEffect(() => setSurveyState(m.survey || null), [m.survey]);
   function voteSurvey(optionId) {
     const current = surveyState;
@@ -490,6 +494,8 @@ function Message({
           <MessageLinkPreview
             messageId={linkedMessageId}
             currentMessageId={m.id}
+            initialMessage={linkedMessage}
+            channel={channel}
             onJump={onJump}
           />
         )}
@@ -703,6 +709,8 @@ export default memo(Message, areMessagePropsEqual);
 function areMessagePropsEqual(prev, next) {
   return (
     prev.m === next.m &&
+    prev.channel === next.channel &&
+    prev.availableMessages === next.availableMessages &&
     prev.grouped === next.grouped &&
     prev.highlighted === next.highlighted &&
     prev.currentUserId === next.currentUserId &&

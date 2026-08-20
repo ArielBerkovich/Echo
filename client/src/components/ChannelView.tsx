@@ -1042,6 +1042,7 @@ export default function ChannelView({
                   <Message
                     m={m}
                     channel={channel}
+                    availableMessages={messages}
                     grouped={false}
                     highlighted={highlightId === m.id}
                     currentUserId={user.id}
