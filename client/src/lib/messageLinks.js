@@ -1,5 +1,15 @@
 const MESSAGE_ID = /^[a-f\d]{24}$/i;
 
+function sameEchoOrigin(url) {
+  if (typeof window === "undefined") return true;
+  if (url.origin === window.location.origin) return true;
+  const loopback = new Set(["localhost", "127.0.0.1", "[::1]"]);
+  return url.protocol === window.location.protocol
+    && url.port === window.location.port
+    && loopback.has(url.hostname)
+    && loopback.has(window.location.hostname);
+}
+
 export function messageLinkPath(channel, messageId) {
   const base = channel?.type === "dm"
     ? `/dms/${encodeURIComponent(channel.id)}`
@@ -21,7 +31,7 @@ export function findMessageLink(body) {
     try {
       const cleaned = candidate.replace(/[),.!?;:]+$/, "");
       const url = new URL(cleaned, typeof window !== "undefined" ? window.location.origin : "http://echo.local");
-      if (typeof window !== "undefined" && url.origin !== window.location.origin) continue;
+      if (!sameEchoOrigin(url)) continue;
       const parts = url.pathname.split("/").filter(Boolean);
       const isConversationPath = (parts[0] === "channels" && parts[1]) || (parts[0] === "dms" && parts[1]);
       const messageId = url.searchParams.get("message");

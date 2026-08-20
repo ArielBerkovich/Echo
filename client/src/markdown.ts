@@ -300,7 +300,13 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
       if (!isEchoMessageLink && typeof window !== "undefined") {
         try {
           const url = new URL(href, window.location.origin);
-          isEchoMessageLink = url.origin === window.location.origin
+          const loopbackHosts = new Set(["localhost", "127.0.0.1", "[::1]"]);
+          const sameOrigin = url.origin === window.location.origin
+            || (url.protocol === window.location.protocol
+              && url.port === window.location.port
+              && loopbackHosts.has(url.hostname)
+              && loopbackHosts.has(window.location.hostname));
+          isEchoMessageLink = sameOrigin
             && /\/(?:channels|dms|home\/dms)\/[^/]+$/i.test(url.pathname)
             && /^[a-f\d]{24}$/i.test(url.searchParams.get("message") || "");
         } catch {
