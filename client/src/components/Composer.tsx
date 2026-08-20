@@ -283,7 +283,10 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
     const { selection } = currentEditor.state;
     if (!selection.empty) return setMention(null);
     const { $from, from } = selection;
-    const before = $from.parent.textBetween(0, $from.parentOffset, "\n", "\0");
+    // Treat soft line breaks as whitespace too. ProseMirror represents
+    // Shift+Enter as a hard_break leaf; using a NUL leaf marker makes
+    // `hello<br>@name` look like `hello@name`, so the mention trigger is lost.
+    const before = $from.parent.textBetween(0, $from.parentOffset, "\n", "\n");
     const match = before.match(/(?:^|\s)([@#])([\w.-]*)$/);
     if (!match) return setMention(null);
     setMention({

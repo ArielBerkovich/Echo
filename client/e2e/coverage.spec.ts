@@ -301,6 +301,17 @@ test("handles mention autocomplete, @everyone, and attachments", async ({ page }
   await expect(hebrewAttachment.locator(".att-file-name")).toHaveText(hebrewFilename);
 });
 
+test("opens mention autocomplete after a soft line break", async ({ page }) => {
+  await page.goto("/");
+  const composer = page.getByTestId("composer-editor");
+  await composer.fill("First line");
+  await composer.press("Shift+Enter");
+  await composer.type(`@${fixture.bob.username}`);
+
+  await expect(page.locator(".mention-popup")).toBeVisible();
+  await expect(page.locator(".mention-item").filter({ hasText: fixture.bob.displayName })).toBeVisible();
+});
+
 test("pastes a clipboard image into the composer as an attachment", async ({ page }) => {
   await page.goto("/");
   const composer = page.getByTestId("composer-editor");
