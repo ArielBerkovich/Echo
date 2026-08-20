@@ -16,10 +16,11 @@ export function messageLink(channel, messageId) {
 // Markdown links and bare URLs both remain detectable because this runs on
 // the source text rather than the sanitized HTML.
 export function findMessageLink(body) {
-  const candidates = String(body || "").match(/https?:\/\/[^\s<>]+/gi) || [];
+  const candidates = String(body || "").match(/(?:https?:\/\/[^\s<>]+|\/(?:channels|dms|home\/dms)\/[^\s<>]+)/gi) || [];
   for (const candidate of candidates) {
     try {
-      const url = new URL(candidate.replace(/[),.!?;:]+$/, ""));
+      const cleaned = candidate.replace(/[),.!?;:]+$/, "");
+      const url = new URL(cleaned, typeof window !== "undefined" ? window.location.origin : "http://echo.local");
       if (typeof window !== "undefined" && url.origin !== window.location.origin) continue;
       const parts = url.pathname.split("/").filter(Boolean);
       const isConversationPath = (parts[0] === "channels" && parts[1]) || (parts[0] === "dms" && parts[1]);

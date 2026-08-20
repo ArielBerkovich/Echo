@@ -280,7 +280,7 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
 
     const html = marked.parse(preserveMarkdownBlankLines(source));
     // Sanitize: allow only the safe subset markdown produces. `class` is kept so
-    // our mention pills stay styled; links open safely in a new tab.
+    // our mention pills stay styled; external links open safely in a new tab.
     const safe = DOMPurify.sanitize(html, {
       ALLOWED_TAGS: [
         "p", "br", "strong", "em", "del", "code", "pre", "blockquote",
@@ -292,13 +292,25 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
       // a narrow allowlist for markdown links and image sources.
       ALLOWED_URI_REGEXP: /^(?:(?:https?|blob):|(?:\.{0,2}\/)|#)/i,
     });
-    // Markdown links should never replace the conversation tab. Add the
-    // attributes after sanitizing so every generated link gets the same safe
-    // browser behavior, regardless of which marked token path produced it.
-    const linksOpenSafely = safe.replace(
-      /<a\b(?![^>]*\btarget=)/gi,
-      '<a target="_blank" rel="noopener noreferrer"'
-    );
+    // External links open safely in a new tab. Echo message links stay in the
+    // conversation tab so the app can apply its normal route/jump behavior.
+    const linksOpenSafely = safe.replace(/<a\b[^>]*>/gi, (tag) => {
+      const href = tag.match(/\bhref="([^"]*)"/i)?.[1] || "";
+      let isEchoMessageLink = href.startsWith("/") && /\/(?:channels|dms|home\/dms)\/[^/?]+\?[^\s]*\bmessage=[a-f\d]{24}\b/i.test(href);
+      if (!isEchoMessageLink && typeof window !== "undefined") {
+        try {
+          const url = new URL(href, window.location.origin);
+          isEchoMessageLink = url.origin === window.location.origin
+            && /\/(?:channels|dms|home\/dms)\/[^/]+$/i.test(url.pathname)
+            && /^[a-f\d]{24}$/i.test(url.searchParams.get("message") || "");
+        } catch {
+          isEchoMessageLink = false;
+        }
+      }
+      if (isEchoMessageLink) return tag.replace(/\s(?:target|rel)="[^"]*"/gi, "");
+      if (/\btarget=/i.test(tag)) return tag;
+      return tag.replace(/>$/, ' target="_blank" rel="noopener noreferrer">');
+    });
     const rendered = wrapEmojis(linksOpenSafely).trim();
     if (renderedCache.size >= RENDER_CACHE_LIMIT) {
       renderedCache.delete(renderedCache.keys().next().value);

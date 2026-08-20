@@ -16,6 +16,7 @@ test("finds same-origin Echo message links in plain and markdown text", () => {
     const id = "507f1f77bcf86cd799439011";
     assert.equal(findMessageLink(`See https://echo.example/channels/general?message=${id}.`), id);
     assert.equal(findMessageLink(`[Read this](https://echo.example/dms/abc?message=${id})`), id);
+    assert.equal(findMessageLink(`[Read this](/channels/general?message=${id})`), id);
     assert.equal(findMessageLink(`https://other.example/channels/general?message=${id}`), null);
   } finally {
     globalThis.window = previousWindow;

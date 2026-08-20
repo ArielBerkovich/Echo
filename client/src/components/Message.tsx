@@ -652,9 +652,11 @@ function Message({
             <button type="button" role="menuitem" data-testid={`message-${mid}-copy-link`} onClick={() => { copyMessageLink(); onCloseMenu(); }}>
               <CopyIcon /> Copy link to message
             </button>
-            <button type="button" role="menuitem" data-testid={`message-${mid}-quote`} disabled={!canQuote} onClick={() => { onQuote(); onCloseMenu(); }}>
-              <QuoteIcon /> Quote message
-            </button>
+            {canQuote && (
+              <button type="button" role="menuitem" data-testid={`message-${mid}-quote`} onClick={() => { onQuote(); onCloseMenu(); }}>
+                <QuoteIcon /> Quote message
+              </button>
+            )}
             <button
               type="button"
               role="menuitem"
