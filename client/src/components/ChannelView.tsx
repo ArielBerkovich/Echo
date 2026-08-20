@@ -280,6 +280,13 @@ export default function ChannelView({
     };
     socket.on("message:reaction", onReaction);
 
+    const onSurvey = ({ messageId, survey }) => {
+      if (!messageId || !survey) return;
+      setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, survey } : m)));
+      setPinnedMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, survey } : m)));
+    };
+    socket.on("message:survey", onSurvey);
+
     const onUpdate = (u) => {
       if (u.channelId !== channel.id || u.parentId) return; // thread edits handled in panel
       setMessages((prev) =>
@@ -351,6 +358,7 @@ export default function ChannelView({
       if (isPreview) socket.emit("channel:leave", channel.id);
       socket.off("message:new", onNew);
       socket.off("message:reaction", onReaction);
+      socket.off("message:survey", onSurvey);
       socket.off("message:update", onUpdate);
       socket.off("message:deleted", onDeleted);
       socket.off("message:pin", onPin);

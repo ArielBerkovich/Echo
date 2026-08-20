@@ -8,7 +8,7 @@ import { canPostToChannel, Channel } from "./models/Channel.js";
 import { Message } from "./models/Message.js";
 import { ActivityEvent } from "./models/ActivityEvent.js";
 import { setIO } from "./realtime.js";
-import { deliverMessage, sanitizeAttachments, attachmentLimitError } from "./deliver.js";
+import { deliverMessage, sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, applySurveyVote } from "./deliver.js";
 import { buildMessageActivityMetadata } from "./lib/messageActivity.js";
 import { roomFor, userRoom } from "./lib/rooms.js";
 import { activeConnections, recordSocketError } from "./metrics.js";
@@ -217,13 +217,15 @@ export function attachSocket(httpServer) {
     });
 
     // Persist an incoming message and fan it out to everyone in the room.
-    socket.on("message:send", async ({ channelId, body, parentId, attachments } = {}, ack) => {
+    socket.on("message:send", async ({ channelId, body, parentId, attachments, survey } = {}, ack) => {
       try {
         const text = String(body || "").trim();
         const attachmentError = attachmentLimitError(attachments);
         if (attachmentError) return ackError(ack, "message_send", attachmentError);
         const files = sanitizeAttachments(attachments);
-        if (!text && files.length === 0) {
+        const normalizedSurvey = sanitizeSurvey(survey);
+        if (surveyError(survey)) return ackError(ack, "message_send", surveyError(survey));
+        if (!text && files.length === 0 && !normalizedSurvey) {
           return ackError(ack, "message_send", "message needs text or an attachment");
         }
 
@@ -245,11 +247,25 @@ export function attachSocket(httpServer) {
           body: text,
           parentId,
           attachments: files,
+          survey: normalizedSurvey,
         });
         ack?.({ ok: true, message: payload });
       } catch (err) {
         ackError(ack, "message_send", err.message || "could not send message");
       }
+    });
+
+    socket.on("survey:vote", async ({ messageId, optionIds } = {}, ack) => {
+      try {
+        const message = await Message.findById(messageId);
+        if (!message?.survey) return ackError(ack, "survey_vote", "survey not found");
+        const channel = await Channel.findById(message.channel);
+        if (!channel || !canAccess(channel, socket.user._id)) return ackError(ack, "survey_vote", "access denied");
+        const updated = await applySurveyVote(message, socket.user._id, optionIds);
+        const survey = updated.toPublicJSON().survey;
+        io.to(roomFor(message.channel.toString())).emit("message:survey", { messageId: message.id, survey });
+        ack?.({ ok: true, survey });
+      } catch (err) { ackError(ack, "survey_vote", err.message || "could not vote"); }
     });
 
     // Edit one of your own messages; broadcast the new body to the room.

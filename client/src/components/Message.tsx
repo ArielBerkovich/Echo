@@ -1,9 +1,10 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, ChartNoAxesColumnIncreasing, Check, LoaderCircle } from "lucide-react";
 import Avatar from "./Avatar.js";
 import Attachments from "./Attachments.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
+import { getSocket } from "../socket.js";
 import { formatTime } from "../lib/time.js";
 import {
   ShareIcon, EmojiAddIcon, ReplyIcon, BookmarkIcon, PencilIcon, TrashIcon, PinIcon, CopyIcon, MoreIcon, QuoteIcon,
@@ -68,6 +69,9 @@ function Message({
   const [copied, setCopied] = useState(false);
   const [issuingPassword, setIssuingPassword] = useState(false);
   const [passwordActionError, setPasswordActionError] = useState("");
+  const [surveyState, setSurveyState] = useState(m.survey || null);
+  const [surveyVoting, setSurveyVoting] = useState(false);
+  const [surveyVoteError, setSurveyVoteError] = useState("");
   const [menuPosition, setMenuPosition] = useState(null);
   const [actionsPosition, setActionsPosition] = useState(null);
   const messageRef = useRef(null);
@@ -81,6 +85,22 @@ function Message({
   menuOpenRef.current = menuOpen;
   pickerOpenRef.current = pickerOpen;
   const mid = m.id;
+  useEffect(() => setSurveyState(m.survey || null), [m.survey]);
+  function voteSurvey(optionId) {
+    const current = surveyState;
+    if (!current) return;
+    const selected = current.options.filter((option) => option.votes?.includes(currentUserId)).map((option) => option.id);
+    const next = current.allowMultiple
+      ? (selected.includes(optionId) ? selected.filter((id) => id !== optionId) : [...selected, optionId])
+      : [optionId];
+    setSurveyVoting(true);
+    setSurveyVoteError("");
+    getSocket().emit("survey:vote", { messageId: m.id, optionIds: next }, (res) => {
+      setSurveyVoting(false);
+      if (res?.survey) setSurveyState(res.survey);
+      else if (res?.error) setSurveyVoteError(res.error);
+    });
+  }
   function activateMessage() {
     hoverGenerationRef.current += 1;
     if (hoverLeaveTimerRef.current) window.clearTimeout(hoverLeaveTimerRef.current);
@@ -361,7 +381,45 @@ function Message({
           </>
         ) : (
           <>
-            {messageBody}
+            {!surveyState && messageBody}
+            {surveyState && (
+              <div className="survey-card" data-testid={`survey-${m.id}`} aria-label="Survey">
+                {(() => {
+                  const totalVotes = surveyState.options.reduce((sum, option) => sum + (option.voteCount ?? option.votes?.length ?? 0), 0);
+                  return (
+                    <>
+                      <div className="survey-card-header">
+                        <span className="survey-card-badge"><ChartNoAxesColumnIncreasing size={15} strokeWidth={2.2} /> Survey</span>
+                        <span className="survey-card-meta">{totalVotes} {totalVotes === 1 ? "vote" : "votes"}</span>
+                      </div>
+                      <strong className="survey-question">{surveyState.question}</strong>
+                <div className="survey-options">
+                  {surveyState.options.map((option) => {
+                    const selected = option.votes?.includes(currentUserId);
+                    const count = option.voteCount ?? option.votes?.length ?? 0;
+                    const percentage = totalVotes ? Math.round((count / totalVotes) * 100) : 0;
+                    return (
+                      <button type="button" key={option.id} className={`survey-option${selected ? " selected" : ""}`} data-testid={`survey-option-${option.id}`} aria-pressed={selected} disabled={surveyVoting} onClick={() => voteSurvey(option.id)}>
+                        <span className="survey-option-progress" style={{ width: `${percentage}%` }} aria-hidden="true" />
+                        <span className="survey-option-content">
+                          <span className="survey-option-check">{selected && <Check size={14} strokeWidth={3} />}</span>
+                          <span className="survey-option-label">{option.label}</span>
+                          <span className="survey-option-count">{percentage}% <span className="survey-option-count-detail">({count})</span></span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="survey-card-footer">
+                  <span>{surveyState.allowMultiple ? "Select all that apply" : "Select one option"}</span>
+                  {surveyVoting && <LoaderCircle className="survey-spinner" size={14} aria-label="Saving vote" />}
+                </div>
+                {surveyVoteError && <span className="survey-error" role="alert">{surveyVoteError}</span>}
+                    </>
+                  );
+                })()}
+              </div>
+            )}
             {messageAttachments}
           </>
         )}

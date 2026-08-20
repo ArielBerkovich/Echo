@@ -11,7 +11,7 @@ import {
   joinUserToChannel,
   removeUserFromChannel,
 } from "../realtime.js";
-import { deliverMessage, sanitizeAttachments, attachmentLimitError } from "../deliver.js";
+import { deliverMessage, sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, applySurveyVote } from "../deliver.js";
 import { normalizeChannelName } from "../automation.js";
 import { ActivityEvent } from "../models/ActivityEvent.js";
 
@@ -746,10 +746,12 @@ channelsRouter.get("/:id/pinned", async (req, res) => {
 // `message:send` socket event). Body: { body, parentId?, attachments? }.
 channelsRouter.post("/:id/messages", async (req, res) => {
   const text = String(req.body?.body || "").trim();
+  const survey = sanitizeSurvey(req.body?.survey);
+  if (surveyError(req.body?.survey)) return res.status(400).json({ error: surveyError(req.body?.survey) });
   const attachmentError = attachmentLimitError(req.body?.attachments);
   if (attachmentError) return res.status(400).json({ error: attachmentError });
   const files = sanitizeAttachments(req.body?.attachments);
-  if (!text && files.length === 0) {
+  if (!text && files.length === 0 && !survey) {
     return res.status(400).json({ error: "message needs text or an attachment" });
   }
   const channelKey = decodeURIComponent(String(req.params.id));
@@ -782,7 +784,32 @@ channelsRouter.post("/:id/messages", async (req, res) => {
     body: text,
     parentId,
     attachments: files,
+    survey,
     idempotencyKey: idempotencyKey || null,
   });
   res.status(201).json({ message });
+});
+
+// POST /api/channels/:channelId/messages/:messageId/survey-vote — replace the
+// caller's survey selection. An empty optionIds array clears their vote.
+channelsRouter.post("/:id/messages/:messageId/survey-vote", async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id) || !mongoose.isValidObjectId(req.params.messageId)) {
+    return res.status(404).json({ error: "survey not found" });
+  }
+  const channel = await Channel.findById(req.params.id);
+  const message = await Message.findById(req.params.messageId);
+  if (!channel || !message || String(message.channel) !== String(channel._id) || !message.survey) {
+    return res.status(404).json({ error: "survey not found" });
+  }
+  if (channel.type !== "public" && !channel.members.some((m) => m.equals(req.user._id))) {
+    return res.status(403).json({ error: "access denied" });
+  }
+  try {
+    const updated = await applySurveyVote(message, req.user._id, req.body?.optionIds);
+    const survey = updated.toPublicJSON().survey;
+    emitToChannel(channel._id.toString(), "message:survey", { messageId: message._id.toString(), survey });
+    res.json({ survey });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });

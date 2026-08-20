@@ -24,6 +24,22 @@ const messageSchema = new mongoose.Schema(
         height: Number,
       },
     ],
+    // Optional structured survey. `body` remains populated with the question
+    // so clients predating surveys still display a useful message.
+    survey: {
+      type: {
+        _id: false,
+        question: { type: String, required: true, maxlength: 500 },
+        allowMultiple: { type: Boolean, default: false },
+        options: [{
+          _id: false,
+          id: { type: String, required: true, maxlength: 64 },
+          label: { type: String, required: true, maxlength: 200 },
+          votes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+        }],
+      },
+      default: null,
+    },
     // "user" messages are normal; "system" are join/create event logs.
     kind: { type: String, enum: ["user", "system"], default: "user" },
     // Set on thread replies — points at the root message of the thread.
@@ -178,6 +194,18 @@ messageSchema.methods.toPublicJSON = function () {
       height: a.height || null,
       url: `/api/files/${a.key}`,
     })),
+    survey: this.survey
+      ? {
+          question: this.survey.question,
+          allowMultiple: !!this.survey.allowMultiple,
+          options: (this.survey.options || []).map((o) => ({
+            id: o.id,
+            label: o.label,
+            votes: (o.votes || []).map((id) => id.toString()),
+            voteCount: (o.votes || []).length,
+          })),
+        }
+      : null,
     forwardedFrom: this.forwardedFrom
       ? {
           authorName: this.forwardedFrom.authorName,

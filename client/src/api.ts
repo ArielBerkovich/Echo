@@ -276,6 +276,11 @@ export const api = {
     request(`/channels/${id}/read`, { method: "POST", body: thread ? { thread } : undefined }),
   getThread: (channelId, msgId) =>
     request(`/channels/${channelId}/messages/${msgId}/thread`),
+  voteSurvey: (channelId, messageId, optionIds) =>
+    request(`/channels/${channelId}/messages/${messageId}/survey-vote`, {
+      method: "POST",
+      body: { optionIds },
+    }),
   getPinned: (channelId) => request(`/channels/${channelId}/pinned`),
   listDms: () => request("/dms"),
   openDm: (userId) => request("/dms", { method: "POST", body: { userId } }),
