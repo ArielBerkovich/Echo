@@ -1,7 +1,7 @@
 const STATIC_VIEWS = new Set(["browse", "activity", "saved", "dms", "settings"]);
 const SETTINGS_TABS = new Set(["account", "appearance", "workspace", "integrations", "desktop", "api"]);
 
-export function workspacePath({ view = "home", convId = null, convName = null, convType = null, searchQuery = null, settingsTab = "account" } = {}) {
+export function workspacePath({ view = "home", convId = null, convName = null, convType = null, searchQuery = null, settingsTab = "account", messageId = null } = {}) {
   const conversation = convName || convId;
   if (searchQuery) return `/search?q=${encodeURIComponent(searchQuery)}`;
   if (view === "browse") return "/browse";
@@ -10,8 +10,10 @@ export function workspacePath({ view = "home", convId = null, convName = null, c
   if (view === "settings") return `/settings/${SETTINGS_TABS.has(settingsTab) ? settingsTab : "account"}`;
   if (view === "dms") return conversation && convType === "dm" ? `/dms/${encodeURIComponent(conversation)}` : "/dms";
   if (conversation) {
-    if (convType === "dm") return `/home/dms/${encodeURIComponent(conversation)}`;
-    return `/channels/${encodeURIComponent(conversation)}`;
+    const path = convType === "dm"
+      ? `/home/dms/${encodeURIComponent(conversation)}`
+      : `/channels/${encodeURIComponent(conversation)}`;
+    return messageId ? `${path}?message=${encodeURIComponent(messageId)}` : path;
   }
   return "/";
 }
@@ -33,13 +35,16 @@ export function parseWorkspacePath(pathname = "/", search = "") {
     };
   }
   if (section === "channels" && id) {
-    return { overlay: null, view: "home", convId: id, convType: "channel", searchQuery: null };
+    const messageId = new URLSearchParams(search).get("message");
+    return { overlay: null, view: "home", convId: id, convType: "channel", ...(messageId ? { messageId } : {}), searchQuery: null };
   }
   if (section === "home" && id === "dms" && parts[2]) {
-    return { overlay: null, view: "home", convId: parts[2], convType: "dm", searchQuery: null };
+    const messageId = new URLSearchParams(search).get("message");
+    return { overlay: null, view: "home", convId: parts[2], convType: "dm", ...(messageId ? { messageId } : {}), searchQuery: null };
   }
   if (section === "dms") {
-    return { overlay: null, view: "dms", convId: id || null, convType: id ? "dm" : null, searchQuery: null };
+    const messageId = new URLSearchParams(search).get("message");
+    return { overlay: null, view: "dms", convId: id || null, convType: id ? "dm" : null, ...(messageId ? { messageId } : {}), searchQuery: null };
   }
   if (section === "settings") {
     return { overlay: null, view: "settings", settingsTab: SETTINGS_TABS.has(id) ? id : "account", convId: null, convType: null, searchQuery: null };

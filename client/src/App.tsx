@@ -441,12 +441,14 @@ export default function App() {
     const currentRouteName = conversationRouteName(currentChannel)?.toLowerCase();
     if (route.convId && (currentChannel?.id === route.convId || currentRouteName === routeConversation)) {
       setViewState(route.view);
+      setJumpMessageId(route.messageId || null);
       if (currentChannel?.id === route.convId && currentRouteName) {
         navigate(workspacePath({
           view: route.view,
           convId: currentChannel.id,
           convName: conversationRouteName(currentChannel),
           convType: currentChannel.type,
+          messageId: route.messageId,
         }), { replace: true });
       }
       return;
@@ -480,8 +482,9 @@ export default function App() {
           dmUserId: dm.withUser.id,
         };
         setActiveChannel(activeDm);
+        setJumpMessageId(route.messageId || null);
         if (route.convId === dm.id) {
-          navigate(workspacePath({ view: route.view, convId: dm.id, convName: dm.withUser.username, convType: "dm" }), { replace: true });
+          navigate(workspacePath({ view: route.view, convId: dm.id, convName: dm.withUser.username, convType: "dm", messageId: route.messageId }), { replace: true });
         }
         return;
       }
@@ -498,8 +501,9 @@ export default function App() {
       if (channel && channel.type !== "dm") {
         setViewState("home");
         setActiveChannel(channel);
+        setJumpMessageId(route.messageId || null);
         if (route.convId === channel.id) {
-          navigate(workspacePath({ view: "home", convId: channel.id, convName: channel.name, convType: channel.type }), { replace: true });
+          navigate(workspacePath({ view: "home", convId: channel.id, convName: channel.name, convType: channel.type, messageId: route.messageId }), { replace: true });
         }
         return;
       }
