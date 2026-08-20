@@ -98,6 +98,7 @@ export default function App() {
   const [toast, setToast] = useState(null); // transient notice (e.g. no access)
   const [connectionBannerVisible, setConnectionBannerVisible] = useState(false);
   const searchRef = useRef(null);
+  const jumpRequestTimerRef = useRef(null);
 
   useEffect(() => {
     document.title = workspace?.name && workspace.name !== "Echo" ? `Echo · ${workspace.name}` : "Echo";
@@ -171,9 +172,26 @@ export default function App() {
   // before ordinary navigation so a failed/stale target cannot be retried in
   // the next channel.
   function clearNavigationTarget() {
+    if (jumpRequestTimerRef.current) {
+      clearTimeout(jumpRequestTimerRef.current);
+      jumpRequestTimerRef.current = null;
+    }
     setJumpMessageId(null);
     setOpenThreadReq(null);
     setScrollToBottomTarget(null);
+  }
+
+  // Re-triggering the same permalink must still scroll and highlight its
+  // message. Clear the previous target first so React's effect observes a
+  // fresh request even when the message is already selected.
+  function requestMessageJump(messageId) {
+    if (!messageId) return;
+    if (jumpRequestTimerRef.current) clearTimeout(jumpRequestTimerRef.current);
+    setJumpMessageId(null);
+    jumpRequestTimerRef.current = setTimeout(() => {
+      jumpRequestTimerRef.current = null;
+      setJumpMessageId(messageId);
+    }, 0);
   }
 
   function handleViewSelect(nextView) {
@@ -962,7 +980,7 @@ export default function App() {
     if (!opened) setToast("You don't have access to that conversation.");
 
     if (opened && threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
-    if (opened && messageId && !threadId) setJumpMessageId(messageId);
+    if (opened && messageId && !threadId) requestMessageJump(messageId);
   }
 
   // Run a full-text message search (from the search bar, on Enter).
@@ -1049,7 +1067,7 @@ export default function App() {
         setActiveChannel(activeDm);
         setView("dms", activeDm);
         if (threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
-        else setJumpMessageId(messageId);
+        else requestMessageJump(messageId);
         return;
       }
 
@@ -1061,7 +1079,7 @@ export default function App() {
       setActiveChannel(channel);
       setView("home", channel);
       if (threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
-      else setJumpMessageId(messageId);
+      else requestMessageJump(messageId);
     },
     [activeChannel, channels, dms, allChannels]
   );
