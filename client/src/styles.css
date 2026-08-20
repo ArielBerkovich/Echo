@@ -7057,8 +7057,8 @@ html[data-mode="dark"] .day-divider-label {
 .survey-option-progress { position: absolute; inset: 0 auto 0 0; max-width: 100%; background: color-mix(in srgb, var(--accent) 13%, transparent); transition: width .25s ease; }
 .survey-option.selected .survey-option-progress { background: color-mix(in srgb, var(--accent) 22%, transparent); }
 .survey-option-content { position: relative; z-index: 1; width: 100%; min-height: 42px; gap: 8px; padding: 8px 10px; }
-.survey-option-check { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border: 1px solid var(--border); border-radius: 50%; background: var(--surface); color: transparent; flex: 0 0 18px; transition: border-color .15s ease, background .15s ease, color .15s ease, box-shadow .15s ease; }
-.survey-option.selected .survey-option-check { border: 2px solid var(--accent); background: var(--surface); color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent); }
+.survey-option-check { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border: 1px solid var(--border); border-radius: 50%; color: var(--accent); flex: 0 0 18px; }
+.survey-option.selected .survey-option-check { border-color: var(--accent); background: var(--accent); color: var(--active-fg); }
 .survey-option-label { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
 .survey-option-count { color: var(--text); font-size: 12px; font-weight: 800; }
 .survey-option-count-detail { color: var(--muted); font-weight: 500; }
