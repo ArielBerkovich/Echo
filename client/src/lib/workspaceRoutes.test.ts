@@ -10,6 +10,8 @@ describe("workspace routes", () => {
     assert.equal(workspacePath({ view: "dms", convId: "id-2", convName: "alice", convType: "dm" }), "/dms/alice");
     assert.equal(workspacePath({ view: "home", convId: "id-2", convName: "alice", convType: "dm" }), "/home/dms/alice");
     assert.equal(workspacePath({ view: "home", convId: "legacy-id", convType: "public" }), "/channels/legacy-id");
+    assert.equal(workspacePath({ view: "home", convId: "abc", convType: "public", messageId: "507f1f77bcf86cd799439011" }), "/channels/abc?message=507f1f77bcf86cd799439011");
+    assert.equal(workspacePath({ view: "dms", convId: "id-2", convName: "alice", convType: "dm", messageId: "507f1f77bcf86cd799439011" }), "/dms/alice?message=507f1f77bcf86cd799439011");
     assert.equal(workspacePath({ searchQuery: "from:alice deployment" }), "/search?q=from%3Aalice%20deployment");
   });
 
@@ -20,6 +22,7 @@ describe("workspace routes", () => {
     assert.deepEqual(parseWorkspacePath("/channels/abc"), {
       overlay: null, view: "home", convId: "abc", convType: "channel", searchQuery: null,
     });
+    assert.equal(parseWorkspacePath("/channels/abc", "?message=507f1f77bcf86cd799439011").messageId, "507f1f77bcf86cd799439011");
     assert.equal(parseWorkspacePath("/search", "?q=release%20notes").searchQuery, "release notes");
   });
 

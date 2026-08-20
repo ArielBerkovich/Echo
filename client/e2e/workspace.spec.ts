@@ -859,3 +859,16 @@ test("navigates grouped search results with the keyboard", async ({ page }) => {
   await pane.press("Enter");
   await expect(messageById(page, fixture.messages.searchHit.id)).toBeVisible();
 });
+
+test("clicking a search result jumps to and highlights that exact message", async ({ page }) => {
+  const token = fixture.messages.searchHit.body.match(/only-token-[^ ]+/)?.[0];
+  expect(token).toBeTruthy();
+  await page.goto(`/search?q=${encodeURIComponent(token)}`);
+
+  const result = page.getByTestId("search-result").filter({ hasText: fixture.messages.searchHit.body });
+  await expect(result).toBeVisible();
+  await result.click();
+
+  await expect(page).toHaveURL(new RegExp(`/channels/general\\?message=${fixture.messages.searchHit.id}`));
+  await expect(messageById(page, fixture.messages.searchHit.id)).toHaveClass(/flash/);
+});
