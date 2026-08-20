@@ -8,7 +8,11 @@ export function workspacePath({ view = "home", convId = null, convName = null, c
   if (view === "activity") return "/activity";
   if (view === "saved") return "/saved";
   if (view === "settings") return `/settings/${SETTINGS_TABS.has(settingsTab) ? settingsTab : "account"}`;
-  if (view === "dms") return conversation && convType === "dm" ? `/dms/${encodeURIComponent(conversation)}` : "/dms";
+  if (view === "dms") {
+    if (!conversation || convType !== "dm") return "/dms";
+    const path = `/dms/${encodeURIComponent(conversation)}`;
+    return messageId ? `${path}?message=${encodeURIComponent(messageId)}` : path;
+  }
   if (conversation) {
     const path = convType === "dm"
       ? `/home/dms/${encodeURIComponent(conversation)}`

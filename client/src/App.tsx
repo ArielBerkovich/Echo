@@ -975,7 +975,7 @@ export default function App() {
       if (dm) {
         const activeDm = { id: dm.id, type: "dm", dmName: dm.withUser.displayName, dmUserId: dm.withUser.id };
         setActiveChannel(activeDm);
-        setView("dms", activeDm);
+        setView("dms", activeDm, { messageId });
         opened = true;
       }
     }
