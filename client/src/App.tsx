@@ -156,6 +156,7 @@ export default function App() {
   }
 
   function setView(nextView, channel = activeChannelRef.current, options = {}) {
+    const { messageId, ...navigationOptions } = options;
     setViewState(nextView);
     navigate(
       workspacePath({
@@ -163,8 +164,9 @@ export default function App() {
         convId: channel?.id || null,
         convName: conversationRouteName(channel),
         convType: channel?.type || null,
+        messageId,
       }),
-      options
+      navigationOptions
     );
   }
 
@@ -1065,7 +1067,7 @@ export default function App() {
           dmUserId: conv.withUser.id,
         };
         setActiveChannel(activeDm);
-        setView("dms", activeDm);
+        setView("dms", activeDm, { messageId });
         if (threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
         else requestMessageJump(messageId);
         return;
@@ -1077,7 +1079,7 @@ export default function App() {
         return setToast("You don't have access to the channel this message was forwarded from.");
       }
       setActiveChannel(channel);
-      setView("home", channel);
+      setView("home", channel, { messageId });
       if (threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
       else requestMessageJump(messageId);
     },
