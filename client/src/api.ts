@@ -276,6 +276,8 @@ export const api = {
     request(`/channels/${id}/read`, { method: "POST", body: thread ? { thread } : undefined }),
   getThread: (channelId, msgId) =>
     request(`/channels/${channelId}/messages/${msgId}/thread`),
+  getMessagePreview: (messageId) =>
+    request(`/messages/${encodeURIComponent(messageId)}/preview`),
   voteSurvey: (channelId, messageId, optionIds) =>
     request(`/channels/${channelId}/messages/${messageId}/survey-vote`, {
       method: "POST",

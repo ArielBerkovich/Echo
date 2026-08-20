@@ -21,6 +21,7 @@ import { httpMetricsMiddleware } from "./metrics.js";
 import { azureDevOpsRouter } from "./routes/azureDevOps.js";
 import { allureRouter } from "./routes/allure.js";
 import { jenkinsRouter } from "./routes/jenkins.js";
+import { messagesRouter } from "./routes/messages.js";
 
 export function createApp() {
   const app = express();
@@ -43,6 +44,7 @@ export function createApp() {
   app.use("/api/desktop-updates", desktopUpdatesRouter(config.desktopUpdateDir));
   app.use("/api/auth", authRouter);
   app.use("/api/channels", channelsRouter);
+  app.use("/api/messages", messagesRouter);
   app.use("/api/users", usersRouter);
   app.use("/api/workspace", workspaceRouter);
   app.use("/api/dms", dmsRouter);

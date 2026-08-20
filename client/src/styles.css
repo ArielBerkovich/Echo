@@ -6977,6 +6977,72 @@ html[data-mode="dark"] .day-divider-label {
   background: var(--border);
 }
 
+.message-link-preview {
+  display: block;
+  width: min(520px, 100%);
+  margin-top: 10px;
+  padding: 11px 13px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+  color: var(--text);
+  text-align: start;
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.message-link-preview:hover {
+  border-color: color-mix(in srgb, var(--accent) 62%, var(--border));
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 10%, transparent);
+  transform: translateY(-1px);
+}
+.message-link-preview:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.message-link-preview-header {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+.message-link-preview-author {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 750;
+}
+.message-link-preview-location {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.message-link-preview-time {
+  margin-left: auto;
+  flex: none;
+  font-size: 10px;
+}
+.message-link-preview-body {
+  display: -webkit-box;
+  margin-top: 6px;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow-wrap: anywhere;
+}
+.message-link-preview-action {
+  display: block;
+  margin-top: 7px;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 750;
+}
+
 /* Reaction pills */
 .reactions {
   display: flex;
