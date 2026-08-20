@@ -299,6 +299,8 @@ export default function ThreadPanel({
             <Fragment key={m.id}>
               <Message
                 m={m}
+                channel={channel}
+                availableMessages={messages}
                 grouped={false}
                 highlighted={highlightId === m.id}
                 currentUserId={user.id}

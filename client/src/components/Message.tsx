@@ -1,11 +1,14 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import { ArrowUpRight, ChartNoAxesColumnIncreasing, Check, LoaderCircle } from "lucide-react";
 import Avatar from "./Avatar.js";
 import Attachments from "./Attachments.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
 import { getSocket } from "../socket.js";
+import { api } from "../api.js";
 import { formatTime } from "../lib/time.js";
+import { findMessageLink, messageLink } from "../lib/messageLinks.js";
 import {
   ShareIcon, EmojiAddIcon, ReplyIcon, BookmarkIcon, PencilIcon, TrashIcon, PinIcon, CopyIcon, MoreIcon, QuoteIcon,
 } from "./Icons.js";
@@ -22,11 +25,50 @@ export function SystemMessage({ m }) {
   );
 }
 
+function MessageLinkPreview({ messageId, currentMessageId, initialMessage = null, channel = null, onJump }) {
+  const previewQuery = useQuery({
+    queryKey: ["message-preview", messageId],
+    queryFn: () => api.getMessagePreview(messageId),
+    enabled: !!messageId && messageId !== currentMessageId,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+  const preview = previewQuery.data || (initialMessage && channel
+    ? { message: initialMessage, channel }
+    : null);
+  if (!preview || !preview.message || !preview.channel) return null;
+  const channelLabel = preview.channel.type === "dm" ? "Direct message" : `#${preview.channel.name}`;
+  return (
+    <button
+      type="button"
+      className="message-link-preview"
+      data-testid={`message-link-preview-${messageId}`}
+      onClick={() => onJump?.({
+        channelId: preview.channel.id,
+        messageId: preview.message.id,
+        channelType: preview.channel.type,
+        channelName: preview.channel.name,
+        threadId: preview.message.parentId || null,
+      })}
+    >
+      <span className="message-link-preview-header">
+        <span className="message-link-preview-author">{preview.message.author?.displayName || "Unknown user"}</span>
+        <span className="message-link-preview-location">{channelLabel}</span>
+        <span className="message-link-preview-time">{formatTime(preview.message.createdAt)}</span>
+      </span>
+      <span className="message-link-preview-body">{preview.message.body || "Attachment"}</span>
+      <span className="message-link-preview-action">View message ↗</span>
+    </button>
+  );
+}
+
 // A single channel message: header, forwarded banner, body, attachments,
 // reactions, thread indicator, hover actions, and the edit/delete menu. All
 // behaviour is delegated to handlers passed by the parent.
 function Message({
   m,
+  channel,
+  availableMessages = [],
   grouped,
   highlighted,
   currentUserId,
@@ -85,6 +127,8 @@ function Message({
   menuOpenRef.current = menuOpen;
   pickerOpenRef.current = pickerOpen;
   const mid = m.id;
+  const linkedMessageId = findMessageLink(m.body);
+  const linkedMessage = linkedMessageId && availableMessages.find((message) => message.id === linkedMessageId);
   useEffect(() => setSurveyState(m.survey || null), [m.survey]);
   function voteSurvey(optionId) {
     const current = surveyState;
@@ -276,6 +320,28 @@ function Message({
     }
   }
 
+  async function copyMessageLink() {
+    if (!channel?.id || !m.id) return;
+    const text = messageLink(channel, m.id);
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+    } catch {
+      // Clipboard access is optional; keep the menu interaction harmless.
+    }
+  }
+
   async function issuePasswordAndReply() {
     if (!onIssuePasswordHelp || issuingPassword) return;
     setIssuingPassword(true);
@@ -422,6 +488,16 @@ function Message({
             )}
             {messageAttachments}
           </>
+        )}
+
+        {linkedMessageId && linkedMessageId !== m.id && (
+          <MessageLinkPreview
+            messageId={linkedMessageId}
+            currentMessageId={m.id}
+            initialMessage={linkedMessage}
+            channel={channel}
+            onJump={onJump}
+          />
         )}
 
         {m.passwordHelpRequest && usersById?.get(currentUserId)?.isAdmin && (
@@ -579,9 +655,14 @@ function Message({
             <button type="button" role="menuitem" data-testid={`message-${mid}-copy`} onClick={() => { copyMessage(); onCloseMenu(); }}>
               <CopyIcon /> Copy message
             </button>
-            <button type="button" role="menuitem" data-testid={`message-${mid}-quote`} disabled={!canQuote} onClick={() => { onQuote(); onCloseMenu(); }}>
-              <QuoteIcon /> Quote message
+            <button type="button" role="menuitem" data-testid={`message-${mid}-copy-link`} onClick={() => { copyMessageLink(); onCloseMenu(); }}>
+              <CopyIcon /> Copy link to message
             </button>
+            {canQuote && (
+              <button type="button" role="menuitem" data-testid={`message-${mid}-quote`} onClick={() => { onQuote(); onCloseMenu(); }}>
+                <QuoteIcon /> Quote message
+              </button>
+            )}
             <button
               type="button"
               role="menuitem"
@@ -628,6 +709,8 @@ export default memo(Message, areMessagePropsEqual);
 function areMessagePropsEqual(prev, next) {
   return (
     prev.m === next.m &&
+    prev.channel === next.channel &&
+    prev.availableMessages === next.availableMessages &&
     prev.grouped === next.grouped &&
     prev.highlighted === next.highlighted &&
     prev.currentUserId === next.currentUserId &&

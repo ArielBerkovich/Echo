@@ -784,7 +784,15 @@ export default function ChannelView({
   const jumpHandledRef = useRef(null); // guards against re-running after the target lands
   const jumpLoadingRef = useRef(null); // guards against duplicate around-message requests
   useEffect(() => {
-    if (!jumpMessageId || loading || !historyReady) return;
+    if (!jumpMessageId) {
+      // The same message can be opened repeatedly from a permalink preview.
+      // Reset the guard when App clears the completed jump target so the next
+      // request is treated as a fresh scroll/highlight action.
+      jumpHandledRef.current = null;
+      jumpLoadingRef.current = null;
+      return;
+    }
+    if (loading || !historyReady) return;
     if (jumpHandledRef.current === jumpMessageId) return;
 
     // While a jump is settling, suppress the scroll-up pagination: the pane
@@ -1041,6 +1049,8 @@ export default function ChannelView({
                   )}
                   <Message
                     m={m}
+                    channel={channel}
+                    availableMessages={messages}
                     grouped={false}
                     highlighted={highlightId === m.id}
                     currentUserId={user.id}

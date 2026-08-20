@@ -98,6 +98,7 @@ export default function App() {
   const [toast, setToast] = useState(null); // transient notice (e.g. no access)
   const [connectionBannerVisible, setConnectionBannerVisible] = useState(false);
   const searchRef = useRef(null);
+  const jumpRequestTimerRef = useRef(null);
 
   useEffect(() => {
     document.title = workspace?.name && workspace.name !== "Echo" ? `Echo · ${workspace.name}` : "Echo";
@@ -173,9 +174,26 @@ export default function App() {
   // before ordinary navigation so a failed/stale target cannot be retried in
   // the next channel.
   function clearNavigationTarget() {
+    if (jumpRequestTimerRef.current) {
+      clearTimeout(jumpRequestTimerRef.current);
+      jumpRequestTimerRef.current = null;
+    }
     setJumpMessageId(null);
     setOpenThreadReq(null);
     setScrollToBottomTarget(null);
+  }
+
+  // Re-triggering the same permalink must still scroll and highlight its
+  // message. Clear the previous target first so React's effect observes a
+  // fresh request even when the message is already selected.
+  function requestMessageJump(messageId) {
+    if (!messageId) return;
+    if (jumpRequestTimerRef.current) clearTimeout(jumpRequestTimerRef.current);
+    setJumpMessageId(null);
+    jumpRequestTimerRef.current = setTimeout(() => {
+      jumpRequestTimerRef.current = null;
+      setJumpMessageId(messageId);
+    }, 0);
   }
 
   function handleViewSelect(nextView) {
@@ -443,12 +461,14 @@ export default function App() {
     const currentRouteName = conversationRouteName(currentChannel)?.toLowerCase();
     if (route.convId && (currentChannel?.id === route.convId || currentRouteName === routeConversation)) {
       setViewState(route.view);
+      setJumpMessageId(route.messageId || null);
       if (currentChannel?.id === route.convId && currentRouteName) {
         navigate(workspacePath({
           view: route.view,
           convId: currentChannel.id,
           convName: conversationRouteName(currentChannel),
           convType: currentChannel.type,
+          messageId: route.messageId,
         }), { replace: true });
       }
       return;
@@ -482,8 +502,9 @@ export default function App() {
           dmUserId: dm.withUser.id,
         };
         setActiveChannel(activeDm);
+        setJumpMessageId(route.messageId || null);
         if (route.convId === dm.id) {
-          navigate(workspacePath({ view: route.view, convId: dm.id, convName: dm.withUser.username, convType: "dm" }), { replace: true });
+          navigate(workspacePath({ view: route.view, convId: dm.id, convName: dm.withUser.username, convType: "dm", messageId: route.messageId }), { replace: true });
         }
         return;
       }
@@ -500,8 +521,9 @@ export default function App() {
       if (channel && channel.type !== "dm") {
         setViewState("home");
         setActiveChannel(channel);
+        setJumpMessageId(route.messageId || null);
         if (route.convId === channel.id) {
-          navigate(workspacePath({ view: "home", convId: channel.id, convName: channel.name, convType: channel.type }), { replace: true });
+          navigate(workspacePath({ view: "home", convId: channel.id, convName: channel.name, convType: channel.type, messageId: route.messageId }), { replace: true });
         }
         return;
       }
@@ -960,7 +982,7 @@ export default function App() {
     if (!opened) setToast("You don't have access to that conversation.");
 
     if (opened && threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
-    if (opened && messageId && !threadId) setJumpMessageId(messageId);
+    if (opened && messageId && !threadId) requestMessageJump(messageId);
   }
 
   // Run a full-text message search (from the search bar, on Enter).
@@ -1045,9 +1067,9 @@ export default function App() {
           dmUserId: conv.withUser.id,
         };
         setActiveChannel(activeDm);
-        setView("dms", activeDm);
+        setView("dms", activeDm, { messageId });
         if (threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
-        else setJumpMessageId(messageId);
+        else requestMessageJump(messageId);
         return;
       }
 
@@ -1059,7 +1081,7 @@ export default function App() {
       setActiveChannel(channel);
       setView("home", channel, { messageId });
       if (threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
-      else setJumpMessageId(messageId);
+      else requestMessageJump(messageId);
     },
     [activeChannel, channels, dms, allChannels]
   );
