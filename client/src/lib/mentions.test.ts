@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { nonMemberMentions } from "./mentions.js";
+import { MENTION_QUERY_RE, nonMemberMentions } from "./mentions.js";
 
 const users = [
   { id: "u1", username: "alice" },
@@ -38,5 +38,17 @@ describe("nonMemberMentions", () => {
       nonMemberMentions({ type: "private", members: [] }, [renamed], "hello @old.name"),
       [renamed]
     );
+  });
+});
+
+describe("mention autocomplete query", () => {
+  it("recognizes non-Latin characters after a mention trigger", () => {
+    const match = "שלום @אב".match(MENTION_QUERY_RE);
+    assert.deepEqual(match?.slice(1), ["@", "אב"]);
+  });
+
+  it("continues to recognize ordinary handles", () => {
+    const match = "hello @carol.smith".match(MENTION_QUERY_RE);
+    assert.deepEqual(match?.slice(1), ["@", "carol.smith"]);
   });
 });

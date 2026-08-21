@@ -16,6 +16,7 @@ import Avatar from "./Avatar.js";
 import EmojiPicker from "./EmojiPicker.js";
 import Modal, { ModalActions } from "./Modal.js";
 import { useMentionGate } from "../lib/useMentionGate.js";
+import { MENTION_QUERY_RE } from "../lib/mentions.js";
 import { CalendarClock, ChartNoAxesColumnIncreasing, ChevronRight } from "lucide-react";
 import {
   LinkIcon, OrderedListIcon, BulletListIcon, QuoteIcon, CodeIcon, CodeBlockIcon,
@@ -287,7 +288,7 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
     // Shift+Enter as a hard_break leaf; using a NUL leaf marker makes
     // `hello<br>@name` look like `hello@name`, so the mention trigger is lost.
     const before = $from.parent.textBetween(0, $from.parentOffset, "\n", "\n");
-    const match = before.match(/(?:^|\s)([@#])([\w.-]*)$/);
+    const match = before.match(MENTION_QUERY_RE);
     if (!match) return setMention(null);
     setMention({
       trigger: match[1],
