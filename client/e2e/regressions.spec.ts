@@ -282,6 +282,51 @@ test("keeps the DM preview width stable when toggling Starred", async ({ page })
   }
 });
 
+test("stars channels without changing their membership or name", async ({ page }) => {
+  await page.goto("/");
+  const channelRow = page.locator(
+    `[data-testid="channel-row-${slug(fixture.projectChannel.name)}"], [data-testid="starred-channel-row-${slug(fixture.projectChannel.name)}"]`,
+  );
+  await expect(channelRow).toBeVisible();
+  await channelRow.click();
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
+
+  const toggle = page.getByTestId("channel-starred-toggle");
+  if ((await toggle.getAttribute("aria-pressed")) === "true") {
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-pressed", "false");
+  }
+
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId(`starred-channel-row-${slug(fixture.projectChannel.name)}`)).toBeVisible();
+
+  const starred = await requestAsToken(page, fixture.alice.token, "/users/vips");
+  expect(starred.channelIds).toContain(fixture.projectChannel.id);
+  const channels = await requestAsToken(page, fixture.alice.token, "/channels");
+  expect(channels.channels).toContainEqual(expect.objectContaining({
+    id: fixture.projectChannel.id,
+    name: fixture.projectChannel.name,
+  }));
+
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-pressed", "false");
+  await expect(page.getByTestId(`channel-row-${slug(fixture.projectChannel.name)}`)).toBeVisible();
+});
+
+test("restores starred channels in the Starred section after reload", async ({ page }) => {
+  await requestAsToken(page, fixture.alice.token, `/channels/${fixture.projectChannel.id}/star`, { method: "POST" });
+
+  await page.goto("/");
+  await expect(page.getByTestId(`starred-channel-row-${slug(fixture.projectChannel.name)}`)).toBeVisible();
+
+  const channelRow = page.getByTestId(`starred-channel-row-${slug(fixture.projectChannel.name)}`);
+  await channelRow.click();
+  await expect(page.getByTestId("channel-starred-toggle")).toHaveAttribute("aria-pressed", "true");
+
+  await requestAsToken(page, fixture.alice.token, `/channels/${fixture.projectChannel.id}/star`, { method: "POST" });
+});
+
 test("adds a channel-message author to Starred without opening a DM first", async ({ page }) => {
   const candidateSuffix = uniqueSuffix("starred").replace(/[^a-z0-9]/gi, "").slice(0, 16);
   const candidate = await registerUser(page, {

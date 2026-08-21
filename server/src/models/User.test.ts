@@ -44,4 +44,11 @@ describe("User.toPublicJSON", () => {
     assert.equal(json.mustResetPassword, false);
     assert.equal(json.onboarded, false);
   });
+
+  it("defaults channel stars independently from VIP users", () => {
+    const user = new User({ username: "bob", displayName: "Bob", passwordHash: "hash" });
+
+    assert.deepEqual(user.starredChannels, []);
+    assert.deepEqual(user.vips, []);
+  });
 });
