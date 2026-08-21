@@ -174,6 +174,7 @@ export default function ChannelView({
         loading ||
         !historyReady ||
         !firstUnreadId ||
+        jumpMessageId ||
         unreadScrollAppliedRef.current
       ) {
         return;
@@ -186,7 +187,7 @@ export default function ChannelView({
         settleUnreadAnchor();
       });
     },
-    [anchorUnreadDivider, firstUnreadId, historyReady, loading, settleUnreadAnchor]
+    [anchorUnreadDivider, firstUnreadId, historyReady, jumpMessageId, loading, settleUnreadAnchor]
   );
 
   // Load history + subscribe to live messages whenever the active channel changes.
@@ -742,7 +743,7 @@ export default function ChannelView({
   // anchor once the divider exists. This avoids snapping back to the bottom
   // when unread state resolves a tick later than the message list.
   useEffect(() => {
-    if (loading || !historyReady || !firstUnreadId || unreadScrollAppliedRef.current) return;
+    if (loading || !historyReady || !firstUnreadId || jumpMessageId || unreadScrollAppliedRef.current) return;
     if (!firstUnreadRef.current) return;
     unreadScrollAppliedRef.current = true;
     jumpingRef.current = true;
@@ -751,7 +752,7 @@ export default function ChannelView({
       anchorUnreadDivider();
       settleUnreadAnchor();
     });
-  }, [anchorUnreadDivider, firstUnreadId, historyReady, loading, settleUnreadAnchor]);
+  }, [anchorUnreadDivider, firstUnreadId, historyReady, jumpMessageId, loading, settleUnreadAnchor]);
 
   // The "New" divider marks where you left off on open; once you've had a few
   // seconds to see it, drop it so it doesn't linger in the conversation.
