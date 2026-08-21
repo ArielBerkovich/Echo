@@ -78,17 +78,17 @@ export function useWorkspaceQueries(enabled) {
     EMPTY_STARRED,
   );
   const setStarredUserIds = useCallback((updater) => {
-    setStarred((previous) => ({
+    setStarredIds((previous) => ({
       ...previous,
       userIds: typeof updater === "function" ? updater(previous.userIds) : updater,
     }));
-  }, [setStarred]);
+  }, [setStarredIds]);
   const setStarredChannelIds = useCallback((updater) => {
-    setStarred((previous) => ({
+    setStarredIds((previous) => ({
       ...previous,
       channelIds: typeof updater === "function" ? updater(previous.channelIds) : updater,
     }));
-  }, [setStarred]);
+  }, [setStarredIds]);
   const activityQuery = useQuery({
     queryKey: queryKeys.activity,
     queryFn: async () => (await api.getActivity()).items || [],
