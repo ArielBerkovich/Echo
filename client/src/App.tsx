@@ -929,7 +929,15 @@ export default function App() {
     const channelName = typeof item === "string" ? null : item.channelName;
     clearNavigationTarget();
     setSearchQuery(null);
-    if (messageId || threadId) clearScrollState(channelId);
+    if (messageId || threadId) {
+      clearScrollState(channelId);
+      // Activity can point at a message changed while its channel was outside
+      // the viewport. Force the timeline to refetch so reactions and other
+      // message metadata are current when the jump lands.
+      if (messageId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.messages(channelId) });
+      }
+    }
 
     let opened = false;
     const channel = resolveJumpChannel({ channelId, channelType, channelName });
