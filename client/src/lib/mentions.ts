@@ -2,6 +2,11 @@
 // relevant for PRIVATE channels — in public channels a non-member still sees
 // the mention (Activity feed + can open the channel). @everyone and unknown
 // handles are ignored.
+// `\w` is ASCII-only in JavaScript, so it cannot detect a mention query while
+// the user is typing a non-Latin display name. Usernames remain ASCII handles;
+// this pattern is specifically for the composer's autocomplete query.
+export const MENTION_QUERY_RE = /(?:^|\s)([@#])([\p{L}\p{N}\p{M}_.-]*)$/u;
+
 export function nonMemberMentions(channel, users, body) {
   if (channel.type !== "private") return [];
   const memberIds = new Set(channel.members || []);

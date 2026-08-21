@@ -286,7 +286,7 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
         "p", "br", "strong", "em", "del", "code", "pre", "blockquote",
         "ul", "ol", "li", "a", "span", "time", "h1", "h2", "h3", "hr", "img",
       ],
-      ALLOWED_ATTR: ["class", "datetime", "href", "title", "target", "rel", "src", "alt", "data-channel-tag"],
+    ALLOWED_ATTR: ["class", "datetime", "href", "title", "target", "rel", "src", "alt", "data-channel-tag", "data-mention"],
       // Authenticated custom emoji are rendered through local blob URLs before
       // this HTML is inserted into the chat. Keep those URLs while retaining
       // a narrow allowlist for markdown links and image sources.

@@ -6958,6 +6958,9 @@ html[data-mode="dark"] .day-divider-label {
   color: var(--text);
   font-size: 13.5px;
   line-height: 1.45;
+  /* Match regular message bodies: preserve RTL character ordering while
+     keeping the note anchored to the left edge of the message column. */
+  text-align: left;
 }
 .forwarded-message-label {
   margin-bottom: 3px;
