@@ -282,6 +282,28 @@ test("keeps the DM preview width stable when toggling Starred", async ({ page })
   }
 });
 
+test("stars channels without changing their membership or name", async ({ page }) => {
+  const before = await requestAsToken(page, fixture.alice.token, "/users/vips");
+  const wasStarred = before.channelIds.includes(fixture.projectChannel.id);
+  const starred = await requestAsToken(page, fixture.alice.token, `/channels/${fixture.projectChannel.id}/star`, {
+    method: "POST",
+  });
+  expect(starred).toEqual({ channelId: fixture.projectChannel.id, starred: !wasStarred });
+
+  const after = await requestAsToken(page, fixture.alice.token, "/users/vips");
+  expect(after.channelIds.includes(fixture.projectChannel.id)).toBe(!wasStarred);
+  const channels = await requestAsToken(page, fixture.alice.token, "/channels");
+  expect(channels.channels).toContainEqual(expect.objectContaining({
+    id: fixture.projectChannel.id,
+    name: fixture.projectChannel.name,
+  }));
+
+  const restored = await requestAsToken(page, fixture.alice.token, `/channels/${fixture.projectChannel.id}/star`, {
+    method: "POST",
+  });
+  expect(restored).toEqual({ channelId: fixture.projectChannel.id, starred: wasStarred });
+});
+
 test("adds a channel-message author to Starred without opening a DM first", async ({ page }) => {
   const candidateSuffix = uniqueSuffix("starred").replace(/[^a-z0-9]/gi, "").slice(0, 16);
   const candidate = await registerUser(page, {

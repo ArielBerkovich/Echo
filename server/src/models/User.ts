@@ -49,6 +49,8 @@ const userSchema = new mongoose.Schema(
     savedMessages: [{ type: mongoose.Schema.Types.ObjectId, ref: "Message" }],
     // Other users this user has marked as VIP (their DMs get a pinned section).
     vips: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    // Channels this user has marked for quick access in the Starred section.
+    starredChannels: [{ type: mongoose.Schema.Types.ObjectId, ref: "Channel" }],
   },
   { timestamps: true }
 );

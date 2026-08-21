@@ -11,6 +11,7 @@ export default function WorkspaceNavigation({
   customEmojis = [],
   hidden,
   starredIds,
+  starredChannelIds,
   onlineIds,
   activeChannel,
   activityBadge,
@@ -26,6 +27,7 @@ export default function WorkspaceNavigation({
   onOpenDm,
   onHideDm,
   onHideChannel,
+  onToggleChannelStarred,
   onLogout,
   onUpdated,
   onOpenSettings,
@@ -59,6 +61,7 @@ export default function WorkspaceNavigation({
             customEmojis={customEmojis}
             hidden={hidden}
             starredIds={starredIds}
+            starredChannelIds={starredChannelIds}
             onlineIds={onlineIds}
             activeChannel={activeChannel}
             mode={view === "dms" ? "dms" : "home"}
@@ -73,6 +76,7 @@ export default function WorkspaceNavigation({
             onPrefetchDm={onPrefetchChannel}
             onHideDm={onHideDm}
             onHideChannel={onHideChannel}
+            onToggleChannelStarred={onToggleChannelStarred}
             onLogout={onLogout}
             onOpenSettings={onOpenSettings}
             onOpenApiDocs={onOpenApiDocs}

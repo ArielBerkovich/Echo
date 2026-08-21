@@ -253,6 +253,36 @@ channelsRouter.post("/", async (req, res) => {
   }
 });
 
+// POST /api/channels/:id/star — toggle the current user's channel star.
+// This is a private navigation preference; it never changes channel access.
+channelsRouter.post("/:id/star", async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(404).json({ error: "channel not found" });
+  }
+  const channel = await Channel.findById(req.params.id);
+  if (!channel || channel.isArchived || channel.type === "dm") {
+    return res.status(404).json({ error: "channel not found" });
+  }
+  if (channel.type !== "public" && !channel.members.some((memberId) => memberId.equals(req.user._id))) {
+    return res.status(403).json({ error: "access denied" });
+  }
+
+  const channelId = channel._id.toString();
+  req.user.starredChannels ||= [];
+  const index = req.user.starredChannels.findIndex((id) => id.equals(channel._id));
+  let starred;
+  if (index >= 0) {
+    req.user.starredChannels.splice(index, 1);
+    starred = false;
+  } else {
+    req.user.starredChannels.push(channel._id);
+    starred = true;
+  }
+  await req.user.save();
+  emitToUser(req.user._id.toString(), "starred:update", { channelId, starred });
+  res.json({ channelId, starred });
+});
+
 // POST /api/channels/:id/join — add the current user to a channel's membership.
 channelsRouter.post("/:id/join", async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) {

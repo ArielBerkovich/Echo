@@ -22,6 +22,7 @@ export function useRealtime({
   setCustomEmojis,
   setSavedIds,
   setStarredIds,
+  setStarredChannelIds,
   setView,
   setActiveChannel,
   setProfileUser,
@@ -133,6 +134,7 @@ export function useRealtime({
         setSavedIds?.(new Set((results[5].value.items || []).map((item) => item.id)));
       }
       if (results[6].status === "fulfilled") setStarredIds?.(new Set(results[6].value.starredIds || []));
+      if (results[6].status === "fulfilled") setStarredChannelIds?.(new Set(results[6].value.starredChannelIds || []));
 
       // Consumers use this to reconcile data local to the active view, such as
       // message history and an open thread.
@@ -266,6 +268,15 @@ export function useRealtime({
       }
       refreshChannels();
     };
+    const onStarredUpdate = ({ channelId, starred } = {}) => {
+      if (!channelId || !setStarredChannelIds) return;
+      setStarredChannelIds((previous) => {
+        const next = new Set(previous);
+        if (starred) next.add(channelId);
+        else next.delete(channelId);
+        return next;
+      });
+    };
     socket.on("emoji:new", onEmoji);
     socket.on("user:new", onNewUser);
     socket.on("user:update", onUserUpdate);
@@ -275,6 +286,7 @@ export function useRealtime({
     socket.on("channel:catalog", onChannelCatalog);
     socket.on("channel:added", onChannelAdded);
     socket.on("channel:removed", onChannelRemoved);
+    socket.on("starred:update", onStarredUpdate);
     return () => {
       socket.off("emoji:new", onEmoji);
       socket.off("user:new", onNewUser);
@@ -285,6 +297,7 @@ export function useRealtime({
       socket.off("channel:catalog", onChannelCatalog);
       socket.off("channel:added", onChannelAdded);
       socket.off("channel:removed", onChannelRemoved);
+      socket.off("starred:update", onStarredUpdate);
     };
   }, [user]);
 

@@ -5,6 +5,7 @@ import { queryKeys } from "./queryClient.js";
 
 const EMPTY_LIST: any[] = [];
 const EMPTY_SET = new Set<string>();
+const EMPTY_STARRED = { userIds: EMPTY_SET, channelIds: EMPTY_SET };
 
 export const workspaceKeys = {
   all: ["workspace"] as const,
@@ -66,10 +67,28 @@ export function useWorkspaceQueries(enabled) {
   );
   const [starredIds, setStarredIds] = useQueryState(
     workspaceKeys.starred,
-    async () => new Set((await api.getStarred()).starredIds || []),
+    async () => {
+      const result = await api.getStarred();
+      return {
+        userIds: new Set(result.starredIds || []),
+        channelIds: new Set(result.starredChannelIds || []),
+      };
+    },
     enabled,
-    EMPTY_SET,
+    EMPTY_STARRED,
   );
+  const setStarredUserIds = useCallback((updater) => {
+    setStarred((previous) => ({
+      ...previous,
+      userIds: typeof updater === "function" ? updater(previous.userIds) : updater,
+    }));
+  }, [setStarred]);
+  const setStarredChannelIds = useCallback((updater) => {
+    setStarred((previous) => ({
+      ...previous,
+      channelIds: typeof updater === "function" ? updater(previous.channelIds) : updater,
+    }));
+  }, [setStarred]);
   const activityQuery = useQuery({
     queryKey: queryKeys.activity,
     queryFn: async () => (await api.getActivity()).items || [],
@@ -93,8 +112,10 @@ export function useWorkspaceQueries(enabled) {
     setCustomEmojis,
     savedIds,
     setSavedIds,
-    starredIds,
-    setStarredIds,
+    starredIds: starredIds.userIds,
+    setStarredIds: setStarredUserIds,
+    starredChannelIds: starredIds.channelIds,
+    setStarredChannelIds,
     activityItems: activityQuery.data || EMPTY_LIST,
   };
 }

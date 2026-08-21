@@ -65,6 +65,7 @@ export default function Sidebar({
   dms = [],
   hidden,
   starredIds = new Set(),
+  starredChannelIds = new Set(),
   onlineIds = new Set(),
   activeChannel,
   mode = "home",
@@ -79,6 +80,7 @@ export default function Sidebar({
   onPrefetchDm,
   onHideDm,
   onHideChannel,
+  onToggleChannelStarred,
   customEmojis = [],
 }) {
   const dmsOnly = mode === "dms";
@@ -104,6 +106,8 @@ export default function Sidebar({
   // Starred DMs get their own section; the rest stay under "Direct Messages".
   const starredDms = shownDms.filter((c) => starredIds.has(c.withUser.id));
   const regularDms = shownDms.filter((c) => !starredIds.has(c.withUser.id));
+  const starredChannels = shownChannels.filter((c) => starredChannelIds.has(c.id));
+  const regularChannels = shownChannels.filter((c) => !starredChannelIds.has(c.id));
 
   // Compact DM row used by both the Starred and Direct Messages sections.
   const renderDmRow = (conv) => {
@@ -250,7 +254,7 @@ export default function Sidebar({
             </span>
           </div>
           {showChannels &&
-            shownChannels.map((c) => (
+            regularChannels.map((c) => (
               <button
                 key={c.id}
                 type="button"
@@ -269,7 +273,7 @@ export default function Sidebar({
           {showChannels && shownChannels.length === 0 && (
             <div className="dm-empty">{filter ? "No matching channels." : "No channels yet."}</div>
           )}
-          {starredDms.length > 0 && (
+          {(starredDms.length > 0 || starredChannels.length > 0) && (
             <>
               <div className="section-label section-toggle starred-section-label">
                 <button
@@ -283,11 +287,27 @@ export default function Sidebar({
                   <span className="starred-label">★ Starred</span>
                 </button>
               </div>
+              {showStarred && starredChannels.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className={`channel-item channel-row starred-channel-row ${!browsingChannels && activeChannel?.id === c.id ? "active" : ""} ${c.unread ? "unread" : ""}`}
+                  data-testid={`starred-channel-row-${slug(c.name)}`}
+                  aria-current={!browsingChannels && activeChannel?.id === c.id ? "page" : undefined}
+                  onClick={() => onSelect(c)}
+                  onMouseEnter={() => onPrefetchChannel?.(c.id)}
+                  onFocus={() => onPrefetchChannel?.(c.id)}
+                >
+                  <span className="ch-mark">{c.type === "private" ? <LockKeyholeIcon className="ch-lock" size={11} strokeWidth={1.6} /> : "#"}</span>
+                  <span className="ci-name">{c.name}</span>
+                  {c.unread > 0 && <span className="unread-badge">{c.unread > 99 ? "99+" : c.unread}</span>}
+                </button>
+              ))}
               {showStarred && starredDms.map(renderDmRow)}
             </>
           )}
 
-          <div className={`section-label dm-label section-toggle ${starredDms.length > 0 ? "dm-label-after-starred" : ""}`} data-testid="home-dm-section">
+          <div className={`section-label dm-label section-toggle ${starredDms.length > 0 || starredChannels.length > 0 ? "dm-label-after-starred" : ""}`} data-testid="home-dm-section">
             <button
               type="button"
               className="sl-collapse"

@@ -67,6 +67,8 @@ export default function ChannelView({
   onOpenForwardedDm,
   isStarred = false,
   onToggleStarred,
+  isChannelStarred = false,
+  onToggleChannelStarred,
   jumpMessageId = null,
   scrollToBottomTarget = null,
   canJumpToForward,
@@ -949,6 +951,17 @@ export default function ChannelView({
           </>
         ) : (
           <>
+            <button
+              type="button"
+              className={`dm-starred-toggle ${isChannelStarred ? "active" : ""}`}
+              data-testid="channel-starred-toggle"
+              aria-label={isChannelStarred ? `Remove #${channel.name} from Starred` : `Mark #${channel.name} as Starred`}
+              aria-pressed={isChannelStarred}
+              title={isChannelStarred ? "Remove from Starred" : "Mark as Starred"}
+              onClick={() => onToggleChannelStarred?.(channel.id)}
+            >
+              <StarIcon size={20} strokeWidth={1.9} fill={isChannelStarred ? "currentColor" : "none"} />
+            </button>
             <button
               className="ch-name ch-name-btn"
               data-testid="channel-title"

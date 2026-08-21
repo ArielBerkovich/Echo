@@ -76,6 +76,8 @@ export default function App() {
     setSavedIds,
     starredIds,
     setStarredIds,
+    starredChannelIds,
+    setStarredChannelIds,
     activityItems,
   } = useWorkspaceQueries(!!user);
   const [navOpen, setNavOpen] = useState(false); // mobile: rail+sidebar drawer open?
@@ -293,6 +295,7 @@ export default function App() {
       setCustomEmojis,
       setSavedIds,
       setStarredIds,
+      setStarredChannelIds,
       setView,
       setActiveChannel,
       setProfileUser,
@@ -1117,6 +1120,30 @@ export default function App() {
     });
   }
 
+  function handleToggleChannelStarred(channelId) {
+    const wasStarred = starredChannelIds.has(channelId);
+    setStarredChannelIds((prev) => {
+      const next = new Set(prev);
+      wasStarred ? next.delete(channelId) : next.add(channelId);
+      return next;
+    });
+    api.toggleChannelStarred(channelId).then(({ starred }) => {
+      setStarredChannelIds((prev) => {
+        const next = new Set(prev);
+        if (starred) next.add(channelId);
+        else next.delete(channelId);
+        return next;
+      });
+    }).catch(() => {
+      setStarredChannelIds((prev) => {
+        const next = new Set(prev);
+        if (wasStarred) next.add(channelId);
+        else next.delete(channelId);
+        return next;
+      });
+    });
+  }
+
   // Auto-dismiss the toast.
   useEffect(() => {
     if (!toast) return;
@@ -1237,6 +1264,7 @@ export default function App() {
           customEmojis={emojis}
           hidden={hidden}
           starredIds={starredIds}
+          starredChannelIds={starredChannelIds}
           onlineIds={onlineIds}
           activeChannel={activeChannel}
           activityBadge={activityBadge}
@@ -1252,6 +1280,7 @@ export default function App() {
           onOpenDm={handleSidebarOpenDm}
           onHideDm={handleHideDm}
           onHideChannel={handleHideChannel}
+          onToggleChannelStarred={handleToggleChannelStarred}
           onLogout={handleLogout}
           onUpdated={(updated) => setUser((previous) => ({ ...previous, ...updated }))}
           onOpenSettings={openSettings}
@@ -1353,6 +1382,8 @@ export default function App() {
             onDmsChanged: refreshDms,
             isStarred: activeChannel?.type === "dm" && starredIds.has(activeChannel.dmUserId),
             onToggleStarred: handleToggleStarred,
+            isChannelStarred: activeChannel?.type !== "dm" && starredChannelIds.has(activeChannel?.id),
+            onToggleChannelStarred: handleToggleChannelStarred,
             jumpMessageId,
             scrollToBottomTarget,
             canJumpToForward,

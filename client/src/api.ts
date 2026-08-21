@@ -293,12 +293,14 @@ export const api = {
   toggleSaved: (messageId) => request(`/saved/${messageId}`, { method: "POST" }),
   getStarred: async () => {
     const result = await request("/users/vips");
-    return { ...result, starredIds: result.vipIds };
+    return { ...result, starredIds: result.vipIds, starredChannelIds: result.channelIds || [] };
   },
   toggleStarred: async (userId) => {
     const result = await request(`/users/${userId}/vip`, { method: "POST" });
     return { ...result, starred: result.vip };
   },
+  toggleChannelStarred: (channelId) =>
+    request(`/channels/${encodeURIComponent(channelId)}/star`, { method: "POST" }),
   markOnboarded: () => request("/users/me/onboarded", { method: "POST" }),
   scheduleMessage: (channelId, payload) =>
     request("/scheduled", { method: "POST", body: { channelId, ...payload } }),

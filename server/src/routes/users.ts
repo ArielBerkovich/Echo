@@ -2,6 +2,7 @@ import { Router } from "express";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import { User } from "../models/User.js";
+import { Channel } from "../models/Channel.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { signToken, signApiToken } from "../auth.js";
 import { setFileCategory, FILE_CATEGORY } from "../storage.js";
@@ -35,9 +36,21 @@ usersRouter.get("/", async (req, res) => {
   });
 });
 
-// GET /api/users/vips — the ids of users the current user has marked VIP.
-usersRouter.get("/vips", (req, res) => {
-  res.json({ vipIds: (req.user.vips || []).map((id) => id.toString()) });
+// GET /api/users/vips — the ids of the users and channels the current user has starred.
+usersRouter.get("/vips", async (req, res) => {
+  const starredChannelIds = req.user.starredChannels || [];
+  const visibleChannels = starredChannelIds.length === 0
+    ? []
+    : await Channel.find({
+      _id: { $in: starredChannelIds },
+      isArchived: false,
+      type: { $ne: "dm" },
+      $or: [{ type: "public" }, { members: req.user._id }],
+    }, { _id: 1 }).lean();
+  res.json({
+    vipIds: (req.user.vips || []).map((id) => id.toString()),
+    channelIds: visibleChannels.map((channel) => channel._id.toString()),
+  });
 });
 
 // POST /api/users/:username/messages — open or reuse a DM by username and send.
