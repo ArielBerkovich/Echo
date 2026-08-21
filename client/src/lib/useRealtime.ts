@@ -71,7 +71,7 @@ export function useRealtime({
       // A reaction on the message currently being viewed is already visible
       // in the conversation, so it should remain in Activity but not add an
       // unread Activity badge.
-      if (it.kind === "reaction" && viewingConversation && it.channelId === active.id) continue;
+      if (it.kind === "reaction" && !it.threadId && viewingConversation && it.channelId === active.id) continue;
       if (it.threadId) byThread[it.threadId] = (byThread[it.threadId] || 0) + 1;
       else byChannel[it.channelId] = (byChannel[it.channelId] || 0) + 1;
     }
