@@ -281,6 +281,14 @@ test("shows and permanently dismisses every supported Activity kind", async ({ b
       page.getByTestId("activity-item").filter({ hasText: addedChannel.channel.name }),
       page.getByTestId("activity-item").filter({ hasText: removedChannel.channel.name }),
     ];
+
+    await targets[3].click();
+    await expect(
+      page.getByTestId(`message-${reactionRoot.message.id}`).locator(".reaction:not(.add)"),
+    ).toContainText("👍");
+    await page.goto("/activity");
+    await expect(page.getByTestId("activity-header")).toBeVisible();
+
     for (const target of targets) {
       await expect(target).toBeVisible();
       await target.getByRole("button", { name: "Delete activity" }).click();
