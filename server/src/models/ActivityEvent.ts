@@ -10,6 +10,7 @@ const activityEventSchema = new mongoose.Schema({
   channel: { type: mongoose.Schema.Types.ObjectId, ref: "Channel", required: true },
   message: { type: mongoose.Schema.Types.ObjectId, ref: "Message", required: true },
   emoji: { type: String, default: "" },
+  readAt: { type: Date, default: null },
   createdAt: { type: Date, default: Date.now },
 });
 

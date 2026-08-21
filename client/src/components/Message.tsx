@@ -29,7 +29,10 @@ export function MessageVisibilityProvider({ onChange, children }) {
   const value = useMemo(() => observer ? {
     observe(element) {
       observer.observe(element);
-      return () => observer.unobserve(element);
+      return () => {
+        callbackRef.current?.(element.dataset.mid, false);
+        observer.unobserve(element);
+      };
     },
   } : null, [observer]);
   return <MessageVisibilityContext.Provider value={value}>{children}</MessageVisibilityContext.Provider>;

@@ -17,6 +17,22 @@ activityRouter.post("/read", async (req, res) => {
   res.json({ ok: true });
 });
 
+// POST /api/activity/read-items — mark specific stored activity events read.
+activityRouter.post("/read-items", async (req, res) => {
+  const ids = Array.isArray(req.body?.ids)
+    ? req.body.ids
+      .map((id) => String(id || "").replace(/^rx-/i, ""))
+      .filter((id) => mongoose.isValidObjectId(id))
+    : [];
+  if (ids.length) {
+    await ActivityEvent.updateMany(
+      { _id: { $in: ids }, recipient: req.user._id },
+      { $set: { readAt: new Date() } },
+    );
+  }
+  res.json({ ok: true });
+});
+
 // DELETE /api/activity — dismiss the current user's complete rolling activity feed.
 activityRouter.delete("/", async (req, res) => {
   const me = req.user;
@@ -231,7 +247,7 @@ activityRouter.get("/", async (req, res) => {
         emoji: e.emoji,
         createdAt: e.createdAt,
         kind: "reaction",
-        unread: !seenAt || new Date(e.createdAt) > seenAt,
+        unread: !e.readAt && (!seenAt || new Date(e.createdAt) > seenAt),
       };
     })
     .filter(Boolean);

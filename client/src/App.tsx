@@ -391,13 +391,16 @@ export default function App() {
       markReadTimerRef.current[channelId] = setTimeout(() => {
         markReadTimerRef.current[channelId] = null;
         markReadAtRef.current[channelId] = Date.now();
-        api.markRead(channelId).catch(() => {});
+        api.markRead(channelId)
+          .then(() => queryClient.invalidateQueries({ queryKey: queryKeys.activity }))
+          .catch(() => {});
       }, 1500 - elapsed);
       return;
     }
     markReadAtRef.current[channelId] = now;
     try {
       await api.markRead(channelId);
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity });
     } catch {
       /* ignore */
     }
@@ -1419,7 +1422,10 @@ export default function App() {
             onChannelUpdated: upsertChannel,
             onJoin: handleJoinChannel,
             onRead: handleRead,
-            onThreadRead: clearThreadActivity,
+            onThreadRead: (rootId) => {
+              clearThreadActivity(rootId);
+              queryClient.invalidateQueries({ queryKey: queryKeys.activity });
+            },
             onMessageVisibilityChange: handleMessageVisibilityChange,
             openThreadId: activeChannel && openThreadReq?.channelId === activeChannel.id ? openThreadReq.rootId : null,
             openThreadJumpMessageId: activeChannel && openThreadReq?.channelId === activeChannel.id ? openThreadReq.messageId : null,

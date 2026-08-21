@@ -46,6 +46,7 @@ export function useRealtime({
   const activeRef = useRef(null);
   const viewRef = useRef(view);
   const visibleMessageIdsRef = useRef(visibleMessageIds || new Set());
+  const markedReactionReadsRef = useRef(new Map());
   const channelsRef = useRef([]);
   const dmsRef = useRef([]);
   const starredRef = useRef(new Set());
@@ -64,6 +65,7 @@ export function useRealtime({
   function syncActivity(items) {
     const byChannel = {};
     const byThread = {};
+    const visibleReactionIds = [];
     const active = activeRef.current;
     const viewingConversation =
       (viewRef.current === "home" || viewRef.current === "dms") &&
@@ -71,20 +73,32 @@ export function useRealtime({
       !document.hidden;
     for (const it of items) {
       if (!it.unread) continue;
-      // A reaction on the message currently being viewed is already visible
-      // in the conversation, so it should remain in Activity but not add an
-      // unread Activity badge.
-      const reactionIsVisible =
-        it.kind === "reaction" &&
+      // An activity whose related message is currently visible has already
+      // been seen in the conversation, so it should not add an unread badge.
+      const activityMessageIsVisible =
+        !!it.messageId &&
         viewingConversation &&
         it.channelId === active.id &&
         visibleMessageIdsRef.current.has(it.messageId);
-      if (reactionIsVisible) continue;
+      if (activityMessageIsVisible && it.kind === "reaction") {
+        const createdAt = String(it.createdAt || "");
+        if (markedReactionReadsRef.current.get(it.id) !== createdAt) {
+          visibleReactionIds.push({ id: it.id, createdAt });
+        }
+        continue;
+      }
+      if (activityMessageIsVisible) continue;
       if (it.threadId) byThread[it.threadId] = (byThread[it.threadId] || 0) + 1;
       else byChannel[it.channelId] = (byChannel[it.channelId] || 0) + 1;
     }
     setActivityUnread(byChannel);
     setActivityThreadUnread(byThread);
+    if (visibleReactionIds.length) {
+      visibleReactionIds.forEach(({ id, createdAt }) => markedReactionReadsRef.current.set(id, createdAt));
+      api.markActivityItemsRead(visibleReactionIds.map(({ id }) => id))
+        .then(() => queryClient.invalidateQueries({ queryKey: queryKeys.activity }))
+        .catch(() => visibleReactionIds.forEach(({ id }) => markedReactionReadsRef.current.delete(id)));
+    }
   }
 
 
@@ -103,6 +117,14 @@ export function useRealtime({
       delete next[rootId];
       return next;
     });
+  }
+
+  function refreshActivity() {
+    queryClient.fetchQuery({
+      queryKey: queryKeys.activity,
+      queryFn: async () => (await api.getActivity()).items || [],
+      staleTime: 0,
+    }).then(syncActivity).catch(() => {});
   }
 
   // Socket.IO restores the transport after a server restart, but transport
@@ -389,13 +411,7 @@ export function useRealtime({
 
       // Activity badge: count @mentions and @everyone broadcasts you haven't
       // seen yet. Thread replies are tracked by their thread; top-level by channel.
-      if (mentionsMe && !mine) {
-        if (msg.parentId) {
-          setActivityThreadUnread((prev) => ({ ...prev, [msg.parentId]: (prev[msg.parentId] || 0) + 1 }));
-        } else if (!viewingHere) {
-          setActivityUnread((prev) => ({ ...prev, [msg.channelId]: (prev[msg.channelId] || 0) + 1 }));
-        }
-      }
+      if (mentionsMe && !mine) refreshActivity();
 
       // Desktop notification — Starred DMs, and channel @mentions.
       // Skipped if you're already focused on that conversation.
@@ -440,13 +456,7 @@ export function useRealtime({
 
     // Server flags a message as "activity" for us — re-sync the badge (works even
     // for mentions in channels we haven't joined, where no message:new arrives).
-    const onActivityBump = () => {
-      queryClient.fetchQuery({
-        queryKey: queryKeys.activity,
-        queryFn: async () => (await api.getActivity()).items || [],
-        staleTime: 0,
-      }).then(syncActivity).catch(() => {});
-    };
+    const onActivityBump = () => refreshActivity();
     socket.on("activity:bump", onActivityBump);
 
     return () => {

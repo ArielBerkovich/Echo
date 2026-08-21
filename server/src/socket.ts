@@ -197,7 +197,7 @@ export function attachSocket(httpServer) {
         if (added && message.kind !== "system" && !message.author.equals(uid)) {
           await ActivityEvent.updateOne(
             { recipient: message.author, actor: uid, message: message._id, emoji },
-            { $set: { channel: message.channel, createdAt: new Date() } },
+            { $set: { channel: message.channel, createdAt: new Date(), readAt: null } },
             { upsert: true }
           ).catch(() => {});
           io.to(userRoom(message.author.toString())).emit("activity:bump", {
