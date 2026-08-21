@@ -72,8 +72,6 @@ services:
     # Keep this service scalable with `docker-compose up --scale server=3`.
     # A fixed container_name would prevent Compose from creating replicas.
     restart: unless-stopped
-    ports:
-      - "8091:8091"
     environment:
       - PORT=4000
       - METRICS_PORT=8091

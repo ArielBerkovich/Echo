@@ -783,6 +783,17 @@ export default function ChannelView({
   // message's original), once it's present in the loaded history.
   const jumpHandledRef = useRef(null); // guards against re-running after the target lands
   const jumpLoadingRef = useRef(null); // guards against duplicate around-message requests
+
+  // A consumed jump can be requested again later for the same message. Clear
+  // the guard after the parent clears the request so the next click is not
+  // mistaken for the already-handled jump.
+  useEffect(() => {
+    if (!jumpMessageId) {
+      jumpHandledRef.current = null;
+      jumpLoadingRef.current = null;
+    }
+  }, [jumpMessageId]);
+
   useEffect(() => {
     if (!jumpMessageId || loading || !historyReady) return;
     if (jumpHandledRef.current === jumpMessageId) return;

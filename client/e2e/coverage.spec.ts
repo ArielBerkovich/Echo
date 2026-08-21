@@ -259,6 +259,43 @@ test("forwards a message and jumps back to the original", async ({ page }) => {
   await expect(page.getByText(`API formatting test ${fixture.suffix}`)).toBeVisible();
 });
 
+test("can view the same-channel original repeatedly after scrolling away", async ({ page }) => {
+  await page.goto("/");
+
+  const sourceBody = `API formatting test ${fixture.suffix}`;
+  const source = page.locator(".message").filter({ hasText: sourceBody }).first();
+  await source.hover();
+  await page.getByTestId(/-actions$/).getByTitle("Forward message").click();
+
+  const forwardModal = page.locator(".modal").filter({ hasText: "Forward message" });
+  await forwardModal
+    .getByPlaceholder("Search channels and people")
+    .fill(fixture.generalChannel.name);
+  await forwardModal
+    .locator(".forward-destination-row")
+    .filter({ hasText: fixture.generalChannel.name })
+    .first()
+    .click();
+  await forwardModal.getByTestId("forward-send-selected").click();
+
+  const forwarded = page
+    .locator(".channel-main .messages .message")
+    .filter({ hasText: sourceBody })
+    .filter({ has: page.locator(".forwarded-message-card") })
+    .last();
+  await expect(forwarded).toBeVisible();
+
+  await forwarded.getByRole("button", { name: /View original/ }).click();
+  await expect(source).toBeInViewport();
+
+  const scroller = page.getByTestId("messages");
+  await scroller.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+  await expect(forwarded).toBeInViewport();
+
+  await forwarded.getByRole("button", { name: /View original/ }).click();
+  await expect(source).toBeInViewport();
+});
+
 test("handles mention autocomplete, @everyone, and attachments", async ({ page }) => {
   await page.goto("/");
 

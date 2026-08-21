@@ -579,9 +579,6 @@ function Message({
             <button type="button" role="menuitem" data-testid={`message-${mid}-copy`} onClick={() => { copyMessage(); onCloseMenu(); }}>
               <CopyIcon /> Copy message
             </button>
-            <button type="button" role="menuitem" data-testid={`message-${mid}-quote`} disabled={!canQuote} onClick={() => { onQuote(); onCloseMenu(); }}>
-              <QuoteIcon /> Quote message
-            </button>
             <button
               type="button"
               role="menuitem"
@@ -590,9 +587,6 @@ function Message({
                 onClick={() => { onToggleSave(); onCloseMenu(); }}
             >
               <BookmarkIcon /> {saved ? "Remove from saved" : "Save for later"}
-            </button>
-            <button type="button" role="menuitem" data-testid={`message-${mid}-forward-menu`} onClick={() => { onForward(); onCloseMenu(); }}>
-              <ShareIcon /> Forward message
             </button>
             {canPin && (
               <button
