@@ -3,7 +3,7 @@ import { api } from "../api.js";
 import { getSocket } from "../socket.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
 import ReactionPicker from "./ReactionPicker.js";
-import Message from "./Message.js";
+import Message, { MessageVisibilityProvider } from "./Message.js";
 import Composer from "./Composer.js";
 import ConfirmDialog from "./ConfirmDialog.js";
 
@@ -296,6 +296,7 @@ export default function ThreadPanel({
 
       <div ref={scrollerRef} className="thread-body" data-testid="thread-body" onScroll={onBodyScroll} onMouseLeave={() => { if (!menuFor) setActionsFor(null); }}>
         <div ref={bodyInnerRef}>
+          <MessageVisibilityProvider onChange={onMessageVisibilityChange}>
           {messages.map((m, index) => (
             <Fragment key={m.id}>
               <Message
@@ -355,6 +356,7 @@ export default function ThreadPanel({
             </Fragment>
           ))}
           <div ref={bottomRef} />
+          </MessageVisibilityProvider>
         </div>
         {newMessageCount > 0 && (
           <button
