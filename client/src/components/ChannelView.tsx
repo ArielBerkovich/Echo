@@ -874,7 +874,9 @@ export default function ChannelView({
     api
       .getThread(channel.id, openThreadId)
       .then(({ parent }) => {
-        if (!cancelled && parent) setThread(parent);
+        if (!cancelled && parent) {
+          setThread(parent);
+        }
       })
       .catch(() => {})
       .finally(() => {

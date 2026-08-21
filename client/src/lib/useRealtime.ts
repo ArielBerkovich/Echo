@@ -71,12 +71,38 @@ export function useRealtime({
       // A reaction on the message currently being viewed is already visible
       // in the conversation, so it should remain in Activity but not add an
       // unread Activity badge.
-      if (it.kind === "reaction" && !it.threadId && viewingConversation && it.channelId === active.id) continue;
+      const reactionIsVisible =
+        it.kind === "reaction" &&
+        viewingConversation &&
+        it.channelId === active.id &&
+        isMessageVisible(it.messageId);
+      if (reactionIsVisible) continue;
       if (it.threadId) byThread[it.threadId] = (byThread[it.threadId] || 0) + 1;
       else byChannel[it.channelId] = (byChannel[it.channelId] || 0) + 1;
     }
     setActivityUnread(byChannel);
     setActivityThreadUnread(byThread);
+  }
+
+  function isMessageVisible(messageId) {
+    if (!messageId) return false;
+    const element = document.querySelector(`[data-testid="message-${messageId}"]`);
+    if (!element) return false;
+    let rect = element.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return false;
+
+    for (let parent = element.parentElement; parent && parent !== document.body; parent = parent.parentElement) {
+      const style = window.getComputedStyle(parent);
+      if (!/(auto|scroll|hidden|clip)/.test(`${style.overflow}${style.overflowY}${style.overflowX}`)) continue;
+      const clip = parent.getBoundingClientRect();
+      const left = Math.max(rect.left, clip.left);
+      const right = Math.min(rect.right, clip.right);
+      const top = Math.max(rect.top, clip.top);
+      const bottom = Math.min(rect.bottom, clip.bottom);
+      if (right <= left || bottom <= top) return false;
+      rect = { left, right, top, bottom, width: right - left, height: bottom - top };
+    }
+    return rect.bottom > 0 && rect.right > 0 && rect.top < window.innerHeight && rect.left < window.innerWidth;
   }
 
   function clearChannelActivity(channelId) {
