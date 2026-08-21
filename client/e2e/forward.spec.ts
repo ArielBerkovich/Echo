@@ -69,6 +69,32 @@ test.describe("forwarding", () => {
     await expectForwardedWithNote(page, fixture.projectChannel.id, note);
   });
 
+  test("renders mentions in the forwarded note and keeps Hebrew notes left-aligned", async ({ page }) => {
+    await openForwardDialog(page);
+
+    const modal = forwardModal(page);
+    const note = `שלום @${fixture.bob.username}`;
+    const noteEditor = modal.getByTestId("composer-editor");
+    await noteEditor.fill(note);
+    await expect(modal.locator(".mention-popup")).toBeVisible();
+    await modal.locator(".mention-item").filter({ hasText: fixture.bob.displayName }).click();
+
+    const expectedNote = `שלום @${fixture.bob.username}`;
+    await modal.getByTestId("forward-search").fill(fixture.projectChannel.name);
+    await destinationByLabel(modal, fixture.projectChannel.name).click();
+    await modal.getByTestId("forward-send-selected").click();
+    await expect(modal).toBeHidden();
+
+    const forwardedNote = page.locator(".forward-note").filter({ hasText: "שלום" }).last();
+    await expect(forwardedNote).toBeVisible();
+    await expect(forwardedNote.locator(`[data-mention="${fixture.bob.username}"]`)).toHaveText(
+      `@${fixture.bob.displayName}`
+    );
+    await expect(forwardedNote).toHaveAttribute("dir", "auto");
+    await expect(forwardedNote).toHaveCSS("text-align", "left");
+    await expectForwardedWithNote(page, fixture.projectChannel.id, expectedNote);
+  });
+
   test("searches all people and preserves the target selection", async ({ page }) => {
     await openForwardDialog(page);
 

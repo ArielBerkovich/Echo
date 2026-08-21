@@ -349,7 +349,7 @@ function Message({
 
         {m.forwardNote && (
           <div className="forward-note markdown" dir="auto">
-            {m.forwardNote}
+            <div dangerouslySetInnerHTML={{ __html: renderMarkdown(m.forwardNote) }} />
           </div>
         )}
 
