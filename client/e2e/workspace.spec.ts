@@ -326,10 +326,17 @@ test("quotes a message into the composer", async ({ page }) => {
   await expect(message).toBeVisible();
 
   await message.hover();
-  const moreActions = page.getByTestId(/message-.*-actions/).getByTitle("More message actions");
+  const moreActions = page.getByTestId(`message-${fixture.messages.dmMessage.id}-actions`).getByTitle("More message actions");
   await expect(moreActions).toBeVisible();
   await moreActions.click();
-  await page.getByRole("menuitem", { name: "Quote message" }).click();
+  const menu = page.getByRole("menu", { name: "Message actions" });
+  await expect(menu.getByRole("menuitem", { name: "Quote message" })).toHaveCount(0);
+  await page.locator(".menu-overlay").click({ position: { x: 1, y: 1 } });
+
+  const quoteAction = page.getByTestId(`message-${fixture.messages.dmMessage.id}-actions`)
+    .getByTestId(`message-${fixture.messages.dmMessage.id}-quote`);
+  await expect(quoteAction).toBeVisible();
+  await quoteAction.click();
 
   const editor = page.getByTestId("composer-editor");
   await expect(editor.locator("blockquote")).toContainText("Bob Builder said:");
