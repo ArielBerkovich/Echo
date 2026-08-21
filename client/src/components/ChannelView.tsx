@@ -87,6 +87,7 @@ export default function ChannelView({
   onJoin,
   onRead,
   onThreadRead,
+  onMessageVisibilityChange,
   openThreadId = null,
   openThreadJumpMessageId = null,
   onThreadOpened,
@@ -1078,6 +1079,7 @@ export default function ChannelView({
                     onToggleSave={() => onToggleSave?.(m.id)}
                     onOpenProfile={onOpenProfile}
                     onOpenChannel={onOpenChannel}
+                    onVisibilityChange={onMessageVisibilityChange}
                     showActions={actionsFor === m.id}
                     onActivate={() => {
                       setActionsFor(m.id);
@@ -1241,6 +1243,7 @@ export default function ChannelView({
             onAddCustomEmoji={onAddCustomEmoji}
             onClose={() => { setThread(null); setThreadJumpTargetId(null); setThreadLightbox(null); }}
             onThreadRead={onThreadRead}
+            onMessageVisibilityChange={onMessageVisibilityChange}
             onChannelUpdated={onChannelUpdated}
             canPost={canPost}
             onOpenLightbox={(src, name) => setThreadLightbox({ src, name })}

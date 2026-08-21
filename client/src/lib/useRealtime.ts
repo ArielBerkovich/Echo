@@ -13,6 +13,7 @@ export function useRealtime({
   user,
   activeChannel,
   view,
+  visibleMessageIds,
   channels,
   dms,
   starredIds,
@@ -44,11 +45,13 @@ export function useRealtime({
   // Mirror state into refs so the stable socket listeners read current values.
   const activeRef = useRef(null);
   const viewRef = useRef(view);
+  const visibleMessageIdsRef = useRef(visibleMessageIds || new Set());
   const channelsRef = useRef([]);
   const dmsRef = useRef([]);
   const starredRef = useRef(new Set());
   useEffect(() => void (activeRef.current = activeChannel), [activeChannel]);
   useEffect(() => void (viewRef.current = view), [view]);
+  useEffect(() => void (visibleMessageIdsRef.current = visibleMessageIds || new Set()), [visibleMessageIds]);
   useEffect(() => void (channelsRef.current = channels), [channels]);
   useEffect(() => void (dmsRef.current = dms), [dms]);
   useEffect(() => void (starredRef.current = starredIds || new Set()), [starredIds]);
@@ -75,7 +78,7 @@ export function useRealtime({
         it.kind === "reaction" &&
         viewingConversation &&
         it.channelId === active.id &&
-        isMessageVisible(it.messageId);
+        visibleMessageIdsRef.current.has(it.messageId);
       if (reactionIsVisible) continue;
       if (it.threadId) byThread[it.threadId] = (byThread[it.threadId] || 0) + 1;
       else byChannel[it.channelId] = (byChannel[it.channelId] || 0) + 1;
@@ -84,26 +87,6 @@ export function useRealtime({
     setActivityThreadUnread(byThread);
   }
 
-  function isMessageVisible(messageId) {
-    if (!messageId) return false;
-    const element = document.querySelector(`[data-testid="message-${messageId}"]`);
-    if (!element) return false;
-    let rect = element.getBoundingClientRect();
-    if (rect.width <= 0 || rect.height <= 0) return false;
-
-    for (let parent = element.parentElement; parent && parent !== document.body; parent = parent.parentElement) {
-      const style = window.getComputedStyle(parent);
-      if (!/(auto|scroll|hidden|clip)/.test(`${style.overflow}${style.overflowY}${style.overflowX}`)) continue;
-      const clip = parent.getBoundingClientRect();
-      const left = Math.max(rect.left, clip.left);
-      const right = Math.min(rect.right, clip.right);
-      const top = Math.max(rect.top, clip.top);
-      const bottom = Math.min(rect.bottom, clip.bottom);
-      if (right <= left || bottom <= top) return false;
-      rect = { left, right, top, bottom, width: right - left, height: bottom - top };
-    }
-    return rect.bottom > 0 && rect.right > 0 && rect.top < window.innerHeight && rect.left < window.innerWidth;
-  }
 
   function clearChannelActivity(channelId) {
     setActivityUnread((prev) => {

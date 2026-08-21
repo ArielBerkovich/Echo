@@ -30,6 +30,7 @@ export default function ThreadPanel({
   onAddCustomEmoji,
   onClose,
   onThreadRead,
+  onMessageVisibilityChange,
   canPost = true,
   onChannelUpdated,
   onOpenLightbox,
@@ -311,6 +312,7 @@ export default function ThreadPanel({
                 onToggleSave={() => onToggleSave?.(m.id)}
                 onOpenProfile={onOpenProfile}
                 onOpenChannel={onOpenChannel}
+                onVisibilityChange={onMessageVisibilityChange}
                 showActions={actionsFor === m.id}
                 onActivate={() => {
                   setActionsFor(m.id);

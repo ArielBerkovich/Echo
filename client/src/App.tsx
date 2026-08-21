@@ -96,6 +96,7 @@ export default function App() {
   const [jumpMessageId, setJumpMessageId] = useState(null); // message to scroll to + highlight
   const [searchQuery, setSearchQuery] = useState(null); // active message-search query (results pane)
   const [openThreadReq, setOpenThreadReq] = useState(null); // { channelId, rootId, messageId } — thread to open after a jump
+  const [visibleMessageIds, setVisibleMessageIds] = useState(() => new Set());
   const [scrollToBottomTarget, setScrollToBottomTarget] = useState(null); // { id, channelId } pinned-open request
   const [toast, setToast] = useState(null); // transient notice (e.g. no access)
   const [connectionBannerVisible, setConnectionBannerVisible] = useState(false);
@@ -286,6 +287,7 @@ export default function App() {
       user,
       activeChannel,
       view,
+      visibleMessageIds,
       channels,
       dms,
       starredIds,
@@ -569,7 +571,16 @@ export default function App() {
 
   useEffect(() => {
     if (user) syncActivity(activityItems);
-  }, [user, activityItems]);
+  }, [user, activityItems, visibleMessageIds]);
+
+  const handleMessageVisibilityChange = useCallback((messageId, visible) => {
+    setVisibleMessageIds((previous) => {
+      const next = new Set(previous);
+      if (visible) next.add(messageId);
+      else next.delete(messageId);
+      return next;
+    });
+  }, []);
 
   // Persist the current location as a backward-compatible fallback for users
   // upgrading from versions that did not expose routes in the URL.
@@ -1409,6 +1420,7 @@ export default function App() {
             onJoin: handleJoinChannel,
             onRead: handleRead,
             onThreadRead: clearThreadActivity,
+            onMessageVisibilityChange: handleMessageVisibilityChange,
             openThreadId: activeChannel && openThreadReq?.channelId === activeChannel.id ? openThreadReq.rootId : null,
             openThreadJumpMessageId: activeChannel && openThreadReq?.channelId === activeChannel.id ? openThreadReq.messageId : null,
             onThreadOpened: () => setOpenThreadReq(null),

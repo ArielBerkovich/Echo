@@ -61,6 +61,7 @@ function Message({
   onOpenLightbox, // (src, name) => open image in a side panel (when in thread)
   onTogglePin,
   onIssuePasswordHelp,
+  onVisibilityChange,
   canPin = true,
   canQuote = false,
 }) {
@@ -78,6 +79,19 @@ function Message({
   const actionsRef = useRef(null);
   const menuRef = useRef(null);
   const menuTriggerRef = useRef(null);
+
+  useEffect(() => {
+    if (!onVisibilityChange || !messageRef.current) return undefined;
+    const observer = new IntersectionObserver(
+      ([entry]) => onVisibilityChange(m.id, entry.isIntersecting),
+      { threshold: 0.01 },
+    );
+    observer.observe(messageRef.current);
+    return () => {
+      observer.disconnect();
+      onVisibilityChange(m.id, false);
+    };
+  }, [m.id, onVisibilityChange]);
   const hoverLeaveTimerRef = useRef(null);
   const hoverGenerationRef = useRef(0);
   const menuOpenRef = useRef(menuOpen);
