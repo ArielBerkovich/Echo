@@ -248,6 +248,13 @@ test("shows and permanently dismisses every supported Activity kind", async ({ b
       method: "DELETE",
     });
 
+    // Start from a clean Activity badge while Alice is actively viewing the
+    // channel whose message will receive the reaction.
+    await requestAsToken(page, fixture.alice.token, "/activity/read", { method: "POST" });
+    await page.goto("/channels/general");
+    await expect(page.getByTestId("channel-title")).toContainText("general");
+    const activityBadgeBeforeReaction = await page.getByTestId("rail-badge-activity").count();
+
     const bobContext = await browser.newContext();
     const bobPage = await bobContext.newPage();
     await seedToken(bobPage, fixture.bob.token);
@@ -261,6 +268,7 @@ test("shows and permanently dismisses every supported Activity kind", async ({ b
     } finally {
       await bobContext.close();
     }
+    await expect(page.getByTestId("rail-badge-activity")).toHaveCount(activityBadgeBeforeReaction);
 
     const expectedKinds = ["mention", "broadcast", "reply", "reaction", "channel_add", "channel_remove"];
     await expect.poll(async () => {

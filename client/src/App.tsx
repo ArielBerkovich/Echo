@@ -285,6 +285,7 @@ export default function App() {
     useRealtime({
       user,
       activeChannel,
+      view,
       channels,
       dms,
       starredIds,

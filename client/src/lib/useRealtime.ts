@@ -12,6 +12,7 @@ import { queryKeys } from "./queryClient.js";
 export function useRealtime({
   user,
   activeChannel,
+  view,
   channels,
   dms,
   starredIds,
@@ -42,10 +43,12 @@ export function useRealtime({
 
   // Mirror state into refs so the stable socket listeners read current values.
   const activeRef = useRef(null);
+  const viewRef = useRef(view);
   const channelsRef = useRef([]);
   const dmsRef = useRef([]);
   const starredRef = useRef(new Set());
   useEffect(() => void (activeRef.current = activeChannel), [activeChannel]);
+  useEffect(() => void (viewRef.current = view), [view]);
   useEffect(() => void (channelsRef.current = channels), [channels]);
   useEffect(() => void (dmsRef.current = dms), [dms]);
   useEffect(() => void (starredRef.current = starredIds || new Set()), [starredIds]);
@@ -58,8 +61,17 @@ export function useRealtime({
   function syncActivity(items) {
     const byChannel = {};
     const byThread = {};
+    const active = activeRef.current;
+    const viewingConversation =
+      (viewRef.current === "home" || viewRef.current === "dms") &&
+      active &&
+      !document.hidden;
     for (const it of items) {
       if (!it.unread) continue;
+      // A reaction on the message currently being viewed is already visible
+      // in the conversation, so it should remain in Activity but not add an
+      // unread Activity badge.
+      if (it.kind === "reaction" && viewingConversation && it.channelId === active.id) continue;
       if (it.threadId) byThread[it.threadId] = (byThread[it.threadId] || 0) + 1;
       else byChannel[it.channelId] = (byChannel[it.channelId] || 0) + 1;
     }

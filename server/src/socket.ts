@@ -200,7 +200,10 @@ export function attachSocket(httpServer) {
             { $set: { channel: message.channel, createdAt: new Date() } },
             { upsert: true }
           ).catch(() => {});
-          io.to(userRoom(message.author.toString())).emit("activity:bump");
+          io.to(userRoom(message.author.toString())).emit("activity:bump", {
+            channelId: message.channel.toString(),
+            messageId: message._id.toString(),
+          });
         }
 
         io.to(roomFor(message.channel.toString())).emit("message:reaction", {
