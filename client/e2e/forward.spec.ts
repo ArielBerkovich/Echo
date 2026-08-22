@@ -49,7 +49,7 @@ test.describe("forwarding", () => {
     await expect(modal.getByTestId("forward-note-field")).toContainText("Note");
     await expect(modal.getByTestId("composer-editor")).toHaveAttribute("data-placeholder", "Add context for the recipient…");
     await expect(modal.locator(".composer-toolbar")).toBeVisible();
-    await expect(modal.locator(".forward-result-group-label")).toHaveText("Recent conversations");
+    await expect(modal.locator(".forward-result-group-label")).toHaveCount(0);
     await expect(modal.getByTestId("forward-send-selected")).toBeDisabled();
   });
 
@@ -125,7 +125,7 @@ test.describe("forwarding", () => {
 
     await search.fill("");
     await expect(modal.locator(".forward-destination-list")).toBeVisible();
-    await expect(modal.locator(".forward-result-group-label")).toHaveText("Recent conversations");
+    await expect(modal.locator(".forward-result-group-label")).toHaveCount(0);
     await expect(modal.locator(".forward-chip")).toContainText(fixture.bob.displayName);
     await expect(send).toHaveText("Forward to 1");
   });

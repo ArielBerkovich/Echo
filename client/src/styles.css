@@ -6716,6 +6716,10 @@ html[data-mode="dark"] .day-divider-label {
 .forward-destination-search {
   flex: none;
 }
+.forward-destination-search.has-results {
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+}
 .forward-destination-search:focus {
   outline: none;
   border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
@@ -6874,11 +6878,14 @@ html[data-mode="dark"] .day-divider-label {
   flex: 0 1 auto;
   min-height: 0;
   max-height: 190px;
-  margin-top: 8px;
+  margin-top: 0;
   padding: 4px;
   overflow-y: auto;
   border: 1px solid var(--border);
-  border-radius: 11px;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 11px;
+  border-bottom-left-radius: 11px;
   background: var(--surface-2);
 }
 .forward-result-group + .forward-result-group {
@@ -9824,7 +9831,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     flex: 0 1 auto;
     min-height: 0;
     max-height: 170px;
-    margin-top: 10px;
+    margin-top: 0;
   }
   .forward-actions {
     padding-bottom: env(safe-area-inset-bottom);

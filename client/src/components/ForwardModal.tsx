@@ -168,6 +168,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
   const hasImageAttachment = message?.attachments?.some((attachment) => attachment.isImage);
   const preview = hasImageAttachment ? "Image attachment" : String(message?.body || "").trim();
   const disabled = !selected.length || status === "submitting";
+  const showResultList = (searchFocused || debouncedQuery) && resultGroups.length > 0;
   const noteChannel = useMemo(() => ({
     id: `forward-note-${message?.id || "message"}`,
     type: "dm",
@@ -213,7 +214,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
 
           <input
             ref={searchRef}
-            className="people-filter forward-destination-search"
+            className={`people-filter forward-destination-search${showResultList ? " has-results" : ""}`}
             data-testid="forward-search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -227,13 +228,13 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
             aria-activedescendant={flatResults[activeIndex] ? `forward-result-${destinationKey(flatResults[activeIndex])}` : undefined}
           />
 
-          {(searchFocused || debouncedQuery) && resultGroups.length > 0 && (
+          {showResultList && (
             <div className="forward-destination-list" id="forward-results" data-testid="forward-destination-list" role="listbox" aria-label="Forward destinations">
               {!resultGroups.length ? (
                 <div className="people-empty">No matches for “{debouncedQuery}”</div>
               ) : resultGroups.map((group) => (
                 <div className="forward-result-group" key={group.label}>
-                  <div className="forward-result-group-label">{group.label}</div>
+                  {group.kind !== "recent" && <div className="forward-result-group-label">{group.label}</div>}
                   {group.items.map((destination) => {
                     const index = flatResults.indexOf(destination);
                     const isSelected = selected.some((item) => destinationKey(item) === destinationKey(destination));
