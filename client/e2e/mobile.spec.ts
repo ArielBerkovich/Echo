@@ -127,19 +127,18 @@ test("keeps the workspace full-screen and usable on a phone", async ({ page }) =
   await expect(page.getByRole("heading", { name: "Sign out?" })).toHaveCount(0);
 });
 
-test("zooms the profile image with a trackpad pinch gesture", async ({ page }) => {
+test("zooms the profile image with explicit controls", async ({ page }) => {
   await page.goto("/");
   await page.getByTestId("rail-account").click();
   const dialog = page.getByTestId("profile-picture-dialog");
   const input = dialog.getByTestId("profile-picture-import-input");
   await input.setInputFiles({ name: "profile.png", mimeType: "image/png", buffer: ONE_BY_ONE_PNG });
 
-  const crop = dialog.locator(".profile-picture-crop");
-  const image = crop.locator(".profile-picture-crop-image");
+  const image = dialog.locator(".profile-picture-crop-image");
   await expect(image).toBeVisible();
   const initialWidth = await image.evaluate((element) => Number.parseFloat(getComputedStyle(element).width));
 
-  await crop.dispatchEvent("wheel", { deltaY: -100 });
+  await dialog.getByRole("button", { name: "Zoom in" }).click();
 
   await expect.poll(async () => image.evaluate((element) => Number.parseFloat(getComputedStyle(element).width))).toBeGreaterThan(initialWidth);
 });

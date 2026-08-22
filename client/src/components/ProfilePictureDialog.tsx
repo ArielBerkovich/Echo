@@ -13,8 +13,6 @@ function clamp(value, min, max) {
 export default function ProfilePictureDialog({ file = null, currentSrc = null, onFileSelected, onSave, onClose }) {
   const imageRef = useRef(null);
   const fileRef = useRef(null);
-  const pointersRef = useRef(new Map());
-  const pinchRef = useRef(null);
   const [imageUrl, setImageUrl] = useState("");
   const [imageSize, setImageSize] = useState(null);
   const [zoom, setZoom] = useState(1);
@@ -68,20 +66,15 @@ export default function ProfilePictureDialog({ file = null, currentSrc = null, o
     setOffset((current) => limitOffset(current, baseScale * nextZoom));
   }
 
+  function changeZoomBy(amount) {
+    const nextZoom = clamp(zoom + amount, 1, 3);
+    setZoom(nextZoom);
+    setOffset((current) => limitOffset(current, baseScale * nextZoom));
+  }
+
   function onPointerDown(event) {
     if (!imageSize || saving) return;
     event.currentTarget.setPointerCapture?.(event.pointerId);
-    pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
-    if (pointersRef.current.size === 2) {
-      const [first, second] = [...pointersRef.current.values()];
-      pinchRef.current = {
-        distance: Math.hypot(second.x - first.x, second.y - first.y),
-        zoom,
-        offset,
-      };
-      setDragging(false);
-      return;
-    }
     setDragging(true);
     event.currentTarget.dataset.startX = String(event.clientX);
     event.currentTarget.dataset.startY = String(event.clientY);
@@ -90,19 +83,7 @@ export default function ProfilePictureDialog({ file = null, currentSrc = null, o
   }
 
   function onPointerMove(event) {
-    if (!imageSize) return;
-    if (pointersRef.current.has(event.pointerId)) {
-      pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
-    }
-    if (pinchRef.current && pointersRef.current.size >= 2) {
-      const [first, second] = [...pointersRef.current.values()];
-      const distance = Math.hypot(second.x - first.x, second.y - first.y);
-      const nextZoom = clamp(pinchRef.current.zoom * (distance / pinchRef.current.distance), 1, 3);
-      setZoom(nextZoom);
-      setOffset(limitOffset(pinchRef.current.offset, baseScale * nextZoom));
-      return;
-    }
-    if (!dragging) return;
+    if (!dragging || !imageSize) return;
     const startX = Number(event.currentTarget.dataset.startX);
     const startY = Number(event.currentTarget.dataset.startY);
     const startOffset = {
@@ -115,25 +96,8 @@ export default function ProfilePictureDialog({ file = null, currentSrc = null, o
     }));
   }
 
-  function stopDragging(event) {
-    pointersRef.current.delete(event?.pointerId);
-    pinchRef.current = null;
+  function stopDragging() {
     setDragging(false);
-  }
-
-  function onWheel(event) {
-    // Trackpad pinch gestures may be reported as ctrl+wheel, while some
-    // browsers expose them as ordinary wheel events. The crop surface owns
-    // both forms so the page never zooms or scrolls underneath it.
-    if (!imageSize || saving) return;
-    event.preventDefault();
-    const delta = event.deltaMode === 1 ? event.deltaY * 16 : event.deltaY;
-    const factor = Math.exp(-delta * 0.002);
-    setZoom((currentZoom) => {
-      const nextZoom = clamp(currentZoom * factor, 1, 3);
-      setOffset((currentOffset) => limitOffset(currentOffset, baseScale * nextZoom));
-      return nextZoom;
-    });
   }
 
   async function save() {
@@ -176,7 +140,6 @@ export default function ProfilePictureDialog({ file = null, currentSrc = null, o
         onPointerMove={onPointerMove}
         onPointerUp={stopDragging}
         onPointerCancel={stopDragging}
-        onWheel={onWheel}
       >
         {sourceUrl ? (
           <img
@@ -198,10 +161,12 @@ export default function ProfilePictureDialog({ file = null, currentSrc = null, o
       <button type="button" className="btn-secondary profile-picture-import-button" onClick={() => fileRef.current?.click()} disabled={saving}>
         <UploadIcon size={16} strokeWidth={2} /><span>Import a different image</span>
       </button>
-      <label className="profile-picture-zoom">
+      <div className="profile-picture-zoom">
         <span>Zoom</span>
+        <button type="button" className="profile-picture-zoom-button" aria-label="Zoom out" onClick={() => changeZoomBy(-0.1)} disabled={!imageSize || saving || zoom <= 1}>−</button>
         <input type="range" min="0" max="100" step="1" value={Math.round((zoom - 1) * 50)} onChange={changeZoom} disabled={!imageSize || saving} />
-      </label>
+        <button type="button" className="profile-picture-zoom-button" aria-label="Zoom in" onClick={() => changeZoomBy(0.1)} disabled={!imageSize || saving || zoom >= 3}>+</button>
+      </div>
       {error && <div className="error">{error}</div>}
       <ModalActions>
         <button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>Cancel</button>
