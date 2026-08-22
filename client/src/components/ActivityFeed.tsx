@@ -124,7 +124,7 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
                 dismissMutation.mutate(it.id);
               }}
             >
-              <Trash2Icon size={15} strokeWidth={1.8} />
+              <Trash2Icon size={17} strokeWidth={1.8} />
             </button>
           </div>
         ))}
