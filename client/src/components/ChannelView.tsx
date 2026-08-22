@@ -836,6 +836,25 @@ export default function ChannelView({
       return true;
     };
 
+    // Message height, pagination, and the unread marker can all settle after
+    // the first paint. Re-apply the target position for a few animation frames
+    // and consume the jump only after the layout has stayed target-driven.
+    const stabilizeJump = (attempt = 0, found = false) => {
+      const landed = scrollToTarget() || found;
+      if (attempt < 8) {
+        requestAnimationFrame(() => stabilizeJump(attempt + 1, landed));
+        return;
+      }
+      if (!landed) {
+        setError("Couldn't locate that message.");
+        onJumpConsumed?.();
+        jumpingRef.current = false;
+        return;
+      }
+      onJumpConsumed?.();
+      settleJump();
+    };
+
     if (!messages.some((message) => message.id === jumpMessageId)) {
       if (jumpLoadingRef.current === jumpMessageId) return;
       jumpLoadingRef.current = jumpMessageId;
@@ -864,17 +883,13 @@ export default function ChannelView({
     jumpLoadingRef.current = null;
     jumpingRef.current = true;
     if (scrollToTarget()) {
-      onJumpConsumed?.();
-      settleJump();
+      requestAnimationFrame(() => stabilizeJump(1, true));
     } else {
       requestAnimationFrame(() => {
         if (scrollToTarget()) {
-          onJumpConsumed?.();
-          settleJump();
+          stabilizeJump(1, true);
         } else {
-          setError("Couldn't locate that message.");
-          onJumpConsumed?.();
-          jumpingRef.current = false;
+          stabilizeJump(1, false);
         }
       });
     }
