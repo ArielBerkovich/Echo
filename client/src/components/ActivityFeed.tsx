@@ -89,7 +89,7 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
         {items.map((it) => (
           <div
             key={it.id}
-            className={`activity-item ${it.unread ? "unread" : ""}`}
+            className={`activity-item ${it.kind === "channel_add" || it.kind === "channel_remove" ? "activity-notification" : ""} ${it.unread ? "unread" : ""}`}
             data-testid="activity-item"
             data-activity-kind={it.kind}
             role="button"

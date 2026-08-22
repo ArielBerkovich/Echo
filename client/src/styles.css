@@ -2479,6 +2479,18 @@ html[data-mode="dark"] .backend-connection-error {
 .activity-item:hover {
   background: var(--surface-2);
 }
+.activity-notification {
+  align-items: center;
+  padding-block: 10px;
+}
+.activity-notification .content {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+}
+.activity-notification .meta {
+  margin-bottom: 0;
+}
 .activity-dismiss {
   flex: none;
   margin-left: auto;
