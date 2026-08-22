@@ -81,6 +81,12 @@ test("keeps the workspace full-screen and usable on a phone", async ({ page }) =
   await page.getByTestId("channel-members").click();
   const membersPanel = page.getByTestId("members-panel");
   await expect(membersPanel).toBeVisible();
+  const addPeople = membersPanel.getByRole("button", { name: "+ Add people" });
+  if (await addPeople.isVisible().catch(() => false)) {
+    await expect(addPeople).toBeFocused();
+  } else {
+    await expect(membersPanel.getByRole("textbox", { name: "Search members" })).toBeFocused();
+  }
   const membersBox = await membersPanel.boundingBox();
   expect(membersBox.width).toBeGreaterThanOrEqual(380);
   expect(membersBox.y + membersBox.height).toBeLessThanOrEqual(navigationRailBox.y + 1);

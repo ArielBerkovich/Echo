@@ -48,6 +48,7 @@ function MessagesSkeleton() {
 
 export default function ChannelView({
   channel,
+  composerFocusRequest = 0,
   recoveryEpoch = 0,
   cachedMessages = null,
   initialScrollState = null,
@@ -126,6 +127,12 @@ export default function ChannelView({
   const scrollerRef = useRef(null); // the scrollable messages container
   const messagesInnerRef = useRef(null); // content wrapper used for resize-based auto-follow
   const composerRef = useRef(null); // main channel composer, for quote insertion
+
+  useEffect(() => {
+    if (!composerFocusRequest || thread) return undefined;
+    const focusTimer = window.setTimeout(() => composerRef.current?.focus(), 0);
+    return () => window.clearTimeout(focusTimer);
+  }, [composerFocusRequest, thread]);
   const typingTimersRef = useRef({}); // per-user safety timers to clear stale typing
   const firstUnreadRef = useRef(null); // the "New messages" divider, for initial scroll
   const initialScrolledRef = useRef(false); // did we position the initial scroll yet?
@@ -893,6 +900,13 @@ export default function ChannelView({
   const dmLabel = channel.dmName || dmAvatarName;
   const dmAvatar = dmUser?.avatarUrl || null;
   const isMember = isDm || (channel.members || []).includes(user.id);
+
+  useEffect(() => {
+    if (!isMember || !canPost || openThreadId) return undefined;
+    const focusTimer = window.setTimeout(() => composerRef.current?.focus(), 0);
+    return () => window.clearTimeout(focusTimer);
+  }, [channel.id, canPost, isMember, openThreadId]);
+
   const isCreator = !isDm && channel.createdBy === user.id;
   const canToggleStarred = isDm && !!dmUser?.id && dmUser.id !== user.id;
   // #general is the default channel — everyone stays in it, so no Leave action.
@@ -1250,6 +1264,7 @@ export default function ChannelView({
             canPost={canPost}
             onOpenLightbox={(src, name, sender) => setThreadLightbox({ src, name, sender })}
             openThreadJumpMessageId={threadJumpTargetId || openThreadJumpMessageId}
+            composerFocusRequest={composerFocusRequest}
           />
         </>
       ) : showMembers ? (

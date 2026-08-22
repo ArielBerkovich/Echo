@@ -78,6 +78,10 @@ export default function ChannelBrowser({
     if (!searchTerm) onCounts?.(counts);
   }, [catalog]);
 
+  useEffect(() => {
+    searchInputRef.current?.focus();
+  }, []);
+
   const totalForFilter = counts[filter] || 0;
   const firstResult = channels.length > 0 ? (page.number - 1) * PAGE_SIZE + 1 : 0;
   const lastResult = firstResult ? firstResult + channels.length - 1 : 0;

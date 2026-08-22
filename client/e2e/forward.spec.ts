@@ -27,6 +27,14 @@ async function channelMessages(page: Page, channelId: string) {
   return result.messages;
 }
 
+async function tabTo(page: Page, locator: Locator) {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    if (await locator.evaluate((element) => element === document.activeElement).catch(() => false)) return;
+    await page.keyboard.press("Tab");
+  }
+  throw new Error("Could not reach locator with Tab");
+}
+
 async function expectForwardedWithNote(page: Page, channelId: string, note: string) {
   await expect.poll(async () => {
     const messages = await channelMessages(page, channelId);
@@ -39,6 +47,49 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe("forwarding", () => {
+  test("opens the message reaction picker and focuses emoji choices by keyboard", async ({ page }) => {
+    await page.goto("/");
+    const source = messageById(page, fixture.messages.searchHit.id);
+    const addReaction = page.getByTestId(`message-${fixture.messages.searchHit.id}-add-reaction-action`);
+    await source.focus();
+    await expect(addReaction).toBeVisible();
+    await page.keyboard.press("Enter");
+    await expect(addReaction).toBeFocused();
+    await page.keyboard.press("Enter");
+
+    const picker = page.getByRole("dialog", { name: "Choose a reaction" });
+    await expect(picker).toBeVisible();
+    const firstEmoji = picker.getByRole("button", { name: "React with 👍" });
+    await expect(firstEmoji).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(picker).toBeHidden();
+  });
+
+  test("opens and forwards with a note using only the keyboard", async ({ page }) => {
+    await page.goto("/");
+    const source = messageById(page, fixture.messages.searchHit.id);
+    const forward = page.getByTestId(`message-${fixture.messages.searchHit.id}-forward`);
+    const modal = forwardModal(page);
+    await source.focus();
+    await expect(forward).toBeVisible();
+    await page.keyboard.press("Enter");
+    await tabTo(page, forward);
+    await page.keyboard.press("Space");
+
+    await expect(modal).toBeVisible();
+    const search = modal.getByTestId("forward-search");
+    await search.pressSequentially(fixture.projectChannel.name);
+    await search.press("Enter");
+    await search.press("Tab");
+    const note = modal.getByTestId("composer-editor");
+    await expect(note).toBeFocused();
+    await note.pressSequentially("Keyboard-only forward note");
+    const send = modal.getByTestId("forward-send-selected");
+    await tabTo(page, send);
+    await page.keyboard.press("Enter");
+    await expectForwardedWithNote(page, fixture.projectChannel.id, "Keyboard-only forward note");
+  });
+
   test("prioritizes recipient selection with compact source context", async ({ page }) => {
     await openForwardDialog(page);
 
@@ -62,6 +113,20 @@ test.describe("forwarding", () => {
     await expect(destinationByLabel(modal, fixture.projectChannel.name)).toBeVisible();
     await modal.getByTestId("composer-editor").click();
     await expect(modal.locator(".forward-destination-list")).toHaveCount(0);
+  });
+
+  test("moves from recipient search to the note composer with Tab", async ({ page }) => {
+    await openForwardDialog(page);
+
+    const modal = forwardModal(page);
+    const search = modal.getByTestId("forward-search");
+    await search.fill(fixture.projectChannel.name);
+    await search.press("Enter");
+    await search.press("Tab");
+
+    await expect(modal.locator(".forward-chip")).toContainText(fixture.projectChannel.name);
+    await expect(modal.getByTestId("composer-editor")).toBeFocused();
+    await expect(modal.getByTestId("forward-send-selected")).toBeEnabled();
   });
 
   test("forwards a plain-text note", async ({ page }) => {

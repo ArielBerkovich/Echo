@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Trash2Icon } from "lucide-react";
 import { api } from "../api.js";
@@ -13,6 +13,7 @@ import { FeedContent, FeedLayout, FeedMessage } from "./FeedLayout.js";
 // Feed of messages that @mention the current user. Clicking jumps to the channel.
 export default function ActivityFeed({ user, users = [], customEmojis = [], onJump, onLoaded }) {
   const [confirmClear, setConfirmClear] = useState(false);
+  const restoreFocusAfterDismissRef = useRef(false);
   const queryClient = useQueryClient();
   const renderMarkdown = useMarkdownRenderer(users, user.username, customEmojis);
   const { data: items = [], isPending: loading } = useQuery({
@@ -50,6 +51,14 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
 
   useEffect(() => {
     onLoaded?.(items);
+  }, [items]);
+
+  useEffect(() => {
+    if (!restoreFocusAfterDismissRef.current) return;
+    restoreFocusAfterDismissRef.current = false;
+    const target = document.querySelector('[data-testid="activity-item"]')
+      || document.querySelector('[data-testid="activity-header"]');
+    target?.focus();
   }, [items]);
 
   useEffect(() => {
@@ -96,6 +105,7 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
             tabIndex={0}
             onClick={() => onJump(it)}
             onKeyDown={(event) => {
+              if (event.currentTarget !== event.target) return;
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
                 onJump(it);
@@ -121,6 +131,7 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
               aria-label="Delete activity"
               onClick={(event) => {
                 event.stopPropagation();
+                restoreFocusAfterDismissRef.current = true;
                 dismissMutation.mutate(it.id);
               }}
             >
@@ -139,6 +150,7 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
           onCancel={() => setConfirmClear(false)}
           onConfirm={() => {
             setConfirmClear(false);
+            restoreFocusAfterDismissRef.current = true;
             clearMutation.mutate();
           }}
         />

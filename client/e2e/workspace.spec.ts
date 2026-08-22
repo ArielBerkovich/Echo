@@ -229,7 +229,7 @@ test("browses, filters, and joins public channels while private channels stay in
   await page.getByTestId("browse-channels").click();
   await expect(page.getByTestId("channel-browser")).toBeVisible();
   const browserSearch = page.getByTestId("channel-browser-search");
-  await expect(browserSearch).not.toBeFocused();
+  await expect(browserSearch).toBeFocused();
   await browserSearch.fill(publicName);
   await expect.poll(() => browserSearch.evaluate((input) => getComputedStyle(input).boxShadow)).toBe("none");
   await page.getByTestId("channel-browser-search-clear").click();

@@ -10,6 +10,21 @@ export default function ReactionPicker({ onPick, onClose, onExpand, customEmojis
   const ref = useRef(null);
 
   useEffect(() => {
+    const focusTimer = window.setTimeout(() => ref.current?.querySelector("button")?.focus(), 0);
+    function onKeyDown(event) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.clearTimeout(focusTimer);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [onClose, showAll]);
+
+  useEffect(() => {
     function onDown(e) {
       if (ref.current?.contains(e.target)) return;
       if (e.target.closest?.(".emoji-toggle, .react-toggle")) return;

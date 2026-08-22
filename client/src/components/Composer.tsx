@@ -146,6 +146,9 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
     },
   }, [channel.id, parentId, placeholder, disabled]);
   useImperativeHandle(ref, () => ({
+    focus() {
+      editor?.commands.focus();
+    },
     quoteMessage(message) {
       if (!editor || editing) return;
       const html = `${markdownTextToComposerHtml(buildQuoteMarkdown(message))}<p></p>`;
@@ -962,7 +965,7 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
             S
           </button>
           <span className="tb-sep" />
-          <button type="button" className="icon-btn" title="Link" onMouseDown={keepFocus} onClick={openLinkDialog}>
+          <button type="button" className="icon-btn" data-testid="composer-link" title="Link" onMouseDown={keepFocus} onClick={openLinkDialog}>
             <LinkIcon />
           </button>
           <span className="tb-sep" />
@@ -996,7 +999,24 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
             <PlusIcon />
           </button>}
           {!editing && !isThread && <button type="button" className="icon-btn survey-compose-btn" data-testid="composer-survey" title="Create survey" aria-label="Create survey" onMouseDown={keepFocus} onClick={() => setSurveyDraft({ question: "", options: ["", ""], allowMultiple: false, error: null })}><ChartNoAxesColumnIncreasing size={18} strokeWidth={1.8} /></button>}
-          <button type="button" className={`icon-btn aa ${showFormatting ? "active" : ""}`} title="Formatting" onMouseDown={keepFocus} onClick={() => setShowFormatting((v) => !v)}>
+          <button
+            type="button"
+            className={`icon-btn aa ${showFormatting ? "active" : ""}`}
+            data-testid="composer-formatting"
+            title="Formatting"
+            onMouseDown={keepFocus}
+            onClick={(event) => {
+              // Keyboard activation is handled in onKeyDown so it cannot be
+              // toggled twice by the browser's synthetic click.
+              if (event.detail !== 0) setShowFormatting((v) => !v);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setShowFormatting((v) => !v);
+              }
+            }}
+          >
             Aa
           </button>
           <button type="button" className={`icon-btn emoji-toggle ${emojiOpen ? "active" : ""}`} data-testid="composer-emoji-toggle" title="Emoji" onMouseDown={keepFocus} onClick={() => setEmojiOpen((v) => !v)}>

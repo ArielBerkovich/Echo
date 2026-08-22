@@ -33,6 +33,10 @@ function labelFor(destination) {
   return destination.kind === "channel" ? `#${destination.label}` : destination.label;
 }
 
+function resultId(destination) {
+  return `forward-destination-${destinationKey(destination).replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+}
+
 function DestinationIcon({ destination }) {
   if (destination.kind === "channel") {
     return <span className="forward-destination-icon" aria-hidden="true">{destination.icon}</span>;
@@ -51,6 +55,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
   const [searchFocused, setSearchFocused] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
   const searchRef = useRef(null);
+  const noteComposerRef = useRef(null);
 
   const destinationGroups = useMemo(() => {
     const channelItems = channels.map((channel) => ({
@@ -131,12 +136,25 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
   }
 
   function handleSearchKeyDown(event) {
-    if (event.key === "ArrowDown") {
+    if (event.key === "Tab" && !event.shiftKey) {
+      event.preventDefault();
+      noteComposerRef.current?.focus();
+    } else if (event.key === "Escape" && query) {
+      event.preventDefault();
+      setQuery("");
+      setActiveIndex(0);
+    } else if (event.key === "ArrowDown") {
       event.preventDefault();
       setActiveIndex((index) => flatResults.length ? (index + 1) % flatResults.length : 0);
     } else if (event.key === "ArrowUp") {
       event.preventDefault();
       setActiveIndex((index) => flatResults.length ? (index - 1 + flatResults.length) % flatResults.length : 0);
+    } else if (event.key === "Home" && flatResults.length) {
+      event.preventDefault();
+      setActiveIndex(0);
+    } else if (event.key === "End" && flatResults.length) {
+      event.preventDefault();
+      setActiveIndex(flatResults.length - 1);
     } else if (event.key === "Enter" && flatResults[activeIndex]) {
       event.preventDefault();
       const destination = flatResults[activeIndex];
@@ -211,10 +229,15 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
               autoFocus
               disabled={!destinationGroups.all.length || isSubmitting}
               aria-label="Search people and channels"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-controls="forward-destination-list"
+              aria-expanded={showResultList && flatResults.length > 0}
+              aria-activedescendant={flatResults[activeIndex] ? resultId(flatResults[activeIndex]) : undefined}
             />
 
             {showResultList && (
-              <div className="forward-destination-list" data-testid="forward-destination-list" aria-label="Recipient search results">
+              <div id="forward-destination-list" className="forward-destination-list" data-testid="forward-destination-list" role="listbox" aria-label="Recipient search results">
                 {!flatResults.length ? (
                   <div className="people-empty">No recipients match “{query.trim()}”</div>
                 ) : resultGroups.map((group) => (
@@ -227,9 +250,13 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
                       return (
                         <button
                           type="button"
+                          id={resultId(destination)}
                           className={`forward-destination-row ${isSelected ? "selected" : ""} ${activeIndex === index ? "keyboard-active" : ""}`}
                           key={destinationKey(destination)}
+                          role="option"
                           aria-pressed={isSelected}
+                          aria-selected={isSelected}
+                          tabIndex={-1}
                           disabled={isSubmitting || atLimit}
                           onMouseEnter={() => setActiveIndex(index)}
                           onClick={() => isSelected ? removeDestination(destination) : addDestination(destination)}
@@ -251,6 +278,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
 
           <div className="forward-note-field" data-testid="forward-note-field">
             <Composer
+              ref={noteComposerRef}
               key={noteChannel.id}
               channel={noteChannel}
               users={users}

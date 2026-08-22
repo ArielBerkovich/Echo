@@ -52,6 +52,7 @@ describe("workspace routes", () => {
       currentRoute({ pathname: "/settings", search: "", state: { workspacePath: "/dms/direct-1" } }),
       { overlay: null, view: "settings", settingsTab: "account", convId: null, convType: null, searchQuery: null }
     );
+    assert.equal(parseWorkspacePath("/settings/shortcuts").settingsTab, "shortcuts");
   });
 
   it("recognizes only same-origin Echo message links", () => {

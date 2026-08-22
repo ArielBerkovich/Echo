@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Building2Icon, Code2Icon, DownloadIcon, GitPullRequestIcon, PaletteIcon, UserRoundIcon } from "lucide-react";
+import { Building2Icon, Code2Icon, DownloadIcon, GitPullRequestIcon, KeyboardIcon, PaletteIcon, UserRoundIcon } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { api, getBackendUrl } from "../api.js";
@@ -12,6 +12,7 @@ import { PASSWORD_RULE } from "../lib/password.js";
 import { passwordPairSchema } from "../lib/formSchemas.js";
 import { uploadSizeError } from "../lib/uploads.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
+import { KEYBOARD_SHORTCUT_GROUPS } from "../lib/keyboardShortcuts.js";
 import {
   notifySupported,
   notifyPermission,
@@ -27,6 +28,7 @@ const SETTINGS_TABS = [
   { id: "workspace", label: "Workspace", Icon: Building2Icon, adminOnly: true },
   { id: "integrations", label: "Integrations", Icon: GitPullRequestIcon, adminOnly: true },
   { id: "desktop", label: "Desktop", Icon: DownloadIcon },
+  { id: "shortcuts", label: "Keyboard shortcuts", Icon: KeyboardIcon },
   { id: "api", label: "API", Icon: Code2Icon },
 ];
 
@@ -706,6 +708,30 @@ export default function SettingsModal({
           {activeTab === "api" && <ApiDocsPage embedded />}
 
           {activeTab === "desktop" && <DesktopDownloads downloads={desktopDownloads} error={desktopDownloadsError} />}
+
+          {activeTab === "shortcuts" && (
+            <section className="settings-section settings-shortcuts-section">
+              <h3>Keyboard shortcuts</h3>
+              <p className="settings-hint">Use these shortcuts to move through Echo quickly. Shortcuts are fixed for everyone.</p>
+              <div className="shortcut-groups">
+                {KEYBOARD_SHORTCUT_GROUPS.map((group) => (
+                  <section className="shortcut-group" key={group.label} aria-labelledby={`shortcut-group-${group.label.toLowerCase()}`}>
+                    <h4 id={`shortcut-group-${group.label.toLowerCase()}`}>{group.label}</h4>
+                    <div className="shortcut-list">
+                      {group.shortcuts.map((shortcut) => (
+                        <div className="shortcut-row" key={`${group.label}-${shortcut.description}`}>
+                          <span className="shortcut-description">{shortcut.description}</span>
+                          <span className="shortcut-keys" aria-label={shortcut.keys.join(" ")}>
+                            {shortcut.keys.map((key) => <kbd key={key}>{key}</kbd>)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            </section>
+          )}
 
           {error && <div className="error">{error}</div>}
           {saved && activeTab !== "workspace" && <div className="settings-saved">Saved ✓</div>}
