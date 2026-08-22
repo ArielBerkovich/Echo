@@ -46,9 +46,14 @@ test.describe("forwarding", () => {
     await expect(page.getByRole("dialog")).toHaveAccessibleName("Forward message");
     await expect(modal.getByTestId("forward-source-toggle")).toHaveAttribute("aria-expanded", "false");
     await expect(modal.getByTestId("forward-source-context")).toHaveCount(0);
+    await page.waitForTimeout(300);
+    const modalShell = page.locator(".forward-modal");
+    const modalHeight = await modalShell.evaluate((element) => element.getBoundingClientRect().height);
     await modal.getByTestId("forward-source-toggle").click();
     await expect(modal.getByTestId("forward-source-toggle")).toHaveAttribute("aria-expanded", "true");
     await expect(modal.getByTestId("forward-source-context")).toContainText(fixture.messages.searchHit.body);
+    await expect.poll(() => modalShell.evaluate((element) => element.getBoundingClientRect().height)).toBe(modalHeight);
+    await expect(modal.locator(".forward-source-message")).toHaveCSS("overflow-y", "auto");
     await expect(modal.getByTestId("forward-note-field")).toContainText("Note");
     await expect(modal.getByTestId("composer-editor")).toHaveAttribute("data-placeholder", "Add context for the recipient…");
     await expect(modal.locator(".composer-toolbar")).toBeVisible();
