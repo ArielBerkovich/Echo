@@ -12,16 +12,20 @@ function messageActivityType(message, recipientId, channelType) {
   return "mention";
 }
 
-function messageRecipients(message, channel) {
-  const recipients = new Set((message.mentionedUserIds || []).map((id) => id.toString()));
+function idString(value) {
+  return value?._id?.toString?.() || value?.toString?.();
+}
+
+export function messageRecipients(message, channel) {
+  const recipients = new Set((message.mentionedUserIds || []).map((id) => idString(id)));
   if (channel?.type === "dm") {
-    for (const member of channel.members || []) recipients.add(member.toString());
+    for (const member of channel.members || []) recipients.add(idString(member));
   }
   if (message.mentionsEveryone) {
-    for (const member of channel?.members || []) recipients.add(member.toString());
+    for (const member of channel?.members || []) recipients.add(idString(member));
   }
-  if (message.threadRootAuthor) recipients.add(message.threadRootAuthor.toString());
-  recipients.delete(message.author.toString());
+  if (message.threadRootAuthor) recipients.add(idString(message.threadRootAuthor));
+  recipients.delete(idString(message.author));
   return recipients;
 }
 
