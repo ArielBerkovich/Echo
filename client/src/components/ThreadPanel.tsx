@@ -6,6 +6,7 @@ import ReactionPicker from "./ReactionPicker.js";
 import Message from "./Message.js";
 import Composer from "./Composer.js";
 import ConfirmDialog from "./ConfirmDialog.js";
+import { hasThreadJumpTarget, scrollThreadMessageIntoView } from "../lib/threadNavigation.js";
 
 // Right-hand thread view: the root message + its replies + a reply composer.
 // Reuses the full Message (reactions, forward, edit) and Composer (emoji, bold,
@@ -169,7 +170,7 @@ export default function ThreadPanel({
       // normal initial scroll-to-bottom would otherwise run first and can
       // win again when the thread body resizes after the target is centered.
       const jumpTargetId = openThreadJumpMessageId || jumpTargetRef.current;
-      if (jumpTargetId) {
+      if (hasThreadJumpTarget(jumpTargetId)) {
         initialScrolledRef.current = true;
         stickToBottomRef.current = false;
         return;
@@ -194,8 +195,9 @@ export default function ThreadPanel({
     jumpHandledRef.current = targetId;
     // Prevent the ResizeObserver and live-reply handling from immediately
     // restoring the thread to its bottom after this permalink scrolls.
-    stickToBottomRef.current = false;
-    target.scrollIntoView({ block: "center", behavior: "auto" });
+    scrollThreadMessageIntoView(target, (stickToBottom) => {
+      stickToBottomRef.current = stickToBottom;
+    });
     setHighlightId(targetId);
   }, [openThreadJumpMessageId, replies, rootMsg.id]);
 
