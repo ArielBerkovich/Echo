@@ -6653,7 +6653,7 @@ html[data-mode="dark"] .day-divider-label {
   overflow: hidden;
 }
 .forward-source-disclosure {
-  margin: 8px 0 8px;
+  margin: 10px 0 8px;
   flex: none;
   border: 1px solid var(--border);
   border-radius: 9px;
@@ -6661,35 +6661,48 @@ html[data-mode="dark"] .day-divider-label {
   overflow: hidden;
 }
 .forward-source-disclosure.is-open {
-  overflow: visible;
-  border-color: transparent;
-  background: transparent;
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
 }
 .forward-source-toggle {
   display: flex;
   width: 100%;
   align-items: center;
-  gap: 6px;
-  padding: 8px 10px;
+  justify-content: space-between;
+  min-height: 44px;
+  gap: 10px;
+  padding: 8px 11px;
   border: 0;
   background: transparent;
   color: var(--muted);
   font: inherit;
-  font-size: 12px;
   text-align: left;
 }
-.forward-source-toggle strong {
+.forward-source-toggle-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+.forward-source-toggle-copy strong {
   color: var(--text);
+  font-size: 12px;
+  font-weight: 750;
+}
+.forward-source-toggle-copy small {
+  color: var(--muted);
+  font-size: 10px;
 }
 .forward-source-toggle:hover,
 .forward-source-toggle:focus-visible {
   background: var(--active-soft);
 }
 .forward-source-chevron {
-  margin-left: auto;
   color: var(--muted);
-  font-size: 16px;
-  line-height: 1;
+  flex: none;
+  transition: transform 0.16s ease;
+}
+.forward-source-disclosure.is-open .forward-source-chevron {
+  transform: rotate(180deg);
 }
 .forward-source-context {
   display: flex;
@@ -6737,11 +6750,15 @@ html[data-mode="dark"] .day-divider-label {
 }
 .forward-source-message .message {
   margin: 0;
-  padding: 0;
+  padding: 4px 2px;
   background: transparent;
 }
 .forward-source-message {
-  max-height: 240px;
+  height: 180px;
+  max-height: 180px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
   overflow-y: auto;
 }
 .forward-source-message .message:hover {

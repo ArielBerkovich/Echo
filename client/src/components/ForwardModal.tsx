@@ -3,7 +3,7 @@ import Avatar from "./Avatar.js";
 import Modal, { ModalActions } from "./Modal.js";
 import Composer from "./Composer.js";
 import Message from "./Message.js";
-import { XIcon } from "lucide-react";
+import { ChevronDown, XIcon } from "lucide-react";
 
 const MAX_DESTINATIONS = 10;
 const MAX_VISIBLE_SEARCH_RESULTS = 20;
@@ -290,8 +290,11 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
             aria-expanded={sourceExpanded}
             onClick={() => setSourceExpanded((open) => !open)}
           >
-            <span>Message to forward</span>
-            <span className="forward-source-chevron" aria-hidden="true">{sourceExpanded ? "−" : "+"}</span>
+            <span className="forward-source-toggle-copy">
+              <strong>Message to forward</strong>
+              <small>{sourceExpanded ? "Original message" : "Preview before forwarding"}</small>
+            </span>
+            <ChevronDown className="forward-source-chevron" size={16} aria-hidden="true" />
           </button>
           {sourceExpanded && (
             <div className="forward-source-message" data-testid="forward-source-context">
