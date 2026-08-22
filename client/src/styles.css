@@ -6598,6 +6598,8 @@ html[data-mode="dark"] .day-divider-label {
   min-height: 0;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
+  padding-bottom: 56px;
 }
 .forward-intro {
   margin: -4px 0 16px;
@@ -7057,11 +7059,16 @@ html[data-mode="dark"] .day-divider-label {
 }
 .forward-actions {
   display: flex;
-  flex: none;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 4;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 8px;
+  margin-top: 0;
   padding-top: 6px;
+  background: var(--surface);
 }
 .forward-actions .btn-primary,
 .forward-actions .btn-secondary {
