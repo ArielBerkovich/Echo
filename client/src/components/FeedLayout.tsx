@@ -1,8 +1,8 @@
 import { memo } from "react";
 
-export function FeedLayout({ title, subtitle, testId, actions, sidePanel, children }) {
+export function FeedLayout({ title, subtitle, testId, actions, children }) {
   return (
-    <main className={`channel-view ${sidePanel ? "has-side-panel" : ""}`}>
+    <main className="channel-view">
       <div className="channel-main">
         <header className="channel-header" data-testid={`${testId}-header`}>
           <span className="ch-name">{title}</span>
@@ -13,7 +13,6 @@ export function FeedLayout({ title, subtitle, testId, actions, sidePanel, childr
           {children}
         </div>
       </div>
-      {sidePanel || null}
     </main>
   );
 }

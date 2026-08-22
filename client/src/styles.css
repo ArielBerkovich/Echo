@@ -2464,9 +2464,6 @@ html[data-mode="dark"] .backend-connection-error {
 .activity-item:hover {
   background: var(--surface-2);
 }
-.activity-item.selected {
-  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
-}
 .activity-dismiss {
   flex: none;
   margin-left: auto;
@@ -2516,92 +2513,6 @@ html[data-mode="dark"] .backend-connection-error {
   margin-top: 6px;
   color: var(--muted);
   font-size: 12px;
-}
-.activity-preview-pane {
-  display: flex;
-  flex: 0 0 50%;
-  flex-direction: column;
-  min-width: 0;
-  max-width: 680px;
-  border-left: 1px solid var(--border);
-  background: var(--surface);
-}
-.activity-preview-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 64px;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface-2);
-}
-.activity-preview-header > div {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.activity-preview-kicker {
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-}
-.activity-preview-close {
-  padding: 4px 9px;
-  border-radius: 7px;
-  color: var(--muted);
-  font-size: 22px;
-  line-height: 1;
-}
-.activity-preview-close:hover,
-.activity-preview-close:focus-visible {
-  background: var(--surface);
-  color: var(--text);
-}
-.activity-preview-chat {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 28px 20px;
-  background: linear-gradient(180deg, var(--bg), var(--surface) 160px);
-  cursor: pointer;
-}
-.activity-preview-chat:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
-.activity-preview-chat .message {
-  padding: 10px 0;
-  border-radius: 10px;
-  background: transparent;
-}
-.activity-preview-chat .message:hover {
-  background: var(--surface-2);
-}
-.activity-preview-message {
-  margin-bottom: 4px;
-  border-radius: 10px;
-}
-.activity-preview-message.target {
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
-  box-shadow: inset 3px 0 0 var(--accent);
-}
-.activity-preview-loading {
-  color: var(--muted);
-  text-align: center;
-}
-.activity-preview-jump {
-  margin: 14px 18px 18px;
-  padding: 10px 14px;
-  border-radius: 8px;
-  background: var(--accent);
-  color: white;
-  font-weight: 700;
-}
-.activity-preview-jump:hover,
-.activity-preview-jump:focus-visible {
-  filter: brightness(1.08);
 }
 /* Unread (not-yet-interacted-with) activity stands out in bold with a dot. */
 .activity-item {
@@ -7569,7 +7480,6 @@ html[data-mode="dark"] .channel-header {
 .channel-view.has-side-panel .header-action-icon span {
   display: none;
 }
-
 .messages-shell {
   flex: 1;
   min-width: 0;
@@ -9104,15 +9014,11 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   .channel-view {
     position: relative;
   }
-  .activity-preview-pane {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 18;
-    width: min(520px, 94%);
-    max-width: 94%;
-    box-shadow: var(--shadow-lg);
+  /* The animated channel view forms its own stacking context; lift it above
+     the bottom rail while a side panel is open so the composer is not covered. */
+  .channel-view.has-side-panel {
+    position: relative;
+    z-index: 61;
   }
   .thread-panel,
   .details-panel:not(.channel-details-dialog),
@@ -11107,13 +11013,6 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     border: 0;
     border-radius: 0;
     box-shadow: 0 0 32px rgba(0, 0, 0, 0.28);
-  }
-
-  /* The animated channel view forms its own stacking context; lift it above
-     the bottom rail while a side panel is open so the composer is not covered. */
-  .channel-view.has-side-panel {
-    position: relative;
-    z-index: 61;
   }
 
   .thread-header {

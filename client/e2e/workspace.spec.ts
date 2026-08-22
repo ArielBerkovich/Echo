@@ -635,7 +635,6 @@ test("opens the exact message from Activity", async ({ page }) => {
   const activityItem = page.getByTestId("activity-item").filter({ hasText: visibleMentionBody }).first();
   await expect(activityItem).toBeVisible();
   await activityItem.click();
-  await page.getByTestId("activity-preview").getByRole("button", { name: "Jump to message" }).click();
 
   await expect(page.getByTestId("channel-title")).toContainText("general");
   await expect(messageById(page, fixture.messages.mention.id)).toBeVisible();
@@ -679,8 +678,6 @@ test("Activity jump wins over the channel unread-message anchor", async ({ page 
   const activityItem = page.getByTestId("activity-item").filter({ hasText: `Older activity target ${stamp}` });
   await expect(activityItem).toBeVisible();
   await activityItem.click();
-  await expect(page.getByTestId("activity-preview")).toBeVisible();
-  await page.getByTestId("activity-preview").getByRole("button", { name: "Jump to message" }).click();
 
   await expect(page.getByTestId("channel-title")).toContainText("general");
   await expect(messageById(page, target.message.id)).toBeInViewport();
@@ -715,7 +712,6 @@ test("opens a public-channel mention even when the user is not in the channel", 
   const activityItem = page.getByTestId("activity-item").filter({ hasText: visibleMentionBody }).first();
   await expect(activityItem).toBeVisible();
   await activityItem.click();
-  await page.getByTestId("activity-preview").getByRole("button", { name: "Jump to message" }).click();
 
   await expect(page.getByTestId("channel-title")).toContainText(channelName);
   await expect(page.getByText(`You're previewing #${channelName}`)).toBeVisible();
@@ -746,10 +742,6 @@ test("opens a thread activity item at the exact reply", async ({ page }) => {
   const activityItem = page.getByText(threadMentionText, { exact: false }).first();
   await expect(activityItem).toBeVisible();
   await activityItem.click();
-  await expect(page.getByTestId("activity-preview")).toContainText("Thread preview");
-  await expect(page.getByTestId("activity-preview").getByTestId(`message-${fixture.messages.threadRoot.id}`)).toBeVisible();
-  await expect(page.getByTestId("activity-preview").getByTestId(`message-${reply.message.id}`)).toBeVisible();
-  await page.getByTestId("activity-preview").getByRole("button", { name: "Jump to message" }).click();
 
   await expect(page.getByTestId("thread-panel")).toBeVisible();
   await expect(messageById(page, reply.message.id)).toBeInViewport();
