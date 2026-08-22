@@ -30,6 +30,7 @@ export default function ThreadPanel({
   onAddCustomEmoji,
   onClose,
   onThreadRead,
+  activityItems = [],
   canPost = true,
   onChannelUpdated,
   onOpenLightbox,
@@ -242,8 +243,14 @@ export default function ThreadPanel({
   // so thread mentions clear from Activity once you've actually seen them.
   useEffect(() => {
     api.markRead(channel.id, root.id).catch(() => {});
-    onThreadRead?.(root.id);
   }, [channel.id, root.id, replies.length]);
+
+  // Activity can change while this panel stays mounted. Re-run only the
+  // Activity acknowledgement path so newly arriving thread notifications are
+  // cleared without repeatedly writing the conversation read marker.
+  useEffect(() => {
+    onThreadRead?.(channel.id, root.id);
+  }, [activityItems, channel.id, root.id, onThreadRead]);
 
   function toggleReaction(messageId, emoji) {
     getSocket().emit("reaction:toggle", { messageId, emoji }, () => {});

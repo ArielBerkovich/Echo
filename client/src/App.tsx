@@ -1426,6 +1426,7 @@ export default function App() {
             onJoin: handleJoinChannel,
             onRead: handleRead,
             onThreadRead: handleThreadRead,
+            activityItems,
             openThreadId: activeChannel && openThreadReq?.channelId === activeChannel.id ? openThreadReq.rootId : null,
             openThreadJumpMessageId: activeChannel && openThreadReq?.channelId === activeChannel.id ? openThreadReq.messageId : null,
             onThreadOpened: () => setOpenThreadReq(null),
