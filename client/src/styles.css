@@ -6717,6 +6717,7 @@ html[data-mode="dark"] .day-divider-label {
   flex: none;
 }
 .forward-destination-search.has-results {
+  margin-bottom: 0;
   border-bottom-right-radius: 0;
   border-bottom-left-radius: 0;
 }
