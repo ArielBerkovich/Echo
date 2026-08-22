@@ -122,8 +122,10 @@ export default function ProfilePictureDialog({ file = null, currentSrc = null, o
   }
 
   function onWheel(event) {
-    // Trackpad pinch gestures are reported as ctrl+wheel events by browsers.
-    if (!imageSize || saving || !event.ctrlKey) return;
+    // Trackpad pinch gestures may be reported as ctrl+wheel, while some
+    // browsers expose them as ordinary wheel events. The crop surface owns
+    // both forms so the page never zooms or scrolls underneath it.
+    if (!imageSize || saving) return;
     event.preventDefault();
     const delta = event.deltaMode === 1 ? event.deltaY * 16 : event.deltaY;
     const factor = Math.exp(-delta * 0.002);

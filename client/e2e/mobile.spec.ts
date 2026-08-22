@@ -139,7 +139,7 @@ test("zooms the profile image with a trackpad pinch gesture", async ({ page }) =
   await expect(image).toBeVisible();
   const initialWidth = await image.evaluate((element) => Number.parseFloat(getComputedStyle(element).width));
 
-  await crop.dispatchEvent("wheel", { deltaY: -100, ctrlKey: true });
+  await crop.dispatchEvent("wheel", { deltaY: -100 });
 
   await expect.poll(async () => image.evaluate((element) => Number.parseFloat(getComputedStyle(element).width))).toBeGreaterThan(initialWidth);
 });
