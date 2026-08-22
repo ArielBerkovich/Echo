@@ -309,6 +309,7 @@ test("shows and permanently dismisses every supported Activity kind", async ({ b
     await expect(targets[3]).toContainText("Bob Builder");
     await expect(targets[3]).toContainText("1 other");
     await targets[3].click();
+    await targets[3].getByTestId("activity-preview").click();
     await expect(
       page.getByTestId(`message-${reactionRoot.message.id}`).locator(".reaction:not(.add)"),
     ).toHaveAttribute("title", /Bob Builder and you reacted with 👍/);

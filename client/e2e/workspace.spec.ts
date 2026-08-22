@@ -597,7 +597,7 @@ test("sends multiple messages from the same composer", async ({ page }) => {
 
 test("shows activity items and marks activity as read", async ({ page }) => {
   const markedRead = page.waitForResponse(
-    (res) => res.url().includes("/api/activity/read") && res.request().method() === "POST"
+    (res) => res.url().includes("/api/activity/read-items") && res.request().method() === "POST"
   );
 
   await page.goto("/");
@@ -616,6 +616,7 @@ test("shows activity items and marks activity as read", async ({ page }) => {
   await expect(page.getByTestId("activity-header")).toContainText("Activity", { timeout: 15_000 });
   const activityItem = page.getByTestId("activity-item").first();
   await expect(activityItem).toBeVisible();
+  await activityItem.click();
   await markedRead;
 });
 
@@ -631,9 +632,10 @@ test("opens the exact message from Activity", async ({ page }) => {
     `@${fixture.alice.username}`,
     `@${fixture.alice.displayName}`
   );
-  const mentionText = page.getByText(visibleMentionBody, { exact: false }).first();
-  await expect(mentionText).toBeVisible();
-  await mentionText.click();
+  const activityItem = page.getByTestId("activity-item").filter({ hasText: visibleMentionBody }).first();
+  await expect(activityItem).toBeVisible();
+  await activityItem.click();
+  await activityItem.getByTestId("activity-preview").click();
 
   await expect(page.getByTestId("channel-title")).toContainText("general");
   await expect(messageById(page, fixture.messages.mention.id)).toBeVisible();
@@ -677,6 +679,8 @@ test("Activity jump wins over the channel unread-message anchor", async ({ page 
   const activityItem = page.getByTestId("activity-item").filter({ hasText: `Older activity target ${stamp}` });
   await expect(activityItem).toBeVisible();
   await activityItem.click();
+  await expect(activityItem.getByTestId("activity-preview")).toBeVisible();
+  await activityItem.getByTestId("activity-preview").click();
 
   await expect(page.getByTestId("channel-title")).toContainText("general");
   await expect(messageById(page, target.message.id)).toBeInViewport();
@@ -708,9 +712,10 @@ test("opens a public-channel mention even when the user is not in the channel", 
   });
 
   await railItem(page, "activity").click();
-  const activityEntry = page.getByText(visibleMentionBody, { exact: false }).first();
-  await expect(activityEntry).toBeVisible();
-  await activityEntry.click();
+  const activityItem = page.getByTestId("activity-item").filter({ hasText: visibleMentionBody }).first();
+  await expect(activityItem).toBeVisible();
+  await activityItem.click();
+  await activityItem.getByTestId("activity-preview").click();
 
   await expect(page.getByTestId("channel-title")).toContainText(channelName);
   await expect(page.getByText(`You're previewing #${channelName}`)).toBeVisible();
@@ -741,6 +746,7 @@ test("opens a thread activity item at the exact reply", async ({ page }) => {
   const activityItem = page.getByText(threadMentionText, { exact: false }).first();
   await expect(activityItem).toBeVisible();
   await activityItem.click();
+  await page.getByTestId("activity-preview").click();
 
   await expect(page.getByTestId("thread-panel")).toBeVisible();
   await expect(messageById(page, reply.message.id)).toBeInViewport();

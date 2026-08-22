@@ -2514,6 +2514,38 @@ html[data-mode="dark"] .backend-connection-error {
   color: var(--muted);
   font-size: 12px;
 }
+.activity-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.activity-preview:hover,
+.activity-preview:focus-visible {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 11%, var(--surface));
+}
+.activity-preview-label {
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+}
+.activity-preview-body {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 /* Unread (not-yet-interacted-with) activity stands out in bold with a dot. */
 .activity-item {
   position: relative;

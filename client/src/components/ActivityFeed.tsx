@@ -13,6 +13,7 @@ import { FeedContent, FeedLayout, FeedMessage } from "./FeedLayout.js";
 // Feed of messages that @mention the current user. Clicking jumps to the channel.
 export default function ActivityFeed({ user, users = [], customEmojis = [], onJump, onLoaded }) {
   const [confirmClear, setConfirmClear] = useState(false);
+  const [previewId, setPreviewId] = useState(null);
   const queryClient = useQueryClient();
   const renderMarkdown = useMarkdownRenderer(users, user.username, customEmojis);
   const { data: items = [], isPending: loading } = useQuery({
@@ -66,6 +67,16 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
   useEffect(() => {
     onLoaded?.(items);
   }, [items]);
+
+  async function selectActivity(item) {
+    setPreviewId((current) => (current === item.id ? null : item.id));
+    if (!item.unread) return;
+    queryClient.setQueryData(queryKeys.activity, (current = []) =>
+      current.map((entry) => (entry.id === item.id ? { ...entry, unread: false } : entry))
+    );
+    await api.markActivityItemsRead([item.id]).catch(() => {});
+    queryClient.invalidateQueries({ queryKey: queryKeys.activity });
+  }
 
   useEffect(() => {
     // Live-refresh while the panel is open (new mentions, replies, reactions).
@@ -121,13 +132,13 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
             className={`activity-item ${it.unread ? "unread" : ""}`}
             data-testid="activity-item"
             data-activity-kind={it.kind}
-            role="button"
+            aria-expanded={previewId === it.id}
             tabIndex={0}
-            onClick={() => onJump(it)}
+            onClick={() => selectActivity(it)}
             onKeyDown={(event) => {
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
-                onJump(it);
+                selectActivity(it);
               }
             }}
           >
@@ -145,6 +156,21 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
                 <div className="activity-reactions" aria-label="Reactions">
                   {it.reactions.map((reaction) => `${reaction.emoji} ${reaction.count}`).join("  ")}
                 </div>
+              ) : null}
+              {previewId === it.id ? (
+                <button
+                  type="button"
+                  className="activity-preview"
+                  data-testid="activity-preview"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onJump(it);
+                  }}
+                  title="Jump to message"
+                >
+                  <span className="activity-preview-label">Preview · click to jump to message</span>
+                  <span className="activity-preview-body">{it.body || "No message preview"}</span>
+                </button>
               ) : null}
             </div>
             <button
