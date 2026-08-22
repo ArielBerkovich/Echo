@@ -194,7 +194,9 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
           <div className="forward-destination-heading">
             <div>
               <strong>Forward to</strong>
-              <span>{debouncedQuery ? "Search everyone" : selected.length ? `${selected.length} selected` : "Recent conversations"}</span>
+              {(debouncedQuery || selected.length > 0) && (
+                <span>{debouncedQuery ? "Search everyone" : `${selected.length} selected`}</span>
+              )}
             </div>
             <small>{selected.length}/{MAX_DESTINATIONS}</small>
           </div>
