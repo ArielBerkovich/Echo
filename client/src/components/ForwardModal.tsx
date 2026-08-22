@@ -165,7 +165,8 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
   }
 
   const authorName = message?.author?.displayName || "Unknown person";
-  const preview = String(message?.body || "").trim();
+  const hasImageAttachment = message?.attachments?.some((attachment) => attachment.isImage);
+  const preview = hasImageAttachment ? "Image attachment" : String(message?.body || "").trim();
   const disabled = !selected.length || status === "submitting";
   const noteChannel = useMemo(() => ({
     id: `forward-note-${message?.id || "message"}`,
