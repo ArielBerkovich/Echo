@@ -2,6 +2,7 @@ import { Marked } from "marked";
 import DOMPurify from "dompurify";
 import emojiData from "@emoji-mart/data";
 import { escapeHtml, highlightCode } from "./lib/syntaxHighlight.js";
+import { isEchoMessageLink } from "./lib/workspaceRoutes.js";
 
 // Syntax-highlight a fenced code block. Uses the declared language (```python)
 // when given/known, otherwise auto-detects across the common languages
@@ -300,11 +301,7 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
       let isMessageLink = false;
       if (href) {
         try {
-          const url = new URL(href, typeof window === "undefined" ? "http://localhost" : window.location.origin);
-          isMessageLink = url.searchParams.has("message")
-            && (/^\/channels\/[^/]+$/.test(url.pathname)
-              || /^\/dms\/[^/]+$/.test(url.pathname)
-              || /^\/home\/dms\/[^/]+$/.test(url.pathname));
+          isMessageLink = isEchoMessageLink(href);
         } catch {
           isMessageLink = false;
         }

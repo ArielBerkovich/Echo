@@ -413,6 +413,30 @@ test("serializes Tiptap content through the existing Markdown message contract",
   expect(messages.find((message) => message.body.includes(marker))?.body).toBe(expectedBody);
 });
 
+test("opens Echo message links in the current tab and external links in a new tab", async ({ page }) => {
+  const echoMessage = await openFreshGeneralMessage(
+    page,
+    "echo-link-menu",
+    `[Echo message](/channels/${fixture.generalChannel.id}?message=${fixture.messages.formatted.id})`
+  );
+  const echoOpenLink = echoMessage.message.locator(".body a");
+  await expect(echoOpenLink).not.toHaveAttribute("target", "_blank");
+  await echoOpenLink.click();
+  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.generalChannel.name}\\?message=${fixture.messages.formatted.id}`));
+
+  const externalMessage = await openFreshGeneralMessage(
+    page,
+    "external-link-menu",
+    "[External link](https://example.com/echo-external-link)"
+  );
+  const externalOpenLink = externalMessage.message.locator(".body a");
+  await expect(externalOpenLink).toHaveAttribute("target", "_blank");
+  const popupPromise = page.waitForEvent("popup");
+  await externalOpenLink.click();
+  const popup = await popupPromise;
+  expect(popup).toBeTruthy();
+});
+
 test("resets the composer placeholder after deleting the draft", async ({ page }) => {
   await page.goto("/");
   await channelRow(page, "general").click();

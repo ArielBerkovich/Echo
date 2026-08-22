@@ -816,7 +816,9 @@ export default function ChannelView({
       const el = document.querySelector(`.messages [data-mid="${jumpMessageId}"]`);
       if (!el) return false;
       const behavior = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
-      el.scrollIntoView({ block: "center", behavior });
+      // Align the top of the message with the viewport so long messages are
+      // readable from their beginning instead of being clipped around center.
+      el.scrollIntoView({ block: "start", behavior });
       setHighlightId(jumpMessageId);
       return true;
     };

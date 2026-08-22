@@ -8,7 +8,7 @@ describe("thread navigation", () => {
     assert.equal(hasThreadJumpTarget(null), false);
   });
 
-  it("disables bottom-following before centering a linked reply", () => {
+  it("disables bottom-following before aligning a linked reply at the top", () => {
     const calls = [];
     const target = {
       scrollIntoView(options) {
@@ -23,7 +23,7 @@ describe("thread navigation", () => {
     assert.equal(result, true);
     assert.deepEqual(calls, [
       { type: "stick", stickToBottom: false },
-      { type: "scroll", options: { block: "center", behavior: "auto" } },
+      { type: "scroll", options: { block: "start", behavior: "auto" } },
     ]);
   });
 });

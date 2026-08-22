@@ -1,6 +1,19 @@
 const STATIC_VIEWS = new Set(["browse", "activity", "saved", "dms", "settings"]);
 const SETTINGS_TABS = new Set(["account", "appearance", "workspace", "integrations", "desktop", "api"]);
 
+export function isEchoMessageLink(href, origin = typeof window === "undefined" ? "http://localhost" : window.location.origin) {
+  try {
+    const url = new URL(href, origin);
+    return url.origin === origin
+      && url.searchParams.has("message")
+      && (/^\/channels\/[^/]+$/.test(url.pathname)
+        || /^\/dms\/[^/]+$/.test(url.pathname)
+        || /^\/home\/dms\/[^/]+$/.test(url.pathname));
+  } catch {
+    return false;
+  }
+}
+
 export function workspacePath({ view = "home", convId = null, convName = null, convType = null, searchQuery = null, settingsTab = "account", messageId = null, threadId = null } = {}) {
   const messageQuery = messageId
     ? `?message=${encodeURIComponent(messageId)}${threadId ? `&thread=${encodeURIComponent(threadId)}` : ""}`

@@ -6,7 +6,7 @@ import Attachments from "./Attachments.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
 import { getSocket } from "../socket.js";
 import { formatTime } from "../lib/time.js";
-import { workspacePath } from "../lib/workspaceRoutes.js";
+import { isEchoMessageLink, workspacePath } from "../lib/workspaceRoutes.js";
 import {
   ShareIcon, EmojiAddIcon, ReplyIcon, BookmarkIcon, PencilIcon, TrashIcon, PinIcon, CopyIcon, MoreIcon, QuoteIcon,
 } from "./Icons.js";
@@ -271,6 +271,7 @@ function Message({
     const menuHeight = 94;
     setLinkAction({
       href: link.href,
+      sameTab: isEchoMessageLink(link.href),
       top: Math.min(Math.max(8, e.clientY), window.innerHeight - menuHeight - 8),
       left: Math.min(Math.max(8, e.clientX), window.innerWidth - menuWidth - 8),
     });
@@ -643,6 +644,8 @@ function Message({
               className="message-link-open"
               role="menuitem"
               href={linkAction.href}
+              target={linkAction.sameTab ? undefined : "_blank"}
+              rel={linkAction.sameTab ? undefined : "noopener noreferrer"}
               onClick={() => setLinkAction(null)}
             >
               <ShareIcon /> Open link

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { currentRoute, parseWorkspacePath, workspacePath } from "./workspaceRoutes.js";
+import { currentRoute, isEchoMessageLink, parseWorkspacePath, workspacePath } from "./workspaceRoutes.js";
 
 describe("workspace routes", () => {
   it("builds stable paths for workspace views and conversations", () => {
@@ -52,5 +52,12 @@ describe("workspace routes", () => {
       currentRoute({ pathname: "/settings", search: "", state: { workspacePath: "/dms/direct-1" } }),
       { overlay: null, view: "settings", settingsTab: "account", convId: null, convType: null, searchQuery: null }
     );
+  });
+
+  it("recognizes only same-origin Echo message links", () => {
+    assert.equal(isEchoMessageLink("/channels/channel-id?message=message-id", "https://echo.test"), true);
+    assert.equal(isEchoMessageLink("https://echo.test/dms/dm-id?message=message-id", "https://echo.test"), true);
+    assert.equal(isEchoMessageLink("https://example.com/channels/channel-id?message=message-id", "https://echo.test"), false);
+    assert.equal(isEchoMessageLink("/channels/channel-id", "https://echo.test"), false);
   });
 });
