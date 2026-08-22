@@ -730,7 +730,13 @@ export default function App() {
   async function handleLeaveChannel(channel, managerId) {
     // #general is the default channel — leaving it isn't allowed.
     if ((channel.name || "").toLowerCase() === "general") return;
-    await api.leaveChannel(channel.id, managerId);
+    const { channel: updated } = await api.leaveChannel(channel.id, managerId);
+    setStarredChannelIds((prev) => {
+      if (!prev.has(channel.id)) return prev;
+      const next = new Set(prev);
+      next.delete(channel.id);
+      return next;
+    });
     setHidden((prev) => persistHidden(new Set(prev).add(channel.id)));
     if (channel.type === "private") {
       api.getSaved().then(({ items }) => setSavedIds(new Set(items.map((item) => item.id)))).catch(() => {});
@@ -738,9 +744,7 @@ export default function App() {
     const { channels } = await api.listChannels();
     setChannels(channels);
     if (activeChannel?.id === channel.id) {
-      const fallback = channelFallbackAfterRemoval(channels);
-      setActiveChannel(fallback);
-      setView("home", fallback);
+      setActiveChannel(updated);
     }
   }
 
