@@ -13,7 +13,6 @@ export function isEchoMessageLink(href, origin = typeof window === "undefined" ?
     return false;
   }
 }
-
 export function workspacePath({ view = "home", convId = null, convName = null, convType = null, searchQuery = null, settingsTab = "account", messageId = null, threadId = null } = {}) {
   const messageQuery = messageId
     ? `?message=${encodeURIComponent(messageId)}${threadId ? `&thread=${encodeURIComponent(threadId)}` : ""}`
