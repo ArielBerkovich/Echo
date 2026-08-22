@@ -7834,7 +7834,7 @@ html[data-mode="dark"] .new-messages-button:hover {
 }
 /* Give emoji-only messages a little breathing room below the author row. */
 .message .body:has(.emoji--jumbo) {
-  margin-top: 6px;
+  margin-top: 12px;
 }
 .password-help-action {
   display: flex;
