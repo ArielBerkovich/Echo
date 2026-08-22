@@ -47,7 +47,6 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selected, setSelected] = useState([]);
   const [note, setNote] = useState("");
-  const [noteOpen, setNoteOpen] = useState(false);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState(null);
   const searchRef = useRef(null);
@@ -249,11 +248,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
           )}
         </section>
 
-        <div
-          className={`forward-note-field${noteOpen ? " is-open" : ""}`}
-          data-testid="forward-note-field"
-          onFocusCapture={() => setNoteOpen(true)}
-        >
+        <div className="forward-note-field" data-testid="forward-note-field">
           <div className="forward-note-label">Note <em>Optional</em></div>
           <Composer
             key={noteChannel.id}

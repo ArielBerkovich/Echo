@@ -7005,17 +7005,6 @@ html[data-mode="dark"] .day-divider-label {
   letter-spacing: 0;
   text-transform: none;
 }
-.forward-note-field:not(.is-open) .composer-toolbar,
-.forward-note-field:not(.is-open) .composer-actions {
-  display: none;
-}
-.forward-note-field:not(.is-open) .composer-editor {
-  min-height: 38px;
-  max-height: 38px;
-  overflow: hidden;
-  padding-top: 9px;
-  padding-bottom: 9px;
-}
 .forward-note-field textarea {
   width: 100%;
   resize: vertical;

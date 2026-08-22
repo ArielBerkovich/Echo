@@ -47,19 +47,16 @@ test.describe("forwarding", () => {
     await expect(modal.getByTestId("forward-source-context")).toContainText(fixture.messages.searchHit.author.displayName);
     await expect(modal.getByTestId("forward-note-field")).toContainText("Note");
     await expect(modal.getByTestId("composer-editor")).toHaveAttribute("data-placeholder", "Add context for the recipient…");
-    await expect(modal.getByTestId("forward-note-field")).not.toHaveClass(/is-open/);
-    await expect(modal.locator(".composer-toolbar")).toBeHidden();
+    await expect(modal.locator(".composer-toolbar")).toBeVisible();
     await expect(modal.locator(".forward-result-group-label")).toHaveText("Recent conversations");
     await expect(modal.getByTestId("forward-send-selected")).toBeDisabled();
   });
 
-  test("shows recent destinations before searching and expands the optional note on demand", async ({ page }) => {
+  test("shows recent destinations with the full note composer", async ({ page }) => {
     await openForwardDialog(page);
 
     const modal = forwardModal(page);
     await expect(destinationByLabel(modal, fixture.projectChannel.name)).toBeVisible();
-    await modal.getByTestId("composer-editor").click();
-    await expect(modal.getByTestId("forward-note-field")).toHaveClass(/is-open/);
     await expect(modal.getByTestId("composer-editor")).toHaveAttribute("data-placeholder", "Add context for the recipient…");
     await expect(modal.locator(".composer-toolbar")).toBeVisible();
   });
