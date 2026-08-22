@@ -46,8 +46,9 @@ test.describe("forwarding", () => {
     await expect(modal).toContainText(fixture.messages.searchHit.body);
     await expect(modal).toContainText("Original message");
     await expect(modal.getByTestId("forward-note-field")).toContainText("Note");
-    await expect(modal.getByTestId("forward-note-field").getByRole("button", { name: "Add a note" })).toHaveAttribute("aria-expanded", "false");
-    await expect(modal.getByTestId("composer-editor")).toHaveCount(0);
+    await expect(modal.getByTestId("composer-editor")).toHaveAttribute("data-placeholder", "Add context for the recipient…");
+    await expect(modal.getByTestId("forward-note-field")).not.toHaveClass(/is-open/);
+    await expect(modal.locator(".composer-toolbar")).toBeHidden();
     await expect(modal.locator(".forward-result-group-label")).toHaveText("Recent conversations");
     await expect(modal.getByTestId("forward-send-selected")).toBeDisabled();
   });
@@ -57,9 +58,10 @@ test.describe("forwarding", () => {
 
     const modal = forwardModal(page);
     await expect(destinationByLabel(modal, fixture.projectChannel.name)).toBeVisible();
-    await modal.getByRole("button", { name: "Add a note" }).click();
+    await modal.getByTestId("composer-editor").click();
+    await expect(modal.getByTestId("forward-note-field")).toHaveClass(/is-open/);
     await expect(modal.getByTestId("composer-editor")).toHaveAttribute("data-placeholder", "Add context for the recipient…");
-    await expect(modal.getByRole("button", { name: "Hide note" })).toHaveAttribute("aria-expanded", "true");
+    await expect(modal.locator(".composer-toolbar")).toBeVisible();
   });
 
   test("keeps Enter in the note editor from sending to its synthetic channel", async ({ page }) => {
@@ -67,7 +69,6 @@ test.describe("forwarding", () => {
 
     const modal = forwardModal(page);
     const note = "Forward context";
-    await modal.getByRole("button", { name: "Add a note" }).click();
     await modal.getByTestId("composer-editor").fill(note);
     await modal.getByTestId("composer-editor").press("Enter");
 
@@ -84,7 +85,6 @@ test.describe("forwarding", () => {
 
     const modal = forwardModal(page);
     const note = `שלום @${fixture.bob.username}`;
-    await modal.getByRole("button", { name: "Add a note" }).click();
     const noteEditor = modal.getByTestId("composer-editor");
     await noteEditor.fill(note);
     await expect(modal.locator(".mention-popup")).toBeVisible();
@@ -137,7 +137,6 @@ test.describe("forwarding", () => {
     const search = modal.getByTestId("forward-search");
     const note = `Forward note ${Date.now()}`;
     const sourceTitle = await page.getByTestId("channel-title").innerText();
-    await modal.getByRole("button", { name: "Add a note" }).click();
     await modal.getByTestId("composer-editor").fill(note);
 
     await search.fill(fixture.bob.displayName);

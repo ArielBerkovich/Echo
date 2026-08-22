@@ -270,35 +270,27 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
           )}
         </section>
 
-        <div className="forward-note-field" data-testid="forward-note-field">
-          <button
-            type="button"
-            className="forward-note-toggle"
-            aria-expanded={noteOpen}
-            aria-label={noteOpen ? "Hide note" : "Add a note"}
-            onClick={() => setNoteOpen((open) => !open)}
+        <div
+          className={`forward-note-field${noteOpen ? " is-open" : ""}`}
+          data-testid="forward-note-field"
+          onFocusCapture={() => setNoteOpen(true)}
+        >
+          <div className="forward-note-label">Note <em>Optional</em></div>
+          <Composer
+            key={noteChannel.id}
+            channel={noteChannel}
+            users={users}
+            channels={channels}
+            customEmojis={customEmojis}
+            onAddCustomEmoji={onAddCustomEmoji}
+            onDraftChange={(value) => setNote(value.slice(0, 2000))}
+            onError={setError}
+            placeholder="Add context for the recipient…"
+            showSchedule={false}
+            showSend={false}
+            showAttachments={false}
             disabled={status === "submitting"}
-          >
-            <span>Note <em>Optional</em></span>
-            <span aria-hidden="true">{noteOpen ? "−" : "+"}</span>
-          </button>
-          {noteOpen && (
-            <Composer
-              key={noteChannel.id}
-              channel={noteChannel}
-              users={users}
-              channels={channels}
-              customEmojis={customEmojis}
-              onAddCustomEmoji={onAddCustomEmoji}
-              onDraftChange={(value) => setNote(value.slice(0, 2000))}
-              onError={setError}
-              placeholder="Add context for the recipient…"
-              showSchedule={false}
-              showSend={false}
-              showAttachments={false}
-              disabled={status === "submitting"}
-            />
-          )}
+          />
         </div>
 
         <div className="forward-live-region" aria-live="polite">
