@@ -165,6 +165,15 @@ export default function ThreadPanel({
     prevReplyCountRef.current = replies.length;
 
     if (!initialScrolledRef.current) {
+      // A permalink to a reply must take over the initial position. The
+      // normal initial scroll-to-bottom would otherwise run first and can
+      // win again when the thread body resizes after the target is centered.
+      const jumpTargetId = openThreadJumpMessageId || jumpTargetRef.current;
+      if (jumpTargetId) {
+        initialScrolledRef.current = true;
+        stickToBottomRef.current = false;
+        return;
+      }
       bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
       initialScrolledRef.current = true;
       stickToBottomRef.current = true;
@@ -183,6 +192,9 @@ export default function ThreadPanel({
     const target = document.querySelector(`.thread-body [data-mid="${targetId}"]`);
     if (!target) return;
     jumpHandledRef.current = targetId;
+    // Prevent the ResizeObserver and live-reply handling from immediately
+    // restoring the thread to its bottom after this permalink scrolls.
+    stickToBottomRef.current = false;
     target.scrollIntoView({ block: "center", behavior: "auto" });
     setHighlightId(targetId);
   }, [openThreadJumpMessageId, replies, rootMsg.id]);
