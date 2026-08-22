@@ -2,6 +2,10 @@ import { expect, test } from "@playwright/test";
 import { dmRow, seedWorkspaceFixture } from "./helpers.js";
 
 let fixture: Awaited<ReturnType<typeof seedWorkspaceFixture>>;
+const ONE_BY_ONE_PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAEklEQVR42mP8/5+hHgAHggJ/PFvdcQAAAABJRU5ErkJggg==",
+  "base64"
+);
 
 test.beforeEach(async ({ page }) => {
   fixture = await seedWorkspaceFixture(page);
@@ -121,4 +125,21 @@ test("keeps the workspace full-screen and usable on a phone", async ({ page }) =
   await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Sign out?" })).toHaveCount(0);
+});
+
+test("zooms the profile image with a trackpad pinch gesture", async ({ page }) => {
+  await page.goto("/");
+  await page.getByTestId("rail-account").click();
+  const dialog = page.getByTestId("profile-picture-dialog");
+  const input = dialog.getByTestId("profile-picture-import-input");
+  await input.setInputFiles({ name: "profile.png", mimeType: "image/png", buffer: ONE_BY_ONE_PNG });
+
+  const crop = dialog.locator(".profile-picture-crop");
+  const image = crop.locator(".profile-picture-crop-image");
+  await expect(image).toBeVisible();
+  const initialWidth = await image.evaluate((element) => Number.parseFloat(getComputedStyle(element).width));
+
+  await crop.dispatchEvent("wheel", { deltaY: -100, ctrlKey: true });
+
+  await expect.poll(async () => image.evaluate((element) => Number.parseFloat(getComputedStyle(element).width))).toBeGreaterThan(initialWidth);
 });
