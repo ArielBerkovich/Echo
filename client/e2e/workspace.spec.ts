@@ -320,6 +320,48 @@ test("copies the raw markdown body from a message", async ({ page }) => {
   await expect.poll(() => page.evaluate(() => window.__copiedText)).toBe(fixture.messages.formatted.body);
 });
 
+test("copies a message permalink and reopens the same message", async ({ page }) => {
+  const { id, message } = await openFreshGeneralMessage(
+    page,
+    "copy-message-link",
+    `Copyable message link ${fixture.suffix}`
+  );
+
+  await message.hover();
+  await page.getByTestId(`message-${id}-actions`).getByTitle("More message actions").click();
+  await page.getByRole("menuitem", { name: "Copy message link" }).click();
+
+  const copied = await page.evaluate(() => window.__copiedText);
+  expect(copied).toContain(`/channels/${fixture.generalChannel.id}?message=${id}`);
+  await page.goto(copied);
+  await expect(messageById(page, id)).toBeInViewport();
+  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.generalChannel.name}\\?message=${id}`));
+});
+
+test("copies a thread reply permalink and reopens the reply in its thread", async ({ page }) => {
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  const root = messageById(page, fixture.messages.threadRoot.id);
+  await expect(root).toBeVisible();
+  await root.hover();
+  await page.getByTestId(`message-${fixture.messages.threadRoot.id}-actions`).getByTitle("Reply in thread").click();
+
+  const thread = page.getByTestId("thread-panel");
+  await expect(thread).toBeVisible();
+  const reply = messageById(page, fixture.messages.threadReply.id);
+  await expect(reply).toBeVisible();
+  await reply.hover();
+  await page.getByTestId(`message-${fixture.messages.threadReply.id}-actions`).getByTitle("More message actions").click();
+  await page.getByRole("menuitem", { name: "Copy message link" }).click();
+
+  const copied = await page.evaluate(() => window.__copiedText);
+  expect(copied).toContain(
+    `/channels/${fixture.projectChannel.id}?message=${fixture.messages.threadReply.id}&thread=${fixture.messages.threadRoot.id}`
+  );
+  await page.goto(copied);
+  await expect(page.getByTestId("thread-panel")).toBeVisible();
+  await expect(messageById(page, fixture.messages.threadReply.id)).toHaveClass(/flash/);
+});
+
 test("quotes a message into the composer", async ({ page }) => {
   await page.goto(`/dms/${fixture.bob.username}`);
   const message = messageById(page, fixture.messages.dmMessage.id);
