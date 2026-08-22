@@ -2485,6 +2485,7 @@ html[data-mode="dark"] .backend-connection-error {
   padding: 5px;
   border-radius: 7px;
   color: var(--muted);
+  background: transparent;
   opacity: 0;
   transition: opacity 120ms ease, color 120ms ease, background 120ms ease;
 }
@@ -2494,7 +2495,7 @@ html[data-mode="dark"] .backend-connection-error {
 }
 .activity-dismiss:hover {
   color: var(--danger, #dc2626);
-  background: var(--surface);
+  background: transparent;
 }
 .activity-item .content {
   min-width: 0;
@@ -3990,9 +3991,19 @@ html[data-mode="dark"] .day-divider-label {
   padding: 8px;
   border-radius: 8px;
   flex: none;
+  background: transparent;
+  transition: color 120ms ease, transform 120ms ease;
 }
 .saved-remove:hover {
-  background: var(--surface-2);
+  background: transparent;
+  transform: scale(1.08);
+}
+
+/* Feed actions stay visually light: color and focus provide feedback without
+   adding a grey button tile to the Activity or Saved rows. */
+.feed-icon-action:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 2px;
 }
 
 /* Floating message-options toolbar */
@@ -7520,9 +7531,11 @@ html[data-mode="dark"] .channel-header {
 }
 .activity-clear {
   color: var(--muted);
+  background: transparent;
 }
 .activity-clear:hover {
   color: var(--danger, #dc2626);
+  background: transparent;
 }
 .channel-view.has-side-panel .channel-header {
   gap: 8px;

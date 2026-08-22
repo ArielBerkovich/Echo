@@ -73,7 +73,7 @@ export default function SavedFeed({ user, users = [], customEmojis = [], onJump,
             </div>
             <button
               type="button"
-              className="saved-remove saved-active"
+              className="saved-remove saved-active feed-icon-action"
               data-testid={`saved-remove-${it.id}`}
               title="Remove from saved"
               aria-label="Remove from saved"

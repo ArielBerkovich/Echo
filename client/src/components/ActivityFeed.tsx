@@ -69,7 +69,7 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
       actions={items.length ? (
         <button
           type="button"
-          className="header-action activity-clear"
+          className="header-action activity-clear feed-icon-action"
           data-testid="activity-clear-all"
           onClick={() => setConfirmClear(true)}
           disabled={clearMutation.isPending}
@@ -115,7 +115,7 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
             </div>
             <button
               type="button"
-              className="activity-dismiss"
+              className="activity-dismiss feed-icon-action"
               data-testid={`activity-delete-${it.id}`}
               title="Delete activity"
               aria-label="Delete activity"
