@@ -2482,23 +2482,6 @@ html[data-mode="dark"] .backend-connection-error {
 .activity-notification {
   align-items: center;
   padding-block: 10px;
-  max-width: 760px;
-  margin-inline: auto;
-}
-.activity-system-icon {
-  flex: 0 0 36px;
-  width: 36px;
-  height: 36px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--muted);
-}
-.activity-system-icon.is-add {
-  color: var(--blue-500, #60a5fa);
-}
-.activity-system-icon.is-remove {
-  color: var(--danger, #f87171);
 }
 .activity-notification .content {
   display: flex;

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Trash2Icon, UserMinusIcon, UserPlusIcon } from "lucide-react";
+import { Trash2Icon } from "lucide-react";
 import { api } from "../api.js";
 import { getSocket } from "../socket.js";
 import { formatDateTime } from "../lib/time.js";
@@ -103,13 +103,7 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
             }}
           >
             {it.unread && <span className="activity-unread-dot" aria-label="Unread" />}
-            {it.kind === "channel_add" || it.kind === "channel_remove" ? (
-              <span className={`activity-system-icon ${it.kind === "channel_add" ? "is-add" : "is-remove"}`} aria-hidden="true">
-                {it.kind === "channel_add" ? <UserPlusIcon size={19} strokeWidth={1.9} /> : <UserMinusIcon size={19} strokeWidth={1.9} />}
-              </span>
-            ) : (
-              <Avatar name={it.author?.displayName || "?"} src={it.author?.avatarUrl} size={36} />
-            )}
+            <Avatar name={it.author?.displayName || "?"} src={it.author?.avatarUrl} size={36} />
             <div className="content">
               <FeedMessage
                 author={it.author?.displayName || "unknown"}
