@@ -4254,6 +4254,31 @@ html[data-mode="dark"] .day-divider-label {
   align-items: center;
   gap: 12px;
 }
+
+.message-sound-settings { display: grid; gap: 16px; }
+.message-sound-options { display: grid; gap: 10px; }
+.message-sound-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-raised);
+}
+.message-sound-option.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.message-sound-option label { display: flex; align-items: center; gap: 11px; min-width: 0; cursor: pointer; }
+.message-sound-option label > span { display: grid; gap: 3px; }
+.message-sound-option small { color: var(--text-muted); line-height: 1.35; }
+.message-sound-option input { accent-color: var(--accent); }
+.message-sound-option input:disabled + span { opacity: .55; }
+.message-sound-preview { flex: 0 0 auto; }
+
+@media (max-width: 520px) {
+  .message-sound-option { align-items: stretch; flex-direction: column; }
+  .message-sound-preview { align-self: flex-start; }
+}
 .notify-on {
   color: #16a34a;
   font-weight: 700;

@@ -20,6 +20,14 @@ import {
   requestNotifyPermission,
   showTestNotification,
 } from "../lib/notify.js";
+import {
+  MESSAGE_SOUNDS,
+  messageSoundsEnabled,
+  previewMessageSound,
+  selectedMessageSound,
+  setMessageSoundsEnabled,
+  setSelectedMessageSound,
+} from "../lib/messageSounds.js";
 
 const SETTINGS_TABS = [
   { id: "account", label: "Account", Icon: UserRoundIcon },
@@ -511,6 +519,11 @@ export default function SettingsModal({
               <p className="settings-hint">Get a desktop alert for direct messages, @mentions, and Starred messages when Echo isn't focused.</p>
               <NotificationToggle />
             </section>
+            <section className="settings-section">
+              <h3>Message sounds</h3>
+              <p className="settings-hint">Play a sound for every new message from another person or integration.</p>
+              <MessageSoundControls />
+            </section>
             {!user.isAdmin ? <ChangePassword /> : <AdminPasswordReset users={users} currentUserId={user.id} />}
           </>}
 
@@ -781,6 +794,53 @@ function NotificationToggle() {
         {on ? "Turn off notifications" : "Enable desktop notifications"}
       </button>
       {on && <span className="notify-on">On ✓</span>}
+    </div>
+  );
+}
+
+function MessageSoundControls() {
+  const [enabled, setEnabled] = useState(() => messageSoundsEnabled());
+  const [selected, setSelected] = useState(() => selectedMessageSound());
+
+  function toggleEnabled() {
+    const next = !enabled;
+    setMessageSoundsEnabled(next);
+    setEnabled(next);
+  }
+
+  function selectSound(soundId) {
+    if (!setSelectedMessageSound(soundId)) return;
+    setSelected(soundId);
+  }
+
+  return (
+    <div className="message-sound-settings">
+      <div className="notify-row">
+        <button type="button" className={enabled ? "btn-secondary" : "btn-primary"} data-testid="message-sound-toggle" onClick={toggleEnabled}>
+          {enabled ? "Turn off message sounds" : "Enable message sounds"}
+        </button>
+        {enabled && <span className="notify-on">On ✓</span>}
+      </div>
+      <div className="message-sound-options" role="radiogroup" aria-label="Message sound">
+        {MESSAGE_SOUNDS.map((sound) => (
+          <div key={sound.id} className={`message-sound-option${selected === sound.id ? " active" : ""}`}>
+            <label>
+              <input
+                type="radio"
+                name="message-sound"
+                value={sound.id}
+                checked={selected === sound.id}
+                disabled={!enabled}
+                onChange={() => selectSound(sound.id)}
+              />
+              <span><strong>{sound.label}</strong><small>{sound.description}</small></span>
+            </label>
+            <button type="button" className="btn-secondary message-sound-preview" data-testid={`message-sound-preview-${sound.id}`} onClick={() => previewMessageSound(sound.id)}>
+              Preview
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

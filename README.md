@@ -15,6 +15,7 @@
 - Public and private channels, direct messages, threads, mentions, reactions, pins, and saved messages.
 - Rich messages with Markdown, code blocks, emoji, uploads, forwarding, and scheduled delivery.
 - Search across messages, people, and channels, plus activity and saved-message views.
+- Selectable incoming-message sounds stored locally for fully offline playback.
 - API tokens, incoming webhooks, and an in-app OpenAPI reference.
 - Docker Compose and Helm deployments with MongoDB and S3-compatible storage.
 - Responsive web UI and Electron desktop apps with automatic updates.
@@ -103,6 +104,18 @@ Run checks with:
 (cd server && npm test && npm run build)
 (cd client && npm test && npm run build)
 ```
+
+### Message sounds
+
+Echo includes three selectable notification sounds: **Soft chime**, **Bright pop**, and **Warm bell**. They are bundled WAV files from OpenGameArt under the [CC0 1.0 Universal public-domain dedication](https://creativecommons.org/publicdomain/zero/1.0/), so playback works offline in both the web and desktop clients. Exact creators, source pages, original filenames, and download dates are recorded in `client/THIRD-PARTY-LICENSES/Message-Sounds-LICENSE.txt`.
+
+To add another sound:
+
+1. Add its identifier, label, and description to `MESSAGE_SOUNDS` in `client/src/lib/messageSounds.ts`.
+2. Add the audio file under `client/src/assets/sounds/` and reference it with `new URL(..., import.meta.url)` in the sound definition.
+3. Record the creator, exact source page, original filename, license, and download date in `client/THIRD-PARTY-LICENSES/`. Only include files whose individual source entry permits redistribution; CC0 is preferred.
+4. Preview it from **Settings → Account → Message sounds**, then verify incoming-message playback and the one-second cooldown.
+5. Run the client tests and both the normal web and Electron builds before rebuilding the client service.
 
 ## Deployment
 

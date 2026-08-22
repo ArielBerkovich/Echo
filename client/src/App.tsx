@@ -18,6 +18,7 @@ import { useConversationCache } from "./lib/useConversationCache.js";
 import { useWorkspaceQueries, workspaceKeys } from "./lib/useWorkspaceQueries.js";
 import { queryKeys } from "./lib/queryClient.js";
 import { currentRoute, workspacePath } from "./lib/workspaceRoutes.js";
+import { installMessageSoundUnlock } from "./lib/messageSounds.js";
 
 const HIDDEN_KEY = "echo.hiddenChannels";
 function loadHidden() {
@@ -100,6 +101,8 @@ export default function App() {
   const [toast, setToast] = useState(null); // transient notice (e.g. no access)
   const [connectionBannerVisible, setConnectionBannerVisible] = useState(false);
   const searchRef = useRef(null);
+
+  useEffect(() => installMessageSoundUnlock(), []);
 
   useEffect(() => {
     document.title = workspace?.name && workspace.name !== "Echo" ? `Echo · ${workspace.name}` : "Echo";

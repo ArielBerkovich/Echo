@@ -1,0 +1,31 @@
+Echo message sounds
+===================
+
+These sound effects are distributed under the CC0 1.0 Universal public-domain
+dedication: https://creativecommons.org/publicdomain/zero/1.0/
+
+Soft chime
+----------
+Original file: bell_ding1.wav
+Creator: PWL
+Source: https://opengameart.org/content/bell-dingschimes
+Source notice: "Releasing as public domain."
+Downloaded: 2026-09-01
+
+Bright pop
+----------
+Original file: pop1.wav
+Creator: EZduzziteh
+Source: https://opengameart.org/content/pop-sounds-0
+Downloaded: 2026-09-01
+
+Warm bell
+---------
+Original file: bell_ding4.wav
+Creator: PWL
+Source: https://opengameart.org/content/bell-dingschimes
+Source notice: "Releasing as public domain."
+Downloaded: 2026-09-01
+
+CC0 does not require attribution. This notice is retained for provenance and
+license traceability.
