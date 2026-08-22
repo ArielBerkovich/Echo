@@ -919,6 +919,7 @@ export default function ChannelView({
         <LightboxImage
           src={threadLightbox.src}
           name={threadLightbox.name}
+          sender={threadLightbox.sender}
           onClose={() => setThreadLightbox(null)}
         />
       )}
@@ -1243,7 +1244,7 @@ export default function ChannelView({
             onThreadRead={onThreadRead}
             onChannelUpdated={onChannelUpdated}
             canPost={canPost}
-            onOpenLightbox={(src, name) => setThreadLightbox({ src, name })}
+            onOpenLightbox={(src, name, sender) => setThreadLightbox({ src, name, sender })}
             openThreadJumpMessageId={threadJumpTargetId || openThreadJumpMessageId}
           />
         </>

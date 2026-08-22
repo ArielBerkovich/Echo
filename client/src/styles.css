@@ -52,6 +52,15 @@
   --tooltip-bg: var(--rail-bg);
   --tooltip-fg: var(--on-navy);
   --tooltip-border: color-mix(in srgb, var(--accent) 42%, var(--border));
+
+  /* Image viewer neutrals stay independent of the selected Echo accent theme. */
+  --lightbox-bg: #e5e5e5;
+  --lightbox-bar: var(--sidebar-bg);
+  --lightbox-border: color-mix(in srgb, var(--on-navy) 22%, transparent);
+  --lightbox-fg: var(--on-navy);
+  --lightbox-muted: var(--on-navy-muted);
+  --lightbox-hover: color-mix(in srgb, var(--accent) 22%, transparent);
+  --lightbox-shadow: 0 16px 44px rgba(0, 0, 0, 0.18);
 }
 
 /* Light/dark is a MODE, independent of the colour theme: the mode sets the
@@ -74,6 +83,8 @@ html[data-mode="dark"] {
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 10px 28px rgba(0, 0, 0, 0.55);
   --shadow-lg: 0 24px 56px rgba(0, 0, 0, 0.6);
+  --lightbox-bg: #242424;
+  --lightbox-shadow: 0 18px 52px rgba(0, 0, 0, 0.55);
 }
 
 .echo-tooltip {
@@ -5955,13 +5966,15 @@ html[data-mode="dark"] .day-divider-label {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.75);
+  background: var(--lightbox-bg);
   animation: fadeIn 0.15s ease;
 }
 .lightbox-panel .lightbox-content {
   position: relative;
-  max-width: 90%;
-  max-height: 90%;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5969,104 +5982,146 @@ html[data-mode="dark"] .day-divider-label {
 }
 .lightbox-panel .lightbox-img {
   max-width: 100%;
-  max-height: 80vh;
-  border-radius: 8px;
+  max-height: 100%;
+  border-radius: 10px;
   object-fit: contain;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+  box-shadow: var(--lightbox-shadow), 0 0 0 1px color-mix(in srgb, var(--lightbox-fg) 12%, transparent);
 }
-.lightbox-panel .lightbox-close {
-  position: absolute;
-  top: -16px;
-  right: -16px;
-}
-
 .lightbox-backdrop {
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--lightbox-bg);
   display: flex;
   align-items: center;
   justify-content: center;
   animation: fadeIn 0.15s ease;
 }
 .lightbox-content {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
-  max-width: 90vw;
-  max-height: 90vh;
+  gap: 14px;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
 }
 .lightbox-img-wrap {
-  position: relative;
+  position: absolute;
+  inset: 64px 24px 24px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  max-width: 90vw;
-  max-height: calc(90vh - 80px);
+  max-width: none;
+  max-height: none;
+  overflow: visible;
 }
 .lightbox-img {
-  max-width: 90vw;
-  max-height: calc(90vh - 80px);
-  border-radius: 8px;
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 10px;
   object-fit: contain;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+  box-shadow: var(--lightbox-shadow), 0 0 0 1px color-mix(in srgb, var(--lightbox-fg) 12%, transparent);
 }
 .lightbox-close {
-  position: absolute;
-  top: -16px;
-  right: -16px;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: rgba(40, 40, 40, 0.9);
-  color: #fff;
-  border: none;
-  font-size: 14px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  opacity: 0.85;
-  z-index: 2;
+  color: var(--lightbox-fg);
 }
-.lightbox-close:hover { opacity: 1; }
 
 .lightbox-toolbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--lightbox-bar);
+  border-bottom: 1px solid var(--lightbox-border);
+  padding: 12px 18px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  z-index: 2;
+}
+.lightbox-title {
+  min-width: 0;
+  max-width: min(420px, 50vw);
+  overflow: hidden;
+  color: var(--lightbox-fg);
+  font-size: 13px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lightbox-sender {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(30, 30, 30, 0.88);
-  border-radius: 10px;
-  padding: 8px 14px;
-  white-space: nowrap;
-  backdrop-filter: blur(6px);
-  flex-shrink: 0;
+  min-width: 0;
+}
+.lightbox-sender .avatar {
+  flex: 0 0 auto;
+}
+.lightbox-sender-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+.lightbox-sender-copy strong {
+  color: var(--lightbox-fg);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.lightbox-sender-copy .lightbox-title {
+  color: var(--lightbox-muted);
+  font-size: 11px;
+  max-width: min(360px, 46vw);
+}
+.lightbox-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+.lightbox-toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--lightbox-border);
+  flex: 0 0 auto;
+}
+.lb-zoom-control {
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 .lb-tool {
   background: none;
   border: none;
-  color: #fff;
+  color: var(--lightbox-fg);
   cursor: pointer;
   display: flex;
   align-items: center;
-  padding: 4px;
+  width: 32px;
+  height: 32px;
+  justify-content: center;
+  padding: 0;
   border-radius: 6px;
-  opacity: 0.8;
+  opacity: 0.72;
+  transition: background 0.15s ease, opacity 0.15s ease;
 }
-.lb-tool:hover { opacity: 1; background: rgba(255,255,255,0.1); }
-.lb-zoom-slider {
-  width: 120px;
-  accent-color: #fff;
-  cursor: pointer;
-}
+.lb-tool:hover:not(:disabled) { opacity: 1; background: var(--lightbox-hover); }
+.lb-tool:disabled { cursor: not-allowed; opacity: 0.3; }
 .lb-zoom-label {
-  color: #ccc;
+  color: var(--lightbox-muted);
   font-size: 12px;
-  min-width: 38px;
+  font-variant-numeric: tabular-nums;
+  min-width: 42px;
   text-align: right;
 }
 
@@ -8507,7 +8562,7 @@ html[data-mode="dark"] .new-messages-button:hover {
 /* Keep the picker usable when the composer is opened on a phone. The native
    picker is 435px tall on desktop, which can extend beneath browser chrome or
    the on-screen keyboard on a short viewport. */
-@media (max-width: 760px) {
+  @media (max-width: 760px) {
   .emoji-popup-wrap {
     left: 8px;
     right: 8px;
@@ -9407,9 +9462,10 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   }
 
   .lightbox-toolbar {
-    max-width: calc(100vw - 24px);
-    overflow-x: auto;
+    padding-inline: 12px;
   }
+  .lightbox-title { max-width: 55vw; }
+  .lightbox-sender-copy .lightbox-title { max-width: 42vw; }
 }
 
 @media (max-width: 420px) {
