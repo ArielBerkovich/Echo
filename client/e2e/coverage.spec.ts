@@ -242,9 +242,9 @@ test("forwards a message and jumps back to the original", async ({ page }) => {
   await message.hover();
   await page.getByTestId(/-actions$/).getByTitle("Forward message").click();
 
-  const forwardModal = page.locator(".modal").filter({ hasText: "Forward message" });
+  const forwardModal = page.getByRole("dialog");
   await forwardModal
-    .getByPlaceholder("Search channels and people")
+    .getByPlaceholder("Search people and channels")
     .fill(fixture.projectChannel.name);
   await forwardModal
     .locator(".forward-destination-row")
@@ -267,9 +267,9 @@ test("can view the same-channel original repeatedly after scrolling away", async
   await source.hover();
   await page.getByTestId(/-actions$/).getByTitle("Forward message").click();
 
-  const forwardModal = page.locator(".modal").filter({ hasText: "Forward message" });
+  const forwardModal = page.getByRole("dialog");
   await forwardModal
-    .getByPlaceholder("Search channels and people")
+    .getByPlaceholder("Search people and channels")
     .fill(fixture.generalChannel.name);
   await forwardModal
     .locator(".forward-destination-row")
@@ -732,9 +732,9 @@ test("opens the original thread when a thread reply is forwarded into the same c
   await reply.hover();
   await page.getByTestId(/-actions$/).getByTitle("Forward message").click();
 
-  const forwardModal = page.locator(".modal").filter({ hasText: "Forward message" });
+  const forwardModal = page.getByRole("dialog");
   await forwardModal
-    .getByPlaceholder("Search channels and people")
+    .getByPlaceholder("Search people and channels")
     .fill(fixture.projectChannel.name);
   await forwardModal
     .locator(".forward-destination-row")
