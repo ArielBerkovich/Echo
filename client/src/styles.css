@@ -14,6 +14,8 @@
   /* Bright accents */
   --blue-500: #2563eb;
   --blue-400: #3b82f6;
+  --link-color: #2563eb;
+  --link-hover: #1d4ed8;
   --cyan: #38bdf8;
   --beam: #fbbf24;
   --accent: var(--blue-500);
@@ -71,6 +73,8 @@ html[data-mode="light"] {
 }
 html[data-mode="dark"] {
   color-scheme: dark;
+  --link-color: #60a5fa;
+  --link-hover: #93c5fd;
   --bg: #080c16;
   --surface: #101726;
   --surface-2: #1a2236;
@@ -8919,14 +8923,12 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   color: var(--muted);
 }
 .markdown a {
-  color: var(--text);
-  text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--text) 48%, transparent);
-  text-underline-offset: 2px;
+  color: var(--link-color);
+  text-decoration: none;
 }
 .markdown a:hover {
-  color: var(--accent);
-  text-decoration-color: var(--accent);
+  color: var(--link-hover);
+  text-decoration: underline;
 }
 .markdown h1,
 .markdown h2,
