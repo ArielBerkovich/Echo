@@ -157,7 +157,7 @@ export default function App() {
   }
 
   function setView(nextView, channel = activeChannelRef.current, options = {}) {
-    const { messageId, ...navigationOptions } = options;
+    const { messageId, threadId, ...navigationOptions } = options;
     setViewState(nextView);
     navigate(
       workspacePath({
@@ -166,6 +166,7 @@ export default function App() {
         convName: conversationRouteName(channel),
         convType: channel?.type || null,
         messageId,
+        threadId,
       }),
       navigationOptions
     );
@@ -963,7 +964,7 @@ export default function App() {
     const channel = resolveJumpChannel({ channelId, channelType, channelName });
     if (channel) {
       setActiveChannel(channel);
-      setView("home", channel);
+      setView("home", channel, { messageId, threadId });
       opened = true;
     } else {
       let dm = dms.find((d) => d.id === channelId);
@@ -984,7 +985,7 @@ export default function App() {
       if (dm) {
         const activeDm = { id: dm.id, type: "dm", dmName: dm.withUser.displayName, dmUserId: dm.withUser.id };
         setActiveChannel(activeDm);
-        setView("dms", activeDm, { messageId });
+        setView("dms", activeDm, { messageId, threadId });
         opened = true;
       }
     }
@@ -1044,7 +1045,7 @@ export default function App() {
         const dm = dms.find((d) => d.id === channelId);
         if (channel) {
           setActiveChannel(channel);
-          setView("home", channel);
+          setView("home", channel, { messageId, threadId });
           setScrollToBottomTarget((prev) => ({ id: (prev?.id || 0) + 1, channelId }));
           if (threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
           return;
@@ -1057,7 +1058,7 @@ export default function App() {
             dmUserId: dm.withUser.id,
           };
           setActiveChannel(activeDm);
-          setView("dms", activeDm);
+          setView("dms", activeDm, { messageId, threadId });
           setScrollToBottomTarget((prev) => ({ id: (prev?.id || 0) + 1, channelId }));
           if (threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
           return;
@@ -1076,7 +1077,7 @@ export default function App() {
           dmUserId: conv.withUser.id,
         };
         setActiveChannel(activeDm);
-        setView("dms", activeDm);
+        setView("dms", activeDm, { messageId, threadId });
         if (threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
         else setJumpMessageId(messageId);
         return;
@@ -1088,7 +1089,7 @@ export default function App() {
         return setToast("You don't have access to the channel this message was forwarded from.");
       }
       setActiveChannel(channel);
-      setView("home", channel, { messageId });
+      setView("home", channel, { messageId, threadId });
       if (threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
       else setJumpMessageId(messageId);
     },
