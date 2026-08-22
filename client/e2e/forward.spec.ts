@@ -39,12 +39,12 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe("forwarding", () => {
-  test("previews the source and keeps the note optional", async ({ page }) => {
+  test("keeps compact source context and makes the note immediately available", async ({ page }) => {
     await openForwardDialog(page);
 
     const modal = forwardModal(page);
-    await expect(modal).toContainText(fixture.messages.searchHit.body);
-    await expect(modal).toContainText("Original message");
+    await expect(modal.getByTestId("forward-source-context")).toContainText(fixture.messages.searchHit.body);
+    await expect(modal.getByTestId("forward-source-context")).toContainText(fixture.messages.searchHit.author.displayName);
     await expect(modal.getByTestId("forward-note-field")).toContainText("Note");
     await expect(modal.getByTestId("composer-editor")).toHaveAttribute("data-placeholder", "Add context for the recipient…");
     await expect(modal.getByTestId("forward-note-field")).not.toHaveClass(/is-open/);

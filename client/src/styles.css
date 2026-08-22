@@ -6643,64 +6643,28 @@ html[data-mode="dark"] .day-divider-label {
   max-height: 96px;
   overflow: hidden;
 }
-.forward-source-card {
-  margin: 4px 0 16px;
-  padding: 13px 14px;
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
-  border-radius: 11px;
-  background: var(--surface-2);
-}
-.forward-source-header {
+.forward-source-context {
   display: flex;
   align-items: center;
-  gap: 9px;
-}
-.forward-source-header > svg {
-  width: 17px;
-  height: 17px;
-  margin-left: auto;
-  color: var(--accent);
-}
-.forward-source-author {
-  display: flex;
+  gap: 5px;
   min-width: 0;
-  flex-direction: column;
-  gap: 1px;
-}
-.forward-source-author strong {
-  color: var(--text);
-  font-size: 13px;
-}
-.forward-source-author span {
+  margin: 2px 0 14px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
+  line-height: 1.35;
 }
-.forward-source-card > p {
-  margin: 10px 0 0 43px;
-  max-height: 74px;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  overflow: hidden;
+.forward-source-context > span {
+  flex: none;
+}
+.forward-source-context strong {
   color: var(--text);
-  font-size: 13.5px;
-  line-height: 1.45;
-  white-space: pre-wrap;
-  word-break: break-word;
+  font-weight: 700;
 }
-.forward-attachment-strip {
-  display: flex;
-  gap: 6px;
-  margin: 10px 0 0 43px;
-}
-.forward-attachment-thumb {
-  width: 48px;
-  height: 48px;
-  object-fit: cover;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: var(--surface);
+.forward-source-context em {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .forward-search-picker {
   position: relative;

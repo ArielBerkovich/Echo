@@ -2,9 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Avatar from "./Avatar.js";
 import Modal, { ModalActions } from "./Modal.js";
 import Composer from "./Composer.js";
-import { Forward as ForwardIcon, XIcon } from "lucide-react";
-import { formatDateTime } from "../lib/time.js";
-import { useAuthUrl } from "../lib/useAuthUrl.js";
+import { XIcon } from "lucide-react";
 
 const MAX_DESTINATIONS = 10;
 const MAX_VISIBLE_SEARCH_RESULTS = 20;
@@ -40,12 +38,6 @@ function DestinationIcon({ destination }) {
     return <span className="forward-destination-icon" aria-hidden="true">{destination.icon}</span>;
   }
   return <Avatar name={destination.label} src={destination.avatarUrl} size={34} />;
-}
-
-function PreviewAttachment({ attachment }) {
-  const src = useAuthUrl(attachment?.url);
-  if (!src || !attachment?.isImage) return null;
-  return <img className="forward-attachment-thumb" src={src} alt={attachment.name || "Attachment"} />;
 }
 
 // Multi-destination forward flow. It keeps the source conversation mounted and
@@ -178,24 +170,11 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
   return (
     <Modal title="Forward message" className="forward-modal" onClose={onClose}>
       <div className="forward-dialog" data-testid="forward-modal">
-        <section className="forward-source-card" aria-label="Message to forward">
-          <div className="forward-source-header">
-            <Avatar name={authorName} src={message?.author?.avatarUrl} size={36} />
-            <div className="forward-source-author">
-              <strong>{authorName}</strong>
-              <span>Original message{message?.createdAt ? ` · ${formatDateTime(message.createdAt)}` : ""}</span>
-            </div>
-            <ForwardIcon aria-hidden="true" />
-          </div>
-          <p title={preview}>{preview || "(No text in this message)"}</p>
-          {message?.attachments?.some((attachment) => attachment.isImage) && (
-            <div className="forward-attachment-strip">
-              {message.attachments.filter((attachment) => attachment.isImage).slice(0, 3).map((attachment) => (
-                <PreviewAttachment key={attachment.key} attachment={attachment} />
-              ))}
-            </div>
-          )}
-        </section>
+        <div className="forward-source-context" data-testid="forward-source-context" title={preview}>
+          <Avatar name={authorName} src={message?.author?.avatarUrl} size={24} />
+          <span>Forwarding <strong>{authorName}</strong>’s message:</span>
+          <em>{preview || "(No text in this message)"}</em>
+        </div>
 
         <section className="forward-destination-section" aria-label="Forward destination">
           <div className="forward-destination-heading">
