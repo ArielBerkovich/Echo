@@ -268,6 +268,10 @@ test("shows and permanently dismisses every supported Activity kind", async ({ b
     } finally {
       await bobContext.close();
     }
+    const aliceRoot = messageById(page, reactionRoot.message.id);
+    await aliceRoot.hover();
+    await page.getByTestId(/-actions$/).getByTitle("Add reaction").click();
+    await page.getByRole("button", { name: "React with 👍" }).click();
     await expect(page.getByTestId("rail-badge-activity")).toHaveCount(activityBadgeBeforeReaction + 1);
     await expect.poll(async () => {
       const activity = await requestAsToken(page, fixture.alice.token, "/activity");
@@ -302,10 +306,12 @@ test("shows and permanently dismisses every supported Activity kind", async ({ b
       page.getByTestId("activity-item").filter({ hasText: removedChannel.channel.name }),
     ];
 
+    await expect(targets[3]).toContainText("Bob Builder");
+    await expect(targets[3]).toContainText("1 other");
     await targets[3].click();
     await expect(
       page.getByTestId(`message-${reactionRoot.message.id}`).locator(".reaction:not(.add)"),
-    ).toContainText("👍");
+    ).toHaveAttribute("title", /Bob Builder and you reacted with 👍/);
     await page.goto("/activity");
     await expect(page.getByTestId("activity-header")).toBeVisible();
     await expect.poll(async () => {

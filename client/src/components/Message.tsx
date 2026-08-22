@@ -462,6 +462,7 @@ function Message({
                       aria-pressed={mine}
                       onClick={() => onToggleReaction(r.emoji)}
                       data-tip={tip}
+                      title={tip}
                     >
                       <span className="reaction-emoji">
                         <EmojiValue value={r.emoji} emojiMap={emojiMap} />
