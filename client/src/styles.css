@@ -14,6 +14,8 @@
   /* Bright accents */
   --blue-500: #2563eb;
   --blue-400: #3b82f6;
+  --link-color: #2563eb;
+  --link-hover: #1d4ed8;
   --cyan: #38bdf8;
   --beam: #fbbf24;
   --accent: var(--blue-500);
@@ -71,6 +73,8 @@ html[data-mode="light"] {
 }
 html[data-mode="dark"] {
   color-scheme: dark;
+  --link-color: #60a5fa;
+  --link-hover: #93c5fd;
   --bg: #080c16;
   --surface: #101726;
   --surface-2: #1a2236;
@@ -7241,8 +7245,8 @@ html[data-mode="dark"] .day-divider-label {
 .reaction.mine {
   background: color-mix(in srgb, var(--blue-400) 14%, var(--surface));
   border-color: color-mix(in srgb, var(--blue-400) 72%, var(--border));
-  color: var(--blue-500);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--blue-400) 12%, transparent);
+  color: var(--link-color);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--link-color) 12%, transparent);
 }
 .reaction-emoji {
   display: inline-flex;
@@ -7828,6 +7832,10 @@ html[data-mode="dark"] .new-messages-button:hover {
      this just stops short RTL text from jumping to the far right of the column. */
   text-align: left;
 }
+/* Give emoji-only messages a little breathing room below the author row. */
+.message .body:has(.emoji--jumbo) {
+  margin-top: 10px;
+}
 .password-help-action {
   display: flex;
   flex-direction: column;
@@ -8109,7 +8117,9 @@ html[data-mode="dark"] .new-messages-button:hover {
 /* Live-rendered formatting inside the WYSIWYG editor */
 .composer-editor strong { font-weight: 700; }
 .composer-editor em { font-style: italic; }
-.composer-editor a { color: var(--blue-500); }
+.composer-editor a {
+  color: var(--link-color);
+}
 .composer-editor code {
   background: #eef2f9;
   color: #b4456f;
@@ -8763,6 +8773,7 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
   font-size: 1.35em;
   line-height: 1;
   vertical-align: -0.15em;
+  color: var(--link-color);
 }
 .markdown .emoji--jumbo {
   font-size: 2.4em;
@@ -8919,10 +8930,11 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   color: var(--muted);
 }
 .markdown a {
-  color: var(--blue-500);
+  color: var(--link-color);
   text-decoration: none;
 }
 .markdown a:hover {
+  color: var(--link-hover);
   text-decoration: underline;
 }
 .markdown h1,
