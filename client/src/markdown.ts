@@ -280,7 +280,7 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
 
     const html = marked.parse(preserveMarkdownBlankLines(source));
     // Sanitize: allow only the safe subset markdown produces. `class` is kept so
-    // our mention pills stay styled; links open safely in a new tab.
+    // our mention pills stay styled.
     const safe = DOMPurify.sanitize(html, {
       ALLOWED_TAGS: [
         "p", "br", "strong", "em", "del", "code", "pre", "blockquote",
@@ -292,13 +292,25 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
       // a narrow allowlist for markdown links and image sources.
       ALLOWED_URI_REGEXP: /^(?:(?:https?|blob):|(?:\.{0,2}\/)|#)/i,
     });
-    // Markdown links should never replace the conversation tab. Add the
-    // attributes after sanitizing so every generated link gets the same safe
-    // browser behavior, regardless of which marked token path produced it.
-    const linksOpenSafely = safe.replace(
-      /<a\b(?![^>]*\btarget=)/gi,
-      '<a target="_blank" rel="noopener noreferrer"'
-    );
+    // External Markdown links open safely in a new tab, while Echo message
+    // permalinks stay in the current tab so they can navigate to the target
+    // conversation and message in this app.
+    const linksOpenSafely = safe.replace(/<a\b([^>]*)>/gi, (tag, attrs) => {
+      const href = attrs.match(/\bhref="([^"]*)"/i)?.[1];
+      let isMessageLink = false;
+      if (href) {
+        try {
+          const url = new URL(href, typeof window === "undefined" ? "http://localhost" : window.location.origin);
+          isMessageLink = url.searchParams.has("message")
+            && (/^\/channels\/[^/]+$/.test(url.pathname)
+              || /^\/dms\/[^/]+$/.test(url.pathname)
+              || /^\/home\/dms\/[^/]+$/.test(url.pathname));
+        } catch {
+          isMessageLink = false;
+        }
+      }
+      return isMessageLink ? `<a${attrs}>` : `<a target="_blank" rel="noopener noreferrer"${attrs}>`;
+    });
     const rendered = wrapEmojis(linksOpenSafely).trim();
     if (renderedCache.size >= RENDER_CACHE_LIMIT) {
       renderedCache.delete(renderedCache.keys().next().value);

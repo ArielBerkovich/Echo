@@ -440,18 +440,30 @@ export default function App() {
     setShowSettings(false);
     setShowApiDocs(route.overlay === "api-docs");
     setSearchQuery(route.searchQuery);
+    const applyRouteMessageTarget = (channelId) => {
+      if (route.messageId && route.threadId) {
+        setJumpMessageId(null);
+        setOpenThreadReq({ channelId, rootId: route.threadId, messageId: route.messageId });
+      } else {
+        setOpenThreadReq(null);
+        setJumpMessageId(route.messageId || null);
+      }
+    };
 
     const currentChannel = activeChannelRef.current;
     const routeConversation = route.convId?.toLowerCase();
     const currentRouteName = conversationRouteName(currentChannel)?.toLowerCase();
     if (route.convId && (currentChannel?.id === route.convId || currentRouteName === routeConversation)) {
       setViewState(route.view);
+      applyRouteMessageTarget(currentChannel.id);
       if (currentChannel?.id === route.convId && currentRouteName) {
         navigate(workspacePath({
           view: route.view,
           convId: currentChannel.id,
           convName: conversationRouteName(currentChannel),
           convType: currentChannel.type,
+          messageId: route.messageId,
+          threadId: route.threadId,
         }), { replace: true });
       }
       return;
@@ -485,8 +497,16 @@ export default function App() {
           dmUserId: dm.withUser.id,
         };
         setActiveChannel(activeDm);
+        applyRouteMessageTarget(dm.id);
         if (route.convId === dm.id) {
-          navigate(workspacePath({ view: route.view, convId: dm.id, convName: dm.withUser.username, convType: "dm" }), { replace: true });
+          navigate(workspacePath({
+            view: route.view,
+            convId: dm.id,
+            convName: dm.withUser.username,
+            convType: "dm",
+            messageId: route.messageId,
+            threadId: route.threadId,
+          }), { replace: true });
         }
         return;
       }
@@ -503,8 +523,16 @@ export default function App() {
       if (channel && channel.type !== "dm") {
         setViewState("home");
         setActiveChannel(channel);
+        applyRouteMessageTarget(channel.id);
         if (route.convId === channel.id) {
-          navigate(workspacePath({ view: "home", convId: channel.id, convName: channel.name, convType: channel.type }), { replace: true });
+          navigate(workspacePath({
+            view: "home",
+            convId: channel.id,
+            convName: channel.name,
+            convType: channel.type,
+            messageId: route.messageId,
+            threadId: route.threadId,
+          }), { replace: true });
         }
         return;
       }

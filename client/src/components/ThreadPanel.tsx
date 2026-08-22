@@ -299,6 +299,9 @@ export default function ThreadPanel({
             <Fragment key={m.id}>
               <Message
                 m={m}
+                channelId={channel.id}
+                channelType={channel.type}
+                threadRootId={m.parentId ? root.id : null}
                 grouped={false}
                 highlighted={highlightId === m.id}
                 currentUserId={user.id}
