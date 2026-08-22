@@ -773,6 +773,53 @@ test("Activity jump wins over the channel unread-message anchor", async ({ page 
   await expect(page.locator(".new-divider")).not.toBeInViewport();
 });
 
+test("jumps to an old Activity message across several pages of general history", async ({ page }) => {
+  const stamp = uniqueSuffix("deep-activity");
+  await requestAsToken(page, fixture.alice.token, "/activity", { method: "DELETE" });
+  const target = await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body: `Deep Activity target ${stamp} @${fixture.alice.username}`,
+      externalKey: `deep-activity-target-${stamp}`,
+    },
+  });
+
+  await Promise.all(Array.from({ length: 75 }, (_, index) => requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body: `Read history ${stamp}-${index}`,
+      externalKey: `deep-activity-read-${stamp}-${index}`,
+    },
+  })));
+  await requestAsToken(page, fixture.alice.token, `/channels/${fixture.generalChannel.id}/read`, { method: "POST" });
+  await Promise.all(Array.from({ length: 125 }, (_, index) => requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body: `Unread history ${stamp}-${index}`,
+      externalKey: `deep-activity-unread-${stamp}-${index}`,
+    },
+  })));
+
+  await page.goto("/channels/general");
+  await expect(page.getByTestId("channel-title")).toContainText("general");
+  await page.route("**/api/channels/*/messages**", async (route) => {
+    const url = new URL(route.request().url());
+    if (!url.searchParams.has("around")) await new Promise((resolve) => setTimeout(resolve, 1_000));
+    await route.continue();
+  });
+  await railItem(page, "activity").click();
+  const activityItem = page.getByTestId("activity-item").filter({ hasText: `Deep Activity target ${stamp}` });
+  await expect(activityItem).toBeVisible({ timeout: 10_000 });
+  await activityItem.click();
+
+  await expect(page.getByTestId("channel-title")).toContainText("general");
+  await expect(messageById(page, target.message.id)).toBeInViewport();
+  await expect(page.locator(".new-divider")).not.toBeInViewport();
+});
+
 test("opens a public-channel mention even when the user is not in the channel", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText("#general", { exact: true })).toBeVisible();

@@ -205,6 +205,11 @@ export default function ChannelView({
       })
       .then(({ messages, lastReadAt }) => {
         if (cancelled) return;
+        // A targeted Activity jump may have replaced this request's window
+        // while the normal history fetch was still in flight. Do not let the
+        // older response put the newest-page window back over the target.
+        const protectedJumpId = jumpLoadingRef.current || jumpHandledRef.current;
+        if (protectedJumpId && !messages.some((message) => message.id === protectedJumpId)) return;
         setMessages(messages);
         onCacheMessages?.(channel.id, messages);
         // First message from someone else that arrived after we last read —
@@ -880,7 +885,6 @@ export default function ChannelView({
     }
 
     jumpHandledRef.current = jumpMessageId;
-    jumpLoadingRef.current = null;
     jumpingRef.current = true;
     if (scrollToTarget()) {
       requestAnimationFrame(() => stabilizeJump(1, true));
