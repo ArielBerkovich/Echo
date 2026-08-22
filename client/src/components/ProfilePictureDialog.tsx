@@ -72,6 +72,22 @@ export default function ProfilePictureDialog({ file = null, currentSrc = null, o
     setOffset((current) => limitOffset(current, baseScale * nextZoom));
   }
 
+  useEffect(() => {
+    if (!imageSize || saving) return undefined;
+    function handleZoomShortcut(event) {
+      if (!(event.ctrlKey || event.metaKey)) return;
+      if (["+", "=", "ArrowUp"].includes(event.key)) {
+        event.preventDefault();
+        changeZoomBy(0.1);
+      } else if (["-", "_", "ArrowDown"].includes(event.key)) {
+        event.preventDefault();
+        changeZoomBy(-0.1);
+      }
+    }
+    window.addEventListener("keydown", handleZoomShortcut);
+    return () => window.removeEventListener("keydown", handleZoomShortcut);
+  }, [imageSize, saving, zoom, baseScale]);
+
   function onPointerDown(event) {
     if (!imageSize || saving) return;
     event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -163,9 +179,7 @@ export default function ProfilePictureDialog({ file = null, currentSrc = null, o
       </button>
       <div className="profile-picture-zoom">
         <span>Zoom</span>
-        <button type="button" className="profile-picture-zoom-button" aria-label="Zoom out" onClick={() => changeZoomBy(-0.1)} disabled={!imageSize || saving || zoom <= 1}>−</button>
         <input type="range" min="0" max="100" step="1" value={Math.round((zoom - 1) * 50)} onChange={changeZoom} disabled={!imageSize || saving} />
-        <button type="button" className="profile-picture-zoom-button" aria-label="Zoom in" onClick={() => changeZoomBy(0.1)} disabled={!imageSize || saving || zoom >= 3}>+</button>
       </div>
       {error && <div className="error">{error}</div>}
       <ModalActions>

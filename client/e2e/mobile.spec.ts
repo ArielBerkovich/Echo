@@ -127,7 +127,7 @@ test("keeps the workspace full-screen and usable on a phone", async ({ page }) =
   await expect(page.getByRole("heading", { name: "Sign out?" })).toHaveCount(0);
 });
 
-test("zooms the profile image with explicit controls", async ({ page }) => {
+test("zooms the profile image with Ctrl-plus", async ({ page }) => {
   await page.goto("/");
   await page.getByTestId("rail-account").click();
   const dialog = page.getByTestId("profile-picture-dialog");
@@ -138,7 +138,7 @@ test("zooms the profile image with explicit controls", async ({ page }) => {
   await expect(image).toBeVisible();
   const initialWidth = await image.evaluate((element) => Number.parseFloat(getComputedStyle(element).width));
 
-  await dialog.getByRole("button", { name: "Zoom in" }).click();
+  await page.keyboard.press("Control+=");
 
   await expect.poll(async () => image.evaluate((element) => Number.parseFloat(getComputedStyle(element).width))).toBeGreaterThan(initialWidth);
 });

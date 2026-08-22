@@ -5142,25 +5142,6 @@ html[data-mode="dark"] .day-divider-label {
   background: transparent;
   cursor: pointer;
 }
-.profile-picture-zoom-button {
-  flex: 0 0 28px;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: transparent;
-  color: var(--text);
-  font-size: 18px;
-  line-height: 1;
-}
-.profile-picture-zoom-button:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-.profile-picture-zoom-button:disabled {
-  cursor: default;
-}
 .profile-picture-zoom input:disabled {
   cursor: default;
   opacity: 0.55;
