@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Trash2Icon } from "lucide-react";
 import { api } from "../api.js";
@@ -8,12 +8,16 @@ import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
 import { queryKeys } from "../lib/queryClient.js";
 import Avatar from "./Avatar.js";
 import ConfirmDialog from "./ConfirmDialog.js";
+import Message from "./Message.js";
 import { FeedContent, FeedLayout, FeedMessage } from "./FeedLayout.js";
 
 // Feed of messages that @mention the current user. Clicking jumps to the channel.
 export default function ActivityFeed({ user, users = [], customEmojis = [], onJump, onLoaded }) {
   const [confirmClear, setConfirmClear] = useState(false);
   const [previewId, setPreviewId] = useState(null);
+  const [previewMessages, setPreviewMessages] = useState([]);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const previewRequestRef = useRef(0);
   const queryClient = useQueryClient();
   const renderMarkdown = useMarkdownRenderer(users, user.username, customEmojis);
   const { data: items = [], isPending: loading } = useQuery({
@@ -69,7 +73,34 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
   }, [items]);
 
   async function selectActivity(item) {
-    setPreviewId((current) => (current === item.id ? null : item.id));
+    if (previewId === item.id) {
+      setPreviewId(null);
+      setPreviewMessages([]);
+      return;
+    }
+    const requestId = ++previewRequestRef.current;
+    setPreviewId(item.id);
+    setPreviewMessages([]);
+    setPreviewLoading(!!item.messageId);
+    if (item.messageId) {
+      try {
+        const result = item.threadId
+          ? await api.getThread(item.channelId, item.threadId)
+          : await api.getMessages(item.channelId, { around: item.messageId });
+        if (requestId === previewRequestRef.current) {
+          const messages = item.threadId
+            ? [result.parent, ...(result.replies || [])].filter(Boolean)
+            : (result.messages || []);
+          setPreviewMessages(messages);
+          setPreviewLoading(false);
+        }
+      } catch {
+        // Keep the Activity payload as the fallback preview.
+        if (requestId === previewRequestRef.current) setPreviewLoading(false);
+      }
+    } else {
+      setPreviewLoading(false);
+    }
     if (!item.unread) return;
     queryClient.setQueryData(queryKeys.activity, (current = []) =>
       current.map((entry) => (entry.id === item.id ? { ...entry, unread: false } : entry))
@@ -86,12 +117,86 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
     return () => socket.off("activity:bump", onBump);
   }, [queryClient]);
 
+  const selectedItem = items.find((item) => item.id === previewId) || null;
+  const fallbackMessage = selectedItem && {
+    id: selectedItem.messageId || selectedItem.id,
+    author: selectedItem.author,
+    body: selectedItem.body || "",
+    createdAt: selectedItem.createdAt,
+    reactions: selectedItem.reactions || [],
+    attachments: [],
+    parentId: selectedItem.threadId || null,
+  };
+  const messagesToPreview = previewMessages.length ? previewMessages : (fallbackMessage ? [fallbackMessage] : []);
+  const previewPane = selectedItem ? (
+    <aside className="activity-preview-pane" data-testid="activity-preview">
+      <header className="activity-preview-header">
+        <div>
+          <span className="activity-preview-kicker">
+            {selectedItem.threadId ? "Thread preview" : "Channel preview"}
+          </span>
+          <strong>#{selectedItem.channelName || "conversation"}</strong>
+        </div>
+        <button
+          type="button"
+          className="activity-preview-close"
+          aria-label="Close message preview"
+          onClick={() => { setPreviewId(null); setPreviewMessages([]); }}
+        >
+          ×
+        </button>
+      </header>
+      <div
+        className="activity-preview-chat"
+        role="button"
+        tabIndex={0}
+        onClick={() => onJump(selectedItem)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onJump(selectedItem);
+          }
+        }}
+        title="Click to jump to message"
+      >
+        {previewLoading ? <div className="activity-preview-loading">Loading conversation…</div> : null}
+        {messagesToPreview.map((message) => (
+          <div
+            key={message.id}
+            className={`activity-preview-message ${message.id === selectedItem.messageId ? "target" : ""}`}
+          >
+            <Message
+              m={message}
+              grouped={false}
+              highlighted={false}
+              currentUserId={user.id}
+              usersById={new Map(users.map((entry) => [entry.id, entry]))}
+              renderMarkdown={renderMarkdown}
+              emojiMap={new Map(customEmojis.map((entry) => [entry.name.toLowerCase(), entry.url]))}
+              canJumpToForward={false}
+              saved={false}
+              showActions={false}
+              canPin={false}
+              onToggleReaction={() => {}}
+              onReact={() => {}}
+              onToggleSave={() => {}}
+            />
+          </div>
+        ))}
+      </div>
+      <button type="button" className="activity-preview-jump" onClick={() => onJump(selectedItem)}>
+        Jump to message
+      </button>
+    </aside>
+  ) : null;
+
   return (
     <>
       <FeedLayout
       title="Activity"
       subtitle="Mentions, replies & broadcasts · last 30 days"
       testId="activity"
+      sidePanel={previewPane}
       actions={items.length ? (
         <>
           {items.some((item) => item.unread) ? (
@@ -129,7 +234,7 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
         {items.map((it) => (
           <div
             key={it.id}
-            className={`activity-item ${it.unread ? "unread" : ""}`}
+            className={`activity-item ${it.unread ? "unread" : ""} ${previewId === it.id ? "selected" : ""}`}
             data-testid="activity-item"
             data-activity-kind={it.kind}
             aria-expanded={previewId === it.id}
@@ -156,21 +261,6 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
                 <div className="activity-reactions" aria-label="Reactions">
                   {it.reactions.map((reaction) => `${reaction.emoji} ${reaction.count}`).join("  ")}
                 </div>
-              ) : null}
-              {previewId === it.id ? (
-                <button
-                  type="button"
-                  className="activity-preview"
-                  data-testid="activity-preview"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onJump(it);
-                  }}
-                  title="Jump to message"
-                >
-                  <span className="activity-preview-label">Preview · click to jump to message</span>
-                  <span className="activity-preview-body">{it.body || "No message preview"}</span>
-                </button>
               ) : null}
             </div>
             <button
