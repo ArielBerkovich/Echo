@@ -6577,8 +6577,8 @@ html[data-mode="dark"] .day-divider-label {
 /* Forward modal: source-message preview + channel icon */
 .modal.forward-modal {
   width: 520px;
-  height: min(760px, calc(100vh - 32px));
-  min-height: min(760px, calc(100vh - 32px));
+  height: min(640px, calc(100vh - 32px));
+  min-height: min(640px, calc(100vh - 32px));
   box-sizing: border-box;
   padding: 22px;
   position: relative;
@@ -6764,7 +6764,7 @@ html[data-mode="dark"] .day-divider-label {
 }
 .forward-destination-section {
   display: flex;
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
   flex-direction: column;
   overflow: hidden;
@@ -9910,9 +9910,9 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   .modal.forward-modal {
     width: 100%;
     max-width: none;
-    max-height: min(92dvh, 760px);
-    height: min(92dvh, 760px);
-    min-height: min(92dvh, 760px);
+    max-height: min(92dvh, 640px);
+    height: min(92dvh, 640px);
+    min-height: min(92dvh, 640px);
     margin: 0;
     padding: 18px 16px 14px;
     border-radius: 18px 18px 0 0;
