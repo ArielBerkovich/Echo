@@ -7023,6 +7023,41 @@ html[data-mode="dark"] .day-divider-label {
 .forward-note-field .composer-actions {
   padding-bottom: 5px;
 }
+.forward-note-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-align: left;
+  text-transform: uppercase;
+}
+.forward-note-toggle:hover,
+.forward-note-toggle:focus-visible {
+  color: var(--accent);
+}
+.forward-note-toggle > span:last-child {
+  color: var(--muted);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1;
+}
+.forward-note-toggle em {
+  margin-left: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
 .forward-note-field > span {
   display: flex;
   margin-bottom: 6px;

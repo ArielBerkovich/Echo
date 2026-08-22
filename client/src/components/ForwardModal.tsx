@@ -55,6 +55,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selected, setSelected] = useState([]);
   const [note, setNote] = useState("");
+  const [noteOpen, setNoteOpen] = useState(false);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState(null);
   const searchRef = useRef(null);
@@ -104,7 +105,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
           .filter((destination) => fuzzyMatch(destination, debouncedQuery))
           .sort((left, right) => matchRank(left, debouncedQuery) - matchRank(right, debouncedQuery))
           .slice(0, MAX_VISIBLE_SEARCH_RESULTS)
-      : [];
+      : destinationGroups.recent.slice(0, MAX_VISIBLE_SEARCH_RESULTS);
     if (debouncedQuery) {
       return [
         { label: "Channels", kind: "channel", items: source.filter((item) => item.kind === "channel") },
@@ -199,8 +200,8 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
         <section className="forward-destination-section" aria-label="Forward destination">
           <div className="forward-destination-heading">
             <div>
-              <strong>To</strong>
-              <span>{debouncedQuery ? "Search everyone" : selected.length ? `${selected.length} selected` : "Choose one or more destinations"}</span>
+              <strong>Forward to</strong>
+              <span>{debouncedQuery ? "Search everyone" : selected.length ? `${selected.length} selected` : "Recent conversations"}</span>
             </div>
             <small>{selected.length}/{MAX_DESTINATIONS}</small>
           </div>
@@ -228,11 +229,11 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
             placeholder="Search channels and people"
             autoFocus
             disabled={!destinationGroups.all.length || status === "submitting"}
-            aria-controls={debouncedQuery ? "forward-results" : undefined}
-            aria-activedescendant={debouncedQuery && flatResults[activeIndex] ? `forward-result-${destinationKey(flatResults[activeIndex])}` : undefined}
+            aria-controls={resultGroups.length ? "forward-results" : undefined}
+            aria-activedescendant={flatResults[activeIndex] ? `forward-result-${destinationKey(flatResults[activeIndex])}` : undefined}
           />
 
-          {debouncedQuery && (
+          {resultGroups.length > 0 && (
             <div className="forward-destination-list" id="forward-results" data-testid="forward-destination-list" role="listbox" aria-label="Forward destinations">
               {!resultGroups.length ? (
                 <div className="people-empty">No matches for “{debouncedQuery}”</div>
@@ -270,24 +271,34 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
         </section>
 
         <div className="forward-note-field" data-testid="forward-note-field">
-          <span className="forward-field-heading">
-            <span>Note <em>Optional</em></span>
-          </span>
-          <Composer
-            key={noteChannel.id}
-            channel={noteChannel}
-            users={users}
-            channels={channels}
-            customEmojis={customEmojis}
-            onAddCustomEmoji={onAddCustomEmoji}
-            onDraftChange={(value) => setNote(value.slice(0, 2000))}
-            onError={setError}
-            placeholder="Add context for the recipient…"
-            showSchedule={false}
-            showSend={false}
-            showAttachments={false}
+          <button
+            type="button"
+            className="forward-note-toggle"
+            aria-expanded={noteOpen}
+            aria-label={noteOpen ? "Hide note" : "Add a note"}
+            onClick={() => setNoteOpen((open) => !open)}
             disabled={status === "submitting"}
-          />
+          >
+            <span>Note <em>Optional</em></span>
+            <span aria-hidden="true">{noteOpen ? "−" : "+"}</span>
+          </button>
+          {noteOpen && (
+            <Composer
+              key={noteChannel.id}
+              channel={noteChannel}
+              users={users}
+              channels={channels}
+              customEmojis={customEmojis}
+              onAddCustomEmoji={onAddCustomEmoji}
+              onDraftChange={(value) => setNote(value.slice(0, 2000))}
+              onError={setError}
+              placeholder="Add context for the recipient…"
+              showSchedule={false}
+              showSend={false}
+              showAttachments={false}
+              disabled={status === "submitting"}
+            />
+          )}
         </div>
 
         <div className="forward-live-region" aria-live="polite">
