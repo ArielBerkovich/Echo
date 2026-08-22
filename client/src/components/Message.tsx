@@ -6,6 +6,7 @@ import Attachments from "./Attachments.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
 import { getSocket } from "../socket.js";
 import { formatTime } from "../lib/time.js";
+import { isEchoMessageLink, workspacePath } from "../lib/workspaceRoutes.js";
 import {
   ShareIcon, EmojiAddIcon, ReplyIcon, BookmarkIcon, PencilIcon, TrashIcon, PinIcon, CopyIcon, MoreIcon, QuoteIcon,
 } from "./Icons.js";
@@ -27,6 +28,9 @@ export function SystemMessage({ m }) {
 // behaviour is delegated to handlers passed by the parent.
 function Message({
   m,
+  channelId,
+  channelType,
+  threadRootId = null,
   grouped,
   highlighted,
   currentUserId,
@@ -73,6 +77,7 @@ function Message({
   const [surveyVoting, setSurveyVoting] = useState(false);
   const [surveyVoteError, setSurveyVoteError] = useState("");
   const [menuPosition, setMenuPosition] = useState(null);
+  const [linkAction, setLinkAction] = useState(null);
   const [actionsPosition, setActionsPosition] = useState(null);
   const messageRef = useRef(null);
   const actionsRef = useRef(null);
@@ -165,7 +170,13 @@ function Message({
       </div>
     </div>
   ) : (
-    <div className="body markdown" data-testid="message-body" dir="auto" onClick={onBodyClick}>
+    <div
+      className="body markdown"
+      data-testid="message-body"
+      dir="auto"
+      onClick={onBodyClick}
+      onContextMenu={onBodyContextMenu}
+    >
       <div dangerouslySetInnerHTML={{ __html: renderMarkdown(m.body) }} />
       {m.editedAt && <span className="edited-label" title={formatTime(m.editedAt)}> (edited)</span>}
     </div>
@@ -252,8 +263,21 @@ function Message({
     }
   }
 
-  async function copyMessage() {
-    const text = String(m.body || "");
+  function onBodyContextMenu(e) {
+    const link = e.target.closest?.("a[href]");
+    if (!link) return;
+    e.preventDefault();
+    const menuWidth = 176;
+    const menuHeight = 94;
+    setLinkAction({
+      href: link.href,
+      sameTab: isEchoMessageLink(link.href),
+      top: Math.min(Math.max(8, e.clientY), window.innerHeight - menuHeight - 8),
+      left: Math.min(Math.max(8, e.clientX), window.innerWidth - menuWidth - 8),
+    });
+  }
+
+  async function copyText(text, onSuccess = () => {}) {
     if (!text) return;
     try {
       if (navigator.clipboard?.writeText) {
@@ -269,11 +293,32 @@ function Message({
         document.execCommand("copy");
         document.body.removeChild(ta);
       }
+      onSuccess();
+    } catch {
+      // Clipboard access can be unavailable in insecure or embedded contexts.
+    }
+  }
+
+  function copyMessage() {
+    copyText(String(m.body || ""), () => {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1400);
-    } catch {
-      setCopied(false);
-    }
+    });
+  }
+
+  function copyMessageLink() {
+    const path = workspacePath({
+      view: channelType === "dm" ? "dms" : "home",
+      convId: channelId,
+      convType: channelType,
+      messageId: m.id,
+      threadId: threadRootId,
+    });
+    const url = new URL(path, window.location.origin);
+    copyText(url.toString(), () => {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1400);
+    });
   }
 
   async function issuePasswordAndReply() {
@@ -565,6 +610,51 @@ function Message({
         document.body
       )}
 
+      {linkAction && createPortal(
+        <>
+          <div className="menu-overlay" onMouseDown={() => setLinkAction(null)} />
+          <div
+            className="msg-menu menu-fixed"
+            data-testid={`message-${mid}-link-menu`}
+            role="menu"
+            aria-label="Link actions"
+            style={{
+              position: "fixed",
+              top: linkAction.top,
+              left: Math.max(8, linkAction.left),
+              right: "auto",
+            }}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              role="menuitem"
+              data-testid={`message-${mid}-copy-link`}
+              onClick={() => {
+                copyText(linkAction.href, () => {
+                  setCopied(true);
+                  window.setTimeout(() => setCopied(false), 1400);
+                });
+                setLinkAction(null);
+              }}
+            >
+              <CopyIcon /> Copy link
+            </button>
+            <a
+              className="message-link-open"
+              role="menuitem"
+              href={linkAction.href}
+              target={linkAction.sameTab ? undefined : "_blank"}
+              rel={linkAction.sameTab ? undefined : "noopener noreferrer"}
+              onClick={() => setLinkAction(null)}
+            >
+              <ShareIcon /> Open link
+            </a>
+          </div>
+        </>,
+        document.body
+      )}
+
       {menuOpen && createPortal(
         <>
           <div className="menu-overlay" onMouseDown={onCloseMenu} />
@@ -577,7 +667,10 @@ function Message({
             onMouseDown={(e) => e.stopPropagation()}
           >
             <button type="button" role="menuitem" data-testid={`message-${mid}-copy`} onClick={() => { copyMessage(); onCloseMenu(); }}>
-              <CopyIcon /> Copy message
+              <CopyIcon /> {copied ? "Copied" : "Copy message"}
+            </button>
+            <button type="button" role="menuitem" data-testid={`message-${mid}-copy-message-link`} onClick={() => { copyMessageLink(); onCloseMenu(); }}>
+              <CopyIcon /> {copied ? "Copied" : "Copy message link"}
             </button>
             <button
               type="button"
@@ -622,6 +715,9 @@ export default memo(Message, areMessagePropsEqual);
 function areMessagePropsEqual(prev, next) {
   return (
     prev.m === next.m &&
+    prev.channelId === next.channelId &&
+    prev.channelType === next.channelType &&
+    prev.threadRootId === next.threadRootId &&
     prev.grouped === next.grouped &&
     prev.highlighted === next.highlighted &&
     prev.currentUserId === next.currentUserId &&

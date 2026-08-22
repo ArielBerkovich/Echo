@@ -6,6 +6,7 @@ import ReactionPicker from "./ReactionPicker.js";
 import Message from "./Message.js";
 import Composer from "./Composer.js";
 import ConfirmDialog from "./ConfirmDialog.js";
+import { hasThreadJumpTarget, scrollThreadMessageIntoView } from "../lib/threadNavigation.js";
 
 // Right-hand thread view: the root message + its replies + a reply composer.
 // Reuses the full Message (reactions, forward, edit) and Composer (emoji, bold,
@@ -165,6 +166,15 @@ export default function ThreadPanel({
     prevReplyCountRef.current = replies.length;
 
     if (!initialScrolledRef.current) {
+      // A permalink to a reply must take over the initial position. The
+      // normal initial scroll-to-bottom would otherwise run first and can
+      // win again when the thread body resizes after the target is centered.
+      const jumpTargetId = openThreadJumpMessageId || jumpTargetRef.current;
+      if (hasThreadJumpTarget(jumpTargetId)) {
+        initialScrolledRef.current = true;
+        stickToBottomRef.current = false;
+        return;
+      }
       bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
       initialScrolledRef.current = true;
       stickToBottomRef.current = true;
@@ -183,7 +193,11 @@ export default function ThreadPanel({
     const target = document.querySelector(`.thread-body [data-mid="${targetId}"]`);
     if (!target) return;
     jumpHandledRef.current = targetId;
-    target.scrollIntoView({ block: "center", behavior: "auto" });
+    // Prevent the ResizeObserver and live-reply handling from immediately
+    // restoring the thread to its bottom after this permalink scrolls.
+    scrollThreadMessageIntoView(target, (stickToBottom) => {
+      stickToBottomRef.current = stickToBottom;
+    });
     setHighlightId(targetId);
   }, [openThreadJumpMessageId, replies, rootMsg.id]);
 
@@ -299,6 +313,9 @@ export default function ThreadPanel({
             <Fragment key={m.id}>
               <Message
                 m={m}
+                channelId={channel.id}
+                channelType={channel.type}
+                threadRootId={m.parentId ? root.id : null}
                 grouped={false}
                 highlighted={highlightId === m.id}
                 currentUserId={user.id}

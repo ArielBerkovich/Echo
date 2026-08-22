@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { currentRoute, parseWorkspacePath, workspacePath } from "./workspaceRoutes.js";
+import { currentRoute, isEchoMessageLink, parseWorkspacePath, workspacePath } from "./workspaceRoutes.js";
 
 describe("workspace routes", () => {
   it("builds stable paths for workspace views and conversations", () => {
@@ -12,6 +12,14 @@ describe("workspace routes", () => {
     assert.equal(workspacePath({ view: "home", convId: "legacy-id", convType: "public" }), "/channels/legacy-id");
     assert.equal(workspacePath({ view: "home", convId: "abc", convType: "public", messageId: "507f1f77bcf86cd799439011" }), "/channels/abc?message=507f1f77bcf86cd799439011");
     assert.equal(workspacePath({ view: "dms", convId: "id-2", convName: "alice", convType: "dm", messageId: "507f1f77bcf86cd799439011" }), "/dms/alice?message=507f1f77bcf86cd799439011");
+    assert.equal(
+      workspacePath({ view: "home", convId: "channel-id", convType: "public", messageId: "reply-id", threadId: "root-id" }),
+      "/channels/channel-id?message=reply-id&thread=root-id"
+    );
+    assert.equal(
+      workspacePath({ view: "dms", convId: "dm-id", convType: "dm", messageId: "message-id", threadId: "root-id" }),
+      "/dms/dm-id?message=message-id&thread=root-id"
+    );
     assert.equal(workspacePath({ searchQuery: "from:alice deployment" }), "/search?q=from%3Aalice%20deployment");
   });
 
@@ -23,6 +31,19 @@ describe("workspace routes", () => {
       overlay: null, view: "home", convId: "abc", convType: "channel", searchQuery: null,
     });
     assert.equal(parseWorkspacePath("/channels/abc", "?message=507f1f77bcf86cd799439011").messageId, "507f1f77bcf86cd799439011");
+    assert.deepEqual(
+      parseWorkspacePath("/channels/channel-id", "?message=reply-id&thread=root-id"),
+      {
+        overlay: null,
+        view: "home",
+        convId: "channel-id",
+        convType: "channel",
+        messageId: "reply-id",
+        threadId: "root-id",
+        searchQuery: null,
+      }
+    );
+    assert.equal(parseWorkspacePath("/dms/dm-id", "?message=message-id&thread=root-id").threadId, "root-id");
     assert.equal(parseWorkspacePath("/search", "?q=release%20notes").searchQuery, "release notes");
   });
 
@@ -31,5 +52,12 @@ describe("workspace routes", () => {
       currentRoute({ pathname: "/settings", search: "", state: { workspacePath: "/dms/direct-1" } }),
       { overlay: null, view: "settings", settingsTab: "account", convId: null, convType: null, searchQuery: null }
     );
+  });
+
+  it("recognizes only same-origin Echo message links", () => {
+    assert.equal(isEchoMessageLink("/channels/channel-id?message=message-id", "https://echo.test"), true);
+    assert.equal(isEchoMessageLink("https://echo.test/dms/dm-id?message=message-id", "https://echo.test"), true);
+    assert.equal(isEchoMessageLink("https://example.com/channels/channel-id?message=message-id", "https://echo.test"), false);
+    assert.equal(isEchoMessageLink("/channels/channel-id", "https://echo.test"), false);
   });
 });

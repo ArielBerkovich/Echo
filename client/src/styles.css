@@ -4067,19 +4067,30 @@ html[data-mode="dark"] .day-divider-label {
   top: auto;
   right: auto;
 }
-.msg-menu button {
+.msg-menu button,
+.msg-menu .message-link-open {
   display: flex;
   align-items: center;
   gap: 9px;
   width: 100%;
   padding: 8px 10px;
   border-radius: 7px;
+  border: 0;
   background: none;
   color: var(--text);
   font-size: 14px;
   text-align: left;
+  text-decoration: none;
 }
-.msg-menu button:hover {
+.msg-menu button svg,
+.msg-menu .message-link-open svg {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.7;
+}
+.msg-menu button:hover,
+.msg-menu .message-link-open:hover {
   background: var(--surface-2);
 }
 .msg-menu button.active {

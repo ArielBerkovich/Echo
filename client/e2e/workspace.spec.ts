@@ -315,9 +315,51 @@ test("copies the raw markdown body from a message", async ({ page }) => {
   const moreActions = page.getByTestId(`message-${id}-actions`).getByTitle("More message actions");
   await expect(moreActions).toBeVisible();
   await moreActions.click();
-  await page.getByRole("menuitem", { name: "Copy message" }).click();
+  await page.getByRole("menuitem", { name: "Copy message", exact: true }).click();
 
   await expect.poll(() => page.evaluate(() => window.__copiedText)).toBe(fixture.messages.formatted.body);
+});
+
+test("copies a message permalink and reopens the same message", async ({ page }) => {
+  const { id, message } = await openFreshGeneralMessage(
+    page,
+    "copy-message-link",
+    `Copyable message link ${fixture.suffix}`
+  );
+
+  await message.hover();
+  await page.getByTestId(`message-${id}-actions`).getByTitle("More message actions").click();
+  await page.getByRole("menuitem", { name: "Copy message link" }).click();
+
+  const copied = await page.evaluate(() => window.__copiedText);
+  expect(copied).toContain(`/channels/${fixture.generalChannel.id}?message=${id}`);
+  await page.goto(copied);
+  await expect(messageById(page, id)).toBeInViewport();
+  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.generalChannel.name}\\?message=${id}`));
+});
+
+test("copies a thread reply permalink and reopens the reply in its thread", async ({ page }) => {
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  const root = messageById(page, fixture.messages.threadRoot.id);
+  await expect(root).toBeVisible();
+  await root.hover();
+  await page.getByTestId(`message-${fixture.messages.threadRoot.id}-actions`).getByTitle("Reply in thread").click();
+
+  const thread = page.getByTestId("thread-panel");
+  await expect(thread).toBeVisible();
+  const reply = messageById(page, fixture.messages.threadReply.id);
+  await expect(reply).toBeVisible();
+  await reply.hover();
+  await page.getByTestId(`message-${fixture.messages.threadReply.id}-actions`).getByTitle("More message actions").click();
+  await page.getByRole("menuitem", { name: "Copy message link" }).click();
+
+  const copied = await page.evaluate(() => window.__copiedText);
+  expect(copied).toContain(
+    `/channels/${fixture.projectChannel.id}?message=${fixture.messages.threadReply.id}&thread=${fixture.messages.threadRoot.id}`
+  );
+  await page.goto(copied);
+  await expect(page.getByTestId("thread-panel")).toBeVisible();
+  await expect(messageById(page, fixture.messages.threadReply.id)).toHaveClass(/flash/);
 });
 
 test("quotes a message into the composer", async ({ page }) => {
@@ -413,6 +455,30 @@ test("serializes Tiptap content through the existing Markdown message contract",
   expect(messages.find((message) => message.body.includes(marker))?.body).toBe(expectedBody);
 });
 
+test("opens Echo message links in the current tab and external links in a new tab", async ({ page }) => {
+  const echoMessage = await openFreshGeneralMessage(
+    page,
+    "echo-link-menu",
+    `[Echo message](/channels/${fixture.generalChannel.id}?message=${fixture.messages.formatted.id})`
+  );
+  const echoOpenLink = echoMessage.message.locator(".body a");
+  await expect(echoOpenLink).not.toHaveAttribute("target", "_blank");
+  await echoOpenLink.click();
+  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.generalChannel.name}\\?message=${fixture.messages.formatted.id}`));
+
+  const externalMessage = await openFreshGeneralMessage(
+    page,
+    "external-link-menu",
+    "[External link](https://example.com/echo-external-link)"
+  );
+  const externalOpenLink = externalMessage.message.locator(".body a");
+  await expect(externalOpenLink).toHaveAttribute("target", "_blank");
+  const popupPromise = page.waitForEvent("popup");
+  await externalOpenLink.click();
+  const popup = await popupPromise;
+  expect(popup).toBeTruthy();
+});
+
 test("resets the composer placeholder after deleting the draft", async ({ page }) => {
   await page.goto("/");
   await channelRow(page, "general").click();
@@ -460,7 +526,7 @@ test("keeps copy-and-paste message paragraphs flush with the composer", async ({
   const { message: source } = await openFreshGeneralMessage(page, "copy-paste", body);
   await source.hover();
   await page.getByTestId(/-actions$/).getByTitle("More message actions").click();
-  await page.getByRole("menuitem", { name: "Copy message" }).click();
+  await page.getByRole("menuitem", { name: "Copy message", exact: true }).click();
 
   const editor = page.getByTestId("composer-editor");
   await editor.focus();

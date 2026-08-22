@@ -389,7 +389,9 @@ test("supports a core messaging, attachment, search, and settings flow on mobile
   await page.getByTestId("composer-send").click();
   await expect(messageByText(page, body)).toBeVisible();
   await expect(messageByText(page, body).locator('img[alt="mobile.png"]')).toBeVisible();
+  await expect(page.getByTestId("composer-editor")).toBeFocused();
 
+  await expect(page.getByTestId("search-input")).toBeVisible();
   await page.getByTestId("search-input").fill(body);
   await page.getByTestId("search-input").press("Enter");
   await expect(page.getByTestId("search-result").filter({ hasText: body })).toBeVisible();
