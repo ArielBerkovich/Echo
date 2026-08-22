@@ -645,7 +645,7 @@ function Message({
               href={linkAction.href}
               onClick={() => setLinkAction(null)}
             >
-              <ArrowUpRight /> Open link
+              <ShareIcon /> Open link
             </a>
           </div>
         </>,

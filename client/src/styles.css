@@ -4082,6 +4082,13 @@ html[data-mode="dark"] .day-divider-label {
   text-align: left;
   text-decoration: none;
 }
+.msg-menu button svg,
+.msg-menu .message-link-open svg {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.7;
+}
 .msg-menu button:hover,
 .msg-menu .message-link-open:hover {
   background: var(--surface-2);
