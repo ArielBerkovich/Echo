@@ -315,7 +315,7 @@ test("copies the raw markdown body from a message", async ({ page }) => {
   const moreActions = page.getByTestId(`message-${id}-actions`).getByTitle("More message actions");
   await expect(moreActions).toBeVisible();
   await moreActions.click();
-  await page.getByRole("menuitem", { name: "Copy message" }).click();
+  await page.getByRole("menuitem", { name: "Copy message", exact: true }).click();
 
   await expect.poll(() => page.evaluate(() => window.__copiedText)).toBe(fixture.messages.formatted.body);
 });
@@ -526,7 +526,7 @@ test("keeps copy-and-paste message paragraphs flush with the composer", async ({
   const { message: source } = await openFreshGeneralMessage(page, "copy-paste", body);
   await source.hover();
   await page.getByTestId(/-actions$/).getByTitle("More message actions").click();
-  await page.getByRole("menuitem", { name: "Copy message" }).click();
+  await page.getByRole("menuitem", { name: "Copy message", exact: true }).click();
 
   const editor = page.getByTestId("composer-editor");
   await editor.focus();

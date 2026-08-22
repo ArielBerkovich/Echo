@@ -45,10 +45,10 @@ test("keeps a message active while hovering and opening its action menu", async 
   await expect(message).toHaveClass(/menu-open/);
 
   const menu = page.getByRole("menu", { name: "Message actions" });
-  await expect(menu.getByRole("menuitem", { name: "Copy message" })).toBeVisible();
+  await expect(menu.getByRole("menuitem", { name: "Copy message", exact: true })).toBeVisible();
   await expect(menu.getByRole("menuitem", { name: "Quote message" })).toHaveCount(0);
   await expect(menu.getByRole("menuitem", { name: "Forward message" })).toHaveCount(0);
-  await menu.getByRole("menuitem", { name: "Copy message" }).hover();
+  await menu.getByRole("menuitem", { name: "Copy message", exact: true }).hover();
   await expect(message).toHaveClass(/menu-open/);
 });
 
