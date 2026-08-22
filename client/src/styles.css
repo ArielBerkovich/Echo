@@ -2509,6 +2509,11 @@ html[data-mode="dark"] .backend-connection-error {
   line-height: 1.5;
   color: #1e293b;
 }
+.activity-reactions {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
 /* Unread (not-yet-interacted-with) activity stands out in bold with a dot. */
 .activity-item {
   position: relative;

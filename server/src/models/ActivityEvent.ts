@@ -18,7 +18,5 @@ const activityEventSchema = new mongoose.Schema({
 
 activityEventSchema.index({ recipient: 1, createdAt: -1 });
 activityEventSchema.index({ sourceKey: 1 }, { unique: true, sparse: true });
-// One event per (recipient, actor, message, emoji) — re-reacting just refreshes it.
-activityEventSchema.index({ recipient: 1, actor: 1, message: 1, emoji: 1 }, { unique: true });
 
 export const ActivityEvent = mongoose.model("ActivityEvent", activityEventSchema);

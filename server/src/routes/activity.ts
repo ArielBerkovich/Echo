@@ -118,6 +118,12 @@ activityRouter.get("/", async (req, res) => {
       author: event.actor?.toPublicJSON?.() || null,
       body: isMessageActivity ? message.body : "",
       emoji: event.emoji,
+      reactions: isMessageActivity
+        ? (message.reactions || []).map((reaction) => ({
+          emoji: reaction.emoji,
+          count: reaction.users?.length || 0,
+        }))
+        : [],
       createdAt: event.createdAt,
       kind: event.type,
       unread: !event.readAt,

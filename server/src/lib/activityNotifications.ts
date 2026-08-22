@@ -92,3 +92,35 @@ export async function backfillMessageActivity() {
     await recordMessageActivity(message, channel, { readAtByRecipient });
   }
 }
+
+// Collapse legacy per-reaction records into Slack-style one-per-message
+// notifications. The newest actor/emoji remains as the notification preview;
+// the message itself is the source of truth for all current reactions.
+export async function coalesceReactionActivity() {
+  const events = await ActivityEvent.find({ type: "reaction" })
+    .sort({ createdAt: -1 })
+    .lean();
+  const groups = new Map();
+  for (const event of events) {
+    if (!event.message) continue;
+    const key = `${event.recipient}:${event.message}`;
+    const group = groups.get(key) || [];
+    group.push(event);
+    groups.set(key, group);
+  }
+  for (const group of groups.values()) {
+    const keep = group.find((event) => event.sourceKey?.startsWith("reaction:")) || group[0];
+    const unread = group.some((event) => !event.readAt);
+    await ActivityEvent.updateOne(
+      { _id: keep._id },
+      {
+        $set: {
+          sourceKey: `reaction:${keep.message}:${keep.recipient}`,
+          readAt: unread ? null : keep.readAt,
+        },
+      },
+    );
+    const removeIds = group.filter((event) => !event._id.equals(keep._id)).map((event) => event._id);
+    if (removeIds.length) await ActivityEvent.deleteMany({ _id: { $in: removeIds } });
+  }
+}

@@ -197,11 +197,19 @@ export function attachSocket(httpServer) {
         // Reacting to someone else's message is activity for its author.
         if (added && message.kind !== "system" && !message.author.equals(uid)) {
           await ActivityEvent.updateOne(
-            { recipient: message.author, actor: uid, message: message._id, emoji },
+            { sourceKey: `reaction:${message._id}:${message.author}` },
             {
-              $set: { channel: message.channel, createdAt: new Date(), readAt: null },
+              $set: {
+                recipient: message.author,
+                actor: uid,
+                message: message._id,
+                emoji,
+                channel: message.channel,
+                createdAt: new Date(),
+                readAt: null,
+              },
               $setOnInsert: {
-                sourceKey: `reaction:${message._id}:${uid}:${emoji}`,
+                type: "reaction",
               },
             },
             { upsert: true }

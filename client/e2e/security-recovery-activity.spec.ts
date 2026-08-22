@@ -281,6 +281,12 @@ test("shows and permanently dismisses every supported Activity kind", async ({ b
       const activity = await requestAsToken(page, fixture.alice.token, "/activity");
       return expectedKinds.filter((kind) => activity.items.some((item) => item.kind === kind)).sort();
     }).toEqual([...expectedKinds].sort());
+    await expect.poll(async () => {
+      const activity = await requestAsToken(page, fixture.alice.token, "/activity");
+      return activity.items.filter(
+        (item) => item.kind === "reaction" && item.messageId === reactionRoot.message.id,
+      ).length;
+    }).toBe(1);
 
     await page.goto("/");
     await expect(page.getByTestId("rail-activity")).toBeVisible();

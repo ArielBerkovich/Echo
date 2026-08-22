@@ -1,10 +1,11 @@
 import mongoose from "mongoose";
 import { connectDb } from "./db.js";
-import { backfillMessageActivity } from "./lib/activityNotifications.js";
+import { backfillMessageActivity, coalesceReactionActivity } from "./lib/activityNotifications.js";
 
 async function main() {
   await connectDb();
   await backfillMessageActivity();
+  await coalesceReactionActivity();
   await mongoose.connection.close();
 }
 

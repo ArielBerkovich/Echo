@@ -141,6 +141,11 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
                 body={it.body}
                 renderMarkdown={renderMarkdown}
               />
+              {it.kind === "reaction" && it.reactions?.length ? (
+                <div className="activity-reactions" aria-label="Reactions">
+                  {it.reactions.map((reaction) => `${reaction.emoji} ${reaction.count}`).join("  ")}
+                </div>
+              ) : null}
             </div>
             <button
               type="button"
@@ -180,7 +185,7 @@ function kindLabel(it) {
   if (it.kind === "dm") return "sent you a message";
   if (it.kind === "broadcast") return "📣 notified the channel";
   if (it.kind === "reply") return "replied in a thread";
-  if (it.kind === "reaction") return `reacted ${it.emoji || ""} to your message`;
+  if (it.kind === "reaction") return "reacted to your message";
   return "mentioned you";
 }
 
