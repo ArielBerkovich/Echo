@@ -8919,11 +8919,14 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   color: var(--muted);
 }
 .markdown a {
-  color: var(--blue-500);
-  text-decoration: none;
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--text) 48%, transparent);
+  text-underline-offset: 2px;
 }
 .markdown a:hover {
-  text-decoration: underline;
+  color: var(--accent);
+  text-decoration-color: var(--accent);
 }
 .markdown h1,
 .markdown h2,
