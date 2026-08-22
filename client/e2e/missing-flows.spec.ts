@@ -272,12 +272,35 @@ test("opens, zooms, and downloads authenticated attachments", async ({ page }) =
   await row.getByTestId(`image-attachment-${image.key}`).click();
   const lightbox = page.getByTestId("attachment-lightbox");
   await expect(lightbox).toBeVisible();
-  await lightbox.getByTestId("lightbox-zoom").fill("3");
-  await expect(lightbox.getByTestId("lightbox-zoom-label")).toHaveText("300%");
+  await expect(lightbox).toContainText(fixture.alice.displayName);
+  await expect(lightbox).toContainText("lightbox.png");
+
+  const zoomIn = lightbox.getByRole("button", { name: "Zoom in" });
+  const zoomOut = lightbox.getByRole("button", { name: "Zoom out" });
+  await expect(zoomOut).toBeDisabled();
+
+  await lightbox.locator(".lightbox-img").click();
+  await expect(lightbox.getByTestId("lightbox-zoom-label")).toHaveText("250%");
+  await lightbox.locator(".lightbox-img").click();
+  await expect(lightbox.getByTestId("lightbox-zoom-label")).toHaveText("100%");
+
+  await zoomIn.click();
+  await expect(lightbox.getByTestId("lightbox-zoom-label")).toHaveText("150%");
+  await page.keyboard.down("Control");
+  await page.keyboard.press("=");
+  await page.keyboard.up("Control");
+  await expect(lightbox.getByTestId("lightbox-zoom-label")).toHaveText("200%");
+  for (let i = 0; i < 4; i += 1) await zoomIn.click();
+  await expect(lightbox.getByTestId("lightbox-zoom-label")).toHaveText("400%");
+  await expect(zoomIn).toBeDisabled();
+  await zoomOut.click();
+  await expect(lightbox.getByTestId("lightbox-zoom-label")).toHaveText("350%");
+
   const imageDownload = page.waitForEvent("download");
   await lightbox.getByTestId("lightbox-download").click();
   await expect((await imageDownload).suggestedFilename()).toBe("lightbox.png");
-  await lightbox.getByRole("button", { name: "Close" }).click();
+  await page.keyboard.press("Escape");
+  await expect(lightbox).not.toBeVisible();
 
   const fileDownload = page.waitForEvent("download");
   await row.getByTestId(`file-attachment-${file.key}`).click();

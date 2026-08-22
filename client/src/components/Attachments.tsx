@@ -1,20 +1,21 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { DownloadIcon, ExpandIcon, FileIcon } from "lucide-react";
+import { DownloadIcon, ExpandIcon, FileIcon, XIcon, ZoomInIcon, ZoomOutIcon } from "lucide-react";
 import { formatSize } from "../lib/format.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
 import { highlightFile, languageForFilename } from "../lib/syntaxHighlight.js";
+import Avatar from "./Avatar.js";
 
 // Renders a message's attachments: images inline, everything else as a
 // downloadable file chip. Pass onOpenLightbox(src, name) to delegate image
 // opening to a parent (e.g. a side-panel lightbox when a thread is open).
-export default function Attachments({ attachments = [], onOpenLightbox }) {
+export default function Attachments({ attachments = [], onOpenLightbox, sender }) {
   if (!attachments.length) return null;
   return (
     <div className="attachments">
       {attachments.map((a) =>
         a.isImage
-          ? <ImageAttachment key={a.key} a={a} onOpenLightbox={onOpenLightbox} />
+          ? <ImageAttachment key={a.key} a={a} onOpenLightbox={onOpenLightbox} sender={sender} />
           : isTextAttachment(a)
             ? <TextAttachment key={a.key} a={a} />
           : <FileAttachment key={a.key} a={a} />
@@ -31,17 +32,33 @@ function isTextAttachment(a) {
 }
 
 const MIN_SCALE = 1;
-const MAX_SCALE = 8;
+const MAX_SCALE = 4;
 
-function Lightbox({ src, name, onClose, inline = false }) {
+function Lightbox({ src, name, sender, onClose, inline = false }) {
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const dragging = useRef(false);
   const didDrag = useRef(false);
+  const imageRef = useRef(null);
   const dragStart = useRef({ x: 0, y: 0, ox: 0, oy: 0 });
+  const activeSrc = useAuthUrl(src);
 
   useEffect(() => {
-    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && ["+", "=", "-", "_"].includes(e.key)) {
+        e.preventDefault();
+        const direction = e.key === "-" || e.key === "_" ? -1 : 1;
+        setScale((current) => {
+          const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, current + direction * 0.5));
+          if (next === MIN_SCALE) setOffset({ x: 0, y: 0 });
+          return next;
+        });
+      }
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
@@ -54,6 +71,13 @@ function Lightbox({ src, name, onClose, inline = false }) {
       return next;
     });
   }, []);
+
+  useEffect(() => {
+    const image = imageRef.current;
+    if (!image) return undefined;
+    image.addEventListener("wheel", onWheel, { passive: false });
+    return () => image.removeEventListener("wheel", onWheel);
+  }, [onWheel, activeSrc]);
 
   const onMouseDown = (e) => {
     if (scale <= 1) return;
@@ -81,15 +105,24 @@ function Lightbox({ src, name, onClose, inline = false }) {
 
   const handleDownload = () => {
     const a = document.createElement("a");
-    a.href = src;
+    a.href = activeSrc;
     a.download = name;
     a.click();
+  };
+
+  const changeScale = (next) => {
+    const clamped = Math.min(MAX_SCALE, Math.max(MIN_SCALE, next));
+    setScale(clamped);
+    if (clamped === MIN_SCALE) setOffset({ x: 0, y: 0 });
   };
 
   const content = (
     <div
       className={inline ? "lightbox-panel" : "lightbox-backdrop"}
       data-testid="attachment-lightbox"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Preview ${name}`}
       onClick={inline ? undefined : handleBackdropClick}
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
@@ -97,10 +130,10 @@ function Lightbox({ src, name, onClose, inline = false }) {
       <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
         <div className="lightbox-img-wrap">
           <img
-            src={src}
+            ref={imageRef}
+            src={activeSrc}
             alt={name}
             className="lightbox-img"
-            onWheel={onWheel}
             onMouseDown={onMouseDown}
             style={{
               transform: `scale(${scale}) translate(${offset.x / scale}px, ${offset.y / scale}px)`,
@@ -114,28 +147,33 @@ function Lightbox({ src, name, onClose, inline = false }) {
               else setScale(2.5);
             }}
           />
-          <button className="lightbox-close" onClick={onClose} aria-label="Close">✕</button>
         </div>
         <div className="lightbox-toolbar" onClick={(e) => e.stopPropagation()}>
-          <button className="lb-tool" data-testid="lightbox-download" onClick={handleDownload} title="Download">
-            <DownloadIcon size={18} strokeWidth={2} />
-          </button>
-<input
-            type="range"
-            className="lb-zoom-slider"
-            data-testid="lightbox-zoom"
-            min={MIN_SCALE}
-            max={MAX_SCALE}
-            step={0.1}
-            value={scale}
-            onChange={(e) => {
-              const next = Number(e.target.value);
-              setScale(next);
-              if (next === MIN_SCALE) setOffset({ x: 0, y: 0 });
-            }}
-            title={`Zoom: ${Math.round(scale * 100)}%`}
-          />
-          <span className="lb-zoom-label" data-testid="lightbox-zoom-label">{Math.round(scale * 100)}%</span>
+          <div className="lightbox-sender">
+            <Avatar name={sender?.displayName || "Unknown sender"} src={sender?.avatarUrl} size={32} />
+            <div className="lightbox-sender-copy">
+              <strong>{sender?.displayName || "Unknown sender"}</strong>
+              <span className="lightbox-title" title={name}>{name}</span>
+            </div>
+          </div>
+          <div className="lightbox-toolbar-actions">
+            <div className="lb-zoom-control" aria-label="Zoom controls">
+              <button className="lb-tool" onClick={() => changeScale(scale - 0.5)} disabled={scale <= MIN_SCALE} title="Zoom out" aria-label="Zoom out">
+                <ZoomOutIcon size={17} strokeWidth={2} />
+              </button>
+              <span className="lb-zoom-label" data-testid="lightbox-zoom-label" aria-live="polite">{Math.round(scale * 100)}%</span>
+              <button className="lb-tool" onClick={() => changeScale(scale + 0.5)} disabled={scale >= MAX_SCALE} title="Zoom in" aria-label="Zoom in">
+                <ZoomInIcon size={17} strokeWidth={2} />
+              </button>
+            </div>
+            <span className="lightbox-toolbar-divider" aria-hidden="true" />
+            <button className="lb-tool" data-testid="lightbox-download" onClick={handleDownload} title="Download image" aria-label="Download image">
+              <DownloadIcon size={18} strokeWidth={2} />
+            </button>
+            <button className="lb-tool lightbox-close" onClick={onClose} aria-label="Close image viewer" title="Close">
+              <XIcon size={19} strokeWidth={2.25} />
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -144,7 +182,7 @@ function Lightbox({ src, name, onClose, inline = false }) {
   return createPortal(content, document.body);
 }
 
-function ImageAttachment({ a, onOpenLightbox }) {
+function ImageAttachment({ a, onOpenLightbox, sender }) {
   const src = useAuthUrl(a.url);
   const [open, setOpen] = useState(false);
   const [intrinsicSize, setIntrinsicSize] = useState(null);
@@ -158,7 +196,7 @@ function ImageAttachment({ a, onOpenLightbox }) {
   const reservedWidth = sourceWidth ? Math.max(48, Math.round(sourceWidth * scale)) : 320;
 
   const handleClick = () => {
-    if (onOpenLightbox) onOpenLightbox(src, a.name);
+    if (onOpenLightbox) onOpenLightbox(src, a.name, sender);
     else setOpen(true);
   };
 
@@ -168,7 +206,6 @@ function ImageAttachment({ a, onOpenLightbox }) {
         className={`att-image${loaded ? " is-loaded" : " is-loading"}`}
         data-testid={`image-attachment-${a.key}`}
         onClick={handleClick}
-        title={a.name}
         disabled={!src}
         style={{ width: `${reservedWidth}px`, aspectRatio: String(ratio), cursor: src ? "zoom-in" : "default" }}
       >
@@ -188,14 +225,14 @@ function ImageAttachment({ a, onOpenLightbox }) {
           />
         )}
       </button>
-      {open && <Lightbox src={src} name={a.name} onClose={() => setOpen(false)} />}
+      {open && <Lightbox src={src} name={a.name} sender={sender} onClose={() => setOpen(false)} />}
     </>
   );
 }
 
 // Exported so ChannelView can render the zoomable image inside a side panel.
-export function LightboxImage({ src, name, onClose }) {
-  return <Lightbox src={src} name={name} onClose={onClose} inline />;
+export function LightboxImage({ src, name, sender, onClose }) {
+  return <Lightbox src={src} name={name} sender={sender} onClose={onClose} inline />;
 }
 
 function FileAttachment({ a }) {

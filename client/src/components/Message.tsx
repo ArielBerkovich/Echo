@@ -172,7 +172,7 @@ function Message({
   );
 
   const messageAttachments = m.attachments?.length > 0
-    ? <Attachments attachments={m.attachments} onOpenLightbox={onOpenLightbox} />
+    ? <Attachments attachments={m.attachments} onOpenLightbox={onOpenLightbox} sender={author} />
     : null;
 
   useLayoutEffect(() => {
