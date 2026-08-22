@@ -89,7 +89,10 @@ activityRouter.get("/", async (req, res) => {
     .sort({ createdAt: -1 })
     .limit(200)
     .populate("actor")
-    .populate({ path: "message", populate: { path: "author" } });
+    .populate({
+      path: "message",
+      populate: [{ path: "author" }, { path: "reactions.users" }],
+    });
 
   const removalChannelIds = events
     .filter((event) => event.type === "channel_remove")
@@ -108,6 +111,15 @@ activityRouter.get("/", async (req, res) => {
     if (!channel) return null;
     const message = event.message;
     const isMessageActivity = !!message;
+    const reactionActorIds = new Set();
+    if (event.type === "reaction") {
+      if (event.actor?._id) reactionActorIds.add(event.actor._id.toString());
+      for (const reaction of message?.reactions || []) {
+        for (const actor of reaction.users || []) {
+          reactionActorIds.add((actor?._id || actor).toString());
+        }
+      }
+    }
     return {
       id: `a-${event._id.toString()}`,
       channelId: event.channel.toString(),
@@ -124,6 +136,7 @@ activityRouter.get("/", async (req, res) => {
           count: reaction.users?.length || 0,
         }))
         : [],
+      reactionActorCount: event.type === "reaction" ? reactionActorIds.size : 0,
       createdAt: event.createdAt,
       kind: event.type,
       unread: !event.readAt,

@@ -185,7 +185,11 @@ function kindLabel(it) {
   if (it.kind === "dm") return "sent you a message";
   if (it.kind === "broadcast") return "📣 notified the channel";
   if (it.kind === "reply") return "replied in a thread";
-  if (it.kind === "reaction") return "reacted to your message";
+  if (it.kind === "reaction") {
+    const others = Math.max(0, (it.reactionActorCount || 1) - 1);
+    if (!others) return "reacted to your message";
+    return `and ${others} other${others === 1 ? "" : "s"} reacted to your message`;
+  }
   return "mentioned you";
 }
 
