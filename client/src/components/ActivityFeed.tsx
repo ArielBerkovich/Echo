@@ -47,10 +47,29 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.activity }),
   });
+  const markReadMutation = useMutation({
+    mutationFn: () => api.markActivityRead(),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.activity });
+      const previous = queryClient.getQueryData(queryKeys.activity);
+      queryClient.setQueryData(queryKeys.activity, (current = []) =>
+        current.map((item) => ({ ...item, unread: false }))
+      );
+      return { previous };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous) queryClient.setQueryData(queryKeys.activity, context.previous);
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.activity }),
+  });
 
   useEffect(() => {
     onLoaded?.(items);
   }, [items]);
+
+  function selectActivity(item) {
+    onJump(item);
+  }
 
   useEffect(() => {
     // Live-refresh while the panel is open (new mentions, replies, reactions).
@@ -67,17 +86,31 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
       subtitle="Mentions, replies & broadcasts · last 30 days"
       testId="activity"
       actions={items.length ? (
-        <button
-          type="button"
-          className="header-action activity-clear"
-          data-testid="activity-clear-all"
-          onClick={() => setConfirmClear(true)}
-          disabled={clearMutation.isPending}
-          title="Clear all activity"
-        >
-          <Trash2Icon size={15} strokeWidth={1.8} />
-          <span>{clearMutation.isPending ? "Clearing…" : "Clear all"}</span>
-        </button>
+        <>
+          {items.some((item) => item.unread) ? (
+            <button
+              type="button"
+              className="header-action"
+              data-testid="activity-mark-all-read"
+              onClick={() => markReadMutation.mutate()}
+              disabled={markReadMutation.isPending}
+              title="Mark all activity as read"
+            >
+              <span>{markReadMutation.isPending ? "Marking…" : "Mark all read"}</span>
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="header-action activity-clear"
+            data-testid="activity-clear-all"
+            onClick={() => setConfirmClear(true)}
+            disabled={clearMutation.isPending}
+            title="Clear all activity"
+          >
+            <Trash2Icon size={15} strokeWidth={1.8} />
+            <span>{clearMutation.isPending ? "Clearing…" : "Clear all"}</span>
+          </button>
+        </>
       ) : null}
     >
       <FeedContent
@@ -92,13 +125,12 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
             className={`activity-item ${it.unread ? "unread" : ""}`}
             data-testid="activity-item"
             data-activity-kind={it.kind}
-            role="button"
             tabIndex={0}
-            onClick={() => onJump(it)}
+            onClick={() => selectActivity(it)}
             onKeyDown={(event) => {
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
-                onJump(it);
+                selectActivity(it);
               }
             }}
           >
@@ -112,6 +144,11 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
                 body={it.body}
                 renderMarkdown={renderMarkdown}
               />
+              {it.kind === "reaction" && it.reactions?.length ? (
+                <div className="activity-reactions" aria-label="Reactions">
+                  {it.reactions.map((reaction) => `${reaction.emoji} ${reaction.count}`).join("  ")}
+                </div>
+              ) : null}
             </div>
             <button
               type="button"
@@ -148,9 +185,14 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
 }
 
 function kindLabel(it) {
+  if (it.kind === "dm") return "sent you a message";
   if (it.kind === "broadcast") return "📣 notified the channel";
   if (it.kind === "reply") return "replied in a thread";
-  if (it.kind === "reaction") return `reacted ${it.emoji || ""} to your message`;
+  if (it.kind === "reaction") {
+    const others = Math.max(0, (it.reactionActorCount || 1) - 1);
+    if (!others) return "reacted to your message";
+    return `and ${others} other${others === 1 ? "" : "s"} reacted to your message`;
+  }
   return "mentioned you";
 }
 

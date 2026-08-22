@@ -287,6 +287,7 @@ export const api = {
   hideDm: (id) => request(`/dms/${id}`, { method: "DELETE" }),
   getActivity: () => request("/activity"),
   markActivityRead: () => request("/activity/read", { method: "POST" }),
+  markActivityItemsRead: (ids) => request("/activity/read-items", { method: "POST", body: { ids } }),
   clearActivity: () => request("/activity", { method: "DELETE" }),
   deleteActivity: (id) => request(`/activity/${encodeURIComponent(id)}`, { method: "DELETE" }),
   getSaved: () => request("/saved"),

@@ -87,6 +87,7 @@ export default function ChannelView({
   onJoin,
   onRead,
   onThreadRead,
+  activityItems = [],
   openThreadId = null,
   openThreadJumpMessageId = null,
   onThreadOpened,
@@ -173,6 +174,7 @@ export default function ChannelView({
         loading ||
         !historyReady ||
         !firstUnreadId ||
+        jumpMessageId ||
         unreadScrollAppliedRef.current
       ) {
         return;
@@ -185,7 +187,7 @@ export default function ChannelView({
         settleUnreadAnchor();
       });
     },
-    [anchorUnreadDivider, firstUnreadId, historyReady, loading, settleUnreadAnchor]
+    [anchorUnreadDivider, firstUnreadId, historyReady, jumpMessageId, loading, settleUnreadAnchor]
   );
 
   // Load history + subscribe to live messages whenever the active channel changes.
@@ -203,6 +205,11 @@ export default function ChannelView({
       })
       .then(({ messages, lastReadAt }) => {
         if (cancelled) return;
+        // A targeted Activity jump may have replaced this request's window
+        // while the normal history fetch was still in flight. Do not let the
+        // older response put the newest-page window back over the target.
+        const protectedJumpId = jumpLoadingRef.current || jumpHandledRef.current;
+        if (protectedJumpId && !messages.some((message) => message.id === protectedJumpId)) return;
         setMessages(messages);
         onCacheMessages?.(channel.id, messages);
         // First message from someone else that arrived after we last read —
@@ -741,7 +748,7 @@ export default function ChannelView({
   // anchor once the divider exists. This avoids snapping back to the bottom
   // when unread state resolves a tick later than the message list.
   useEffect(() => {
-    if (loading || !historyReady || !firstUnreadId || unreadScrollAppliedRef.current) return;
+    if (loading || !historyReady || !firstUnreadId || jumpMessageId || unreadScrollAppliedRef.current) return;
     if (!firstUnreadRef.current) return;
     unreadScrollAppliedRef.current = true;
     jumpingRef.current = true;
@@ -750,7 +757,7 @@ export default function ChannelView({
       anchorUnreadDivider();
       settleUnreadAnchor();
     });
-  }, [anchorUnreadDivider, firstUnreadId, historyReady, loading, settleUnreadAnchor]);
+  }, [anchorUnreadDivider, firstUnreadId, historyReady, jumpMessageId, loading, settleUnreadAnchor]);
 
   // The "New" divider marks where you left off on open; once you've had a few
   // seconds to see it, drop it so it doesn't linger in the conversation.
@@ -815,10 +822,42 @@ export default function ChannelView({
     const scrollToTarget = () => {
       const el = document.querySelector(`.messages [data-mid="${jumpMessageId}"]`);
       if (!el) return false;
-      const behavior = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
-      el.scrollIntoView({ block: "center", behavior });
+      // Jumps are state transitions, not user scrolling. Move this specific
+      // scroll container by the exact delta so the unread anchor cannot choose
+      // a different ancestor or interrupt a browser-managed scroll animation.
+      const scroller = scrollerRef.current;
+      if (scroller) {
+        const targetRect = el.getBoundingClientRect();
+        const scrollerRect = scroller.getBoundingClientRect();
+        const targetCenter = targetRect.top + targetRect.height / 2;
+        const scrollerCenter = scrollerRect.top + scrollerRect.height / 2;
+        scroller.scrollTop += targetCenter - scrollerCenter;
+      }
+      // The parent clears jumpMessageId as soon as this succeeds. Keep the
+      // unread effect from treating that state transition as a fresh channel
+      // open and moving the viewport back to the unread divider.
+      unreadScrollAppliedRef.current = true;
       setHighlightId(jumpMessageId);
       return true;
+    };
+
+    // Message height, pagination, and the unread marker can all settle after
+    // the first paint. Re-apply the target position for a few animation frames
+    // and consume the jump only after the layout has stayed target-driven.
+    const stabilizeJump = (attempt = 0, found = false) => {
+      const landed = scrollToTarget() || found;
+      if (attempt < 8) {
+        requestAnimationFrame(() => stabilizeJump(attempt + 1, landed));
+        return;
+      }
+      if (!landed) {
+        setError("Couldn't locate that message.");
+        onJumpConsumed?.();
+        jumpingRef.current = false;
+        return;
+      }
+      onJumpConsumed?.();
+      settleJump();
     };
 
     if (!messages.some((message) => message.id === jumpMessageId)) {
@@ -846,20 +885,15 @@ export default function ChannelView({
     }
 
     jumpHandledRef.current = jumpMessageId;
-    jumpLoadingRef.current = null;
     jumpingRef.current = true;
     if (scrollToTarget()) {
-      onJumpConsumed?.();
-      settleJump();
+      requestAnimationFrame(() => stabilizeJump(1, true));
     } else {
       requestAnimationFrame(() => {
         if (scrollToTarget()) {
-          onJumpConsumed?.();
-          settleJump();
+          stabilizeJump(1, true);
         } else {
-          setError("Couldn't locate that message.");
-          onJumpConsumed?.();
-          jumpingRef.current = false;
+          stabilizeJump(1, false);
         }
       });
     }
@@ -874,7 +908,9 @@ export default function ChannelView({
     api
       .getThread(channel.id, openThreadId)
       .then(({ parent }) => {
-        if (!cancelled && parent) setThread(parent);
+        if (!cancelled && parent) {
+          setThread(parent);
+        }
       })
       .catch(() => {})
       .finally(() => {
@@ -1120,7 +1156,7 @@ export default function ChannelView({
             })
           )}
             <div ref={bottomRef} />
-          </div>
+        </div>
         </div>
         {(showScrollToLatest || newMessageCount > 0) && (
           <button
@@ -1239,6 +1275,7 @@ export default function ChannelView({
             onAddCustomEmoji={onAddCustomEmoji}
             onClose={() => { setThread(null); setThreadJumpTargetId(null); setThreadLightbox(null); }}
             onThreadRead={onThreadRead}
+            activityItems={activityItems}
             onChannelUpdated={onChannelUpdated}
             canPost={canPost}
             onOpenLightbox={(src, name) => setThreadLightbox({ src, name })}

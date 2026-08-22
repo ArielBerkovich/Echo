@@ -9,6 +9,7 @@
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "backfill:activity": "node dist/backfillMessageActivity.js",
+    "backfill:activity-notifications": "node dist/backfillActivityNotifications.js",
     "typecheck": "node -e \"console.log('TypeScript migration check: noCheck=true, so this validates parsing/module resolution, not full type safety.')\" && tsc --noEmit -p tsconfig.json",
     "test": "JWT_SECRET=test-secret node --import tsx --test $(find src \\( -name '*.test.ts' -o -name '*.test.js' \\) -print)"
   },

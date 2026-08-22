@@ -8,7 +8,9 @@ import {
   openLocalAuth,
   railItem,
   requestAsToken,
+  seedToken,
   seedWorkspaceFixture,
+  uniqueSuffix,
 } from "./helpers.js";
 
 let fixture: Awaited<ReturnType<typeof seedWorkspaceFixture>>;
@@ -597,7 +599,7 @@ test("sends multiple messages from the same composer", async ({ page }) => {
 
 test("shows activity items and marks activity as read", async ({ page }) => {
   const markedRead = page.waitForResponse(
-    (res) => res.url().includes("/api/activity/read") && res.request().method() === "POST"
+    (res) => res.url().includes("/api/activity/read-items") && res.request().method() === "POST"
   );
 
   await page.goto("/");
@@ -616,7 +618,86 @@ test("shows activity items and marks activity as read", async ({ page }) => {
   await expect(page.getByTestId("activity-header")).toContainText("Activity", { timeout: 15_000 });
   const activityItem = page.getByTestId("activity-item").first();
   await expect(activityItem).toBeVisible();
+  await activityItem.click();
   await markedRead;
+});
+
+test("updates Activity live for a new direct message", async ({ page }) => {
+  const body = `Live DM Activity ${fixture.suffix}`;
+  await requestAsToken(page, fixture.alice.token, "/activity", { method: "DELETE" });
+  await page.goto(`/channels/${fixture.generalChannel.name}`);
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.generalChannel.name);
+  await expect(page.getByTestId("rail-badge-activity")).toHaveCount(0);
+
+  await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.dmChannel.id,
+      body,
+      externalKey: `live-dm-activity-${fixture.suffix}`,
+    },
+  });
+
+  await expect(page.getByTestId("rail-badge-activity")).toBeVisible({ timeout: 10_000 });
+  await railItem(page, "activity").click();
+  const item = page.getByTestId("activity-item").filter({ hasText: body });
+  await expect(item).toBeVisible();
+  await expect(item).toContainText("sent you a message");
+});
+
+test("marks all Activity items read and persists the state", async ({ page }) => {
+  const first = `Mark all Activity one ${fixture.suffix}`;
+  const second = `Mark all Activity two ${fixture.suffix}`;
+  await requestAsToken(page, fixture.alice.token, "/activity", { method: "DELETE" });
+  for (const body of [first, second]) {
+    await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+      method: "POST",
+      body: {
+        channelId: fixture.generalChannel.id,
+        body: `${body} @${fixture.alice.username}`,
+        externalKey: `${body}-${fixture.suffix}`,
+      },
+    });
+  }
+
+  await page.goto("/activity");
+  await expect(page.getByTestId("activity-item").filter({ hasText: first })).toBeVisible();
+  await expect(page.getByTestId("activity-item").filter({ hasText: second })).toBeVisible();
+  await page.getByTestId("activity-mark-all-read").click();
+  await expect(page.getByTestId("activity-mark-all-read")).toHaveCount(0);
+  await expect.poll(async () => {
+    const activity = await requestAsToken(page, fixture.alice.token, "/activity");
+    return activity.items.some((item) => item.unread);
+  }).toBe(false);
+
+  await page.reload();
+  await expect(page.getByTestId("activity-header")).toBeVisible();
+  await expect(page.getByTestId("activity-mark-all-read")).toHaveCount(0);
+});
+
+test("clears all Activity items and persists the empty feed", async ({ page }) => {
+  const body = `Clear all Activity ${fixture.suffix}`;
+  await requestAsToken(page, fixture.alice.token, "/activity", { method: "DELETE" });
+  await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body: `${body} @${fixture.alice.username}`,
+      externalKey: `clear-all-activity-${fixture.suffix}`,
+    },
+  });
+
+  await page.goto("/activity");
+  await expect(page.getByTestId("activity-item").filter({ hasText: body })).toBeVisible();
+  await page.getByTestId("activity-clear-all").click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toContainText("Clear all activity?");
+  await dialog.getByRole("button", { name: "Clear all", exact: true }).click();
+  await expect(page.getByText("No activity yet")).toBeVisible();
+  await expect.poll(async () => (await requestAsToken(page, fixture.alice.token, "/activity")).items).toHaveLength(0);
+
+  await page.reload();
+  await expect(page.getByText("No activity yet")).toBeVisible();
 });
 
 test("opens the exact message from Activity", async ({ page }) => {
@@ -627,16 +708,116 @@ test("opens the exact message from Activity", async ({ page }) => {
   await page.reload();
 
   await expect(page.getByTestId("activity-header")).toBeVisible();
-  const visibleMentionBody = fixture.messages.mention.body.replace(
+  const mentionBody = `Exact Activity target ${fixture.suffix} @${fixture.alice.username}`;
+  const mention = await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body: mentionBody,
+      externalKey: `exact-activity-target-${fixture.suffix}`,
+    },
+  });
+  const visibleMentionBody = mentionBody.replace(
     `@${fixture.alice.username}`,
     `@${fixture.alice.displayName}`
   );
-  const mentionText = page.getByText(visibleMentionBody, { exact: false }).first();
-  await expect(mentionText).toBeVisible();
-  await mentionText.click();
+  const activityItem = page.getByTestId("activity-item").filter({ hasText: visibleMentionBody }).first();
+  await expect(activityItem).toBeVisible();
+  await activityItem.click();
 
   await expect(page.getByTestId("channel-title")).toContainText("general");
-  await expect(messageById(page, fixture.messages.mention.id)).toBeVisible();
+  await expect(messageById(page, mention.message.id)).toBeVisible();
+});
+
+test("Activity jump wins over the channel unread-message anchor", async ({ page }) => {
+  const stamp = Date.now();
+  await page.goto("/activity");
+
+  const target = await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body: `Older activity target ${stamp} @${fixture.alice.username}`,
+      externalKey: `activity-jump-target-${stamp}`,
+    },
+  });
+  await Promise.all(Array.from({ length: 10 }, (_, index) => requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body: `Read context ${stamp}-${index}`,
+      externalKey: `activity-jump-read-context-${stamp}-${index}`,
+    },
+  })));
+  // The target notification stays unread in Activity even after the channel
+  // read marker advances; a newer ordinary message creates the unread area.
+  await requestAsToken(page, fixture.alice.token, `/channels/${fixture.generalChannel.id}/read`, {
+    method: "POST",
+  });
+  await Promise.all(Array.from({ length: 40 }, (_, index) => requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body: `${index === 0 ? "Newer unread message" : "Unread context"} ${stamp}-${index}`,
+      externalKey: `activity-jump-unread-${stamp}-${index}`,
+    },
+  })));
+
+  await page.goto("/activity");
+  const activityItem = page.getByTestId("activity-item").filter({ hasText: `Older activity target ${stamp}` });
+  await expect(activityItem).toBeVisible();
+  await activityItem.click();
+
+  await expect(page.getByTestId("channel-title")).toContainText("general");
+  await expect(messageById(page, target.message.id)).toBeInViewport();
+  await expect(page.locator(".new-divider")).not.toBeInViewport();
+});
+
+test("jumps to an old Activity message across several pages of general history", async ({ page }) => {
+  const stamp = uniqueSuffix("deep-activity");
+  await requestAsToken(page, fixture.alice.token, "/activity", { method: "DELETE" });
+  const target = await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body: `Deep Activity target ${stamp} @${fixture.alice.username}`,
+      externalKey: `deep-activity-target-${stamp}`,
+    },
+  });
+
+  await Promise.all(Array.from({ length: 75 }, (_, index) => requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body: `Read history ${stamp}-${index}`,
+      externalKey: `deep-activity-read-${stamp}-${index}`,
+    },
+  })));
+  await requestAsToken(page, fixture.alice.token, `/channels/${fixture.generalChannel.id}/read`, { method: "POST" });
+  await Promise.all(Array.from({ length: 125 }, (_, index) => requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body: `Unread history ${stamp}-${index}`,
+      externalKey: `deep-activity-unread-${stamp}-${index}`,
+    },
+  })));
+
+  await page.goto("/channels/general");
+  await expect(page.getByTestId("channel-title")).toContainText("general");
+  await page.route("**/api/channels/*/messages**", async (route) => {
+    const url = new URL(route.request().url());
+    if (!url.searchParams.has("around")) await new Promise((resolve) => setTimeout(resolve, 1_000));
+    await route.continue();
+  });
+  await railItem(page, "activity").click();
+  const activityItem = page.getByTestId("activity-item").filter({ hasText: `Deep Activity target ${stamp}` });
+  await expect(activityItem).toBeVisible({ timeout: 10_000 });
+  await activityItem.click();
+
+  await expect(page.getByTestId("channel-title")).toContainText("general");
+  await expect(messageById(page, target.message.id)).toBeInViewport();
+  await expect(page.locator(".new-divider")).not.toBeInViewport();
 });
 
 test("opens a public-channel mention even when the user is not in the channel", async ({ page }) => {
@@ -664,9 +845,9 @@ test("opens a public-channel mention even when the user is not in the channel", 
   });
 
   await railItem(page, "activity").click();
-  const activityEntry = page.getByText(visibleMentionBody, { exact: false }).first();
-  await expect(activityEntry).toBeVisible();
-  await activityEntry.click();
+  const activityItem = page.getByTestId("activity-item").filter({ hasText: visibleMentionBody }).first();
+  await expect(activityItem).toBeVisible();
+  await activityItem.click();
 
   await expect(page.getByTestId("channel-title")).toContainText(channelName);
   await expect(page.getByText(`You're previewing #${channelName}`)).toBeVisible();
@@ -700,6 +881,142 @@ test("opens a thread activity item at the exact reply", async ({ page }) => {
 
   await expect(page.getByTestId("thread-panel")).toBeVisible();
   await expect(messageById(page, reply.message.id)).toBeInViewport();
+});
+
+test("opens Activity for a reaction on a thread reply", async ({ browser, page }) => {
+  const stamp = uniqueSuffix("thread-reaction");
+  await requestAsToken(page, fixture.alice.token, "/activity", { method: "DELETE" });
+  const root = await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.projectChannel.id,
+      body: `Thread reaction root ${stamp}`,
+      externalKey: `thread-reaction-root-${stamp}`,
+    },
+  });
+  const reply = await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.projectChannel.id,
+      parentId: root.message.id,
+      body: `Thread reaction reply ${stamp}`,
+      externalKey: `thread-reaction-reply-${stamp}`,
+    },
+  });
+
+  const bobContext = await browser.newContext();
+  const bobPage = await bobContext.newPage();
+  await seedToken(bobPage, fixture.bob.token);
+  try {
+    await bobPage.goto(`/channels/${fixture.projectChannel.name}`);
+    await expect(bobPage.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
+    await bobPage.getByTestId(`message-${root.message.id}-reply-count`).click();
+    await expect(bobPage.getByTestId("thread-panel")).toBeVisible();
+    const replyMessage = messageById(bobPage, reply.message.id);
+    await replyMessage.hover();
+    await bobPage.getByTestId(/-actions$/).getByTitle("Add reaction").click();
+    await bobPage.getByRole("button", { name: "React with 👍" }).click();
+  } finally {
+    await bobContext.close();
+  }
+
+  await expect.poll(async () => {
+    const activity = await requestAsToken(page, fixture.alice.token, "/activity");
+    return activity.items.find((entry) => entry.messageId === reply.message.id)?.unread;
+  }).toBe(true);
+  await page.goto("/activity");
+  const item = page.getByTestId("activity-item").filter({ hasText: `Thread reaction reply ${stamp}` });
+  await expect(item).toBeVisible();
+  await item.click();
+  await expect(page.getByTestId("thread-panel")).toBeVisible();
+  await expect(messageById(page, reply.message.id)).toBeInViewport();
+});
+
+test("the latest Activity selection wins during rapid navigation", async ({ page }) => {
+  const stamp = uniqueSuffix("rapid-activity");
+  await requestAsToken(page, fixture.alice.token, "/activity", { method: "DELETE" });
+  const first = await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body: `Rapid Activity first ${stamp} @${fixture.alice.username}`,
+      externalKey: `rapid-activity-first-${stamp}`,
+    },
+  });
+  const second = await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.projectChannel.id,
+      body: `Rapid Activity second ${stamp} @${fixture.alice.username}`,
+      externalKey: `rapid-activity-second-${stamp}`,
+    },
+  });
+
+  await page.goto("/activity");
+  const firstVisibleBody = first.message.body.replace(`@${fixture.alice.username}`, `@${fixture.alice.displayName}`);
+  const secondVisibleBody = second.message.body.replace(`@${fixture.alice.username}`, `@${fixture.alice.displayName}`);
+  const firstItem = page.getByTestId("activity-item").filter({ hasText: firstVisibleBody });
+  const secondItem = page.getByTestId("activity-item").filter({ hasText: secondVisibleBody });
+  await expect(firstItem).toBeVisible();
+  await expect(secondItem).toBeVisible();
+  // Dispatch both clicks before React commits the first navigation. This
+  // models a fast double-selection from the Activity feed.
+  await firstItem.dispatchEvent("click");
+  await secondItem.dispatchEvent("click");
+
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
+  await expect(messageById(page, second.message.id)).toBeInViewport();
+});
+
+test("reading a thread marks its Activity notifications read", async ({ page }) => {
+  const stamp = Date.now();
+  const reply = await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.projectChannel.id,
+      parentId: fixture.messages.threadRoot.id,
+      body: `Thread activity ${stamp}`,
+      externalKey: `thread-activity-read-${stamp}`,
+    },
+  });
+
+  await expect.poll(async () => {
+    const activity = await requestAsToken(page, fixture.alice.token, "/activity");
+    return activity.items.find((item) => item.messageId === reply.message.id)?.unread;
+  }).toBe(true);
+
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
+  await page.getByTestId(`message-${fixture.messages.threadRoot.id}-reply-count`).click();
+  await expect(page.getByTestId("thread-panel")).toBeVisible();
+  await expect.poll(async () => {
+    const activity = await requestAsToken(page, fixture.alice.token, "/activity");
+    return activity.items.find((item) => item.messageId === reply.message.id)?.unread;
+  }).toBe(false);
+});
+
+test("an already-open thread marks newly arriving Activity read", async ({ page }) => {
+  const stamp = Date.now();
+  await requestAsToken(page, fixture.alice.token, "/activity/read", { method: "POST" });
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
+  await page.getByTestId(`message-${fixture.messages.threadRoot.id}-reply-count`).click();
+  await expect(page.getByTestId("thread-panel")).toBeVisible();
+
+  const reply = await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.projectChannel.id,
+      parentId: fixture.messages.threadRoot.id,
+      body: `Live thread activity ${stamp}`,
+      externalKey: `live-thread-activity-${stamp}`,
+    },
+  });
+  await expect.poll(async () => {
+    const activity = await requestAsToken(page, fixture.alice.token, "/activity");
+    const item = activity.items.find((entry) => entry.messageId === reply.message.id);
+    return item ? { found: true, unread: item.unread } : { found: false, unread: null };
+  }).toEqual({ found: true, unread: false });
 });
 
 test("shows saved messages and removes one from saved", async ({ page }) => {

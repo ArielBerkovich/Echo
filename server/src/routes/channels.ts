@@ -359,7 +359,10 @@ channelsRouter.post("/:id/members", async (req, res) => {
     if (!target._id.equals(req.user._id)) {
       await ActivityEvent.updateOne(
         { recipient: target._id, actor: req.user._id, message: channel._id, emoji: "" },
-        { $set: { type: "channel_add", channel: channel._id, createdAt: new Date() } },
+        {
+          $set: { type: "channel_add", channel: channel._id, createdAt: new Date(), readAt: null },
+          $setOnInsert: { sourceKey: `channel_add:${channel._id}:${target._id}` },
+        },
         { upsert: true }
       ).catch(() => {});
       emitToUser(target._id.toString(), "activity:bump");
@@ -457,7 +460,9 @@ channelsRouter.delete("/:id/members/:userId", async (req, res) => {
           type: "channel_remove",
           channel: channel._id,
           createdAt: new Date(),
+          readAt: null,
         },
+        $setOnInsert: { sourceKey: `channel_remove:${channel._id}:${userId}` },
       },
       { upsert: true }
     ).catch(() => {});

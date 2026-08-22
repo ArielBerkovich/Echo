@@ -109,6 +109,7 @@ export default function App() {
   const restoredRef = useRef(false); // have we restored the saved location yet?
   const restoredUserRef = useRef(null);
   const navDuringRestoreRef = useRef(false); // user navigated before the initial restore finished
+  const jumpRequestRef = useRef(0); // invalidates stale asynchronous Activity jumps
   const viewRef = useRef(view);
   const activeChannelRef = useRef(activeChannel);
 
@@ -185,11 +186,6 @@ export default function App() {
     clearNavigationTarget();
     searchRef.current?.clear();
     setSearchQuery(null);
-    if (nextView === "activity") {
-      api.markActivityRead()
-        .catch(() => {})
-        .finally(() => queryClient.invalidateQueries({ queryKey: queryKeys.activity }));
-    }
     if (nextView === "dms") {
       setActiveChannel(null);
       setView(nextView, null);
@@ -279,12 +275,11 @@ export default function App() {
     connectionStatus,
     recoveryEpoch,
     syncActivity,
-    clearChannelActivity,
-    clearThreadActivity,
   } =
     useRealtime({
       user,
       activeChannel,
+      view,
       channels,
       dms,
       starredIds,
@@ -374,13 +369,11 @@ export default function App() {
     setScrollToBottomTarget(null);
   }
 
-  // Mark a conversation read: clear its unread locally (no refetch) and persist
-  // the read marker, throttled so a busy channel doesn't write on every message.
+  // Mark a conversation read. This only affects the conversation unread marker;
+  // Activity notifications are read independently by Activity actions.
   async function handleRead(channelId) {
     setChannels((prev) => prev.map((c) => (c.id === channelId && c.unread ? { ...c, unread: 0 } : c)));
     setDms((prev) => prev.map((d) => (d.id === channelId && d.unread ? { ...d, unread: 0 } : d)));
-    // Opening the conversation clears its activity items (server marks them read).
-    clearChannelActivity(channelId);
     const now = Date.now();
     const elapsed = now - (markReadAtRef.current[channelId] || 0);
     if (elapsed < 1500) {
@@ -388,16 +381,32 @@ export default function App() {
       markReadTimerRef.current[channelId] = setTimeout(() => {
         markReadTimerRef.current[channelId] = null;
         markReadAtRef.current[channelId] = Date.now();
-        api.markRead(channelId).catch(() => {});
+        api.markRead(channelId)
+          .then(() => queryClient.invalidateQueries({ queryKey: queryKeys.activity }))
+          .catch(() => {});
       }, 1500 - elapsed);
       return;
     }
     markReadAtRef.current[channelId] = now;
     try {
       await api.markRead(channelId);
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity });
     } catch {
       /* ignore */
     }
+  }
+
+  // Thread read markers and Activity notifications are separate state. When
+  // a user opens a thread normally, acknowledge only the Activity items that
+  // belong to that thread (mentions, replies, and reactions), leaving other
+  // notifications untouched.
+  async function handleThreadRead(channelId, rootId) {
+    const ids = activityItems
+      .filter((item) => item.channelId === channelId && item.threadId === rootId && item.unread)
+      .map((item) => item.id);
+    if (!ids.length) return;
+    await api.markActivityItemsRead(ids).catch(() => {});
+    queryClient.invalidateQueries({ queryKey: queryKeys.activity });
   }
 
   // Restore the user's last view + conversation (or fall back to the first
@@ -913,6 +922,7 @@ export default function App() {
   // item is a thread reply, also open its thread so it gets marked read (a
   // thread mention stays unread until the thread itself is opened).
   async function handleJump(item) {
+    const jumpRequest = ++jumpRequestRef.current;
     markNavDuringRestore();
     const channelId = typeof item === "string" ? item : item.channelId;
     // Channel add/remove activity entries are navigation events, not
@@ -928,8 +938,25 @@ export default function App() {
     const channelType = typeof item === "string" ? null : item.channelType;
     const channelName = typeof item === "string" ? null : item.channelName;
     clearNavigationTarget();
+    // Publish the jump before any async read acknowledgement. ChannelView
+    // must know about the target during its first layout pass, otherwise its
+    // normal unread-divider anchor can win the race.
+    if (threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
+    else if (messageId) setJumpMessageId(messageId);
+    if (typeof item !== "string" && item.id) {
+      void api.markActivityItemsRead([item.id]).catch(() => {});
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity });
+    }
     setSearchQuery(null);
-    if (messageId || threadId) clearScrollState(channelId);
+    if (messageId || threadId) {
+      clearScrollState(channelId);
+      // Activity can point at a message changed while its channel was outside
+      // the viewport. Force the timeline to refetch so reactions and other
+      // message metadata are current when the jump lands.
+      if (messageId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.messages(channelId) });
+      }
+    }
 
     let opened = false;
     const channel = resolveJumpChannel({ channelId, channelType, channelName });
@@ -944,6 +971,7 @@ export default function App() {
       if (!dm && channelType === "dm") {
         try {
           const result = await api.getChannel(channelId);
+          if (jumpRequest !== jumpRequestRef.current) return;
           const other = (result.members || []).find((member) => member.id !== user.id)
             || (result.channel?.members?.length === 1 ? user : null);
           if (result.channel?.type === "dm" && other) {
@@ -960,10 +988,11 @@ export default function App() {
         opened = true;
       }
     }
-    if (!opened) setToast("You don't have access to that conversation.");
+    if (!opened) {
+      clearNavigationTarget();
+      setToast("You don't have access to that conversation.");
+    }
 
-    if (opened && threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
-    if (opened && messageId && !threadId) setJumpMessageId(messageId);
   }
 
   // Run a full-text message search (from the search bar, on Enter).
@@ -1399,7 +1428,8 @@ export default function App() {
             onChannelUpdated: upsertChannel,
             onJoin: handleJoinChannel,
             onRead: handleRead,
-            onThreadRead: clearThreadActivity,
+            onThreadRead: handleThreadRead,
+            activityItems,
             openThreadId: activeChannel && openThreadReq?.channelId === activeChannel.id ? openThreadReq.rootId : null,
             openThreadJumpMessageId: activeChannel && openThreadReq?.channelId === activeChannel.id ? openThreadReq.messageId : null,
             onThreadOpened: () => setOpenThreadReq(null),

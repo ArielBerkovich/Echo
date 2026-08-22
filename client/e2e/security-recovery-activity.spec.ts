@@ -248,6 +248,13 @@ test("shows and permanently dismisses every supported Activity kind", async ({ b
       method: "DELETE",
     });
 
+    // Start from a clean Activity badge while Alice is actively viewing the
+    // channel whose message will receive the reaction.
+    await requestAsToken(page, fixture.alice.token, "/activity/read", { method: "POST" });
+    await page.goto("/channels/general");
+    await expect(page.getByTestId("channel-title")).toContainText("general");
+    const activityBadgeBeforeReaction = await page.getByTestId("rail-badge-activity").count();
+
     const bobContext = await browser.newContext();
     const bobPage = await bobContext.newPage();
     await seedToken(bobPage, fixture.bob.token);
@@ -261,12 +268,29 @@ test("shows and permanently dismisses every supported Activity kind", async ({ b
     } finally {
       await bobContext.close();
     }
+    const aliceRoot = messageById(page, reactionRoot.message.id);
+    await aliceRoot.hover();
+    await page.getByTestId(/-actions$/).getByTitle("Add reaction").click();
+    await page.getByRole("button", { name: "React with 👍" }).click();
+    await expect(page.getByTestId("rail-badge-activity")).toHaveCount(activityBadgeBeforeReaction + 1);
+    await expect.poll(async () => {
+      const activity = await requestAsToken(page, fixture.alice.token, "/activity");
+      return activity.items.find(
+        (item) => item.kind === "reaction" && item.messageId === reactionRoot.message.id,
+      )?.unread;
+    }).toBe(true);
 
     const expectedKinds = ["mention", "broadcast", "reply", "reaction", "channel_add", "channel_remove"];
     await expect.poll(async () => {
       const activity = await requestAsToken(page, fixture.alice.token, "/activity");
       return expectedKinds.filter((kind) => activity.items.some((item) => item.kind === kind)).sort();
     }).toEqual([...expectedKinds].sort());
+    await expect.poll(async () => {
+      const activity = await requestAsToken(page, fixture.alice.token, "/activity");
+      return activity.items.filter(
+        (item) => item.kind === "reaction" && item.messageId === reactionRoot.message.id,
+      ).length;
+    }).toBe(1);
 
     await page.goto("/");
     await expect(page.getByTestId("rail-activity")).toBeVisible();
@@ -281,6 +305,22 @@ test("shows and permanently dismisses every supported Activity kind", async ({ b
       page.getByTestId("activity-item").filter({ hasText: addedChannel.channel.name }),
       page.getByTestId("activity-item").filter({ hasText: removedChannel.channel.name }),
     ];
+
+    await expect(targets[3]).toContainText("Bob Builder");
+    await expect(targets[3]).toContainText("1 other");
+    await targets[3].click();
+    await expect(
+      page.getByTestId(`message-${reactionRoot.message.id}`).locator(".reaction:not(.add)"),
+    ).toHaveAttribute("title", /Bob Builder and you reacted with 👍/);
+    await page.goto("/activity");
+    await expect(page.getByTestId("activity-header")).toBeVisible();
+    await expect.poll(async () => {
+      const activity = await requestAsToken(page, fixture.alice.token, "/activity");
+      return activity.items.find(
+        (item) => item.kind === "reaction" && item.messageId === reactionRoot.message.id,
+      )?.unread;
+    }).toBe(false);
+
     for (const target of targets) {
       await expect(target).toBeVisible();
       await target.getByRole("button", { name: "Delete activity" }).click();
@@ -298,4 +338,38 @@ test("shows and permanently dismisses every supported Activity kind", async ({ b
       { method: "DELETE" }
     );
   }
+});
+
+test("cannot read or delete another user's Activity notification", async ({ page }) => {
+  const body = `Activity authorization ${uniqueSuffix("auth")}`;
+  await requestAsToken(page, fixture.alice.token, "/activity", { method: "DELETE" });
+  await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body: `${body} @${fixture.alice.username}`,
+      externalKey: `activity-authorization-${fixture.suffix}`,
+    },
+  });
+
+  await expect.poll(async () => {
+    const activity = await requestAsToken(page, fixture.alice.token, "/activity");
+    return activity.items.find((entry) => entry.body?.includes(body)) || null;
+  }).toMatchObject({ unread: true });
+  const activity = await requestAsToken(page, fixture.alice.token, "/activity");
+  const target = activity.items.find((entry) => entry.body?.includes(body));
+  expect(target?.id).toBeTruthy();
+
+  const readResponse = await rawApi(page, fixture.bob.token, "/activity/read-items", {
+    method: "POST",
+    body: { ids: [target.id] },
+  });
+  expect(readResponse.ok()).toBeTruthy();
+  const afterRead = await requestAsToken(page, fixture.alice.token, "/activity");
+  expect(afterRead.items.find((entry) => entry.id === target.id)?.unread).toBe(true);
+
+  const deleteResponse = await rawApi(page, fixture.bob.token, `/activity/${target.id}`, { method: "DELETE" });
+  expect(deleteResponse.ok()).toBeTruthy();
+  const afterDelete = await requestAsToken(page, fixture.alice.token, "/activity");
+  expect(afterDelete.items.some((entry) => entry.id === target.id)).toBe(true);
 });

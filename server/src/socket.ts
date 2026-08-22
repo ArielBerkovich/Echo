@@ -10,6 +10,7 @@ import { ActivityEvent } from "./models/ActivityEvent.js";
 import { setIO } from "./realtime.js";
 import { deliverMessage, sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, applySurveyVote } from "./deliver.js";
 import { buildMessageActivityMetadata } from "./lib/messageActivity.js";
+import { recordMessageActivity } from "./lib/activityNotifications.js";
 import { roomFor, userRoom } from "./lib/rooms.js";
 import { activeConnections, recordSocketError } from "./metrics.js";
 
@@ -196,11 +197,27 @@ export function attachSocket(httpServer) {
         // Reacting to someone else's message is activity for its author.
         if (added && message.kind !== "system" && !message.author.equals(uid)) {
           await ActivityEvent.updateOne(
-            { recipient: message.author, actor: uid, message: message._id, emoji },
-            { $set: { channel: message.channel, createdAt: new Date() } },
+            { sourceKey: `reaction:${message._id}:${message.author}` },
+            {
+              $set: {
+                recipient: message.author,
+                actor: uid,
+                message: message._id,
+                emoji,
+                channel: message.channel,
+                createdAt: new Date(),
+                readAt: null,
+              },
+              $setOnInsert: {
+                type: "reaction",
+              },
+            },
             { upsert: true }
           ).catch(() => {});
-          io.to(userRoom(message.author.toString())).emit("activity:bump");
+          io.to(userRoom(message.author.toString())).emit("activity:bump", {
+            channelId: message.channel.toString(),
+            messageId: message._id.toString(),
+          });
         }
 
         io.to(roomFor(message.channel.toString())).emit("message:reaction", {

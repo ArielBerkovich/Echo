@@ -12,6 +12,7 @@ import { queryKeys } from "./queryClient.js";
 export function useRealtime({
   user,
   activeChannel,
+  view,
   channels,
   dms,
   starredIds,
@@ -31,9 +32,8 @@ export function useRealtime({
   onAuthInvalid,
 }) {
   const queryClient = useQueryClient();
-  // Activity badge counts (live). Top-level mentions keyed by channel (cleared
-  // when you open the channel); thread mentions keyed by their root (cleared
-  // when you open the thread).
+  // Activity badge counts (live), grouped by conversation for the sidebar.
+  // The authoritative unread state lives on each persistent Activity event.
   const [activityUnread, setActivityUnread] = useState({});
   const [activityThreadUnread, setActivityThreadUnread] = useState({});
   const [onlineIds, setOnlineIds] = useState(() => new Set()); // ids of users currently connected
@@ -42,10 +42,12 @@ export function useRealtime({
 
   // Mirror state into refs so the stable socket listeners read current values.
   const activeRef = useRef(null);
+  const viewRef = useRef(view);
   const channelsRef = useRef([]);
   const dmsRef = useRef([]);
   const starredRef = useRef(new Set());
   useEffect(() => void (activeRef.current = activeChannel), [activeChannel]);
+  useEffect(() => void (viewRef.current = view), [view]);
   useEffect(() => void (channelsRef.current = channels), [channels]);
   useEffect(() => void (dmsRef.current = dms), [dms]);
   useEffect(() => void (starredRef.current = starredIds || new Set()), [starredIds]);
@@ -54,7 +56,8 @@ export function useRealtime({
     return userList.map((u) => (u.id === updated.id ? { ...u, ...updated } : u));
   }
 
-  // Rebuild the badge counts from a fresh activity feed (server is the truth).
+  // Rebuild the badge counts from persistent Activity notifications. Channel
+  // and thread Read markers are intentionally not part of this calculation.
   function syncActivity(items) {
     const byChannel = {};
     const byThread = {};
@@ -67,21 +70,12 @@ export function useRealtime({
     setActivityThreadUnread(byThread);
   }
 
-  function clearChannelActivity(channelId) {
-    setActivityUnread((prev) => {
-      if (!prev[channelId]) return prev;
-      const next = { ...prev };
-      delete next[channelId];
-      return next;
-    });
-  }
-  function clearThreadActivity(rootId) {
-    setActivityThreadUnread((prev) => {
-      if (!prev[rootId]) return prev;
-      const next = { ...prev };
-      delete next[rootId];
-      return next;
-    });
+  function refreshActivity() {
+    queryClient.fetchQuery({
+      queryKey: queryKeys.activity,
+      queryFn: async () => (await api.getActivity()).items || [],
+      staleTime: 0,
+    }).then(syncActivity).catch(() => {});
   }
 
   // Socket.IO restores the transport after a server restart, but transport
@@ -368,13 +362,7 @@ export function useRealtime({
 
       // Activity badge: count @mentions and @everyone broadcasts you haven't
       // seen yet. Thread replies are tracked by their thread; top-level by channel.
-      if (mentionsMe && !mine) {
-        if (msg.parentId) {
-          setActivityThreadUnread((prev) => ({ ...prev, [msg.parentId]: (prev[msg.parentId] || 0) + 1 }));
-        } else if (!viewingHere) {
-          setActivityUnread((prev) => ({ ...prev, [msg.channelId]: (prev[msg.channelId] || 0) + 1 }));
-        }
-      }
+      if (mentionsMe && !mine) refreshActivity();
 
       // Desktop notification — Starred DMs, and channel @mentions.
       // Skipped if you're already focused on that conversation.
@@ -419,13 +407,7 @@ export function useRealtime({
 
     // Server flags a message as "activity" for us — re-sync the badge (works even
     // for mentions in channels we haven't joined, where no message:new arrives).
-    const onActivityBump = () => {
-      queryClient.fetchQuery({
-        queryKey: queryKeys.activity,
-        queryFn: async () => (await api.getActivity()).items || [],
-        staleTime: 0,
-      }).then(syncActivity).catch(() => {});
-    };
+    const onActivityBump = () => refreshActivity();
     socket.on("activity:bump", onActivityBump);
 
     return () => {
@@ -444,7 +426,5 @@ export function useRealtime({
     connectionStatus,
     recoveryEpoch,
     syncActivity,
-    clearChannelActivity,
-    clearThreadActivity,
   };
 }

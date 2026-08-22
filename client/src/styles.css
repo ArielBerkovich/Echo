@@ -2509,6 +2509,11 @@ html[data-mode="dark"] .backend-connection-error {
   line-height: 1.5;
   color: #1e293b;
 }
+.activity-reactions {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
 /* Unread (not-yet-interacted-with) activity stands out in bold with a dot. */
 .activity-item {
   position: relative;
@@ -7475,7 +7480,6 @@ html[data-mode="dark"] .channel-header {
 .channel-view.has-side-panel .header-action-icon span {
   display: none;
 }
-
 .messages-shell {
   flex: 1;
   min-width: 0;
@@ -9009,6 +9013,12 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 @media (max-width: 980px) {
   .channel-view {
     position: relative;
+  }
+  /* The animated channel view forms its own stacking context; lift it above
+     the bottom rail while a side panel is open so the composer is not covered. */
+  .channel-view.has-side-panel {
+    position: relative;
+    z-index: 61;
   }
   .thread-panel,
   .details-panel:not(.channel-details-dialog),
@@ -11003,13 +11013,6 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     border: 0;
     border-radius: 0;
     box-shadow: 0 0 32px rgba(0, 0, 0, 0.28);
-  }
-
-  /* The animated channel view forms its own stacking context; lift it above
-     the bottom rail while a side panel is open so the composer is not covered. */
-  .channel-view.has-side-panel {
-    position: relative;
-    z-index: 61;
   }
 
   .thread-header {

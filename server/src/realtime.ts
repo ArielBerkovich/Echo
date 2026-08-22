@@ -44,7 +44,6 @@ export async function syncUserSockets(user) {
     live.user.isAdmin = user.isAdmin;
     live.user.mustResetPassword = user.mustResetPassword;
     live.user.onboarded = user.onboarded;
-    live.user.activitySeenAt = user.activitySeenAt;
   }
 }
 
