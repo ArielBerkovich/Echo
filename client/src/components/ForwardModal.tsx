@@ -185,26 +185,6 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
       onClose={onClose}
     >
       <div className="forward-dialog" data-testid="forward-modal">
-        <section className={`forward-source-disclosure${sourceExpanded ? " is-open" : ""}`} aria-label="Message to forward">
-          <button
-            type="button"
-            className="forward-source-toggle"
-            data-testid="forward-source-toggle"
-            aria-expanded={sourceExpanded}
-            onClick={() => setSourceExpanded((open) => !open)}
-          >
-            <span>Message to forward</span>
-            <strong>{authorName}</strong>
-            <span className="forward-source-chevron" aria-hidden="true">{sourceExpanded ? "−" : "+"}</span>
-          </button>
-          {sourceExpanded && (
-            <div className="forward-source-context" data-testid="forward-source-context" title={preview}>
-              <Avatar name={authorName} src={message?.author?.avatarUrl} size={24} />
-              <em>{preview || "(No text in this message)"}</em>
-            </div>
-          )}
-        </section>
-
         <section className="forward-destination-section" aria-label="Forward destination">
           <div className="forward-destination-heading">
             <div>
@@ -300,6 +280,31 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
             disabled={status === "submitting"}
           />
         </div>
+
+        <section className={`forward-source-disclosure${sourceExpanded ? " is-open" : ""}`} aria-label="Message to forward">
+          <button
+            type="button"
+            className="forward-source-toggle"
+            data-testid="forward-source-toggle"
+            aria-expanded={sourceExpanded}
+            onClick={() => setSourceExpanded((open) => !open)}
+          >
+            <span>Message to forward</span>
+            <span className="forward-source-chevron" aria-hidden="true">{sourceExpanded ? "−" : "+"}</span>
+          </button>
+          {sourceExpanded && (
+            <div className="forward-source-context" data-testid="forward-source-context">
+              <Avatar name={authorName} src={message?.author?.avatarUrl} size={32} />
+              <div className="forward-source-message-content">
+                <div className="forward-source-message-meta">
+                  <strong>{authorName}</strong>
+                  <span>Original message</span>
+                </div>
+                <p title={preview}>{preview || "(No text in this message)"}</p>
+              </div>
+            </div>
+          )}
+        </section>
 
         <div className="forward-live-region" aria-live="polite">
           {error && <div className="error forward-error" role="alert">{error}</div>}
