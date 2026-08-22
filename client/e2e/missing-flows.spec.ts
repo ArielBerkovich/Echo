@@ -290,7 +290,7 @@ test("opens, zooms, and downloads authenticated attachments", async ({ page }) =
   await page.keyboard.press("=");
   await page.keyboard.up("Control");
   await expect(lightbox.getByTestId("lightbox-zoom-label")).toHaveText("200%");
-  for (let i = 0; i < 6; i += 1) await zoomIn.click();
+  for (let i = 0; i < 4; i += 1) await zoomIn.click();
   await expect(lightbox.getByTestId("lightbox-zoom-label")).toHaveText("400%");
   await expect(zoomIn).toBeDisabled();
   await zoomOut.click();

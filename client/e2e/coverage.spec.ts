@@ -209,8 +209,8 @@ test("edits message attachments from the composer", async ({ page }) => {
   await page.getByTestId("composer-send").click();
 
   await expect(message.locator('[data-testid^="image-attachment-"]')).toHaveCount(1);
-  await expect(message.locator('[title="replacement.png"]')).toBeVisible();
-  await expect(message.locator('[title="original.png"]')).toHaveCount(0);
+  await expect(message.locator('img[alt="replacement.png"]')).toBeVisible();
+  await expect(message.locator('img[alt="original.png"]')).toHaveCount(0);
 });
 
 test("toggles reactions and pins messages", async ({ page }) => {
