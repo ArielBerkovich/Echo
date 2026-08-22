@@ -1254,7 +1254,7 @@ export default function ChannelView({
             onOpenChannel={onOpenChannel}
             onAddCustomEmoji={onAddCustomEmoji}
             onClose={() => { setThread(null); setThreadJumpTargetId(null); setThreadLightbox(null); }}
-            onThreadRead={onThreadRead}
+            onThreadRead={(rootId) => onThreadRead?.(channel.id, rootId)}
             onChannelUpdated={onChannelUpdated}
             canPost={canPost}
             onOpenLightbox={(src, name) => setThreadLightbox({ src, name })}

@@ -746,6 +746,33 @@ test("opens a thread activity item at the exact reply", async ({ page }) => {
   await expect(messageById(page, reply.message.id)).toBeInViewport();
 });
 
+test("reading a thread marks its Activity notifications read", async ({ page }) => {
+  const stamp = Date.now();
+  const reply = await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.projectChannel.id,
+      parentId: fixture.messages.threadRoot.id,
+      body: `Thread activity ${stamp}`,
+      externalKey: `thread-activity-read-${stamp}`,
+    },
+  });
+
+  await expect.poll(async () => {
+    const activity = await requestAsToken(page, fixture.alice.token, "/activity");
+    return activity.items.find((item) => item.messageId === reply.message.id)?.unread;
+  }).toBe(true);
+
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
+  await page.getByTestId(`message-${fixture.messages.threadRoot.id}-reply-count`).click();
+  await expect(page.getByTestId("thread-panel")).toBeVisible();
+  await expect.poll(async () => {
+    const activity = await requestAsToken(page, fixture.alice.token, "/activity");
+    return activity.items.find((item) => item.messageId === reply.message.id)?.unread;
+  }).toBe(false);
+});
+
 test("shows saved messages and removes one from saved", async ({ page }) => {
   const unsave = page.waitForResponse(
     (res) => res.url().includes("/api/saved/") && res.request().method() === "POST"

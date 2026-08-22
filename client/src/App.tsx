@@ -395,6 +395,19 @@ export default function App() {
     }
   }
 
+  // Thread read markers and Activity notifications are separate state. When
+  // a user opens a thread normally, acknowledge only the Activity items that
+  // belong to that thread (mentions, replies, and reactions), leaving other
+  // notifications untouched.
+  async function handleThreadRead(channelId, rootId) {
+    const ids = activityItems
+      .filter((item) => item.channelId === channelId && item.threadId === rootId && item.unread)
+      .map((item) => item.id);
+    if (!ids.length) return;
+    await api.markActivityItemsRead(ids).catch(() => {});
+    queryClient.invalidateQueries({ queryKey: queryKeys.activity });
+  }
+
   // Restore the user's last view + conversation (or fall back to the first
   // channel) once channels & DMs are loaded.
   function applyLocation(saved, chs, conversations) {
@@ -1412,6 +1425,7 @@ export default function App() {
             onChannelUpdated: upsertChannel,
             onJoin: handleJoinChannel,
             onRead: handleRead,
+            onThreadRead: handleThreadRead,
             openThreadId: activeChannel && openThreadReq?.channelId === activeChannel.id ? openThreadReq.rootId : null,
             openThreadJumpMessageId: activeChannel && openThreadReq?.channelId === activeChannel.id ? openThreadReq.messageId : null,
             onThreadOpened: () => setOpenThreadReq(null),
