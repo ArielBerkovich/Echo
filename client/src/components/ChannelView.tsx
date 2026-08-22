@@ -1290,6 +1290,12 @@ export default function ChannelView({
           channels={channels}
           dms={dms}
           users={users}
+          channelId={channel.id}
+          channelType={channel.type}
+          currentUserId={user.id}
+          usersById={usersById}
+          renderMarkdown={renderMarkdown}
+          emojiMap={emojiMap}
           customEmojis={customEmojis}
           onAddCustomEmoji={onAddCustomEmoji}
           onForward={forwardTo}

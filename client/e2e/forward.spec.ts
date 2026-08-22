@@ -39,27 +39,37 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe("forwarding", () => {
-  test("previews the source and keeps the note optional", async ({ page }) => {
+  test("prioritizes recipient selection with compact source context", async ({ page }) => {
     await openForwardDialog(page);
 
     const modal = forwardModal(page);
-    await expect(modal).toContainText(fixture.messages.searchHit.body);
-    await expect(modal).toContainText("Original message");
-    await expect(modal.locator(".forward-note-field .forward-field-heading")).toContainText("Note");
+    await expect(page.getByRole("dialog")).toHaveAccessibleName("Forward to");
+    await expect(modal.locator(".forward-source-card")).toContainText(fixture.messages.searchHit.body);
+    await expect(modal.locator(".forward-result-group-label")).toHaveCount(0);
     await expect(modal.getByTestId("composer-editor")).toHaveAttribute("data-placeholder", "Add context for the recipient…");
-    await expect(modal.locator(".composer-toolbar")).toBeVisible();
-    await expect(modal.locator(".composer-actions")).toBeVisible();
-    await expect(modal.getByTestId("composer-send-options")).toHaveCount(0);
+    await expect(modal.locator(".composer")).toBeVisible();
     await expect(modal.getByTestId("forward-send-selected")).toBeDisabled();
+
+    const actions = modal.locator(".forward-actions");
+    await expect(actions).toBeVisible();
   });
 
-  test("keeps Enter in the note editor from sending to its synthetic channel", async ({ page }) => {
+  test("shows recent destinations and keeps the note composer available", async ({ page }) => {
+    await openForwardDialog(page);
+
+    const modal = forwardModal(page);
+    await modal.getByTestId("forward-search").fill(fixture.projectChannel.name);
+    await expect(destinationByLabel(modal, fixture.projectChannel.name)).toBeVisible();
+    await modal.getByTestId("composer-editor").click();
+    await expect(modal.locator(".forward-destination-list")).toHaveCount(0);
+  });
+
+  test("forwards a plain-text note", async ({ page }) => {
     await openForwardDialog(page);
 
     const modal = forwardModal(page);
     const note = "Forward context";
     await modal.getByTestId("composer-editor").fill(note);
-    await modal.getByTestId("composer-editor").press("Enter");
 
     await modal.getByTestId("forward-search").fill(fixture.projectChannel.name);
     await destinationByLabel(modal, fixture.projectChannel.name).click();
@@ -69,7 +79,7 @@ test.describe("forwarding", () => {
     await expectForwardedWithNote(page, fixture.projectChannel.id, note);
   });
 
-  test("renders mentions in the forwarded note and keeps Hebrew notes left-aligned", async ({ page }) => {
+  test("preserves Hebrew notes when forwarding", async ({ page }) => {
     await openForwardDialog(page);
 
     const modal = forwardModal(page);
@@ -103,7 +113,7 @@ test.describe("forwarding", () => {
     const send = modal.getByTestId("forward-send-selected");
     await search.fill(fixture.bob.displayName);
 
-    await expect(modal).toContainText("Search everyone");
+    await expect(modal.locator(".forward-result-group-label")).toHaveText("People and direct messages");
     await expect(modal.locator('.forward-destination-copy strong').first()).toBeVisible();
     await expect(modal.locator(".forward-destination-row").filter({ hasText: fixture.projectChannel.name })).toHaveCount(0);
     const bobTarget = destinationByLabel(modal, fixture.bob.displayName);
@@ -113,7 +123,8 @@ test.describe("forwarding", () => {
     await expect(send).toHaveText("Forward to 1");
 
     await search.fill("");
-    await expect(modal.locator(".forward-destination-list")).toHaveCount(0);
+    await expect(modal.locator(".forward-destination-list")).toBeVisible();
+    await expect(modal.locator(".forward-result-group-label")).toHaveCount(0);
     await expect(modal.locator(".forward-chip")).toContainText(fixture.bob.displayName);
     await expect(send).toHaveText("Forward to 1");
   });

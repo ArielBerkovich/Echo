@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Avatar from "./Avatar.js";
-import Modal, { ModalActions } from "./Modal.js";
 import Composer from "./Composer.js";
-import { Forward as ForwardIcon, XIcon } from "lucide-react";
-import { formatDateTime } from "../lib/time.js";
-import { useAuthUrl } from "../lib/useAuthUrl.js";
+import Message from "./Message.js";
+import Modal, { ModalActions } from "./Modal.js";
+import { XIcon } from "lucide-react";
 
 const MAX_DESTINATIONS = 10;
 const MAX_VISIBLE_SEARCH_RESULTS = 20;
@@ -16,9 +15,8 @@ function destinationKey(destination) {
 function fuzzyMatch(destination, query) {
   const normalizedQuery = query.trim().toLowerCase();
   if (!normalizedQuery) return false;
-  const label = destination.label.toLowerCase();
-  const handle = destination.handle.toLowerCase();
-  return label.includes(normalizedQuery) || handle.includes(normalizedQuery);
+  return destination.label.toLowerCase().includes(normalizedQuery)
+    || destination.handle.toLowerCase().includes(normalizedQuery);
 }
 
 function matchRank(destination, query) {
@@ -42,28 +40,17 @@ function DestinationIcon({ destination }) {
   return <Avatar name={destination.label} src={destination.avatarUrl} size={34} />;
 }
 
-function PreviewAttachment({ attachment }) {
-  const src = useAuthUrl(attachment?.url);
-  if (!src || !attachment?.isImage) return null;
-  return <img className="forward-attachment-thumb" src={src} alt={attachment.name || "Attachment"} />;
-}
-
-// Multi-destination forward flow. It keeps the source conversation mounted and
-// performs one guarded forward request per selected destination.
-export default function ForwardModal({ message, channels = [], dms = [], users = [], customEmojis = [], onAddCustomEmoji, onForward, onSuccess, onClose }) {
+// Recipient-first forwarding flow. Search and selection stay synchronous so
+// keyboard input always acts on exactly what is visible.
+export default function ForwardModal({ message, channels = [], dms = [], users = [], customEmojis = [], channelId = "", channelType = "public", currentUserId = "", usersById = new Map(), renderMarkdown, emojiMap = {}, onAddCustomEmoji, onForward, onSuccess, onClose }) {
   const [query, setQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selected, setSelected] = useState([]);
   const [note, setNote] = useState("");
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState(null);
-  const searchRef = useRef(null);
+  const [searchFocused, setSearchFocused] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedQuery(query.trim()), 200);
-    return () => clearTimeout(timer);
-  }, [query]);
+  const searchRef = useRef(null);
 
   const destinationGroups = useMemo(() => {
     const channelItems = channels.map((channel) => ({
@@ -92,40 +79,42 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
       }));
     return {
       recent: [...dmItems, ...channelItems],
-      channels: channelItems,
-      dms: [...dmItems, ...people],
       all: [...channelItems, ...dmItems, ...people],
     };
   }, [channels, dms, users]);
 
+  const hasQuery = Boolean(query.trim());
   const resultGroups = useMemo(() => {
-    const source = debouncedQuery
+    const matches = hasQuery
       ? destinationGroups.all
-          .filter((destination) => fuzzyMatch(destination, debouncedQuery))
-          .sort((left, right) => matchRank(left, debouncedQuery) - matchRank(right, debouncedQuery))
+          .filter((destination) => fuzzyMatch(destination, query))
+          .sort((left, right) => matchRank(left, query) - matchRank(right, query))
           .slice(0, MAX_VISIBLE_SEARCH_RESULTS)
-      : [];
-    if (debouncedQuery) {
-      return [
-        { label: "Channels", kind: "channel", items: source.filter((item) => item.kind === "channel") },
-        { label: "Direct messages", kind: "dm", items: source.filter((item) => item.kind !== "channel") },
-      ].filter((group) => group.items.length);
-    }
-    return [{ label: "Recent conversations", kind: "recent", items: source }].filter((group) => group.items.length);
-  }, [debouncedQuery, destinationGroups]);
+      : destinationGroups.recent.slice(0, MAX_VISIBLE_SEARCH_RESULTS);
+
+    if (!hasQuery) return [{ label: "Recent destinations", items: matches }].filter((group) => group.items.length);
+
+    return [
+      { label: "Channels", items: matches.filter((item) => item.kind === "channel") },
+      { label: "People and direct messages", items: matches.filter((item) => item.kind !== "channel") },
+    ].filter((group) => group.items.length);
+  }, [destinationGroups, hasQuery, query]);
 
   const flatResults = useMemo(() => resultGroups.flatMap((group) => group.items), [resultGroups]);
-
-  useEffect(() => {
-    setActiveIndex((index) => Math.min(index, Math.max(0, flatResults.length - 1)));
-  }, [flatResults.length]);
+  const selectedKeys = useMemo(() => new Set(selected.map(destinationKey)), [selected]);
+  const showResultList = searchFocused;
+  const isSubmitting = status === "submitting";
+  const disabled = !selected.length || isSubmitting;
+  const noteChannel = useMemo(() => ({
+    id: `forward-note-${message?.id || "message"}`,
+    type: "dm",
+    dmName: "the recipient",
+  }), [message?.id]);
 
   function addDestination(destination) {
-    if (selected.some((item) => destinationKey(item) === destinationKey(destination))) return;
-    if (selected.length >= MAX_DESTINATIONS) return;
+    if (selectedKeys.has(destinationKey(destination)) || selected.length >= MAX_DESTINATIONS) return;
     setSelected((previous) => [...previous, destination]);
     setQuery("");
-    setDebouncedQuery("");
     setActiveIndex(0);
     requestAnimationFrame(() => searchRef.current?.focus());
   }
@@ -133,6 +122,12 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
   function removeDestination(destination) {
     setSelected((previous) => previous.filter((item) => destinationKey(item) !== destinationKey(destination)));
     requestAnimationFrame(() => searchRef.current?.focus());
+  }
+
+  function handleSearchBlur() {
+    requestAnimationFrame(() => {
+      setSearchFocused(Boolean(searchRef.current?.closest(".forward-recipient-picker")?.contains(document.activeElement)));
+    });
   }
 
   function handleSearchKeyDown(event) {
@@ -144,12 +139,14 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
       setActiveIndex((index) => flatResults.length ? (index - 1 + flatResults.length) % flatResults.length : 0);
     } else if (event.key === "Enter" && flatResults[activeIndex]) {
       event.preventDefault();
-      addDestination(flatResults[activeIndex]);
+      const destination = flatResults[activeIndex];
+      if (selectedKeys.has(destinationKey(destination))) removeDestination(destination);
+      else addDestination(destination);
     }
   }
 
   async function submit() {
-    if (!selected.length || status === "submitting") return;
+    if (!selected.length || isSubmitting) return;
     setStatus("submitting");
     setError(null);
     try {
@@ -165,145 +162,163 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
     }
   }
 
-  const authorName = message?.author?.displayName || "Unknown person";
-  const preview = String(message?.body || "").trim();
-  const disabled = !selected.length || status === "submitting";
-  const noteChannel = useMemo(() => ({
-    id: `forward-note-${message?.id || "message"}`,
-    type: "dm",
-    dmName: "the recipient",
-  }), [message?.id]);
-
   return (
-    <Modal title="Forward message" className="forward-modal" onClose={onClose}>
+    <Modal
+      title="Forward to"
+      className="forward-modal"
+      closeClassName="forward-close"
+      closeDisabled={isSubmitting}
+      onClose={onClose}
+    >
       <div className="forward-dialog" data-testid="forward-modal">
-        <section className="forward-source-card" aria-label="Message to forward">
-          <div className="forward-source-header">
-            <Avatar name={authorName} src={message?.author?.avatarUrl} size={36} />
-            <div className="forward-source-author">
-              <strong>{authorName}</strong>
-              <span>Original message{message?.createdAt ? ` · ${formatDateTime(message.createdAt)}` : ""}</span>
+        <div className="forward-content">
+          <section className="forward-recipient-picker" aria-labelledby="forward-recipient-heading">
+            <div className="forward-destination-heading">
+              <div>
+                <strong id="forward-recipient-heading">Send to</strong>
+                {selected.length > 0 && <span>{`${selected.length} recipient${selected.length === 1 ? "" : "s"} selected`}</span>}
+              </div>
+              <small>{selected.length} of {MAX_DESTINATIONS}</small>
             </div>
-            <ForwardIcon aria-hidden="true" />
+
+            {selected.length > 0 && (
+              <div className="forward-selected-chips" aria-label="Selected recipients">
+                {selected.map((destination) => (
+                  <span className="forward-chip" key={destinationKey(destination)} title={labelFor(destination)}>
+                    <span>{labelFor(destination)}</span>
+                    <button type="button" aria-label={`Remove ${labelFor(destination)}`} onClick={() => removeDestination(destination)} disabled={isSubmitting}>
+                      <XIcon size={13} aria-hidden="true" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <input
+              ref={searchRef}
+              className={`people-filter forward-destination-search${showResultList ? " has-results" : ""}`}
+              data-testid="forward-search"
+              type="search"
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setActiveIndex(0);
+              }}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={handleSearchBlur}
+              onKeyDown={handleSearchKeyDown}
+              placeholder="Search people and channels"
+              autoFocus
+              disabled={!destinationGroups.all.length || isSubmitting}
+              aria-label="Search people and channels"
+            />
+
+            {showResultList && (
+              <div className="forward-destination-list" data-testid="forward-destination-list" aria-label="Recipient search results">
+                {!flatResults.length ? (
+                  <div className="people-empty">No recipients match “{query.trim()}”</div>
+                ) : resultGroups.map((group) => (
+                  <section className="forward-result-group" key={group.label} aria-label={group.label}>
+                    {hasQuery && <div className="forward-result-group-label">{group.label}</div>}
+                    {group.items.map((destination) => {
+                      const index = flatResults.indexOf(destination);
+                      const isSelected = selectedKeys.has(destinationKey(destination));
+                      const atLimit = selected.length >= MAX_DESTINATIONS && !isSelected;
+                      return (
+                        <button
+                          type="button"
+                          className={`forward-destination-row ${isSelected ? "selected" : ""} ${activeIndex === index ? "keyboard-active" : ""}`}
+                          key={destinationKey(destination)}
+                          aria-pressed={isSelected}
+                          disabled={isSubmitting || atLimit}
+                          onMouseEnter={() => setActiveIndex(index)}
+                          onClick={() => isSelected ? removeDestination(destination) : addDestination(destination)}
+                        >
+                          <DestinationIcon destination={destination} />
+                          <span className="forward-destination-copy">
+                            <strong>{labelFor(destination)}</strong>
+                            <small>{destination.handle}</small>
+                          </span>
+                          <span className="forward-selection-indicator" aria-hidden="true">{isSelected ? "✓" : "+"}</span>
+                        </button>
+                      );
+                    })}
+                  </section>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <div className="forward-note-field" data-testid="forward-note-field">
+            <Composer
+              key={noteChannel.id}
+              channel={noteChannel}
+              users={users}
+              channels={channels}
+              customEmojis={customEmojis}
+              onAddCustomEmoji={onAddCustomEmoji}
+              onDraftChange={(value) => setNote(value.slice(0, 2000))}
+              onError={setError}
+              placeholder="Add context for the recipient…"
+              showSchedule={false}
+              showSend={false}
+              showAttachments={false}
+              disabled={isSubmitting}
+            />
           </div>
-          <p title={preview}>{preview || "(No text in this message)"}</p>
-          {message?.attachments?.some((attachment) => attachment.isImage) && (
-            <div className="forward-attachment-strip">
-              {message.attachments.filter((attachment) => attachment.isImage).slice(0, 3).map((attachment) => (
-                <PreviewAttachment key={attachment.key} attachment={attachment} />
-              ))}
-            </div>
-          )}
-        </section>
 
-        <section className="forward-destination-section" aria-label="Forward destination">
-          <div className="forward-destination-heading">
-            <div>
-              <strong>To</strong>
-              <span>{debouncedQuery ? "Search everyone" : selected.length ? `${selected.length} selected` : "Choose one or more destinations"}</span>
-            </div>
-            <small>{selected.length}/{MAX_DESTINATIONS}</small>
+          <section className="forward-source-card" aria-label="Message being forwarded">
+            <Message
+              m={message}
+              channelId={channelId}
+              channelType={channelType}
+              grouped={false}
+              highlighted={false}
+              currentUserId={currentUserId}
+              usersById={usersById}
+              renderMarkdown={renderMarkdown || ((body) => body)}
+              emojiMap={emojiMap}
+              canJumpToForward={() => false}
+              saved={false}
+              onToggleSave={() => {}}
+              editing={null}
+              menuOpen={false}
+              pickerOpen={false}
+              onReact={() => {}}
+              onToggleReaction={() => {}}
+              onOpenThread={() => {}}
+              onQuote={() => {}}
+              onJump={() => {}}
+              onToggleMenu={() => {}}
+              onCloseMenu={() => {}}
+              onStartEdit={() => {}}
+              onDelete={() => {}}
+              onEditChange={() => {}}
+              onEditSave={() => {}}
+              onEditCancel={() => {}}
+              showActions={false}
+              onTogglePin={() => {}}
+              onIssuePasswordHelp={() => {}}
+              canPin={false}
+              canQuote={false}
+            />
+          </section>
+
+          <div className="forward-live-region" aria-live="polite">
+            {error && <div className="error forward-error" role="alert">{error}</div>}
           </div>
-
-          {selected.length > 0 && (
-            <div className="forward-selected-chips" aria-label="Selected destinations">
-              {selected.map((destination) => (
-                <span className="forward-chip" key={destinationKey(destination)} title={labelFor(destination)}>
-                  <span>{labelFor(destination)}</span>
-                  <button type="button" aria-label={`Remove ${labelFor(destination)}`} onClick={() => removeDestination(destination)} disabled={status === "submitting"}>
-                    <XIcon size={13} />
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
-
-          <input
-            ref={searchRef}
-            className="people-filter forward-destination-search"
-            data-testid="forward-search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            onKeyDown={handleSearchKeyDown}
-            placeholder="Search channels and people"
-            autoFocus
-            disabled={!destinationGroups.all.length || status === "submitting"}
-            aria-controls={debouncedQuery ? "forward-results" : undefined}
-            aria-activedescendant={debouncedQuery && flatResults[activeIndex] ? `forward-result-${destinationKey(flatResults[activeIndex])}` : undefined}
-          />
-
-          {debouncedQuery && (
-            <div className="forward-destination-list" id="forward-results" data-testid="forward-destination-list" role="listbox" aria-label="Forward destinations">
-              {!resultGroups.length ? (
-                <div className="people-empty">No matches for “{debouncedQuery}”</div>
-              ) : resultGroups.map((group) => (
-                <div className="forward-result-group" key={group.label}>
-                  <div className="forward-result-group-label">{group.label}</div>
-                  {group.items.map((destination) => {
-                    const index = flatResults.indexOf(destination);
-                    const isSelected = selected.some((item) => destinationKey(item) === destinationKey(destination));
-                    return (
-                      <button
-                        type="button"
-                        className={`forward-destination-row ${isSelected ? "selected" : ""} ${activeIndex === index ? "keyboard-active" : ""}`}
-                        key={destinationKey(destination)}
-                        id={`forward-result-${destinationKey(destination)}`}
-                        role="option"
-                        aria-selected={isSelected}
-                        disabled={status === "submitting" || (selected.length >= MAX_DESTINATIONS && !isSelected)}
-                        onMouseEnter={() => setActiveIndex(index)}
-                        onClick={() => isSelected ? removeDestination(destination) : addDestination(destination)}
-                      >
-                        <DestinationIcon destination={destination} />
-                        <span className="forward-destination-copy">
-                          <strong>{labelFor(destination)}</strong>
-                          <small>{destination.handle}</small>
-                        </span>
-                        <span className="forward-selection-indicator" aria-hidden="true">{isSelected ? "✓" : "＋"}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <div className="forward-note-field" data-testid="forward-note-field">
-          <span className="forward-field-heading">
-            <span>Note <em>Optional</em></span>
-          </span>
-          <Composer
-            key={noteChannel.id}
-            channel={noteChannel}
-            users={users}
-            channels={channels}
-            customEmojis={customEmojis}
-            onAddCustomEmoji={onAddCustomEmoji}
-            onDraftChange={(value) => setNote(value.slice(0, 2000))}
-            onError={setError}
-            placeholder="Add context for the recipient…"
-            showSchedule={false}
-            showSend={false}
-            showAttachments={false}
-            disabled={status === "submitting"}
-          />
         </div>
 
-        <div className="forward-live-region" aria-live="polite">
-          {error && <div className="error forward-error" role="alert">{error}</div>}
-        </div>
         <ModalActions className="forward-actions" data-testid="forward-actions">
-          <button type="button" className="btn-secondary" onClick={onClose} disabled={status === "submitting"}>Cancel</button>
+          <button type="button" className="btn-secondary" onClick={onClose} disabled={isSubmitting}>Cancel</button>
           <button
             type="button"
             className="btn-primary"
             data-testid="forward-send-selected"
             disabled={disabled}
-            aria-disabled={disabled}
             onClick={submit}
           >
-            {status === "submitting" ? "Forwarding…" : `Forward${selected.length ? ` to ${selected.length}` : ""}`}
+            {isSubmitting ? "Forwarding…" : selected.length ? `Forward to ${selected.length}` : "Forward"}
           </button>
         </ModalActions>
       </div>
