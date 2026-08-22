@@ -47,6 +47,21 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.activity }),
   });
+  const markReadMutation = useMutation({
+    mutationFn: () => api.markActivityRead(),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.activity });
+      const previous = queryClient.getQueryData(queryKeys.activity);
+      queryClient.setQueryData(queryKeys.activity, (current = []) =>
+        current.map((item) => ({ ...item, unread: false }))
+      );
+      return { previous };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous) queryClient.setQueryData(queryKeys.activity, context.previous);
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.activity }),
+  });
 
   useEffect(() => {
     onLoaded?.(items);
@@ -67,17 +82,31 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
       subtitle="Mentions, replies & broadcasts · last 30 days"
       testId="activity"
       actions={items.length ? (
-        <button
-          type="button"
-          className="header-action activity-clear"
-          data-testid="activity-clear-all"
-          onClick={() => setConfirmClear(true)}
-          disabled={clearMutation.isPending}
-          title="Clear all activity"
-        >
-          <Trash2Icon size={15} strokeWidth={1.8} />
-          <span>{clearMutation.isPending ? "Clearing…" : "Clear all"}</span>
-        </button>
+        <>
+          {items.some((item) => item.unread) ? (
+            <button
+              type="button"
+              className="header-action"
+              data-testid="activity-mark-all-read"
+              onClick={() => markReadMutation.mutate()}
+              disabled={markReadMutation.isPending}
+              title="Mark all activity as read"
+            >
+              <span>{markReadMutation.isPending ? "Marking…" : "Mark all read"}</span>
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="header-action activity-clear"
+            data-testid="activity-clear-all"
+            onClick={() => setConfirmClear(true)}
+            disabled={clearMutation.isPending}
+            title="Clear all activity"
+          >
+            <Trash2Icon size={15} strokeWidth={1.8} />
+            <span>{clearMutation.isPending ? "Clearing…" : "Clear all"}</span>
+          </button>
+        </>
       ) : null}
     >
       <FeedContent
@@ -148,6 +177,7 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
 }
 
 function kindLabel(it) {
+  if (it.kind === "dm") return "sent you a message";
   if (it.kind === "broadcast") return "📣 notified the channel";
   if (it.kind === "reply") return "replied in a thread";
   if (it.kind === "reaction") return `reacted ${it.emoji || ""} to your message`;

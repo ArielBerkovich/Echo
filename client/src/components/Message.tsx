@@ -1,4 +1,4 @@
-import { createContext, memo, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ArrowUpRight, ChartNoAxesColumnIncreasing, Check, LoaderCircle } from "lucide-react";
 import Avatar from "./Avatar.js";
@@ -9,34 +9,6 @@ import { formatTime } from "../lib/time.js";
 import {
   ShareIcon, EmojiAddIcon, ReplyIcon, BookmarkIcon, PencilIcon, TrashIcon, PinIcon, CopyIcon, MoreIcon, QuoteIcon,
 } from "./Icons.js";
-
-export const MessageVisibilityContext = createContext(null);
-
-export function MessageVisibilityProvider({ onChange, children }) {
-  const callbackRef = useRef(onChange);
-  const [observer, setObserver] = useState(null);
-  useEffect(() => {
-    callbackRef.current = onChange;
-  }, [onChange]);
-  useEffect(() => {
-    if (typeof IntersectionObserver === "undefined") return undefined;
-    const next = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => callbackRef.current?.(entry.target.dataset.mid, entry.isIntersecting));
-    }, { threshold: 0.01 });
-    setObserver(next);
-    return () => next.disconnect();
-  }, []);
-  const value = useMemo(() => observer ? {
-    observe(element) {
-      observer.observe(element);
-      return () => {
-        callbackRef.current?.(element.dataset.mid, false);
-        observer.unobserve(element);
-      };
-    },
-  } : null, [observer]);
-  return <MessageVisibilityContext.Provider value={value}>{children}</MessageVisibilityContext.Provider>;
-}
 
 // A "joined the channel" / "created this channel" log line.
 export function SystemMessage({ m }) {
@@ -89,7 +61,6 @@ function Message({
   onOpenLightbox, // (src, name) => open image in a side panel (when in thread)
   onTogglePin,
   onIssuePasswordHelp,
-  onVisibilityChange,
   canPin = true,
   canQuote = false,
 }) {
@@ -107,12 +78,6 @@ function Message({
   const actionsRef = useRef(null);
   const menuRef = useRef(null);
   const menuTriggerRef = useRef(null);
-  const visibilityContext = useContext(MessageVisibilityContext);
-
-  useEffect(() => {
-    if (!onVisibilityChange || !visibilityContext || !messageRef.current) return undefined;
-    return visibilityContext.observe(messageRef.current);
-  }, [onVisibilityChange, visibilityContext, m.id]);
   const hoverLeaveTimerRef = useRef(null);
   const hoverGenerationRef = useRef(0);
   const menuOpenRef = useRef(menuOpen);

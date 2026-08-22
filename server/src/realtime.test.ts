@@ -127,7 +127,6 @@ describe("realtime helpers", () => {
       isAdmin: true,
       mustResetPassword: true,
       onboarded: true,
-      activitySeenAt: new Date("2026-06-01T00:00:00Z"),
     });
 
     assert.deepEqual(calls, [

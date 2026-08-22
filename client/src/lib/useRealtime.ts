@@ -13,7 +13,6 @@ export function useRealtime({
   user,
   activeChannel,
   view,
-  visibleMessageIds,
   channels,
   dms,
   starredIds,
@@ -33,9 +32,8 @@ export function useRealtime({
   onAuthInvalid,
 }) {
   const queryClient = useQueryClient();
-  // Activity badge counts (live). Top-level mentions keyed by channel (cleared
-  // when you open the channel); thread mentions keyed by their root (cleared
-  // when you open the thread).
+  // Activity badge counts (live), grouped by conversation for the sidebar.
+  // The authoritative unread state lives on each persistent Activity event.
   const [activityUnread, setActivityUnread] = useState({});
   const [activityThreadUnread, setActivityThreadUnread] = useState({});
   const [onlineIds, setOnlineIds] = useState(() => new Set()); // ids of users currently connected
@@ -45,14 +43,11 @@ export function useRealtime({
   // Mirror state into refs so the stable socket listeners read current values.
   const activeRef = useRef(null);
   const viewRef = useRef(view);
-  const visibleMessageIdsRef = useRef(visibleMessageIds || new Set());
-  const markedReactionReadsRef = useRef(new Map());
   const channelsRef = useRef([]);
   const dmsRef = useRef([]);
   const starredRef = useRef(new Set());
   useEffect(() => void (activeRef.current = activeChannel), [activeChannel]);
   useEffect(() => void (viewRef.current = view), [view]);
-  useEffect(() => void (visibleMessageIdsRef.current = visibleMessageIds || new Set()), [visibleMessageIds]);
   useEffect(() => void (channelsRef.current = channels), [channels]);
   useEffect(() => void (dmsRef.current = dms), [dms]);
   useEffect(() => void (starredRef.current = starredIds || new Set()), [starredIds]);
@@ -61,62 +56,18 @@ export function useRealtime({
     return userList.map((u) => (u.id === updated.id ? { ...u, ...updated } : u));
   }
 
-  // Rebuild the badge counts from a fresh activity feed (server is the truth).
+  // Rebuild the badge counts from persistent Activity notifications. Channel
+  // and thread Read markers are intentionally not part of this calculation.
   function syncActivity(items) {
     const byChannel = {};
     const byThread = {};
-    const visibleReactionIds = [];
-    const active = activeRef.current;
-    const viewingConversation =
-      (viewRef.current === "home" || viewRef.current === "dms") &&
-      active &&
-      !document.hidden;
     for (const it of items) {
       if (!it.unread) continue;
-      // An activity whose related message is currently visible has already
-      // been seen in the conversation, so it should not add an unread badge.
-      const activityMessageIsVisible =
-        !!it.messageId &&
-        viewingConversation &&
-        it.channelId === active.id &&
-        visibleMessageIdsRef.current.has(it.messageId);
-      if (activityMessageIsVisible && it.kind === "reaction") {
-        const createdAt = String(it.createdAt || "");
-        if (markedReactionReadsRef.current.get(it.id) !== createdAt) {
-          visibleReactionIds.push({ id: it.id, createdAt });
-        }
-        continue;
-      }
-      if (activityMessageIsVisible) continue;
       if (it.threadId) byThread[it.threadId] = (byThread[it.threadId] || 0) + 1;
       else byChannel[it.channelId] = (byChannel[it.channelId] || 0) + 1;
     }
     setActivityUnread(byChannel);
     setActivityThreadUnread(byThread);
-    if (visibleReactionIds.length) {
-      visibleReactionIds.forEach(({ id, createdAt }) => markedReactionReadsRef.current.set(id, createdAt));
-      api.markActivityItemsRead(visibleReactionIds.map(({ id }) => id))
-        .then(() => queryClient.invalidateQueries({ queryKey: queryKeys.activity }))
-        .catch(() => visibleReactionIds.forEach(({ id }) => markedReactionReadsRef.current.delete(id)));
-    }
-  }
-
-
-  function clearChannelActivity(channelId) {
-    setActivityUnread((prev) => {
-      if (!prev[channelId]) return prev;
-      const next = { ...prev };
-      delete next[channelId];
-      return next;
-    });
-  }
-  function clearThreadActivity(rootId) {
-    setActivityThreadUnread((prev) => {
-      if (!prev[rootId]) return prev;
-      const next = { ...prev };
-      delete next[rootId];
-      return next;
-    });
   }
 
   function refreshActivity() {
@@ -475,7 +426,5 @@ export function useRealtime({
     connectionStatus,
     recoveryEpoch,
     syncActivity,
-    clearChannelActivity,
-    clearThreadActivity,
   };
 }

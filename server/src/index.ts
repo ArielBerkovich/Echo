@@ -10,6 +10,7 @@ import { Message } from "./models/Message.js";
 import { UserAlias } from "./models/UserAlias.js";
 import { MigrationIntent } from "./models/MigrationIntent.js";
 import { UserMigrationAudit } from "./models/UserMigrationAudit.js";
+import { ActivityEvent } from "./models/ActivityEvent.js";
 import { createMetricsApp } from "./metrics.js";
 
 async function start() {
@@ -20,6 +21,7 @@ async function start() {
   await UserAlias.syncIndexes();
   await MigrationIntent.syncIndexes();
   await UserMigrationAudit.syncIndexes();
+  await ActivityEvent.syncIndexes();
 
   const app = createApp();
   const httpServer = http.createServer(app);

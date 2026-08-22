@@ -96,7 +96,6 @@ export default function App() {
   const [jumpMessageId, setJumpMessageId] = useState(null); // message to scroll to + highlight
   const [searchQuery, setSearchQuery] = useState(null); // active message-search query (results pane)
   const [openThreadReq, setOpenThreadReq] = useState(null); // { channelId, rootId, messageId } — thread to open after a jump
-  const [visibleMessageIds, setVisibleMessageIds] = useState(() => new Set());
   const [scrollToBottomTarget, setScrollToBottomTarget] = useState(null); // { id, channelId } pinned-open request
   const [toast, setToast] = useState(null); // transient notice (e.g. no access)
   const [connectionBannerVisible, setConnectionBannerVisible] = useState(false);
@@ -186,11 +185,6 @@ export default function App() {
     clearNavigationTarget();
     searchRef.current?.clear();
     setSearchQuery(null);
-    if (nextView === "activity") {
-      api.markActivityRead()
-        .catch(() => {})
-        .finally(() => queryClient.invalidateQueries({ queryKey: queryKeys.activity }));
-    }
     if (nextView === "dms") {
       setActiveChannel(null);
       setView(nextView, null);
@@ -280,14 +274,11 @@ export default function App() {
     connectionStatus,
     recoveryEpoch,
     syncActivity,
-    clearChannelActivity,
-    clearThreadActivity,
   } =
     useRealtime({
       user,
       activeChannel,
       view,
-      visibleMessageIds,
       channels,
       dms,
       starredIds,
@@ -377,13 +368,11 @@ export default function App() {
     setScrollToBottomTarget(null);
   }
 
-  // Mark a conversation read: clear its unread locally (no refetch) and persist
-  // the read marker, throttled so a busy channel doesn't write on every message.
+  // Mark a conversation read. This only affects the conversation unread marker;
+  // Activity notifications are read independently by Activity actions.
   async function handleRead(channelId) {
     setChannels((prev) => prev.map((c) => (c.id === channelId && c.unread ? { ...c, unread: 0 } : c)));
     setDms((prev) => prev.map((d) => (d.id === channelId && d.unread ? { ...d, unread: 0 } : d)));
-    // Opening the conversation clears its activity items (server marks them read).
-    clearChannelActivity(channelId);
     const now = Date.now();
     const elapsed = now - (markReadAtRef.current[channelId] || 0);
     if (elapsed < 1500) {
@@ -574,16 +563,7 @@ export default function App() {
 
   useEffect(() => {
     if (user) syncActivity(activityItems);
-  }, [user, activityItems, visibleMessageIds]);
-
-  const handleMessageVisibilityChange = useCallback((messageId, visible) => {
-    setVisibleMessageIds((previous) => {
-      const next = new Set(previous);
-      if (visible) next.add(messageId);
-      else next.delete(messageId);
-      return next;
-    });
-  }, []);
+  }, [user, activityItems]);
 
   // Persist the current location as a backward-compatible fallback for users
   // upgrading from versions that did not expose routes in the URL.
@@ -929,6 +909,10 @@ export default function App() {
   // thread mention stays unread until the thread itself is opened).
   async function handleJump(item) {
     markNavDuringRestore();
+    if (typeof item !== "string" && item.id) {
+      await api.markActivityItemsRead([item.id]).catch(() => {});
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity });
+    }
     const channelId = typeof item === "string" ? item : item.channelId;
     // Channel add/remove activity entries are navigation events, not
     // messages. Their `id` is a synthetic activity-event id and must not be
@@ -1422,11 +1406,6 @@ export default function App() {
             onChannelUpdated: upsertChannel,
             onJoin: handleJoinChannel,
             onRead: handleRead,
-            onThreadRead: (rootId) => {
-              clearThreadActivity(rootId);
-              queryClient.invalidateQueries({ queryKey: queryKeys.activity });
-            },
-            onMessageVisibilityChange: handleMessageVisibilityChange,
             openThreadId: activeChannel && openThreadReq?.channelId === activeChannel.id ? openThreadReq.rootId : null,
             openThreadJumpMessageId: activeChannel && openThreadReq?.channelId === activeChannel.id ? openThreadReq.messageId : null,
             onThreadOpened: () => setOpenThreadReq(null),

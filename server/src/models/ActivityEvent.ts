@@ -1,20 +1,23 @@
 import mongoose from "mongoose";
 
-// A non-message activity event (currently: someone reacted to your message).
-// Mentions and thread-reply activity are still derived from messages directly;
-// reactions need an explicit record since they carry no per-user timestamp.
+// One persistent notification in the user's Activity feed. Conversation read
+// markers are deliberately not used here: a notification can be read without
+// marking an entire channel or thread read.
 const activityEventSchema = new mongoose.Schema({
   recipient: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
   actor: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   type: { type: String, default: "reaction" },
   channel: { type: mongoose.Schema.Types.ObjectId, ref: "Channel", required: true },
-  message: { type: mongoose.Schema.Types.ObjectId, ref: "Message", required: true },
+  message: { type: mongoose.Schema.Types.ObjectId, ref: "Message", default: null },
   emoji: { type: String, default: "" },
   readAt: { type: Date, default: null },
+  // Stable identity for message-derived notifications and future event types.
+  sourceKey: { type: String, default: null },
   createdAt: { type: Date, default: Date.now },
 });
 
 activityEventSchema.index({ recipient: 1, createdAt: -1 });
+activityEventSchema.index({ sourceKey: 1 }, { unique: true, sparse: true });
 // One event per (recipient, actor, message, emoji) — re-reacting just refreshes it.
 activityEventSchema.index({ recipient: 1, actor: 1, message: 1, emoji: 1 }, { unique: true });
 

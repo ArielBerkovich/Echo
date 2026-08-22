@@ -16,7 +16,7 @@ import ThreadPanel from "./ThreadPanel.js";
 import ForwardModal from "./ForwardModal.js";
 import ChannelDetailsPanel from "./ChannelDetailsPanel.js";
 import MembersPanel from "./MembersPanel.js";
-import Message, { MessageVisibilityProvider, SystemMessage } from "./Message.js";
+import Message, { SystemMessage } from "./Message.js";
 import { LightboxImage } from "./Attachments.js";
 import Composer from "./Composer.js";
 import ConfirmDialog from "./ConfirmDialog.js";
@@ -87,7 +87,6 @@ export default function ChannelView({
   onJoin,
   onRead,
   onThreadRead,
-  onMessageVisibilityChange,
   openThreadId = null,
   openThreadJumpMessageId = null,
   onThreadOpened,
@@ -1021,7 +1020,6 @@ export default function ChannelView({
           onScroll={onMessagesScroll}
         >
           <div ref={messagesInnerRef}>
-          <MessageVisibilityProvider onChange={onMessageVisibilityChange}>
           {loadingOlder && <div className="older-loader">Loading earlier messages…</div>}
           {loading ? (
             <MessagesSkeleton />
@@ -1081,7 +1079,6 @@ export default function ChannelView({
                     onToggleSave={() => onToggleSave?.(m.id)}
                     onOpenProfile={onOpenProfile}
                     onOpenChannel={onOpenChannel}
-                    onVisibilityChange={onMessageVisibilityChange}
                     showActions={actionsFor === m.id}
                     onActivate={() => {
                       setActionsFor(m.id);
@@ -1126,8 +1123,7 @@ export default function ChannelView({
             })
           )}
             <div ref={bottomRef} />
-          </MessageVisibilityProvider>
-          </div>
+        </div>
         </div>
         {(showScrollToLatest || newMessageCount > 0) && (
           <button
@@ -1246,7 +1242,6 @@ export default function ChannelView({
             onAddCustomEmoji={onAddCustomEmoji}
             onClose={() => { setThread(null); setThreadJumpTargetId(null); setThreadLightbox(null); }}
             onThreadRead={onThreadRead}
-            onMessageVisibilityChange={onMessageVisibilityChange}
             onChannelUpdated={onChannelUpdated}
             canPost={canPost}
             onOpenLightbox={(src, name) => setThreadLightbox({ src, name })}

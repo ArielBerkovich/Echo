@@ -268,13 +268,13 @@ test("shows and permanently dismisses every supported Activity kind", async ({ b
     } finally {
       await bobContext.close();
     }
+    await expect(page.getByTestId("rail-badge-activity")).toHaveCount(activityBadgeBeforeReaction + 1);
     await expect.poll(async () => {
       const activity = await requestAsToken(page, fixture.alice.token, "/activity");
       return activity.items.find(
         (item) => item.kind === "reaction" && item.messageId === reactionRoot.message.id,
       )?.unread;
-    }).toBe(false);
-    await expect(page.getByTestId("rail-badge-activity")).toHaveCount(activityBadgeBeforeReaction);
+    }).toBe(true);
 
     const expectedKinds = ["mention", "broadcast", "reply", "reaction", "channel_add", "channel_remove"];
     await expect.poll(async () => {
@@ -302,6 +302,12 @@ test("shows and permanently dismisses every supported Activity kind", async ({ b
     ).toContainText("👍");
     await page.goto("/activity");
     await expect(page.getByTestId("activity-header")).toBeVisible();
+    await expect.poll(async () => {
+      const activity = await requestAsToken(page, fixture.alice.token, "/activity");
+      return activity.items.find(
+        (item) => item.kind === "reaction" && item.messageId === reactionRoot.message.id,
+      )?.unread;
+    }).toBe(false);
 
     for (const target of targets) {
       await expect(target).toBeVisible();

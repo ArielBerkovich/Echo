@@ -3,6 +3,7 @@ import { Message } from "./models/Message.js";
 import { getIO } from "./realtime.js";
 import { roomFor, userRoom } from "./lib/rooms.js";
 import { buildMessageActivityMetadata } from "./lib/messageActivity.js";
+import { recordMessageActivity } from "./lib/activityNotifications.js";
 import mongoose from "mongoose";
 
 export const MAX_MESSAGE_ATTACHMENTS = 10;
@@ -122,6 +123,7 @@ export async function deliverMessage({ channel, authorId, body, parentId, attach
   if (idem) doc.idempotencyKey = idem;
   const message = await Message.create(doc);
   await message.populate("author");
+  await recordMessageActivity(message, channel).catch(() => {});
 
   // A new DM message brings the conversation back for anyone who hid it.
   if (channel.type === "dm" && channel.hiddenFor?.length) {
