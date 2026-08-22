@@ -2482,6 +2482,7 @@ html[data-mode="dark"] .backend-connection-error {
 .activity-dismiss {
   flex: none;
   margin-left: auto;
+  align-self: center;
   padding: 5px;
   border-radius: 7px;
   color: var(--muted);
