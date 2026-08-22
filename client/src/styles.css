@@ -7245,8 +7245,8 @@ html[data-mode="dark"] .day-divider-label {
 .reaction.mine {
   background: color-mix(in srgb, var(--blue-400) 14%, var(--surface));
   border-color: color-mix(in srgb, var(--blue-400) 72%, var(--border));
-  color: var(--blue-500);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--blue-400) 12%, transparent);
+  color: var(--link-color);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--link-color) 12%, transparent);
 }
 .reaction-emoji {
   display: inline-flex;
