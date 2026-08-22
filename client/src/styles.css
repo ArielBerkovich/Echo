@@ -8113,7 +8113,9 @@ html[data-mode="dark"] .new-messages-button:hover {
 /* Live-rendered formatting inside the WYSIWYG editor */
 .composer-editor strong { font-weight: 700; }
 .composer-editor em { font-style: italic; }
-.composer-editor a { color: var(--blue-500); }
+.composer-editor a {
+  color: var(--link-color);
+}
 .composer-editor code {
   background: #eef2f9;
   color: #b4456f;
@@ -8767,6 +8769,7 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
   font-size: 1.35em;
   line-height: 1;
   vertical-align: -0.15em;
+  color: var(--link-color);
 }
 .markdown .emoji--jumbo {
   font-size: 2.4em;
