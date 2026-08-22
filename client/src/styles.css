@@ -6731,6 +6731,14 @@ html[data-mode="dark"] .day-divider-label {
   padding-right: 0;
   padding-left: 0;
 }
+.forward-source-message .message {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+}
+.forward-source-message .message:hover {
+  background: transparent;
+}
 .forward-source-context p {
   margin: 4px 0 0;
   max-height: 58px;

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Avatar from "./Avatar.js";
 import Modal, { ModalActions } from "./Modal.js";
 import Composer from "./Composer.js";
+import Message from "./Message.js";
 import { XIcon } from "lucide-react";
 
 const MAX_DESTINATIONS = 10;
@@ -42,7 +43,7 @@ function DestinationIcon({ destination }) {
 
 // Multi-destination forward flow. It keeps the source conversation mounted and
 // performs one guarded forward request per selected destination.
-export default function ForwardModal({ message, channels = [], dms = [], users = [], customEmojis = [], onAddCustomEmoji, onForward, onSuccess, onClose }) {
+export default function ForwardModal({ message, channels = [], dms = [], users = [], customEmojis = [], channelId = "", channelType = "public", currentUserId = "", usersById = new Map(), renderMarkdown, emojiMap = {}, onAddCustomEmoji, onForward, onSuccess, onClose }) {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selected, setSelected] = useState([]);
@@ -293,15 +294,41 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
             <span className="forward-source-chevron" aria-hidden="true">{sourceExpanded ? "−" : "+"}</span>
           </button>
           {sourceExpanded && (
-            <div className="forward-source-context" data-testid="forward-source-context">
-              <Avatar name={authorName} src={message?.author?.avatarUrl} size={32} />
-              <div className="forward-source-message-content">
-                <div className="forward-source-message-meta">
-                  <strong>{authorName}</strong>
-                  <span>Original message</span>
-                </div>
-                <p title={preview}>{preview || "(No text in this message)"}</p>
-              </div>
+            <div className="forward-source-message" data-testid="forward-source-context">
+              <Message
+                m={message}
+                channelId={channelId}
+                channelType={channelType}
+                grouped={false}
+                highlighted={false}
+                currentUserId={currentUserId}
+                usersById={usersById}
+                renderMarkdown={renderMarkdown || ((body) => body)}
+                emojiMap={emojiMap}
+                canJumpToForward={() => false}
+                saved={false}
+                onToggleSave={() => {}}
+                editing={null}
+                menuOpen={false}
+                pickerOpen={false}
+                onReact={() => {}}
+                onToggleReaction={() => {}}
+                onOpenThread={() => {}}
+                onQuote={() => {}}
+                onJump={() => {}}
+                onToggleMenu={() => {}}
+                onCloseMenu={() => {}}
+                onStartEdit={() => {}}
+                onDelete={() => {}}
+                onEditChange={() => {}}
+                onEditSave={() => {}}
+                onEditCancel={() => {}}
+                showActions={false}
+                onTogglePin={() => {}}
+                onIssuePasswordHelp={() => {}}
+                canPin={false}
+                canQuote={false}
+              />
             </div>
           )}
         </section>
