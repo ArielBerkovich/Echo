@@ -66,6 +66,28 @@ export default function ProfilePictureDialog({ file = null, currentSrc = null, o
     setOffset((current) => limitOffset(current, baseScale * nextZoom));
   }
 
+  function changeZoomBy(amount) {
+    const nextZoom = clamp(zoom + amount, 1, 3);
+    setZoom(nextZoom);
+    setOffset((current) => limitOffset(current, baseScale * nextZoom));
+  }
+
+  useEffect(() => {
+    if (!imageSize || saving) return undefined;
+    function handleZoomShortcut(event) {
+      if (!(event.ctrlKey || event.metaKey)) return;
+      if (["+", "=", "ArrowUp"].includes(event.key)) {
+        event.preventDefault();
+        changeZoomBy(0.1);
+      } else if (["-", "_", "ArrowDown"].includes(event.key)) {
+        event.preventDefault();
+        changeZoomBy(-0.1);
+      }
+    }
+    window.addEventListener("keydown", handleZoomShortcut);
+    return () => window.removeEventListener("keydown", handleZoomShortcut);
+  }, [imageSize, saving, zoom, baseScale]);
+
   function onPointerDown(event) {
     if (!imageSize || saving) return;
     event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -155,10 +177,10 @@ export default function ProfilePictureDialog({ file = null, currentSrc = null, o
       <button type="button" className="btn-secondary profile-picture-import-button" onClick={() => fileRef.current?.click()} disabled={saving}>
         <UploadIcon size={16} strokeWidth={2} /><span>Import a different image</span>
       </button>
-      <label className="profile-picture-zoom">
+      <div className="profile-picture-zoom">
         <span>Zoom</span>
         <input type="range" min="0" max="100" step="1" value={Math.round((zoom - 1) * 50)} onChange={changeZoom} disabled={!imageSize || saving} />
-      </label>
+      </div>
       {error && <div className="error">{error}</div>}
       <ModalActions>
         <button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>Cancel</button>

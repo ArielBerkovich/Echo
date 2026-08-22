@@ -69,7 +69,7 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
       actions={items.length ? (
         <button
           type="button"
-          className="header-action activity-clear"
+          className="header-action activity-clear feed-icon-action"
           data-testid="activity-clear-all"
           onClick={() => setConfirmClear(true)}
           disabled={clearMutation.isPending}
@@ -89,7 +89,7 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
         {items.map((it) => (
           <div
             key={it.id}
-            className={`activity-item ${it.unread ? "unread" : ""}`}
+            className={`activity-item ${it.kind === "channel_add" || it.kind === "channel_remove" ? "activity-notification" : ""} ${it.unread ? "unread" : ""}`}
             data-testid="activity-item"
             data-activity-kind={it.kind}
             role="button"
@@ -115,7 +115,7 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
             </div>
             <button
               type="button"
-              className="activity-dismiss"
+              className="activity-dismiss feed-icon-action"
               data-testid={`activity-delete-${it.id}`}
               title="Delete activity"
               aria-label="Delete activity"
@@ -124,7 +124,7 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
                 dismissMutation.mutate(it.id);
               }}
             >
-              <Trash2Icon size={15} strokeWidth={1.8} />
+              <Trash2Icon size={17} strokeWidth={1.8} />
             </button>
           </div>
         ))}
