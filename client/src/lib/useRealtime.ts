@@ -259,12 +259,21 @@ export function useRealtime({
     };
     // Added to a channel by someone else — pull it into the sidebar live.
     const onChannelAdded = () => refreshChannels();
-    // Removed from a channel by its creator — drop it from the sidebar, and if
-    // we're currently viewing it, navigate back home.
+    // Removed from a channel by its creator — drop it from the sidebar, while
+    // keeping an open channel view as a read-only preview.
     const onChannelRemoved = ({ channelId } = {}) => {
+      if (channelId && setStarredChannelIds) {
+        setStarredChannelIds((previous) => {
+          if (!previous.has(channelId)) return previous;
+          const next = new Set(previous);
+          next.delete(channelId);
+          return next;
+        });
+      }
       if (activeRef.current?.id === channelId) {
-        setView("home");
-        setActiveChannel(null);
+        setActiveChannel((previous) => previous && previous.id === channelId
+          ? { ...previous, members: (previous.members || []).filter((memberId) => String(memberId) !== String(user.id)) }
+          : previous);
       }
       refreshChannels();
     };

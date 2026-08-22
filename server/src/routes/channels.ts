@@ -40,6 +40,18 @@ async function markChannelReadAtJoin(channelId, userId) {
   );
 }
 
+async function clearChannelStar(user, channelId) {
+  const starredChannels = user.starredChannels || [];
+  if (!starredChannels.some((id) => id.equals(channelId))) return false;
+  user.starredChannels = starredChannels.filter((id) => !id.equals(channelId));
+  await user.save();
+  emitToUser(user._id.toString(), "starred:update", {
+    channelId: channelId.toString(),
+    starred: false,
+  });
+  return true;
+}
+
 // Attach an `unread` count (messages from others since the user last read) to
 // each channel doc, returning plain public objects.
 async function withUnread(channels, userId) {
@@ -263,7 +275,7 @@ channelsRouter.post("/:id/star", async (req, res) => {
   if (!channel || channel.isArchived || channel.type === "dm") {
     return res.status(404).json({ error: "channel not found" });
   }
-  if (channel.type !== "public" && !channel.members.some((memberId) => memberId.equals(req.user._id))) {
+  if (!channel.members.some((memberId) => memberId.equals(req.user._id))) {
     return res.status(403).json({ error: "access denied" });
   }
 
@@ -440,6 +452,8 @@ channelsRouter.delete("/:id/members/:userId", async (req, res) => {
   await Channel.updateOne({ _id: channel._id }, { $pull: { members: userId, managers: userId } });
 
   if (wasMember) {
+    const removedUser = await User.findById(userId);
+    if (removedUser) await clearChannelStar(removedUser, channel._id);
     await ActivityEvent.deleteMany({
       recipient: userId,
       channel: channel._id,
@@ -511,6 +525,7 @@ channelsRouter.post("/:id/leave", async (req, res) => {
       );
     }
   }
+  await clearChannelStar(req.user, channel._id);
   channel.members = remainingMembers;
   channel.managers = (channel.managers || []).filter((memberId) => String(memberId) !== String(req.user._id));
   await ActivityEvent.deleteMany({
