@@ -49,6 +49,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
   const [note, setNote] = useState("");
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState(null);
+  const [searchFocused, setSearchFocused] = useState(true);
   const searchRef = useRef(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -127,6 +128,12 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
     requestAnimationFrame(() => searchRef.current?.focus());
   }
 
+  function handleSearchBlur() {
+    requestAnimationFrame(() => {
+      setSearchFocused(Boolean(searchRef.current?.closest(".forward-destination-section")?.contains(document.activeElement)));
+    });
+  }
+
   function handleSearchKeyDown(event) {
     if (event.key === "ArrowDown") {
       event.preventDefault();
@@ -203,6 +210,8 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
             data-testid="forward-search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={handleSearchBlur}
             onKeyDown={handleSearchKeyDown}
             placeholder="Search channels and people"
             autoFocus
@@ -211,7 +220,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
             aria-activedescendant={flatResults[activeIndex] ? `forward-result-${destinationKey(flatResults[activeIndex])}` : undefined}
           />
 
-          {resultGroups.length > 0 && (
+          {(searchFocused || debouncedQuery) && resultGroups.length > 0 && (
             <div className="forward-destination-list" id="forward-results" data-testid="forward-destination-list" role="listbox" aria-label="Forward destinations">
               {!resultGroups.length ? (
                 <div className="people-empty">No matches for “{debouncedQuery}”</div>

@@ -59,6 +59,8 @@ test.describe("forwarding", () => {
     await expect(destinationByLabel(modal, fixture.projectChannel.name)).toBeVisible();
     await expect(modal.getByTestId("composer-editor")).toHaveAttribute("data-placeholder", "Add context for the recipient…");
     await expect(modal.locator(".composer-toolbar")).toBeVisible();
+    await modal.getByTestId("composer-editor").click();
+    await expect(modal.locator(".forward-destination-list")).toHaveCount(0);
   });
 
   test("keeps Enter in the note editor from sending to its synthetic channel", async ({ page }) => {
