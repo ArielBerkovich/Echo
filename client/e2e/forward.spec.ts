@@ -39,13 +39,16 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe("forwarding", () => {
-  test("keeps compact source context and makes the note immediately available", async ({ page }) => {
+  test("keeps the source message collapsed until requested", async ({ page }) => {
     await openForwardDialog(page);
 
     const modal = forwardModal(page);
     await expect(page.getByRole("dialog")).toHaveAccessibleName("Forward message");
+    await expect(modal.getByTestId("forward-source-toggle")).toHaveAttribute("aria-expanded", "false");
+    await expect(modal.getByTestId("forward-source-context")).toHaveCount(0);
+    await modal.getByTestId("forward-source-toggle").click();
+    await expect(modal.getByTestId("forward-source-toggle")).toHaveAttribute("aria-expanded", "true");
     await expect(modal.getByTestId("forward-source-context")).toContainText(fixture.messages.searchHit.body);
-    await expect(modal.getByTestId("forward-source-context")).toContainText(fixture.messages.searchHit.author.displayName);
     await expect(modal.getByTestId("forward-note-field")).toContainText("Note");
     await expect(modal.getByTestId("composer-editor")).toHaveAttribute("data-placeholder", "Add context for the recipient…");
     await expect(modal.locator(".composer-toolbar")).toBeVisible();

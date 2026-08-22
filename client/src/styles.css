@@ -6649,22 +6649,51 @@ html[data-mode="dark"] .day-divider-label {
   max-height: 96px;
   overflow: hidden;
 }
+.forward-source-disclosure {
+  margin: 2px 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.forward-source-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+}
+.forward-source-toggle strong {
+  color: var(--text);
+}
+.forward-source-toggle:hover,
+.forward-source-toggle:focus-visible {
+  background: var(--active-soft);
+}
+.forward-source-chevron {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+}
 .forward-source-context {
   display: flex;
   align-items: center;
   gap: 5px;
   min-width: 0;
-  margin: 2px 0 14px;
+  padding: 0 10px 9px;
   color: var(--muted);
   font-size: 12px;
   line-height: 1.35;
 }
 .forward-source-context > span {
   flex: none;
-}
-.forward-source-context strong {
-  color: var(--text);
-  font-weight: 700;
 }
 .forward-source-context em {
   min-width: 0;
