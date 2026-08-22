@@ -109,6 +109,7 @@ export default function App() {
   const restoredRef = useRef(false); // have we restored the saved location yet?
   const restoredUserRef = useRef(null);
   const navDuringRestoreRef = useRef(false); // user navigated before the initial restore finished
+  const jumpRequestRef = useRef(0); // invalidates stale asynchronous Activity jumps
   const viewRef = useRef(view);
   const activeChannelRef = useRef(activeChannel);
 
@@ -921,6 +922,7 @@ export default function App() {
   // item is a thread reply, also open its thread so it gets marked read (a
   // thread mention stays unread until the thread itself is opened).
   async function handleJump(item) {
+    const jumpRequest = ++jumpRequestRef.current;
     markNavDuringRestore();
     const channelId = typeof item === "string" ? item : item.channelId;
     // Channel add/remove activity entries are navigation events, not
@@ -942,7 +944,7 @@ export default function App() {
     if (threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
     else if (messageId) setJumpMessageId(messageId);
     if (typeof item !== "string" && item.id) {
-      await api.markActivityItemsRead([item.id]).catch(() => {});
+      void api.markActivityItemsRead([item.id]).catch(() => {});
       queryClient.invalidateQueries({ queryKey: queryKeys.activity });
     }
     setSearchQuery(null);
@@ -969,6 +971,7 @@ export default function App() {
       if (!dm && channelType === "dm") {
         try {
           const result = await api.getChannel(channelId);
+          if (jumpRequest !== jumpRequestRef.current) return;
           const other = (result.members || []).find((member) => member.id !== user.id)
             || (result.channel?.members?.length === 1 ? user : null);
           if (result.channel?.type === "dm" && other) {

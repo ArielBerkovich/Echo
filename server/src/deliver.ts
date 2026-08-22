@@ -140,18 +140,21 @@ export async function deliverMessage({ channel, authorId, body, parentId, attach
   const payload = message.toPublicJSON();
   io?.to(roomFor(cid)).emit("message:new", payload);
 
-  // Activity badge bumps for @mentions / @everyone / thread-root authors, so it
-  // updates live even for recipients not in this channel's room.
-  if (channel.type !== "dm") {
-    const notify = new Set();
+  // Activity badge bumps for DMs, @mentions, @everyone, and thread-root
+  // authors, so it updates live even for recipients not in this channel's
+  // message room.
+  const notify = new Set();
+  if (channel.type === "dm") {
+    channel.members.forEach((member) => notify.add(member.toString()));
+  } else {
     activityMetadata.mentionedUserIds.forEach((id) => notify.add(id.toString()));
     if (activityMetadata.mentionsEveryone) {
       channel.members.forEach((m) => notify.add(m.toString()));
     }
     if (activityMetadata.threadRootAuthor) notify.add(activityMetadata.threadRootAuthor.toString());
-    notify.delete(authorId.toString()); // not your own message
-    for (const uid of notify) io?.to(userRoom(uid)).emit("activity:bump");
   }
+  notify.delete(authorId.toString()); // not your own message
+  for (const uid of notify) io?.to(userRoom(uid)).emit("activity:bump");
 
   return payload;
 }

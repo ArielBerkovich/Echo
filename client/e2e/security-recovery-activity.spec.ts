@@ -339,3 +339,37 @@ test("shows and permanently dismisses every supported Activity kind", async ({ b
     );
   }
 });
+
+test("cannot read or delete another user's Activity notification", async ({ page }) => {
+  const body = `Activity authorization ${uniqueSuffix("auth")}`;
+  await requestAsToken(page, fixture.alice.token, "/activity", { method: "DELETE" });
+  await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body: `${body} @${fixture.alice.username}`,
+      externalKey: `activity-authorization-${fixture.suffix}`,
+    },
+  });
+
+  await expect.poll(async () => {
+    const activity = await requestAsToken(page, fixture.alice.token, "/activity");
+    return activity.items.find((entry) => entry.body?.includes(body)) || null;
+  }).toMatchObject({ unread: true });
+  const activity = await requestAsToken(page, fixture.alice.token, "/activity");
+  const target = activity.items.find((entry) => entry.body?.includes(body));
+  expect(target?.id).toBeTruthy();
+
+  const readResponse = await rawApi(page, fixture.bob.token, "/activity/read-items", {
+    method: "POST",
+    body: { ids: [target.id] },
+  });
+  expect(readResponse.ok()).toBeTruthy();
+  const afterRead = await requestAsToken(page, fixture.alice.token, "/activity");
+  expect(afterRead.items.find((entry) => entry.id === target.id)?.unread).toBe(true);
+
+  const deleteResponse = await rawApi(page, fixture.bob.token, `/activity/${target.id}`, { method: "DELETE" });
+  expect(deleteResponse.ok()).toBeTruthy();
+  const afterDelete = await requestAsToken(page, fixture.alice.token, "/activity");
+  expect(afterDelete.items.some((entry) => entry.id === target.id)).toBe(true);
+});

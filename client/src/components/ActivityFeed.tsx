@@ -67,15 +67,8 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
     onLoaded?.(items);
   }, [items]);
 
-  async function selectActivity(item) {
+  function selectActivity(item) {
     onJump(item);
-    if (item.unread) {
-      queryClient.setQueryData(queryKeys.activity, (current = []) =>
-        current.map((entry) => (entry.id === item.id ? { ...entry, unread: false } : entry))
-      );
-      await api.markActivityItemsRead([item.id]).catch(() => {});
-      queryClient.invalidateQueries({ queryKey: queryKeys.activity });
-    }
   }
 
   useEffect(() => {
