@@ -9086,6 +9086,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     display: flex;
     align-items: center;
     padding: 10px 14px;
+    border-bottom: 0;
   }
   .pane-search .search-box {
     flex: 1;
@@ -10953,13 +10954,19 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   .app[data-mobile-nav="true"] .app-nav .sidebar {
     display: flex !important;
     position: fixed;
-    inset: 0 0 calc(72px + env(safe-area-inset-bottom));
+    inset: calc(63px + env(safe-area-inset-top)) 0 calc(72px + env(safe-area-inset-bottom));
     z-index: 1;
     width: 100%;
     max-width: none;
     transform: none;
     box-shadow: none;
     pointer-events: auto;
+  }
+
+  /* Keep the workspace search available before a conversation is selected. */
+  .app[data-mobile-nav="true"] .pane-search {
+    position: relative;
+    z-index: 65;
   }
 
   .app[data-mobile-nav="true"] .app-nav .rail {
@@ -11174,4 +11181,10 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   height: 42px;
   justify-content: center;
   width: 42px;
+}
+
+@media (max-width: 420px) {
+  .app[data-mobile-nav="true"] .app-nav .sidebar {
+    top: calc(58px + env(safe-area-inset-top));
+  }
 }

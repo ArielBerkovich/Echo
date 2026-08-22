@@ -435,19 +435,7 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
     }
     if (doSend(question, [], { question, options: options.map((label) => ({ label })), allowMultiple: surveyDraft.allowMultiple })) {
       setSurveyDraft(null);
-      dismissMobileKeyboard();
     }
-  }
-
-  // On phones, keeping focus after sending leaves the virtual keyboard open and
-  // hides the newly sent message. Desktop users keep the normal focused editor.
-  function dismissMobileKeyboard() {
-    if (!window.matchMedia("(max-width: 760px)").matches) return;
-    requestAnimationFrame(() => {
-      editor?.commands.blur();
-      const active = document.activeElement;
-      if (active instanceof HTMLElement) active.blur();
-    });
   }
 
   function resetComposer() {
@@ -592,7 +580,7 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
     const attachments = pending;
     const proceed = () => {
       stopTyping();
-      if (doSend(body, attachments)) dismissMobileKeyboard();
+      doSend(body, attachments);
     };
     // Hold the send if it @-mentions non-members of a private channel.
     if (gate(body, proceed)) return;
@@ -1021,6 +1009,7 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
             type="submit"
             className={`icon-btn send-btn ${canSend || pending.length ? "ready" : ""}`}
             data-testid="composer-send"
+            onMouseDown={keepFocus}
             disabled={(!canSend && pending.length === 0) || uploading}
             aria-label={editing ? "Save edit" : "Send"}
             title={editing ? "Save edit" : "Send message"}
