@@ -909,10 +909,6 @@ export default function App() {
   // thread mention stays unread until the thread itself is opened).
   async function handleJump(item) {
     markNavDuringRestore();
-    if (typeof item !== "string" && item.id) {
-      await api.markActivityItemsRead([item.id]).catch(() => {});
-      queryClient.invalidateQueries({ queryKey: queryKeys.activity });
-    }
     const channelId = typeof item === "string" ? item : item.channelId;
     // Channel add/remove activity entries are navigation events, not
     // messages. Their `id` is a synthetic activity-event id and must not be
@@ -927,6 +923,15 @@ export default function App() {
     const channelType = typeof item === "string" ? null : item.channelType;
     const channelName = typeof item === "string" ? null : item.channelName;
     clearNavigationTarget();
+    // Publish the jump before any async read acknowledgement. ChannelView
+    // must know about the target during its first layout pass, otherwise its
+    // normal unread-divider anchor can win the race.
+    if (threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
+    else if (messageId) setJumpMessageId(messageId);
+    if (typeof item !== "string" && item.id) {
+      await api.markActivityItemsRead([item.id]).catch(() => {});
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity });
+    }
     setSearchQuery(null);
     if (messageId || threadId) {
       clearScrollState(channelId);
@@ -967,10 +972,11 @@ export default function App() {
         opened = true;
       }
     }
-    if (!opened) setToast("You don't have access to that conversation.");
+    if (!opened) {
+      clearNavigationTarget();
+      setToast("You don't have access to that conversation.");
+    }
 
-    if (opened && threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
-    if (opened && messageId && !threadId) setJumpMessageId(messageId);
   }
 
   // Run a full-text message search (from the search bar, on Enter).

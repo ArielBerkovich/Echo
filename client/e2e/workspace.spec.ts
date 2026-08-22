@@ -639,6 +639,50 @@ test("opens the exact message from Activity", async ({ page }) => {
   await expect(messageById(page, fixture.messages.mention.id)).toBeVisible();
 });
 
+test("Activity jump wins over the channel unread-message anchor", async ({ page }) => {
+  const stamp = Date.now();
+  await page.goto("/activity");
+
+  const target = await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body: `Older activity target ${stamp} @${fixture.alice.username}`,
+      externalKey: `activity-jump-target-${stamp}`,
+    },
+  });
+  await Promise.all(Array.from({ length: 10 }, (_, index) => requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body: `Read context ${stamp}-${index}`,
+      externalKey: `activity-jump-read-context-${stamp}-${index}`,
+    },
+  })));
+  // The target notification stays unread in Activity even after the channel
+  // read marker advances; a newer ordinary message creates the unread area.
+  await requestAsToken(page, fixture.alice.token, `/channels/${fixture.generalChannel.id}/read`, {
+    method: "POST",
+  });
+  await Promise.all(Array.from({ length: 40 }, (_, index) => requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body: `${index === 0 ? "Newer unread message" : "Unread context"} ${stamp}-${index}`,
+      externalKey: `activity-jump-unread-${stamp}-${index}`,
+    },
+  })));
+
+  await page.goto("/activity");
+  const activityItem = page.getByTestId("activity-item").filter({ hasText: `Older activity target ${stamp}` });
+  await expect(activityItem).toBeVisible();
+  await activityItem.click();
+
+  await expect(page.getByTestId("channel-title")).toContainText("general");
+  await expect(messageById(page, target.message.id)).toBeInViewport();
+  await expect(page.locator(".new-divider")).not.toBeInViewport();
+});
+
 test("opens a public-channel mention even when the user is not in the channel", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText("#general", { exact: true })).toBeVisible();

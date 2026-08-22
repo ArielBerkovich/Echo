@@ -816,8 +816,21 @@ export default function ChannelView({
     const scrollToTarget = () => {
       const el = document.querySelector(`.messages [data-mid="${jumpMessageId}"]`);
       if (!el) return false;
-      const behavior = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
-      el.scrollIntoView({ block: "center", behavior });
+      // Jumps are state transitions, not user scrolling. Move this specific
+      // scroll container by the exact delta so the unread anchor cannot choose
+      // a different ancestor or interrupt a browser-managed scroll animation.
+      const scroller = scrollerRef.current;
+      if (scroller) {
+        const targetRect = el.getBoundingClientRect();
+        const scrollerRect = scroller.getBoundingClientRect();
+        const targetCenter = targetRect.top + targetRect.height / 2;
+        const scrollerCenter = scrollerRect.top + scrollerRect.height / 2;
+        scroller.scrollTop += targetCenter - scrollerCenter;
+      }
+      // The parent clears jumpMessageId as soon as this succeeds. Keep the
+      // unread effect from treating that state transition as a fresh channel
+      // open and moving the viewport back to the unread divider.
+      unreadScrollAppliedRef.current = true;
       setHighlightId(jumpMessageId);
       return true;
     };
