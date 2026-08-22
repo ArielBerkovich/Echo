@@ -43,6 +43,7 @@ test.describe("forwarding", () => {
     await openForwardDialog(page);
 
     const modal = forwardModal(page);
+    await expect(page.getByRole("dialog")).toHaveAccessibleName("Forward message");
     await expect(modal.getByTestId("forward-source-context")).toContainText(fixture.messages.searchHit.body);
     await expect(modal.getByTestId("forward-source-context")).toContainText(fixture.messages.searchHit.author.displayName);
     await expect(modal.getByTestId("forward-note-field")).toContainText("Note");

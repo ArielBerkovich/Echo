@@ -175,7 +175,13 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
   }), [message?.id]);
 
   return (
-    <Modal title="Forward message" className="forward-modal" onClose={onClose}>
+    <Modal
+      title="Forward message"
+      className="forward-modal"
+      showHeader={false}
+      closeClassName="forward-close"
+      onClose={onClose}
+    >
       <div className="forward-dialog" data-testid="forward-modal">
         <div className="forward-source-context" data-testid="forward-source-context" title={preview}>
           <Avatar name={authorName} src={message?.author?.avatarUrl} size={24} />

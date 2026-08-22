@@ -6578,10 +6578,16 @@ html[data-mode="dark"] .day-divider-label {
 .modal.forward-modal {
   width: 520px;
   padding: 22px;
+  position: relative;
   max-height: calc(100vh - 32px);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+.forward-modal .forward-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
 }
 .forward-dialog {
   display: flex;
