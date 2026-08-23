@@ -26,6 +26,8 @@ function loadHidden() {
 }
 
 const RECENTS_KEY = "echo.recentSearches";
+const RECENT_DESTINATION_LIMIT = 8;
+const SEARCH_RECENT_DISPLAY_LIMIT = 6;
 const CONNECTION_BANNER_DELAY_MS = 1000;
 const GLOBAL_HOTKEY_OPTIONS = {
   preventDefault: true,
@@ -198,16 +200,19 @@ export default function App() {
     setScrollToBottomTarget(null);
   }
 
+  function handleActivityReady() {
+    api.markActivityRead()
+      .then(() => api.getActivity())
+      .then(({ items }) => syncActivity(items || []))
+      .catch(() => {})
+      .finally(() => queryClient.invalidateQueries({ queryKey: queryKeys.activity }));
+  }
+
   function handleViewSelect(nextView) {
     markNavDuringRestore();
     clearNavigationTarget();
     searchRef.current?.clear();
     setSearchQuery(null);
-    if (nextView === "activity") {
-      api.markActivityRead()
-        .catch(() => {})
-        .finally(() => queryClient.invalidateQueries({ queryKey: queryKeys.activity }));
-    }
     if (nextView === "dms") {
       setActiveChannel(null);
       setView(nextView, null);
@@ -672,7 +677,7 @@ export default function App() {
 
   function rememberRecent(item) {
     setRecents((prev) => {
-      const next = [item, ...prev.filter((r) => !(r.type === item.type && r.id === item.id))].slice(0, 6);
+      const next = [item, ...prev.filter((r) => !(r.type === item.type && r.id === item.id))].slice(0, RECENT_DESTINATION_LIMIT);
       writeJson(RECENTS_KEY, next);
       return next;
     });
@@ -1312,6 +1317,7 @@ export default function App() {
           channels={channels}
           dms={dms}
           customEmojis={emojis}
+          activityItems={activityItems}
           hidden={hidden}
           starredIds={starredIds}
           starredChannelIds={starredChannelIds}
@@ -1349,7 +1355,7 @@ export default function App() {
             query: searchQuery,
             channels: visibleChannels,
             myChannelIds,
-            recents,
+            recents: recents.slice(0, SEARCH_RECENT_DISPLAY_LIMIT),
             onPickChannel: handlePickChannel,
             onFindChannels: findPublicChannels,
             onPickUser: handlePickUser,
@@ -1385,6 +1391,7 @@ export default function App() {
             emojis,
             onJump: handleJump,
             onActivityLoaded: syncActivity,
+            onActivityReady: handleActivityReady,
             onUnsave: (id) => setSavedIds((previous) => {
               const next = new Set(previous);
               next.delete(id);
@@ -1419,6 +1426,7 @@ export default function App() {
             users,
             channels: visibleChannels,
             dms,
+            recentDestinations: recents,
             customEmojis: emojis,
             mode,
             savedIds,
@@ -1429,6 +1437,7 @@ export default function App() {
             onOpenProfile: openProfile,
             onOpenChannel: handleOpenChannelTag,
             onOpenForwardedDm: (target, channel) => handleOpenDm(target, false, "dms", channel),
+            onRememberRecent: rememberRecent,
             onToast: setToast,
             onDmsChanged: refreshDms,
             isStarred: activeChannel?.type === "dm" && starredIds.has(activeChannel.dmUserId),

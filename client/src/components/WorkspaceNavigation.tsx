@@ -9,6 +9,7 @@ export default function WorkspaceNavigation({
   channels,
   dms,
   customEmojis = [],
+  activityItems = [],
   hidden,
   starredIds,
   starredChannelIds,
@@ -52,6 +53,8 @@ export default function WorkspaceNavigation({
         onLogout={onLogout}
         onUpdated={onUpdated}
         badges={badges}
+        customEmojis={customEmojis}
+        latestActivity={activityItems[0]}
       />
       {showSidebar ? (
           <Sidebar
