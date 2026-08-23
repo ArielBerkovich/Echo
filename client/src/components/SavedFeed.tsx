@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api.js";
 import { queryKeys } from "../lib/queryClient.js";
@@ -11,6 +12,7 @@ import { FeedContent, FeedLayout, FeedMessage } from "./FeedLayout.js";
 // jumps to the message; the bookmark removes it from saved.
 export default function SavedFeed({ user, users = [], customEmojis = [], onJump, onUnsave }) {
   const queryClient = useQueryClient();
+  const restoreFocusAfterUnsaveRef = useRef(false);
   const renderMarkdown = useMarkdownRenderer(users, user.username, customEmojis);
   const { data: items = [], isPending: loading } = useQuery({
     queryKey: queryKeys.saved,
@@ -33,8 +35,17 @@ export default function SavedFeed({ user, users = [], customEmojis = [], onJump,
     onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.saved }),
   });
 
+  useEffect(() => {
+    if (!restoreFocusAfterUnsaveRef.current) return;
+    restoreFocusAfterUnsaveRef.current = false;
+    const target = document.querySelector('[data-testid="saved-item"]')
+      || document.querySelector('[data-testid="saved-header"]');
+    target?.focus();
+  }, [items]);
+
   function unsave(e, it) {
     e.stopPropagation(); // don't trigger the row's jump
+    restoreFocusAfterUnsaveRef.current = true;
     unsaveMutation.mutate(it.id);
   }
 
@@ -55,6 +66,7 @@ export default function SavedFeed({ user, users = [], customEmojis = [], onJump,
             tabIndex={0}
             onClick={() => onJump(it)}
             onKeyDown={(event) => {
+              if (event.currentTarget !== event.target) return;
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
                 onJump(it);

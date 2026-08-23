@@ -35,6 +35,7 @@ export default function ThreadPanel({
   onChannelUpdated,
   onOpenLightbox,
   openThreadJumpMessageId = null,
+  composerFocusRequest = 0,
 }) {
   const [rootMsg, setRootMsg] = useState(root); // local copy so live edits/reactions apply
   const [replies, setReplies] = useState([]);
@@ -50,6 +51,18 @@ export default function ThreadPanel({
   const scrollerRef = useRef(null);
   const bodyInnerRef = useRef(null); // content wrapper used to track height changes
   const composerRef = useRef(null); // thread reply composer, for quote insertion
+
+  useEffect(() => {
+    if (!composerFocusRequest || !canPost) return undefined;
+    const focusTimer = window.setTimeout(() => composerRef.current?.focus(), 0);
+    return () => window.clearTimeout(focusTimer);
+  }, [composerFocusRequest, canPost]);
+
+  useEffect(() => {
+    if (!canPost) return undefined;
+    const focusTimer = window.setTimeout(() => composerRef.current?.focus(), 0);
+    return () => window.clearTimeout(focusTimer);
+  }, [root.id, canPost]);
   const stickToBottomRef = useRef(true); // should later layout changes keep us pinned?
   const initialScrolledRef = useRef(false); // has the panel been positioned yet?
   const prevReplyCountRef = useRef(0); // reply count last render

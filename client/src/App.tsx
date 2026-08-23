@@ -18,6 +18,7 @@ import { useConversationCache } from "./lib/useConversationCache.js";
 import { useWorkspaceQueries, workspaceKeys } from "./lib/useWorkspaceQueries.js";
 import { queryKeys } from "./lib/queryClient.js";
 import { currentRoute, workspacePath } from "./lib/workspaceRoutes.js";
+import { useHotkeys } from "react-hotkeys-hook";
 
 const HIDDEN_KEY = "echo.hiddenChannels";
 function loadHidden() {
@@ -26,6 +27,22 @@ function loadHidden() {
 
 const RECENTS_KEY = "echo.recentSearches";
 const CONNECTION_BANNER_DELAY_MS = 1000;
+const GLOBAL_HOTKEY_OPTIONS = {
+  preventDefault: true,
+  enableOnFormTags: true,
+  enableOnContentEditable: true,
+};
+
+function modifierHotkeys(combo) {
+  return [`ctrl+${combo}`, `meta+${combo}`];
+}
+
+function isEditableTarget(target) {
+  return target instanceof HTMLElement && (
+    target.isContentEditable
+    || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)
+  );
+}
 
 function isMobileViewport() {
   return typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches;
@@ -82,6 +99,7 @@ export default function App() {
   } = useWorkspaceQueries(!!user);
   const [navOpen, setNavOpen] = useState(false); // mobile: rail+sidebar drawer open?
   const [showTour, setShowTour] = useState(false); // first-run walkthrough
+  const [composerFocusRequest, setComposerFocusRequest] = useState(0);
 
   useEffect(() => subscribeAuthExpired(() => setSessionExpired(true)), []);
   const { theme, setTheme, mode, setMode, toggleMode } = useThemePreferences();
@@ -112,21 +130,20 @@ export default function App() {
   const viewRef = useRef(view);
   const activeChannelRef = useRef(activeChannel);
 
-  // Use the workspace search pane for the familiar browser find shortcut.
-  // This is intentionally global so it works from conversations, feeds, and
-  // while the composer is focused, just like in Slack and similar clients.
-  useEffect(() => {
-    function onFindShortcut(event) {
-      if (!user || event.defaultPrevented || event.altKey) return;
-      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "f") return;
-
-      event.preventDefault();
-      searchRef.current?.focus();
-    }
-
-    window.addEventListener("keydown", onFindShortcut);
-    return () => window.removeEventListener("keydown", onFindShortcut);
-  }, [user]);
+  const hotkeyOptions = { ...GLOBAL_HOTKEY_OPTIONS, enabled: !!user };
+  useHotkeys(modifierHotkeys("f"), () => searchRef.current?.focus(), hotkeyOptions, [user]);
+  useHotkeys(modifierHotkeys("shift+m"), () => handleStartConversation(), hotkeyOptions, [user]);
+  useHotkeys(modifierHotkeys("shift+o"), () => handleBrowseChannels(), hotkeyOptions, [user]);
+  useHotkeys(modifierHotkeys("shift+c"), () => setShowCreate(true), hotkeyOptions, [user]);
+  useHotkeys(modifierHotkeys("shift+space"), (event) => {
+    if (isEditableTarget(event.target) || !activeChannel) return;
+    setComposerFocusRequest((request) => request + 1);
+  }, hotkeyOptions, [user, activeChannel]);
+  useHotkeys(modifierHotkeys("shift+h"), () => handleViewSelect("home"), hotkeyOptions, [user]);
+  useHotkeys(modifierHotkeys("shift+d"), () => handleViewSelect("dms"), hotkeyOptions, [user]);
+  useHotkeys(modifierHotkeys("shift+a"), () => handleViewSelect("activity"), hotkeyOptions, [user]);
+  useHotkeys(modifierHotkeys("shift+s"), () => handleViewSelect("saved"), hotkeyOptions, [user]);
+  useHotkeys(["ctrl+comma", "meta+comma"], () => openSettings(), hotkeyOptions, [user]);
 
   // Echo's own images should not become native drag sources. This keeps
   // logos, avatars, and message images from being dropped into the composer;
@@ -1393,6 +1410,7 @@ export default function App() {
           }}
           conversation={{
             channel: activeChannel,
+            composerFocusRequest,
             recoveryEpoch,
             cachedMessages: activeChannel ? getCachedMessages(activeChannel.id) : null,
             initialScrollState: activeInitialScrollState,

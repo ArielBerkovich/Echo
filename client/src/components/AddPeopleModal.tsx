@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Avatar from "./Avatar.js";
 import Modal, { ModalActions } from "./Modal.js";
 
@@ -8,6 +8,12 @@ export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
   const [adding, setAdding] = useState(null);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState("");
+  const searchRef = useRef(null);
+
+  useEffect(() => {
+    const focusTimer = window.setTimeout(() => searchRef.current?.focus(), 0);
+    return () => window.clearTimeout(focusTimer);
+  }, []);
 
   const memberIds = new Set(channel.members || []);
   const q = filter.trim().toLowerCase();
@@ -37,6 +43,7 @@ export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
       <div data-testid="add-people-modal">
       <input
         className="people-filter"
+        ref={searchRef}
         data-testid="add-people-search"
         value={filter}
         onChange={(e) => setFilter(e.target.value)}

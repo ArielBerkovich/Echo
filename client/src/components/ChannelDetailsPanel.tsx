@@ -323,7 +323,17 @@ function EditableField({ label, value, placeholder, editable, multiline, onSave,
           <span>{label}</span>
         </div>
         {editable && !editing && (
-          <button type="button" className="channel-details-edit" onClick={start}>
+          <button
+            type="button"
+            className="channel-details-edit"
+            onClick={start}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                start();
+              }
+            }}
+          >
             {value ? "Edit" : "Add"}
           </button>
         )}

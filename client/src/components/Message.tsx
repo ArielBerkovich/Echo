@@ -138,6 +138,12 @@ function Message({
     }
   }, [showActions, menuOpen, pickerOpen]);
 
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const focusTimer = window.setTimeout(() => menuRef.current?.querySelector("[role=menuitem]")?.focus(), 0);
+    return () => window.clearTimeout(focusTimer);
+  }, [menuOpen]);
+
   useEffect(() => () => {
     if (hoverLeaveTimerRef.current) window.clearTimeout(hoverLeaveTimerRef.current);
   }, []);
@@ -340,6 +346,19 @@ function Message({
       ref={messageRef}
       data-mid={m.id}
       data-testid={`message-${mid}`}
+      tabIndex={0}
+      aria-label={`Message from ${m.author?.displayName || "unknown sender"}`}
+      onFocus={activateMessage}
+      onKeyDown={(event) => {
+        if (event.currentTarget !== event.target || event.key !== "Enter" || !actionsVisible) return;
+        event.preventDefault();
+        window.setTimeout(() => actionsRef.current?.querySelector("button")?.focus(), 0);
+      }}
+      onMouseDown={(event) => {
+        if (event.target.closest?.("button, a, [data-message-actions]")) return;
+        messageRef.current?.focus();
+        activateMessage();
+      }}
       onMouseEnter={activateMessage}
       onClick={(event) => {
         if (!window.matchMedia("(max-width: 760px)").matches) return;
@@ -569,6 +588,7 @@ function Message({
           <button
             className="react-toggle"
             data-testid={`message-${mid}-add-reaction-action`}
+            aria-label="Add reaction"
             title="Add reaction"
             onMouseEnter={activateMessage}
             onMouseOver={activateMessage}
@@ -580,16 +600,16 @@ function Message({
             <EmojiAddIcon />
           </button>
           {!inThread && (
-            <button data-testid={`message-${mid}-reply`} title="Reply in thread" onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onOpenThread}>
+            <button data-testid={`message-${mid}-reply`} aria-label="Reply in thread" title="Reply in thread" onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onOpenThread}>
               <ReplyIcon />
             </button>
           )}
           {canQuote && (
-            <button data-testid={`message-${mid}-quote`} title="Quote message" onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onQuote}>
+            <button data-testid={`message-${mid}-quote`} aria-label="Quote message" title="Quote message" onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onQuote}>
               <QuoteIcon />
             </button>
           )}
-          <button data-testid={`message-${mid}-forward`} title="Forward message" onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onForward}>
+          <button data-testid={`message-${mid}-forward`} aria-label="Forward message" title="Forward message" onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onForward}>
             <ShareIcon />
           </button>
           <button

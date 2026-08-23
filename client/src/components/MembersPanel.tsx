@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SearchIcon, UsersRoundIcon, XIcon } from "lucide-react";
 import Avatar from "./Avatar.js";
 import ConfirmDialog from "./ConfirmDialog.js";
@@ -9,6 +9,8 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
   const [removeError, setRemoveError] = useState(null);
   const [removing, setRemoving] = useState(false);
   const [promotingId, setPromotingId] = useState(null);
+  const addPeopleRef = useRef(null);
+  const searchRef = useRef(null);
 
   useEffect(() => {
     function onKeyDown(event) {
@@ -45,6 +47,10 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
     isMember &&
     channel.type !== "dm" &&
     channel.name?.toLowerCase() !== "general";
+
+  useEffect(() => {
+    (addPeopleRef.current || searchRef.current)?.focus();
+  }, [canAddPeople]);
 
   async function confirmRemove() {
     if (!removeTarget) return;
@@ -92,7 +98,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
 
       <div className="members-panel-body">
         {canAddPeople && (
-          <button type="button" className="members-panel-add" onClick={onAddPeople}>
+          <button ref={addPeopleRef} type="button" className="members-panel-add" onClick={onAddPeople}>
             + Add people
           </button>
         )}
@@ -100,6 +106,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
         <div className="channel-details-search members-panel-search">
           <SearchIcon size={16} strokeWidth={1.8} aria-hidden="true" />
           <input
+            ref={searchRef}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search members"

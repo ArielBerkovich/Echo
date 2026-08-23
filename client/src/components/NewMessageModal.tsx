@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Avatar from "./Avatar.js";
 import Composer from "./Composer.js";
 import Modal from "./Modal.js";
@@ -10,7 +10,14 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
   const [channel, setChannel] = useState(null);
   const [preparing, setPreparing] = useState(false);
   const [error, setError] = useState(null);
+  const composerRef = useRef(null);
   const draftChannel = { id: "new-message-draft", type: "dm", dmName: selected?.displayName || "recipient" };
+
+  useEffect(() => {
+    if (!channel || preparing) return undefined;
+    const focusTimer = window.setTimeout(() => composerRef.current?.focus(), 0);
+    return () => window.clearTimeout(focusTimer);
+  }, [channel, preparing]);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(query.trim()), 200);
@@ -61,9 +68,17 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 onKeyDown={(event) => {
-                  if (event.key === "Enter" && matches[0]) {
+                  if (event.key === "Enter") {
+                    const normalized = query.trim().toLowerCase();
+                    const firstMatch = users
+                      .filter((user) => user.id !== currentUserId)
+                      .filter((user) => !normalized
+                        || user.displayName.toLowerCase().includes(normalized)
+                        || user.username.toLowerCase().includes(normalized))
+                      .slice(0, 20)[0];
+                    if (!firstMatch) return;
                     event.preventDefault();
-                    select(matches[0]);
+                    select(firstMatch);
                   }
                 }}
                 placeholder="Search people"
@@ -95,6 +110,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
           <div className={`new-message-compose ${channel ? "has-channel" : ""}`}>
             {preparing ? <div className="people-empty">Opening conversation…</div> : null}
             <Composer
+                ref={composerRef}
                 key={channel?.id || draftChannel.id}
                 channel={channel || draftChannel}
                 users={users}
