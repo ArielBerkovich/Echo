@@ -2463,6 +2463,25 @@ html[data-mode="dark"] .backend-connection-error {
   padding: 0;
   border-radius: 50%;
 }
+.rail-badge.rail-badge-emoji {
+  top: 0;
+  right: -2px;
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid var(--rail-bg);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-2) 88%, var(--rail-bg));
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.3);
+  font-size: 15px;
+  line-height: 1;
+}
+.rail-badge.rail-badge-emoji .custom-emoji {
+  width: 15px;
+  height: 15px;
+  vertical-align: middle;
+}
 
 /* Activity feed */
 .activity-item {

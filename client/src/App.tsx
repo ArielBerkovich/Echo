@@ -198,16 +198,19 @@ export default function App() {
     setScrollToBottomTarget(null);
   }
 
+  function handleActivityReady() {
+    api.markActivityRead()
+      .then(() => api.getActivity())
+      .then(({ items }) => syncActivity(items || []))
+      .catch(() => {})
+      .finally(() => queryClient.invalidateQueries({ queryKey: queryKeys.activity }));
+  }
+
   function handleViewSelect(nextView) {
     markNavDuringRestore();
     clearNavigationTarget();
     searchRef.current?.clear();
     setSearchQuery(null);
-    if (nextView === "activity") {
-      api.markActivityRead()
-        .catch(() => {})
-        .finally(() => queryClient.invalidateQueries({ queryKey: queryKeys.activity }));
-    }
     if (nextView === "dms") {
       setActiveChannel(null);
       setView(nextView, null);
@@ -1312,6 +1315,7 @@ export default function App() {
           channels={channels}
           dms={dms}
           customEmojis={emojis}
+          activityItems={activityItems}
           hidden={hidden}
           starredIds={starredIds}
           starredChannelIds={starredChannelIds}
@@ -1385,6 +1389,7 @@ export default function App() {
             emojis,
             onJump: handleJump,
             onActivityLoaded: syncActivity,
+            onActivityReady: handleActivityReady,
             onUnsave: (id) => setSavedIds((previous) => {
               const next = new Set(previous);
               next.delete(id);

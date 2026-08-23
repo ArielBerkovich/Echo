@@ -11,22 +11,23 @@ import ConfirmDialog from "./ConfirmDialog.js";
 import { FeedContent, FeedLayout, FeedMessage } from "./FeedLayout.js";
 
 // Feed of messages that @mention the current user. Clicking jumps to the channel.
-export default function ActivityFeed({ user, users = [], customEmojis = [], onJump, onLoaded }) {
+export default function ActivityFeed({ user, users = [], customEmojis = [], onJump, onLoaded, onReady }) {
   const [confirmClear, setConfirmClear] = useState(false);
   const restoreFocusAfterDismissRef = useRef(false);
+  const readyRef = useRef(false);
   const queryClient = useQueryClient();
   const renderMarkdown = useMarkdownRenderer(users, user.username, customEmojis);
-  const { data: items = [], isPending: loading } = useQuery({
+  const { data: items = [], isPending: loading, isSuccess } = useQuery({
     queryKey: queryKeys.activity,
     queryFn: async () => (await api.getActivity()).items || [],
   });
   const dismissMutation = useMutation({
-    mutationFn: (itemId) => api.deleteActivity(itemId),
-    onMutate: async (itemId) => {
+    mutationFn: (itemIds) => Promise.all(itemIds.map((itemId) => api.deleteActivity(itemId))),
+    onMutate: async (itemIds) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.activity });
       const previous = queryClient.getQueryData(queryKeys.activity);
       queryClient.setQueryData(queryKeys.activity, (current = []) =>
-        current.filter((item) => item.id !== itemId)
+        current.filter((item) => !itemIds.includes(item.id))
       );
       return { previous };
     },
@@ -35,6 +36,7 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.activity }),
   });
+  const displayItems = groupReactionActivities(items);
   const clearMutation = useMutation({
     mutationFn: () => api.clearActivity(),
     onMutate: async () => {
@@ -52,6 +54,12 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
   useEffect(() => {
     onLoaded?.(items);
   }, [items]);
+
+  useEffect(() => {
+    if (!isSuccess || readyRef.current) return;
+    readyRef.current = true;
+    onReady?.();
+  }, [isSuccess]);
 
   useEffect(() => {
     if (!restoreFocusAfterDismissRef.current) return;
@@ -91,11 +99,11 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
     >
       <FeedContent
         loading={loading}
-        items={items}
+        items={displayItems}
         emptyTitle="No activity yet"
-        emptyMessage="When someone @mentions you, it'll show up here."
+        emptyMessage="When someone mentions you or reacts to your messages, it'll show up here."
       >
-        {items.map((it) => (
+        {displayItems.map((it) => (
           <div
             key={it.id}
             className={`activity-item ${it.kind === "channel_add" || it.kind === "channel_remove" ? "activity-notification" : ""} ${it.unread ? "unread" : ""}`}
@@ -113,10 +121,14 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
             }}
           >
             {it.unread && <span className="activity-unread-dot" aria-label="Unread" />}
-            <Avatar name={it.author?.displayName || "?"} src={it.author?.avatarUrl} size={36} />
+            <Avatar
+              name={activityAuthor(it)}
+              src={it.kind === "reaction_group" && it.reactionItems.length > 1 ? null : it.author?.avatarUrl}
+              size={36}
+            />
             <div className="content">
               <FeedMessage
-                author={it.author?.displayName || "unknown"}
+                author={activityAuthor(it)}
                 context={activityContext(it)}
                 time={formatDateTime(it.createdAt)}
                 body={it.body}
@@ -132,7 +144,7 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
               onClick={(event) => {
                 event.stopPropagation();
                 restoreFocusAfterDismissRef.current = true;
-                dismissMutation.mutate(it.id);
+                dismissMutation.mutate(it.ids || [it.id]);
               }}
             >
               <Trash2Icon size={17} strokeWidth={1.8} />
@@ -169,6 +181,59 @@ function kindLabel(it) {
 function activityContext(item) {
   if (item.kind === "channel_add") return `added you to #${item.channelName}`;
   if (item.kind === "channel_remove") return `removed you from #${item.channelName}`;
+  if (item.kind === "reaction_group") {
+    const { emojis } = reactionGroupSummary(item);
+    const location = item.channelType === "dm" ? "in a DM" : `in #${item.channelName}`;
+    return `reacted with ${emojis} to your message ${location}`;
+  }
   const location = item.channelType === "dm" ? "in a DM" : `in #${item.channelName}`;
   return `${kindLabel(item)} ${location}`;
+}
+
+function activityAuthor(item) {
+  if (item.kind === "reaction_group") return reactionGroupSummary(item).actors;
+  return item.author?.displayName || "unknown";
+}
+
+function reactionGroupSummary(item) {
+  const actors = [...new Set(item.reactionItems.map((reaction) => reaction.author?.displayName || "Someone"))];
+  const emojis = [...new Set(item.reactionItems.map((reaction) => reaction.emoji).filter(Boolean))];
+  const actorLabel = actors.length <= 2
+    ? actors.join(" and ")
+    : `${actors.slice(0, 2).join(", ")}, and ${actors.length - 2} other${actors.length - 2 === 1 ? "" : "s"}`;
+  const emojiLabel = emojis.length <= 2
+    ? emojis.join(" and ")
+    : `${emojis.slice(0, 2).join(", ")}, and ${emojis.length - 2} more`;
+  return { actors: actorLabel || "Someone", emojis: emojiLabel || "an emoji" };
+}
+
+function groupReactionActivities(items) {
+  const grouped = [];
+  const byMessage = new Map();
+
+  for (const item of items) {
+    if (item.kind !== "reaction") {
+      grouped.push(item);
+      continue;
+    }
+
+    const existing = byMessage.get(item.messageId);
+    if (existing) {
+      existing.reactionItems.push(item);
+      existing.ids.push(item.id);
+      existing.unread = existing.unread || item.unread;
+      continue;
+    }
+
+    const group = {
+      ...item,
+      kind: "reaction_group",
+      ids: [item.id],
+      reactionItems: [item],
+    };
+    byMessage.set(item.messageId, group);
+    grouped.push(group);
+  }
+
+  return grouped;
 }
