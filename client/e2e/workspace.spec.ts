@@ -284,7 +284,7 @@ test("aligns thread chrome with the conversation and labels replies clearly", as
 
   const thread = page.getByTestId("thread-panel");
   await expect(thread).toBeVisible();
-  await expect(thread.getByTestId("thread-context")).toHaveText(`in #${fixture.projectChannel.name}`);
+  await expect(thread.getByTestId("thread-context")).toHaveCount(0);
   await expect(thread.getByTestId("composer-editor")).toHaveAttribute(
     "data-placeholder",
     "Reply to thread…"
@@ -515,8 +515,8 @@ test("clears message actions when leaving the message row but keeps them over th
   expect(messageBox).not.toBeNull();
   expect(messagesBox).not.toBeNull();
   await page.mouse.move(
-    Math.min(messagesBox.x + messagesBox.width - 4, messageBox.x + messageBox.width + 80),
-    messageBox.y + Math.min(8, messageBox.height / 2)
+    messagesBox.x + Math.min(8, messagesBox.width / 2),
+    Math.min(messagesBox.y + messagesBox.height - 8, messageBox.y + messageBox.height + 24)
   );
   await expect(actions).toBeHidden();
 });

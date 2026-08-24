@@ -108,6 +108,20 @@ const SearchBox = forwardRef(function SearchBox(
       inputRef.current?.focus();
       setOpen(true);
     },
+    searchInChannel(channelName) {
+      const next = `in:${channelName} `;
+      setConversationPickerOpen(false);
+      setQuery(next);
+      setCaret(next.length);
+      setActiveIdx(0);
+      setOpen(true);
+      requestAnimationFrame(() => {
+        const input = inputRef.current;
+        if (!input) return;
+        input.focus();
+        input.setSelectionRange(next.length, next.length);
+      });
+    },
     startConversation() {
       setQuery("");
       setCaret(0);
@@ -382,8 +396,15 @@ const SearchBox = forwardRef(function SearchBox(
   return (
     <div className="search-box" ref={wrapRef} data-testid="search-box">
       <div className="search-box-field" data-testid="search-box-field">
-        <SearchIcon size={15} strokeWidth={1.8} />
-        <div className="search-input-wrap">
+        <span className="search-icon-badge" aria-hidden="true">
+          <SearchIcon size={15} strokeWidth={2.1} />
+        </span>
+          <div className="search-input-wrap">
+          {!query && (
+            <span className="search-placeholder" aria-hidden="true">
+              {peoplePicker ? "Find someone to message" : "Search messages, people, and channels"}
+            </span>
+          )}
           <div className="search-highlight" ref={highlightRef} aria-hidden="true" dir="auto">
             {renderHighlighted(query)}
           </div>
@@ -402,11 +423,11 @@ const SearchBox = forwardRef(function SearchBox(
               setOpen(true);
             }}
             onKeyDown={onKeyDown}
-            placeholder={peoplePicker ? "Find someone to message" : "Search messages, people, and channels"}
+            placeholder=""
             dir="auto"
-          />
+            />
+          </div>
         </div>
-      </div>
 
       {open && (
         <div className="search-dropdown">

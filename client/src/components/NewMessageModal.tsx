@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { XIcon } from "lucide-react";
 import Avatar from "./Avatar.js";
 import Composer from "./Composer.js";
 import Modal from "./Modal.js";
@@ -49,6 +50,10 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
   }
 
   async function handleSent() {
+    if (!selected || !channel) {
+      setError("Select a recipient first.");
+      return;
+    }
     try {
       await onStart(selected, channel);
       onClose();
@@ -58,35 +63,57 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
   }
 
   return (
-    <Modal title="New message" className="new-message-modal" testId="new-message-modal" closeDisabled={preparing} onClose={onClose}>
+    <Modal title="New Message" className="new-message-modal" testId="new-message-modal" closeDisabled={preparing} onClose={onClose}>
         <div className="new-message-layout">
           <div className="new-message-picker">
-            <label className="new-message-search people-filter" data-testid="new-message-search">
-              <input
-                className="new-message-search-input"
-                data-testid="new-message-search-input"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    const normalized = query.trim().toLowerCase();
-                    const firstMatch = users
-                      .filter((user) => user.id !== currentUserId)
-                      .filter((user) => !normalized
-                        || user.displayName.toLowerCase().includes(normalized)
-                        || user.username.toLowerCase().includes(normalized))
-                      .slice(0, 20)[0];
-                    if (!firstMatch) return;
-                    event.preventDefault();
-                    select(firstMatch);
-                  }
-                }}
-                placeholder="Search people"
-                autoFocus
-              />
-            </label>
+            {selected ? (
+              <div className="new-message-search new-message-search-selected" data-testid="new-message-search">
+                <span className="forward-chip new-message-recipient" data-testid="new-message-recipient">
+                  <span>{selected.displayName}</span>
+                  <button
+                    type="button"
+                    aria-label={`Remove ${selected.displayName}`}
+                    onMouseDown={(event) => event.stopPropagation()}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setSelected(null);
+                      setChannel(null);
+                      setQuery("");
+                      setDebouncedQuery("");
+                    }}
+                  >
+                    <XIcon size={13} aria-hidden="true" />
+                  </button>
+                </span>
+              </div>
+            ) : (
+              <label className="new-message-search people-filter" data-testid="new-message-search">
+                <input
+                  className="new-message-search-input"
+                  data-testid="new-message-search-input"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      const normalized = query.trim().toLowerCase();
+                      const firstMatch = users
+                        .filter((user) => user.id !== currentUserId)
+                        .filter((user) => !normalized
+                          || user.displayName.toLowerCase().includes(normalized)
+                          || user.username.toLowerCase().includes(normalized))
+                        .slice(0, 20)[0];
+                      if (!firstMatch) return;
+                      event.preventDefault();
+                      select(firstMatch);
+                    }
+                  }}
+                  placeholder="Search people"
+                  autoFocus
+                />
+              </label>
+            )}
 
-            {debouncedQuery ? <div className="new-message-people" role="listbox" aria-label="People">
+            {!selected && debouncedQuery ? <div className="new-message-people" role="listbox" aria-label="People">
               {matches.length ? matches.map((user) => (
                 <button
                   type="button"
@@ -111,12 +138,15 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
             {preparing ? <div className="people-empty">Opening conversation…</div> : null}
             <Composer
                 ref={composerRef}
-                key={channel?.id || draftChannel.id}
-                channel={channel || draftChannel}
+                key="new-message-composer"
+                channel={draftChannel}
+                sendChannel={channel}
                 users={users}
                 customEmojis={customEmojis}
                 mode={mode}
+                placeholder="Write a message…"
                 showSchedule={false}
+                showSend
                 disabled={!channel}
                 onError={setError}
                 onSent={handleSent}

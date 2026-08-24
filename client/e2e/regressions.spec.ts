@@ -151,6 +151,16 @@ test("aligns the Home filter with the main search field", async ({ page }) => {
   expect(Math.abs(topEdges.sidebar - topEdges.main)).toBeLessThanOrEqual(1);
 });
 
+test("opens regular search with the current channel scope", async ({ page }) => {
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
+
+  await page.getByTestId("channel-search").click();
+
+  await expect(page.getByTestId("search-input")).toHaveValue(`in:${fixture.projectChannel.name} `);
+  await expect(page.getByTestId("search-input")).toBeFocused();
+});
+
 test("starts a conversation from the Home Direct Messages button", async ({ page }) => {
   await page.goto("/");
 
@@ -203,6 +213,33 @@ test("activates the Composer after selecting a new message recipient", async ({ 
   await modal.getByTestId(`new-message-user-${fixture.bob.username}`).click();
   await expect(modal.getByTestId("composer-editor")).toHaveAttribute("contenteditable", "true");
   await expect(modal.getByTestId("composer-send-options")).toHaveCount(0);
+});
+
+test("keeps the new-message draft while changing the recipient chip", async ({ page }) => {
+  await page.goto("/");
+  await page.getByTestId("home-dm-section").getByTestId("start-dm").click();
+
+  const modal = page.getByTestId("new-message-modal");
+  const draft = `Draft survives recipient changes ${fixture.suffix}`;
+  const search = modal.getByTestId("new-message-search-input");
+
+  await search.fill(fixture.bob.username);
+  await modal.getByTestId(`new-message-user-${fixture.bob.username}`).click();
+  await expect(modal.getByTestId("new-message-recipient")).toContainText(fixture.bob.displayName);
+
+  const editor = modal.getByTestId("composer-editor");
+  await expect(editor).toHaveAttribute("contenteditable", "true");
+  await editor.fill(draft);
+
+  const removeRecipient = modal.getByTestId("new-message-recipient").getByRole("button");
+  await removeRecipient.click();
+  await expect(modal.getByTestId("new-message-search-input")).toBeVisible();
+  await expect(editor).toHaveText(draft);
+
+  await search.fill(fixture.bob.username);
+  await modal.getByTestId(`new-message-user-${fixture.bob.username}`).click();
+  await expect(modal.getByTestId("new-message-recipient")).toContainText(fixture.bob.displayName);
+  await expect(editor).toHaveText(draft);
 });
 
 test("starts a new list after existing composer text", async ({ page }) => {

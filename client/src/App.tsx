@@ -1436,6 +1436,7 @@ export default function App() {
             onScrollToBottomTargetConsumed: clearScrollToBottomTarget,
             onOpenProfile: openProfile,
             onOpenChannel: handleOpenChannelTag,
+            onSearchInChannel: (channelName) => searchRef.current?.searchInChannel(channelName),
             onOpenForwardedDm: (target, channel) => handleOpenDm(target, false, "dms", channel),
             onRememberRecent: rememberRecent,
             onToast: setToast,

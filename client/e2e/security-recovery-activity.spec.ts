@@ -257,7 +257,7 @@ test("shows and permanently dismisses every supported Activity kind", async ({ b
       const root = messageById(bobPage, reactionRoot.message.id);
       await root.hover();
       await bobPage.getByTestId(/-actions$/).getByTitle("Add reaction").click();
-      await bobPage.getByRole("button", { name: "React with 👍" }).click();
+      await bobPage.getByRole("button", { name: "React with thumbs up" }).click();
     } finally {
       await bobContext.close();
     }
