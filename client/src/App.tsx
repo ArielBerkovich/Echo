@@ -104,6 +104,11 @@ export default function App() {
   const [composerFocusRequest, setComposerFocusRequest] = useState(0);
 
   useEffect(() => subscribeAuthExpired(() => setSessionExpired(true)), []);
+  useEffect(() => {
+    const disconnectOnPageHide = () => disconnectSocket();
+    window.addEventListener("pagehide", disconnectOnPageHide);
+    return () => window.removeEventListener("pagehide", disconnectOnPageHide);
+  }, []);
   const { theme, setTheme, mode, setMode, toggleMode } = useThemePreferences();
   const {
     scrollStates,
