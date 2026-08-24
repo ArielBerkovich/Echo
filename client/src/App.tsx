@@ -26,6 +26,8 @@ function loadHidden() {
 }
 
 const RECENTS_KEY = "echo.recentSearches";
+const RECENT_DESTINATION_LIMIT = 8;
+const SEARCH_RECENT_DISPLAY_LIMIT = 6;
 const CONNECTION_BANNER_DELAY_MS = 1000;
 const GLOBAL_HOTKEY_OPTIONS = {
   preventDefault: true,
@@ -675,7 +677,7 @@ export default function App() {
 
   function rememberRecent(item) {
     setRecents((prev) => {
-      const next = [item, ...prev.filter((r) => !(r.type === item.type && r.id === item.id))].slice(0, 6);
+      const next = [item, ...prev.filter((r) => !(r.type === item.type && r.id === item.id))].slice(0, RECENT_DESTINATION_LIMIT);
       writeJson(RECENTS_KEY, next);
       return next;
     });
@@ -1353,7 +1355,7 @@ export default function App() {
             query: searchQuery,
             channels: visibleChannels,
             myChannelIds,
-            recents,
+            recents: recents.slice(0, SEARCH_RECENT_DISPLAY_LIMIT),
             onPickChannel: handlePickChannel,
             onFindChannels: findPublicChannels,
             onPickUser: handlePickUser,
@@ -1424,6 +1426,7 @@ export default function App() {
             users,
             channels: visibleChannels,
             dms,
+            recentDestinations: recents,
             customEmojis: emojis,
             mode,
             savedIds,
@@ -1434,6 +1437,7 @@ export default function App() {
             onOpenProfile: openProfile,
             onOpenChannel: handleOpenChannelTag,
             onOpenForwardedDm: (target, channel) => handleOpenDm(target, false, "dms", channel),
+            onRememberRecent: rememberRecent,
             onToast: setToast,
             onDmsChanged: refreshDms,
             isStarred: activeChannel?.type === "dm" && starredIds.has(activeChannel.dmUserId),

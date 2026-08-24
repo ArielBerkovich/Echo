@@ -3,7 +3,7 @@ import Avatar from "./Avatar.js";
 import Composer from "./Composer.js";
 import Message from "./Message.js";
 import Modal, { ModalActions } from "./Modal.js";
-import { XIcon } from "lucide-react";
+import { PlusIcon, XIcon } from "lucide-react";
 
 const MAX_DESTINATIONS = 10;
 const MAX_VISIBLE_SEARCH_RESULTS = 20;
@@ -46,7 +46,7 @@ function DestinationIcon({ destination }) {
 
 // Recipient-first forwarding flow. Search and selection stay synchronous so
 // keyboard input always acts on exactly what is visible.
-export default function ForwardModal({ message, channels = [], dms = [], users = [], customEmojis = [], channelId = "", channelType = "public", currentUserId = "", usersById = new Map(), renderMarkdown, emojiMap = {}, onAddCustomEmoji, onForward, onSuccess, onClose }) {
+export default function ForwardModal({ message, channels = [], dms = [], users = [], recents = [], customEmojis = [], channelId = "", channelType = "public", currentUserId = "", usersById = new Map(), renderMarkdown, emojiMap = {}, onAddCustomEmoji, onForward, onSuccess, onClose }) {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState([]);
   const [note, setNote] = useState("");
@@ -58,6 +58,9 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
   const noteComposerRef = useRef(null);
 
   const destinationGroups = useMemo(() => {
+    const channelsById = new Map(channels.map((channel) => [channel.id, channel]));
+    const dmsByUserId = new Map(dms.map((dm) => [dm.withUser?.id, dm]));
+    const usersById = new Map(users.map((user) => [user.id, user]));
     const channelItems = channels.map((channel) => ({
       id: channel.id,
       kind: "channel",
@@ -68,9 +71,11 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
     const dmItems = dms.map((dm) => ({
       id: dm.id,
       kind: "dm",
+      userId: dm.withUser?.id || "",
       label: dm.withUser?.displayName || "Direct message",
       handle: "Direct message",
       avatarUrl: dm.withUser?.avatarUrl || null,
+      username: dm.withUser?.username || "",
     }));
     const knownDmUserIds = new Set(dms.map((dm) => dm.withUser?.id).filter(Boolean));
     const people = users
@@ -82,11 +87,28 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
         handle: `@${user.username}`,
         avatarUrl: user.avatarUrl || null,
       }));
+    const recentItems = recents.map((recent) => {
+      if (recent.type === "channel") {
+        const channel = channelsById.get(recent.id);
+        return channel ? channelItems.find((item) => item.id === channel.id) : null;
+      }
+      const user = usersById.get(recent.id) || dmsByUserId.get(recent.id)?.withUser;
+      if (!user) return null;
+      return {
+        id: user.id,
+        kind: "user",
+        label: user.displayName || user.username || "Person",
+        handle: `@${user.username}`,
+        avatarUrl: user.avatarUrl || null,
+        username: user.username || "",
+      };
+    }).filter(Boolean);
+
     return {
-      recent: [...dmItems, ...channelItems],
+      recent: recentItems,
       all: [...channelItems, ...dmItems, ...people],
     };
-  }, [channels, dms, users]);
+  }, [channels, dms, users, recents]);
 
   const hasQuery = Boolean(query.trim());
   const resultGroups = useMemo(() => {
@@ -266,7 +288,9 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
                             <strong>{labelFor(destination)}</strong>
                             <small>{destination.handle}</small>
                           </span>
-                          <span className="forward-selection-indicator" aria-hidden="true">{isSelected ? "✓" : "+"}</span>
+                          <span className="forward-selection-indicator" aria-hidden="true">
+                            {isSelected ? "✓" : <PlusIcon size={14} strokeWidth={2.5} />}
+                          </span>
                         </button>
                       );
                     })}

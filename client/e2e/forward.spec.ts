@@ -115,6 +115,23 @@ test.describe("forwarding", () => {
     await expect(modal.locator(".forward-destination-list")).toHaveCount(0);
   });
 
+  test("uses the same browser-local recents as global search", async ({ page }) => {
+    await page.goto("/");
+    await page.evaluate((recent) => {
+      localStorage.setItem("echo.recentSearches", JSON.stringify([recent]));
+    }, {
+      type: "channel",
+      id: fixture.projectChannel.id,
+      name: fixture.projectChannel.name,
+    });
+    await page.reload();
+
+    await openForwardDialog(page);
+    const modal = forwardModal(page);
+    await expect(destinationByLabel(modal, fixture.projectChannel.name)).toBeVisible();
+    await expect(destinationByLabel(modal, fixture.generalChannel.name)).toHaveCount(0);
+  });
+
   test("moves from recipient search to the note composer with Tab", async ({ page }) => {
     await openForwardDialog(page);
 
