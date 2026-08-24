@@ -33,6 +33,11 @@ async function openBobInGeneral(browser, messageIds: string[]) {
   return { bobContext, bobPage };
 }
 
+async function closeBob({ bobContext, bobPage }) {
+  await bobPage.goto("about:blank");
+  await bobContext.close();
+}
+
 test("groups reactions by message, keeps messages separate, and dismisses the whole group", async ({ browser, page }) => {
   const stamp = uniqueSuffix("reaction-group");
   const groupedBody = `Grouped reaction ${stamp}`;
@@ -54,7 +59,7 @@ test("groups reactions by message, keeps messages separate, and dismisses the wh
     await addReaction(bobPage, grouped.message.id, "❤️");
     await addReaction(bobPage, separate.message.id, "🚀");
   } finally {
-    await bobContext.close();
+    await closeBob({ bobContext, bobPage });
   }
 
   await page.goto("/activity");
@@ -100,7 +105,7 @@ test("shows the newest unread reaction on the rail and clears it after the feed 
     await addReaction(bobPage, message.message.id, "👍");
     await addReaction(bobPage, message.message.id, "❤️");
   } finally {
-    await bobContext.close();
+    await closeBob({ bobContext, bobPage });
   }
 
   await page.goto("/");
