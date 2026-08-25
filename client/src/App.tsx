@@ -104,6 +104,12 @@ export default function App() {
   const [composerFocusRequest, setComposerFocusRequest] = useState(0);
 
   useEffect(() => subscribeAuthExpired(() => setSessionExpired(true)), []);
+  useEffect(() => {
+    // Explicitly close realtime connections before Playwright/browser teardown
+    // so a page with an active WebSocket does not keep the context alive.
+    window.addEventListener("beforeunload", disconnectSocket);
+    return () => window.removeEventListener("beforeunload", disconnectSocket);
+  }, []);
   const { theme, setTheme, mode, setMode, toggleMode } = useThemePreferences();
   const {
     scrollStates,
