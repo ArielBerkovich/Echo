@@ -123,7 +123,12 @@ test.describe("forwarding", () => {
 
     const modal = forwardModal(page);
     await expect(modal.locator(".forward-destination-list")).toBeVisible();
-    await expect(destinationByLabel(modal, fixture.generalChannel.name)).toBeVisible();
+    const recent = destinationByLabel(modal, fixture.generalChannel.name);
+    await expect(recent).toBeVisible();
+    await recent.click();
+    await expect(modal.getByTestId("forward-send-selected")).toBeEnabled();
+    await modal.getByTestId("forward-send-selected").click();
+    await expect(modal).toBeHidden();
   });
 
   test("does not show an empty recipient error before or after selection", async ({ page }) => {
