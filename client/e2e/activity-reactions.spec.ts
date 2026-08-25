@@ -14,18 +14,23 @@ test.beforeEach(async ({ page }) => {
 });
 
 async function addReaction(page, messageId: string, emoji: string) {
+  const labels: Record<string, string> = { "👍": "thumbs up", "❤️": "heart", "🚀": "rocket" };
   const message = messageById(page, messageId);
   await expect(message).toBeVisible();
   await message.hover();
-  await page.getByTestId(/-actions$/).getByTitle("Add reaction").click();
-  await page.getByRole("button", { name: `React with ${emoji}` }).click();
+  await page.getByTestId(`message-${messageId}-add-reaction-action`).click();
+  await page.getByRole("dialog", { name: "Choose a reaction" })
+    .getByRole("button", { name: `React with ${labels[emoji]}` })
+    .click();
 }
 
 async function openBobInGeneral(browser, messageIds: string[]) {
   const bobPage = await browser.newPage();
   await seedToken(bobPage, fixture.bob.token);
+  await bobPage.goto(
+    `/channels/${encodeURIComponent(fixture.generalChannel.name)}?message=${messageIds[0]}`
+  );
   for (const messageId of messageIds) {
-    await bobPage.goto(`/channels/${encodeURIComponent(fixture.generalChannel.name)}?message=${messageId}`);
     await expect(messageById(bobPage, messageId)).toBeVisible();
   }
   return bobPage;
