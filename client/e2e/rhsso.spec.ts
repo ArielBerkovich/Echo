@@ -220,6 +220,32 @@ test.describe("RHSSO login flows (Real integration, runs only when Keycloak is u
     expect(user.isAdmin).toBe(false);
   });
 
+  test("does not offer password changes in settings (Real)", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Sign in with RHSSO" }).click();
+    await page.waitForURL((url) => url.port === "8180", { timeout: 15_000 });
+    await page.locator("#username").fill(RHSSO_USER);
+    await page.locator("#password").fill(RHSSO_PASSWORD);
+    await page.locator("#kc-login").click();
+    await page.waitForURL((url) => url.hostname === "localhost" && url.port === ECHO_PORT, { timeout: 15_000 });
+
+    const creationModal = page.getByTestId("creation-migration-modal");
+    if (await creationModal.isVisible().catch(() => false)) {
+      await creationModal.getByRole("button", { name: "Create a new Echo account" }).click();
+    }
+    await expect(page.getByTestId("rail-logout")).toBeVisible({ timeout: 15_000 });
+    await page.getByTestId("rail-settings").click();
+    await expect(page.getByTestId("sso-password-settings")).toBeVisible();
+    await expect(page.getByTestId("change-password-form")).toHaveCount(0);
+
+    const token = await page.evaluate(() => localStorage.getItem("echo.token"));
+    const passwordResponse = await page.request.patch("/api/users/me/password", {
+      headers: { Authorization: `Bearer ${token}` },
+      data: { currentPassword: RHSSO_PASSWORD, newPassword: "AnotherPassword1" },
+    });
+    expect(passwordResponse.status()).toBe(403);
+  });
+
   test("logout does not cause a redirect loop back to Keycloak (Real)", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "Sign in with RHSSO" }).click();

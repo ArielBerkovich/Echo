@@ -65,6 +65,8 @@ userSchema.methods.toPublicJSON = function () {
     displayName: this.displayName,
     avatarUrl: this.avatarUrlOverride || (this.avatarKey ? `/api/files/${this.avatarKey}` : null),
     isAdmin: !!this.isAdmin,
+    // SSO credentials are managed by the identity provider, not Echo.
+    canChangePassword: this.authOrigin !== "rhsso" && !this.rhssoSubject,
     mustResetPassword: !!this.mustResetPassword,
     onboarded: !!this.onboarded,
   };
