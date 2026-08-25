@@ -296,7 +296,11 @@ test("keeps the DM preview width stable when toggling Starred", async ({ page })
   await row.locator(".dm-open").click();
   const starredToggle = page.getByTestId("dm-starred-toggle");
   const wasStarred = (await starredToggle.getAttribute("aria-pressed")) === "true";
+  const starResponse = page.waitForResponse(
+    (response) => response.url().includes("/api/users/") && response.url().endsWith("/vip") && response.request().method() === "POST"
+  );
   await starredToggle.click();
+  await expect((await starResponse).ok()).toBeTruthy();
   await expect(starredToggle).toHaveAttribute("aria-pressed", String(!wasStarred));
   await railItem(page, "dms").click();
 
@@ -460,7 +464,9 @@ test("creates the channel creator as a manager and lets them promote a member", 
   });
 
   await page.goto("/");
-  await page.getByTestId(`channel-row-${slug(channelName)}`).click();
+  const channel = page.getByTestId(`channel-row-${slug(channelName)}`);
+  await expect(channel).toBeVisible();
+  await channel.click();
   await page.locator(".ch-name-btn").click();
 
   const details = page.getByTestId("channel-details-dialog");
@@ -547,7 +553,9 @@ test("switches channels without flashing stale messages while images load", asyn
     { nextChannel: seeded.channelName, staleText: fixture.messages.dmMessage.body }
   );
 
-  await page.getByTestId(`channel-row-${slug(seeded.channelName)}`).click();
+  const seededRow = page.getByTestId(`channel-row-${slug(seeded.channelName)}`);
+  await expect(seededRow).toBeVisible();
+  await seededRow.click();
   await expect(page.getByTestId("channel-title")).toContainText(seeded.channelName);
   await expect(page.getByTestId(`message-${seeded.message.id}`)).toBeVisible();
   await expect(staleMessage).toHaveCount(0);
