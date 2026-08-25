@@ -149,8 +149,7 @@ test("opens a profile, marks Starred, starts a DM, protects it, and can message 
 });
 
 test("edits and deletes own messages", async ({ page }) => {
-  await page.goto("/");
-  await page.getByTestId(`channel-row-${slug(fixture.generalChannel.name)}`).click();
+  await page.goto(`/channels/${encodeURIComponent(fixture.generalChannel.name)}`);
 
   const body = `Editable ${Date.now()}`;
   const composer = page.getByTestId("composer-editor");
@@ -714,13 +713,13 @@ test("pins a message from inside a thread", async ({ page }) => {
 });
 
 test("opens the original thread when a thread reply is forwarded into the same channel", async ({ page }) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: `# ${fixture.projectChannel.name}` }).click();
+  await page.goto(`/channels/${encodeURIComponent(fixture.projectChannel.name)}`);
 
   const root = page
     .locator(".message")
     .filter({ hasText: fixture.messages.threadRoot.body })
     .first();
+  await expect(root).toBeVisible();
   await root.hover();
   await page.getByTestId(/-actions$/).getByTitle("Reply in thread").click();
   await expect(page.getByTestId("thread-panel")).toBeVisible();

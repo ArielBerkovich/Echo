@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { seedWorkspaceFixture } from "./helpers.js";
+import { requestAsToken, seedWorkspaceFixture } from "./helpers.js";
 
 let fixture: Awaited<ReturnType<typeof seedWorkspaceFixture>>;
 
@@ -76,14 +76,15 @@ test.describe("post-login forms are keyboard operable", () => {
     await peopleSearch.press("Escape");
     await expect(addPeople).toBeHidden();
 
-    // Restore the fixture-owned channel metadata so later tests remain isolated.
-    await pressEnter(page.getByTestId("channel-title"));
-    await page.getByTestId("channel-details-dialog").getByRole("button", { name: "Edit", exact: true }).first().focus();
-    await page.keyboard.press("Space");
-    const restoredTopic = page.getByTestId("channel-details-dialog").locator("input.settings-input").first();
-    await restoredTopic.press("ControlOrMeta+A");
-    await restoredTopic.pressSequentially("A very long planning topic that should truncate instead of pushing actions away");
-    await pressEnter(page.getByTestId("channel-details-dialog").getByRole("button", { name: "Save" }).first());
+    // Restore the fixture-owned channel metadata through the API. The UI flow
+    // above is what this test covers; reopening the dialog here only adds a
+    // race with the details panel's asynchronous refresh.
+    await requestAsToken(page, fixture.alice.token, `/channels/${fixture.projectChannel.id}`, {
+      method: "PATCH",
+      body: {
+        topic: "A very long planning topic that should truncate instead of pushing actions away",
+      },
+    });
   });
 
   test("fills and sends a survey using only keyboard navigation", async ({ page }) => {

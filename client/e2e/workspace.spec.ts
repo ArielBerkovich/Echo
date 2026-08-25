@@ -642,9 +642,8 @@ test("uses an empty quoted line to exit a blockquote", async ({ page }) => {
 });
 
 test("sends multiple messages from the same composer", async ({ page }) => {
-  await page.goto("/");
-  await channelRow(page, "general").click();
-  await expect(page.getByTestId("channel-title")).toContainText("general");
+  await page.goto(`/channels/${encodeURIComponent(fixture.generalChannel.name)}`);
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.generalChannel.name);
 
   const composer = page.getByTestId("composer-editor");
   await expect(composer).toBeVisible();
@@ -921,7 +920,7 @@ test("searches messages with filters and displays results", async ({ page }) => 
 test("navigates grouped search results with the keyboard", async ({ page }) => {
   const uniqueSearchToken = fixture.messages.searchHit.body.match(/only-token-[^ ]+/)?.[0];
   expect(uniqueSearchToken).toBeTruthy();
-  await page.goto(`/search?q=${encodeURIComponent(uniqueSearchToken)}`);
+  await page.goto(`/search?q=${encodeURIComponent(`${uniqueSearchToken} in:${fixture.generalChannel.name}`)}`);
 
   const pane = page.getByTestId("search-results-pane");
   await expect(pane).toBeFocused();

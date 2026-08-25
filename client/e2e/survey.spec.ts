@@ -1,13 +1,12 @@
 import { expect, test } from "@playwright/test";
-import { seedWorkspaceFixture, channelRow, uniqueSuffix } from "./helpers.js";
+import { seedWorkspaceFixture, uniqueSuffix } from "./helpers.js";
 
 let fixture: Awaited<ReturnType<typeof seedWorkspaceFixture>>;
 
 test.beforeEach(async ({ page }) => {
   fixture = await seedWorkspaceFixture(page);
-  await page.goto("/");
-  await channelRow(page, fixture.generalChannel.name).click();
-  await expect(page.getByTestId("channel-title")).toContainText("general");
+  await page.goto(`/channels/${encodeURIComponent(fixture.generalChannel.name)}`);
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.generalChannel.name);
 });
 
 function surveyModal(page) {

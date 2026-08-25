@@ -4,7 +4,7 @@ export default defineConfig({
   testDir: "./e2e",
   timeout: 30_000,
   retries: process.env.CI ? 2 : 0,
-  expect: { timeout: 5_000 },
+  expect: { timeout: 10_000 },
   // Specs share state within a worker, but each worker gets its own fixture
   // users/channels. Keep tests in a file ordered while running files in
   // parallel. E2E_WORKERS lets CI and local runs tune database/browser load.

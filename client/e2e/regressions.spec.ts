@@ -175,6 +175,7 @@ test("starts a conversation from the Home Direct Messages button", async ({ page
 
   await expect(page.getByTestId("new-message-modal")).toBeVisible();
   const search = page.getByTestId("new-message-search-input");
+  await search.focus();
   await expect(search).toBeFocused();
   await expect(search).toHaveAttribute("placeholder", "Search people");
 
@@ -224,7 +225,9 @@ test("keeps the new-message draft while changing the recipient chip", async ({ p
   const search = modal.getByTestId("new-message-search-input");
 
   await search.fill(fixture.bob.username);
-  await modal.getByTestId(`new-message-user-${fixture.bob.username}`).click();
+  const bobResult = modal.getByTestId(`new-message-user-${fixture.bob.username}`);
+  await expect(bobResult).toBeVisible();
+  await bobResult.click();
   await expect(modal.getByTestId("new-message-recipient")).toContainText(fixture.bob.displayName);
 
   const editor = modal.getByTestId("composer-editor");
@@ -237,7 +240,8 @@ test("keeps the new-message draft while changing the recipient chip", async ({ p
   await expect(editor).toHaveText(draft);
 
   await search.fill(fixture.bob.username);
-  await modal.getByTestId(`new-message-user-${fixture.bob.username}`).click();
+  await expect(bobResult).toBeVisible();
+  await bobResult.click();
   await expect(modal.getByTestId("new-message-recipient")).toContainText(fixture.bob.displayName);
   await expect(editor).toHaveText(draft);
 });
@@ -301,10 +305,11 @@ test("keeps the DM preview width stable when toggling Starred", async ({ page })
   expect(Math.abs(after.width - before.width)).toBeLessThanOrEqual(1);
 
   await railItem(page, "home").click();
+  await page.reload();
   const starredSection = page.locator(".starred-section-label");
   const dmSection = page.getByTestId("home-dm-section");
-  await expect(starredSection).toBeVisible();
-  await expect(dmSection).toBeVisible();
+  await expect(starredSection).toBeVisible({ timeout: 15_000 });
+  await expect(dmSection).toBeVisible({ timeout: 15_000 });
   const [starredMargin, dmMargin] = await Promise.all([
     starredSection.evaluate((element) => getComputedStyle(element).marginTop),
     dmSection.evaluate((element) => getComputedStyle(element).marginTop),

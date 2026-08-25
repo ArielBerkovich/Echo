@@ -264,13 +264,14 @@ test("uses distinct system messages for self-joins and added members", async ({ 
       .getByRole("button", { name: `Join #${selfJoinName}` })
       .click();
 
-    const selfJoinMessages = await requestAsToken(
-      page,
-      alice.token,
-      `/channels/${selfJoinChannel.channel.id}/messages`
-    );
-    expect(selfJoinMessages.messages.filter((message) => message.kind === "system").at(-1).body)
-      .toBe("joined");
+    await expect.poll(async () => {
+      const messages = await requestAsToken(
+        page,
+        alice.token,
+        `/channels/${selfJoinChannel.channel.id}/messages`
+      );
+      return messages.messages.filter((message) => message.kind === "system").at(-1)?.body;
+    }, { timeout: 10_000 }).toBe("joined");
 
     await channelRow(bobPage.page, addedMemberName).click();
     await requestAsToken(page, bob.token, `/channels/${addedMemberChannel.channel.id}/members`, {
@@ -280,21 +281,28 @@ test("uses distinct system messages for self-joins and added members", async ({ 
 
     await expect(alicePage.page.getByTestId(`channel-row-${addedMemberName}`)).toBeVisible();
     await alicePage.page.getByTestId(`channel-row-${addedMemberName}`).click();
-    const addedMemberMessages = await requestAsToken(
-      page,
-      alice.token,
-      `/channels/${addedMemberChannel.channel.id}/messages`
-    );
-    expect(addedMemberMessages.messages.filter((message) => message.kind === "system").at(-1).body)
-      .toBe("was added");
+    await expect.poll(async () => {
+      const messages = await requestAsToken(
+        page,
+        alice.token,
+        `/channels/${addedMemberChannel.channel.id}/messages`
+      );
+      return messages.messages.filter((message) => message.kind === "system").at(-1)?.body;
+    }, { timeout: 10_000 }).toBe("was added");
   });
 });
 
 test("updates the typing indicator after a display name change", async ({ browser, page }) => {
   const { alice } = fixture;
   await withAliceBobPages(browser, async ({ alicePage, bobPage }) => {
-    await channelRow(alicePage.page, "general").click();
-    await channelRow(bobPage.page, "general").click();
+    await Promise.all([
+      alicePage.page.goto(`/channels/${encodeURIComponent(fixture.generalChannel.name)}`),
+      bobPage.page.goto(`/channels/${encodeURIComponent(fixture.generalChannel.name)}`),
+    ]);
+    await Promise.all([
+      expect(alicePage.page.getByTestId("composer-editor")).toBeVisible(),
+      expect(bobPage.page.getByTestId("channel-view")).toBeVisible(),
+    ]);
 
     const updatedName = `${alice.displayName} Renamed`;
     await requestAsToken(page, alice.token, "/users/me", {

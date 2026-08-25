@@ -67,9 +67,20 @@ async function ensureWorkspaceAdmin(page) {
   const response = await page.request.post("/api/auth/register", {
     data: { username: "admin", password: DEFAULT_PASSWORD },
   });
-  // Multiple workers can observe setup at the same time. One registration
-  // wins and the others should continue once the admin exists.
-  expect(response.ok() || response.status() === 409, "failed to bootstrap workspace admin").toBeTruthy();
+  if (response.ok() || response.status() === 409) return;
+
+  // Multiple workers can observe setup while the winning registration is
+  // still being committed. Re-read setup status before treating a transient
+  // response from the losing worker as a bootstrap failure.
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const retryStatus = await page.request.get("/api/auth/setup-status");
+    const retryBody = await retryStatus.json().catch(() => ({}));
+    if (retryStatus.ok() && !retryBody.needsSetup) return;
+  }
+
+  const body = await response.json().catch(() => ({}));
+  throw new Error(body.error || `failed to bootstrap workspace admin (${response.status()})`);
 }
 
 export async function loginAndSeedToken(page, username, password) {
