@@ -356,7 +356,6 @@ function Message({
       }}
       onMouseDown={(event) => {
         if (event.target.closest?.("button, a, [data-message-actions]")) return;
-        messageRef.current?.focus();
         activateMessage();
       }}
       onMouseEnter={activateMessage}
@@ -419,7 +418,6 @@ function Message({
 
         {m.forwardedFrom ? (
           <>
-            {m.forwardNote && <div className="forward-divider" aria-hidden="true" />}
             <div className="forwarded-message-card">
               <div className="forwarded-label">
                 <ShareIcon />

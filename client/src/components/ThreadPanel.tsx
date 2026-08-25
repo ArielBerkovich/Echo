@@ -306,16 +306,12 @@ export default function ThreadPanel({
   }
 
   const messages = [rootMsg, ...replies];
-  const conversationLabel = channel.type === "dm"
-    ? channel.dmName || channel.name || "Direct message"
-    : `#${channel.name}`;
 
   return (
     <aside className="thread-panel" data-testid="thread-panel">
       <header className="thread-header" data-testid="thread-header">
         <div className="thread-heading">
           <span className="thread-title">Thread</span>
-          <span className="thread-context" data-testid="thread-context" title={conversationLabel}>in {conversationLabel}</span>
         </div>
         <button className="thread-close" data-testid="thread-close" onClick={onClose} aria-label="Close thread">✕</button>
       </header>

@@ -104,6 +104,12 @@ export default function App() {
   const [composerFocusRequest, setComposerFocusRequest] = useState(0);
 
   useEffect(() => subscribeAuthExpired(() => setSessionExpired(true)), []);
+  useEffect(() => {
+    // Explicitly close realtime connections before Playwright/browser teardown
+    // so a page with an active WebSocket does not keep the context alive.
+    window.addEventListener("beforeunload", disconnectSocket);
+    return () => window.removeEventListener("beforeunload", disconnectSocket);
+  }, []);
   const { theme, setTheme, mode, setMode, toggleMode } = useThemePreferences();
   const {
     scrollStates,
@@ -1436,6 +1442,7 @@ export default function App() {
             onScrollToBottomTargetConsumed: clearScrollToBottomTarget,
             onOpenProfile: openProfile,
             onOpenChannel: handleOpenChannelTag,
+            onSearchInChannel: (channelName) => searchRef.current?.searchInChannel(channelName),
             onOpenForwardedDm: (target, channel) => handleOpenDm(target, false, "dms", channel),
             onRememberRecent: rememberRecent,
             onToast: setToast,

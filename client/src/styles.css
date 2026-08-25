@@ -2017,7 +2017,10 @@ html[data-mode="dark"] .backend-connection-error {
 }
 /* Gold Starred section header in the sidebar. */
 .starred-section-label {
-  margin-top: 12px;
+  margin-top: 8px;
+}
+.starred-section-label ~ .channels-section-label {
+  margin-top: 8px;
 }
 .starred-label {
   color: var(--beam);
@@ -2787,12 +2790,14 @@ html[data-mode="dark"] .sidebar {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 .dms-view .sidebar-header {
-  height: 70px;
+  height: 59px;
+  box-sizing: border-box;
+  padding-inline: 12px;
   border-bottom: none;
 }
 .sidebar-header .brand-sm {
   font-weight: 700;
-  font-size: 17px;
+  font-size: 18px;
   letter-spacing: -0.01em;
 }
 .channel-list {
@@ -2973,10 +2978,7 @@ html[data-mode="dark"] .sidebar {
 
 /* Direct Messages section */
 .dm-label {
-  margin-top: 14px;
-}
-.dm-label-after-starred {
-  margin-top: 12px;
+  margin-top: 8px;
 }
 .dm-item {
   padding-right: 6px;
@@ -3053,15 +3055,15 @@ html[data-mode="dark"] .sidebar {
   align-items: center;
   gap: 6px;
   margin-top: 10px;
-  padding: 0 14px 10px;
+  padding: 0 12px 10px;
 }
 .sidebar:not(.dms-view) > .dm-find {
-  margin-top: 20px;
+  margin-top: 10px;
 }
 .dm-find input {
   flex: 1;
   box-sizing: border-box;
-  height: 40px;
+  height: 38px;
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.14);
   color: #fff;
@@ -3367,7 +3369,7 @@ html[data-mode="dark"] .sidebar {
 }
 .pane-search {
   flex: none;
-  padding: 20px 14px 10px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
 }
@@ -3379,30 +3381,66 @@ html[data-mode="dark"] .sidebar {
 .search-box-field {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
   box-sizing: border-box;
-  height: 40px;
-  padding: 9px 12px;
-  border: 1px solid transparent;
-  border-radius: 9px;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  border-radius: 12px;
   background: var(--surface-2);
   color: var(--muted);
-  transition: background 0.16s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--text) 5%, transparent);
+  transition: background 0.16s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.16s ease;
+}
+.search-icon-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  color: var(--accent);
+  transition: background 0.16s ease, color 0.16s ease, transform 0.16s ease;
 }
 .search-box-field:focus-within {
   background: var(--surface);
   border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
   color: var(--accent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 24%, transparent) inset;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent), 0 2px 5px color-mix(in srgb, var(--text) 7%, transparent);
+  transform: translateY(-1px);
+}
+.search-box-field:hover:not(:focus-within) {
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
+  background: color-mix(in srgb, var(--surface-2) 88%, var(--surface));
+}
+.search-box-field:focus-within .search-icon-badge {
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+  transform: scale(1.03);
 }
 /* The input sits transparently over a "mirror" that renders the same text
    with the filter keywords (in:/from:/has:) styled — native inputs can't
    colour parts of their own text. */
 .search-input-wrap {
   position: relative;
+  display: flex;
+  align-items: center;
+  height: 18px;
   flex: 1;
   min-width: 0;
+}
+.search-placeholder {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 18px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  pointer-events: none;
 }
 .search-box-field input.search-input,
 .search-highlight {
@@ -3414,11 +3452,13 @@ html[data-mode="dark"] .sidebar {
 .search-box-field input.search-input {
   display: block;
   width: 100%;
+  height: 18px;
   border: none;
   background: none;
   padding: 0;
   color: transparent;
   caret-color: var(--text);
+  line-height: 18px;
 }
 .search-box-field input.search-input:focus {
   outline: none;
@@ -3426,11 +3466,16 @@ html[data-mode="dark"] .sidebar {
 }
 .search-highlight {
   position: absolute;
-  inset: 0;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 18px;
+  transform: translateY(-50%);
   white-space: pre;
   overflow: hidden;
   pointer-events: none;
   color: var(--text);
+  line-height: 18px;
 }
 /* Colour-only (NOT bold): the transparent input renders normal-weight text, so
    bold keywords here would be wider than the input's metrics and the caret
@@ -3574,7 +3619,9 @@ html[data-mode="dark"] .sidebar {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 16px 18px;
+  height: 64px;
+  box-sizing: border-box;
+  padding: 14px 24px;
   border-bottom: 1px solid var(--border);
 }
 .members-panel-title {
@@ -3644,13 +3691,14 @@ html[data-mode="dark"] .sidebar {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  margin-inline: -16px;
 }
 .members-panel-person {
   display: flex;
   align-items: center;
   gap: 11px;
-  padding: 9px 4px;
-  border-radius: 9px;
+  padding: 9px 20px;
+  border-radius: 0;
 }
 .members-panel-person:hover {
   background: var(--surface-2);
@@ -3718,7 +3766,8 @@ html[data-mode="dark"] .sidebar {
   gap: 12px;
   height: 64px;
   flex: none;
-  padding: 14px 16px;
+  box-sizing: border-box;
+  padding: 14px 24px;
   border-bottom: 1px solid var(--border);
   font-weight: 800;
 }
@@ -3755,11 +3804,23 @@ html[data-mode="dark"] .sidebar {
 }
 .thread-body {
   flex: 1;
+  --thread-body-gutter: 16px;
+  --messages-gutter: 0px;
   overflow-y: auto;
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+.thread-body > div {
+  width: 100%;
+}
+.thread-body > div > .message {
+  width: calc(100% + (2 * var(--thread-body-gutter)));
+  margin-left: calc(-1 * var(--thread-body-gutter));
+  box-sizing: border-box;
+  padding-left: calc(var(--thread-body-gutter) + 14px);
+  padding-right: calc(var(--thread-body-gutter) + 14px);
 }
 .thread-divider {
   display: flex;
@@ -3781,11 +3842,13 @@ html[data-mode="dark"] .sidebar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
+  height: 64px;
+  box-sizing: border-box;
+  padding: 14px 24px;
   border-bottom: 1px solid var(--border);
   font-weight: 800;
 }
-.panel-title { font-size: 15px; }
+.panel-title { font-size: 18px; }
 .panel-close {
   background: none;
   color: var(--muted);
@@ -6510,6 +6573,8 @@ html[data-mode="dark"] .day-divider-label {
 
 /* "Forwarded from …" header above a forwarded message */
 .forwarded-message-card {
+  width: 100%;
+  box-sizing: border-box;
   margin-top: 8px;
   padding: 10px 12px 11px;
   border: 1px solid var(--border);
@@ -7509,12 +7574,6 @@ html[data-mode="dark"] .day-divider-label {
 .forwarded-message-label {
   margin-top: 8px;
 }
-.forward-divider {
-  height: 1px;
-  margin: 10px 0 8px;
-  background: var(--border);
-}
-
 /* Reaction pills */
 .reactions {
   display: flex;
@@ -7783,6 +7842,12 @@ html[data-mode="dark"] .day-divider-label {
 .reaction-quick-button:focus-visible {
   background: var(--active-soft);
 }
+.reaction-quick-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  grid-row: span 2;
+}
 .reaction-more-button {
   display: flex;
   align-items: center;
@@ -8026,12 +8091,18 @@ html[data-mode="dark"] .channel-header {
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
-  padding: 20px 24px;
+  --messages-gutter: 24px;
+  padding: 20px var(--messages-gutter);
   display: flex;
   flex-direction: column;
   gap: 4px;
   background: linear-gradient(180deg, var(--bg), var(--surface) 120px);
+}
+.messages-inner {
+  width: calc(100% + (2 * var(--messages-gutter)));
+  margin-left: calc(-1 * var(--messages-gutter));
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -8243,19 +8314,20 @@ html[data-mode="dark"] .new-messages-button:hover {
 .message {
   display: flex;
   gap: 12px;
-  padding: 7px 14px;
-  border-radius: 12px;
+  padding: 7px calc(var(--messages-gutter) + 14px);
+  border-radius: 0;
   animation: fadeInUp 0.28s ease both;
   scroll-margin: 24px;
-  box-shadow: inset 2px 0 0 transparent;
-  transition: background 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: none;
+  user-select: text;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 .message:hover,
 .message.menu-open,
 .message.actions-hovered,
 .message.reaction-open {
-  background: var(--surface-2);
-  box-shadow: inset 2px 0 0 var(--accent);
+  background: color-mix(in srgb, var(--surface-2) 58%, var(--surface));
+  box-shadow: none;
 }
 .message.menu-open {
   z-index: 80;
@@ -8272,6 +8344,7 @@ html[data-mode="dark"] .new-messages-button:hover {
   width: 36px;
 }
 .message .content {
+  flex: 1 1 auto;
   min-width: 0;
 }
 .message .meta {
@@ -9120,12 +9193,12 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
 .new-message-layout {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
 }
 .new-message-picker {
   min-width: 0;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 10px;
+  border-bottom: 0;
+  padding-bottom: 0;
 }
 .new-message-compose {
   min-width: 0;
@@ -9134,22 +9207,81 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
 }
 .new-message-compose .composer {
   width: 100%;
-  margin: 14px 0 0;
+  margin: 0;
 }
 .new-message-compose .composer.is-disabled { opacity: 0.62; }
 .new-message-recipient {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 48px;
-  padding: 7px 9px;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 36px;
+  padding: 5px 7px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 999px;
   background: var(--surface-2);
 }
 .new-message-recipient .person-info {
   min-width: 0;
-  flex: 1;
+  flex: none;
+  overflow: hidden;
+}
+.new-message-recipient .person-name,
+.new-message-recipient .person-handle {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.new-message-recipient .person-name {
+  font-size: 13px;
+  font-weight: 700;
+}
+.new-message-recipient .person-handle {
+  color: var(--muted);
+  font-size: 11px;
+}
+.new-message-search-selected {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  box-sizing: border-box;
+  padding: 4px 6px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.new-message-search-selected .new-message-recipient {
+  width: auto;
+  min-height: 0;
+  padding: 4px 6px 4px 9px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 650;
+}
+.new-message-search-selected .new-message-recipient button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+  color: var(--muted);
+  line-height: 1;
+}
+.new-message-search-selected .new-message-recipient button:hover,
+.new-message-search-selected .new-message-recipient button:focus-visible {
+  background: var(--active-soft);
+  color: var(--text);
 }
 .new-message-change {
   flex: none;
@@ -9169,12 +9301,21 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
   display: flex;
   align-items: center;
   gap: 9px;
+  height: 40px;
+  box-sizing: border-box;
   padding: 0 12px;
   border: 1px solid var(--border);
   border-radius: 10px;
   color: var(--muted);
   background: var(--surface-2);
   transition: background 0.16s ease, border-color 0.16s ease;
+}
+.new-message-search-selected {
+  height: 40px;
+  padding: 4px 6px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 .new-message-search:focus-within {
   border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
@@ -10210,7 +10351,8 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 }
 
 .messages {
-  padding: clamp(1rem, 1.8vw, 2rem) clamp(1rem, 2.8vw, 2.5rem);
+  --messages-gutter: clamp(1rem, 2.8vw, 2.5rem);
+  padding: clamp(1rem, 1.8vw, 2rem) var(--messages-gutter);
 }
 
 .channel-header {
@@ -10266,7 +10408,8 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 /* Re-apply narrow-screen geometry after the fluid desktop rules above. */
 @media (max-width: 760px) {
   .messages {
-    padding: 1rem 0.75rem;
+    --messages-gutter: 0.75rem;
+    padding: 1rem var(--messages-gutter);
   }
   .modal-backdrop:has(.forward-modal) {
     align-items: flex-end;
@@ -10307,17 +10450,20 @@ html[data-mode="dark"] .hljs-class .hljs-title {
    enlarge the reading surfaces selectively rather than scaling the whole UI. */
 @media (min-width: 1600px) {
   .channel-header,
-  .thread-header {
+  .thread-header,
+  .panel-header,
+  .members-panel-header {
     height: 72px;
   }
   .messages {
-    padding: 2rem clamp(2.5rem, 3.5vw, 4rem);
+    --messages-gutter: clamp(2.5rem, 3.5vw, 4rem);
+    padding: 2rem var(--messages-gutter);
     gap: 6px;
   }
 
   .message {
     gap: 14px;
-    padding: 9px 16px;
+    padding: 9px calc(var(--messages-gutter) + 16px);
   }
   .message .avatar-slot {
     width: 40px;
@@ -10392,8 +10538,9 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   }
 
   .thread-header,
-  .panel-header {
-    padding: 17px 20px;
+  .panel-header,
+  .members-panel-header {
+    padding: 17px 24px;
     font-size: 18px;
   }
   .thread-body,
@@ -10566,7 +10713,8 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     padding: 23px 22px;
   }
   .dms-view .sidebar-header {
-    height: 73px;
+    height: 59px;
+    padding-inline: 12px;
   }
   .channel-list {
     padding: 18px 14px;
@@ -11223,7 +11371,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   }
 
   .pane-search {
-    padding-top: max(8px, env(safe-area-inset-top));
+    padding: max(6px, env(safe-area-inset-top)) 10px;
   }
 
   .search-box-field input.search-input {
@@ -11502,6 +11650,14 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     padding: 14px 12px 20px;
   }
 
+  .members-panel-list {
+    margin-inline: -12px;
+  }
+
+  .members-panel-person {
+    padding-inline: 16px;
+  }
+
   .channel-details-backdrop {
     inset: 0 0 calc(72px + env(safe-area-inset-bottom));
     align-items: stretch;
@@ -11585,7 +11741,12 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   }
 
   .thread-title {
-    font-size: 19px;
+    font-size: 16px;
+  }
+
+  .panel-title,
+  .members-panel-title h2 {
+    font-size: 16px;
   }
 
   .thread-context {
@@ -11605,6 +11766,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 
   .thread-body {
     min-height: 0;
+    --thread-body-gutter: 12px;
     padding: 14px 12px 20px;
     gap: 8px;
     overscroll-behavior: contain;

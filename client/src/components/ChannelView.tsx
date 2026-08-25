@@ -24,7 +24,7 @@ import LeaveChannelDialog from "./LeaveChannelDialog.js";
 import { LeaveIcon, PinIcon } from "./Icons.js";
 import { formatDayDivider, isDifferentDay } from "../lib/time.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
-import { ChevronsDownIcon, StarIcon, UsersRoundIcon } from "lucide-react";
+import { ChevronsDownIcon, SearchIcon, StarIcon, UsersRoundIcon } from "lucide-react";
 import { queryKeys } from "../lib/queryClient.js";
 
 // Shimmering placeholder rows shown while a channel's history loads, so the
@@ -66,6 +66,7 @@ export default function ChannelView({
   onScrollToBottomTargetConsumed,
   onOpenProfile,
   onOpenChannel,
+  onSearchInChannel,
   onOpenForwardedDm,
   onRememberRecent,
   isStarred = false,
@@ -1009,6 +1010,15 @@ export default function ChannelView({
               <button className="header-action header-action-icon" data-testid="channel-pinned" onClick={openPinnedPanel} title="Pinned messages" aria-label="Pinned messages">
                 <PinIcon />
               </button>
+              <button
+                className="header-action header-action-icon channel-search-action"
+                data-testid="channel-search"
+                title={`Search in #${channel.name}`}
+                aria-label={`Search in #${channel.name}`}
+                onClick={() => onSearchInChannel?.(channel.name)}
+              >
+                <SearchIcon size={15} strokeWidth={1.9} />
+              </button>
               <button className="header-action header-action-icon" data-testid="channel-members" title="View members" onClick={() => { setThread(null); setThreadJumpTargetId(null); setShowDetails(false); setShowMembers(true); }}>
                 <UsersRoundIcon size={16} strokeWidth={1.8} />
               </button>
@@ -1031,7 +1041,6 @@ export default function ChannelView({
                   onClick={() => setConfirmLeave(true)}
                 >
                   <LeaveIcon />
-                  <span>Leave</span>
                 </button>
               )}
             </div>
@@ -1046,7 +1055,7 @@ export default function ChannelView({
           ref={scrollerRef}
           onScroll={onMessagesScroll}
         >
-          <div ref={messagesInnerRef}>
+          <div className="messages-inner" ref={messagesInnerRef}>
           {loadingOlder && <div className="older-loader">Loading earlier messages…</div>}
           {loading ? (
             <MessagesSkeleton />

@@ -39,8 +39,7 @@ test.describe("workspace branding", () => {
 
     await seedToken(page, admin.token);
     try {
-      await page.goto("/");
-      await page.getByTestId("rail-settings").click();
+      await page.goto("/settings");
       await expect(page.getByTestId("settings-page")).toBeVisible();
       await page.getByRole("button", { name: "Workspace" }).click();
 

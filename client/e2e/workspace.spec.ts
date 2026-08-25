@@ -284,7 +284,7 @@ test("aligns thread chrome with the conversation and labels replies clearly", as
 
   const thread = page.getByTestId("thread-panel");
   await expect(thread).toBeVisible();
-  await expect(thread.getByTestId("thread-context")).toHaveText(`in #${fixture.projectChannel.name}`);
+  await expect(thread.getByTestId("thread-context")).toHaveCount(0);
   await expect(thread.getByTestId("composer-editor")).toHaveAttribute(
     "data-placeholder",
     "Reply to thread…"
@@ -515,8 +515,8 @@ test("clears message actions when leaving the message row but keeps them over th
   expect(messageBox).not.toBeNull();
   expect(messagesBox).not.toBeNull();
   await page.mouse.move(
-    Math.min(messagesBox.x + messagesBox.width - 4, messageBox.x + messageBox.width + 80),
-    messageBox.y + Math.min(8, messageBox.height / 2)
+    messagesBox.x + Math.min(8, messagesBox.width / 2),
+    Math.min(messagesBox.y + messagesBox.height - 8, messageBox.y + messageBox.height + 24)
   );
   await expect(actions).toBeHidden();
 });
@@ -642,9 +642,8 @@ test("uses an empty quoted line to exit a blockquote", async ({ page }) => {
 });
 
 test("sends multiple messages from the same composer", async ({ page }) => {
-  await page.goto("/");
-  await channelRow(page, "general").click();
-  await expect(page.getByTestId("channel-title")).toContainText("general");
+  await page.goto(`/channels/${encodeURIComponent(fixture.generalChannel.name)}`);
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.generalChannel.name);
 
   const composer = page.getByTestId("composer-editor");
   await expect(composer).toBeVisible();
@@ -921,7 +920,7 @@ test("searches messages with filters and displays results", async ({ page }) => 
 test("navigates grouped search results with the keyboard", async ({ page }) => {
   const uniqueSearchToken = fixture.messages.searchHit.body.match(/only-token-[^ ]+/)?.[0];
   expect(uniqueSearchToken).toBeTruthy();
-  await page.goto(`/search?q=${encodeURIComponent(uniqueSearchToken)}`);
+  await page.goto(`/search?q=${encodeURIComponent(`${uniqueSearchToken} in:${fixture.generalChannel.name}`)}`);
 
   const pane = page.getByTestId("search-results-pane");
   await expect(pane).toBeFocused();
@@ -936,12 +935,12 @@ test("navigates grouped search results with the keyboard", async ({ page }) => {
 test("clicking a search result jumps to and highlights that exact message", async ({ page }) => {
   const token = fixture.messages.searchHit.body.match(/only-token-[^ ]+/)?.[0];
   expect(token).toBeTruthy();
-  await page.goto(`/search?q=${encodeURIComponent(token)}`);
+  await page.goto(`/search?q=${encodeURIComponent(`${token} in:${fixture.generalChannel.name}`)}`);
 
   const result = page.getByTestId("search-result").filter({ hasText: fixture.messages.searchHit.body });
   await expect(result).toBeVisible();
   await result.click();
 
-  await expect(page).toHaveURL(new RegExp(`/channels/general\\?message=${fixture.messages.searchHit.id}`));
+  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.generalChannel.name}\\?message=${fixture.messages.searchHit.id}`));
   await expect(messageById(page, fixture.messages.searchHit.id)).toHaveClass(/flash/);
 });

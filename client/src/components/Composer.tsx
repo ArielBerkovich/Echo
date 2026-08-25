@@ -62,7 +62,7 @@ function formatScheduleTime(date) {
 // Rich-text message composer: @mention autocomplete, a formatting toolbar,
 // emoji, and file attachments. Owns all of its own editor state — mount it with
 // a `key={channel.id}` so switching channels yields a fresh, empty composer.
-const Composer = forwardRef(function Composer({ channel, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, onDraftChange, onEditSave, onEditCancel, editing = null, placeholder: customPlaceholder, mode = "light", captureScreenDrops = false, showSchedule = true, showSend = true, showAttachments = true, disabled = false }, ref) {
+const Composer = forwardRef(function Composer({ channel, sendChannel = null, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, onDraftChange, onEditSave, onEditCancel, editing = null, placeholder: customPlaceholder, mode = "light", captureScreenDrops = false, showSchedule = true, showSend = true, showAttachments = true, disabled = false }, ref) {
   const isThread = !!parentId; // a thread reply composer (hides channel-level scheduling)
   const [mention, setMention] = useState(null); // { trigger, query, from, to } or null
   const [activeIdx, setActiveIdx] = useState(0);
@@ -108,6 +108,7 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
   } = useAttachments({ captureScreenDrops, onError });
 
   const isDm = channel.type === "dm";
+  const targetChannelId = sendChannel?.id || channel.id;
   const scheduledTargetLabel = isDm ? "this conversation" : "this channel";
   const placeholder = customPlaceholder || (isThread
     ? "Reply to thread…"
@@ -144,7 +145,7 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
       syncMentionContext(currentEditor);
       setEditorState(readEditorState(currentEditor));
     },
-  }, [channel.id, parentId, placeholder, disabled]);
+  }, [channel.id, parentId, placeholder]);
   useImperativeHandle(ref, () => ({
     focus() {
       editor?.commands.focus();
@@ -187,7 +188,7 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
     if (!showSend) return;
     if (!typingActiveRef.current) {
       typingActiveRef.current = true;
-      getSocket().emit("typing", { channelId: channel.id, typing: true });
+      getSocket().emit("typing", { channelId: targetChannelId, typing: true });
     }
     clearTimeout(typingStopRef.current);
     typingStopRef.current = setTimeout(stopTyping, 2500);
@@ -196,7 +197,7 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
     clearTimeout(typingStopRef.current);
     if (typingActiveRef.current) {
       typingActiveRef.current = false;
-      getSocket().emit("typing", { channelId: channel.id, typing: false });
+      getSocket().emit("typing", { channelId: targetChannelId, typing: false });
     }
   }
   // Stop signalling when the composer unmounts (e.g. switching channels).
@@ -204,22 +205,22 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
   // Load pending scheduled messages for this channel (for the banner + manager).
   function refreshScheduled() {
     api
-      .listScheduled(channel.id)
+      .listScheduled(targetChannelId)
       .then(({ scheduled }) => setScheduledMsgs(scheduled))
       .catch(() => {});
   }
   useEffect(() => {
     if (!isThread && showSchedule && !disabled) refreshScheduled(); // scheduling is a channel-level feature
-  }, [channel.id, isThread, showSchedule, disabled]);
+  }, [targetChannelId, isThread, showSchedule, disabled]);
   useEffect(() => {
     if (isThread || !showSchedule || disabled) return;
     const socket = getSocket();
     const onNew = (msg) => {
-      if (msg.channelId === channel.id) refreshScheduled();
+      if (msg.channelId === targetChannelId) refreshScheduled();
     };
     socket.on("message:new", onNew);
     return () => socket.off("message:new", onNew);
-  }, [channel.id, isThread, showSchedule, disabled]);
+  }, [targetChannelId, isThread, showSchedule, disabled]);
 
   const suggestions = useMemo(() => {
     if (!mention) return [];
@@ -420,7 +421,7 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
       onError?.("Echo is reconnecting. Your draft is still here — send it when the connection returns.");
       return false;
     }
-    socket.emit("message:send", { channelId: channel.id, body, attachments, parentId, survey }, (res) => {
+    socket.emit("message:send", { channelId: targetChannelId, body, attachments, parentId, survey }, (res) => {
       if (res?.error) onError?.(res.error);
       else onSent?.();
     });
@@ -476,7 +477,7 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
     try {
       if (inScheduleModal) setScheduleError(null);
       else onError?.(null);
-      await api.scheduleMessage(channel.id, {
+      await api.scheduleMessage(targetChannelId, {
         body,
         attachments: pending,
         scheduledFor: when.toISOString(),

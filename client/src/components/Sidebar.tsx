@@ -149,11 +149,45 @@ export default function Sidebar({
     );
   };
 
+  const starredSection = (starredDms.length > 0 || starredChannels.length > 0) ? (
+    <>
+      <div className="section-label section-toggle starred-section-label">
+        <button
+          type="button"
+          className="sl-collapse"
+          data-testid="starred-toggle"
+          onClick={() => setStarredCollapsed((v) => !v)}
+          aria-expanded={!starredCollapsed}
+        >
+          <Chevron collapsed={starredCollapsed && !f} />
+          <span className="starred-label">Starred ★</span>
+        </button>
+      </div>
+      {showStarred && starredChannels.map((c) => (
+        <button
+          key={c.id}
+          type="button"
+          className={`channel-item channel-row starred-channel-row ${!browsingChannels && activeChannel?.id === c.id ? "active" : ""} ${c.unread ? "unread" : ""}`}
+          data-testid={`starred-channel-row-${slug(c.name)}`}
+          aria-current={!browsingChannels && activeChannel?.id === c.id ? "page" : undefined}
+          onClick={() => onSelect(c)}
+          onMouseEnter={() => onPrefetchChannel?.(c.id)}
+          onFocus={() => onPrefetchChannel?.(c.id)}
+        >
+          <span className="ch-mark">{c.type === "private" ? <LockKeyholeIcon className="ch-lock" size={11} strokeWidth={1.6} /> : "#"}</span>
+          <span className="ci-name">{c.name}</span>
+          {c.unread > 0 && <span className="unread-badge">{c.unread > 99 ? "99+" : c.unread}</span>}
+        </button>
+      ))}
+      {showStarred && starredDms.map(renderDmRow)}
+    </>
+  ) : null;
+
   return (
     <aside className={`sidebar ${dmsOnly ? "dms-view" : ""}`} data-testid="sidebar">
       {dmsOnly && (
         <div className="sidebar-header" data-testid="dms-header">
-          <span className="brand-sm">Direct messages</span>
+          <span className="brand-sm">Direct Messages</span>
         </div>
       )}
       <div className="dm-find">
@@ -217,7 +251,8 @@ export default function Sidebar({
         // One scrolling list; the Channels and Direct Messages sections each
         // collapse from their header so you can shrink one to see the other.
         <div className="channel-list">
-          <div className="section-label section-toggle">
+          {starredSection}
+          <div className="section-label section-toggle channels-section-label">
             <button
               type="button"
               className="sl-collapse"
@@ -273,41 +308,7 @@ export default function Sidebar({
           {showChannels && shownChannels.length === 0 && (
             <div className="dm-empty">{filter ? "No matching channels." : "No channels yet."}</div>
           )}
-          {(starredDms.length > 0 || starredChannels.length > 0) && (
-            <>
-              <div className="section-label section-toggle starred-section-label">
-                <button
-                  type="button"
-                  className="sl-collapse"
-                  data-testid="starred-toggle"
-                  onClick={() => setStarredCollapsed((v) => !v)}
-                  aria-expanded={!starredCollapsed}
-                >
-                  <Chevron collapsed={starredCollapsed && !f} />
-                  <span className="starred-label">★ Starred</span>
-                </button>
-              </div>
-              {showStarred && starredChannels.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  className={`channel-item channel-row starred-channel-row ${!browsingChannels && activeChannel?.id === c.id ? "active" : ""} ${c.unread ? "unread" : ""}`}
-                  data-testid={`starred-channel-row-${slug(c.name)}`}
-                  aria-current={!browsingChannels && activeChannel?.id === c.id ? "page" : undefined}
-                  onClick={() => onSelect(c)}
-                  onMouseEnter={() => onPrefetchChannel?.(c.id)}
-                  onFocus={() => onPrefetchChannel?.(c.id)}
-                >
-                  <span className="ch-mark">{c.type === "private" ? <LockKeyholeIcon className="ch-lock" size={11} strokeWidth={1.6} /> : "#"}</span>
-                  <span className="ci-name">{c.name}</span>
-                  {c.unread > 0 && <span className="unread-badge">{c.unread > 99 ? "99+" : c.unread}</span>}
-                </button>
-              ))}
-              {showStarred && starredDms.map(renderDmRow)}
-            </>
-          )}
-
-          <div className={`section-label dm-label section-toggle ${starredDms.length > 0 || starredChannels.length > 0 ? "dm-label-after-starred" : ""}`} data-testid="home-dm-section">
+          <div className="section-label dm-label section-toggle" data-testid="home-dm-section">
             <button
               type="button"
               className="sl-collapse"

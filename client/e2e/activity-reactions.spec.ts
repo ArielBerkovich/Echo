@@ -14,23 +14,26 @@ test.beforeEach(async ({ page }) => {
 });
 
 async function addReaction(page, messageId: string, emoji: string) {
+  const labels: Record<string, string> = { "👍": "thumbs up", "❤️": "heart", "🚀": "rocket" };
   const message = messageById(page, messageId);
   await expect(message).toBeVisible();
   await message.hover();
-  await page.getByTestId(/-actions$/).getByTitle("Add reaction").click();
-  await page.getByRole("button", { name: `React with ${emoji}` }).click();
+  await page.getByTestId(`message-${messageId}-add-reaction-action`).click();
+  await page.getByRole("dialog", { name: "Choose a reaction" })
+    .getByRole("button", { name: `React with ${labels[emoji]}` })
+    .click();
 }
 
 async function openBobInGeneral(browser, messageIds: string[]) {
-  const bobContext = await browser.newContext();
-  const bobPage = await bobContext.newPage();
+  const bobPage = await browser.newPage();
   await seedToken(bobPage, fixture.bob.token);
-  await bobPage.goto("/");
-  await bobPage.getByTestId("channel-row-general").click();
+  await bobPage.goto(
+    `/channels/${encodeURIComponent(fixture.generalChannel.name)}?message=${messageIds[0]}`
+  );
   for (const messageId of messageIds) {
     await expect(messageById(bobPage, messageId)).toBeVisible();
   }
-  return { bobContext, bobPage };
+  return bobPage;
 }
 
 test("groups reactions by message, keeps messages separate, and dismisses the whole group", async ({ browser, page }) => {
@@ -48,13 +51,13 @@ test("groups reactions by message, keeps messages separate, and dismisses the wh
 
   // Start from a read feed so this test only exercises the reactions it creates.
   await requestAsToken(page, fixture.alice.token, "/activity/read", { method: "POST" });
-  const { bobContext, bobPage } = await openBobInGeneral(browser, [grouped.message.id, separate.message.id]);
+  const bobPage = await openBobInGeneral(browser, [grouped.message.id, separate.message.id]);
   try {
     await addReaction(bobPage, grouped.message.id, "👍");
     await addReaction(bobPage, grouped.message.id, "❤️");
     await addReaction(bobPage, separate.message.id, "🚀");
   } finally {
-    await bobContext.close();
+    await bobPage.close();
   }
 
   await page.goto("/activity");
@@ -95,12 +98,12 @@ test("shows the newest unread reaction on the rail and clears it after the feed 
   });
   await requestAsToken(page, fixture.alice.token, "/activity/read", { method: "POST" });
 
-  const { bobContext, bobPage } = await openBobInGeneral(browser, [message.message.id]);
+  const bobPage = await openBobInGeneral(browser, [message.message.id]);
   try {
     await addReaction(bobPage, message.message.id, "👍");
     await addReaction(bobPage, message.message.id, "❤️");
   } finally {
-    await bobContext.close();
+    await bobPage.close();
   }
 
   await page.goto("/");

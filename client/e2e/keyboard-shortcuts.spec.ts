@@ -114,12 +114,15 @@ test.describe("documented keyboard shortcuts", () => {
   test("uses search result arrows and Enter to open a message", async ({ page }) => {
     const token = fixture.messages.searchHit.body.match(/only-token-[^ ]+/)?.[0];
     expect(token).toBeTruthy();
-    await page.goto(`/search?q=${encodeURIComponent(token || "")}`);
+    await page.goto(`/search?q=${encodeURIComponent(`${token || ""} in:${fixture.generalChannel.name}`)}`);
 
     const pane = page.getByTestId("search-results-pane");
     await expect(pane).toBeFocused();
     await pane.press("ArrowDown");
     await pane.press("Enter");
+    await expect(page).toHaveURL(
+      new RegExp(`/channels/${fixture.generalChannel.name}\\?message=${fixture.messages.searchHit.id}`)
+    );
     await expect(messageById(page, fixture.messages.searchHit.id)).toBeVisible();
   });
 
@@ -150,8 +153,9 @@ test.describe("documented keyboard shortcuts", () => {
   });
 
   test("cancels message editing with Escape", async ({ page }) => {
-    await page.goto("/");
+    await page.goto(`/channels/${encodeURIComponent(fixture.generalChannel.name)}?message=${fixture.messages.searchHit.id}`);
     const message = messageById(page, fixture.messages.searchHit.id);
+    await expect(message).toBeVisible();
     await message.hover();
     await page.getByTestId(/-actions$/).getByTitle("More message actions").click();
     await page.getByRole("menuitem", { name: "Edit message" }).click();

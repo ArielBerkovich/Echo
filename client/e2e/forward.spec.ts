@@ -59,7 +59,7 @@ test.describe("forwarding", () => {
 
     const picker = page.getByRole("dialog", { name: "Choose a reaction" });
     await expect(picker).toBeVisible();
-    const firstEmoji = picker.getByRole("button", { name: "React with 👍" });
+    const firstEmoji = picker.getByRole("button", { name: "React with thumbs up" });
     await expect(firstEmoji).toBeFocused();
     await page.keyboard.press("Escape");
     await expect(picker).toBeHidden();
