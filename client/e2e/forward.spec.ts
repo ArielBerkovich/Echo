@@ -125,6 +125,7 @@ test.describe("forwarding", () => {
     const firstDestination = modal.locator(".forward-destination-row").first();
     if (await firstDestination.count()) {
       await firstDestination.click();
+      await expect(modal.locator(".forward-destination-list")).toBeVisible();
       await expect(modal.locator(".people-empty")).toHaveCount(0);
     }
 

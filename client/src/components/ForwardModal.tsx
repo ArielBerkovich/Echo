@@ -259,7 +259,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
               role="combobox"
               aria-autocomplete="list"
               aria-controls="forward-destination-list"
-              aria-expanded={showResultList && flatResults.length > 0}
+              aria-expanded={showResultList && (flatResults.length > 0 || hasQuery || selected.length > 0)}
               aria-activedescendant={flatResults[activeIndex] ? resultId(flatResults[activeIndex]) : undefined}
             />
 

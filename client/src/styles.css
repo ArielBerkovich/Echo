@@ -6383,23 +6383,24 @@ html[data-mode="dark"] .day-divider-label {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 30px;
-  width: 30px;
-  height: 30px;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
   padding: 0;
   border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--accent);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text);
   cursor: pointer;
   text-decoration: none;
 }
 .att-text-action:hover,
 .att-text-action:focus-visible {
-  background: var(--active-soft);
-  color: var(--accent);
+  background: var(--border);
+  color: var(--text);
 }
 .att-text-download { margin-left: auto; }
+.att-text-download + .att-text-open { margin-left: -4px; }
 .att-text-preview {
   max-height: 150px;
   margin: 0;
@@ -6471,13 +6472,13 @@ html[data-mode="dark"] .day-divider-label {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   padding: 0;
   border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--accent);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text);
   cursor: pointer;
   text-decoration: none;
 }
@@ -6485,8 +6486,8 @@ html[data-mode="dark"] .day-divider-label {
 .text-viewer-actions a:focus-visible,
 .text-viewer-actions button:hover,
 .text-viewer-actions button:focus-visible {
-  background: var(--active-soft);
-  color: var(--accent);
+  background: var(--border);
+  color: var(--text);
 }
 .text-viewer-content {
   flex: 1;
@@ -7248,6 +7249,9 @@ html[data-mode="dark"] .day-divider-label {
   border-bottom-right-radius: 11px;
   border-bottom-left-radius: 11px;
   background: var(--surface-2);
+}
+.forward-destination-list:empty {
+  min-height: 44px;
 }
 .forward-result-group + .forward-result-group {
   margin-top: 8px;
