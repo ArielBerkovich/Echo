@@ -513,7 +513,7 @@ export default function SettingsModal({
               <p className="settings-hint">Get a desktop alert for direct messages, @mentions, and Starred messages when Echo isn't focused.</p>
               <NotificationToggle />
             </section>
-            {!user.isAdmin ? <ChangePassword /> : <AdminPasswordReset users={users} currentUserId={user.id} />}
+            {!user.isAdmin ? (user.canChangePassword ? <ChangePassword /> : <SsoPasswordNotice />) : <AdminPasswordReset users={users} currentUserId={user.id} />}
           </>}
 
           {activeTab === "appearance" && themes.length > 0 && <section className="settings-section settings-appearance-card">
@@ -808,6 +808,15 @@ function NotificationToggle() {
       </button>
       {on && <span className="notify-on">On ✓</span>}
     </div>
+  );
+}
+
+function SsoPasswordNotice() {
+  return (
+    <section className="settings-section" data-testid="sso-password-settings">
+      <h3>Password</h3>
+      <p className="settings-hint">Your password is managed by your single sign-on provider.</p>
+    </section>
   );
 }
 

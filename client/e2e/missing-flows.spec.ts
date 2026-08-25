@@ -155,6 +155,23 @@ test("changes a local user's password and invalidates the old credential", async
   expect(newLogin.ok()).toBeTruthy();
 });
 
+test("hides password settings for an SSO-authenticated user", async ({ page }) => {
+  await seedToken(page, fixture.alice.token);
+  await page.route("**/api/auth/me", async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    await route.fulfill({
+      response,
+      json: { ...body, user: { ...body.user, canChangePassword: false } },
+    });
+  });
+
+  await page.goto("/");
+  await page.getByTestId("rail-settings").click();
+  await expect(page.getByTestId("sso-password-settings")).toBeVisible();
+  await expect(page.getByTestId("change-password-form")).toHaveCount(0);
+});
+
 test("creates, delivers through, lists, and revokes an incoming webhook", async ({ page }) => {
   await page.goto("/");
   await channelRow(page, "general").click();
