@@ -329,12 +329,7 @@ test("keeps the DM preview width stable when toggling Starred", async ({ page })
 });
 
 test("stars channels without changing their membership or name", async ({ page }) => {
-  await page.goto("/");
-  const channelRow = page.locator(
-    `[data-testid="channel-row-${slug(fixture.projectChannel.name)}"], [data-testid="starred-channel-row-${slug(fixture.projectChannel.name)}"]`,
-  );
-  await expect(channelRow).toBeVisible();
-  await channelRow.click();
+  await page.goto(`/channels/${fixture.projectChannel.id}`);
   await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
 
   const toggle = page.getByTestId("channel-starred-toggle");

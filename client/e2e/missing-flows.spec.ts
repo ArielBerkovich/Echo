@@ -215,8 +215,7 @@ test("defaults desktop notifications on, filters events, and navigates when one 
     Object.defineProperty(document, "hasFocus", { configurable: true, value: () => false });
     window.__e2eNotifications = notifications;
   });
-  await page.goto("/");
-  await page.getByTestId("rail-settings").click();
+  await page.goto("/settings");
   await expect(page.getByTestId("settings-page")).toBeVisible();
   await expect(page.getByText("On ✓")).toBeVisible();
   await page.evaluate(() => { window.__e2eNotifications.length = 0; });

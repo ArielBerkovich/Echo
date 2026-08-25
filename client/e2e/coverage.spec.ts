@@ -253,8 +253,9 @@ test("forwards a message and jumps back to the original", async ({ page }) => {
   await forwardModal.getByTestId("forward-send-selected").click();
 
   await page.getByTestId(`channel-row-${slug(fixture.projectChannel.name)}`).click();
-  await expect(page.locator(".forwarded-message-card")).toContainText("in #general");
-  await page.getByRole("button", { name: /View original/ }).click();
+  const forwardedCard = page.locator(".forwarded-message-card").filter({ hasText: "in #general" }).first();
+  await expect(forwardedCard).toBeVisible();
+  await forwardedCard.getByRole("button", { name: /View original/ }).click();
   await expect(page.getByText(`API formatting test ${fixture.suffix}`)).toBeVisible();
 });
 
