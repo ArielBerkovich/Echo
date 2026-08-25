@@ -118,7 +118,7 @@ test.describe("forwarding", () => {
   test("shows stored recent destinations when the picker is focused", async ({ page }) => {
     await page.addInitScript(({ id, name }) => {
       localStorage.setItem("echo.recentSearches", JSON.stringify([{ type: "channel", id, name }]));
-    }, { id: fixture.generalChannel.id, name: fixture.generalChannel.name });
+    }, { id: "stale-channel-id", name: fixture.generalChannel.name });
     await openForwardDialog(page);
 
     const modal = forwardModal(page);
