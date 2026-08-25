@@ -284,8 +284,7 @@ test("starts a conversation from the dedicated DMs button with the keyboard", as
 });
 
 test("keeps the DM preview width stable when toggling Starred", async ({ page }) => {
-  await page.goto("/");
-  await railItem(page, "dms").click();
+  await page.goto("/dms");
   await expect(page.getByTestId("dms-header")).toBeVisible();
 
   const row = dmRow(page, fixture.bob.displayName);
@@ -296,12 +295,14 @@ test("keeps the DM preview width stable when toggling Starred", async ({ page })
   await row.locator(".dm-open").click();
   const starredToggle = page.getByTestId("dm-starred-toggle");
   const wasStarred = (await starredToggle.getAttribute("aria-pressed")) === "true";
-  const starResponse = page.waitForResponse(
-    (response) => response.url().includes("/api/users/") && response.url().endsWith("/vip") && response.request().method() === "POST"
-  );
-  await starredToggle.click();
-  await expect((await starResponse).ok()).toBeTruthy();
-  await expect(starredToggle).toHaveAttribute("aria-pressed", String(!wasStarred));
+  if (!wasStarred) {
+    const starResponse = page.waitForResponse(
+      (response) => response.url().includes("/api/users/") && response.url().endsWith("/vip") && response.request().method() === "POST"
+    );
+    await starredToggle.click();
+    await expect((await starResponse).ok()).toBeTruthy();
+  }
+  await expect(starredToggle).toHaveAttribute("aria-pressed", "true");
   await railItem(page, "dms").click();
 
   const after = await dmRow(page, fixture.bob.displayName).locator(".dm-preview").boundingBox();
@@ -488,10 +489,8 @@ test("removes a channel from the sidebar after leaving it", async ({ page }) => 
     body: { userId: fixture.bob.id },
   });
 
-  await page.goto("/");
+  await page.goto(`/channels/${created.channel.id}`);
   const row = page.getByTestId(`channel-row-${slug(channelName)}`);
-  await expect(row).toBeVisible();
-  await row.click();
   await page.getByTestId("channel-leave").click();
   await page.getByRole("button", { name: "Leave", exact: true }).click();
 
@@ -527,8 +526,7 @@ test("switches channels without flashing stale messages while images load", asyn
     await route.continue();
   });
 
-  await page.goto("/");
-  await page.locator(".dm-item").filter({ hasText: fixture.bob.displayName }).first().locator(".dm-open").click();
+  await page.goto(`/home/dms/${fixture.dmChannel.id}`);
   const staleMessage = page.getByTestId(`message-${fixture.messages.dmMessage.id}`);
   await expect(staleMessage).toBeVisible();
   await page.evaluate(

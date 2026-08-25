@@ -80,10 +80,10 @@ test("shows presence and typing across sessions", async ({ browser, page }) => {
 test("bumps unread counts and reflects live edits and deletes", async ({ browser, page }) => {
   const { alice, bob, projectChannel } = fixture;
   await withAliceBobPages(browser, async ({ alicePage, bobPage }) => {
-    await channelRow(alicePage.page, projectChannel.name).click();
+    await alicePage.page.goto(`/channels/${projectChannel.id}`);
     await expect(alicePage.page.getByTestId("channel-view")).toHaveAttribute("data-channel-joined", "true");
     await expect(alicePage.page.getByTestId("connection-banner")).toHaveCount(0);
-    await channelRow(bobPage.page, "general").click();
+    await bobPage.page.goto(`/channels/${fixture.generalChannel.id}`);
     await expect(bobPage.page.getByTestId("channel-view")).toHaveAttribute("data-channel-joined", "true");
     await expect(bobPage.page.getByTestId("connection-banner")).toHaveCount(0);
 
@@ -133,8 +133,7 @@ test("recovers missed messages after a temporary server outage", async ({ browse
   const alicePage = await newAuthedPage(browser, alice.token);
 
   try {
-    await alicePage.page.goto("/");
-    await channelRow(alicePage.page, generalChannel.name).click();
+    await alicePage.page.goto(`/channels/${generalChannel.id}`);
     await expect(alicePage.page.getByTestId("channel-view")).toBeVisible();
 
     await alicePage.context.setOffline(true);
