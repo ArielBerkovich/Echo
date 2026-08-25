@@ -22,14 +22,13 @@ async function addReaction(page, messageId: string, emoji: string) {
 }
 
 async function openBobInGeneral(browser, messageIds: string[]) {
-  const bobContext = await browser.newContext();
-  const bobPage = await bobContext.newPage();
+  const bobPage = await browser.newPage();
   await seedToken(bobPage, fixture.bob.token);
   for (const messageId of messageIds) {
     await bobPage.goto(`/channels/${encodeURIComponent(fixture.generalChannel.name)}?message=${messageId}`);
     await expect(messageById(bobPage, messageId)).toBeVisible();
   }
-  return { bobContext, bobPage };
+  return bobPage;
 }
 
 test("groups reactions by message, keeps messages separate, and dismisses the whole group", async ({ browser, page }) => {
@@ -47,14 +46,13 @@ test("groups reactions by message, keeps messages separate, and dismisses the wh
 
   // Start from a read feed so this test only exercises the reactions it creates.
   await requestAsToken(page, fixture.alice.token, "/activity/read", { method: "POST" });
-  const { bobContext, bobPage } = await openBobInGeneral(browser, [grouped.message.id, separate.message.id]);
+  const bobPage = await openBobInGeneral(browser, [grouped.message.id, separate.message.id]);
   try {
     await addReaction(bobPage, grouped.message.id, "👍");
     await addReaction(bobPage, grouped.message.id, "❤️");
     await addReaction(bobPage, separate.message.id, "🚀");
   } finally {
-    await bobPage.close({ runBeforeUnload: true }).catch(() => {});
-    await bobContext.close();
+    await bobPage.close();
   }
 
   await page.goto("/activity");
@@ -95,13 +93,12 @@ test("shows the newest unread reaction on the rail and clears it after the feed 
   });
   await requestAsToken(page, fixture.alice.token, "/activity/read", { method: "POST" });
 
-  const { bobContext, bobPage } = await openBobInGeneral(browser, [message.message.id]);
+  const bobPage = await openBobInGeneral(browser, [message.message.id]);
   try {
     await addReaction(bobPage, message.message.id, "👍");
     await addReaction(bobPage, message.message.id, "❤️");
   } finally {
-    await bobPage.close({ runBeforeUnload: true }).catch(() => {});
-    await bobContext.close();
+    await bobPage.close();
   }
 
   await page.goto("/");
