@@ -6427,10 +6427,9 @@ html[data-mode="dark"] .day-divider-label {
 .att-text-open {
   margin: 0;
 }
-.att-text.is-pasted .att-file-icon,
-.att-text.is-pasted .att-file-name {
-  color: var(--accent);
-}
+.att-text.is-pasted .att-file-icon { color: var(--blue-500); }
+.att-text.is-pasted .att-file-name { color: var(--text); }
+.att-text.is-pasted .att-text-toggle:hover .att-file-name { color: var(--blue-500); }
 
 .text-viewer-backdrop {
   position: fixed;
@@ -6645,10 +6644,7 @@ html[data-mode="dark"] .day-divider-label {
   justify-content: center;
   color: var(--muted);
 }
-.pending-file.is-pasted .pending-file-icon,
-.pending-file.is-pasted .pending-file-name {
-  color: var(--accent);
-}
+.pending-file.is-pasted .pending-file-name { color: var(--text); }
 .pending-file-name {
   font-weight: 600;
   font-size: 13px;
