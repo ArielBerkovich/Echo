@@ -24,7 +24,7 @@ export default function Attachments({ attachments = [], onOpenLightbox, sender }
   );
 }
 
-const TEXT_EXTENSIONS = /\.(txt|csv|tsv|log|md|markdown|json|xml|yaml|yml|toml|ini|conf|env|css|js|jsx|ts|tsx|html)$/i;
+const TEXT_EXTENSIONS = /\.(txt|csv|tsv|log|md|markdown|json|xml|yaml|yml|toml|ini|conf|env|css|js|jsx|ts|tsx|html|java|py|sh|bash)$/i;
 
 function isTextAttachment(a) {
   const type = String(a.contentType || "").toLowerCase();
@@ -353,7 +353,16 @@ function TextAttachment({ a }) {
             <div className="text-viewer-head">
               <strong>{a.name}</strong>
               <div className="text-viewer-actions">
-                <a href={src || undefined} download={a.name}>Download</a>
+                <a
+                  className="text-viewer-download"
+                  data-testid="text-viewer-download"
+                  href={src || undefined}
+                  download={a.name}
+                  title={`Download ${a.name}`}
+                  aria-label={`Download ${a.name}`}
+                >
+                  <DownloadIcon size={18} strokeWidth={2} aria-hidden="true" />
+                </a>
                 <button type="button" onClick={() => setOpen(false)} aria-label="Close preview" title="Close preview">×</button>
               </div>
             </div>

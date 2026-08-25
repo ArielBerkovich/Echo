@@ -12,12 +12,19 @@ import { readString, writeString } from "../lib/storage.js";
 import { useAttachments } from "../lib/useAttachments.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
 import { buildQuoteMarkdown } from "../lib/quote.js";
+import {
+  LARGE_PASTE_CHARACTERS,
+  MAX_MESSAGE_CHARACTERS,
+  MAX_PASTE_ATTACHMENT_BYTES,
+  createPasteAttachment,
+  pasteByteLength,
+} from "../lib/pasteAttachment.js";
 import Avatar from "./Avatar.js";
 import EmojiPicker from "./EmojiPicker.js";
 import Modal, { ModalActions } from "./Modal.js";
 import { useMentionGate } from "../lib/useMentionGate.js";
 import { MENTION_QUERY_RE } from "../lib/mentions.js";
-import { CalendarClock, ChartNoAxesColumnIncreasing, ChevronRight } from "lucide-react";
+import { CalendarClock, ChartNoAxesColumnIncreasing, ChevronRight, Paperclip, X } from "lucide-react";
 import {
   LinkIcon, OrderedListIcon, BulletListIcon, QuoteIcon, CodeIcon, CodeBlockIcon,
   PlusIcon, SmileyIcon, SendIcon, ChevronIcon,
@@ -78,6 +85,8 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   const [showScheduled, setShowScheduled] = useState(false); // manage-scheduled modal
   const [editingSched, setEditingSched] = useState(null); // { id, body, at } being edited
   const [surveyDraft, setSurveyDraft] = useState(null);
+  const [pastePrompt, setPastePrompt] = useState(null); // { text, byteLength, tooLong, tooLarge }
+  const [pasteBlockedNotice, setPasteBlockedNotice] = useState(null);
   const [editorState, setEditorState] = useState({
     canSend: false,
     bold: false,
@@ -89,6 +98,17 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     code: false,
     codeBlock: false,
   });
+
+  useEffect(() => {
+    if (!pastePrompt) return undefined;
+    const handlePastePromptKeyDown = (event) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      clearPastePrompt();
+    };
+    window.addEventListener("keydown", handlePastePromptKeyDown);
+    return () => window.removeEventListener("keydown", handlePastePromptKeyDown);
+  }, [pastePrompt]);
 
   const keyDownHandlerRef = useRef(null);
   const pasteHandlerRef = useRef(null);
@@ -304,6 +324,11 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   }
 
   function handlePaste(e) {
+    if (pastePrompt) {
+      e.preventDefault();
+      setPasteBlockedNotice("Choose an option for the current paste before pasting more content.");
+      return;
+    }
     const images = Array.from(e.clipboardData?.items || [])
       .filter((item) => item.kind === "file" && item.type.startsWith("image/"))
       .map((item) => item.getAsFile())
@@ -317,7 +342,36 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     const text = e.clipboardData?.getData("text/plain");
     if (!text) return;
     e.preventDefault();
+    const byteLength = pasteByteLength(text);
+    if (byteLength > MAX_PASTE_ATTACHMENT_BYTES) {
+      setPasteBlockedNotice(null);
+      setPastePrompt({ text, byteLength, tooLarge: true });
+      return;
+    }
+    if (text.length > LARGE_PASTE_CHARACTERS) {
+      setPasteBlockedNotice(null);
+      setPastePrompt({ text, byteLength, tooLong: text.length > MAX_MESSAGE_CHARACTERS, tooLarge: false });
+      return;
+    }
     editor?.commands.insertContent(markdownTextToComposerHtml(text));
+  }
+
+  function pasteAsText() {
+    if (!pastePrompt || pastePrompt.tooLong || pastePrompt.tooLarge) return;
+    editor?.commands.insertContent(markdownTextToComposerHtml(pastePrompt.text));
+    clearPastePrompt();
+  }
+
+  function attachPastedText() {
+    if (!pastePrompt || pastePrompt.tooLarge || !showAttachments) return;
+    const file = createPasteAttachment(pastePrompt.text);
+    clearPastePrompt();
+    stageFiles([file]);
+  }
+
+  function clearPastePrompt() {
+    setPastePrompt(null);
+    setPasteBlockedNotice(null);
   }
 
   function applyMention(picked) {
@@ -390,6 +444,11 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       }
     }
     if (e.key === "Enter" && editor) {
+      if (pastePrompt) {
+        e.preventDefault();
+        setPasteBlockedNotice("Choose an option above before sending this message.");
+        return;
+      }
       if (editor.isActive("codeBlock")) {
         e.preventDefault();
         if (e.shiftKey) editor.chain().focus().insertContent("\n").run();
@@ -460,6 +519,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   // Schedule the composed message for a given Date (shared by the quick option
   // and the custom dialog).
   async function scheduleFor(when, inScheduleModal = false) {
+    if (pastePrompt) return;
     const reportError = (message) => {
       if (inScheduleModal) setScheduleError(message);
       else onError?.(message);
@@ -492,6 +552,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
 
   // Open the custom schedule dialog (default: one hour from now).
   function openSchedule() {
+    if (pastePrompt) return;
     onError?.(null);
     setScheduleError(null);
     setSendMenuOpen(false);
@@ -560,6 +621,10 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   function handleSend(e) {
     e?.preventDefault();
     if (!showSend) return;
+    if (pastePrompt) {
+      setPasteBlockedNotice("Choose an option above before sending this message.");
+      return;
+    }
     const hasText = !!editor && editor.getText().trim() !== "";
     if (!hasText && pending.length === 0) return; // nothing to send
     if (uploading) return; // wait for in-flight uploads
@@ -665,6 +730,40 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
             <ChevronRight size={15} strokeWidth={2.2} aria-hidden="true" />
           </span>
         </button>
+      )}
+
+      {pastePrompt && (
+        <div
+          className={`composer-paste-prompt${pastePrompt.tooLarge ? " is-error" : ""}`}
+          role="dialog"
+          aria-label="Paste options"
+          data-testid="composer-paste-prompt"
+        >
+          <div className="composer-paste-content">
+            <span className="composer-paste-icon" aria-hidden="true"><Paperclip size={18} strokeWidth={2} /></span>
+            <div className="composer-paste-copy">
+              <strong>{pastePrompt.tooLarge ? "This paste can’t be attached." : pastePrompt.tooLong ? "Paste exceeds the message limit" : "Attach this paste as a file?"}</strong>
+              {(pastePrompt.tooLarge || pastePrompt.tooLong) && (
+                <span>
+                  {pastePrompt.tooLarge
+                    ? `${formatSize(pastePrompt.byteLength)} · Files are limited to 10 MB.`
+                    : `${pastePrompt.text.length.toLocaleString()} characters · Messages support up to ${MAX_MESSAGE_CHARACTERS.toLocaleString()}.`}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="composer-paste-actions">
+            {!pastePrompt.tooLarge && showAttachments && (
+              <button type="button" className="btn-primary" onClick={attachPastedText}>Attach as file</button>
+            )}
+            {!pastePrompt.tooLarge && pastePrompt.text.length <= MAX_MESSAGE_CHARACTERS && (
+              <button type="button" className="btn-secondary" onClick={pasteAsText}>Paste as text</button>
+            )}
+            <button type="button" className="composer-paste-dismiss" onClick={clearPastePrompt}>
+              {pastePrompt.tooLarge ? "Dismiss" : "Cancel"}
+            </button>
+          </div>
+        </div>
       )}
 
       {!editing && scheduleAt !== null && (
@@ -945,8 +1044,8 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                   <span className="pending-file-meta">{formatSize(a.size)}</span>
                 </div>
               )}
-              <button type="button" className="pending-remove" title="Remove" onClick={() => removePending(a.key)}>
-                ✕
+              <button type="button" className="chip-remove pending-remove" title="Remove" onClick={() => removePending(a.key)}>
+                <X size={13} strokeWidth={2.4} aria-hidden="true" />
               </button>
             </div>
           ))}
@@ -993,6 +1092,12 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
         <EditorContent editor={editor} />
       </div>
 
+      {pasteBlockedNotice && (
+        <div className="composer-paste-notice" data-testid="composer-paste-error" role="alert">
+          {pasteBlockedNotice}
+        </div>
+      )}
+
       <div className="composer-actions">
         <div className="left">
           {showAttachments && <input ref={fileInputRef} type="file" multiple hidden data-testid="composer-attachments" onChange={onPickFiles} />}
@@ -1031,9 +1136,9 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
             className={`icon-btn send-btn ${canSend || pending.length ? "ready" : ""}`}
             data-testid="composer-send"
             onMouseDown={keepFocus}
-            disabled={(!canSend && pending.length === 0) || uploading}
+            disabled={(!canSend && pending.length === 0 && !pastePrompt) || uploading}
             aria-label={editing ? "Save edit" : "Send"}
-            title={editing ? "Save edit" : "Send message"}
+            title={pastePrompt ? "Choose how to handle the pasted content first" : editing ? "Save edit" : "Send message"}
           >
             <SendIcon />
           </button>}
@@ -1046,6 +1151,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
               title="Send options"
               onMouseDown={keepFocus}
               onClick={() => setSendMenuOpen((v) => !v)}
+              disabled={!!pastePrompt}
             >
               <ChevronIcon />
             </button>
@@ -1058,8 +1164,8 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                 <button
                   type="button"
                   onClick={scheduleTomorrow9}
-                  disabled={!canSend && pending.length === 0}
-                  title={!canSend && pending.length === 0 ? "Write a message first" : undefined}
+                  disabled={(!canSend && pending.length === 0) || !!pastePrompt}
+                  title={pastePrompt ? "Choose how to handle the pasted content first" : !canSend && pending.length === 0 ? "Write a message first" : undefined}
                 >
                   <span>Tomorrow, 09:00</span>
                   <span className="send-menu-sub">
@@ -1069,8 +1175,8 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                 <button
                   type="button"
                   onClick={openSchedule}
-                  disabled={!canSend && pending.length === 0}
-                  title={!canSend && pending.length === 0 ? "Write a message first" : undefined}
+                  disabled={(!canSend && pending.length === 0) || !!pastePrompt}
+                  title={pastePrompt ? "Choose how to handle the pasted content first" : !canSend && pending.length === 0 ? "Write a message first" : undefined}
                 >
                   <span>Custom time…</span>
                 </button>

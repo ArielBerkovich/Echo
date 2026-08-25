@@ -226,7 +226,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
                 {selected.map((destination) => (
                   <span className="forward-chip" key={destinationKey(destination)} title={labelFor(destination)}>
                     <span>{labelFor(destination)}</span>
-                    <button type="button" aria-label={`Remove ${labelFor(destination)}`} onClick={() => removeDestination(destination)} disabled={isSubmitting}>
+                    <button type="button" className="chip-remove" aria-label={`Remove ${labelFor(destination)}`} onClick={() => removeDestination(destination)} disabled={isSubmitting}>
                       <XIcon size={13} aria-hidden="true" />
                     </button>
                   </span>
