@@ -24,7 +24,7 @@ import EmojiPicker from "./EmojiPicker.js";
 import Modal, { ModalActions } from "./Modal.js";
 import { useMentionGate } from "../lib/useMentionGate.js";
 import { MENTION_QUERY_RE } from "../lib/mentions.js";
-import { CalendarClock, ChartNoAxesColumnIncreasing, ChevronRight, Paperclip, X } from "lucide-react";
+import { CalendarClock, ChartNoAxesColumnIncreasing, ChevronRight, FileIcon, Paperclip, X } from "lucide-react";
 import {
   LinkIcon, OrderedListIcon, BulletListIcon, QuoteIcon, CodeIcon, CodeBlockIcon,
   PlusIcon, SmileyIcon, SendIcon, ChevronIcon,
@@ -1039,7 +1039,8 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
               {a.isImage ? (
                 <PendingImage attachment={a} />
               ) : (
-                <div className="pending-file">
+                <div className={`pending-file${a.name?.startsWith("pasted.") ? " is-pasted" : ""}`}>
+                  <span className="pending-file-icon" aria-hidden="true"><FileIcon size={18} strokeWidth={1.8} /></span>
                   <span className="pending-file-name">{a.name}</span>
                   <span className="pending-file-meta">{formatSize(a.size)}</span>
                 </div>

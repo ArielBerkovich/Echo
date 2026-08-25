@@ -6379,28 +6379,27 @@ html[data-mode="dark"] .day-divider-label {
   font: inherit;
 }
 .att-text-toggle:hover .att-file-name { color: var(--blue-500); }
-.att-text-chevron {
-  margin-left: auto;
-  color: var(--muted);
-  font-size: 18px;
-  line-height: 1;
-}
-.att-text-download {
+.att-text-action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  margin-left: auto;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
   border-radius: 6px;
-  color: var(--muted);
-  font-size: 20px;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
   text-decoration: none;
 }
-.att-text-download:hover {
-  background: var(--surface-2);
-  color: var(--text);
+.att-text-action:hover,
+.att-text-action:focus-visible {
+  background: var(--active-soft);
+  color: var(--accent);
 }
+.att-text-download { margin-left: auto; }
 .att-text-preview {
   max-height: 150px;
   margin: 0;
@@ -6425,16 +6424,12 @@ html[data-mode="dark"] .day-divider-label {
   font-size: 11px;
 }
 .att-text-open {
-  padding: 4px 9px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--text);
-  cursor: pointer;
-  font: inherit;
-  font-size: 12px;
+  margin: 0;
 }
-.att-text-open:hover { background: var(--surface-3, var(--surface-2)); }
+.att-text.is-pasted .att-file-icon,
+.att-text.is-pasted .att-file-name {
+  color: var(--accent);
+}
 
 .text-viewer-backdrop {
   position: fixed;
@@ -6468,7 +6463,7 @@ html[data-mode="dark"] .day-divider-label {
 .text-viewer-actions {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 6px;
 }
 .text-viewer-actions a,
 .text-viewer-actions button {
@@ -6477,23 +6472,21 @@ html[data-mode="dark"] .day-divider-label {
   justify-content: center;
   width: 30px;
   height: 30px;
+  padding: 0;
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: var(--muted);
+  color: var(--accent);
   cursor: pointer;
   text-decoration: none;
 }
 .text-viewer-actions a:hover,
 .text-viewer-actions a:focus-visible,
-.text-viewer-actions button {
-  color: var(--text);
-}
-.text-viewer-actions button { font-size: 22px; }
-.text-viewer-actions a:hover,
-.text-viewer-actions a:focus-visible,
 .text-viewer-actions button:hover,
-.text-viewer-actions button:focus-visible { background: var(--surface-2); }
+.text-viewer-actions button:focus-visible {
+  background: var(--active-soft);
+  color: var(--accent);
+}
 .text-viewer-content {
   flex: 1;
   min-height: 0;
@@ -6633,13 +6626,26 @@ html[data-mode="dark"] .day-divider-label {
   border-radius: 10px;
 }
 .pending-file {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 2px;
-  max-width: 180px;
+  display: grid;
+  align-items: center;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  max-width: 220px;
   height: 72px;
   padding: 0 14px;
+}
+.pending-file-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  grid-row: 1 / span 2;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+}
+.pending-file.is-pasted .pending-file-icon,
+.pending-file.is-pasted .pending-file-name {
+  color: var(--accent);
 }
 .pending-file-name {
   font-weight: 600;

@@ -115,6 +115,25 @@ test.describe("forwarding", () => {
     await expect(modal.locator(".forward-destination-list")).toHaveCount(0);
   });
 
+  test("does not show an empty recipient error before or after selection", async ({ page }) => {
+    await openForwardDialog(page);
+
+    const modal = forwardModal(page);
+    const search = modal.getByTestId("forward-search");
+    await expect(modal.locator(".people-empty")).toHaveCount(0);
+
+    const firstDestination = modal.locator(".forward-destination-row").first();
+    if (await firstDestination.count()) {
+      await firstDestination.click();
+      await expect(modal.locator(".people-empty")).toHaveCount(0);
+    }
+
+    await search.fill("no-such-recipient");
+    await expect(modal.locator(".people-empty")).toContainText("No recipients match");
+    await search.fill("");
+    await expect(modal.locator(".people-empty")).toHaveCount(0);
+  });
+
   test("uses the same browser-local recents as global search", async ({ page }) => {
     await page.goto("/");
     await page.evaluate((recent) => {

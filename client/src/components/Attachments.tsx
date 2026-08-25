@@ -306,7 +306,7 @@ function TextAttachment({ a }) {
   const highlightedText = open && text != null ? highlightFile(text, a.name) : null;
   return (
     <>
-      <div className="att-text" data-testid={`text-attachment-${a.key}`}>
+      <div className={`att-text${a.name?.startsWith("pasted.") ? " is-pasted" : ""}`} data-testid={`text-attachment-${a.key}`}>
       <div className="att-text-head">
         <button
           type="button"
@@ -319,20 +319,19 @@ function TextAttachment({ a }) {
             <span className="att-file-name">{a.name}</span>
             <span className="att-file-meta">{languageLabel} · {formatSize(a.size)}</span>
           </span>
-          <span className="att-text-chevron" aria-hidden="true">{expanded ? "⌃" : "⌄"}</span>
         </button>
         <a
-          className="att-text-download"
+          className="att-text-action att-text-download"
           href={src || undefined}
           download={a.name}
           title="Download file"
-          aria-label={`Download ${a.name}`}
+          aria-label="Download file"
         >
           <DownloadIcon size={17} strokeWidth={2} />
         </a>
         <button
           type="button"
-          className="att-text-open att-text-header-open"
+          className="att-text-action att-text-open att-text-header-open"
           onClick={() => setOpen(true)}
           title="Open full-screen preview"
           aria-label={`Open full-screen preview of ${a.name}`}
@@ -348,8 +347,18 @@ function TextAttachment({ a }) {
       )}
       </div>
       {open && createPortal(
-        <div className="text-viewer-backdrop" role="dialog" aria-modal="true" aria-label={`Preview ${a.name}`} onClick={() => setOpen(false)}>
-          <div className="text-viewer" onClick={(event) => event.stopPropagation()}>
+        <div
+          className="text-viewer-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Preview ${a.name}`}
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            setOpen(false);
+          }}
+        >
+          <div className="text-viewer" onPointerDown={(event) => event.stopPropagation()} onClick={(event) => event.stopPropagation()}>
             <div className="text-viewer-head">
               <strong>{a.name}</strong>
               <div className="text-viewer-actions">
@@ -358,12 +367,14 @@ function TextAttachment({ a }) {
                   data-testid="text-viewer-download"
                   href={src || undefined}
                   download={a.name}
-                  title={`Download ${a.name}`}
-                  aria-label={`Download ${a.name}`}
+                  title="Download file"
+                  aria-label="Download file"
                 >
                   <DownloadIcon size={18} strokeWidth={2} aria-hidden="true" />
                 </a>
-                <button type="button" onClick={() => setOpen(false)} aria-label="Close preview" title="Close preview">×</button>
+                <button className="text-viewer-close" type="button" onClick={() => setOpen(false)} aria-label="Close preview" title="Close preview">
+                  <XIcon size={18} strokeWidth={2} aria-hidden="true" />
+                </button>
               </div>
             </div>
             <pre className="text-viewer-content">{highlightedText ? <code dangerouslySetInnerHTML={{ __html: highlightedText }} /> : "Loading preview…"}</pre>
