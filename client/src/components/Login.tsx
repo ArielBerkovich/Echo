@@ -68,9 +68,7 @@ export default function Login({ onAuthed, initialError = "" }) {
   const [passwordHelpError, setPasswordHelpError] = useState("");
   const [connectionIssue, setConnectionIssue] = useState(null);
   const [setupStatusAttempt, setSetupStatusAttempt] = useState(0);
-  const [showLocalAuth, setShowLocalAuth] = useState(() =>
-    typeof window !== "undefined" && sessionStorage.getItem("echo.ssoBypass") === "true"
-  );
+  const [showLocalAuth, setShowLocalAuth] = useState(false);
 
   const isRegister = needsSetup || mode === "register";
   const ssoLanding = rhssoEnabled && !needsSetup && !isRegister && !showLocalAuth;
