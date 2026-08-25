@@ -25,9 +25,8 @@ async function openBobInGeneral(browser, messageIds: string[]) {
   const bobContext = await browser.newContext();
   const bobPage = await bobContext.newPage();
   await seedToken(bobPage, fixture.bob.token);
-  await bobPage.goto("/");
-  await bobPage.getByTestId("channel-row-general").click();
   for (const messageId of messageIds) {
+    await bobPage.goto(`/channels/${encodeURIComponent(fixture.generalChannel.name)}?message=${messageId}`);
     await expect(messageById(bobPage, messageId)).toBeVisible();
   }
   return { bobContext, bobPage };
@@ -54,6 +53,7 @@ test("groups reactions by message, keeps messages separate, and dismisses the wh
     await addReaction(bobPage, grouped.message.id, "❤️");
     await addReaction(bobPage, separate.message.id, "🚀");
   } finally {
+    await bobPage.close({ runBeforeUnload: true }).catch(() => {});
     await bobContext.close();
   }
 
@@ -100,6 +100,7 @@ test("shows the newest unread reaction on the rail and clears it after the feed 
     await addReaction(bobPage, message.message.id, "👍");
     await addReaction(bobPage, message.message.id, "❤️");
   } finally {
+    await bobPage.close({ runBeforeUnload: true }).catch(() => {});
     await bobContext.close();
   }
 
