@@ -259,11 +259,11 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
               role="combobox"
               aria-autocomplete="list"
               aria-controls="forward-destination-list"
-              aria-expanded={showResultList && (flatResults.length > 0 || hasQuery || selected.length > 0)}
+              aria-expanded={showResultList}
               aria-activedescendant={flatResults[activeIndex] ? resultId(flatResults[activeIndex]) : undefined}
             />
 
-            {showResultList && (flatResults.length > 0 || hasQuery || selected.length > 0) && (
+            {showResultList && (
               <div id="forward-destination-list" className="forward-destination-list" data-testid="forward-destination-list" role="listbox" aria-label="Recipient search results">
                 {!flatResults.length && hasQuery ? (
                   <div className="people-empty">No recipients match “{query.trim()}”</div>
