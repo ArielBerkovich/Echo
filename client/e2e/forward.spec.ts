@@ -115,6 +115,17 @@ test.describe("forwarding", () => {
     await expect(modal.locator(".forward-destination-list")).toHaveCount(0);
   });
 
+  test("shows stored recent destinations when the picker is focused", async ({ page }) => {
+    await page.addInitScript(({ id, name }) => {
+      localStorage.setItem("echo.recentSearches", JSON.stringify([{ type: "channel", id, name }]));
+    }, { id: fixture.generalChannel.id, name: fixture.generalChannel.name });
+    await openForwardDialog(page);
+
+    const modal = forwardModal(page);
+    await expect(modal.locator(".forward-destination-list")).toBeVisible();
+    await expect(destinationByLabel(modal, fixture.generalChannel.name)).toBeVisible();
+  });
+
   test("does not show an empty recipient error before or after selection", async ({ page }) => {
     await openForwardDialog(page);
 
