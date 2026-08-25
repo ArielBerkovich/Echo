@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
-import { dmRow, messageById, railItem, registerUser, requestAsToken, seedWorkspaceFixture, uniqueSuffix } from "./helpers.js";
+import { dmRow, messageById, railItem, registerUser, requestAsToken, seedWorkspaceFixture, uniqueSuffix, uploadAsToken } from "./helpers.js";
 
 let fixture: Awaited<ReturnType<typeof seedWorkspaceFixture>>;
 
@@ -132,6 +132,37 @@ test.describe("forwarding", () => {
     await expect(modal.locator(".people-empty")).toContainText("No recipients match");
     await search.fill("");
     await expect(modal.locator(".people-empty")).toHaveCount(0);
+  });
+
+  test("closes only the file preview when forwarding a message with a file", async ({ page }) => {
+    const attachment = (await uploadAsToken(page, fixture.alice.token, {
+      name: "forward-preview.json",
+      mimeType: "application/json",
+      buffer: Buffer.from('{"forwarded":true}', "utf8"),
+    })).attachments[0];
+    const created = await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
+      method: "POST",
+      body: {
+        channelId: fixture.generalChannel.id,
+        body: `Forward file preview ${uniqueSuffix("message")}`,
+        attachments: [attachment],
+      },
+    });
+
+    await page.goto("/");
+    const source = messageById(page, created.message.id);
+    await expect(source).toBeVisible();
+    await source.hover();
+    await page.getByTestId(`message-${created.message.id}-forward`).click({ force: true });
+
+    const modal = forwardModal(page);
+    await expect(modal).toBeVisible();
+    await modal.getByRole("button", { name: "Open full-screen preview of forward-preview.json" }).click();
+    const viewer = page.getByRole("dialog", { name: "Preview forward-preview.json" });
+    await expect(viewer).toBeVisible();
+    await viewer.getByRole("button", { name: "Close preview" }).click();
+    await expect(viewer).toBeHidden();
+    await expect(modal).toBeVisible();
   });
 
   test("uses the same browser-local recents as global search", async ({ page }) => {

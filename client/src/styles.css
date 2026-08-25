@@ -6434,7 +6434,8 @@ html[data-mode="dark"] .day-divider-label {
 .text-viewer-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 1200;
+  z-index: 2000;
+  pointer-events: auto;
   display: flex;
   align-items: stretch;
   justify-content: center;

@@ -208,6 +208,11 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
       className="forward-modal"
       closeClassName="forward-close"
       closeDisabled={isSubmitting}
+      onPointerDownOutside={(event) => {
+        if (event.target instanceof Element && event.target.closest(".text-viewer-backdrop")) {
+          event.preventDefault();
+        }
+      }}
       onClose={onClose}
     >
       <div className="forward-dialog" data-testid="forward-modal">
