@@ -165,20 +165,23 @@ test.describe("forwarding", () => {
     await expect(modal).toBeVisible();
   });
 
-  test("does not show browser-local recents in the forward picker", async ({ page }) => {
+  test("shows browser-local recents in the forward picker", async ({ page }) => {
     await page.goto("/");
-    await page.evaluate((recent) => {
-      localStorage.setItem("echo.recentSearches", JSON.stringify([recent]));
+    await page.evaluate(({ userId, recent }) => {
+      localStorage.setItem(`echo.recentSearches.user.${userId}`, JSON.stringify([recent]));
     }, {
-      type: "channel",
-      id: fixture.projectChannel.id,
-      name: fixture.projectChannel.name,
+      userId: fixture.alice.id,
+      recent: {
+        type: "channel",
+        id: fixture.projectChannel.id,
+        name: fixture.projectChannel.name,
+      },
     });
     await page.reload();
 
     await openForwardDialog(page);
     const modal = forwardModal(page);
-    await expect(modal.locator(".forward-destination-list")).toHaveCount(0);
+    await expect(destinationByLabel(modal, fixture.projectChannel.name)).toBeVisible();
   });
 
   test("moves from recipient search to the note composer with Tab", async ({ page }) => {

@@ -46,7 +46,7 @@ function DestinationIcon({ destination }) {
 
 // Recipient-first forwarding flow. Search and selection stay synchronous so
 // keyboard input always acts on exactly what is visible.
-export default function ForwardModal({ message, channels = [], dms = [], users = [], customEmojis = [], channelId = "", channelType = "public", currentUserId = "", usersById = new Map(), renderMarkdown, emojiMap = {}, onAddCustomEmoji, onForward, onSuccess, onClose }) {
+export default function ForwardModal({ message, channels = [], dms = [], users = [], recents = [], customEmojis = [], channelId = "", channelType = "public", currentUserId = "", usersById = new Map(), renderMarkdown, emojiMap = {}, onAddCustomEmoji, onForward, onSuccess, onClose }) {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState([]);
   const [note, setNote] = useState("");
@@ -87,11 +87,22 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
         label: user.displayName || user.username || "Person",
         handle: `@${user.username}`,
         avatarUrl: user.avatarUrl || null,
+        username: user.username,
       }));
+    const channelsById = new Map(channelItems.map((item) => [item.id, item]));
+    const usersById = new Map(users.map((user) => [user.id, user]));
+    const dmsByUserId = new Map(dmItems.map((dm) => [dm.userId, dm]));
+    const recentItems = recents.map((recent) => {
+      if (recent.type === "channel") return channelsById.get(recent.id) || null;
+      const user = usersById.get(recent.id);
+      if (user) return people.find((person) => person.id === user.id) || null;
+      return dmsByUserId.get(recent.id) || null;
+    }).filter(Boolean);
     return {
+      recent: recentItems,
       all: [...channelItems, ...dmItems, ...people],
     };
-  }, [channels, dms, users]);
+  }, [channels, dms, users, recents]);
 
   const hasQuery = Boolean(query.trim());
   const resultGroups = useMemo(() => {
@@ -102,7 +113,9 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
           .slice(0, MAX_VISIBLE_SEARCH_RESULTS)
       : [];
 
-    if (!hasQuery) return [];
+    if (!hasQuery) return destinationGroups.recent.length
+      ? [{ label: "Recent", items: destinationGroups.recent }]
+      : [];
 
     return [
       { label: "Channels", items: matches.filter((item) => item.kind === "channel") },
@@ -112,7 +125,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
 
   const flatResults = useMemo(() => resultGroups.flatMap((group) => group.items), [resultGroups]);
   const selectedKeys = useMemo(() => new Set(selected.map(destinationKey)), [selected]);
-  const showResultList = searchFocused && hasQuery;
+  const showResultList = searchFocused && (hasQuery || destinationGroups.recent.length > 0);
   const isSubmitting = status === "submitting";
   const disabled = !selected.length || isSubmitting;
   const noteChannel = useMemo(() => ({

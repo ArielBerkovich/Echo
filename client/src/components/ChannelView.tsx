@@ -58,6 +58,7 @@ export default function ChannelView({
   channels = [],
   forwardChannels = channels,
   dms = [],
+  recentDestinations = [],
   customEmojis = [],
   savedIds,
   onToggleSave,
@@ -68,6 +69,7 @@ export default function ChannelView({
   onOpenChannel,
   onSearchInChannel,
   onOpenForwardedDm,
+  onRememberRecent,
   isStarred = false,
   onToggleStarred,
   isChannelStarred = false,
@@ -1314,6 +1316,7 @@ export default function ChannelView({
           message={forwarding}
           channels={forwardChannels}
           dms={dms}
+          recents={recentDestinations}
           users={users}
           channelId={channel.id}
           channelType={channel.type}
@@ -1332,6 +1335,16 @@ export default function ChannelView({
             const firstLabel = first?.kind === "channel" ? `#${first.label}` : first?.label;
             const remainder = destinations.length - 1;
             onToast?.(`Forwarded to ${firstLabel}${remainder > 0 ? ` and ${remainder} other${remainder === 1 ? "" : "s"}` : ""}`);
+            for (const destination of destinations) {
+              onRememberRecent?.(destination.kind === "channel"
+                ? { type: "channel", id: destination.id, name: destination.label }
+                : {
+                    type: "user",
+                    id: destination.kind === "dm" ? destination.userId : destination.id,
+                    displayName: destination.label,
+                    username: destination.username || destination.handle?.replace(/^@/, ""),
+                  });
+            }
           }}
           onClose={() => setForwarding(null)}
         />
