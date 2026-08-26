@@ -46,7 +46,7 @@ function DestinationIcon({ destination }) {
 
 // Recipient-first forwarding flow. Search and selection stay synchronous so
 // keyboard input always acts on exactly what is visible.
-export default function ForwardModal({ message, channels = [], dms = [], users = [], recents = [], customEmojis = [], channelId = "", channelType = "public", currentUserId = "", usersById = new Map(), renderMarkdown, emojiMap = {}, onAddCustomEmoji, onForward, onSuccess, onClose }) {
+export default function ForwardModal({ message, channels = [], dms = [], users = [], customEmojis = [], channelId = "", channelType = "public", currentUserId = "", usersById = new Map(), renderMarkdown, emojiMap = {}, onAddCustomEmoji, onForward, onSuccess, onClose }) {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState([]);
   const [note, setNote] = useState("");
