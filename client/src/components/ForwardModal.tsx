@@ -3,7 +3,7 @@ import Avatar from "./Avatar.js";
 import Composer from "./Composer.js";
 import Message from "./Message.js";
 import Modal, { ModalActions } from "./Modal.js";
-import { PlusIcon, XIcon } from "lucide-react";
+import { XIcon } from "lucide-react";
 
 const MAX_DESTINATIONS = 10;
 const MAX_VISIBLE_SEARCH_RESULTS = 20;
@@ -276,9 +276,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
                             <strong>{labelFor(destination)}</strong>
                             <small>{destination.handle}</small>
                           </span>
-                          <span className="forward-selection-indicator" aria-hidden="true">
-                            {isSelected ? "✓" : <PlusIcon size={14} strokeWidth={2.5} />}
-                          </span>
+                          <span className="forward-selection-indicator" aria-hidden="true">{isSelected ? "✓" : "+"}</span>
                         </button>
                       );
                     })}

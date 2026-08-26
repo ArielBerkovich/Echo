@@ -68,7 +68,6 @@ export default function ChannelView({
   onOpenChannel,
   onSearchInChannel,
   onOpenForwardedDm,
-  onRememberRecent,
   isStarred = false,
   onToggleStarred,
   isChannelStarred = false,
@@ -515,15 +514,6 @@ export default function ChannelView({
           }
         }
         resolve();
-        const recent = dest.kind === "channel"
-          ? { type: "channel", id: dest.id, name: dest.label }
-          : {
-              type: "user",
-              id: dest.kind === "dm" ? dest.userId : dest.id,
-              displayName: dest.label,
-              username: dest.username || dest.handle?.replace(/^@/, ""),
-            };
-        onRememberRecent?.(recent);
       });
     });
   }
