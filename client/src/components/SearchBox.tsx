@@ -154,6 +154,16 @@ const SearchBox = forwardRef(function SearchBox(
     () => channels.filter((c) => c.type === "public" && !c.isArchived && c.id && c.name),
     [channels]
   );
+  const searchableUsers = useMemo(
+    () => [
+      ...new Map(
+        users
+          .filter((user) => user?.id && user?.username && user.displayName)
+          .map((user) => [user.username.toLowerCase(), user])
+      ).values(),
+    ],
+    [users]
+  );
   const q = query.trim().toLowerCase();
   const hasFilterTokens = /(?:^|\s)(in:|from:|has:)/i.test(query);
   const peoplePicker = variant === "people-picker" || conversationPickerOpen;
@@ -205,10 +215,10 @@ const SearchBox = forwardRef(function SearchBox(
     if (filter.type === "has") {
       return HAS_OPTIONS.filter((o) => o.key.startsWith(fq));
     }
-    return users
+    return searchableUsers
       .filter((u) => u.username.toLowerCase().includes(fq) || u.displayName.toLowerCase().includes(fq))
       .slice(0, 8);
-  }, [filter, channelCandidates, users]);
+  }, [filter, channelCandidates, searchableUsers]);
 
   // Quick-nav results (only when not building a filtered query).
   const channelHits =
@@ -217,7 +227,7 @@ const SearchBox = forwardRef(function SearchBox(
       : [];
   const peopleHits =
     (q || peoplePicker) && !hasFilterTokens
-      ? users
+      ? searchableUsers
           .filter(
             (u) => u.username.toLowerCase().includes(q) || u.displayName.toLowerCase().includes(q)
           )
