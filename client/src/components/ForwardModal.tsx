@@ -89,13 +89,10 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
       }));
     const recentItems = recents.map((recent) => {
       if (recent.type === "channel") {
-        const channel = channelsById.get(recent.id)
-          || channels.find((item) => item.name === recent.name || item.name === recent.label);
+        const channel = channelsById.get(recent.id);
         return channel ? channelItems.find((item) => item.id === channel.id) : null;
       }
-      const user = usersById.get(recent.id)
-        || dmsByUserId.get(recent.id)?.withUser
-        || users.find((item) => item.username === recent.username);
+      const user = usersById.get(recent.id) || dmsByUserId.get(recent.id)?.withUser;
       if (!user) return null;
       return {
         id: user.id,
