@@ -90,17 +90,27 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
     const recentItems = recents.map((recent) => {
       if (recent.type === "channel") {
         const channel = channelsById.get(recent.id);
-        return channel ? channelItems.find((item) => item.id === channel.id) : null;
+        return channel
+          ? channelItems.find((item) => item.id === channel.id)
+          : recent.id && (recent.name || recent.label)
+            ? {
+                id: recent.id,
+                kind: "channel",
+                label: recent.name || recent.label,
+                handle: recent.type === "private" ? "Private channel" : "Public channel",
+                icon: recent.type === "private" ? "🔒" : "#",
+              }
+            : null;
       }
       const user = usersById.get(recent.id) || dmsByUserId.get(recent.id)?.withUser;
-      if (!user) return null;
+      if (!user && !(recent.id && (recent.displayName || recent.username || recent.label))) return null;
       return {
-        id: user.id,
+        id: user?.id || recent.id,
         kind: "user",
-        label: user.displayName || user.username || "Person",
-        handle: `@${user.username}`,
-        avatarUrl: user.avatarUrl || null,
-        username: user.username || "",
+        label: user?.displayName || user?.username || recent.displayName || recent.label || recent.username || "Person",
+        handle: `@${user?.username || recent.username || ""}`,
+        avatarUrl: user?.avatarUrl || null,
+        username: user?.username || recent.username || "",
       };
     }).filter(Boolean);
 
