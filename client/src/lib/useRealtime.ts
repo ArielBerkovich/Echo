@@ -238,7 +238,7 @@ export function useRealtime({
     const onPresence = ({ online } = {}) => setOnlineIds(new Set(online || []));
     const mergeChannel = (prev, updated) => {
       const exists = prev.some((c) => c.id === updated.id);
-      if (updated.type !== "public") {
+      if (updated.type !== "public" || updated.isArchived) {
         return prev.filter((c) => c.id !== updated.id);
       }
       const next = exists
@@ -255,6 +255,9 @@ export function useRealtime({
     const onChannelCatalog = ({ channel: updated } = {}) => {
       if (!updated?.id) return;
       setAllChannels?.((prev) => mergeChannel(prev, updated));
+      if (updated.isArchived) {
+        setChannels((prev) => prev.filter((channel) => channel.id !== updated.id));
+      }
       setActiveChannel((prev) => (prev?.id === updated.id ? { ...prev, ...updated } : prev));
     };
     // Added to a channel by someone else — pull it into the sidebar live.

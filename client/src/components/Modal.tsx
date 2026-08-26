@@ -13,6 +13,7 @@ export default function Modal({
   closeClassName = "",
   closeTestId,
   closeDisabled = false,
+  onPointerDownOutside,
   showHeader = true,
   showClose = true,
   testId,
@@ -36,7 +37,10 @@ export default function Modal({
             data-testid={testId}
             aria-describedby={undefined}
             onEscapeKeyDown={(event) => closeDisabled && event.preventDefault()}
-            onPointerDownOutside={(event) => closeDisabled && event.preventDefault()}
+            onPointerDownOutside={(event) => {
+              if (closeDisabled) event.preventDefault();
+              onPointerDownOutside?.(event);
+            }}
           >
             {showHeader ? (
               <div className="modal-header mb-[18px] flex items-center justify-between">

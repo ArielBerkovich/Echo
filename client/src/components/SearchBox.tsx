@@ -150,10 +150,31 @@ const SearchBox = forwardRef(function SearchBox(
     return () => document.removeEventListener("mousedown", onDown);
   }, []);
 
-  const publicChannels = useMemo(() => channels.filter((c) => c.type === "public"), [channels]);
+  const publicChannels = useMemo(
+    () => channels.filter((c) => c.type === "public" && !c.isArchived && c.id && c.name),
+    [channels]
+  );
+  const searchableUsers = useMemo(
+    () => [
+      ...new Map(
+        users
+          .filter((user) => user?.id && user?.username && user.displayName)
+          .map((user) => [user.username.toLowerCase(), user])
+      ).values(),
+    ],
+    [users]
+  );
   const q = query.trim().toLowerCase();
   const hasFilterTokens = /(?:^|\s)(in:|from:|has:)/i.test(query);
   const peoplePicker = variant === "people-picker" || conversationPickerOpen;
+  const recentItems = useMemo(
+    () => [...new Map(
+      (Array.isArray(recents) ? recents : [])
+        .filter((recent) => recent?.type && recent?.id)
+        .map((recent) => [`${recent.type}:${recent.id}`, recent])
+    ).values()],
+    [recents]
+  );
 
   const filter = activeFilterAt(query, caret);
   const shouldFindChannels =
@@ -182,7 +203,13 @@ const SearchBox = forwardRef(function SearchBox(
   }, [channelLookup, onFindChannels, shouldFindChannels]);
 
   const channelCandidates = useMemo(
-    () => [...new Map([...publicChannels, ...remoteChannels].map((channel) => [channel.id, channel])).values()],
+    () => [
+      ...new Map(
+        [...publicChannels, ...remoteChannels]
+          .filter((channel) => channel && channel.id && channel.name && !channel.isArchived)
+          .map((channel) => [channel.id, channel])
+      ).values(),
+    ],
     [publicChannels, remoteChannels]
   );
 
@@ -196,10 +223,10 @@ const SearchBox = forwardRef(function SearchBox(
     if (filter.type === "has") {
       return HAS_OPTIONS.filter((o) => o.key.startsWith(fq));
     }
-    return users
+    return searchableUsers
       .filter((u) => u.username.toLowerCase().includes(fq) || u.displayName.toLowerCase().includes(fq))
       .slice(0, 8);
-  }, [filter, channelCandidates, users]);
+  }, [filter, channelCandidates, searchableUsers]);
 
   // Quick-nav results (only when not building a filtered query).
   const channelHits =
@@ -208,7 +235,7 @@ const SearchBox = forwardRef(function SearchBox(
       : [];
   const peopleHits =
     (q || peoplePicker) && !hasFilterTokens
-      ? users
+      ? searchableUsers
           .filter(
             (u) => u.username.toLowerCase().includes(q) || u.displayName.toLowerCase().includes(q)
           )
@@ -235,7 +262,7 @@ const SearchBox = forwardRef(function SearchBox(
     if (!q) {
       return [
         ...(addPeopleChannel ? [{ kind: "add-people" }] : []),
-        ...recents.map((r) =>
+        ...recentItems.map((r) =>
         r.type === "channel"
           ? { kind: "recent-channel", item: r }
           : { kind: "recent-user", item: r }
@@ -243,7 +270,7 @@ const SearchBox = forwardRef(function SearchBox(
       ];
     }
     return [];
-  }, [filter, filterSuggestions, q, hasFilterTokens, channelHits, peopleHits, recents, addPeopleChannel, peoplePicker]);
+  }, [filter, filterSuggestions, q, hasFilterTokens, channelHits, peopleHits, recentItems, addPeopleChannel, peoplePicker]);
 
   // Reset/clamp the highlight whenever the navigable set changes.
   useEffect(() => {
@@ -489,8 +516,8 @@ const SearchBox = forwardRef(function SearchBox(
                     </>
                   )}
                   <div className="search-section">Recent</div>
-                  {recents.length === 0 && <div className="people-empty">No recent searches.</div>}
-                  {recents.map((r, idx) =>
+                  {recentItems.length === 0 && <div className="people-empty">No recent searches.</div>}
+                  {recentItems.map((r, idx) =>
                     r.type === "channel"
                       ? channelRow(r, idx + (addPeopleChannel ? 1 : 0), "recent")
                       : (

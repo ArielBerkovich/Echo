@@ -6379,28 +6379,28 @@ html[data-mode="dark"] .day-divider-label {
   font: inherit;
 }
 .att-text-toggle:hover .att-file-name { color: var(--blue-500); }
-.att-text-chevron {
-  margin-left: auto;
-  color: var(--muted);
-  font-size: 18px;
-  line-height: 1;
-}
-.att-text-download {
+.att-text-action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  margin-left: auto;
-  border-radius: 6px;
-  color: var(--muted);
-  font-size: 20px;
-  text-decoration: none;
-}
-.att-text-download:hover {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
   background: var(--surface-2);
   color: var(--text);
+  cursor: pointer;
+  text-decoration: none;
 }
+.att-text-action:hover,
+.att-text-action:focus-visible {
+  background: var(--border);
+  color: var(--text);
+}
+.att-text-download { margin-left: auto; }
+.att-text-download + .att-text-open { margin-left: -4px; }
 .att-text-preview {
   max-height: 150px;
   margin: 0;
@@ -6425,21 +6425,17 @@ html[data-mode="dark"] .day-divider-label {
   font-size: 11px;
 }
 .att-text-open {
-  padding: 4px 9px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--text);
-  cursor: pointer;
-  font: inherit;
-  font-size: 12px;
+  margin: 0;
 }
-.att-text-open:hover { background: var(--surface-3, var(--surface-2)); }
+.att-text.is-pasted .att-file-icon { color: var(--blue-500); }
+.att-text.is-pasted .att-file-name { color: var(--text); }
+.att-text.is-pasted .att-text-toggle:hover .att-file-name { color: var(--blue-500); }
 
 .text-viewer-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 1200;
+  z-index: 2000;
+  pointer-events: auto;
   display: flex;
   align-items: stretch;
   justify-content: center;
@@ -6468,23 +6464,30 @@ html[data-mode="dark"] .day-divider-label {
 .text-viewer-actions {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 6px;
 }
-.text-viewer-actions a {
-  color: var(--blue-500);
-  font-size: 13px;
-}
+.text-viewer-actions a,
 .text-viewer-actions button {
-  width: 30px;
-  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
   border: 0;
-  border-radius: 6px;
-  background: transparent;
+  border-radius: 8px;
+  background: var(--surface-2);
   color: var(--text);
   cursor: pointer;
-  font-size: 22px;
+  text-decoration: none;
 }
-.text-viewer-actions button:hover { background: var(--surface-2); }
+.text-viewer-actions a:hover,
+.text-viewer-actions a:focus-visible,
+.text-viewer-actions button:hover,
+.text-viewer-actions button:focus-visible {
+  background: var(--border);
+  color: var(--text);
+}
 .text-viewer-content {
   flex: 1;
   min-height: 0;
@@ -6504,11 +6507,111 @@ html[data-mode="dark"] .day-divider-label {
 }
 
 /* ---- Composer: staged (pending) attachments before send ---- */
+.composer-paste-prompt {
+  position: absolute;
+  z-index: 30;
+  right: 12px;
+  bottom: calc(100% + 10px);
+  left: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+.composer-paste-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.composer-paste-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  color: var(--accent);
+}
+.composer-paste-prompt.is-error {
+  border-color: color-mix(in srgb, var(--danger) 30%, var(--border));
+  background: color-mix(in srgb, var(--danger) 5%, var(--surface));
+}
+.composer-paste-prompt.is-error .composer-paste-icon {
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+  color: var(--danger);
+}
+.composer-paste-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.composer-paste-copy strong {
+  font-size: 14px;
+  line-height: 1.35;
+}
+.composer-paste-copy span {
+  color: var(--muted);
+}
+.composer-paste-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.composer-paste-actions button {
+  padding: 6px 10px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.composer-paste-dismiss {
+  background: transparent;
+  color: var(--muted);
+}
+.composer-paste-dismiss:hover,
+.composer-paste-dismiss:focus-visible {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.composer-paste-notice {
+  display: flex;
+  justify-content: flex-start;
+  padding: 0 12px 8px;
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
 .composer-attachments {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  padding: 10px 12px 0;
+  padding: 10px 12px 6px;
+}
+
+@media (max-width: 640px) {
+  .composer-paste-prompt {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .composer-paste-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
 }
 .pending-att {
   position: relative;
@@ -6524,14 +6627,24 @@ html[data-mode="dark"] .day-divider-label {
   border-radius: 10px;
 }
 .pending-file {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 2px;
-  max-width: 180px;
+  display: grid;
+  align-items: center;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  max-width: 220px;
   height: 72px;
   padding: 0 14px;
 }
+.pending-file-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  grid-row: 1 / span 2;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+}
+.pending-file.is-pasted .pending-file-name { color: var(--text); }
 .pending-file-name {
   font-weight: 600;
   font-size: 13px;
@@ -6554,21 +6667,8 @@ html[data-mode="dark"] .day-divider-label {
 }
 .pending-remove {
   position: absolute;
-  top: -7px;
-  right: -7px;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: var(--text);
-  color: #fff;
-  font-size: 11px;
-  box-shadow: var(--shadow-sm);
-}
-.pending-remove:hover {
-  background: var(--danger);
+  top: -8px;
+  right: -8px;
 }
 
 /* "Forwarded from …" header above a forwarded message */
@@ -7003,7 +7103,7 @@ html[data-mode="dark"] .day-divider-label {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.forward-chip button {
+.chip-remove {
   display: inline-flex;
   flex: none;
   align-items: center;
@@ -7012,12 +7112,17 @@ html[data-mode="dark"] .day-divider-label {
   height: 20px;
   padding: 0;
   border-radius: 50%;
-  color: var(--muted);
+  border: 1px solid color-mix(in srgb, var(--danger) 58%, var(--surface));
+  background: color-mix(in srgb, var(--surface) 90%, var(--danger));
+  color: color-mix(in srgb, var(--danger) 82%, var(--text));
+  line-height: 1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
-.forward-chip button:hover,
-.forward-chip button:focus-visible {
-  background: var(--active-soft);
-  color: var(--text);
+.chip-remove:hover,
+.chip-remove:focus-visible {
+  background: color-mix(in srgb, var(--surface) 78%, var(--danger));
+  color: color-mix(in srgb, var(--danger) 92%, var(--text));
+  transform: scale(1.06);
 }
 .forward-search-picker .people-filter {
   position: relative;
@@ -7141,6 +7246,9 @@ html[data-mode="dark"] .day-divider-label {
   border-bottom-left-radius: 11px;
   background: var(--surface-2);
 }
+.forward-destination-list:empty {
+  min-height: 44px;
+}
 .forward-result-group + .forward-result-group {
   margin-top: 8px;
   padding-top: 6px;
@@ -7193,13 +7301,11 @@ html[data-mode="dark"] .day-divider-label {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--surface);
   font-size: 14px;
   font-weight: 900;
-  line-height: 1;
 }
 .forward-destination-row.selected .forward-selection-indicator {
   border-color: var(--accent);

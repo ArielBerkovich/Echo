@@ -3,7 +3,7 @@ import Avatar from "./Avatar.js";
 import Composer from "./Composer.js";
 import Message from "./Message.js";
 import Modal, { ModalActions } from "./Modal.js";
-import { PlusIcon, XIcon } from "lucide-react";
+import { XIcon } from "lucide-react";
 
 const MAX_DESTINATIONS = 10;
 const MAX_VISIBLE_SEARCH_RESULTS = 20;
@@ -46,7 +46,7 @@ function DestinationIcon({ destination }) {
 
 // Recipient-first forwarding flow. Search and selection stay synchronous so
 // keyboard input always acts on exactly what is visible.
-export default function ForwardModal({ message, channels = [], dms = [], users = [], recents = [], customEmojis = [], channelId = "", channelType = "public", currentUserId = "", usersById = new Map(), renderMarkdown, emojiMap = {}, onAddCustomEmoji, onForward, onSuccess, onClose }) {
+export default function ForwardModal({ message, channels = [], dms = [], users = [], customEmojis = [], channelId = "", channelType = "public", currentUserId = "", usersById = new Map(), renderMarkdown, emojiMap = {}, onAddCustomEmoji, onForward, onSuccess, onClose }) {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState([]);
   const [note, setNote] = useState("");
@@ -58,57 +58,41 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
   const noteComposerRef = useRef(null);
 
   const destinationGroups = useMemo(() => {
-    const channelsById = new Map(channels.map((channel) => [channel.id, channel]));
-    const dmsByUserId = new Map(dms.map((dm) => [dm.withUser?.id, dm]));
-    const usersById = new Map(users.map((user) => [user.id, user]));
-    const channelItems = channels.map((channel) => ({
+    const channelItems = channels
+      .filter((channel) => channel?.id && channel?.name && !channel.isArchived)
+      .map((channel) => ({
       id: channel.id,
       kind: "channel",
       label: channel.name,
       handle: channel.type === "private" ? "Private channel" : "Public channel",
       icon: channel.type === "private" ? "🔒" : "#",
-    }));
-    const dmItems = dms.map((dm) => ({
+      }));
+    const dmItems = dms
+      .filter((dm) => dm?.id && dm.withUser?.id)
+      .map((dm) => ({
       id: dm.id,
       kind: "dm",
-      userId: dm.withUser?.id || "",
-      label: dm.withUser?.displayName || "Direct message",
+      userId: dm.withUser.id,
+      label: dm.withUser.displayName || dm.withUser.username || "Direct message",
       handle: "Direct message",
       avatarUrl: dm.withUser?.avatarUrl || null,
       username: dm.withUser?.username || "",
-    }));
-    const knownDmUserIds = new Set(dms.map((dm) => dm.withUser?.id).filter(Boolean));
+      }));
+    const knownDmUserIds = new Set(dmItems.map((dm) => dm.userId));
     const people = users
-      .filter((user) => !knownDmUserIds.has(user.id))
+      .filter((user) => user?.id && user?.username && !knownDmUserIds.has(user.id))
       .map((user) => ({
         id: user.id,
         kind: "user",
         label: user.displayName || user.username || "Person",
         handle: `@${user.username}`,
         avatarUrl: user.avatarUrl || null,
+        username: user.username,
       }));
-    const recentItems = recents.map((recent) => {
-      if (recent.type === "channel") {
-        const channel = channelsById.get(recent.id);
-        return channel ? channelItems.find((item) => item.id === channel.id) : null;
-      }
-      const user = usersById.get(recent.id) || dmsByUserId.get(recent.id)?.withUser;
-      if (!user) return null;
-      return {
-        id: user.id,
-        kind: "user",
-        label: user.displayName || user.username || "Person",
-        handle: `@${user.username}`,
-        avatarUrl: user.avatarUrl || null,
-        username: user.username || "",
-      };
-    }).filter(Boolean);
-
     return {
-      recent: recentItems,
       all: [...channelItems, ...dmItems, ...people],
     };
-  }, [channels, dms, users, recents]);
+  }, [channels, dms, users]);
 
   const hasQuery = Boolean(query.trim());
   const resultGroups = useMemo(() => {
@@ -117,9 +101,9 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
           .filter((destination) => fuzzyMatch(destination, query))
           .sort((left, right) => matchRank(left, query) - matchRank(right, query))
           .slice(0, MAX_VISIBLE_SEARCH_RESULTS)
-      : destinationGroups.recent.slice(0, MAX_VISIBLE_SEARCH_RESULTS);
+      : [];
 
-    if (!hasQuery) return [{ label: "Recent destinations", items: matches }].filter((group) => group.items.length);
+    if (!hasQuery) return [];
 
     return [
       { label: "Channels", items: matches.filter((item) => item.kind === "channel") },
@@ -129,7 +113,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
 
   const flatResults = useMemo(() => resultGroups.flatMap((group) => group.items), [resultGroups]);
   const selectedKeys = useMemo(() => new Set(selected.map(destinationKey)), [selected]);
-  const showResultList = searchFocused;
+  const showResultList = searchFocused && hasQuery;
   const isSubmitting = status === "submitting";
   const disabled = !selected.length || isSubmitting;
   const noteChannel = useMemo(() => ({
@@ -208,6 +192,11 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
       className="forward-modal"
       closeClassName="forward-close"
       closeDisabled={isSubmitting}
+      onPointerDownOutside={(event) => {
+        if (event.target instanceof Element && event.target.closest(".text-viewer-backdrop")) {
+          event.preventDefault();
+        }
+      }}
       onClose={onClose}
     >
       <div className="forward-dialog" data-testid="forward-modal">
@@ -226,7 +215,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
                 {selected.map((destination) => (
                   <span className="forward-chip" key={destinationKey(destination)} title={labelFor(destination)}>
                     <span>{labelFor(destination)}</span>
-                    <button type="button" aria-label={`Remove ${labelFor(destination)}`} onClick={() => removeDestination(destination)} disabled={isSubmitting}>
+                    <button type="button" className="chip-remove" aria-label={`Remove ${labelFor(destination)}`} onClick={() => removeDestination(destination)} disabled={isSubmitting}>
                       <XIcon size={13} aria-hidden="true" />
                     </button>
                   </span>
@@ -258,9 +247,9 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
               aria-activedescendant={flatResults[activeIndex] ? resultId(flatResults[activeIndex]) : undefined}
             />
 
-            {showResultList && (
+            {showResultList && (flatResults.length > 0 || hasQuery || selected.length > 0) && (
               <div id="forward-destination-list" className="forward-destination-list" data-testid="forward-destination-list" role="listbox" aria-label="Recipient search results">
-                {!flatResults.length ? (
+                {!flatResults.length && hasQuery ? (
                   <div className="people-empty">No recipients match “{query.trim()}”</div>
                 ) : resultGroups.map((group) => (
                   <section className="forward-result-group" key={group.label} aria-label={group.label}>
@@ -288,9 +277,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
                             <strong>{labelFor(destination)}</strong>
                             <small>{destination.handle}</small>
                           </span>
-                          <span className="forward-selection-indicator" aria-hidden="true">
-                            {isSelected ? "✓" : <PlusIcon size={14} strokeWidth={2.5} />}
-                          </span>
+                          <span className="forward-selection-indicator" aria-hidden="true">{isSelected ? "✓" : "+"}</span>
                         </button>
                       );
                     })}

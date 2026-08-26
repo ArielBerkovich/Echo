@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
-import { dmRow, messageById, railItem, registerUser, requestAsToken, seedWorkspaceFixture, uniqueSuffix } from "./helpers.js";
+import { dmRow, messageById, railItem, registerUser, requestAsToken, seedWorkspaceFixture, uniqueSuffix, uploadAsToken } from "./helpers.js";
 
 let fixture: Awaited<ReturnType<typeof seedWorkspaceFixture>>;
 
@@ -105,7 +105,7 @@ test.describe("forwarding", () => {
     await expect(actions).toBeVisible();
   });
 
-  test("shows recent destinations and keeps the note composer available", async ({ page }) => {
+  test("searches destinations and keeps the note composer available", async ({ page }) => {
     await openForwardDialog(page);
 
     const modal = forwardModal(page);
@@ -115,21 +115,73 @@ test.describe("forwarding", () => {
     await expect(modal.locator(".forward-destination-list")).toHaveCount(0);
   });
 
-  test("uses the same browser-local recents as global search", async ({ page }) => {
+  test("does not show an empty recipient error before or after selection", async ({ page }) => {
+    await openForwardDialog(page);
+
+    const modal = forwardModal(page);
+    const search = modal.getByTestId("forward-search");
+    await expect(modal.locator(".people-empty")).toHaveCount(0);
+
+    const firstDestination = modal.locator(".forward-destination-row").first();
+    if (await firstDestination.count()) {
+      await firstDestination.click();
+      await expect(modal.locator(".people-empty")).toHaveCount(0);
+    }
+
+    await search.fill("no-such-recipient");
+    await expect(modal.locator(".people-empty")).toContainText("No recipients match");
+    await search.fill("");
+    await expect(modal.locator(".people-empty")).toHaveCount(0);
+  });
+
+  test("closes only the file preview when forwarding a message with a file", async ({ page }) => {
+    const attachment = (await uploadAsToken(page, fixture.alice.token, {
+      name: "forward-preview.json",
+      mimeType: "application/json",
+      buffer: Buffer.from('{"forwarded":true}', "utf8"),
+    })).attachments[0];
+    const created = await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
+      method: "POST",
+      body: {
+        channelId: fixture.generalChannel.id,
+        body: `Forward file preview ${uniqueSuffix("message")}`,
+        attachments: [attachment],
+      },
+    });
+
     await page.goto("/");
-    await page.evaluate((recent) => {
-      localStorage.setItem("echo.recentSearches", JSON.stringify([recent]));
+    const source = messageById(page, created.message.id);
+    await expect(source).toBeVisible();
+    await source.hover();
+    await page.getByTestId(`message-${created.message.id}-forward`).click({ force: true });
+
+    const modal = forwardModal(page);
+    await expect(modal).toBeVisible();
+    await modal.getByRole("button", { name: "Open full-screen preview of forward-preview.json" }).click();
+    const viewer = page.getByRole("dialog", { name: "Preview forward-preview.json" });
+    await expect(viewer).toBeVisible();
+    await viewer.getByRole("button", { name: "Close preview" }).click();
+    await expect(viewer).toBeHidden();
+    await expect(modal).toBeVisible();
+  });
+
+  test("does not show browser-local recents in the forward picker", async ({ page }) => {
+    await page.goto("/");
+    await page.evaluate(({ userId, recent }) => {
+      localStorage.setItem(`echo.recentSearches.user.${userId}`, JSON.stringify([recent]));
     }, {
-      type: "channel",
-      id: fixture.projectChannel.id,
-      name: fixture.projectChannel.name,
+      userId: fixture.alice.id,
+      recent: {
+        type: "channel",
+        id: fixture.projectChannel.id,
+        name: fixture.projectChannel.name,
+      },
     });
     await page.reload();
 
     await openForwardDialog(page);
     const modal = forwardModal(page);
-    await expect(destinationByLabel(modal, fixture.projectChannel.name)).toBeVisible();
-    await expect(destinationByLabel(modal, fixture.generalChannel.name)).toHaveCount(0);
+    await expect(modal.locator(".forward-destination-list")).toHaveCount(0);
   });
 
   test("moves from recipient search to the note composer with Tab", async ({ page }) => {
@@ -205,8 +257,7 @@ test.describe("forwarding", () => {
     await expect(send).toHaveText("Forward to 1");
 
     await search.fill("");
-    await expect(modal.locator(".forward-destination-list")).toBeVisible();
-    await expect(modal.locator(".forward-result-group-label")).toHaveCount(0);
+    await expect(modal.locator(".forward-destination-list")).toHaveCount(0);
     await expect(modal.locator(".forward-chip")).toContainText(fixture.bob.displayName);
     await expect(send).toHaveText("Forward to 1");
   });
