@@ -10,7 +10,7 @@ import WorkspaceNavigation from "./components/WorkspaceNavigation.js";
 import WorkspaceOverlays from "./components/WorkspaceOverlays.js";
 import WorkspaceContent from "./components/WorkspaceContent.js";
 import SessionExpiredDialog from "./components/SessionExpiredDialog.js";
-import { readJson, writeJson } from "./lib/storage.js";
+import { readJson, readString, writeJson, writeString } from "./lib/storage.js";
 import { notifyPermission, notifySupported, requestNotifyPermission, setNotifyPref } from "./lib/notify.js";
 import { BUILT_IN_GIT_EMOJIS } from "./lib/gitEmojis.js";
 import { THEMES, useThemePreferences } from "./lib/useThemePreferences.js";
@@ -26,6 +26,7 @@ function loadHidden() {
 }
 
 const RECENTS_KEY = "echo.recentSearches";
+const RECENTS_KEY_PREFIX = "echo.recentSearches.user.";
 const CONNECTION_BANNER_DELAY_MS = 1000;
 const GLOBAL_HOTKEY_OPTIONS = {
   preventDefault: true,
@@ -60,8 +61,8 @@ function normalizeRecents(value) {
   });
 }
 
-function loadRecents() {
-  return normalizeRecents(readJson(RECENTS_KEY, []));
+function recentStorageKey(userId) {
+  return `${RECENTS_KEY_PREFIX}${userId}`;
 }
 
 export default function App() {
@@ -76,7 +77,7 @@ export default function App() {
   const [allChannels, setAllChannels] = useState([]); // bounded cache of public channel summaries
   const [catalogCounts, setCatalogCounts] = useState(null);
   const [activeChannel, setActiveChannel] = useState(null);
-  const [recents, setRecents] = useState(loadRecents);
+  const [recents, setRecents] = useState([]);
   const [showCreate, setShowCreate] = useState(false);
   const [showNewMessage, setShowNewMessage] = useState(false);
   const [showAddPeople, setShowAddPeople] = useState(false);
@@ -178,6 +179,24 @@ export default function App() {
 
   useEffect(() => void (viewRef.current = view), [view]);
   useEffect(() => void (activeChannelRef.current = activeChannel), [activeChannel]);
+
+  // Recents are a client-side cache. Scope them to the signed-in account and
+  // reconcile old entries against the current server snapshot so a deployment
+  // reset cannot leave deleted users or channels in the search UI.
+  useEffect(() => {
+    if (!user || !channelsQuery.isSuccess || !dmsQuery.isSuccess || !usersQuery.isSuccess) return;
+    const scopedKey = recentStorageKey(user.id);
+    const scopedValue = readJson(scopedKey, null);
+    const legacyValue = scopedValue === null ? readJson(RECENTS_KEY, []) : scopedValue;
+    const knownChannelIds = new Set([...channels, ...allChannels].map((channel) => channel.id));
+    const knownUserIds = new Set(users.map((candidate) => candidate.id));
+    const next = normalizeRecents(legacyValue).filter((recent) =>
+      recent.type === "channel" ? knownChannelIds.has(recent.id) : knownUserIds.has(recent.id)
+    );
+    setRecents(next);
+    writeJson(scopedKey, next);
+    if (scopedValue === null && readString(RECENTS_KEY, null) !== null) writeString(RECENTS_KEY, null);
+  }, [user, channelsQuery.isSuccess, dmsQuery.isSuccess, usersQuery.isSuccess, channels, allChannels, users]);
 
   function markNavDuringRestore() {
     if (!restoredRef.current) navDuringRestoreRef.current = true;
@@ -686,6 +705,7 @@ export default function App() {
     setUser(null);
     setAllChannels([]);
     setCatalogCounts(null);
+    setRecents([]);
     setActiveChannel(null);
     setScrollToBottomTarget(null);
     navigate("/", { replace: true });
@@ -694,7 +714,7 @@ export default function App() {
   function rememberRecent(item) {
     setRecents((prev) => {
       const next = [item, ...prev.filter((r) => !(r.type === item.type && r.id === item.id))].slice(0, 6);
-      writeJson(RECENTS_KEY, next);
+      if (user?.id) writeJson(recentStorageKey(user.id), next);
       return next;
     });
   }
