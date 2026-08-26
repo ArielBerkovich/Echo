@@ -1463,7 +1463,6 @@ export default function App() {
             channels: visibleChannels,
             forwardChannels: channels,
             dms,
-            recentDestinations: recents,
             customEmojis: emojis,
             mode,
             savedIds,

@@ -58,7 +58,6 @@ export default function ChannelView({
   channels = [],
   forwardChannels = channels,
   dms = [],
-  recentDestinations = [],
   customEmojis = [],
   savedIds,
   onToggleSave,
@@ -1316,7 +1315,6 @@ export default function ChannelView({
           message={forwarding}
           channels={forwardChannels}
           dms={dms}
-          recents={recentDestinations}
           users={users}
           channelId={channel.id}
           channelType={channel.type}
