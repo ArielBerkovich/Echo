@@ -513,6 +513,24 @@ test("shows only joined channels in the Channels section", async ({ page }) => {
   await expect(page.getByTestId("channel-leave")).toHaveCount(0);
 });
 
+test("removes archived channels from pane search", async ({ page }) => {
+  const channelName = `archived-search-${fixture.suffix}`;
+  const created = await requestAsToken(page, fixture.alice.token, "/channels", {
+    method: "POST",
+    body: { name: channelName, type: "public" },
+  });
+
+  await page.goto("/");
+  await page.getByTestId("search-input").fill(channelName);
+  await expect(page.getByTestId(`search-channel-${slug(channelName)}`)).toBeVisible();
+
+  await requestAsToken(page, fixture.alice.token, `/channels/${created.channel.id}`, {
+    method: "DELETE",
+  });
+
+  await expect(page.getByTestId(`search-channel-${slug(channelName)}`)).toHaveCount(0);
+});
+
 test("switches channels without flashing stale messages while images load", async ({ page }) => {
   const seeded = await createImageChannel(page, "switch-image");
   let fileRequests = 0;

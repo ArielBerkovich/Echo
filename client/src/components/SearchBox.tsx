@@ -150,7 +150,10 @@ const SearchBox = forwardRef(function SearchBox(
     return () => document.removeEventListener("mousedown", onDown);
   }, []);
 
-  const publicChannels = useMemo(() => channels.filter((c) => c.type === "public"), [channels]);
+  const publicChannels = useMemo(
+    () => channels.filter((c) => c.type === "public" && !c.isArchived && c.id && c.name),
+    [channels]
+  );
   const q = query.trim().toLowerCase();
   const hasFilterTokens = /(?:^|\s)(in:|from:|has:)/i.test(query);
   const peoplePicker = variant === "people-picker" || conversationPickerOpen;
@@ -182,7 +185,13 @@ const SearchBox = forwardRef(function SearchBox(
   }, [channelLookup, onFindChannels, shouldFindChannels]);
 
   const channelCandidates = useMemo(
-    () => [...new Map([...publicChannels, ...remoteChannels].map((channel) => [channel.id, channel])).values()],
+    () => [
+      ...new Map(
+        [...publicChannels, ...remoteChannels]
+          .filter((channel) => channel && channel.id && channel.name && !channel.isArchived)
+          .map((channel) => [channel.id, channel])
+      ).values(),
+    ],
     [publicChannels, remoteChannels]
   );
 
