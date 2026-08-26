@@ -58,28 +58,29 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
   const noteComposerRef = useRef(null);
 
   const destinationGroups = useMemo(() => {
-    const channelsById = new Map(channels.map((channel) => [channel.id, channel]));
-    const dmsByUserId = new Map(dms.map((dm) => [dm.withUser?.id, dm]));
-    const usersById = new Map(users.map((user) => [user.id, user]));
-    const channelItems = channels.map((channel) => ({
+    const channelItems = channels
+      .filter((channel) => channel?.id && channel?.name && !channel.isArchived)
+      .map((channel) => ({
       id: channel.id,
       kind: "channel",
       label: channel.name,
       handle: channel.type === "private" ? "Private channel" : "Public channel",
       icon: channel.type === "private" ? "🔒" : "#",
-    }));
-    const dmItems = dms.map((dm) => ({
+      }));
+    const dmItems = dms
+      .filter((dm) => dm?.id && dm.withUser?.id)
+      .map((dm) => ({
       id: dm.id,
       kind: "dm",
-      userId: dm.withUser?.id || "",
-      label: dm.withUser?.displayName || "Direct message",
+      userId: dm.withUser.id,
+      label: dm.withUser.displayName || dm.withUser.username || "Direct message",
       handle: "Direct message",
       avatarUrl: dm.withUser?.avatarUrl || null,
       username: dm.withUser?.username || "",
-    }));
-    const knownDmUserIds = new Set(dms.map((dm) => dm.withUser?.id).filter(Boolean));
+      }));
+    const knownDmUserIds = new Set(dmItems.map((dm) => dm.userId));
     const people = users
-      .filter((user) => !knownDmUserIds.has(user.id))
+      .filter((user) => user?.id && user?.username && !knownDmUserIds.has(user.id))
       .map((user) => ({
         id: user.id,
         kind: "user",
@@ -87,28 +88,10 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
         handle: `@${user.username}`,
         avatarUrl: user.avatarUrl || null,
       }));
-    const recentItems = recents.map((recent) => {
-      if (recent.type === "channel") {
-        const channel = channelsById.get(recent.id);
-        return channel ? channelItems.find((item) => item.id === channel.id) : null;
-      }
-      const user = usersById.get(recent.id) || dmsByUserId.get(recent.id)?.withUser;
-      if (!user) return null;
-      return {
-        id: user.id,
-        kind: "user",
-        label: user.displayName || user.username || "Person",
-        handle: `@${user.username}`,
-        avatarUrl: user.avatarUrl || null,
-        username: user.username || "",
-      };
-    }).filter(Boolean);
-
     return {
-      recent: recentItems,
       all: [...channelItems, ...dmItems, ...people],
     };
-  }, [channels, dms, users, recents]);
+  }, [channels, dms, users]);
 
   const hasQuery = Boolean(query.trim());
   const resultGroups = useMemo(() => {
@@ -117,9 +100,9 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
           .filter((destination) => fuzzyMatch(destination, query))
           .sort((left, right) => matchRank(left, query) - matchRank(right, query))
           .slice(0, MAX_VISIBLE_SEARCH_RESULTS)
-      : destinationGroups.recent.slice(0, MAX_VISIBLE_SEARCH_RESULTS);
+      : [];
 
-    if (!hasQuery) return [{ label: "Recent destinations", items: matches }].filter((group) => group.items.length);
+    if (!hasQuery) return [];
 
     return [
       { label: "Channels", items: matches.filter((item) => item.kind === "channel") },
@@ -129,7 +112,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
 
   const flatResults = useMemo(() => resultGroups.flatMap((group) => group.items), [resultGroups]);
   const selectedKeys = useMemo(() => new Set(selected.map(destinationKey)), [selected]);
-  const showResultList = searchFocused;
+  const showResultList = searchFocused && hasQuery;
   const isSubmitting = status === "submitting";
   const disabled = !selected.length || isSubmitting;
   const noteChannel = useMemo(() => ({
