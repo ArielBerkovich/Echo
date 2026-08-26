@@ -90,27 +90,17 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
     const recentItems = recents.map((recent) => {
       if (recent.type === "channel") {
         const channel = channelsById.get(recent.id);
-        return channel
-          ? channelItems.find((item) => item.id === channel.id)
-          : recent.id && (recent.name || recent.label)
-            ? {
-                id: recent.id,
-                kind: "channel",
-                label: recent.name || recent.label,
-                handle: recent.type === "private" ? "Private channel" : "Public channel",
-                icon: recent.type === "private" ? "🔒" : "#",
-              }
-            : null;
+        return channel ? channelItems.find((item) => item.id === channel.id) : null;
       }
       const user = usersById.get(recent.id) || dmsByUserId.get(recent.id)?.withUser;
-      if (!user && !(recent.id && (recent.displayName || recent.username || recent.label))) return null;
+      if (!user) return null;
       return {
-        id: user?.id || recent.id,
+        id: user.id,
         kind: "user",
-        label: user?.displayName || user?.username || recent.displayName || recent.label || recent.username || "Person",
-        handle: `@${user?.username || recent.username || ""}`,
-        avatarUrl: user?.avatarUrl || null,
-        username: user?.username || recent.username || "",
+        label: user.displayName || user.username || "Person",
+        handle: `@${user.username}`,
+        avatarUrl: user.avatarUrl || null,
+        username: user.username || "",
       };
     }).filter(Boolean);
 
@@ -269,7 +259,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
               role="combobox"
               aria-autocomplete="list"
               aria-controls="forward-destination-list"
-              aria-expanded={showResultList && (flatResults.length > 0 || hasQuery || selected.length > 0)}
+              aria-expanded={showResultList && flatResults.length > 0}
               aria-activedescendant={flatResults[activeIndex] ? resultId(flatResults[activeIndex]) : undefined}
             />
 
