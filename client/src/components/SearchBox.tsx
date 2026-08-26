@@ -167,6 +167,14 @@ const SearchBox = forwardRef(function SearchBox(
   const q = query.trim().toLowerCase();
   const hasFilterTokens = /(?:^|\s)(in:|from:|has:)/i.test(query);
   const peoplePicker = variant === "people-picker" || conversationPickerOpen;
+  const recentItems = useMemo(
+    () => [...new Map(
+      (Array.isArray(recents) ? recents : [])
+        .filter((recent) => recent?.type && recent?.id)
+        .map((recent) => [`${recent.type}:${recent.id}`, recent])
+    ).values()],
+    [recents]
+  );
 
   const filter = activeFilterAt(query, caret);
   const shouldFindChannels =
@@ -254,7 +262,7 @@ const SearchBox = forwardRef(function SearchBox(
     if (!q) {
       return [
         ...(addPeopleChannel ? [{ kind: "add-people" }] : []),
-        ...recents.map((r) =>
+        ...recentItems.map((r) =>
         r.type === "channel"
           ? { kind: "recent-channel", item: r }
           : { kind: "recent-user", item: r }
@@ -262,7 +270,7 @@ const SearchBox = forwardRef(function SearchBox(
       ];
     }
     return [];
-  }, [filter, filterSuggestions, q, hasFilterTokens, channelHits, peopleHits, recents, addPeopleChannel, peoplePicker]);
+  }, [filter, filterSuggestions, q, hasFilterTokens, channelHits, peopleHits, recentItems, addPeopleChannel, peoplePicker]);
 
   // Reset/clamp the highlight whenever the navigable set changes.
   useEffect(() => {
@@ -508,8 +516,8 @@ const SearchBox = forwardRef(function SearchBox(
                     </>
                   )}
                   <div className="search-section">Recent</div>
-                  {recents.length === 0 && <div className="people-empty">No recent searches.</div>}
-                  {recents.map((r, idx) =>
+                  {recentItems.length === 0 && <div className="people-empty">No recent searches.</div>}
+                  {recentItems.map((r, idx) =>
                     r.type === "channel"
                       ? channelRow(r, idx + (addPeopleChannel ? 1 : 0), "recent")
                       : (

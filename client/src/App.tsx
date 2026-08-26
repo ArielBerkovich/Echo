@@ -48,8 +48,20 @@ function isMobileViewport() {
   return typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches;
 }
 
+function normalizeRecents(value) {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set();
+  return value.filter((recent) => {
+    if (!recent || !["channel", "user"].includes(recent.type) || !recent.id) return false;
+    const key = `${recent.type}:${recent.id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function loadRecents() {
-  return readJson(RECENTS_KEY, []);
+  return normalizeRecents(readJson(RECENTS_KEY, []));
 }
 
 export default function App() {
