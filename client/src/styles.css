@@ -3589,6 +3589,7 @@ html[data-mode="dark"] .sidebar {
   background: var(--surface);
   min-width: 0;
   min-height: 0;
+  --side-panel-width: clamp(320px, 36%, 460px);
 }
 .channel-main {
   flex: 1;
@@ -3631,8 +3632,8 @@ html[data-mode="dark"] .sidebar {
 .thread-panel,
 .details-panel,
 .pinned-panel {
-  width: 460px;
-  max-width: 42vw;
+  width: var(--side-panel-width);
+  max-width: var(--side-panel-width);
   flex: none;
   border-left: 1px solid var(--border);
   display: flex;
@@ -9927,7 +9928,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     right: 0;
     bottom: 0;
     z-index: 18;
-    width: min(440px, 94%);
+    width: min(var(--side-panel-width), 94%);
     max-width: 94%;
     box-shadow: var(--shadow-lg);
   }
