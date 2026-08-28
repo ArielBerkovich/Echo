@@ -92,7 +92,7 @@ dmsRouter.patch("/:id", async (req, res) => {
   }
   const name = String(req.body?.name || "").trim();
   if (!name || name.length > 64 || !/^[a-z0-9_-]+$/i.test(name)) {
-    return res.status(400).json({ error: "group DM names may contain only letters, numbers, dashes, and underscores" });
+    return res.status(400).json({ error: "group DM names may contain only English letters (A-Z), numbers, dashes, and underscores" });
   }
   const existing = await Channel.findOne({ name: name.toLowerCase(), _id: { $ne: channel._id } });
   if (existing) return res.status(409).json({ error: "that conversation name is already in use" });
@@ -114,7 +114,7 @@ dmsRouter.post("/:id/convert", async (req, res) => {
   }
   const name = String(req.body?.name || "").trim().toLowerCase();
   if (!name || name.length > 64 || !/^[a-z0-9_-]+$/.test(name)) {
-    return res.status(400).json({ error: "channel names may contain only lowercase letters, numbers, dashes, and underscores" });
+    return res.status(400).json({ error: "channel names may contain only lowercase English letters (a-z), numbers, dashes, and underscores" });
   }
   const existing = await Channel.findOne({ name, _id: { $ne: channel._id } });
   if (existing) return res.status(409).json({ error: "that channel name is already in use" });

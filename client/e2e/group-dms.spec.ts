@@ -162,7 +162,11 @@ test("renames a group DM and keeps the custom name after refresh", async ({ page
   await page.getByTestId("channel-members").click();
   const members = page.getByTestId("members-panel");
   await members.getByRole("button", { name: "Rename group DM" }).click();
-  await members.getByRole("textbox", { name: "Group DM name" }).fill(customName);
+  const nameInput = members.getByRole("textbox", { name: "Group DM name" });
+  await nameInput.fill("团队聊天");
+  await members.getByRole("button", { name: "Save" }).click();
+  await expect(members.getByRole("alert")).toHaveText("group DM names may contain only English letters (A-Z), numbers, dashes, and underscores");
+  await nameInput.fill(customName);
   await members.getByRole("button", { name: "Save" }).click();
 
   await expect(page.getByTestId("channel-title")).toHaveText(customName);
