@@ -255,17 +255,15 @@ export default function App() {
   function setView(nextView, channel = activeChannelRef.current, options = {}) {
     const { messageId, threadId, ...navigationOptions } = options;
     setViewState(nextView);
-    navigate(
-      workspacePath({
-        view: nextView,
-        convId: channel?.id || null,
-        convName: conversationRouteName(channel),
-        convType: channel?.type || null,
-        messageId,
-        threadId,
-      }),
-      navigationOptions
-    );
+    const destination = workspacePath({
+      view: nextView,
+      convId: channel?.id || null,
+      convName: conversationRouteName(channel),
+      convType: channel?.type || null,
+      messageId,
+      threadId,
+    });
+    navigate(destination, navigationOptions);
   }
 
   // Jump targets belong to the conversation that created them. Clear them
