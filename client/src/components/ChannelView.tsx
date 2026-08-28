@@ -961,15 +961,21 @@ export default function ChannelView({
               </button>
             )}
             {isGroupDm ? <GroupAvatar size={36} /> : <Avatar name={dmAvatarName} src={dmAvatar} size={36} />}
-            <button
-              type="button"
-              className="ch-name ch-name-btn dm-name-btn"
-              data-testid="channel-title"
-              title="View profile"
-              onClick={() => dmUser?.id && onOpenProfile?.(dmUser.id)}
-            >
-              {dmLabel}
-            </button>
+            {isGroupDm ? (
+              <span className="ch-name dm-name-btn" data-testid="channel-title">
+                {dmLabel}
+              </span>
+            ) : (
+              <button
+                type="button"
+                className="ch-name ch-name-btn dm-name-btn"
+                data-testid="channel-title"
+                title="View profile"
+                onClick={() => dmUser?.id && onOpenProfile?.(dmUser.id)}
+              >
+                {dmLabel}
+              </button>
+            )}
             {isGroupDm && (
               <div className="header-actions">
                 <button
