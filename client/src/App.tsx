@@ -1452,6 +1452,7 @@ export default function App() {
 
         <WorkspaceContent
           view={view}
+          homeChannel={lastConversationRef.current}
           onOpenNavigation={() => setNavOpen(true)}
           search={{
             inputRef: searchRef,

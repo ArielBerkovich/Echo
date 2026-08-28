@@ -3551,6 +3551,15 @@ html[data-mode="dark"] .sidebar {
   min-width: 0;
   min-height: 0;
 }
+.preserved-home {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+.preserved-home-hidden {
+  display: none;
+}
 .channel-main {
   flex: 1;
   display: flex;

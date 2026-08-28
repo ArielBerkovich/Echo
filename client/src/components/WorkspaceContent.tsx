@@ -12,7 +12,7 @@ const SavedFeed = lazy(() => import("./SavedFeed.js"));
 const SearchResults = lazy(() => import("./SearchResults.js"));
 const SettingsModal = lazy(() => import("./SettingsModal.js"));
 
-export default function WorkspaceContent({ view, search, browse, feeds, conversation }) {
+export default function WorkspaceContent({ view, search, browse, feeds, conversation, homeChannel }) {
   // Activity is commonly a short-lived stop before returning to a channel.
   // Warm the conversation chunk while the feed is visible so navigation back
   // to Home does not pay the dynamic-import cost on the critical interaction.
@@ -54,6 +54,7 @@ export default function WorkspaceContent({ view, search, browse, feeds, conversa
       </div>
       <ActiveWorkspaceView
         view={view}
+        homeChannel={homeChannel}
         search={search}
         browse={browse}
         feeds={feeds}
@@ -63,7 +64,21 @@ export default function WorkspaceContent({ view, search, browse, feeds, conversa
   );
 }
 
-function ActiveWorkspaceView({ view, search, browse, feeds, conversation }) {
+function ActiveWorkspaceView({ view, homeChannel, search, browse, feeds, conversation }) {
+  const preservedChannel = view === "home" ? conversation.channel : (homeChannel || conversation.channel);
+  const homeConversation = preservedChannel && preservedChannel.id === conversation.channel?.id
+    ? conversation
+    : preservedChannel
+      ? { ...conversation, channel: preservedChannel, cachedMessages: null, initialScrollState: null }
+      : null;
+  const preserveHome = !search.query && (
+    view === "activity"
+    || view === "saved"
+    || (view === "dms" && !conversation.channel)
+  ) && !!homeConversation;
+  const homeContent = (preserveHome || (!search.query && view === "home" && !!conversation.channel))
+    ? <ConversationView conversation={homeConversation || conversation} />
+    : null;
   let content;
   if (search.query) {
     content = <SearchResults query={search.query} onJump={search.onJump} onClose={search.onClose} />;
@@ -102,16 +117,31 @@ function ActiveWorkspaceView({ view, search, browse, feeds, conversation }) {
     );
   } else if (view === "settings") {
     content = <SettingsModal {...feeds.settings} />;
-  } else if (!conversation.channel || (view !== "home" && conversation.channel.type !== "dm")) {
+  } else if (view === "home") {
+    content = homeContent ? null : <div className="empty-pane">Search to start a conversation.</div>;
+  } else if (!conversation.channel || conversation.channel.type !== "dm") {
     content = (
       <div className="empty-pane">
         {view === "dms" ? "Select a conversation, or start a new one." : "Search to start a conversation."}
       </div>
     );
   } else {
-    const { channel, ...props } = conversation;
-    content = <ChannelView key={channel.id} channel={channel} {...props} />;
+    content = <ConversationView conversation={conversation} />;
   }
 
-  return <Suspense fallback={<div className="empty-state"><p>Loading…</p></div>}>{content}</Suspense>;
+  return (
+    <Suspense fallback={<div className="empty-state"><p>Loading…</p></div>}>
+      {content}
+      {homeContent ? (
+        <div className={`preserved-home ${preserveHome ? "preserved-home-hidden" : ""}`} aria-hidden={preserveHome || undefined}>
+          {homeContent}
+        </div>
+      ) : null}
+    </Suspense>
+  );
+}
+
+function ConversationView({ conversation }) {
+  const { channel, ...props } = conversation;
+  return <ChannelView key={channel.id} channel={channel} {...props} />;
 }
