@@ -2920,11 +2920,6 @@ html[data-mode="dark"] .sidebar {
   color: rgba(255, 255, 255, 0.9);
   font-weight: 650;
 }
-.dms-view .dm-rich.unread:not(.active) .avatar,
-.dm-item.unread:not(.active) .avatar {
-  outline: 1px solid color-mix(in srgb, var(--on-navy) 65%, transparent);
-  outline-offset: 1px;
-}
 .unread-badge {
   flex: none;
   background: var(--danger);

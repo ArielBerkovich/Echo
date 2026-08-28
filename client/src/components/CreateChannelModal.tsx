@@ -78,7 +78,6 @@ export default function CreateChannelModal({ onCreate, onClose }) {
                 const nextValue = `${name.slice(0, start)}${e.key}${name.slice(end)}`;
                 if (e.key === "_" || nextValue.includes("--")) {
                   e.preventDefault();
-                  setError("Channel names cannot contain underscores or consecutive dashes");
                 }
               }}
               onBlur={nameField.onBlur}
