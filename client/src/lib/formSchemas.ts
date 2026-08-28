@@ -6,7 +6,6 @@ const text = (value) => String(value ?? "").trim();
 export const normalizeChannelNameInput = (value) =>
   text(value)
     .replace(/^#/, "")
-    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
     .toLowerCase()
     .replace(/\s+/g, "-")
     .replace(/[^a-z0-9_-]/g, "");

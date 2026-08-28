@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { channelSchema, normalizeChannelNameInput } from "./formSchemas.ts";
 
-test("channel input turns camelCase into lowercase dashed names", () => {
-  assert.equal(normalizeChannelNameInput("ProjectName"), "project-name");
+test("channel input lowercases names and turns spaces into dashes", () => {
+  assert.equal(normalizeChannelNameInput("ProjectName"), "projectname");
   assert.equal(normalizeChannelNameInput("Release Notes"), "release-notes");
 });
 
