@@ -24,13 +24,12 @@ function railNameFontSize(name) {
 }
 
 export default function LeftRail({ view, onSelect, badges = {}, user, workspace, workspaceLoading = false, onLogout, onUpdated, customEmojis = [], latestActivity }) {
-  const [clicked, setClicked] = useState(null);
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
   const [displayNameDialogOpen, setDisplayNameDialogOpen] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [indicatorOffset, setIndicatorOffset] = useState(null);
-  const clickTimerRef = useRef(null);
+  const [indicatorVisible, setIndicatorVisible] = useState(true);
   const railTopRef = useRef(null);
   const itemRefs = useRef(new Map());
   const workspaceLogoSrc = useAuthUrl(workspace?.logoUrl);
@@ -58,14 +57,11 @@ export default function LeftRail({ view, onSelect, badges = {}, user, workspace,
     observer.observe(activeItem);
     return () => observer.disconnect();
   }, [view]);
-  useEffect(() => () => clearTimeout(clickTimerRef.current), []);
-
-  function pulse(key) {
-    clearTimeout(clickTimerRef.current);
-    setClicked(key);
-    clickTimerRef.current = setTimeout(() => setClicked(null), 650);
-  }
-
+  useEffect(() => {
+    setIndicatorVisible(false);
+    const timer = setTimeout(() => setIndicatorVisible(true), 90);
+    return () => clearTimeout(timer);
+  }, [view]);
   function onAvatarFileSelected(file) {
     if (!file) return;
     if (!file.type.startsWith("image/")) return;
@@ -107,7 +103,14 @@ export default function LeftRail({ view, onSelect, badges = {}, user, workspace,
         className="rail-top"
         style={{ "--rail-indicator-offset": indicatorOffset == null ? "0px" : `${indicatorOffset}px` }}
       >
-        {activeIndex >= 0 && indicatorOffset != null && <span className="rail-active-indicator" data-testid="rail-active-indicator" aria-hidden="true" />}
+        {activeIndex >= 0 && indicatorOffset != null && (
+          <span
+            key={view}
+            className={`rail-active-indicator${indicatorVisible ? "" : " is-hidden"}`}
+            data-testid="rail-active-indicator"
+            aria-hidden="true"
+          />
+        )}
         {ITEMS.map(({ key, label, Icon }) => {
           const count = badges[key] || 0;
           const isLatestReaction = key === "activity" && latestActivity?.kind === "reaction" && latestActivity.unread && latestActivity.emoji;
@@ -122,7 +125,7 @@ export default function LeftRail({ view, onSelect, badges = {}, user, workspace,
             <button
               key={key}
               type="button"
-              className={`rail-item rail-item-${key} ${view === key ? "active" : ""} ${clicked === key ? "clicked" : ""}`}
+              className={`rail-item rail-item-${key} ${view === key ? "active" : ""}`}
               data-testid={`rail-${key}`}
               aria-label={activityStateLabel}
               title={activityStateLabel}
@@ -132,7 +135,6 @@ export default function LeftRail({ view, onSelect, badges = {}, user, workspace,
                 else itemRefs.current.delete(key);
               }}
               onClick={() => {
-                pulse(key);
                 onSelect(key);
               }}
             >
@@ -190,10 +192,9 @@ export default function LeftRail({ view, onSelect, badges = {}, user, workspace,
           <div className="rail-account-actions">
             <button
               type="button"
-              className={`rail-account-action rail-settings-action${view === "settings" ? " active" : ""}${clicked === "settings" ? " clicked" : ""}`}
+              className={`rail-account-action rail-settings-action${view === "settings" ? " active" : ""}`}
               data-testid="rail-settings"
               onClick={() => {
-                pulse("settings");
                 onSelect("settings");
               }}
               title="Settings"

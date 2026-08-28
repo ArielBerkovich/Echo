@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import SearchBox from "./SearchBox.js";
 
 // Conversation history, feeds, and browse/search results pull in markdown,
@@ -6,12 +6,27 @@ import SearchBox from "./SearchBox.js";
 // so the navigation shell can become interactive without that graph.
 const ActivityFeed = lazy(() => import("./ActivityFeed.js"));
 const ChannelBrowser = lazy(() => import("./ChannelBrowser.js"));
-const ChannelView = lazy(() => import("./ChannelView.js"));
+const loadChannelView = () => import("./ChannelView.js");
+const ChannelView = lazy(loadChannelView);
 const SavedFeed = lazy(() => import("./SavedFeed.js"));
 const SearchResults = lazy(() => import("./SearchResults.js"));
 const SettingsModal = lazy(() => import("./SettingsModal.js"));
 
 export default function WorkspaceContent({ view, search, browse, feeds, conversation }) {
+  // Activity is commonly a short-lived stop before returning to a channel.
+  // Warm the conversation chunk while the feed is visible so navigation back
+  // to Home does not pay the dynamic-import cost on the critical interaction.
+  useEffect(() => {
+    if (view !== "activity") return undefined;
+    const preload = () => loadChannelView();
+    if (typeof window.requestIdleCallback === "function") {
+      const idleId = window.requestIdleCallback(preload, { timeout: 500 });
+      return () => window.cancelIdleCallback(idleId);
+    }
+    const timeoutId = window.setTimeout(preload, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [view]);
+
   const activeChannel = conversation.channel;
   const addPeopleChannel = activeChannel &&
     activeChannel.type !== "dm" &&
@@ -65,16 +80,7 @@ function ActiveWorkspaceView({ view, search, browse, feeds, conversation }) {
       />
     );
   } else if (view === "activity") {
-    content = (
-      <ActivityFeed
-        user={feeds.user}
-        users={feeds.users}
-        customEmojis={feeds.emojis}
-        onJump={feeds.onJump}
-        onLoaded={feeds.onActivityLoaded}
-        onReady={feeds.onActivityReady}
-      />
-    );
+    content = null;
   } else if (view === "saved") {
     content = (
       <SavedFeed

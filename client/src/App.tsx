@@ -185,6 +185,14 @@ export default function App() {
   useEffect(() => void (viewRef.current = view), [view]);
   useEffect(() => void (activeChannelRef.current = activeChannel), [activeChannel]);
 
+  // Activity is a transient full-page view. Keep the selected conversation's
+  // history warm while it is open so returning to Home can render from the
+  // React Query cache instead of waiting on the messages request.
+  useEffect(() => {
+    if (view !== "activity" || !activeChannel?.id) return;
+    prefetchMessages(activeChannel.id);
+  }, [view, activeChannel?.id, prefetchMessages]);
+
   // Recents are a client-side cache. Scope them to the signed-in account and
   // reconcile old entries against the current server snapshot so a deployment
   // reset cannot leave deleted users or channels in the search UI.
