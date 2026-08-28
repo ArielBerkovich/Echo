@@ -153,6 +153,7 @@ export default function App() {
   const navDuringRestoreRef = useRef(false); // user navigated before the initial restore finished
   const viewRef = useRef(view);
   const activeChannelRef = useRef(activeChannel);
+  const lastConversationRef = useRef(null);
 
   const hotkeyOptions = { ...GLOBAL_HOTKEY_OPTIONS, enabled: !!user };
   useHotkeys(modifierHotkeys("f"), () => searchRef.current?.focus(), hotkeyOptions, [user]);
@@ -184,6 +185,11 @@ export default function App() {
 
   useEffect(() => void (viewRef.current = view), [view]);
   useEffect(() => void (activeChannelRef.current = activeChannel), [activeChannel]);
+  useEffect(() => {
+    if (activeChannel && (view === "home" || view === "dms")) {
+      lastConversationRef.current = activeChannel;
+    }
+  }, [view, activeChannel]);
 
   // Activity is a transient full-page view. Keep the selected conversation's
   // history warm while it is open so returning to Home can render from the
@@ -299,7 +305,16 @@ export default function App() {
         setActiveChannel(null);
         setView(nextView, null);
       } else {
-        setView(nextView);
+        const homeChannel = activeChannelRef.current
+          || lastConversationRef.current
+          || channels.find((channel) => channel.name.toLowerCase() === "general")
+          || channels[0]
+          || null;
+        // Begin loading the selected conversation before Home mounts it. The
+        // ChannelView fetch joins this React Query request instead of creating
+        // a sequential navigation → fetch waterfall.
+        prefetchMessages(homeChannel?.id);
+        setView(nextView, homeChannel);
       }
     } else {
       setView(nextView);
