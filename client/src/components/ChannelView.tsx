@@ -914,6 +914,8 @@ export default function ChannelView({
 
   const isCreator = !isDm && channel.createdBy === user.id;
   const canToggleStarred = isDm && dmParticipants.length <= 1 && !!dmUser?.id && dmUser.id !== user.id;
+  const canToggleGroupDmStarred = isGroupDm && isMember;
+  const dmStarred = isGroupDm ? isChannelStarred : isStarred;
   // #general is the default channel — everyone stays in it, so no Leave action.
   const isGeneral = (channel.name || "").toLowerCase() === "general";
 
@@ -947,17 +949,17 @@ export default function ChannelView({
       <header className="channel-header" data-testid="channel-header">
         {isDm ? (
           <>
-            {canToggleStarred && (
+            {(canToggleStarred || canToggleGroupDmStarred) && (
               <button
                 type="button"
-                className={`dm-starred-toggle ${isStarred ? "active" : ""}`}
+                className={`dm-starred-toggle ${dmStarred ? "active" : ""}`}
                 data-testid="dm-starred-toggle"
-                aria-label={isStarred ? `Remove ${dmLabel} from Starred` : `Mark ${dmLabel} as Starred`}
-                aria-pressed={isStarred}
-                title={isStarred ? "Remove from Starred" : "Mark as Starred"}
-                onClick={() => onToggleStarred?.(dmUser.id)}
+                aria-label={dmStarred ? `Remove ${dmLabel} from Starred` : `Mark ${dmLabel} as Starred`}
+                aria-pressed={dmStarred}
+                title={dmStarred ? "Remove from Starred" : "Mark as Starred"}
+                onClick={() => isGroupDm ? onToggleChannelStarred?.(channel.id) : onToggleStarred?.(dmUser.id)}
               >
-                <StarIcon size={20} strokeWidth={1.9} fill={isStarred ? "currentColor" : "none"} />
+                <StarIcon size={20} strokeWidth={1.9} fill={dmStarred ? "currentColor" : "none"} />
               </button>
             )}
             {isGroupDm ? <GroupAvatar size={36} /> : <Avatar name={dmAvatarName} src={dmAvatar} size={36} />}

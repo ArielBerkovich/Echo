@@ -272,7 +272,8 @@ channelsRouter.post("/:id/star", async (req, res) => {
     return res.status(404).json({ error: "channel not found" });
   }
   const channel = await Channel.findById(req.params.id);
-  if (!channel || channel.isArchived || channel.type === "dm") {
+  const isGroupDm = channel?.type === "dm" && channel.members.length > 2;
+  if (!channel || channel.isArchived || (channel.type === "dm" && !isGroupDm)) {
     return res.status(404).json({ error: "channel not found" });
   }
   if (!channel.members.some((memberId) => memberId.equals(req.user._id))) {

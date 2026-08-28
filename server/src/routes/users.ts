@@ -44,7 +44,6 @@ usersRouter.get("/vips", async (req, res) => {
     : await Channel.find({
       _id: { $in: starredChannelIds },
       isArchived: false,
-      type: { $ne: "dm" },
       $or: [{ type: "public" }, { members: req.user._id }],
     }, { _id: 1 }).lean();
   res.json({

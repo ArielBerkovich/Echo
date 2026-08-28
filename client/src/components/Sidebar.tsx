@@ -112,7 +112,10 @@ export default function Sidebar({
   const dmLabel = (conversation) => dmPeople(conversation).map((person) => person.displayName).join(", ");
   const shownDms = dms.filter((c) => !f || dmLabel(c).toLowerCase().includes(f));
   // Starred DMs get their own section; the rest stay under "Direct Messages".
-  const starredDms = shownDms.filter((c) => dmPeople(c).length === 1 && starredIds.has(dmPeople(c)[0].id));
+  const starredDms = shownDms.filter((c) => {
+    const people = dmPeople(c);
+    return people.length === 1 ? starredIds.has(people[0].id) : starredChannelIds.has(c.id);
+  });
   const regularDms = shownDms.filter((c) => !starredDms.includes(c));
   const starredChannels = shownChannels.filter((c) => starredChannelIds.has(c.id));
   const regularChannels = shownChannels.filter((c) => !starredChannelIds.has(c.id));
@@ -122,7 +125,7 @@ export default function Sidebar({
     const people = dmPeople(conv);
     const active = activeChannel?.type === "dm" && activeChannel?.id === conv.id;
     const unread = conv.unread > 0;
-    const isStarred = people.length === 1 && starredIds.has(people[0].id);
+    const isStarred = people.length === 1 ? starredIds.has(people[0].id) : starredChannelIds.has(conv.id);
     const label = conv.isSelf ? `${conv.withUser.displayName} (you)` : dmLabel(conv);
     return (
       <div key={conv.id} className={`channel-item dm-item ${active ? "active" : ""} ${unread ? "unread" : ""}`} data-testid={`dm-row-${slug(conv.withUser.displayName)}`}>
@@ -229,7 +232,7 @@ export default function Sidebar({
             const label = dmLabel(conv);
             const active = activeChannel?.type === "dm" && activeChannel?.id === conv.id;
             const unread = conv.unread > 0;
-            const isStarred = people.length === 1 && starredIds.has(people[0].id);
+            const isStarred = people.length === 1 ? starredIds.has(people[0].id) : starredChannelIds.has(conv.id);
             return (
               <div key={conv.id} className={`dm-rich ${active ? "active" : ""} ${unread ? "unread" : ""}`} data-testid={`dm-row-${slug(label)}`}>
                 <button className="dm-open" data-testid={`dm-open-${slug(label)}`} onClick={() => onOpenDm({ ...conv.withUser, participants: people })}>

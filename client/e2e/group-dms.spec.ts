@@ -185,6 +185,10 @@ test("converts a group DM into a private channel", async ({ page }) => {
   const channelName = `qa-convert-${usernameSuffix}`;
 
   await page.goto(`/home/dms/${created.channel.id}`);
+  const dmStar = page.getByTestId("dm-starred-toggle");
+  await expect(dmStar).toHaveAttribute("aria-pressed", "false");
+  await dmStar.click();
+  await expect(dmStar).toHaveAttribute("aria-pressed", "true");
   await page.getByTestId("channel-members").click();
   const members = page.getByTestId("members-panel");
   await members.getByRole("button", { name: "Convert to private channel" }).click();
@@ -194,4 +198,5 @@ test("converts a group DM into a private channel", async ({ page }) => {
   await expect(page).toHaveURL(new RegExp(`/channels/${created.channel.id}$`));
   await expect(page.getByTestId("channel-title")).toContainText(channelName);
   await expect(page.getByTestId("channel-members")).toBeVisible();
+  await expect(page.getByTestId("channel-starred-toggle")).toHaveAttribute("aria-pressed", "true");
 });

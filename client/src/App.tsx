@@ -65,6 +65,11 @@ function recentStorageKey(userId) {
   return `${RECENTS_KEY_PREFIX}${userId}`;
 }
 
+function isGroupDmChannel(channel) {
+  return channel?.type === "dm"
+    && (channel.members?.length > 2 || channel.participants?.length > 2);
+}
+
 export default function App() {
   const queryClient = useQueryClient();
   const location = useLocation();
@@ -990,7 +995,7 @@ export default function App() {
   }
 
   async function handleHideDm(conv) {
-    if (starredIds.has(conv.withUser.id)) return;
+    if (starredIds.has(conv.withUser.id) || starredChannelIds.has(conv.id)) return;
     await api.hideDm(conv.id);
     setDms((prev) => prev.filter((d) => d.id !== conv.id));
     if (activeChannel?.id === conv.id) {
@@ -1541,7 +1546,8 @@ export default function App() {
             onDmsChanged: refreshDms,
             isStarred: activeChannel?.type === "dm" && starredIds.has(activeChannel.dmUserId),
             onToggleStarred: handleToggleStarred,
-            isChannelStarred: activeChannel?.type !== "dm" && starredChannelIds.has(activeChannel?.id),
+            isChannelStarred: (activeChannel?.type !== "dm" || isGroupDmChannel(activeChannel))
+              && starredChannelIds.has(activeChannel?.id),
             onToggleChannelStarred: handleToggleChannelStarred,
             jumpMessageId,
             scrollToBottomTarget,
