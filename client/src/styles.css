@@ -9480,11 +9480,14 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
   transition: background 0.16s ease, border-color 0.16s ease;
 }
 .new-message-search-selected {
-  height: 40px;
+  height: auto;
+  max-height: 144px;
   padding: 4px 6px;
   border: 0;
   background: transparent;
   box-shadow: none;
+  overflow-y: auto;
+  align-content: flex-start;
 }
 .new-message-add-input {
   flex: 1 1 110px;
