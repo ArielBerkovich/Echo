@@ -4004,6 +4004,11 @@ html[data-mode="dark"] .sidebar {
 .thread-panel .composer {
   margin: 4px 12px 22px;
 }
+.thread-panel .composer-toolbar {
+  flex-wrap: wrap;
+  overflow-x: visible;
+  row-gap: 3px;
+}
 
 /* Thread and reaction summary beneath a message. */
 .message {
