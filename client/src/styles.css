@@ -2384,7 +2384,6 @@ html[data-mode="dark"] .backend-connection-error {
   from { opacity: 0; }
   to { opacity: 1; }
 }
-.rail-active-indicator.is-hidden { opacity: 0; }
 .rail-icon {
   position: relative;
   width: 34px;

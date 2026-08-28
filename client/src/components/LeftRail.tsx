@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { ActivityIcon, BookmarkIcon, HomeIcon, MessageSquareTextIcon, SettingsIcon } from "lucide-react";
 import Avatar from "./Avatar.js";
 import { LeaveIcon } from "./Icons.js";
@@ -29,7 +29,6 @@ export default function LeftRail({ view, onSelect, badges = {}, user, workspace,
   const [displayNameDialogOpen, setDisplayNameDialogOpen] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [indicatorOffset, setIndicatorOffset] = useState(null);
-  const [indicatorVisible, setIndicatorVisible] = useState(true);
   const railTopRef = useRef(null);
   const itemRefs = useRef(new Map());
   const workspaceLogoSrc = useAuthUrl(workspace?.logoUrl);
@@ -56,11 +55,6 @@ export default function LeftRail({ view, onSelect, badges = {}, user, workspace,
     observer.observe(railTop);
     observer.observe(activeItem);
     return () => observer.disconnect();
-  }, [view]);
-  useEffect(() => {
-    setIndicatorVisible(false);
-    const timer = setTimeout(() => setIndicatorVisible(true), 90);
-    return () => clearTimeout(timer);
   }, [view]);
   function onAvatarFileSelected(file) {
     if (!file) return;
@@ -106,7 +100,7 @@ export default function LeftRail({ view, onSelect, badges = {}, user, workspace,
         {activeIndex >= 0 && indicatorOffset != null && (
           <span
             key={view}
-            className={`rail-active-indicator${indicatorVisible ? "" : " is-hidden"}`}
+            className="rail-active-indicator"
             data-testid="rail-active-indicator"
             aria-hidden="true"
           />
