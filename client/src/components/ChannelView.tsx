@@ -10,7 +10,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "../api.js";
 import { getSocket } from "../socket.js";
-import Avatar from "./Avatar.js";
+import Avatar, { GroupAvatar } from "./Avatar.js";
 import ReactionPicker from "./ReactionPicker.js";
 import ThreadPanel from "./ThreadPanel.js";
 import ForwardModal from "./ForwardModal.js";
@@ -960,7 +960,7 @@ export default function ChannelView({
                 <StarIcon size={20} strokeWidth={1.9} fill={isStarred ? "currentColor" : "none"} />
               </button>
             )}
-            <Avatar name={dmAvatarName} src={dmAvatar} size={36} />
+            {isGroupDm ? <GroupAvatar size={36} /> : <Avatar name={dmAvatarName} src={dmAvatar} size={36} />}
             <button
               type="button"
               className="ch-name ch-name-btn dm-name-btn"
@@ -1070,7 +1070,7 @@ export default function ChannelView({
             <div className="empty-state">
               {isDm ? (
                 <>
-                  <Avatar name={dmAvatarName} src={dmAvatar} size={56} />
+                  {isGroupDm ? <GroupAvatar size={56} /> : <Avatar name={dmAvatarName} src={dmAvatar} size={56} />}
                   <h3>{dmLabel}</h3>
                   <p>This is the start of your direct message history. Say hello! 👋</p>
                 </>

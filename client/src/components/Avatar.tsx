@@ -1,4 +1,5 @@
 import { useAuthUrl } from "../lib/useAuthUrl.js";
+import { UsersRoundIcon } from "lucide-react";
 
 // Deterministic colored avatar built from a person's initials.
 const PALETTE = [
@@ -47,6 +48,18 @@ export default function Avatar({ name = "?", size = 36, src = null }) {
       aria-hidden="true"
     >
       {initials(name)}
+    </span>
+  );
+}
+
+export function GroupAvatar({ size = 36 }) {
+  return (
+    <span
+      className="avatar group-avatar"
+      style={{ width: size, height: size }}
+      aria-label="Group conversation"
+    >
+      <UsersRoundIcon size={size * 0.52} strokeWidth={1.9} aria-hidden="true" />
     </span>
   );
 }

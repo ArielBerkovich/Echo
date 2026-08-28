@@ -4297,6 +4297,15 @@ html[data-mode="dark"] .day-divider-label {
   background: var(--surface-2);
 }
 
+.group-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  color: #fff;
+  background: linear-gradient(135deg, #475569, #64748b);
+}
+
 /* ---- User settings page ---- */
 .settings-page {
   position: relative;

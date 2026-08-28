@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { ChevronDownIcon, CompassIcon, LockKeyholeIcon, SquarePenIcon } from "lucide-react";
-import Avatar from "./Avatar.js";
+import Avatar, { GroupAvatar } from "./Avatar.js";
 import { relativeTime } from "../lib/time.js";
 import { useAuthUrls } from "../lib/useAuthUrl.js";
 import { tokenizeEmojiShortcodes } from "../markdown.js";
@@ -49,6 +49,12 @@ function PresenceAvatar({ name, src, size, online, showPresence = true }) {
       {showPresence && <span className={`presence-dot ${online ? "online" : "offline"}`} title={online ? "Online" : "Offline"} />}
     </span>
   );
+}
+
+function DmAvatar({ group, name, src, size, online, showPresence }) {
+  return group
+    ? <GroupAvatar size={size} />
+    : <PresenceAvatar name={name} src={src} size={size} online={online} showPresence={showPresence} />;
 }
 
 function slug(text) {
@@ -127,7 +133,8 @@ export default function Sidebar({
           onMouseEnter={() => onPrefetchDm?.(conv.id)}
           onFocus={() => onPrefetchDm?.(conv.id)}
         >
-          <PresenceAvatar
+          <DmAvatar
+            group={people.length > 1}
             name={label}
             src={people.length === 1 ? people[0].avatarUrl : null}
             size={20}
@@ -226,7 +233,8 @@ export default function Sidebar({
             return (
               <div key={conv.id} className={`dm-rich ${active ? "active" : ""} ${unread ? "unread" : ""}`} data-testid={`dm-row-${slug(label)}`}>
                 <button className="dm-open" data-testid={`dm-open-${slug(label)}`} onClick={() => onOpenDm({ ...conv.withUser, participants: people })}>
-                  <PresenceAvatar
+                  <DmAvatar
+                    group={people.length > 1}
                     name={label}
                     src={people.length === 1 ? people[0].avatarUrl : null}
                     size={38}
