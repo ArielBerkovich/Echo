@@ -2914,9 +2914,6 @@ html[data-mode="dark"] .sidebar {
   font-weight: 800;
   color: #fff;
 }
-.channel-item.unread:not(.active) {
-  background: rgba(56, 189, 248, 0.08);
-}
 .dm-rich.unread .dm-preview {
   color: rgba(255, 255, 255, 0.9);
   font-weight: 500;
