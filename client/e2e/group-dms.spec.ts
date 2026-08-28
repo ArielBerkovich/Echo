@@ -74,3 +74,54 @@ test("keeps legacy group-DM links working and canonicalizes them to the ID", asy
   await expect(page).toHaveURL(new RegExp(`/dms/${created.channel.id}$`));
   await expect(page.getByTestId("channel-title")).toContainText(legacyLabel);
 });
+
+test("renames a group DM and keeps the custom name after refresh", async ({ page }) => {
+  const usernameSuffix = String(Date.now()).slice(-6);
+  const third = await registerUser(page, {
+    username: `rename.third${usernameSuffix}`,
+    displayName: "Rename Third",
+  });
+  await onboard(page, third);
+  const created = await requestAsToken(page, fixture.alice.token, "/dms", {
+    method: "POST",
+    body: { userIds: [fixture.bob.id, third.user.id] },
+  });
+  const customName = `qa-group-${usernameSuffix}`;
+
+  await page.goto(`/home/dms/${created.channel.id}`);
+  await page.getByTestId("channel-members").click();
+  const members = page.getByTestId("members-panel");
+  await members.getByRole("button", { name: "Rename group DM" }).click();
+  await members.getByRole("textbox", { name: "Group DM name" }).fill(customName);
+  await members.getByRole("button", { name: "Save" }).click();
+
+  await expect(page.getByTestId("channel-title")).toHaveText(customName);
+  await page.reload();
+  await expect(page).toHaveURL(new RegExp(`/home/dms/${created.channel.id}$`));
+  await expect(page.getByTestId("channel-title")).toHaveText(customName);
+});
+
+test("converts a group DM into a private channel", async ({ page }) => {
+  const usernameSuffix = String(Date.now()).slice(-6);
+  const third = await registerUser(page, {
+    username: `convert.third${usernameSuffix}`,
+    displayName: "Convert Third",
+  });
+  await onboard(page, third);
+  const created = await requestAsToken(page, fixture.alice.token, "/dms", {
+    method: "POST",
+    body: { userIds: [fixture.bob.id, third.user.id] },
+  });
+  const channelName = `qa-convert-${usernameSuffix}`;
+
+  await page.goto(`/home/dms/${created.channel.id}`);
+  await page.getByTestId("channel-members").click();
+  const members = page.getByTestId("members-panel");
+  await members.getByRole("button", { name: "Convert to private channel" }).click();
+  await members.getByRole("textbox", { name: "New private channel name" }).fill(channelName);
+  await members.getByRole("button", { name: "Convert", exact: true }).click();
+
+  await expect(page).toHaveURL(new RegExp(`/channels/${created.channel.id}$`));
+  await expect(page.getByTestId("channel-title")).toContainText(channelName);
+  await expect(page.getByTestId("channel-members")).toBeVisible();
+});
