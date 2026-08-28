@@ -100,8 +100,9 @@ test("bumps unread counts and reflects live edits and deletes", async ({ browser
     });
 
     await expect(
-      channelRow(alicePage.page, "general").locator(".unread-badge")
-    ).toBeVisible();
+      channelRow(alicePage.page, "general")
+    ).toHaveClass(/unread/);
+    await expect(channelRow(alicePage.page, "general").locator(".unread-badge")).toHaveCount(0);
 
     await channelRow(alicePage.page, "general").click();
     const liveMessage = messageByText(alicePage.page, liveBody).first();

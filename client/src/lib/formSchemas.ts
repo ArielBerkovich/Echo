@@ -4,7 +4,11 @@ import { passwordProblem } from "./password.js";
 const text = (value) => String(value ?? "").trim();
 
 export const normalizeChannelNameInput = (value) =>
-  text(value).replace(/^#/, "").toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9_-]/g, "");
+  text(value)
+    .replace(/^#/, "")
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9_-]/g, "");
 
 export const normalizeEmojiNameInput = (value) => text(value).replace(/^:|:$/g, "").toLowerCase();
 
@@ -71,7 +75,7 @@ export const channelSchema = z.object({
   name: z
     .string()
     .transform(normalizeChannelNameInput)
-    .pipe(z.string().min(1, "Channel name is required").max(64, "Channel name must be 64 characters or fewer").regex(/^[a-z0-9_-]+$/, "Channel name can only contain lowercase letters, numbers, -, and _")),
+    .pipe(z.string().min(1, "Channel name is required").max(64, "Channel name must be 64 characters or fewer").regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Channel names cannot contain underscores, consecutive dashes, or start/end with a dash")),
   type: z.enum(["public", "private"]),
   readOnly: z.boolean().default(false),
 });

@@ -147,7 +147,6 @@ export default function Sidebar({
           />
           <span className="dm-name">{label}</span>
         </button>
-        {unread && <span className="unread-badge">{conv.unread > 99 ? "99+" : conv.unread}</span>}
         <button
           className={`dm-remove ${isStarred ? "reserved" : ""}`}
           data-testid={`dm-remove-${slug(conv.withUser.displayName)}`}
@@ -191,7 +190,6 @@ export default function Sidebar({
         >
           <span className="ch-mark">{c.type === "private" ? <LockKeyholeIcon className="ch-lock" size={11} strokeWidth={1.6} /> : "#"}</span>
           <span className="ci-name">{c.name}</span>
-          {c.unread > 0 && <span className="unread-badge">{c.unread > 99 ? "99+" : c.unread}</span>}
         </button>
       ))}
       {showStarred && starredDms.map(renderDmRow)}
@@ -337,7 +335,6 @@ export default function Sidebar({
               >
                 <span className="ch-mark">{c.type === "private" ? <LockKeyholeIcon className="ch-lock" size={11} strokeWidth={1.6} /> : "#"}</span>
                 <span className="ci-name">{c.name}</span>
-                {c.unread > 0 && <span className="unread-badge">{c.unread > 99 ? "99+" : c.unread}</span>}
               </button>
             ))}
           {showChannels && shownChannels.length === 0 && (
