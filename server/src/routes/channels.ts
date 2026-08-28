@@ -241,7 +241,7 @@ channelsRouter.post("/", async (req, res) => {
 
   const normalized = String(name).toLowerCase().trim();
   if (!isValidChannelName(normalized)) {
-    return res.status(400).json({ error: "channel names may contain lowercase letters, numbers, and single dashes between words" });
+    return res.status(400).json({ error: "channel names cannot contain underscores, consecutive dashes, or start/end with a dash" });
   }
   const existing = await Channel.findOne({ name: normalized });
   if (existing) return res.status(409).json({ error: "channel name already exists" });
