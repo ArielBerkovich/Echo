@@ -766,35 +766,55 @@ export default function App() {
 
   function upsertChannel(channel) {
     const active = activeChannelRef.current;
-    if (active?.id === channel.id && active.name !== channel.name) {
+    const existingDm = channel.type === "dm" ? dms.find((conversation) => conversation.id === channel.id) : null;
+    const memberIds = channel.type === "dm" && channel.members?.length
+      ? channel.members
+      : existingDm?.participants?.map((participant) => participant.id) || [];
+    const participantById = new Map([
+      ...(existingDm?.participants || []).map((participant) => [participant.id, participant]),
+      ...users.map((candidate) => [candidate.id, candidate]),
+    ]);
+    const participants = channel.type === "dm"
+      ? memberIds.map((id) => participantById.get(id)).filter(Boolean)
+      : null;
+    const updatedChannel = channel.type === "dm" && participants.length > 2
+      ? {
+          ...channel,
+          participants,
+          dmName: channel.name?.startsWith("dm-")
+            ? participants.filter((participant) => participant.id !== user.id).map((participant) => participant.displayName).join(", ")
+            : channel.name,
+        }
+      : channel;
+    if (active?.id === updatedChannel.id && active.name !== updatedChannel.name) {
       navigate(workspacePath({
         view: viewRef.current,
-        convId: channel.id,
-        convName: channel.name,
-        convType: channel.type,
+        convId: updatedChannel.id,
+        convName: updatedChannel.name,
+        convType: updatedChannel.type,
       }), { replace: true });
     }
     setChannels((prev) => {
-      const exists = prev.some((c) => c.id === channel.id);
+      const exists = prev.some((c) => c.id === updatedChannel.id);
       const next = exists
-        ? prev.map((c) => (c.id === channel.id ? channel : c))
-        : [...prev, channel];
+        ? prev.map((c) => (c.id === updatedChannel.id ? updatedChannel : c))
+        : [...prev, updatedChannel];
       return next.sort((a, b) => a.name.localeCompare(b.name));
     });
     setAllChannels((prev) => {
-      if (channel.type !== "public") {
-        return prev.filter((c) => c.id !== channel.id);
+      if (updatedChannel.type !== "public") {
+        return prev.filter((c) => c.id !== updatedChannel.id);
       }
-      const exists = prev.some((c) => c.id === channel.id);
+      const exists = prev.some((c) => c.id === updatedChannel.id);
       const next = exists
-        ? prev.map((c) => (c.id === channel.id ? channel : c))
-        : [...prev, channel];
+        ? prev.map((c) => (c.id === updatedChannel.id ? updatedChannel : c))
+        : [...prev, updatedChannel];
       return next.sort((a, b) => a.name.localeCompare(b.name));
     });
-    setActiveChannel((prev) => (prev && prev.id === channel.id ? { ...prev, ...channel } : prev));
-    setDms((prev) => channel.type === "dm"
-      ? prev.map((conversation) => conversation.id === channel.id ? { ...conversation, ...channel } : conversation)
-      : prev.filter((conversation) => conversation.id !== channel.id));
+    setActiveChannel((prev) => (prev && prev.id === updatedChannel.id ? { ...prev, ...updatedChannel } : prev));
+    setDms((prev) => updatedChannel.type === "dm"
+      ? prev.map((conversation) => conversation.id === updatedChannel.id ? { ...conversation, ...updatedChannel } : conversation)
+      : prev.filter((conversation) => conversation.id !== updatedChannel.id));
   }
 
   async function handleAddMember(userId) {
