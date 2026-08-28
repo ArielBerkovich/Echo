@@ -147,7 +147,6 @@ export default function Sidebar({
           />
           <span className="dm-name">{label}</span>
         </button>
-        {unread && <span className="unread-badge">{conv.unread > 99 ? "99+" : conv.unread}</span>}
         <button
           className={`dm-remove ${isStarred ? "reserved" : ""}`}
           data-testid={`dm-remove-${slug(conv.withUser.displayName)}`}
