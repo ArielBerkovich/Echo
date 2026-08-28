@@ -190,6 +190,7 @@ export default function Sidebar({
         >
           <span className="ch-mark">{c.type === "private" ? <LockKeyholeIcon className="ch-lock" size={11} strokeWidth={1.6} /> : "#"}</span>
           <span className="ci-name">{c.name}</span>
+          {c.unread > 0 && <span className="channel-unread-indicator" aria-hidden="true" />}
         </button>
       ))}
       {showStarred && starredDms.map(renderDmRow)}
@@ -334,6 +335,7 @@ export default function Sidebar({
               >
                 <span className="ch-mark">{c.type === "private" ? <LockKeyholeIcon className="ch-lock" size={11} strokeWidth={1.6} /> : "#"}</span>
                 <span className="ci-name">{c.name}</span>
+                {c.unread > 0 && <span className="channel-unread-indicator" aria-hidden="true" />}
               </button>
             ))}
           {showChannels && shownChannels.length === 0 && (
