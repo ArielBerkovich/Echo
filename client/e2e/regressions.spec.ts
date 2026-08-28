@@ -132,23 +132,21 @@ test("aligns the Direct Messages and main search dividers", async ({ page }) => 
   expect(Math.abs(bottomEdges.sidebar - bottomEdges.main)).toBeLessThanOrEqual(1);
 });
 
-test("aligns the Home filter with the main search field", async ({ page }) => {
+test("opens the Home filter below the sidebar tools", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/");
   await railItem(page, "home").click();
 
-  const [sidebarFilter, mainSearch] = await Promise.all([
-    page.getByTestId("sidebar-filter").boundingBox(),
-    page.getByTestId("search-box-field").boundingBox(),
-  ]);
-  const topEdges = {
-    sidebar: sidebarFilter?.y,
-    main: mainSearch?.y,
-  };
+  const filterToggle = page.getByTestId("sidebar-filter-toggle");
+  await expect(filterToggle).toBeVisible();
+  expect(await page.getByTestId("sidebar-filter").count()).toBe(0);
+  const tools = await page.getByRole("group", { name: "Sidebar actions" }).boundingBox();
+  expect(tools).not.toBeNull();
 
-  expect(topEdges.sidebar).toBeDefined();
-  expect(topEdges.main).toBeDefined();
-  expect(Math.abs(topEdges.sidebar - topEdges.main)).toBeLessThanOrEqual(1);
+  await filterToggle.click();
+  const sidebarFilter = await page.getByTestId("sidebar-filter").boundingBox();
+  expect(sidebarFilter).not.toBeNull();
+  expect(sidebarFilter.y).toBeGreaterThanOrEqual(tools.y + tools.height);
 });
 
 test("opens regular search with the current channel scope", async ({ page }) => {
@@ -165,7 +163,7 @@ test("starts a conversation from the Home Direct Messages button", async ({ page
   await page.goto("/");
 
   const dmSection = page.getByTestId("home-dm-section");
-  const startButton = dmSection.getByTestId("start-dm");
+  const startButton = page.getByTestId("start-dm");
   await expect(startButton).toBeVisible();
   await expect(startButton).toHaveClass(/add-channel/);
   await expect(startButton).toHaveAttribute("aria-label", "New message");
@@ -198,7 +196,7 @@ test("starts a conversation from the Home Direct Messages button", async ({ page
 
 test("shows an inactive Composer before choosing a new message recipient", async ({ page }) => {
   await page.goto("/");
-  await page.getByTestId("home-dm-section").getByTestId("start-dm").click();
+  await page.getByTestId("start-dm").click();
   const modal = page.getByTestId("new-message-modal");
   await expect(modal.getByTestId("composer-editor")).toBeVisible();
   await expect(modal.getByTestId("composer-editor")).toHaveAttribute("contenteditable", "false");
@@ -208,7 +206,7 @@ test("shows an inactive Composer before choosing a new message recipient", async
 
 test("activates the Composer after selecting a new message recipient", async ({ page }) => {
   await page.goto("/");
-  await page.getByTestId("home-dm-section").getByTestId("start-dm").click();
+  await page.getByTestId("start-dm").click();
   const modal = page.getByTestId("new-message-modal");
   await modal.getByTestId("new-message-search-input").fill(fixture.bob.username);
   await modal.getByTestId(`new-message-user-${fixture.bob.username}`).click();
@@ -218,7 +216,7 @@ test("activates the Composer after selecting a new message recipient", async ({ 
 
 test("keeps the new-message draft while changing the recipient chip", async ({ page }) => {
   await page.goto("/");
-  await page.getByTestId("home-dm-section").getByTestId("start-dm").click();
+  await page.getByTestId("start-dm").click();
 
   const modal = page.getByTestId("new-message-modal");
   const draft = `Draft survives recipient changes ${fixture.suffix}`;
