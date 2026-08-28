@@ -2920,7 +2920,8 @@ html[data-mode="dark"] .sidebar {
   color: rgba(255, 255, 255, 0.9);
   font-weight: 650;
 }
-.dms-view .dm-rich.unread:not(.active) .avatar {
+.dms-view .dm-rich.unread:not(.active) .avatar,
+.dm-item.unread:not(.active) .avatar {
   outline: 2px solid var(--on-navy);
   outline-offset: 2px;
 }
