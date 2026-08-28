@@ -899,10 +899,12 @@ export default function ChannelView({
 
   const isDm = channel.type === "dm";
   const dmUser = isDm ? usersById.get(channel.dmUserId) : null;
+  const dmParticipants = (channel.participants || []).filter((person) => person.id !== user.id);
   const dmAvatarName = dmUser?.displayName || channel.dmName || "?";
-  const dmLabel = channel.dmName || dmAvatarName;
+  const dmLabel = channel.dmName || (dmParticipants.length ? dmParticipants.map((person) => person.displayName).join(", ") : dmAvatarName);
   const dmAvatar = dmUser?.avatarUrl || null;
   const isMember = isDm || (channel.members || []).includes(user.id);
+  const isGroupDm = isDm && ((channel.members || []).length > 2 || dmParticipants.length > 1);
 
   useEffect(() => {
     if (!isMember || !canPost || openThreadId) return undefined;
@@ -911,7 +913,7 @@ export default function ChannelView({
   }, [channel.id, canPost, isMember, openThreadId]);
 
   const isCreator = !isDm && channel.createdBy === user.id;
-  const canToggleStarred = isDm && !!dmUser?.id && dmUser.id !== user.id;
+  const canToggleStarred = isDm && dmParticipants.length <= 1 && !!dmUser?.id && dmUser.id !== user.id;
   // #general is the default channel — everyone stays in it, so no Leave action.
   const isGeneral = (channel.name || "").toLowerCase() === "general";
 
@@ -963,11 +965,23 @@ export default function ChannelView({
               type="button"
               className="ch-name ch-name-btn dm-name-btn"
               data-testid="channel-title"
-              title={`View ${dmLabel}'s profile`}
+              title="View profile"
               onClick={() => dmUser?.id && onOpenProfile?.(dmUser.id)}
             >
               {dmLabel}
             </button>
+            {isGroupDm && (
+              <button
+                type="button"
+                className="header-action header-action-icon"
+                data-testid="channel-members"
+                title="View members"
+                aria-label="View members"
+                onClick={() => { setThread(null); setThreadJumpTargetId(null); setShowMembers(true); }}
+              >
+                <UsersRoundIcon size={16} strokeWidth={1.8} />
+              </button>
+            )}
           </>
         ) : (
           <>
@@ -1286,6 +1300,7 @@ export default function ChannelView({
           onAddPeople={onAddPeople}
           onRemoveMember={onRemoveMember}
           onPromoteManager={onPromoteManager}
+          onUpdated={onChannelUpdated}
           onClose={() => setShowMembers(false)}
         />
       ) : showPinned ? (

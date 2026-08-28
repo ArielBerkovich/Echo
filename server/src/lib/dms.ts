@@ -2,7 +2,33 @@ import { Channel } from "../models/Channel.js";
 
 // Deterministic channel name for the DM between two users, regardless of order.
 export function dmName(a, b) {
-  return `dm-${[String(a), String(b)].sort().join("-")}`;
+  const ids = Array.isArray(a) ? a : [a, b];
+  return `dm-${ids.map(String).sort().join("-")}`;
+}
+
+// Group DMs use the same deterministic naming scheme as one-to-one DMs. The
+// member set, rather than the order in which people were selected, identifies
+// the conversation.
+export function ensureGroupDmChannel(currentUserId, otherUserIds) {
+  const memberIds = [...new Set([currentUserId, ...otherUserIds].map(String))];
+  const name = dmName(memberIds);
+  return Channel.findOneAndUpdate(
+    {
+      type: "dm",
+      members: { $all: memberIds },
+      $expr: { $eq: [{ $size: "$members" }, memberIds.length] },
+    },
+    {
+      $setOnInsert: {
+        name,
+        type: "dm",
+        members: memberIds,
+        createdBy: currentUserId,
+      },
+      $pull: { hiddenFor: currentUserId },
+    },
+    { new: true, upsert: true, setDefaultsOnInsert: false }
+  );
 }
 
 // Create the DM if this pair has never messaged, and make it visible to the

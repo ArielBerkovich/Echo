@@ -7,12 +7,19 @@ import Modal from "./Modal.js";
 export default function NewMessageModal({ currentUserId, users, customEmojis, mode, onPrepare, onStart, onClose }) {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [selected, setSelected] = useState(null);
+  const [selected, setSelected] = useState([]);
   const [channel, setChannel] = useState(null);
   const [preparing, setPreparing] = useState(false);
   const [error, setError] = useState(null);
   const composerRef = useRef(null);
-  const draftChannel = { id: "new-message-draft", type: "dm", dmName: selected?.displayName || "recipient" };
+  const prepareRequestRef = useRef(0);
+  const draftChannel = {
+    id: "new-message-draft",
+    type: "dm",
+    dmName: selected.length > 1
+      ? selected.map((user) => user.displayName).join(", ")
+      : selected[0]?.displayName || "recipient",
+  };
 
   useEffect(() => {
     if (!channel || preparing) return undefined;
@@ -35,22 +42,43 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
       .slice(0, 20);
   }, [currentUserId, debouncedQuery, users]);
 
-  async function select(user) {
-    setSelected(user);
+  async function prepare(nextSelected) {
+    const requestId = ++prepareRequestRef.current;
     setChannel(null);
     setError(null);
     setPreparing(true);
     try {
-      setChannel(await onPrepare(user));
+      const nextChannel = await onPrepare(nextSelected);
+      if (requestId === prepareRequestRef.current) setChannel(nextChannel);
     } catch (err) {
-      setError(err.message);
+      if (requestId === prepareRequestRef.current) setError(err.message);
     } finally {
-      setPreparing(false);
+      if (requestId === prepareRequestRef.current) setPreparing(false);
+    }
+  }
+
+  function select(user) {
+    const nextSelected = [...selected, user];
+    setSelected(nextSelected);
+    setQuery("");
+    setDebouncedQuery("");
+    prepare(nextSelected);
+  }
+
+  function remove(userId) {
+    const nextSelected = selected.filter((user) => user.id !== userId);
+    setSelected(nextSelected);
+    setQuery("");
+    setDebouncedQuery("");
+    if (nextSelected.length) prepare(nextSelected);
+    else {
+      setChannel(null);
+      setError(null);
     }
   }
 
   async function handleSent() {
-    if (!selected || !channel) {
+    if (!selected.length || !channel) {
       setError("Select a recipient first.");
       return;
     }
@@ -66,25 +94,29 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
     <Modal title="New Message" className="new-message-modal" testId="new-message-modal" closeDisabled={preparing} onClose={onClose}>
         <div className="new-message-layout">
           <div className="new-message-picker">
-            {selected ? (
+            {selected.length ? (
               <div className="new-message-search new-message-search-selected" data-testid="new-message-search">
-                <span className="forward-chip new-message-recipient" data-testid="new-message-recipient">
-                  <span>{selected.displayName}</span>
-                  <button
-                    type="button"
-                    aria-label={`Remove ${selected.displayName}`}
-                    onMouseDown={(event) => event.stopPropagation()}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setSelected(null);
-                      setChannel(null);
-                      setQuery("");
-                      setDebouncedQuery("");
-                    }}
-                  >
+                {selected.map((user) => <span className="forward-chip new-message-recipient" data-testid="new-message-recipient" key={user.id}>
+                  <span>{user.displayName}</span>
+                  <button type="button" aria-label={`Remove ${user.displayName}`} onMouseDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); remove(user.id); }}>
                     <XIcon size={13} aria-hidden="true" />
                   </button>
-                </span>
+                </span>)}
+                <input
+                  className="new-message-search-input new-message-add-input"
+                  data-testid="new-message-search-input"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key !== "Enter") return;
+                    const firstMatch = matches.find((user) => !selected.some((candidate) => candidate.id === user.id));
+                    if (!firstMatch) return;
+                    event.preventDefault();
+                    select(firstMatch);
+                  }}
+                  placeholder="Add people"
+                  autoFocus
+                />
               </div>
             ) : (
               <label className="new-message-search people-filter" data-testid="new-message-search">
@@ -113,15 +145,15 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
               </label>
             )}
 
-            {!selected && debouncedQuery ? <div className="new-message-people" role="listbox" aria-label="People">
-              {matches.length ? matches.map((user) => (
+            {debouncedQuery ? <div className="new-message-people" role="listbox" aria-label="People">
+              {matches.filter((user) => !selected.some((candidate) => candidate.id === user.id)).length ? matches.filter((user) => !selected.some((candidate) => candidate.id === user.id)).map((user) => (
                 <button
                   type="button"
                   key={user.id}
-                  className={`new-message-person ${selected?.id === user.id ? "selected" : ""}`}
+                  className="new-message-person"
                   data-testid={`new-message-user-${user.username}`}
                   role="option"
-                  aria-selected={selected?.id === user.id}
+                  aria-selected="false"
                   onClick={() => select(user)}
                 >
                   <Avatar name={user.displayName} src={user.avatarUrl} size={34} />

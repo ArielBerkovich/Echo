@@ -102,33 +102,36 @@ export default function Sidebar({
   const shownChannels = channels
     .filter((c) => !hiddenSet.has(c.id))
     .filter((c) => !f || c.name.toLowerCase().includes(f));
-  const shownDms = dms.filter((c) => !f || (c.withUser.displayName || "").toLowerCase().includes(f));
+  const dmPeople = (conversation) => conversation.participants?.filter((person) => person.id !== user.id) || [conversation.withUser];
+  const dmLabel = (conversation) => dmPeople(conversation).map((person) => person.displayName).join(", ");
+  const shownDms = dms.filter((c) => !f || dmLabel(c).toLowerCase().includes(f));
   // Starred DMs get their own section; the rest stay under "Direct Messages".
-  const starredDms = shownDms.filter((c) => starredIds.has(c.withUser.id));
-  const regularDms = shownDms.filter((c) => !starredIds.has(c.withUser.id));
+  const starredDms = shownDms.filter((c) => dmPeople(c).length === 1 && starredIds.has(dmPeople(c)[0].id));
+  const regularDms = shownDms.filter((c) => !starredDms.includes(c));
   const starredChannels = shownChannels.filter((c) => starredChannelIds.has(c.id));
   const regularChannels = shownChannels.filter((c) => !starredChannelIds.has(c.id));
 
   // Compact DM row used by both the Starred and Direct Messages sections.
   const renderDmRow = (conv) => {
-    const active = activeChannel?.type === "dm" && activeChannel?.dmUserId === conv.withUser.id;
+    const people = dmPeople(conv);
+    const active = activeChannel?.type === "dm" && activeChannel?.id === conv.id;
     const unread = conv.unread > 0;
-    const isStarred = starredIds.has(conv.withUser.id);
-    const label = conv.isSelf ? `${conv.withUser.displayName} (you)` : conv.withUser.displayName;
+    const isStarred = people.length === 1 && starredIds.has(people[0].id);
+    const label = conv.isSelf ? `${conv.withUser.displayName} (you)` : dmLabel(conv);
     return (
       <div key={conv.id} className={`channel-item dm-item ${active ? "active" : ""} ${unread ? "unread" : ""}`} data-testid={`dm-row-${slug(conv.withUser.displayName)}`}>
         <button
           className="dm-open"
           data-testid={`dm-open-${slug(conv.withUser.displayName)}`}
-          onClick={() => onOpenDm(conv.withUser, conv.isSelf)}
+          onClick={() => onOpenDm({ ...conv.withUser, participants: people }, conv.isSelf)}
           onMouseEnter={() => onPrefetchDm?.(conv.id)}
           onFocus={() => onPrefetchDm?.(conv.id)}
         >
           <PresenceAvatar
-            name={conv.withUser.displayName}
-            src={conv.withUser.avatarUrl}
+            name={label}
+            src={people.length === 1 ? people[0].avatarUrl : null}
             size={20}
-            online={onlineIds.has(conv.withUser.id)}
+            online={people.length === 1 && onlineIds.has(people[0].id)}
             showPresence={!(["azure", "system"].includes(conv.withUser.username))}
           />
           <span className="dm-name">{label}</span>
@@ -215,22 +218,24 @@ export default function Sidebar({
             </button>
           </div>
           {shownDms.filter((c) => !c.isSelf).map((conv) => {
-            const active = activeChannel?.type === "dm" && activeChannel?.dmUserId === conv.withUser.id;
+            const people = dmPeople(conv);
+            const label = dmLabel(conv);
+            const active = activeChannel?.type === "dm" && activeChannel?.id === conv.id;
             const unread = conv.unread > 0;
-            const isStarred = starredIds.has(conv.withUser.id);
+            const isStarred = people.length === 1 && starredIds.has(people[0].id);
             return (
-              <div key={conv.id} className={`dm-rich ${active ? "active" : ""} ${unread ? "unread" : ""}`} data-testid={`dm-row-${slug(conv.withUser.displayName)}`}>
-                <button className="dm-open" data-testid={`dm-open-${slug(conv.withUser.displayName)}`} onClick={() => onOpenDm(conv.withUser)}>
+              <div key={conv.id} className={`dm-rich ${active ? "active" : ""} ${unread ? "unread" : ""}`} data-testid={`dm-row-${slug(label)}`}>
+                <button className="dm-open" data-testid={`dm-open-${slug(label)}`} onClick={() => onOpenDm({ ...conv.withUser, participants: people })}>
                   <PresenceAvatar
-                    name={conv.withUser.displayName}
-                    src={conv.withUser.avatarUrl}
+                    name={label}
+                    src={people.length === 1 ? people[0].avatarUrl : null}
                     size={38}
-                    online={onlineIds.has(conv.withUser.id)}
+                    online={people.length === 1 && onlineIds.has(people[0].id)}
                     showPresence={!(["azure", "system"].includes(conv.withUser.username))}
                   />
                   <div className="dm-text">
                     <div className="dm-row-top">
-                      <span className="dm-name" dir="auto">{conv.withUser.displayName}</span>
+                      <span className="dm-name" dir="auto">{label}</span>
                       {unread && <span className="unread-badge">{conv.unread > 99 ? "99+" : conv.unread}</span>}
                       <span className="dm-time">{relativeTime(conv.lastAt)}</span>
                     </div>
