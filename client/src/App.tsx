@@ -211,6 +211,15 @@ export default function App() {
       || null;
   }
 
+  function dmRouteName(conversation) {
+    if (!conversation) return null;
+    if (!conversation.isGroup) return conversation.withUser?.username || null;
+    const people = (conversation.participants || []).filter((person) => person.id !== user.id);
+    return conversation.name?.startsWith("dm-")
+      ? people.map((person) => person.displayName).join(", ")
+      : conversation.name;
+  }
+
   function activeDmFromConversation(conversation) {
     const participants = conversation.participants || (conversation.withUser ? [conversation.withUser] : []);
     const people = participants.filter((person) => person.id !== user.id);
@@ -540,8 +549,7 @@ export default function App() {
 
     const currentChannel = activeChannelRef.current;
     const routeConversation = route.convId?.toLowerCase();
-    const currentRouteName = conversationRouteName(currentChannel)?.toLowerCase();
-    if (route.convId && (currentChannel?.id === route.convId || currentRouteName === routeConversation)) {
+    if (route.convId && currentChannel?.id === route.convId) {
       setViewState(route.view);
       applyRouteMessageTarget(currentChannel.id);
       return;
@@ -550,7 +558,7 @@ export default function App() {
     if (route.convType === "dm" && route.convId) {
       let dm = conversations.find((conversation) =>
         conversation.id === route.convId
-        || conversation.withUser.username?.toLowerCase() === routeConversation
+        || dmRouteName(conversation)?.toLowerCase() === routeConversation
       );
       if (!dm) {
         const person = users.find((candidate) => candidate.username.toLowerCase() === routeConversation);
@@ -596,6 +604,16 @@ export default function App() {
         };
         setActiveChannel(activeDm);
         applyRouteMessageTarget(dm.id);
+        if (route.convId !== dm.id) {
+          navigate(workspacePath({
+            view: route.view === "home" ? "home" : "dms",
+            convId: dm.id,
+            convName: dm.name,
+            convType: "dm",
+            messageId: route.messageId,
+            threadId: route.threadId,
+          }), { replace: true });
+        }
         return;
       }
     }
