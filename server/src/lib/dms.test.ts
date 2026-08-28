@@ -18,6 +18,56 @@ describe("DM helpers", () => {
     assert.equal(dmName(ids).length, 63);
   });
 
+  it("deduplicates members before creating a group DM", async () => {
+    const currentUserId = new mongoose.Types.ObjectId();
+    const otherUserId = new mongoose.Types.ObjectId();
+    const expectedChannel = { id: "deduplicated-group" };
+    const originalFind = Channel.find;
+    const originalCreate = Channel.create;
+    let createCall;
+    Channel.find = async () => [];
+    Channel.create = async (...args) => {
+      createCall = args;
+      return expectedChannel;
+    };
+
+    try {
+      await ensureGroupDmChannel(currentUserId, [otherUserId, otherUserId]);
+      assert.deepEqual(createCall[0].members, [String(currentUserId), String(otherUserId)]);
+    } finally {
+      Channel.find = originalFind;
+      Channel.create = originalCreate;
+    }
+  });
+
+  it("reuses only an exact member-set match, including renamed conversations", async () => {
+    const currentUserId = new mongoose.Types.ObjectId();
+    const otherUserId = new mongoose.Types.ObjectId();
+    const thirdUserId = new mongoose.Types.ObjectId();
+    const smaller = { _id: new mongoose.Types.ObjectId(), members: [currentUserId, otherUserId] };
+    const exact = { _id: new mongoose.Types.ObjectId(), members: [thirdUserId, currentUserId, otherUserId] };
+    const originalFind = Channel.find;
+    const originalUpdate = Channel.findOneAndUpdate;
+    let updateCall;
+    Channel.find = async () => [smaller, exact];
+    Channel.findOneAndUpdate = async (...args) => {
+      updateCall = args;
+      return exact;
+    };
+
+    try {
+      assert.equal(await ensureGroupDmChannel(currentUserId, [otherUserId, thirdUserId]), exact);
+      assert.deepEqual(updateCall, [
+        { _id: exact._id },
+        { $pull: { hiddenFor: currentUserId } },
+        { new: true },
+      ]);
+    } finally {
+      Channel.find = originalFind;
+      Channel.findOneAndUpdate = originalUpdate;
+    }
+  });
+
   it("creates a deterministic group DM for the selected members", async () => {
     const currentUserId = new mongoose.Types.ObjectId();
     const otherUserId = new mongoose.Types.ObjectId();

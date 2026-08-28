@@ -9,6 +9,7 @@ describe("workspace routes", () => {
     assert.equal(workspacePath({ view: "home", convId: "id-1", convName: "channel 1", convType: "public" }), "/channels/id-1");
     assert.equal(workspacePath({ view: "dms", convId: "id-2", convName: "alice", convType: "dm" }), "/dms/id-2");
     assert.equal(workspacePath({ view: "home", convId: "id-2", convName: "alice", convType: "dm" }), "/home/dms/id-2");
+    assert.equal(workspacePath({ view: "dms", convName: "Alice Test, Bob Builder", convType: "dm" }), "/dms/Alice%20Test%2C%20Bob%20Builder");
     assert.equal(workspacePath({ view: "home", convId: "legacy-id", convType: "public" }), "/channels/legacy-id");
     assert.equal(workspacePath({ view: "home", convId: "abc", convType: "public", messageId: "507f1f77bcf86cd799439011" }), "/channels/abc?message=507f1f77bcf86cd799439011");
     assert.equal(workspacePath({ view: "dms", convId: "id-2", convName: "alice", convType: "dm", messageId: "507f1f77bcf86cd799439011" }), "/dms/id-2?message=507f1f77bcf86cd799439011");
@@ -44,6 +45,9 @@ describe("workspace routes", () => {
       }
     );
     assert.equal(parseWorkspacePath("/dms/dm-id", "?message=message-id&thread=root-id").threadId, "root-id");
+    assert.deepEqual(parseWorkspacePath("/home/dms/dm-id"), {
+      overlay: null, view: "home", convId: "dm-id", convType: "dm", searchQuery: null,
+    });
     assert.equal(parseWorkspacePath("/search", "?q=release%20notes").searchQuery, "release notes");
   });
 
