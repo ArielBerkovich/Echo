@@ -2445,6 +2445,7 @@ html[data-mode="dark"] .backend-connection-error {
   right: -5px;
   background: var(--danger);
   color: var(--navy-900);
+  text-shadow: -0.5px 0 #fff, 0.5px 0 #fff, 0 -0.5px #fff, 0 0.5px #fff;
   font-size: 10px;
   font-weight: 700;
   min-width: 16px;
@@ -2477,6 +2478,7 @@ html[data-mode="dark"] .backend-connection-error {
   border-radius: 999px;
   background: color-mix(in srgb, var(--surface-2) 88%, var(--rail-bg));
   box-shadow: 0 2px 7px rgba(0, 0, 0, 0.3);
+  text-shadow: none;
   font-size: 15px;
   line-height: 1;
 }
