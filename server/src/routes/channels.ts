@@ -14,6 +14,7 @@ import {
 import { deliverMessage, sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, applySurveyVote } from "../deliver.js";
 import { normalizeChannelName } from "../automation.js";
 import { ActivityEvent } from "../models/ActivityEvent.js";
+import { isValidChannelName } from "../lib/channelName.js";
 
 // Whitelist attachment fields (keys produced by /api/uploads). Mirrors the
 // socket sender so the REST and realtime paths behave identically.
@@ -239,6 +240,9 @@ channelsRouter.post("/", async (req, res) => {
   const visibility = type === "private" ? "private" : "public";
 
   const normalized = String(name).toLowerCase().trim();
+  if (!isValidChannelName(normalized)) {
+    return res.status(400).json({ error: "channel names may contain lowercase letters, numbers, and single dashes between words" });
+  }
   const existing = await Channel.findOne({ name: normalized });
   if (existing) return res.status(409).json({ error: "channel name already exists" });
 

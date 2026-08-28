@@ -6,6 +6,7 @@ import { Message } from "../models/Message.js";
 import { Read } from "../models/Read.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { ensureDmChannel, ensureGroupDmChannel, ensureSelfDmChannel } from "../lib/dms.js";
+import { isValidChannelName } from "../lib/channelName.js";
 
 export const dmsRouter = Router();
 dmsRouter.use(requireAuth);
@@ -113,8 +114,8 @@ dmsRouter.post("/:id/convert", async (req, res) => {
     return res.status(403).json({ error: "only the group DM creator can convert this conversation" });
   }
   const name = String(req.body?.name || "").trim().toLowerCase();
-  if (!name || name.length > 64 || !/^[a-z0-9_-]+$/.test(name)) {
-    return res.status(400).json({ error: "channel names may contain only lowercase English letters (a-z), numbers, dashes, and underscores" });
+  if (!isValidChannelName(name)) {
+    return res.status(400).json({ error: "channel names may contain lowercase letters, numbers, and single dashes between words" });
   }
   const existing = await Channel.findOne({ name, _id: { $ne: channel._id } });
   if (existing) return res.status(409).json({ error: "that channel name is already in use" });
