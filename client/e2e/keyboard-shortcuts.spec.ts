@@ -121,7 +121,7 @@ test.describe("documented keyboard shortcuts", () => {
     await pane.press("ArrowDown");
     await pane.press("Enter");
     await expect(page).toHaveURL(
-      new RegExp(`/channels/${fixture.generalChannel.name}\\?message=${fixture.messages.searchHit.id}`)
+      new RegExp(`/channels/${fixture.generalChannel.id}\\?message=${fixture.messages.searchHit.id}`)
     );
     await expect(messageById(page, fixture.messages.searchHit.id)).toBeVisible();
   });
