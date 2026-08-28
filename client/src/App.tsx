@@ -512,17 +512,7 @@ export default function App() {
       const dm = conversations.find((d) => d.id === saved.convId);
       if (dm) {
         nextView = "dms";
-        active = {
-          id: dm.id,
-          type: "dm",
-          name: dm.name,
-          dmName: dm.isGroup ? (dm.name?.startsWith("dm-") ? dm.participants.filter((person) => person.id !== user.id).map((person) => person.displayName).join(", ") : dm.name) : dm.withUser.displayName,
-          dmUserId: dm.isGroup ? undefined : dm.withUser.id,
-          participants: dm.participants,
-          members: dm.participants?.map((person) => person.id),
-          memberCount: dm.memberCount ?? dm.participants?.length,
-          createdBy: dm.createdBy,
-        };
+        active = activeDmFromConversation(dm);
       }
     } else if (!isMobileViewport() && saved?.convId) {
       const ch = chs.find((c) => c.id === saved.convId);
@@ -595,18 +585,7 @@ export default function App() {
       }
       if (dm) {
         setViewState(route.view === "home" ? "home" : "dms");
-        const activeDm = {
-          id: dm.id,
-          type: "dm",
-          name: dm.name,
-          dmName: dm.isGroup ? (dm.name?.startsWith("dm-") ? dm.participants.filter((person) => person.id !== user.id).map((person) => person.displayName).join(", ") : dm.name) : dm.withUser.displayName,
-          dmUsername: dm.isGroup ? undefined : dm.withUser.username,
-          dmUserId: dm.isGroup ? undefined : dm.withUser.id,
-          participants: dm.participants,
-          members: dm.participants?.map((person) => person.id),
-          memberCount: dm.memberCount ?? dm.participants?.length,
-          createdBy: dm.createdBy,
-        };
+        const activeDm = activeDmFromConversation(dm);
         setActiveChannel(activeDm);
         applyRouteMessageTarget(dm.id);
         if (route.convId !== dm.id) {

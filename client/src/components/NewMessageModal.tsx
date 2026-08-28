@@ -41,6 +41,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
         || user.username.toLowerCase().includes(normalized))
       .slice(0, 20);
   }, [currentUserId, debouncedQuery, users]);
+  const availableMatches = matches.filter((user) => !selected.some((candidate) => candidate.id === user.id));
 
   async function prepare(nextSelected) {
     const requestId = ++prepareRequestRef.current;
@@ -109,7 +110,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
                   onChange={(event) => setQuery(event.target.value)}
                   onKeyDown={(event) => {
                     if (event.key !== "Enter") return;
-                    const firstMatch = matches.find((user) => !selected.some((candidate) => candidate.id === user.id));
+                    const firstMatch = availableMatches[0];
                     if (!firstMatch) return;
                     event.preventDefault();
                     select(firstMatch);
@@ -146,7 +147,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
             )}
 
             {debouncedQuery ? <div className="new-message-people" role="listbox" aria-label="People">
-              {matches.filter((user) => !selected.some((candidate) => candidate.id === user.id)).length ? matches.filter((user) => !selected.some((candidate) => candidate.id === user.id)).map((user) => (
+              {availableMatches.length ? availableMatches.map((user) => (
                 <button
                   type="button"
                   key={user.id}
