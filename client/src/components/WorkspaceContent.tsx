@@ -64,14 +64,6 @@ export default function WorkspaceContent({ view, search, browse, feeds, conversa
 }
 
 function ActiveWorkspaceView({ view, search, browse, feeds, conversation }) {
-  const { channel, ...conversationProps } = conversation;
-  const canShowConversation = !search.query
-    && !!channel
-    && (view === "home" || (view === "dms" && channel.type === "dm"));
-  const keepConversationMounted = canShowConversation || (view === "activity" && !!channel);
-  const channelContent = keepConversationMounted
-    ? <ChannelView key={channel.id} channel={channel} {...conversationProps} />
-    : null;
   let content;
   if (search.query) {
     content = <SearchResults query={search.query} onJump={search.onJump} onClose={search.onClose} />;
@@ -110,24 +102,16 @@ function ActiveWorkspaceView({ view, search, browse, feeds, conversation }) {
     );
   } else if (view === "settings") {
     content = <SettingsModal {...feeds.settings} />;
-  } else if (!canShowConversation) {
+  } else if (!conversation.channel || (view !== "home" && conversation.channel.type !== "dm")) {
     content = (
       <div className="empty-pane">
         {view === "dms" ? "Select a conversation, or start a new one." : "Search to start a conversation."}
       </div>
     );
-  } else if (!keepConversationMounted) {
-    content = null;
+  } else {
+    const { channel, ...props } = conversation;
+    content = <ChannelView key={channel.id} channel={channel} {...props} />;
   }
 
-  return (
-    <Suspense fallback={<div className="empty-state"><p>Loading…</p></div>}>
-      {channelContent ? (
-        <div style={canShowConversation ? undefined : { display: "none" }} aria-hidden={!canShowConversation}>
-          {channelContent}
-        </div>
-      ) : null}
-      {!canShowConversation ? content : null}
-    </Suspense>
-  );
+  return <Suspense fallback={<div className="empty-state"><p>Loading…</p></div>}>{content}</Suspense>;
 }
