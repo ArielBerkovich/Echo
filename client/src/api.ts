@@ -282,6 +282,11 @@ export const api = {
       body: { optionIds },
     }),
   getPinned: (channelId) => request(`/channels/${channelId}/pinned`),
+  getFiles: (channelId, { before = "", limit = 50 } = {}) => {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (before) params.set("before", before);
+    return request(`/channels/${channelId}/files?${params.toString()}`);
+  },
   listDms: () => request("/dms"),
   openDm: (userId) => request("/dms", { method: "POST", body: Array.isArray(userId) ? { userIds: userId } : { userId } }),
   renameGroupDm: (id, name) => request(`/dms/${id}`, { method: "PATCH", body: { name } }),

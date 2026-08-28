@@ -113,3 +113,52 @@ test("opens a CSV attachment from its compact header and closes on backdrop clic
   await page.locator(".text-viewer-backdrop").click({ position: { x: 4, y: 4 } });
   await expect(dialog).toBeHidden();
 });
+
+test("keeps Files available and jumps duplicate filenames to their own messages", async ({ page }) => {
+  await page.goto(`/channels/${fixture.projectChannel.id}`);
+  await expect(page.getByTestId("channel-files")).toBeVisible();
+
+  const name = `duplicate-dragged-${fixture.suffix}.txt`;
+  const firstAttachment = (await uploadAsToken(page, fixture.alice.token, {
+    name,
+    mimeType: "text/plain",
+    buffer: Buffer.from("first duplicate", "utf8"),
+  })).attachments[0];
+  const first = await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body: `First duplicate attachment ${fixture.suffix}`,
+      attachments: [firstAttachment],
+    },
+  });
+  const secondAttachment = (await uploadAsToken(page, fixture.alice.token, {
+    name,
+    mimeType: "text/plain",
+    buffer: Buffer.from("second duplicate", "utf8"),
+  })).attachments[0];
+  const second = await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body: `Second duplicate attachment ${fixture.suffix}`,
+      attachments: [secondAttachment],
+    },
+  });
+
+  await page.goto(`/channels/${fixture.generalChannel.id}`);
+  await page.getByTestId("channel-files").click();
+  const rows = page.locator(".file-row").filter({ has: page.locator("strong", { hasText: name }) });
+  await expect(rows).toHaveCount(2);
+
+  // Files are newest-first, so the second row is the first uploaded message.
+  await rows.nth(1).getByRole("button", { name: `Jump to the message containing ${name}` }).click();
+  await expect(page).toHaveURL(new RegExp(`message=${first.message.id}`));
+  await expect(messageById(page, first.message.id)).toBeVisible();
+
+  await page.getByTestId("channel-files").click();
+  const refreshedRows = page.locator(".file-row").filter({ has: page.locator("strong", { hasText: name }) });
+  await refreshedRows.nth(0).getByRole("button", { name: `Jump to the message containing ${name}` }).click();
+  await expect(page).toHaveURL(new RegExp(`message=${second.message.id}`));
+  await expect(messageById(page, second.message.id)).toBeVisible();
+});

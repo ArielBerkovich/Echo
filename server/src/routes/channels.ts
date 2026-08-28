@@ -796,6 +796,42 @@ channelsRouter.get("/:id/pinned", async (req, res) => {
   res.json({ messages: docs.map((m) => m.toPublicJSON()) });
 });
 
+// GET /api/channels/:id/files — attachments in a conversation, newest first.
+// Unlike message history this includes thread replies, because a file shared in
+// a thread is still shared with the whole conversation.
+channelsRouter.get("/:id/files", async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(404).json({ error: "channel not found" });
+  }
+  const channel = await Channel.findById(req.params.id);
+  if (!channel || channel.isArchived) return res.status(404).json({ error: "channel not found" });
+  if (channel.type !== "public" && !channel.members.some((m) => m.equals(req.user._id))) {
+    return res.status(403).json({ error: "access denied" });
+  }
+
+  const limit = Math.min(Math.max(Number.parseInt(String(req.query.limit || "50"), 10) || 50, 1), 100);
+  const query = { channel: channel._id, "attachments.0": { $exists: true } };
+  if (req.query.before) {
+    const before = new Date(String(req.query.before));
+    if (!Number.isNaN(before.getTime())) query.createdAt = { $lt: before };
+  }
+  const docs = await Message.find(query).sort({ createdAt: -1 }).limit(limit).populate("author");
+  const files = docs.flatMap((message) => {
+    const publicMessage = message.toPublicJSON();
+    return publicMessage.attachments.map((attachment) => ({
+      ...attachment,
+      // Use the public message id explicitly: attachment filenames and object
+      // keys can repeat (for example after a forward), but this origin cannot.
+      id: `${publicMessage.id}:${attachment.key}`,
+      messageId: publicMessage.id,
+      createdAt: publicMessage.createdAt,
+      author: publicMessage.author,
+      parentId: publicMessage.parentId,
+    }));
+  });
+  res.json({ files, nextBefore: docs.length === limit ? docs[docs.length - 1].createdAt : null });
+});
+
 // POST /api/channels/:id/messages — send a message (REST equivalent of the
 // `message:send` socket event). Body: { body, parentId?, attachments? }.
 channelsRouter.post("/:id/messages", async (req, res) => {
