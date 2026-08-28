@@ -44,6 +44,15 @@ function DestinationIcon({ destination }) {
   return <Avatar name={destination.label} src={destination.avatarUrl} size={34} />;
 }
 
+function uniqueById(items) {
+  const seen = new Set();
+  return items.filter((item) => {
+    if (!item?.id || seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
+}
+
 // Recipient-first forwarding flow. Search and selection stay synchronous so
 // keyboard input always acts on exactly what is visible.
 export default function ForwardModal({ message, channels = [], dms = [], users = [], customEmojis = [], channelId = "", channelType = "public", currentUserId = "", usersById = new Map(), renderMarkdown, emojiMap = {}, onAddCustomEmoji, onForward, onSuccess, onClose }) {
@@ -67,19 +76,24 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
       handle: channel.type === "private" ? "Private channel" : "Public channel",
       icon: channel.type === "private" ? "🔒" : "#",
       }));
-    const dmItems = dms
+    const dmItems = uniqueById(dms)
       .filter((dm) => dm?.id && dm.withUser?.id)
-      .map((dm) => ({
+      .map((dm) => {
+      const participants = (dm.participants || [dm.withUser]).filter((person) => person?.id && person.id !== currentUserId);
+      const isGroup = dm.isGroup || participants.length > 1;
+      return {
       id: dm.id,
       kind: "dm",
-      userId: dm.withUser.id,
-      label: dm.withUser.displayName || dm.withUser.username || "Direct message",
-      handle: "Direct message",
-      avatarUrl: dm.withUser?.avatarUrl || null,
-      username: dm.withUser?.username || "",
-      }));
-    const knownDmUserIds = new Set(dmItems.map((dm) => dm.userId));
-    const people = users
+      userId: isGroup ? undefined : dm.withUser.id,
+      label: participants.map((person) => person.displayName || person.username).join(", ") || "Direct message",
+      handle: isGroup ? "Group direct message" : "Direct message",
+      avatarUrl: !isGroup ? dm.withUser?.avatarUrl || null : null,
+      username: !isGroup ? dm.withUser?.username || "" : "",
+      isGroup,
+      };
+      });
+    const knownDmUserIds = new Set(dmItems.filter((dm) => !dm.isGroup).map((dm) => dm.userId));
+    const people = uniqueById(users)
       .filter((user) => user?.id && user?.username && !knownDmUserIds.has(user.id))
       .map((user) => ({
         id: user.id,
@@ -92,7 +106,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
     return {
       all: [...channelItems, ...dmItems, ...people],
     };
-  }, [channels, dms, users]);
+  }, [channels, currentUserId, dms, users]);
 
   const hasQuery = Boolean(query.trim());
   const resultGroups = useMemo(() => {

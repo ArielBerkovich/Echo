@@ -10,7 +10,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "../api.js";
 import { getSocket } from "../socket.js";
-import Avatar from "./Avatar.js";
+import Avatar, { GroupAvatar } from "./Avatar.js";
 import ReactionPicker from "./ReactionPicker.js";
 import ThreadPanel from "./ThreadPanel.js";
 import ForwardModal from "./ForwardModal.js";
@@ -899,10 +899,12 @@ export default function ChannelView({
 
   const isDm = channel.type === "dm";
   const dmUser = isDm ? usersById.get(channel.dmUserId) : null;
+  const dmParticipants = (channel.participants || []).filter((person) => person.id !== user.id);
   const dmAvatarName = dmUser?.displayName || channel.dmName || "?";
-  const dmLabel = channel.dmName || dmAvatarName;
+  const dmLabel = channel.dmName || (dmParticipants.length ? dmParticipants.map((person) => person.displayName).join(", ") : dmAvatarName);
   const dmAvatar = dmUser?.avatarUrl || null;
   const isMember = isDm || (channel.members || []).includes(user.id);
+  const isGroupDm = isDm && ((channel.members || []).length > 2 || dmParticipants.length > 1);
 
   useEffect(() => {
     if (!isMember || !canPost || openThreadId) return undefined;
@@ -911,7 +913,9 @@ export default function ChannelView({
   }, [channel.id, canPost, isMember, openThreadId]);
 
   const isCreator = !isDm && channel.createdBy === user.id;
-  const canToggleStarred = isDm && !!dmUser?.id && dmUser.id !== user.id;
+  const canToggleStarred = isDm && dmParticipants.length <= 1 && !!dmUser?.id && dmUser.id !== user.id;
+  const canToggleGroupDmStarred = isGroupDm && isMember;
+  const dmStarred = isGroupDm ? isChannelStarred : isStarred;
   // #general is the default channel — everyone stays in it, so no Leave action.
   const isGeneral = (channel.name || "").toLowerCase() === "general";
 
@@ -945,29 +949,49 @@ export default function ChannelView({
       <header className="channel-header" data-testid="channel-header">
         {isDm ? (
           <>
-            {canToggleStarred && (
+            {(canToggleStarred || canToggleGroupDmStarred) && (
               <button
                 type="button"
-                className={`dm-starred-toggle ${isStarred ? "active" : ""}`}
+                className={`dm-starred-toggle ${dmStarred ? "active" : ""}`}
                 data-testid="dm-starred-toggle"
-                aria-label={isStarred ? `Remove ${dmLabel} from Starred` : `Mark ${dmLabel} as Starred`}
-                aria-pressed={isStarred}
-                title={isStarred ? "Remove from Starred" : "Mark as Starred"}
-                onClick={() => onToggleStarred?.(dmUser.id)}
+                aria-label={dmStarred ? `Remove ${dmLabel} from Starred` : `Mark ${dmLabel} as Starred`}
+                aria-pressed={dmStarred}
+                title={dmStarred ? "Remove from Starred" : "Mark as Starred"}
+                onClick={() => isGroupDm ? onToggleChannelStarred?.(channel.id) : onToggleStarred?.(dmUser.id)}
               >
-                <StarIcon size={20} strokeWidth={1.9} fill={isStarred ? "currentColor" : "none"} />
+                <StarIcon size={20} strokeWidth={1.9} fill={dmStarred ? "currentColor" : "none"} />
               </button>
             )}
-            <Avatar name={dmAvatarName} src={dmAvatar} size={36} />
-            <button
-              type="button"
-              className="ch-name ch-name-btn dm-name-btn"
-              data-testid="channel-title"
-              title={`View ${dmLabel}'s profile`}
-              onClick={() => dmUser?.id && onOpenProfile?.(dmUser.id)}
-            >
-              {dmLabel}
-            </button>
+            {isGroupDm ? <GroupAvatar size={36} /> : <Avatar name={dmAvatarName} src={dmAvatar} size={36} />}
+            {isGroupDm ? (
+              <span className="ch-name dm-name-btn" data-testid="channel-title">
+                {dmLabel}
+              </span>
+            ) : (
+              <button
+                type="button"
+                className="ch-name ch-name-btn dm-name-btn"
+                data-testid="channel-title"
+                title="View profile"
+                onClick={() => dmUser?.id && onOpenProfile?.(dmUser.id)}
+              >
+                {dmLabel}
+              </button>
+            )}
+            {isGroupDm && (
+              <div className="header-actions">
+                <button
+                  type="button"
+                  className="header-action header-action-icon"
+                  data-testid="channel-members"
+                  title="View members"
+                  aria-label="View members"
+                  onClick={() => { setThread(null); setThreadJumpTargetId(null); setShowMembers(true); }}
+                >
+                  <UsersRoundIcon size={16} strokeWidth={1.8} />
+                </button>
+              </div>
+            )}
           </>
         ) : (
           <>
@@ -1054,7 +1078,7 @@ export default function ChannelView({
             <div className="empty-state">
               {isDm ? (
                 <>
-                  <Avatar name={dmAvatarName} src={dmAvatar} size={56} />
+                  {isGroupDm ? <GroupAvatar size={56} /> : <Avatar name={dmAvatarName} src={dmAvatar} size={56} />}
                   <h3>{dmLabel}</h3>
                   <p>This is the start of your direct message history. Say hello! 👋</p>
                 </>
@@ -1286,6 +1310,7 @@ export default function ChannelView({
           onAddPeople={onAddPeople}
           onRemoveMember={onRemoveMember}
           onPromoteManager={onPromoteManager}
+          onUpdated={onChannelUpdated}
           onClose={() => setShowMembers(false)}
         />
       ) : showPinned ? (

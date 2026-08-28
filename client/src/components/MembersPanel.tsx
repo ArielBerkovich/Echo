@@ -1,14 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { api } from "../api.js";
 import { SearchIcon, UsersRoundIcon, XIcon } from "lucide-react";
 import Avatar from "./Avatar.js";
 import ConfirmDialog from "./ConfirmDialog.js";
 
-export default function MembersPanel({ channel, users = [], onOpenProfile, onAddPeople, onRemoveMember, onPromoteManager, onClose }) {
+export default function MembersPanel({ channel, users = [], onOpenProfile, onAddPeople, onRemoveMember, onPromoteManager, onUpdated, onClose }) {
   const [query, setQuery] = useState("");
   const [removeTarget, setRemoveTarget] = useState(null);
-  const [removeError, setRemoveError] = useState(null);
+  const [memberError, setMemberError] = useState(null);
+  const [managementError, setManagementError] = useState(null);
   const [removing, setRemoving] = useState(false);
   const [promotingId, setPromotingId] = useState(null);
+  const [editName, setEditName] = useState(false);
+  const [name, setName] = useState(channel.name?.startsWith("dm-") ? "" : channel.name || "");
+  const [savingName, setSavingName] = useState(false);
+  const [convertOpen, setConvertOpen] = useState(false);
+  const [converting, setConverting] = useState(false);
   const addPeopleRef = useRef(null);
   const searchRef = useRef(null);
 
@@ -20,13 +27,17 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
 
+  const memberIds = channel.members?.length
+    ? channel.members
+    : (channel.participants || []).map((member) => member.id);
   const members = useMemo(() => {
     const byId = new Map(users.map((user) => [user.id, user]));
-    return (channel.members || [])
-      .map((id) => byId.get(id))
+    const participantById = new Map((channel.participants || []).map((user) => [user.id, user]));
+    return memberIds
+      .map((id) => byId.get(id) || participantById.get(id))
       .filter(Boolean)
       .sort((a, b) => a.displayName.localeCompare(b.displayName));
-  }, [channel.members, users]);
+  }, [channel.participants, memberIds, users]);
   const normalizedQuery = query.trim().toLowerCase();
   const shownMembers = normalizedQuery
     ? members.filter(
@@ -35,8 +46,10 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
           member.username.toLowerCase().includes(normalizedQuery)
       )
     : members;
-  const isMember = (channel.members || []).includes(channel.currentUserId);
+  const isMember = memberIds.includes(channel.currentUserId);
   const isManager = (channel.managers || []).includes(channel.currentUserId);
+  const isGroupDm = channel.type === "dm" && memberIds.length > 2;
+  const canManageGroupDm = isGroupDm && channel.createdBy === channel.currentUserId;
   const canRemoveMembers =
     !!onRemoveMember &&
     (channel.createdBy === channel.currentUserId || isManager) &&
@@ -45,8 +58,36 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
   const canAddPeople =
     !!onAddPeople &&
     isMember &&
-    channel.type !== "dm" &&
-    channel.name?.toLowerCase() !== "general";
+    channel.name?.toLowerCase() !== "general" &&
+    (!isGroupDm || memberIds.length < 20);
+
+  async function renameGroupDm() {
+    setSavingName(true);
+    setManagementError(null);
+    try {
+      const { channel: updated } = await api.renameGroupDm(channel.id, name);
+      onUpdated?.(updated);
+      setEditName(false);
+    } catch (error) {
+      setManagementError(error.message || "Could not rename group DM");
+    } finally {
+      setSavingName(false);
+    }
+  }
+
+  async function convertGroupDm() {
+    setConverting(true);
+    setManagementError(null);
+    try {
+      const { channel: updated } = await api.convertGroupDm(channel.id, { name });
+      onUpdated?.(updated);
+      setConvertOpen(false);
+    } catch (error) {
+      setManagementError(error.message || "Could not convert group DM");
+    } finally {
+      setConverting(false);
+    }
+  }
 
   useEffect(() => {
     (addPeopleRef.current || searchRef.current)?.focus();
@@ -55,12 +96,12 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
   async function confirmRemove() {
     if (!removeTarget) return;
     setRemoving(true);
-    setRemoveError(null);
+    setMemberError(null);
     try {
       await onRemoveMember(removeTarget.id);
       setRemoveTarget(null);
     } catch (error) {
-      setRemoveError(error.message || "Could not remove member");
+      setMemberError(error.message || "Could not remove member");
     } finally {
       setRemoving(false);
     }
@@ -68,12 +109,12 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
 
   async function promoteManager(member) {
     if (!onPromoteManager) return;
-    setRemoveError(null);
+    setMemberError(null);
     setPromotingId(member.id);
     try {
       await onPromoteManager(member.id);
     } catch (error) {
-      setRemoveError(error.message || "Could not make member a manager");
+      setMemberError(error.message || "Could not make member a manager");
     } finally {
       setPromotingId(null);
     }
@@ -88,7 +129,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
           </span>
           <div>
             <h2 id="members-panel-title">Members</h2>
-            <span>{channel.memberCount ?? members.length} people in #{channel.name}</span>
+            <span>{channel.memberCount ?? members.length} people in {isGroupDm ? "this group DM" : `#${channel.name}`}</span>
           </div>
         </div>
         <button type="button" className="channel-details-close" onClick={onClose} aria-label="Close members">
@@ -97,6 +138,46 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
       </header>
 
       <div className="members-panel-body">
+        {isGroupDm && canManageGroupDm && (
+          <section className="group-dm-management" aria-label="Group DM actions">
+            {editName ? (
+              <div className="group-dm-name-editor">
+                <input
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="Group DM name"
+                  aria-label="Group DM name"
+                  autoFocus
+                />
+                <button type="button" onClick={renameGroupDm} disabled={savingName || !name.trim()}>{savingName ? "Saving…" : "Save"}</button>
+                <button type="button" onClick={() => setEditName(false)} disabled={savingName}>Cancel</button>
+                {managementError && <div className="error members-panel-error group-dm-error" role="alert">{managementError}</div>}
+              </div>
+            ) : (
+              <button type="button" className="members-panel-action" onClick={() => { setName(channel.name?.startsWith("dm-") ? "" : channel.name || ""); setEditName(true); }}>
+                Rename group DM
+              </button>
+            )}
+            {convertOpen ? (
+              <div className="group-dm-convert-editor">
+                <p>All current members and messages will stay, and this conversation will become a private channel.</p>
+                <input
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="New private channel name"
+                  aria-label="New private channel name"
+                />
+                <button type="button" onClick={convertGroupDm} disabled={converting || !name.trim()}>{converting ? "Converting…" : "Convert"}</button>
+                <button type="button" onClick={() => setConvertOpen(false)} disabled={converting}>Cancel</button>
+                {managementError && <div className="error members-panel-error group-dm-error" role="alert">{managementError}</div>}
+              </div>
+            ) : (
+              <button type="button" className="members-panel-action" onClick={() => { setName(""); setConvertOpen(true); }}>
+                Convert to private channel
+              </button>
+            )}
+          </section>
+        )}
         {canAddPeople && (
           <button ref={addPeopleRef} type="button" className="members-panel-add" onClick={onAddPeople}>
             + Add people
@@ -114,7 +195,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
           />
         </div>
 
-        {removeError && <div className="error members-panel-error">{removeError}</div>}
+        {memberError && <div className="error members-panel-error" role="alert">{memberError}</div>}
 
         <div className="members-panel-list">
           {members.length === 0 ? (
