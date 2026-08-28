@@ -971,16 +971,18 @@ export default function ChannelView({
               {dmLabel}
             </button>
             {isGroupDm && (
-              <button
-                type="button"
-                className="header-action header-action-icon"
-                data-testid="channel-members"
-                title="View members"
-                aria-label="View members"
-                onClick={() => { setThread(null); setThreadJumpTargetId(null); setShowMembers(true); }}
-              >
-                <UsersRoundIcon size={16} strokeWidth={1.8} />
-              </button>
+              <div className="header-actions">
+                <button
+                  type="button"
+                  className="header-action header-action-icon"
+                  data-testid="channel-members"
+                  title="View members"
+                  aria-label="View members"
+                  onClick={() => { setThread(null); setThreadJumpTargetId(null); setShowMembers(true); }}
+                >
+                  <UsersRoundIcon size={16} strokeWidth={1.8} />
+                </button>
+              </div>
             )}
           </>
         ) : (

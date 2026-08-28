@@ -7,7 +7,8 @@ import ConfirmDialog from "./ConfirmDialog.js";
 export default function MembersPanel({ channel, users = [], onOpenProfile, onAddPeople, onRemoveMember, onPromoteManager, onUpdated, onClose }) {
   const [query, setQuery] = useState("");
   const [removeTarget, setRemoveTarget] = useState(null);
-  const [removeError, setRemoveError] = useState(null);
+  const [memberError, setMemberError] = useState(null);
+  const [managementError, setManagementError] = useState(null);
   const [removing, setRemoving] = useState(false);
   const [promotingId, setPromotingId] = useState(null);
   const [editName, setEditName] = useState(false);
@@ -26,13 +27,15 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
 
+  const memberIds = channel.members || (channel.participants || []).map((member) => member.id);
   const members = useMemo(() => {
     const byId = new Map(users.map((user) => [user.id, user]));
-    return (channel.members || [])
-      .map((id) => byId.get(id))
+    const participantById = new Map((channel.participants || []).map((user) => [user.id, user]));
+    return memberIds
+      .map((id) => byId.get(id) || participantById.get(id))
       .filter(Boolean)
       .sort((a, b) => a.displayName.localeCompare(b.displayName));
-  }, [channel.members, users]);
+  }, [channel.participants, memberIds, users]);
   const normalizedQuery = query.trim().toLowerCase();
   const shownMembers = normalizedQuery
     ? members.filter(
@@ -41,9 +44,9 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
           member.username.toLowerCase().includes(normalizedQuery)
       )
     : members;
-  const isMember = (channel.members || []).includes(channel.currentUserId);
+  const isMember = memberIds.includes(channel.currentUserId);
   const isManager = (channel.managers || []).includes(channel.currentUserId);
-  const isGroupDm = channel.type === "dm" && (channel.members || []).length > 2;
+  const isGroupDm = channel.type === "dm" && memberIds.length > 2;
   const canManageGroupDm = isGroupDm && channel.createdBy === channel.currentUserId;
   const canRemoveMembers =
     !!onRemoveMember &&
@@ -58,13 +61,13 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
 
   async function renameGroupDm() {
     setSavingName(true);
-    setRemoveError(null);
+    setManagementError(null);
     try {
       const { channel: updated } = await api.renameGroupDm(channel.id, name);
       onUpdated?.(updated);
       setEditName(false);
     } catch (error) {
-      setRemoveError(error.message || "Could not rename group DM");
+      setManagementError(error.message || "Could not rename group DM");
     } finally {
       setSavingName(false);
     }
@@ -72,13 +75,13 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
 
   async function convertGroupDm() {
     setConverting(true);
-    setRemoveError(null);
+    setManagementError(null);
     try {
       const { channel: updated } = await api.convertGroupDm(channel.id, { name });
       onUpdated?.(updated);
       setConvertOpen(false);
     } catch (error) {
-      setRemoveError(error.message || "Could not convert group DM");
+      setManagementError(error.message || "Could not convert group DM");
     } finally {
       setConverting(false);
     }
@@ -91,12 +94,12 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
   async function confirmRemove() {
     if (!removeTarget) return;
     setRemoving(true);
-    setRemoveError(null);
+    setMemberError(null);
     try {
       await onRemoveMember(removeTarget.id);
       setRemoveTarget(null);
     } catch (error) {
-      setRemoveError(error.message || "Could not remove member");
+      setMemberError(error.message || "Could not remove member");
     } finally {
       setRemoving(false);
     }
@@ -104,12 +107,12 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
 
   async function promoteManager(member) {
     if (!onPromoteManager) return;
-    setRemoveError(null);
+    setMemberError(null);
     setPromotingId(member.id);
     try {
       await onPromoteManager(member.id);
     } catch (error) {
-      setRemoveError(error.message || "Could not make member a manager");
+      setMemberError(error.message || "Could not make member a manager");
     } finally {
       setPromotingId(null);
     }
@@ -146,6 +149,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
                 />
                 <button type="button" onClick={renameGroupDm} disabled={savingName || !name.trim()}>{savingName ? "Saving…" : "Save"}</button>
                 <button type="button" onClick={() => setEditName(false)} disabled={savingName}>Cancel</button>
+                {managementError && <div className="error members-panel-error group-dm-error" role="alert">{managementError}</div>}
               </div>
             ) : (
               <button type="button" className="members-panel-action" onClick={() => { setName(channel.name?.startsWith("dm-") ? "" : channel.name || ""); setEditName(true); }}>
@@ -163,6 +167,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
                 />
                 <button type="button" onClick={convertGroupDm} disabled={converting || !name.trim()}>{converting ? "Converting…" : "Convert"}</button>
                 <button type="button" onClick={() => setConvertOpen(false)} disabled={converting}>Cancel</button>
+                {managementError && <div className="error members-panel-error group-dm-error" role="alert">{managementError}</div>}
               </div>
             ) : (
               <button type="button" className="members-panel-action" onClick={() => { setName(""); setConvertOpen(true); }}>
@@ -188,7 +193,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
           />
         </div>
 
-        {removeError && <div className="error members-panel-error">{removeError}</div>}
+        {memberError && <div className="error members-panel-error" role="alert">{memberError}</div>}
 
         <div className="members-panel-list">
           {members.length === 0 ? (

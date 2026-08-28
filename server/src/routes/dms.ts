@@ -52,6 +52,9 @@ dmsRouter.get("/", async (req, res) => {
     const last = lastMap.get(c._id.toString());
     return {
       id: c._id.toString(),
+      name: c.name,
+      memberCount: c.members.length,
+      createdBy: c.createdBy?.toString() || null,
       withUser: other.toPublicJSON(),
       participants: c.members.map((member) => member.toPublicJSON()),
       isGroup: !isSelf && participants.length > 1,

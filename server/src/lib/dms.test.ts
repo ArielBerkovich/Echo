@@ -12,27 +12,45 @@ describe("DM helpers", () => {
     assert.equal(dmName(["c", "a", "b"]), "dm-a-b-c");
   });
 
+  it("keeps long group DM names within the channel limit", () => {
+    const ids = ["a".repeat(24), "b".repeat(24), "c".repeat(24), "d".repeat(24)];
+    assert.equal(dmName(ids), dmName([...ids].reverse()));
+    assert.equal(dmName(ids).length, 63);
+  });
+
   it("creates a deterministic group DM for the selected members", async () => {
     const currentUserId = new mongoose.Types.ObjectId();
     const otherUserId = new mongoose.Types.ObjectId();
     const thirdUserId = new mongoose.Types.ObjectId();
     const expectedChannel = { id: "group-channel" };
-    const original = Channel.findOneAndUpdate;
-    let call;
-    Channel.findOneAndUpdate = async (...args) => {
-      call = args;
+    const originalFind = Channel.find;
+    const originalCreate = Channel.create;
+    let findCall;
+    let createCall;
+    Channel.find = async (...args) => {
+      findCall = args;
+      return [];
+    };
+    Channel.create = async (...args) => {
+      createCall = args;
       return expectedChannel;
     };
 
     try {
       assert.equal(await ensureGroupDmChannel(currentUserId, [thirdUserId, otherUserId]), expectedChannel);
-      assert.equal(call[0].type, "dm");
-      assert.deepEqual(call[0].members, { $all: [String(currentUserId), String(thirdUserId), String(otherUserId)] });
-      assert.deepEqual(call[0].$expr, { $eq: [{ $size: "$members" }, 3] });
-      assert.equal(call[1].$setOnInsert.name, dmName([currentUserId, otherUserId, thirdUserId]));
-      assert.deepEqual(call[1].$setOnInsert.members, [String(currentUserId), String(thirdUserId), String(otherUserId)]);
+      assert.deepEqual(findCall[0], {
+        type: "dm",
+        members: { $all: [String(currentUserId), String(thirdUserId), String(otherUserId)] },
+      });
+      assert.deepEqual(createCall[0], {
+        name: dmName([currentUserId, otherUserId, thirdUserId]),
+        type: "dm",
+        members: [String(currentUserId), String(thirdUserId), String(otherUserId)],
+        createdBy: currentUserId,
+      });
     } finally {
-      Channel.findOneAndUpdate = original;
+      Channel.find = originalFind;
+      Channel.create = originalCreate;
     }
   });
 

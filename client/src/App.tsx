@@ -218,10 +218,14 @@ export default function App() {
     return {
       id: conversation.id,
       type: "dm",
-      dmName: isGroup ? people.map((person) => person.displayName).join(", ") : conversation.withUser?.displayName,
+      name: conversation.name,
+      dmName: isGroup ? (conversation.name?.startsWith("dm-") ? people.map((person) => person.displayName).join(", ") : conversation.name) : conversation.withUser?.displayName,
       dmUsername: isGroup ? undefined : conversation.withUser?.username,
       dmUserId: isGroup ? undefined : conversation.withUser?.id,
       participants,
+      members: participants.map((person) => person.id),
+      memberCount: conversation.memberCount ?? participants.length,
+      createdBy: conversation.createdBy,
       isSelf: conversation.isSelf,
     };
   }
@@ -497,9 +501,13 @@ export default function App() {
         active = {
           id: dm.id,
           type: "dm",
-          dmName: dm.isGroup ? dm.participants.filter((person) => person.id !== user.id).map((person) => person.displayName).join(", ") : dm.withUser.displayName,
+          name: dm.name,
+          dmName: dm.isGroup ? (dm.name?.startsWith("dm-") ? dm.participants.filter((person) => person.id !== user.id).map((person) => person.displayName).join(", ") : dm.name) : dm.withUser.displayName,
           dmUserId: dm.isGroup ? undefined : dm.withUser.id,
           participants: dm.participants,
+          members: dm.participants?.map((person) => person.id),
+          memberCount: dm.memberCount ?? dm.participants?.length,
+          createdBy: dm.createdBy,
         };
       }
     } else if (!isMobileViewport() && saved?.convId) {
@@ -577,10 +585,14 @@ export default function App() {
         const activeDm = {
           id: dm.id,
           type: "dm",
-          dmName: dm.isGroup ? dm.participants.filter((person) => person.id !== user.id).map((person) => person.displayName).join(", ") : dm.withUser.displayName,
-          dmUsername: dm.withUser.username,
-          dmUserId: dm.withUser.id,
+          name: dm.name,
+          dmName: dm.isGroup ? (dm.name?.startsWith("dm-") ? dm.participants.filter((person) => person.id !== user.id).map((person) => person.displayName).join(", ") : dm.name) : dm.withUser.displayName,
+          dmUsername: dm.isGroup ? undefined : dm.withUser.username,
+          dmUserId: dm.isGroup ? undefined : dm.withUser.id,
           participants: dm.participants,
+          members: dm.participants?.map((person) => person.id),
+          memberCount: dm.memberCount ?? dm.participants?.length,
+          createdBy: dm.createdBy,
         };
         setActiveChannel(activeDm);
         applyRouteMessageTarget(dm.id);

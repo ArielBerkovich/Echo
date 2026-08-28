@@ -3820,6 +3820,9 @@ html[data-mode="dark"] .sidebar {
 .members-panel-error {
   margin: 0 0 10px;
 }
+.group-dm-error {
+  margin: 0;
+}
 .thread-header {
   display: flex;
   align-items: center;
