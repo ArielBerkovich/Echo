@@ -2922,8 +2922,8 @@ html[data-mode="dark"] .sidebar {
 }
 .dms-view .dm-rich.unread:not(.active) .avatar,
 .dm-item.unread:not(.active) .avatar {
-  outline: 2px solid var(--on-navy);
-  outline-offset: 2px;
+  outline: 1px solid color-mix(in srgb, var(--on-navy) 65%, transparent);
+  outline-offset: 1px;
 }
 .unread-badge {
   flex: none;
