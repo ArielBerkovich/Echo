@@ -27,7 +27,9 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
 
-  const memberIds = channel.members || (channel.participants || []).map((member) => member.id);
+  const memberIds = channel.members?.length
+    ? channel.members
+    : (channel.participants || []).map((member) => member.id);
   const members = useMemo(() => {
     const byId = new Map(users.map((user) => [user.id, user]));
     const participantById = new Map((channel.participants || []).map((user) => [user.id, user]));
@@ -56,8 +58,8 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
   const canAddPeople =
     !!onAddPeople &&
     isMember &&
-    channel.type !== "dm" &&
-    channel.name?.toLowerCase() !== "general";
+    channel.name?.toLowerCase() !== "general" &&
+    (!isGroupDm || memberIds.length < 20);
 
   async function renameGroupDm() {
     setSavingName(true);

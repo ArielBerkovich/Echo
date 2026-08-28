@@ -342,8 +342,12 @@ channelsRouter.post("/:id/members", async (req, res) => {
   if (!channel || channel.isArchived) {
     return res.status(404).json({ error: "channel not found" });
   }
-  if (channel.type === "dm") {
+  const isGroupDm = channel.type === "dm" && channel.members.length > 2;
+  if (channel.type === "dm" && !isGroupDm) {
     return res.status(400).json({ error: "cannot add members to a direct message" });
+  }
+  if (isGroupDm && channel.members.length >= 20) {
+    return res.status(400).json({ error: "group DMs are limited to 20 people" });
   }
   // Everyone is automatically a member of #general, so there's no one to add.
   if ((channel.name || "").toLowerCase() === "general") {
@@ -351,7 +355,7 @@ channelsRouter.post("/:id/members", async (req, res) => {
   }
   // Anyone may add to public channels; private channels are members-only.
   const isMember = channel.members.some((m) => m.equals(req.user._id));
-  if (channel.type === "private" && !isMember) {
+  if ((channel.type === "private" || isGroupDm) && !isMember) {
     return res.status(403).json({ error: "join the channel before adding others" });
   }
 
