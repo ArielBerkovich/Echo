@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronDownIcon, CompassIcon, LockKeyholeIcon, SquarePenIcon } from "lucide-react";
+import { ChevronDownIcon, CompassIcon, HashIcon, ListFilterIcon, LockKeyholeIcon, MessageCircleIcon, SquarePenIcon, StarIcon } from "lucide-react";
 import Avatar, { GroupAvatar } from "./Avatar.js";
 import { relativeTime } from "../lib/time.js";
 import { useAuthUrls } from "../lib/useAuthUrl.js";
@@ -94,6 +94,7 @@ export default function Sidebar({
   const [chCollapsed, setChCollapsed] = useState(false); // Channels section collapsed?
   const [starredCollapsed, setStarredCollapsed] = useState(false); // Starred section collapsed?
   const [dmCollapsed, setDmCollapsed] = useState(false); // DMs section collapsed?
+  const [filterOpen, setFilterOpen] = useState(dmsOnly);
   const emojiUrls = useMemo(() => customEmojis.map((emoji) => emoji.url), [customEmojis]);
   const authUrls = useAuthUrls(emojiUrls);
   const previewEmojis = customEmojis
@@ -173,7 +174,8 @@ export default function Sidebar({
           aria-expanded={!starredCollapsed}
         >
           <Chevron collapsed={starredCollapsed && !f} />
-          <span className="starred-label">Starred ★</span>
+          <StarIcon className="section-icon starred-icon" size={12} strokeWidth={2.5} aria-hidden="true" />
+          <span className="starred-label">Starred</span>
         </button>
       </div>
       {showStarred && starredChannels.map((c) => (
@@ -203,15 +205,55 @@ export default function Sidebar({
           <span className="brand-sm">Direct Messages</span>
         </div>
       )}
-      <div className="dm-find">
-        <input
-          data-testid="sidebar-filter"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          placeholder={dmsOnly ? "Find a DM" : "Filter channels & DMs"}
-        />
-        {dmsOnly && <StartConversationButton onClick={onStartConversation} />}
-      </div>
+      {!dmsOnly && (
+        <div className="sidebar-actions" role="group" aria-label="Sidebar actions">
+          <button
+            type="button"
+            className={`add-channel filter-button ${filterOpen ? "active" : ""}`}
+            data-testid="sidebar-filter-toggle"
+            onClick={() => {
+              setFilterOpen((open) => !open);
+              if (filterOpen) setFilter("");
+            }}
+            title={filterOpen ? "Close filter" : "Filter"}
+            aria-label={filterOpen ? "Close filter" : "Filter channels and direct messages"}
+            aria-pressed={filterOpen}
+          >
+            <ListFilterIcon size={14} strokeWidth={1.9} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className={`add-channel browse-channels-button ${browsingChannels ? "active" : ""}`}
+            data-testid="browse-channels"
+            aria-label="Browse all channels"
+            aria-pressed={browsingChannels}
+            aria-controls="channel-browser-pane"
+            title="Browse public channels"
+            onClick={onBrowseChannels}
+          >
+            <CompassIcon size={14} strokeWidth={1.9} aria-hidden="true" />
+          </button>
+          <button type="button" className="add-channel" data-testid="create-channel" onClick={onNewChannel} title="Create channel" aria-label="Create channel">
+            <span className="add-channel-mark" aria-hidden="true">
+              <span />
+              <span />
+            </span>
+          </button>
+          <StartConversationButton onClick={onStartConversation} />
+        </div>
+      )}
+      {(dmsOnly || filterOpen) && (
+        <div className="dm-find">
+          <input
+            data-testid="sidebar-filter"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder={dmsOnly ? "Find a DM" : "Filter channels & DMs"}
+            autoFocus={!dmsOnly}
+          />
+          {dmsOnly && <StartConversationButton onClick={onStartConversation} />}
+        </div>
+      )}
 
       {dmsOnly ? (
         <div className="channel-list">
@@ -277,32 +319,9 @@ export default function Sidebar({
               aria-expanded={!chCollapsed}
             >
               <Chevron collapsed={chCollapsed && !f} />
+              <HashIcon className="section-icon" size={12} strokeWidth={2.5} aria-hidden="true" />
               <span>Channels</span>
             </button>
-            <span className="channel-header-actions" role="group" aria-label="Channel actions">
-              <button
-                type="button"
-                className={`add-channel browse-channels-button ${browsingChannels ? "active" : ""}`}
-                data-testid="browse-channels"
-                aria-label="Browse all channels"
-                aria-pressed={browsingChannels}
-                aria-controls="channel-browser-pane"
-                title={
-                  Number.isFinite(publicChannelCount)
-                    ? `Browse ${publicChannelCount} public ${publicChannelCount === 1 ? "channel" : "channels"}`
-                    : "Browse public channels"
-                }
-                onClick={onBrowseChannels}
-              >
-                <CompassIcon size={14} strokeWidth={1.9} aria-hidden="true" />
-              </button>
-              <button type="button" className="add-channel" data-testid="create-channel" onClick={onNewChannel} title="Create channel" aria-label="Create channel">
-                <span className="add-channel-mark" aria-hidden="true">
-                  <span />
-                  <span />
-                </span>
-              </button>
-            </span>
           </div>
           {showChannels &&
             regularChannels.map((c) => (
@@ -333,9 +352,9 @@ export default function Sidebar({
               aria-expanded={!dmCollapsed}
             >
               <Chevron collapsed={dmCollapsed && !f} />
+              <MessageCircleIcon className="section-icon" size={12} strokeWidth={2.5} aria-hidden="true" />
               <span>Direct Messages</span>
             </button>
-            <StartConversationButton onClick={onStartConversation} />
           </div>
           {showDms && regularDms.map(renderDmRow)}
           {showDms && regularDms.length === 0 && (

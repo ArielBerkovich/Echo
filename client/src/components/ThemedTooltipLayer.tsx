@@ -20,6 +20,7 @@ function tooltipTarget(node: EventTarget | null) {
 }
 
 function tooltipPlacementOrder(target: HTMLElement) {
+  if (target.closest(".sidebar-actions")) return ["below", "above", "left", "right"] as const;
   if (target.closest(".rail")) return ["right", "above", "below", "left"] as const;
   // Above is the stable Echo convention. The measured collision pass below
   // changes this only when the actual rendered tooltip cannot fit there.
@@ -133,11 +134,13 @@ export default function ThemedTooltipLayer() {
       if (focusedRef.current === event.target) focusedRef.current = null;
       if (!(event.relatedTarget instanceof Node) || !targetRef.current?.contains(event.relatedTarget)) hide();
     };
+    const onClick = () => hide();
 
     document.addEventListener("pointerover", onPointerOver, true);
     document.addEventListener("pointerout", onPointerOut, true);
     document.addEventListener("focusin", onFocusIn, true);
     document.addEventListener("focusout", onFocusOut, true);
+    document.addEventListener("click", onClick, true);
     window.addEventListener("resize", hide);
     window.addEventListener("scroll", hide, true);
     return () => {
@@ -145,6 +148,7 @@ export default function ThemedTooltipLayer() {
       document.removeEventListener("pointerout", onPointerOut, true);
       document.removeEventListener("focusin", onFocusIn, true);
       document.removeEventListener("focusout", onFocusOut, true);
+      document.removeEventListener("click", onClick, true);
       window.removeEventListener("resize", hide);
       window.removeEventListener("scroll", hide, true);
       hide();

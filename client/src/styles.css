@@ -2822,6 +2822,11 @@ html[data-mode="dark"] .sidebar {
   cursor: pointer;
   padding: 0;
 }
+.section-label .sl-collapse,
+.section-label .sl-collapse > span {
+  color: var(--on-navy);
+  font-weight: 800;
+}
 .sl-collapse:hover {
   color: var(--on-navy);
 }
@@ -2831,6 +2836,17 @@ html[data-mode="dark"] .sidebar {
 }
 .sl-chevron.collapsed {
   transform: rotate(-90deg);
+}
+.section-icon {
+  flex: none;
+  opacity: 0.9;
+}
+.starred-icon {
+  color: var(--beam);
+  opacity: 1;
+}
+.starred-section-label .sl-collapse > .starred-label {
+  color: var(--beam);
 }
 .section-label {
   display: flex;
@@ -2975,6 +2991,12 @@ html[data-mode="dark"] .sidebar {
   color: #fff;
   box-shadow: 0 3px 9px var(--active-ring);
 }
+.filter-button.active {
+  background: var(--active-bg);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 3px 9px var(--active-ring);
+}
 
 /* Direct Messages section */
 .dm-label {
@@ -3080,6 +3102,20 @@ html[data-mode="dark"] .sidebar {
 }
 .dm-find .start-conversation {
   flex: none;
+}
+.sidebar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 58px;
+  min-height: 58px;
+  box-sizing: border-box;
+  padding: 10px 12px;
+}
+.sidebar-actions .add-channel {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
 }
 .dm-rich {
   display: flex;
