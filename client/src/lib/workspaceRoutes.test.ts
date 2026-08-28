@@ -6,12 +6,12 @@ describe("workspace routes", () => {
   it("builds stable paths for workspace views and conversations", () => {
     assert.equal(workspacePath({ view: "activity" }), "/activity");
     assert.equal(workspacePath({ view: "settings" }), "/settings/account");
-    assert.equal(workspacePath({ view: "home", convId: "id-1", convName: "channel 1", convType: "public" }), "/channels/channel%201");
-    assert.equal(workspacePath({ view: "dms", convId: "id-2", convName: "alice", convType: "dm" }), "/dms/alice");
-    assert.equal(workspacePath({ view: "home", convId: "id-2", convName: "alice", convType: "dm" }), "/home/dms/alice");
+    assert.equal(workspacePath({ view: "home", convId: "id-1", convName: "channel 1", convType: "public" }), "/channels/id-1");
+    assert.equal(workspacePath({ view: "dms", convId: "id-2", convName: "alice", convType: "dm" }), "/dms/id-2");
+    assert.equal(workspacePath({ view: "home", convId: "id-2", convName: "alice", convType: "dm" }), "/home/dms/id-2");
     assert.equal(workspacePath({ view: "home", convId: "legacy-id", convType: "public" }), "/channels/legacy-id");
     assert.equal(workspacePath({ view: "home", convId: "abc", convType: "public", messageId: "507f1f77bcf86cd799439011" }), "/channels/abc?message=507f1f77bcf86cd799439011");
-    assert.equal(workspacePath({ view: "dms", convId: "id-2", convName: "alice", convType: "dm", messageId: "507f1f77bcf86cd799439011" }), "/dms/alice?message=507f1f77bcf86cd799439011");
+    assert.equal(workspacePath({ view: "dms", convId: "id-2", convName: "alice", convType: "dm", messageId: "507f1f77bcf86cd799439011" }), "/dms/id-2?message=507f1f77bcf86cd799439011");
     assert.equal(
       workspacePath({ view: "home", convId: "channel-id", convType: "public", messageId: "reply-id", threadId: "root-id" }),
       "/channels/channel-id?message=reply-id&thread=root-id"
