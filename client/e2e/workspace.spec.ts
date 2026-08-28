@@ -115,11 +115,11 @@ test("preserves composer drafts per channel", async ({ page }) => {
 });
 
 test("supports direct workspace routes and browser history", async ({ page }) => {
-  // Legacy ID links remain valid, but are replaced with the readable canonical URL.
+  // ID URLs remain stable, while legacy name URLs continue to resolve.
   await page.goto(`/channels/${fixture.projectChannel.id}`);
 
   await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
-  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.projectChannel.name}$`));
+  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.projectChannel.id}$`));
   await expectRailIndicatorAligned(page, "home");
   await page.setViewportSize({ width: 1600, height: 900 });
   await page.waitForTimeout(450);
@@ -137,7 +137,7 @@ test("supports direct workspace routes and browser history", async ({ page }) =>
   await page.setViewportSize({ width: 1280, height: 720 });
 
   await page.goBack();
-  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.projectChannel.name}$`));
+  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.projectChannel.id}$`));
   await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
 
   await page.goto(`/dms/${fixture.bob.username}`);
@@ -335,7 +335,7 @@ test("copies a message permalink and reopens the same message", async ({ page })
   expect(copied).toContain(`/channels/${fixture.generalChannel.id}?message=${id}`);
   await page.goto(copied);
   await expect(messageById(page, id)).toBeInViewport();
-  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.generalChannel.name}\\?message=${id}`));
+  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.generalChannel.id}\\?message=${id}`));
 });
 
 test("copies a thread reply permalink and reopens the reply in its thread", async ({ page }) => {
@@ -464,7 +464,7 @@ test("opens Echo message links in the current tab and external links in a new ta
   const echoOpenLink = echoMessage.message.locator(".body a");
   await expect(echoOpenLink).not.toHaveAttribute("target", "_blank");
   await echoOpenLink.click();
-  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.generalChannel.name}\\?message=${fixture.messages.formatted.id}`));
+  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.generalChannel.id}\\?message=${fixture.messages.formatted.id}`));
 
   const externalMessage = await openFreshGeneralMessage(
     page,
@@ -941,6 +941,6 @@ test("clicking a search result jumps to and highlights that exact message", asyn
   await expect(result).toBeVisible();
   await result.click();
 
-  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.generalChannel.name}\\?message=${fixture.messages.searchHit.id}`));
+  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.generalChannel.id}\\?message=${fixture.messages.searchHit.id}`));
   await expect(messageById(page, fixture.messages.searchHit.id)).toHaveClass(/flash/);
 });
