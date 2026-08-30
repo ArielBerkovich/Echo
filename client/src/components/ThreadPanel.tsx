@@ -7,6 +7,7 @@ import Message from "./Message.js";
 import Composer from "./Composer.js";
 import ConfirmDialog from "./ConfirmDialog.js";
 import { hasThreadJumpTarget, scrollThreadMessageIntoView } from "../lib/threadNavigation.js";
+import { shouldGroupWithPreviousMessage } from "../lib/messageGrouping.js";
 
 // Right-hand thread view: the root message + its replies + a reply composer.
 // Reuses the full Message (reactions, forward, edit) and Composer (emoji, bold,
@@ -318,14 +319,18 @@ export default function ThreadPanel({
 
       <div ref={scrollerRef} className="thread-body" data-testid="thread-body" onScroll={onBodyScroll} onMouseLeave={() => { if (!menuFor) setActionsFor(null); }}>
         <div ref={bodyInnerRef}>
-          {messages.map((m, index) => (
+          {messages.map((m, index) => {
+            const prev = messages[index - 1];
+            // The thread root is a separate context from its replies.
+            const grouped = index > 1 && shouldGroupWithPreviousMessage(prev, m);
+            return (
             <Fragment key={m.id}>
               <Message
                 m={m}
                 channelId={channel.id}
                 channelType={channel.type}
                 threadRootId={m.parentId ? root.id : null}
-                grouped={false}
+                grouped={grouped}
                 highlighted={highlightId === m.id}
                 currentUserId={user.id}
                 usersById={usersById}
@@ -377,7 +382,8 @@ export default function ThreadPanel({
                 </div>
               )}
             </Fragment>
-          ))}
+            );
+          })}
           <div ref={bottomRef} />
         </div>
         {newMessageCount > 0 && (

@@ -58,6 +58,20 @@ export function isDifferentDay(a, b) {
   );
 }
 
+// True when two timestamps are in the same local calendar minute.
+export function isSameMinute(a, b) {
+  const da = new Date(a);
+  const db = new Date(b);
+  if (Number.isNaN(da.getTime()) || Number.isNaN(db.getTime())) return false;
+  return (
+    da.getFullYear() === db.getFullYear() &&
+    da.getMonth() === db.getMonth() &&
+    da.getDate() === db.getDate() &&
+    da.getHours() === db.getHours() &&
+    da.getMinutes() === db.getMinutes()
+  );
+}
+
 // Compact, recency-aware label for conversation lists ("now", "5 min", time,
 // "Yesterday", or a date).
 export function relativeTime(iso) {

@@ -23,6 +23,7 @@ import ConfirmDialog from "./ConfirmDialog.js";
 import LeaveChannelDialog from "./LeaveChannelDialog.js";
 import { LeaveIcon, PinIcon } from "./Icons.js";
 import { formatDayDivider, isDifferentDay } from "../lib/time.js";
+import { shouldGroupWithPreviousMessage } from "../lib/messageGrouping.js";
 import { formatSize } from "../lib/format.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
 import { ChevronsDownIcon, DownloadIcon, FileIcon, MessageSquareTextIcon, PaperclipIcon, SearchIcon, StarIcon, UsersRoundIcon } from "lucide-react";
@@ -1156,6 +1157,7 @@ export default function ChannelView({
               const prev = messages[i - 1];
               // A day divider whenever the calendar day changes (and at the top).
               const isNewDay = !prev || isDifferentDay(prev.createdAt, m.createdAt);
+              const grouped = shouldGroupWithPreviousMessage(prev, m);
               const dayDivider = isNewDay ? (
                 <div className="day-divider">
                   <span className="day-divider-label">{formatDayDivider(m.createdAt)}</span>
@@ -1182,7 +1184,7 @@ export default function ChannelView({
                     m={m}
                     channelId={channel.id}
                     channelType={channel.type}
-                    grouped={false}
+                    grouped={grouped}
                     highlighted={highlightId === m.id}
                     currentUserId={user.id}
                     usersById={usersById}
