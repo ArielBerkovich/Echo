@@ -25,12 +25,12 @@ import {
 const SETTINGS_TABS = [
   { id: "account", label: "Account", Icon: UserRoundIcon },
   { id: "appearance", label: "Appearance", Icon: PaletteIcon },
-  { id: "webhooks", label: "Webhooks", Icon: WebhookIcon },
   { id: "workspace", label: "Workspace", Icon: Building2Icon, adminOnly: true },
   { id: "integrations", label: "Integrations", Icon: GitPullRequestIcon, adminOnly: true },
   { id: "desktop", label: "Desktop", Icon: DownloadIcon },
   { id: "shortcuts", label: "Keyboard shortcuts", Icon: KeyboardIcon },
   { id: "api", label: "API", Icon: Code2Icon },
+  { id: "webhooks", label: "Webhooks", Icon: WebhookIcon },
 ];
 
 const AZURE_NOTIFY_OPTIONS = [
