@@ -176,13 +176,19 @@ test("configures one personal mention webhook from Settings", async ({ page }) =
   await seedToken(page, fixture.alice.token);
   await page.goto("/");
   await page.getByTestId("rail-settings").click();
+  const webhookLoaded = page.waitForResponse((response) => response.url().includes("/api/mention-webhook") && response.request().method() === "GET");
   await page.getByRole("button", { name: "Webhooks" }).click();
+  await webhookLoaded;
 
   const settings = page.getByTestId("mention-webhook-settings");
   await settings.getByTestId("mention-webhook-url").fill("https://hooks.example.test/alice");
   await settings.getByTestId("mention-webhook-save").click();
   await expect(settings).toContainText("Saved ✓");
   await expect(settings.getByTestId("mention-webhook-secret")).toHaveValue(/.+/);
+  await expect(settings).toContainText("Before accepting an event");
+  await expect(settings).toContainText("user_mentioned");
+  await expect(settings).toContainText("direct_message");
+  await expect(settings.getByTestId("mention-webhook-copy-secret")).toHaveText("Copy");
 
   const first = await requestAsToken(page, fixture.alice.token, "/mention-webhook");
   expect(first.webhook).toMatchObject({ url: "https://hooks.example.test/alice", enabled: true });

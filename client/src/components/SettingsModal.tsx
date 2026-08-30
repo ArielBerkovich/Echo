@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Building2Icon, Code2Icon, DownloadIcon, GitPullRequestIcon, KeyboardIcon, PaletteIcon, UserRoundIcon, WebhookIcon } from "lucide-react";
+import { Building2Icon, CheckIcon, Code2Icon, DownloadIcon, GitPullRequestIcon, KeyboardIcon, PaletteIcon, UserRoundIcon, WebhookIcon } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { api, getBackendUrl } from "../api.js";
@@ -112,6 +112,7 @@ export default function SettingsModal({
   const [mentionWebhookEnabled, setMentionWebhookEnabled] = useState(true);
   const [mentionWebhookLoading, setMentionWebhookLoading] = useState(false);
   const [mentionWebhookSaved, setMentionWebhookSaved] = useState(false);
+  const [mentionWebhookSecretCopied, setMentionWebhookSecretCopied] = useState(false);
   const workspaceLogoSrc = useAuthUrl(workspaceLogoUrl);
 
   const nameChanged = displayName.trim() !== user.displayName;
@@ -486,6 +487,7 @@ export default function SettingsModal({
       setMentionWebhook(webhook);
       setMentionWebhookUrl(webhook.url);
       setMentionWebhookEnabled(webhook.enabled);
+      setMentionWebhookSecretCopied(false);
       setMentionWebhookSaved(true);
     } catch (err) {
       setError(err.message);
@@ -514,6 +516,7 @@ export default function SettingsModal({
     if (!mentionWebhook?.signingSecret) return;
     try {
       await navigator.clipboard.writeText(mentionWebhook.signingSecret);
+      setMentionWebhookSecretCopied(true);
     } catch {
       setError("Couldn't copy the signing secret. Select and copy it manually.");
     }
@@ -615,12 +618,47 @@ export default function SettingsModal({
               {mentionWebhookSaved && <span className="workspace-save-status">Saved ✓</span>}
             </div>
             {mentionWebhook?.signingSecret && <div className="mention-webhook-secret">
-              <div><label className="settings-profile-field-label" htmlFor="mention-webhook-secret">Signing secret</label><p>Use this to validate the <code>x-echo-signature</code> header.</p></div>
+              <div>
+                <label className="settings-profile-field-label" htmlFor="mention-webhook-secret">Signing secret</label>
+                <p>Before accepting an event, verify that <code>x-echo-signature</code> is an HMAC-SHA256 of <code>x-echo-timestamp</code>, a period, and the <strong>raw request body</strong>. Keep this secret on your server—never expose it in a browser or commit it.</p>
+              </div>
               <div className="mention-webhook-secret-value">
                 <input id="mention-webhook-secret" className="settings-input" data-testid="mention-webhook-secret" value={mentionWebhook.signingSecret} readOnly />
-                <button type="button" className="btn-secondary" onClick={copyMentionWebhookSecret}>Copy</button>
+                <button type="button" className="btn-secondary" data-testid="mention-webhook-copy-secret" onClick={copyMentionWebhookSecret} aria-live="polite">
+                  {mentionWebhookSecretCopied ? <><CheckIcon size={15} /> Copied</> : "Copy"}
+                </button>
               </div>
             </div>}
+            {mentionWebhook && <section className="mention-webhook-examples" aria-labelledby="mention-webhook-examples-title">
+              <div>
+                <h4 id="mention-webhook-examples-title">What Echo sends</h4>
+                <p>Echo sends JSON with the event type, recipient, message, channel, and author. The request headers also include <code>x-echo-event</code>, <code>x-echo-delivery</code>, <code>x-echo-timestamp</code>, and <code>x-echo-signature</code>.</p>
+              </div>
+              <details open>
+                <summary>Someone mentions you <code>user_mentioned</code></summary>
+                <pre>{`{
+  "id": "7ee0d8e7-…",
+  "type": "user_mentioned",
+  "occurredAt": "2026-08-30T19:30:00.000Z",
+  "recipient": { "id": "…", "username": "${user.username}" },
+  "message": { "id": "…", "body": "Can you take a look at this?" },
+  "channel": { "id": "…", "name": "general", "type": "public" },
+  "author": { "id": "…", "username": "alex" }
+}`}</pre>
+              </details>
+              <details>
+                <summary>Someone sends you a DM <code>direct_message</code></summary>
+                <pre>{`{
+  "id": "0bb3a1c0-…",
+  "type": "direct_message",
+  "occurredAt": "2026-08-30T19:31:00.000Z",
+  "recipient": { "id": "…", "username": "${user.username}" },
+  "message": { "id": "…", "body": "Do you have a minute?" },
+  "channel": { "id": "…", "type": "dm" },
+  "author": { "id": "…", "username": "alex" }
+}`}</pre>
+              </details>
+            </section>}
           </section>}
 
           {activeTab === "appearance" && themes.length > 0 && <section className="settings-section settings-appearance-card">

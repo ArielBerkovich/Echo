@@ -5470,7 +5470,8 @@ html[data-mode="dark"] .day-divider-label {
   border-color: color-mix(in srgb, #22c55e 30%, var(--border));
 }
 .mention-webhook-card,
-.mention-webhook-secret {
+.mention-webhook-secret,
+.mention-webhook-examples {
   display: grid;
   gap: 14px;
   padding: 16px;
@@ -5528,6 +5529,49 @@ html[data-mode="dark"] .day-divider-label {
   flex: 1;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12px;
+}
+.mention-webhook-secret-value .btn-secondary {
+  min-width: 78px;
+  justify-content: center;
+}
+.mention-webhook-secret-value .btn-secondary svg {
+  vertical-align: -2px;
+}
+.mention-webhook-examples {
+  gap: 12px;
+}
+.mention-webhook-examples h4 {
+  margin: 0;
+  color: var(--text);
+  font-size: 13px;
+}
+.mention-webhook-examples p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.mention-webhook-examples details {
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.mention-webhook-examples summary {
+  padding: 10px 12px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 650;
+}
+.mention-webhook-examples pre {
+  margin: 0;
+  padding: 12px;
+  overflow-x: auto;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface-2) 65%, var(--surface));
+  font: 11px/1.55 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 @media (max-width: 560px) {
   .mention-webhook-field { align-items: flex-start; flex-direction: column; }
