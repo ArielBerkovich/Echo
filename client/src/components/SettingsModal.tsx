@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Building2Icon, Code2Icon, DownloadIcon, GitPullRequestIcon, KeyboardIcon, PaletteIcon, UserRoundIcon } from "lucide-react";
+import { Building2Icon, Code2Icon, DownloadIcon, GitPullRequestIcon, KeyboardIcon, PaletteIcon, UserRoundIcon, WebhookIcon } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { api, getBackendUrl } from "../api.js";
@@ -25,6 +25,7 @@ import {
 const SETTINGS_TABS = [
   { id: "account", label: "Account", Icon: UserRoundIcon },
   { id: "appearance", label: "Appearance", Icon: PaletteIcon },
+  { id: "webhooks", label: "Webhooks", Icon: WebhookIcon },
   { id: "workspace", label: "Workspace", Icon: Building2Icon, adminOnly: true },
   { id: "integrations", label: "Integrations", Icon: GitPullRequestIcon, adminOnly: true },
   { id: "desktop", label: "Desktop", Icon: DownloadIcon },
@@ -106,6 +107,11 @@ export default function SettingsModal({
   const [jenkinsDownloadError, setJenkinsDownloadError] = useState(null);
   const [desktopDownloads, setDesktopDownloads] = useState(null);
   const [desktopDownloadsError, setDesktopDownloadsError] = useState(null);
+  const [mentionWebhook, setMentionWebhook] = useState(null);
+  const [mentionWebhookUrl, setMentionWebhookUrl] = useState("");
+  const [mentionWebhookEnabled, setMentionWebhookEnabled] = useState(true);
+  const [mentionWebhookLoading, setMentionWebhookLoading] = useState(false);
+  const [mentionWebhookSaved, setMentionWebhookSaved] = useState(false);
   const workspaceLogoSrc = useAuthUrl(workspaceLogoUrl);
 
   const nameChanged = displayName.trim() !== user.displayName;
@@ -121,6 +127,22 @@ export default function SettingsModal({
       })
       .then((downloads) => !cancelled && setDesktopDownloads(downloads))
       .catch((err) => !cancelled && setDesktopDownloadsError(err.message));
+    return () => { cancelled = true; };
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab !== "webhooks") return;
+    let cancelled = false;
+    setMentionWebhookLoading(true);
+    api.getMentionWebhook()
+      .then(({ webhook }) => {
+        if (cancelled) return;
+        setMentionWebhook(webhook || null);
+        setMentionWebhookUrl(webhook?.url || "");
+        setMentionWebhookEnabled(webhook?.enabled ?? true);
+      })
+      .catch((err) => !cancelled && setError(err.message))
+      .finally(() => !cancelled && setMentionWebhookLoading(false));
     return () => { cancelled = true; };
   }, [activeTab]);
 
@@ -455,6 +477,48 @@ export default function SettingsModal({
     }
   }
 
+  async function saveMentionWebhook() {
+    setMentionWebhookLoading(true);
+    setMentionWebhookSaved(false);
+    setError(null);
+    try {
+      const { webhook } = await api.saveMentionWebhook({ url: mentionWebhookUrl, enabled: mentionWebhookEnabled });
+      setMentionWebhook(webhook);
+      setMentionWebhookUrl(webhook.url);
+      setMentionWebhookEnabled(webhook.enabled);
+      setMentionWebhookSaved(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setMentionWebhookLoading(false);
+    }
+  }
+
+  async function removeMentionWebhook() {
+    setMentionWebhookLoading(true);
+    setMentionWebhookSaved(false);
+    setError(null);
+    try {
+      await api.deleteMentionWebhook();
+      setMentionWebhook(null);
+      setMentionWebhookUrl("");
+      setMentionWebhookEnabled(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setMentionWebhookLoading(false);
+    }
+  }
+
+  async function copyMentionWebhookSecret() {
+    if (!mentionWebhook?.signingSecret) return;
+    try {
+      await navigator.clipboard.writeText(mentionWebhook.signingSecret);
+    } catch {
+      setError("Couldn't copy the signing secret. Select and copy it manually.");
+    }
+  }
+
   async function setAzureNotification(key, enabled) {
     if (!azureIntegration) return;
     setAzureLoading(true);
@@ -515,6 +579,41 @@ export default function SettingsModal({
             </section>
             {!user.isAdmin ? (user.canChangePassword ? <ChangePassword /> : <SsoPasswordNotice />) : <AdminPasswordReset users={users} currentUserId={user.id} />}
           </>}
+
+          {activeTab === "webhooks" && <section className="settings-section mention-webhook-settings" data-testid="mention-webhook-settings">
+            <h3>Mention webhook</h3>
+            <p className="settings-hint">Send a signed event to your URL whenever someone mentions <strong>@{user.username}</strong>. One destination is supported per account.</p>
+            <div className="settings-profile-field">
+              <label className="settings-profile-field-label" htmlFor="mention-webhook-url">Webhook URL</label>
+              <input
+                id="mention-webhook-url"
+                className="settings-input"
+                data-testid="mention-webhook-url"
+                type="url"
+                placeholder="https://example.com/echo-events"
+                value={mentionWebhookUrl}
+                onChange={(event) => { setMentionWebhookUrl(event.target.value); setMentionWebhookSaved(false); }}
+                disabled={mentionWebhookLoading}
+              />
+            </div>
+            <label className="integration-option-row mention-webhook-enabled">
+              <div><strong>Enabled</strong><span>Deliver events for new @mentions.</span></div>
+              <span className={`integration-switch${mentionWebhookEnabled ? " is-on" : ""}`}><input type="checkbox" checked={mentionWebhookEnabled} disabled={mentionWebhookLoading} onChange={(event) => { setMentionWebhookEnabled(event.target.checked); setMentionWebhookSaved(false); }} /><span className="integration-switch-track"><span /></span></span>
+            </label>
+            <div className="integration-actions">
+              <button type="button" className="btn-primary" data-testid="mention-webhook-save" disabled={mentionWebhookLoading || !mentionWebhookUrl.trim()} onClick={saveMentionWebhook}>{mentionWebhook ? "Save webhook" : "Create webhook"}</button>
+              {mentionWebhook && <button type="button" className="btn-danger-outline" data-testid="mention-webhook-remove" disabled={mentionWebhookLoading} onClick={removeMentionWebhook}>Remove webhook</button>}
+              {mentionWebhookSaved && <span className="workspace-save-status">Saved ✓</span>}
+            </div>
+            {mentionWebhook?.signingSecret && <div className="settings-profile-field mention-webhook-secret">
+              <label className="settings-profile-field-label" htmlFor="mention-webhook-secret">Signing secret</label>
+              <div className="settings-name-row">
+                <input id="mention-webhook-secret" className="settings-input" data-testid="mention-webhook-secret" value={mentionWebhook.signingSecret} readOnly />
+                <button type="button" className="btn-secondary" onClick={copyMentionWebhookSecret}>Copy</button>
+              </div>
+              <p className="settings-hint">Validate the <code>x-echo-signature</code> header with this secret.</p>
+            </div>}
+          </section>}
 
           {activeTab === "appearance" && themes.length > 0 && <section className="settings-section settings-appearance-card">
             <h3>Appearance</h3>

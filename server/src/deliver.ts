@@ -3,6 +3,7 @@ import { Message } from "./models/Message.js";
 import { getIO } from "./realtime.js";
 import { roomFor, userRoom } from "./lib/rooms.js";
 import { buildMessageActivityMetadata } from "./lib/messageActivity.js";
+import { dispatchMentionWebhooks } from "./mentionWebhooks.js";
 import mongoose from "mongoose";
 
 export const MAX_MESSAGE_ATTACHMENTS = 10;
@@ -137,6 +138,7 @@ export async function deliverMessage({ channel, authorId, body, parentId, attach
 
   const payload = message.toPublicJSON();
   io?.to(roomFor(cid)).emit("message:new", payload);
+  dispatchMentionWebhooks({ message, channel, author: message.author });
 
   // Activity badge bumps for @mentions / @everyone / thread-root authors, so it
   // updates live even for recipients not in this channel's room.
