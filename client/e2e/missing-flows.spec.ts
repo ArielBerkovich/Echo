@@ -172,6 +172,40 @@ test("hides password settings for an SSO-authenticated user", async ({ page }) =
   await expect(page.getByTestId("change-password-form")).toHaveCount(0);
 });
 
+test("configures one personal mention webhook from Settings", async ({ page }) => {
+  await seedToken(page, fixture.alice.token);
+  await page.goto("/");
+  await page.getByTestId("rail-settings").click();
+  await expect(page.locator('[aria-label="Settings categories"] button')).toHaveText([
+    "Account", "Appearance", "Desktop", "Keyboard shortcuts", "API", "Webhooks",
+  ]);
+  const webhookLoaded = page.waitForResponse((response) => response.url().includes("/api/mention-webhook") && response.request().method() === "GET");
+  await page.getByRole("button", { name: "Webhooks" }).click();
+  await webhookLoaded;
+
+  const settings = page.getByTestId("mention-webhook-settings");
+  await settings.getByTestId("mention-webhook-url").fill("https://hooks.example.test/alice");
+  await settings.getByTestId("mention-webhook-save").click();
+  await expect(settings).toContainText("Saved ✓");
+  await expect(settings.getByTestId("mention-webhook-secret")).toHaveValue(/.+/);
+  await expect(settings).toContainText("Before accepting an event");
+  await expect(settings).toContainText("user_mentioned");
+  await expect(settings).toContainText("direct_message");
+  await expect(settings).toContainText("message.parentId");
+  await expect(settings.getByTestId("mention-webhook-copy-secret")).toHaveText("Copy");
+
+  const first = await requestAsToken(page, fixture.alice.token, "/mention-webhook");
+  expect(first.webhook).toMatchObject({ url: "https://hooks.example.test/alice", enabled: true });
+
+  await settings.getByTestId("mention-webhook-url").fill("https://hooks.example.test/alice-v2");
+  await settings.getByTestId("mention-webhook-save").click();
+  const updated = await requestAsToken(page, fixture.alice.token, "/mention-webhook");
+  expect(updated.webhook).toMatchObject({ id: first.webhook.id, url: "https://hooks.example.test/alice-v2", enabled: true });
+
+  const bobView = await requestAsToken(page, fixture.bob.token, "/mention-webhook");
+  expect(bobView.webhook).toBeNull();
+});
+
 test("creates, delivers through, lists, and revokes an incoming webhook", async ({ page }) => {
   await page.goto("/");
   await channelRow(page, "general").click();

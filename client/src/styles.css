@@ -5414,6 +5414,178 @@ html[data-mode="dark"] .day-divider-label {
 .settings-content-desktop {
   grid-template-columns: minmax(0, 720px);
 }
+.settings-content-webhooks {
+  grid-template-columns: minmax(0, 760px);
+}
+.mention-webhook-settings {
+  width: min(760px, 100%);
+  display: grid;
+  gap: 18px;
+}
+.mention-webhook-hero {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.mention-webhook-icon {
+  width: 42px;
+  height: 42px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--active-bg) 14%, var(--surface-2));
+  border: 1px solid color-mix(in srgb, var(--active-bg) 26%, var(--border));
+}
+.mention-webhook-hero h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+.mention-webhook-hero p,
+.mention-webhook-secret p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.mention-webhook-status {
+  margin-left: auto;
+  flex: none;
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 700;
+}
+.mention-webhook-status.is-active {
+  color: #16803b;
+  background: color-mix(in srgb, #22c55e 12%, var(--surface));
+  border-color: color-mix(in srgb, #22c55e 30%, var(--border));
+}
+.mention-webhook-card,
+.mention-webhook-secret,
+.mention-webhook-examples {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--surface-2) 58%, var(--surface));
+}
+.mention-webhook-field {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.mention-webhook-field > span {
+  color: var(--muted);
+  font-size: 12px;
+  text-align: right;
+}
+.mention-webhook-card .settings-input {
+  min-height: 42px;
+}
+.mention-webhook-enabled {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  cursor: pointer;
+}
+.mention-webhook-enabled strong,
+.mention-webhook-enabled small {
+  display: block;
+}
+.mention-webhook-enabled strong {
+  color: var(--text);
+  font-size: 13px;
+}
+.mention-webhook-enabled small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.mention-webhook-actions,
+.mention-webhook-secret-value {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.mention-webhook-actions {
+  min-height: 36px;
+}
+.mention-webhook-secret-value .settings-input {
+  min-width: 0;
+  flex: 1;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+}
+.mention-webhook-secret-value .btn-secondary {
+  min-width: 78px;
+  justify-content: center;
+}
+.mention-webhook-secret-value .btn-secondary svg {
+  vertical-align: -2px;
+}
+.mention-webhook-examples {
+  gap: 12px;
+}
+.mention-webhook-examples h4 {
+  margin: 0;
+  color: var(--text);
+  font-size: 13px;
+}
+.mention-webhook-examples p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.mention-webhook-examples .mention-webhook-thread-note {
+  margin: 0;
+  padding: 9px 11px;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 7px 7px 0;
+  color: var(--text);
+  background: color-mix(in srgb, var(--active-bg) 12%, var(--surface));
+}
+.mention-webhook-examples details {
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.mention-webhook-examples summary {
+  padding: 10px 12px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 650;
+}
+.mention-webhook-examples pre {
+  margin: 0;
+  padding: 12px;
+  overflow-x: auto;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface-2) 65%, var(--surface));
+  font: 11px/1.55 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+@media (max-width: 560px) {
+  .mention-webhook-field { align-items: flex-start; flex-direction: column; }
+  .mention-webhook-field > span { text-align: left; }
+  .mention-webhook-secret-value { align-items: stretch; flex-direction: column; }
+}
 .settings-content-shortcuts {
   grid-template-columns: minmax(0, 720px);
 }

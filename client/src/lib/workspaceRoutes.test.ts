@@ -57,6 +57,8 @@ describe("workspace routes", () => {
       { overlay: null, view: "settings", settingsTab: "account", convId: null, convType: null, searchQuery: null }
     );
     assert.equal(parseWorkspacePath("/settings/shortcuts").settingsTab, "shortcuts");
+    assert.equal(workspacePath({ view: "settings", settingsTab: "webhooks" }), "/settings/webhooks");
+    assert.equal(parseWorkspacePath("/settings/webhooks").settingsTab, "webhooks");
   });
 
   it("recognizes only same-origin Echo message links", () => {

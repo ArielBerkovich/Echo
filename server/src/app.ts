@@ -21,6 +21,7 @@ import { httpMetricsMiddleware } from "./metrics.js";
 import { azureDevOpsRouter } from "./routes/azureDevOps.js";
 import { allureRouter } from "./routes/allure.js";
 import { jenkinsRouter } from "./routes/jenkins.js";
+import { mentionWebhooksRouter } from "./routes/mentionWebhooks.js";
 
 export function createApp() {
   const app = express();
@@ -55,6 +56,7 @@ export function createApp() {
   app.use("/api/admin", adminRouter);
   app.use("/api/saved", savedRouter);
   app.use("/api/webhooks", webhooksRouter);
+  app.use("/api/mention-webhook", mentionWebhooksRouter);
   app.use("/api/integrations/azure-devops", azureDevOpsRouter);
   app.use("/api/integrations/allure", allureRouter);
   app.use("/api/integrations/jenkins", jenkinsRouter);
