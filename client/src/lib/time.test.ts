@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { formatDate, formatDateTime, formatDayDivider, formatTime, isDifferentDay, relativeTime } from "./time.js";
+import { formatDate, formatDateTime, formatDayDivider, formatTime, isDifferentDay, isSameMinute, relativeTime } from "./time.js";
 
 describe("time formatting helpers", () => {
   it("return empty strings for invalid dates where helpers explicitly guard", () => {
@@ -19,6 +19,12 @@ describe("time formatting helpers", () => {
   it("detects calendar-day boundaries", () => {
     assert.equal(isDifferentDay("2026-06-04T09:00:00", "2026-06-04T17:00:00"), false);
     assert.equal(isDifferentDay("2026-06-04T09:00:00", "2026-06-05T09:00:00"), true);
+  });
+
+  it("detects timestamps in the same local minute", () => {
+    assert.equal(isSameMinute("2026-06-04T09:00:01", "2026-06-04T09:00:59"), true);
+    assert.equal(isSameMinute("2026-06-04T09:00:59", "2026-06-04T09:01:00"), false);
+    assert.equal(isSameMinute("invalid", "2026-06-04T09:00:00"), false);
   });
 
   it("labels today and yesterday for day dividers", () => {

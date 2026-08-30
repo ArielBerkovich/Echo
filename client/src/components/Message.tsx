@@ -374,9 +374,7 @@ function Message({
       }}
     >
       <div className="avatar-slot">
-        {grouped ? (
-          <span className="grouped-time">{formatTime(m.createdAt)}</span>
-        ) : (
+        {!grouped && (
           <button
             type="button"
             className="avatar-btn"
