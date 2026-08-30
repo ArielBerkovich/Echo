@@ -1,5 +1,5 @@
 const STATIC_VIEWS = new Set(["browse", "activity", "saved", "dms", "settings"]);
-const SETTINGS_TABS = new Set(["account", "appearance", "workspace", "integrations", "desktop", "shortcuts", "api"]);
+const SETTINGS_TABS = new Set(["account", "appearance", "webhooks", "workspace", "integrations", "desktop", "shortcuts", "api"]);
 
 export function isEchoMessageLink(href, origin = typeof window === "undefined" ? "http://localhost" : window.location.origin) {
   try {
