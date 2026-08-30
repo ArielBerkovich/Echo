@@ -584,15 +584,15 @@ export default function SettingsModal({
             <div className="mention-webhook-hero">
               <span className="mention-webhook-icon" aria-hidden="true"><WebhookIcon size={22} strokeWidth={2} /></span>
               <div>
-                <h3>Mention webhook</h3>
-                <p>Send a signed event whenever someone mentions <strong>@{user.username}</strong>.</p>
+                <h3>Personal webhook</h3>
+                <p>Send a signed event when someone mentions <strong>@{user.username}</strong> or sends you a direct message.</p>
               </div>
               <span className={`mention-webhook-status${mentionWebhook?.enabled ? " is-active" : ""}`}>{mentionWebhook?.enabled ? "Active" : mentionWebhook ? "Paused" : "Not configured"}</span>
             </div>
             <div className="mention-webhook-card">
               <div className="mention-webhook-field">
                 <label className="settings-profile-field-label" htmlFor="mention-webhook-url">Destination URL</label>
-                <span>Echo sends new mention events to this endpoint.</span>
+                <span>Echo sends your new mention and direct-message events here.</span>
               </div>
               <input
                 id="mention-webhook-url"
@@ -605,7 +605,7 @@ export default function SettingsModal({
                 disabled={mentionWebhookLoading}
               />
               <label className="mention-webhook-enabled">
-                <span><strong>Deliver events</strong><small>Send each new @mention to this endpoint.</small></span>
+                <span><strong>Deliver events</strong><small>Send each new @mention and direct message to this endpoint.</small></span>
                 <span className={`integration-switch${mentionWebhookEnabled ? " is-on" : ""}`}><input type="checkbox" checked={mentionWebhookEnabled} disabled={mentionWebhookLoading} onChange={(event) => { setMentionWebhookEnabled(event.target.checked); setMentionWebhookSaved(false); }} /><span className="integration-switch-track"><span /></span></span>
               </label>
             </div>

@@ -40,19 +40,35 @@ async function deliver(url, secret, event) {
   }
 }
 
-// Mention delivery is deliberately asynchronous so a receiver cannot delay
-// normal message sending. Only explicit @mentions produce an event.
+export function webhookRecipients(message, channel, authorId) {
+  const author = String(authorId);
+  const recipients = new Map((message.mentionedUserIds || []).map((userId) => [String(userId), "user_mentioned"]));
+  // A direct conversation delivers to every other participant, including a
+  // group DM. Direct delivery takes precedence when a recipient is also
+  // mentioned in the same message.
+  if (channel.type === "dm") {
+    for (const memberId of channel.members || []) {
+      const userId = String(memberId);
+      if (userId !== author) recipients.set(userId, "direct_message");
+    }
+  }
+  recipients.delete(author);
+  return recipients;
+}
+
+// Delivery is deliberately asynchronous so a receiver cannot delay normal
+// message sending. Recipients are explicit mentions or DM participants.
 export function dispatchMentionWebhooks({ message, channel, author }) {
-  if (!message.mentionedUserIds?.length) return;
+  if (!message.mentionedUserIds?.length && channel.type !== "dm") return;
   queueMicrotask(() => void dispatch({ message, channel, author }).catch((error) => {
     console.error("Could not dispatch mention webhooks:", error);
   }));
 }
 
 async function dispatch({ message, channel, author }) {
-  const recipientIds = [...new Set(message.mentionedUserIds.map(String))]
-    .filter((userId) => userId !== String(author._id));
-  if (!recipientIds.length) return;
+  const recipientEvents = webhookRecipients(message, channel, author._id);
+  if (!recipientEvents.size) return;
+  const recipientIds = [...recipientEvents.keys()];
   const [webhooks, recipients] = await Promise.all([
     MentionWebhook.find({ user: { $in: recipientIds }, enabled: true }),
     User.find({ _id: { $in: recipientIds } }),
@@ -63,7 +79,7 @@ async function dispatch({ message, channel, author }) {
     if (!recipient) continue;
     const event = {
       id: crypto.randomUUID(),
-      type: "user_mentioned",
+      type: recipientEvents.get(recipient._id.toString()),
       occurredAt: new Date().toISOString(),
       recipient: recipient.toPublicJSON(),
       message: message.toPublicJSON(),
