@@ -8446,6 +8446,9 @@ html[data-mode="dark"] .channel-header {
 .channel-view.has-side-panel .channel-header {
   gap: 8px;
 }
+.channel-view.has-side-panel > .channel-main > .composer .composer-toolbar {
+  overflow-y: hidden;
+}
 .channel-view.has-side-panel .channel-header .ch-name-btn {
   max-width: min(220px, 26vw);
   overflow: hidden;
