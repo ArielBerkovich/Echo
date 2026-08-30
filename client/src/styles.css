@@ -5551,6 +5551,14 @@ html[data-mode="dark"] .day-divider-label {
   font-size: 12px;
   line-height: 1.45;
 }
+.mention-webhook-examples .mention-webhook-thread-note {
+  margin: 0;
+  padding: 9px 11px;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 7px 7px 0;
+  color: var(--text);
+  background: color-mix(in srgb, var(--active-bg) 12%, var(--surface));
+}
 .mention-webhook-examples details {
   border: 1px solid var(--border);
   border-radius: 9px;

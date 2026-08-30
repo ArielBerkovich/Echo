@@ -188,6 +188,7 @@ test("configures one personal mention webhook from Settings", async ({ page }) =
   await expect(settings).toContainText("Before accepting an event");
   await expect(settings).toContainText("user_mentioned");
   await expect(settings).toContainText("direct_message");
+  await expect(settings).toContainText("message.parentId");
   await expect(settings.getByTestId("mention-webhook-copy-secret")).toHaveText("Copy");
 
   const first = await requestAsToken(page, fixture.alice.token, "/mention-webhook");

@@ -634,6 +634,7 @@ export default function SettingsModal({
                 <h4 id="mention-webhook-examples-title">What Echo sends</h4>
                 <p>Echo sends JSON with the event type, recipient, message, channel, and author. The request headers also include <code>x-echo-event</code>, <code>x-echo-delivery</code>, <code>x-echo-timestamp</code>, and <code>x-echo-signature</code>.</p>
               </div>
+              <p className="mention-webhook-thread-note"><code>message.id</code> always identifies the exact new message that triggered this event. For a reply in a thread, <code>message.parentId</code> is the root message’s ID; it is <code>null</code> for a top-level message.</p>
               <details open>
                 <summary>Someone mentions you <code>user_mentioned</code></summary>
                 <pre>{`{
@@ -641,7 +642,11 @@ export default function SettingsModal({
   "type": "user_mentioned",
   "occurredAt": "2026-08-30T19:30:00.000Z",
   "recipient": { "id": "…", "username": "${user.username}" },
-  "message": { "id": "…", "body": "Can you take a look at this?" },
+  "message": {
+    "id": "reply-message-id",
+    "parentId": "thread-root-message-id",
+    "body": "Can you take a look at this?"
+  },
   "channel": { "id": "…", "name": "general", "type": "public" },
   "author": { "id": "…", "username": "alex" }
 }`}</pre>
