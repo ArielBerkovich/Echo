@@ -8815,6 +8815,11 @@ html[data-mode="dark"] .new-messages-button:hover {
   padding-top: 2px;
   padding-bottom: 2px;
 }
+/* The first message still has a header, but its bottom edge should join a
+   same-minute run as tightly as the grouped messages that follow it. */
+.message:not(.grouped):has(+ .message.grouped) {
+  padding-bottom: 2px;
+}
 .message.grouped .avatar-slot {
   width: 36px;
 }
@@ -10077,22 +10082,8 @@ html[data-mode="dark"] .hljs-class .hljs-title {
    Message-area polish — grouping, sticky date pills, reactions.
    ============================================================ */
 
-/* Grouped messages: hide the repeated avatar/name; reveal a faint timestamp in
-   the gutter on hover so you can still see exactly when each line was sent. */
-.grouped-time {
-  display: block;
-  width: 36px;
-  font-size: 10.5px;
-  line-height: 22px; /* match the first body line so short rows don't inflate */
-  text-align: center;
-  color: var(--muted);
-  opacity: 0;
-  transition: opacity 0.12s ease;
-  user-select: none;
-}
-.message.grouped:hover .grouped-time {
-  opacity: 0.85;
-}
+/* Grouped messages retain the avatar gutter while omitting repeated sender
+   details, including the timestamp. */
 
 /* ---- Presence dots ---- */
 .avatar-wrap {
