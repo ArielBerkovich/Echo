@@ -581,10 +581,19 @@ export default function SettingsModal({
           </>}
 
           {activeTab === "webhooks" && <section className="settings-section mention-webhook-settings" data-testid="mention-webhook-settings">
-            <h3>Mention webhook</h3>
-            <p className="settings-hint">Send a signed event to your URL whenever someone mentions <strong>@{user.username}</strong>. One destination is supported per account.</p>
-            <div className="settings-profile-field">
-              <label className="settings-profile-field-label" htmlFor="mention-webhook-url">Webhook URL</label>
+            <div className="mention-webhook-hero">
+              <span className="mention-webhook-icon" aria-hidden="true"><WebhookIcon size={22} strokeWidth={2} /></span>
+              <div>
+                <h3>Mention webhook</h3>
+                <p>Send a signed event whenever someone mentions <strong>@{user.username}</strong>.</p>
+              </div>
+              <span className={`mention-webhook-status${mentionWebhook?.enabled ? " is-active" : ""}`}>{mentionWebhook?.enabled ? "Active" : mentionWebhook ? "Paused" : "Not configured"}</span>
+            </div>
+            <div className="mention-webhook-card">
+              <div className="mention-webhook-field">
+                <label className="settings-profile-field-label" htmlFor="mention-webhook-url">Destination URL</label>
+                <span>Echo sends new mention events to this endpoint.</span>
+              </div>
               <input
                 id="mention-webhook-url"
                 className="settings-input"
@@ -595,23 +604,22 @@ export default function SettingsModal({
                 onChange={(event) => { setMentionWebhookUrl(event.target.value); setMentionWebhookSaved(false); }}
                 disabled={mentionWebhookLoading}
               />
+              <label className="mention-webhook-enabled">
+                <span><strong>Deliver events</strong><small>Send each new @mention to this endpoint.</small></span>
+                <span className={`integration-switch${mentionWebhookEnabled ? " is-on" : ""}`}><input type="checkbox" checked={mentionWebhookEnabled} disabled={mentionWebhookLoading} onChange={(event) => { setMentionWebhookEnabled(event.target.checked); setMentionWebhookSaved(false); }} /><span className="integration-switch-track"><span /></span></span>
+              </label>
             </div>
-            <label className="integration-option-row mention-webhook-enabled">
-              <div><strong>Enabled</strong><span>Deliver events for new @mentions.</span></div>
-              <span className={`integration-switch${mentionWebhookEnabled ? " is-on" : ""}`}><input type="checkbox" checked={mentionWebhookEnabled} disabled={mentionWebhookLoading} onChange={(event) => { setMentionWebhookEnabled(event.target.checked); setMentionWebhookSaved(false); }} /><span className="integration-switch-track"><span /></span></span>
-            </label>
-            <div className="integration-actions">
+            <div className="mention-webhook-actions">
               <button type="button" className="btn-primary" data-testid="mention-webhook-save" disabled={mentionWebhookLoading || !mentionWebhookUrl.trim()} onClick={saveMentionWebhook}>{mentionWebhook ? "Save webhook" : "Create webhook"}</button>
               {mentionWebhook && <button type="button" className="btn-danger-outline" data-testid="mention-webhook-remove" disabled={mentionWebhookLoading} onClick={removeMentionWebhook}>Remove webhook</button>}
               {mentionWebhookSaved && <span className="workspace-save-status">Saved ✓</span>}
             </div>
-            {mentionWebhook?.signingSecret && <div className="settings-profile-field mention-webhook-secret">
-              <label className="settings-profile-field-label" htmlFor="mention-webhook-secret">Signing secret</label>
-              <div className="settings-name-row">
+            {mentionWebhook?.signingSecret && <div className="mention-webhook-secret">
+              <div><label className="settings-profile-field-label" htmlFor="mention-webhook-secret">Signing secret</label><p>Use this to validate the <code>x-echo-signature</code> header.</p></div>
+              <div className="mention-webhook-secret-value">
                 <input id="mention-webhook-secret" className="settings-input" data-testid="mention-webhook-secret" value={mentionWebhook.signingSecret} readOnly />
                 <button type="button" className="btn-secondary" onClick={copyMentionWebhookSecret}>Copy</button>
               </div>
-              <p className="settings-hint">Validate the <code>x-echo-signature</code> header with this secret.</p>
             </div>}
           </section>}
 
