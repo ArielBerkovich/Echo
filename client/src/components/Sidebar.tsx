@@ -30,7 +30,7 @@ function Preview({ body, customEmojis }) {
   for (const token of tokens) {
     if (length >= 40) break;
     if (token.type === "custom") {
-      output.push(<img key={`custom-${output.length}`} className="custom-emoji" src={token.value} alt={token.alt} title={token.alt} />);
+      output.push(<img key={`custom-${output.length}`} className="custom-emoji" src={token.value} alt={token.alt} title="Custom emoji" />);
       length += 1;
       continue;
     }

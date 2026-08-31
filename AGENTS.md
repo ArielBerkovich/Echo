@@ -60,3 +60,11 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml stop \
 
 If server code changes, rebuild the `server` service as described above; the
 host Vite process can remain running.
+
+## Tooltip content
+
+Keep every `title` tooltip stable and context-independent. Do not interpolate
+channel names, user names, file names, timestamps, counts, emoji codes, or
+other runtime data into tooltip text. Use a concise action label such as
+`View files`, `Search messages`, or `View profile`; keep dynamic context in
+visible UI or in an `aria-label` when it improves screen-reader context.

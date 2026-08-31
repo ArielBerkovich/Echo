@@ -153,7 +153,7 @@ function Lightbox({ src, name, sender, onClose, inline = false }) {
             <Avatar name={sender?.displayName || "Unknown sender"} src={sender?.avatarUrl} size={32} />
             <div className="lightbox-sender-copy">
               <strong>{sender?.displayName || "Unknown sender"}</strong>
-              <span className="lightbox-title" title={name}>{name}</span>
+              <span className="lightbox-title">{name}</span>
             </div>
           </div>
           <div className="lightbox-toolbar-actions">
@@ -251,7 +251,6 @@ function FileAttachment({ a }) {
         link.download = a.name;
         link.click();
       }}
-      title={a.name}
     >
           <span className="att-file-icon">
         <FileIcon size={20} strokeWidth={1.5} />
