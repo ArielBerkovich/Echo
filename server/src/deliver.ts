@@ -7,15 +7,15 @@ import { dispatchMentionWebhooks } from "./mentionWebhooks.js";
 import mongoose from "mongoose";
 
 export const MAX_MESSAGE_ATTACHMENTS = 10;
+export const MAX_SURVEY_OPTION_CHARACTERS = 80;
 
 export function sanitizeSurvey(survey) {
   if (!survey || typeof survey !== "object") return null;
   const question = String(survey.question || "").trim().slice(0, 500);
   const rawOptions = Array.isArray(survey.options) ? survey.options : [];
   const options = rawOptions
-    .map((option) => ({ label: String(option?.label || "").trim().slice(0, 200) }))
+    .map((option) => ({ label: String(option?.label || "").trim().slice(0, MAX_SURVEY_OPTION_CHARACTERS) }))
     .filter((option) => option.label)
-    .filter((option, index, all) => all.findIndex((item) => item.label.toLowerCase() === option.label.toLowerCase()) === index)
     .slice(0, 10)
     .map((option) => ({ id: new mongoose.Types.ObjectId().toString(), label: option.label, votes: [] }));
   if (!question || options.length < 2) return null;
@@ -24,6 +24,14 @@ export function sanitizeSurvey(survey) {
 
 export function surveyError(survey) {
   if (survey === undefined || survey === null) return null;
+  const rawOptions = Array.isArray(survey.options) ? survey.options : [];
+  if (rawOptions.some((option) => String(option?.label || "").trim().length > MAX_SURVEY_OPTION_CHARACTERS)) {
+    return `survey options must be ${MAX_SURVEY_OPTION_CHARACTERS} characters or fewer`;
+  }
+  const labels = rawOptions.map((option) => String(option?.label || "").trim().toLowerCase()).filter(Boolean);
+  if (labels.some((label, index) => labels.indexOf(label) !== index)) {
+    return "survey options must be unique";
+  }
   return sanitizeSurvey(survey) ? null : "a survey needs a question and at least two options";
 }
 

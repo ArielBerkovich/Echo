@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { roomFor, userRoom } from "./lib/rooms.js";
-import { attachmentLimitError, sanitizeAttachments, sanitizeSurvey, surveyError } from "./deliver.js";
+import { attachmentLimitError, sanitizeAttachments, sanitizeSurvey, surveyError, MAX_SURVEY_OPTION_CHARACTERS } from "./deliver.js";
 
 describe("room helpers", () => {
   it("build channel and user room names", () => {
@@ -72,7 +72,7 @@ describe("attachmentLimitError", () => {
 });
 
 describe("surveys", () => {
-  it("normalizes valid surveys and removes duplicate or empty options", () => {
+  it("normalizes valid surveys", () => {
     const result = sanitizeSurvey({
       question: "  Lunch? ",
       multipleChoice: true,
@@ -80,7 +80,7 @@ describe("surveys", () => {
     });
     assert.equal(result.question, "Lunch?");
     assert.equal(result.allowMultiple, true);
-    assert.deepEqual(result.options.map((option) => option.label), ["Pizza", "Salad"]);
+    assert.deepEqual(result.options.map((option) => option.label), ["Pizza", "pizza", "Salad"]);
     assert.ok(result.options.every((option) => option.votes.length === 0 && option.id.length > 0));
   });
 
@@ -88,5 +88,21 @@ describe("surveys", () => {
     assert.equal(surveyError({ question: "Pick one", options: [{ label: "Only" }] }) !== null, true);
     assert.equal(surveyError({ question: "", options: [{ label: "A" }, { label: "B" }] }) !== null, true);
     assert.equal(surveyError(undefined), null);
+  });
+
+  it("rejects duplicate survey options", () => {
+    assert.equal(
+      surveyError({ question: "Pick one", options: [{ label: "Pizza" }, { label: "pizza" }] }),
+      "survey options must be unique"
+    );
+  });
+
+  it("rejects survey options above the shared character limit", () => {
+    const option = "x".repeat(MAX_SURVEY_OPTION_CHARACTERS + 1);
+    assert.equal(
+      surveyError({ question: "Pick one", options: [{ label: "A" }, { label: option }] }),
+      "survey options must be 80 characters or fewer"
+    );
+    assert.equal(surveyError({ question: "Pick one", options: [{ label: "A" }, { label: "x".repeat(MAX_SURVEY_OPTION_CHARACTERS) }] }), null);
   });
 });

@@ -36,6 +36,8 @@ const SCHEDULE_PRESETS = [
   { label: "Tomorrow, 09:00", getWhen: tomorrow9am },
 ];
 
+const MAX_SURVEY_OPTION_CHARACTERS = 80;
+
 function tomorrow9am() {
   const d = new Date();
   d.setDate(d.getDate() + 1);
@@ -85,6 +87,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   const [showScheduled, setShowScheduled] = useState(false); // manage-scheduled modal
   const [editingSched, setEditingSched] = useState(null); // { id, body, at } being edited
   const [surveyDraft, setSurveyDraft] = useState(null);
+  const surveyOptionsListRef = useRef(null);
   const [pastePrompt, setPastePrompt] = useState(null); // { text, byteLength, tooLong, tooLarge }
   const [pasteBlockedNotice, setPasteBlockedNotice] = useState(null);
   const [editorState, setEditorState] = useState({
@@ -98,6 +101,18 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     code: false,
     codeBlock: false,
   });
+  const duplicateSurveyOptionCount = surveyDraft
+    ? surveyDraft.options.filter((option, index, options) => {
+      const normalized = option.trim().toLowerCase();
+      return normalized && options.slice(0, index).some((candidate) => candidate.trim().toLowerCase() === normalized);
+    }).length
+    : 0;
+
+  useEffect(() => {
+    if (!surveyDraft) return;
+    const list = surveyOptionsListRef.current;
+    if (list) list.scrollTop = list.scrollHeight;
+  }, [surveyDraft?.options.length, duplicateSurveyOptionCount]);
 
   useEffect(() => {
     if (!pastePrompt) return undefined;
@@ -496,6 +511,10 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       setSurveyDraft((draft) => ({ ...draft, error: "Add a question and at least two options." }));
       return;
     }
+    if (duplicateSurveyOptionCount > 0) {
+      setSurveyDraft((draft) => ({ ...draft, error: "Each survey option must be unique." }));
+      return;
+    }
     if (doSend(question, [], { question, options: options.map((label) => ({ label })), allowMultiple: surveyDraft.allowMultiple })) {
       setSurveyDraft(null);
     }
@@ -790,7 +809,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
               </button>
             ))}
           </div>
-          <label className="schedule-custom-field">
+          <label className="schedule-custom-field survey-question-field">
             <span>Custom date and time</span>
             <input
               className="settings-input schedule-input"
@@ -836,16 +855,34 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
 
       {!editing && surveyDraft && (
         <Modal title="Send a survey" className="survey-modal" testId="survey-modal" onClose={() => setSurveyDraft(null)}>
-          <label className="schedule-custom-field">
+          <label className="schedule-custom-field survey-question-field">
             <span>Question</span>
             <input className="settings-input" autoFocus value={surveyDraft.question} placeholder="What should we do?" onChange={(e) => setSurveyDraft((d) => ({ ...d, question: e.target.value, error: null }))} />
           </label>
-          <div className="schedule-custom-field">
+          <div className="schedule-custom-field survey-options-field">
             <span>Options</span>
-            {surveyDraft.options.map((option, index) => (
-              <input key={index} className="settings-input" value={option} placeholder={`Option ${index + 1}`} onChange={(e) => setSurveyDraft((d) => ({ ...d, options: d.options.map((v, i) => i === index ? e.target.value : v), error: null }))} />
-            ))}
-            {surveyDraft.options.length < 10 && <button type="button" className="btn-secondary" onClick={() => setSurveyDraft((d) => ({ ...d, options: [...d.options, ""] }))}>Add option</button>}
+            <div ref={surveyOptionsListRef} className="survey-options-list">
+              {surveyDraft.options.map((option, index) => {
+                const normalized = option.trim().toLowerCase();
+                const duplicate = normalized && surveyDraft.options.slice(0, index).some((candidate) => (
+                  candidate.trim().toLowerCase() === normalized
+                ));
+                return (
+                  <div className="survey-option-entry" key={index}>
+                    <input
+                      className="settings-input"
+                      maxLength={MAX_SURVEY_OPTION_CHARACTERS}
+                      value={option}
+                      placeholder={`Option ${index + 1}`}
+                      aria-describedby={duplicate ? `survey-option-warning-${index}` : undefined}
+                      onChange={(e) => setSurveyDraft((d) => ({ ...d, options: d.options.map((v, i) => i === index ? e.target.value : v), error: null }))}
+                    />
+                    {duplicate && <span id={`survey-option-warning-${index}`} className="survey-option-warning">This option matches an earlier choice.</span>}
+                  </div>
+                );
+              })}
+            </div>
+            {surveyDraft.options.length < 10 && <button type="button" className="btn-secondary survey-add-option" onClick={() => setSurveyDraft((d) => ({ ...d, options: [...d.options, ""] }))}>Add option</button>}
           </div>
           <label className={`survey-multiple-toggle${surveyDraft.allowMultiple ? " is-enabled" : ""}`}>
             <input
