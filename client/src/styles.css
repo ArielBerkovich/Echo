@@ -3658,8 +3658,10 @@ html[data-mode="dark"] .sidebar {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 16px 18px;
-  border-bottom: 1px solid var(--border);
+  min-height: 64px;
+  box-sizing: border-box;
+  padding: 13px 18px;
+  border-bottom: 0;
 }
 .members-panel-title {
   display: flex;
@@ -3870,7 +3872,7 @@ html[data-mode="dark"] .sidebar {
   height: 64px;
   flex: none;
   padding: 14px 16px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 0;
   font-weight: 800;
 }
 .thread-heading {
@@ -3944,11 +3946,13 @@ html[data-mode="dark"] .sidebar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border);
+  min-height: 64px;
+  box-sizing: border-box;
+  padding: 13px 16px;
+  border-bottom: 0;
   font-weight: 800;
 }
-.panel-title { font-size: 15px; }
+.panel-title { font-size: 18px; }
 .panel-close {
   background: none;
   color: var(--muted);
@@ -8496,7 +8500,7 @@ html[data-mode="dark"] .channel-header {
 }
 .files-panel-controls {
   padding: 12px 16px 8px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 0;
 }
 .files-search {
   display: flex;
@@ -8505,17 +8509,32 @@ html[data-mode="dark"] .channel-header {
   padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: 8px;
+  background: var(--surface);
   color: var(--muted);
+}
+.files-search:focus-within {
+  border-color: var(--active-bg);
+  box-shadow: 0 0 0 2px var(--active-ring);
 }
 .files-search input {
   min-width: 0;
   width: 100%;
+  min-height: 0;
+  padding: 0;
   border: 0;
   outline: 0;
+  border-radius: 0;
   background: transparent;
   color: var(--text);
   font: inherit;
   font-size: 13px;
+  box-shadow: none;
+}
+.files-search input:focus,
+.channel-details-search input:focus {
+  border: 0;
+  outline: none;
+  box-shadow: none;
 }
 .files-filters {
   display: flex;

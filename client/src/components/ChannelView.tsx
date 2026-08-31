@@ -971,7 +971,7 @@ export default function ChannelView({
       ? `${typingNames[0]} and ${typingNames.length - 1} others are typing…`
       : "";
 
-  const hasSidePanel = !!thread || showPinned || showFiles;
+  const hasSidePanel = !!thread || showMembers || showPinned || showFiles;
 
   return (
     <main
@@ -1561,7 +1561,7 @@ function FilesPanel({ files, loading, error, conversationLabel, onRetry, onClose
       </div>
       <div className="files-panel-controls">
         <label className="files-search">
-          <SearchIcon size={15} aria-hidden="true" />
+          <SearchIcon size={16} aria-hidden="true" />
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search files…" aria-label="Search files" />
         </label>
         <div className="files-filters" role="group" aria-label="Filter files">
