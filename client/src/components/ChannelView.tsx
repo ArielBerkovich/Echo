@@ -1077,6 +1077,16 @@ export default function ChannelView({
               </span>
             )}
             <div className="header-actions">
+              {channel.createdBy === user.id && channel.type === "private" && (
+                <button
+                  className="header-action header-action-visibility"
+                  data-testid="channel-visibility"
+                  title="Change who can join"
+                  onClick={() => onChangeVisibility(channel, "public")}
+                >
+                  Make public
+                </button>
+              )}
               <button className="header-action header-action-icon" data-testid="channel-pinned" onClick={openPinnedPanel} title="Pinned messages" aria-label="Pinned messages">
                 <PinIcon />
               </button>
@@ -1105,16 +1115,6 @@ export default function ChannelView({
               <button className="header-action header-action-icon" data-testid="channel-members" title="View members" onClick={() => { setThread(null); setThreadJumpTargetId(null); setShowFiles(false); setShowDetails(false); setShowMembers(true); }}>
                 <UsersRoundIcon size={16} strokeWidth={1.8} />
               </button>
-              {channel.createdBy === user.id && channel.type === "private" && (
-                <button
-                  className="header-action header-action-visibility"
-                  data-testid="channel-visibility"
-                  title="Change who can join"
-                  onClick={() => onChangeVisibility(channel, "public")}
-                >
-                  Make public
-                </button>
-              )}
               {!isGeneral && isMember && (
                 <button
                   className="header-action header-action-icon leave"
