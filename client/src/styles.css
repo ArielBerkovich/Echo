@@ -4019,69 +4019,46 @@ html[data-mode="dark"] .sidebar {
 .thread-indicator {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  height: 30px;
-  padding: 0 9px 0 5px;
-  border: 1px solid color-mix(in srgb, var(--text) 10%, var(--border));
-  border-radius: 9px;
-  background: color-mix(in srgb, var(--surface) 94%, var(--surface-2));
-  color: var(--text);
-  font-size: 12.5px;
-  font-weight: 650;
+  gap: 8px;
+  min-height: 32px;
+  padding: 3px 6px 3px 2px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
   line-height: 1;
-  box-shadow:
-    0 2px 7px color-mix(in srgb, var(--text) 7%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--surface) 80%, transparent);
-  transition: background 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
+  transition: color 0.14s ease, background 0.14s ease;
 }
-.thread-indicator-icon {
+.thread-participants {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 1px;
+}
+.thread-participant-avatar {
+  display: inline-flex;
+  margin-left: -8px;
+  border: 1.5px solid var(--surface-2);
+  border-radius: 8px;
+}
+.thread-participant-avatar:first-child { margin-left: 0; }
+.thread-participant-avatar .avatar {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 6px;
-  background: var(--surface-2);
-  color: var(--muted);
-}
-.thread-indicator-icon svg {
-  width: 14px;
-  height: 14px;
-  stroke-width: 2;
-}
-.thread-indicator-arrow {
-  margin-left: 1px;
-  color: var(--muted);
-  font-size: 17px;
-  font-weight: 500;
   line-height: 1;
-  transition: transform 0.14s ease;
+  border-radius: 6px;
 }
-.thread-indicator:hover {
-  background: var(--surface-2);
-  border-color: color-mix(in srgb, var(--text) 20%, var(--border));
-  box-shadow: 0 4px 12px color-mix(in srgb, var(--text) 10%, transparent);
+.thread-participant-avatar .avatar > svg {
+  display: block;
 }
-.thread-indicator:hover .thread-indicator-arrow {
-  transform: translateX(2px);
-}
+.thread-reply-link { color: var(--link-color); font-weight: 700; }
+.thread-indicator:hover { background: color-mix(in srgb, var(--link-color) 9%, transparent); }
+.thread-indicator:hover .thread-reply-link { color: color-mix(in srgb, var(--link-color) 82%, var(--text)); }
 .thread-indicator:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--text) 32%, transparent);
+  outline: 2px solid var(--active-ring);
   outline-offset: 2px;
-}
-html[data-mode="dark"] .thread-indicator {
-  background: color-mix(in srgb, var(--surface-2) 88%, var(--surface));
-  border-color: color-mix(in srgb, var(--text) 14%, var(--border));
-  box-shadow:
-    0 3px 10px rgba(0, 0, 0, 0.24),
-    inset 0 1px 0 color-mix(in srgb, var(--text) 7%, transparent);
-}
-html[data-mode="dark"] .thread-indicator-icon {
-  background: color-mix(in srgb, var(--surface) 76%, var(--surface-2));
-}
-html[data-mode="dark"] .thread-indicator:hover {
-  background: color-mix(in srgb, var(--surface-2) 76%, var(--text));
-  border-color: color-mix(in srgb, var(--text) 24%, var(--border));
 }
 /* "User is typing…" indicator above the composer */
 .typing-indicator {
@@ -8450,10 +8427,16 @@ html[data-mode="dark"] .channel-header {
   overflow-y: hidden;
 }
 .channel-view.has-side-panel .channel-header .ch-name-btn {
-  max-width: min(220px, 26vw);
+  flex: 1 1 auto;
+  width: 0;
+  max-width: none;
+  box-sizing: border-box;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.channel-view.has-side-panel .channel-header .header-actions {
+  flex: 0 0 auto;
 }
 .channel-view.has-side-panel .channel-header .ch-topic {
   max-width: 220px;

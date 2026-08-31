@@ -739,13 +739,26 @@ channelsRouter.get("/:id/messages", async (req, res) => {
   const ids = docs.map((d) => d._id);
   const stats = await Message.aggregate([
     { $match: { parentId: { $in: ids } } },
-    { $group: { _id: "$parentId", count: { $sum: 1 }, lastReplyAt: { $max: "$createdAt" } } },
+    { $sort: { createdAt: -1 } },
+    {
+      $group: {
+        _id: "$parentId",
+        count: { $sum: 1 },
+        lastReplyAt: { $max: "$createdAt" },
+        replyParticipantIds: { $push: "$author" },
+      },
+    },
   ]);
   const statMap = new Map(stats.map((s) => [s._id.toString(), s]));
 
   const messages = docs.reverse().map((m) => {
     const s = statMap.get(m._id.toString());
-    return { ...m.toPublicJSON(), replyCount: s?.count || 0, lastReplyAt: s?.lastReplyAt || null };
+    return {
+      ...m.toPublicJSON(),
+      replyCount: s?.count || 0,
+      lastReplyAt: s?.lastReplyAt || null,
+      replyParticipantIds: [...new Set((s?.replyParticipantIds || []).map((id) => id.toString()))].slice(0, 2),
+    };
   });
 
   // When the user last read this channel — lets the client open at the first

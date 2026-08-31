@@ -1,5 +1,5 @@
 import { useAuthUrl } from "../lib/useAuthUrl.js";
-import { UsersRoundIcon } from "lucide-react";
+import { UserRound, UsersRoundIcon } from "lucide-react";
 
 // Deterministic colored avatar built from a person's initials.
 const PALETTE = [
@@ -16,13 +16,14 @@ function hashString(str) {
   return Math.abs(hash);
 }
 
-function initials(name) {
+function initials(name, initialsOnly = false) {
   const parts = name.trim().split(/\s+/);
+  if (initialsOnly) return (parts[0]?.[0] || "?").toUpperCase();
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-export default function Avatar({ name = "?", size = 36, src = null }) {
+export default function Avatar({ name = "?", size = 36, src = null, initialsOnly = false, fallbackIcon = false }) {
   const authSrc = useAuthUrl(src);
   // Uploaded profile picture takes precedence over the initials fallback.
   if (src && authSrc) {
@@ -47,7 +48,7 @@ export default function Avatar({ name = "?", size = 36, src = null }) {
       }}
       aria-hidden="true"
     >
-      {initials(name)}
+      {fallbackIcon ? <UserRound size={size * 0.56} strokeWidth={2.2} aria-hidden="true" /> : initials(name, initialsOnly)}
     </span>
   );
 }

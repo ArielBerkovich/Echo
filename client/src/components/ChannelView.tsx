@@ -24,6 +24,7 @@ import LeaveChannelDialog from "./LeaveChannelDialog.js";
 import { LeaveIcon, PinIcon } from "./Icons.js";
 import { formatDayDivider, isDifferentDay } from "../lib/time.js";
 import { shouldGroupWithPreviousMessage } from "../lib/messageGrouping.js";
+import { appendReplyParticipant } from "../lib/replyParticipants.js";
 import { formatSize } from "../lib/format.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
 import { ChevronsDownIcon, DownloadIcon, FileIcon, MessageSquareTextIcon, PaperclipIcon, SearchIcon, StarIcon, UsersRoundIcon } from "lucide-react";
@@ -259,7 +260,12 @@ export default function ChannelView({
         setMessages((prev) =>
           prev.map((m) =>
             m.id === msg.parentId
-              ? { ...m, replyCount: (m.replyCount || 0) + 1, lastReplyAt: msg.createdAt }
+              ? {
+                ...m,
+                replyCount: (m.replyCount || 0) + 1,
+                lastReplyAt: msg.createdAt,
+                replyParticipantIds: appendReplyParticipant(m.replyParticipantIds, msg.author?.id),
+              }
               : m
           )
         );
