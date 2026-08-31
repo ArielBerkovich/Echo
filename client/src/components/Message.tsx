@@ -186,7 +186,7 @@ function Message({
       onContextMenu={onBodyContextMenu}
     >
       <div dangerouslySetInnerHTML={{ __html: renderMarkdown(m.body) }} />
-      {m.editedAt && <span className="edited-label" title={formatTime(m.editedAt)}> (edited)</span>}
+      {m.editedAt && <span className="edited-label" title="Edited"> (edited)</span>}
     </div>
   );
 
@@ -381,7 +381,7 @@ function Message({
             type="button"
             className="avatar-btn"
             data-testid={`message-${mid}-avatar`}
-            title={`View ${author?.displayName || "profile"}`}
+            title="View profile"
             onClick={() => m.author?.id && onOpenProfile?.(m.author.id)}
           >
             <Avatar name={author?.displayName || "?"} src={author?.avatarUrl} size={36} />
@@ -630,7 +630,7 @@ function Message({
             title="More message actions"
             aria-label="More message actions"
             aria-expanded={menuOpen}
-            className={menuOpen ? "active" : ""}
+            className={`message-more-action${menuOpen ? " active" : ""}`}
             onMouseEnter={activateMessage}
             onMouseOver={activateMessage}
             onClick={onToggleMenu}

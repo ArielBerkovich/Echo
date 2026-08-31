@@ -125,7 +125,7 @@ export default function LeftRail({ view, onSelect, badges = {}, user, workspace,
               className={`rail-item rail-item-${key} ${view === key ? "active" : ""} ${clicked === key ? "clicked" : ""}`}
               data-testid={`rail-${key}`}
               aria-label={activityStateLabel}
-              title={activityStateLabel}
+              title={label}
               aria-current={view === key ? "page" : undefined}
               ref={(node) => {
                 if (node) itemRefs.current.set(key, node);

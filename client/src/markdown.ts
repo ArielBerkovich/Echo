@@ -248,7 +248,7 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
         },
         renderer(token) {
           if (token.native) return token.native;
-          return `<img class="custom-emoji" src="${token.customUrl}" alt=":${token.code}:" title=":${token.code}:" />`;
+          return `<img class="custom-emoji" src="${token.customUrl}" alt=":${token.code}:" title="Custom emoji" />`;
         },
       },
       {

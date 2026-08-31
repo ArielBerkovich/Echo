@@ -1025,7 +1025,7 @@ export default function ChannelView({
                 type="button"
                 className={`header-action header-action-icon ${showFiles ? "active" : ""}`}
                 data-testid="channel-files"
-                title={`Files in ${dmLabel}`}
+                title="View files"
                 aria-label={`Files in ${dmLabel}`}
                 aria-controls="conversation-files-panel"
                 aria-expanded={showFiles}
@@ -1094,7 +1094,7 @@ export default function ChannelView({
                 type="button"
                 className={`header-action header-action-icon ${showFiles ? "active" : ""}`}
                 data-testid="channel-files"
-                title={`Files in #${channel.name}`}
+                title="View files"
                 aria-label={`Files in #${channel.name}`}
                 aria-controls="conversation-files-panel"
                 aria-expanded={showFiles}
@@ -1106,7 +1106,7 @@ export default function ChannelView({
               <button
                 className="header-action header-action-icon channel-search-action"
                 data-testid="channel-search"
-                title={`Search in #${channel.name}`}
+                title="Search messages"
                 aria-label={`Search in #${channel.name}`}
                 onClick={() => onSearchInChannel?.(channel.name)}
               >
@@ -1579,7 +1579,7 @@ function FilesPanel({ files, loading, error, conversationLabel, onRetry, onClose
             <div className={`file-row${unavailable.has(file.id) ? " unavailable" : ""}`} key={file.id}>
               <div className="file-type" aria-hidden="true">{fileCategory(file) === "Images" ? "IMG" : (file.name || "FILE").split(".").pop()?.slice(0, 4).toUpperCase()}</div>
               <div className="file-info">
-                <strong title={file.name}>{file.name}</strong>
+                <strong>{file.name}</strong>
                 {unavailable.has(file.id) ? <span>This file is no longer available</span> : <span>{file.contentType || "File"} · {formatSize(file.size)} · {file.author?.displayName || "Unknown"} · {new Date(file.createdAt).toLocaleDateString()}</span>}
               </div>
               <div className="file-actions">

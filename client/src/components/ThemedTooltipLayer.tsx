@@ -32,7 +32,7 @@ function tooltipPosition(target: HTMLElement, placement: TooltipState["placement
   const halfWidth = (width || TOOLTIP_MAX_WIDTH) / 2;
   const minLeft = Math.min(TOOLTIP_EDGE + halfWidth, window.innerWidth / 2);
   const maxLeft = Math.max(window.innerWidth - TOOLTIP_EDGE - halfWidth, window.innerWidth / 2);
-  const rightAligned = target.matches("[data-testid='composer-send-options'], [data-testid='channel-members'], .timeline-jump-button") && placement === "above";
+  const rightAligned = target.matches("[data-testid='composer-send-options'], [data-testid='channel-members'], .timeline-jump-button, .message-more-action, .header-action.leave") && placement === "above";
   const centeredLeft = rightAligned
     ? rect.right - halfWidth
     : Math.min(
@@ -161,7 +161,7 @@ export default function ThemedTooltipLayer() {
     const placement = tooltipPlacementOrder(tooltip.target).find((candidate) => {
       const position = tooltipPosition(tooltip.target, candidate, width, height);
       const box = tooltipBox(position, candidate, width, height);
-      const rightAnchored = tooltip.target.matches("[data-testid='composer-send-options'], [data-testid='channel-members'], .timeline-jump-button");
+      const rightAnchored = tooltip.target.matches("[data-testid='composer-send-options'], [data-testid='channel-members'], .timeline-jump-button, .message-more-action, .header-action.leave");
       const viewportEdge = rightAnchored ? 4 : TOOLTIP_EDGE;
       const fitsViewport = box.left >= viewportEdge && box.right <= window.innerWidth - viewportEdge
         && box.top >= TOOLTIP_EDGE && box.bottom <= window.innerHeight - TOOLTIP_EDGE;
@@ -177,7 +177,7 @@ export default function ThemedTooltipLayer() {
   }, [tooltip]);
 
   if (!tooltip) return null;
-  const rightAnchored = tooltip.target.matches("[data-testid='composer-send-options'], [data-testid='channel-members'], .timeline-jump-button");
+  const rightAnchored = tooltip.target.matches("[data-testid='composer-send-options'], [data-testid='channel-members'], .timeline-jump-button, .message-more-action, .header-action.leave");
   return (
     <div
       ref={tooltipNodeRef}
