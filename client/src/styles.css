@@ -11366,6 +11366,82 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   fill: #fbbf24;
 }
 
+/* Channel-header actions are lightweight secondary controls. Keep their hit
+   areas generous, but let the header breathe by using color-only feedback. */
+.channel-header .header-action-icon,
+.channel-header .dm-starred-toggle {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  box-shadow: none;
+  transition: color 140ms ease, transform 140ms ease;
+}
+.channel-header .header-actions {
+  gap: 0;
+}
+.channel-header .header-action-icon:hover,
+.channel-header .dm-starred-toggle:not(.active):hover {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text);
+  transform: translateY(-1px);
+  box-shadow: none;
+}
+.channel-header .header-action-icon.active {
+  background: transparent;
+  border-color: transparent;
+  color: var(--accent);
+  box-shadow: none;
+}
+.channel-header .header-action-visibility {
+  height: 30px;
+  min-height: 30px;
+  padding: 0 9px;
+  border: 1px solid color-mix(in srgb, var(--accent) 48%, var(--border));
+  border-radius: 8px;
+  background: transparent;
+  color: var(--accent);
+  font-weight: 700;
+  margin-right: 12px;
+  transition: color 140ms ease, background 140ms ease, border-color 140ms ease;
+}
+.channel-header .header-action-visibility:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: none;
+}
+.channel-header .header-action-icon.leave,
+.channel-header .header-action-icon.leave:hover {
+  background: transparent;
+  border-color: transparent;
+  color: var(--danger);
+  box-shadow: none;
+}
+.channel-header .header-action-icon:focus-visible,
+.channel-header .dm-starred-toggle:focus-visible,
+.channel-header .header-action-visibility:focus-visible {
+  outline: 2px solid var(--active-ring);
+  outline-offset: 3px;
+}
+.channel-header .dm-starred-toggle.active,
+.channel-header .dm-starred-toggle.active:hover {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: var(--beam) !important;
+  box-shadow: none;
+}
+.channel-header .dm-starred-toggle.active svg {
+  color: var(--beam);
+  stroke: var(--beam);
+  fill: var(--beam);
+}
+
 /* Person names use a slightly stronger type scale across the workspace so
    people remain easy to identify beside channel and message metadata. */
 .message .author,
