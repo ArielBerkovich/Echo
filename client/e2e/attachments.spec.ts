@@ -81,6 +81,18 @@ test("keeps code attachments compact until expanded and highlights them full-scr
   await expect(dialog.locator(".text-viewer-content .hljs-keyword").first()).toBeVisible();
   await expect(dialog.getByRole("link", { name: "Download file" })).toBeVisible();
 
+  for (const control of [
+    dialog.getByRole("link", { name: "Download file" }),
+    dialog.getByRole("button", { name: "Close preview" }),
+  ]) {
+    await control.hover();
+    const tooltip = page.locator(".echo-tooltip");
+    await expect(tooltip).toBeVisible();
+    const tooltipBox = await tooltip.boundingBox();
+    expect(tooltipBox.y).toBeGreaterThanOrEqual(0);
+    await page.mouse.move(0, 0);
+  }
+
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
 });

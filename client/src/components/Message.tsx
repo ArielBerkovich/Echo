@@ -256,6 +256,16 @@ function Message({
     };
   }, [menuOpen]);
 
+  function onMessageMenuKeyDown(event) {
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    const items = Array.from(menuRef.current?.querySelectorAll("[role=menuitem]") || []);
+    const currentIndex = items.indexOf(document.activeElement);
+    if (currentIndex < 0 || items.length === 0) return;
+    event.preventDefault();
+    const direction = event.key === "ArrowDown" ? 1 : -1;
+    items[(currentIndex + direction + items.length) % items.length]?.focus();
+  }
+
   // Open a profile when an @mention pill in the rendered body is clicked.
   function onBodyClick(e) {
     const channelTag = e.target.closest?.(".channel-tag[data-channel-tag]");
@@ -696,6 +706,7 @@ function Message({
             style={menuPosition || { visibility: "hidden" }}
             role="menu"
             aria-label="Message actions"
+            onKeyDown={onMessageMenuKeyDown}
             onMouseDown={(e) => e.stopPropagation()}
           >
             <button type="button" role="menuitem" data-testid={`message-${mid}-copy`} onClick={() => { copyMessage(); onCloseMenu(); }}>

@@ -261,6 +261,9 @@ test("keeps channel header actions inside the header when pinned panel is open",
 
   await expect(page.getByTestId("pinned-panel")).toBeVisible();
   const header = await page.getByTestId("channel-header").boundingBox();
+  const pinnedHeader = await page.getByTestId("pinned-panel").locator(".panel-header").boundingBox();
+  expect(pinnedHeader.y).toBe(header.y);
+  expect(pinnedHeader.height).toBe(header.height);
   const leave = await page.getByTestId("channel-leave").boundingBox();
   const bounds = {
     headerRight: header.x + header.width,
@@ -271,6 +274,20 @@ test("keeps channel header actions inside the header when pinned panel is open",
 
   expect(bounds.leaveRight).toBeLessThanOrEqual(bounds.headerRight + 1);
   expect(bounds.documentWidth).toBeLessThanOrEqual(bounds.viewportWidth + 1);
+
+  await page.getByTestId("pinned-panel").getByRole("button", { name: "Close" }).click();
+  await page.getByTestId("channel-members").click();
+  await expect(page.getByTestId("members-panel")).toBeVisible();
+  const membersHeader = await page.getByTestId("members-panel").locator(".members-panel-header").boundingBox();
+  expect(membersHeader.y).toBe(header.y);
+  expect(membersHeader.height).toBe(header.height);
+  await page.getByTestId("members-panel").getByRole("button", { name: "Close members" }).click();
+
+  await page.getByTestId("channel-files").click();
+  await expect(page.getByTestId("files-panel")).toBeVisible();
+  const filesHeader = await page.getByTestId("files-panel").locator(".panel-header").boundingBox();
+  expect(filesHeader.y).toBe(header.y);
+  expect(filesHeader.height).toBe(header.height);
 });
 
 test("aligns thread chrome with the conversation and labels replies clearly", async ({ page }) => {

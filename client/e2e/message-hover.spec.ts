@@ -52,6 +52,25 @@ test("keeps a message active while hovering and opening its action menu", async 
   await expect(message).toHaveClass(/menu-open/);
 });
 
+test("supports arrow-key navigation in the message actions menu", async ({ page }) => {
+  const { id, message } = await openFreshMessage(
+    page,
+    "keyboard-actions",
+    `Keyboard action navigation ${fixture.suffix}`
+  );
+  await message.hover();
+  const actions = page.getByTestId(`message-${id}-actions`);
+  await actions.getByTestId(`message-${id}-more`).click();
+
+  const menu = page.getByRole("menu", { name: "Message actions" });
+  const items = menu.getByRole("menuitem");
+  await expect(items.nth(0)).toBeFocused();
+  await menu.press("ArrowDown");
+  await expect(items.nth(1)).toBeFocused();
+  await menu.press("ArrowUp");
+  await expect(items.nth(0)).toBeFocused();
+});
+
 test("keeps a message active through reaction selection", async ({ page }) => {
   const { id, message } = await openFreshMessage(
     page,
