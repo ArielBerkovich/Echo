@@ -10157,7 +10157,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 
 /* Medium screens: a thread / details panel overlays the conversation from the
    right rather than taking layout width, so the messages stay readable. */
-@media (max-width: 980px) {
+@media (max-width: 1200px) {
   .channel-view {
     position: relative;
   }
