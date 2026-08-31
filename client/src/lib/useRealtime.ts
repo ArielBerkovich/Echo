@@ -4,6 +4,7 @@ import { api } from "../api.js";
 import { getSocket } from "../socket.js";
 import { notificationPreview, notificationsActive, showNotification } from "./notify.js";
 import { queryKeys } from "./queryClient.js";
+import { appendReplyParticipant } from "./replyParticipants.js";
 
 // Owns the real-time layer: socket listeners (message:new, activity:bump,
 // reconnect, emoji:new, user:new, presence), the live Activity-badge counts,
@@ -333,7 +334,12 @@ export function useRealtime({
         const messages = msg.parentId
           ? history.messages.map((message) =>
               message.id === msg.parentId
-                ? { ...message, replyCount: (message.replyCount || 0) + 1, lastReplyAt: msg.createdAt }
+                ? {
+                  ...message,
+                  replyCount: (message.replyCount || 0) + 1,
+                  lastReplyAt: msg.createdAt,
+                  replyParticipantIds: appendReplyParticipant(message.replyParticipantIds, msg.author?.id),
+                }
                 : message
             )
           : [...history.messages, msg];

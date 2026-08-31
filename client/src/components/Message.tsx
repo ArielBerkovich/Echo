@@ -6,6 +6,7 @@ import Attachments from "./Attachments.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
 import { getSocket } from "../socket.js";
 import { formatTime } from "../lib/time.js";
+import { replyParticipantNames, visibleReplyParticipants } from "../lib/replyParticipants.js";
 import { isEchoMessageLink, workspacePath } from "../lib/workspaceRoutes.js";
 import {
   ShareIcon, EmojiAddIcon, ReplyIcon, BookmarkIcon, PencilIcon, TrashIcon, PinIcon, CopyIcon, MoreIcon, QuoteIcon,
@@ -152,6 +153,7 @@ function Message({
   // over the realtime user:update event. Resolve the latest directory entry so
   // an already-open conversation updates without waiting for a new message.
   const author = usersById?.get(m.author?.id) || m.author;
+  const replyNames = replyParticipantNames(m.replyParticipantIds, usersById);
   const messageBody = editing ? (
     <div className="msg-edit">
       <textarea
@@ -548,14 +550,28 @@ function Message({
                 type="button"
                 className="thread-indicator"
                 data-testid={`message-${mid}-reply-count`}
-                aria-label={`Open thread with ${m.replyCount} ${m.replyCount === 1 ? "reply" : "replies"}`}
+                aria-label={`Open thread with ${m.replyCount} ${m.replyCount === 1 ? "reply" : "replies"}${replyNames ? ` from ${replyNames}` : ""}`}
                 onClick={onOpenThread}
               >
-                <span className="thread-indicator-icon" aria-hidden="true">
-                  <ReplyIcon />
+                <span className="thread-participants" aria-hidden="true">
+                  {visibleReplyParticipants(m.replyParticipantIds).map((id) => {
+                    const participant = usersById?.get(id);
+                    return (
+                      <span className="thread-participant-avatar" key={id}>
+                        <Avatar
+                          name={participant?.displayName || "?"}
+                          src={participant?.avatarUrl}
+                          size={20}
+                          initialsOnly
+                          fallbackIcon
+                        />
+                      </span>
+                    );
+                  })}
                 </span>
-                <span>{m.replyCount} {m.replyCount === 1 ? "reply" : "replies"}</span>
-                <span className="thread-indicator-arrow" aria-hidden="true">›</span>
+                <span className="thread-reply-link">
+                  {m.replyCount} {m.replyCount === 1 ? "reply" : "replies"}
+                </span>
               </button>
             )}
           </div>
