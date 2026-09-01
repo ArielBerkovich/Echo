@@ -107,14 +107,14 @@ Run checks with:
 
 ### Message sounds
 
-Echo includes three selectable notification sounds: **Soft chime**, **Bright pop**, and **Warm bell**. They are bundled WAV files from OpenGameArt under the [CC0 1.0 Universal public-domain dedication](https://creativecommons.org/publicdomain/zero/1.0/), so playback works offline in both the web and desktop clients. Exact creators, source pages, original filenames, and download dates are recorded in `client/THIRD-PARTY-LICENSES/Message-Sounds-LICENSE.txt`.
+Echo includes five selectable notification sounds: **Bright pop**, **Short alert**, **Clear ding**, **Soft chime**, and **Warm bell**. They are bundled WAV files from OpenGameArt under the [CC0 1.0 Universal public-domain dedication](https://creativecommons.org/publicdomain/zero/1.0/), so playback works offline in both the web and desktop clients. Exact creators, source pages, original filenames, and download dates are recorded in `client/THIRD-PARTY-LICENSES/Message-Sounds-LICENSE.txt`.
 
 To add another sound:
 
 1. Add its identifier, label, and description to `MESSAGE_SOUNDS` in `client/src/lib/messageSounds.ts`.
 2. Add the audio file under `client/src/assets/sounds/` and reference it with `new URL(..., import.meta.url)` in the sound definition.
 3. Record the creator, exact source page, original filename, license, and download date in `client/THIRD-PARTY-LICENSES/`. Only include files whose individual source entry permits redistribution; CC0 is preferred.
-4. Preview it from **Settings → Account → Message sounds**, then verify incoming-message playback and the one-second cooldown.
+4. Preview it from **Settings → Preferences → Message sounds**, then verify incoming-message playback and the one-second cooldown.
 5. Run the client tests and both the normal web and Electron builds before rebuilding the client service.
 
 ## Deployment

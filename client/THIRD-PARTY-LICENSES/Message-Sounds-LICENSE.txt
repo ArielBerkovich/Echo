@@ -27,5 +27,20 @@ Source: https://opengameart.org/content/bell-dingschimes
 Source notice: "Releasing as public domain."
 Downloaded: 2026-09-01
 
+Short alert
+-----------
+Original file: alert.wav
+Creator: frosty ham
+Source: https://opengameart.org/content/alertnotification-sound
+Downloaded: 2026-09-01
+
+Clear ding
+----------
+Original file: bell_ding1.wav
+Creator: PWL
+Source: https://opengameart.org/content/bell-dingschimes
+Source notice: "Releasing as public domain."
+Downloaded: 2026-09-01
+
 CC0 does not require attribution. This notice is retained for provenance and
 license traceability.
