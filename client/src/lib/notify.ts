@@ -65,7 +65,7 @@ export function notificationsActive() {
 // Show one notification; clicking it focuses the app and runs onClick (e.g. to
 // jump to the conversation). `tag` collapses repeats from the same conversation.
 export function showNotification(title, { body, tag, onClick } = {}) {
-  if (!notificationsActive()) return;
+  if (!notificationsActive()) return false;
 
   const desktop = desktopNotifications();
   if (desktop) {
@@ -77,7 +77,7 @@ export function showNotification(title, { body, tag, onClick } = {}) {
       // retaining a navigation callback if the user never clicks it.
       window.setTimeout(() => desktopClickHandlers.delete(id), 6000);
     }
-    return;
+    return true;
   }
 
   try {
@@ -92,8 +92,10 @@ export function showNotification(title, { body, tag, onClick } = {}) {
       n.close();
       onClick?.();
     };
+    return true;
   } catch {
     /* notifications unavailable — ignore */
+    return false;
   }
 }
 
