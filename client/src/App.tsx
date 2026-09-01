@@ -784,6 +784,7 @@ export default function App() {
       }), { replace: true });
     }
     setChannels((prev) => {
+      if (updatedChannel.type === "dm") return prev.filter((c) => c.id !== updatedChannel.id);
       const exists = prev.some((c) => c.id === updatedChannel.id);
       const next = exists
         ? prev.map((c) => (c.id === updatedChannel.id ? updatedChannel : c))
