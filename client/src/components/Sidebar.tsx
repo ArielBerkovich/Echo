@@ -65,6 +65,15 @@ function slug(text) {
     .replace(/^-+|-+$/g, "");
 }
 
+const MAX_DM_TITLE_CHARS = 48;
+
+function truncateDmTitle(text) {
+  const value = String(text || "");
+  return value.length > MAX_DM_TITLE_CHARS
+    ? value.slice(0, MAX_DM_TITLE_CHARS - 1) + "…"
+    : value;
+}
+
 export default function Sidebar({
   user,
   channels,
@@ -110,7 +119,10 @@ export default function Sidebar({
     .filter((c) => !hiddenSet.has(c.id))
     .filter((c) => !f || c.name.toLowerCase().includes(f));
   const dmPeople = (conversation) => conversation.participants?.filter((person) => person.id !== user.id) || [conversation.withUser];
-  const dmLabel = (conversation) => dmPeople(conversation).map((person) => person.displayName).join(", ");
+  const dmLabel = (conversation) => {
+    if (conversation.isGroup && conversation.name && !conversation.name.startsWith("dm-")) return conversation.name;
+    return dmPeople(conversation).map((person) => person.displayName).join(", ");
+  };
   const shownDms = dms.filter((c) => !f || dmLabel(c).toLowerCase().includes(f));
   // Starred DMs get their own section; the rest stay under "Direct Messages".
   const starredDms = shownDms.filter((c) => {
@@ -128,6 +140,7 @@ export default function Sidebar({
     const unread = conv.unread > 0;
     const isStarred = people.length === 1 ? starredIds.has(people[0].id) : starredChannelIds.has(conv.id);
     const label = conv.isSelf ? `${conv.withUser.displayName} (you)` : dmLabel(conv);
+    const displayLabel = truncateDmTitle(label);
     return (
       <div key={conv.id} className={`channel-item dm-item ${active ? "active" : ""} ${unread ? "unread" : ""}`} data-testid={`dm-row-${slug(conv.withUser.displayName)}`}>
         <button
@@ -145,7 +158,7 @@ export default function Sidebar({
             online={people.length === 1 && onlineIds.has(people[0].id)}
             showPresence={!(["azure", "system"].includes(conv.withUser.username))}
           />
-          <span className="dm-name">{label}</span>
+          <span className="dm-name" aria-label={label}>{displayLabel}</span>
         </button>
         <button
           className={`dm-remove ${isStarred ? "reserved" : ""}`}
@@ -270,6 +283,7 @@ export default function Sidebar({
           {shownDms.filter((c) => !c.isSelf).map((conv) => {
             const people = dmPeople(conv);
             const label = dmLabel(conv);
+            const displayLabel = truncateDmTitle(label);
             const active = activeChannel?.type === "dm" && activeChannel?.id === conv.id;
             const unread = conv.unread > 0;
             const isStarred = people.length === 1 ? starredIds.has(people[0].id) : starredChannelIds.has(conv.id);
@@ -286,7 +300,7 @@ export default function Sidebar({
                   />
                   <div className="dm-text">
                     <div className="dm-row-top">
-                      <span className="dm-name" dir="auto">{label}</span>
+                      <span className="dm-name" dir="auto">{displayLabel}</span>
                       {unread && <span className="unread-badge">{conv.unread > 99 ? "99+" : conv.unread}</span>}
                       <span className="dm-time">{relativeTime(conv.lastAt)}</span>
                     </div>

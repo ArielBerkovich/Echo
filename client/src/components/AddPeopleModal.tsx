@@ -44,8 +44,8 @@ export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
   return (
     <Modal title={isGroupDm ? "Add people to this group DM" : `Add people to ${channel.type === "private" ? "🔒" : "#"} ${channel.name}`} onClose={onClose}>
       <div data-testid="add-people-modal">
-        {isGroupDm && memberIds.size >= 20 ? (
-          <div className="people-empty">This group DM has reached the 20-person limit.</div>
+        {isGroupDm && memberIds.size >= 10 ? (
+          <div className="people-empty">This group DM has reached the 10-person limit.</div>
         ) : null}
         <input
           className="people-filter"
@@ -58,7 +58,7 @@ export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
         />
 
         <div className="people-list">
-          {isGroupDm && memberIds.size >= 20 ? null : available.length === 0 ? (
+          {isGroupDm && memberIds.size >= 10 ? null : available.length === 0 ? (
             <div className="people-empty">Everyone in the workspace is already here.</div>
           ) : (
             available.map((u) => (

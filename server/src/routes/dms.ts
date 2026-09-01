@@ -10,6 +10,7 @@ import { isValidChannelName } from "../lib/channelName.js";
 
 export const dmsRouter = Router();
 dmsRouter.use(requireAuth);
+const MAX_GROUP_DM_MEMBERS = 10;
 
 // GET /api/dms — the user's visible DM conversations, most-recent first.
 dmsRouter.get("/", async (req, res) => {
@@ -155,7 +156,11 @@ dmsRouter.post("/", async (req, res) => {
     return res.status(400).json({ error: "valid userId or userIds are required" });
   }
   const uniqueIds = [...new Set(requestedIds.map(String))];
-  if (uniqueIds.length > 20) return res.status(400).json({ error: "group DMs are limited to 20 people" });
+  // userIds contains people other than the current user, so leave room for
+  // the initiator in the total group-DM member limit.
+  if (uniqueIds.length > MAX_GROUP_DM_MEMBERS - 1) {
+    return res.status(400).json({ error: `group DMs are limited to ${MAX_GROUP_DM_MEMBERS} people` });
+  }
   const isGroup = uniqueIds.length > 1;
   if (isGroup && uniqueIds.includes(String(req.user._id))) {
     return res.status(400).json({ error: "select people other than yourself" });

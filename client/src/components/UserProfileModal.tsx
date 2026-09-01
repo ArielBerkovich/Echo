@@ -31,9 +31,6 @@ export default function UserProfileModal({ user, currentUserId, online, isStarre
       </div>
       {!isSelf && (
         <div className="profile-actions">
-          <button type="button" className="btn-primary profile-message" data-testid="profile-message" onClick={() => onMessage(user)}>
-            Message
-          </button>
           <button
             type="button"
             className={`profile-starred ${isStarred ? "active" : ""}`}
@@ -43,6 +40,9 @@ export default function UserProfileModal({ user, currentUserId, online, isStarre
             title={isStarred ? "Remove from Starred" : "Mark as Starred"}
           >
             <StarIcon className="profile-star-icon" size={23} strokeWidth={1.8} fill={isStarred ? "currentColor" : "none"} />
+          </button>
+          <button type="button" className="btn-primary profile-message" data-testid="profile-message" onClick={() => onMessage(user)}>
+            Message
           </button>
         </div>
       )}

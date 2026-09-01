@@ -4,6 +4,8 @@ import Avatar from "./Avatar.js";
 import Composer from "./Composer.js";
 import Modal from "./Modal.js";
 
+const MAX_GROUP_DM_RECIPIENTS = 9;
+
 export default function NewMessageModal({ currentUserId, users, customEmojis, mode, onPrepare, onStart, onClose }) {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -59,6 +61,9 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
   }
 
   function select(user) {
+    if (selected.length >= MAX_GROUP_DM_RECIPIENTS) {
+      return;
+    }
     const nextSelected = [...selected, user];
     setSelected(nextSelected);
     setQuery("");
@@ -103,21 +108,23 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
                     <XIcon size={13} aria-hidden="true" />
                   </button>
                 </span>)}
-                <input
-                  className="new-message-search-input new-message-add-input"
-                  data-testid="new-message-search-input"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key !== "Enter") return;
-                    const firstMatch = availableMatches[0];
-                    if (!firstMatch) return;
-                    event.preventDefault();
-                    select(firstMatch);
-                  }}
-                  placeholder="Add people"
-                  autoFocus
-                />
+                {selected.length < MAX_GROUP_DM_RECIPIENTS ? (
+                  <input
+                    className="new-message-search-input new-message-add-input"
+                    data-testid="new-message-search-input"
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key !== "Enter") return;
+                      const firstMatch = availableMatches[0];
+                      if (!firstMatch) return;
+                      event.preventDefault();
+                      select(firstMatch);
+                    }}
+                    placeholder="Add people"
+                    autoFocus
+                  />
+                ) : null}
               </div>
             ) : (
               <label className="new-message-search people-filter" data-testid="new-message-search">

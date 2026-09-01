@@ -33,6 +33,15 @@ import { queryKeys } from "../lib/queryClient.js";
 // Shimmering placeholder rows shown while a channel's history loads, so the
 // pane has structure immediately instead of flashing an empty "say hello" state.
 const SKELETON_WIDTHS = [62, 44, 78, 35, 70, 52, 66];
+const MAX_DM_TITLE_CHARS = 48;
+
+function truncateDmTitle(text) {
+  const value = String(text || "");
+  return value.length > MAX_DM_TITLE_CHARS
+    ? value.slice(0, MAX_DM_TITLE_CHARS - 1) + "…"
+    : value;
+}
+
 function MessagesSkeleton() {
   return (
     <div className="msg-skeletons" aria-hidden="true">
@@ -944,6 +953,7 @@ export default function ChannelView({
   const dmParticipants = (channel.participants || []).filter((person) => person.id !== user.id);
   const dmAvatarName = dmUser?.displayName || channel.dmName || "?";
   const dmLabel = channel.dmName || (dmParticipants.length ? dmParticipants.map((person) => person.displayName).join(", ") : dmAvatarName);
+  const dmDisplayLabel = truncateDmTitle(dmLabel);
   const dmAvatar = dmUser?.avatarUrl || null;
   const isMember = isDm || (channel.members || []).includes(user.id);
   const isGroupDm = isDm && ((channel.members || []).length > 2 || dmParticipants.length > 1);
@@ -1006,18 +1016,19 @@ export default function ChannelView({
             )}
             {isGroupDm ? <GroupAvatar size={36} /> : <Avatar name={dmAvatarName} src={dmAvatar} size={36} />}
             {isGroupDm ? (
-              <span className="ch-name dm-name-btn" data-testid="channel-title">
-                {dmLabel}
+              <span className="ch-name dm-name-btn" data-testid="channel-title" aria-label={dmLabel}>
+                {dmDisplayLabel}
               </span>
             ) : (
               <button
                 type="button"
                 className="ch-name ch-name-btn dm-name-btn"
                 data-testid="channel-title"
+                aria-label={dmLabel}
                 title="View profile"
                 onClick={() => dmUser?.id && onOpenProfile?.(dmUser.id)}
               >
-                {dmLabel}
+                {dmDisplayLabel}
               </button>
             )}
             <div className="header-actions">
@@ -1147,7 +1158,7 @@ export default function ChannelView({
               {isDm ? (
                 <>
                   {isGroupDm ? <GroupAvatar size={56} /> : <Avatar name={dmAvatarName} src={dmAvatar} size={56} />}
-                  <h3>{dmLabel}</h3>
+                  <h3>{dmDisplayLabel}</h3>
                   <p>This is the start of your direct message history. Say hello! 👋</p>
                 </>
               ) : (
