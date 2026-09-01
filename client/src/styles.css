@@ -4428,16 +4428,6 @@ html[data-mode="dark"] .day-divider-label {
 }
 
 .message-sound-settings { display: grid; gap: 18px; }
-.message-sound-toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding-bottom: 18px; border-bottom: 1px solid var(--border); }
-.message-sound-toggle-row strong { display: block; color: var(--text); font-size: 15px; }
-.message-sound-toggle-row p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
-.preference-switch { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; min-width: 72px; padding: 6px 9px 6px 7px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-2); color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer; }
-.preference-switch:hover { border-color: var(--accent); color: var(--text); }
-.preference-switch.is-on { border-color: color-mix(in srgb, var(--accent) 60%, var(--border)); color: var(--text); }
-.preference-switch-track { width: 24px; height: 14px; padding: 2px; border-radius: 999px; background: var(--muted); }
-.preference-switch-track span { display: block; width: 10px; height: 10px; border-radius: 50%; background: var(--surface); transition: transform .16s ease; }
-.preference-switch.is-on .preference-switch-track { background: var(--accent); }
-.preference-switch.is-on .preference-switch-track span { transform: translateX(10px); }
 .message-sound-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .message-sound-option { position: relative; display: flex; flex-direction: column; align-items: stretch; gap: 16px; min-height: 166px; padding: 15px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-raised); transition: border-color .16s ease, background .16s ease, box-shadow .16s ease, transform .16s ease; }
 .message-sound-option:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); }
@@ -4467,7 +4457,6 @@ html[data-mode="dark"] .day-divider-label {
 .preferences-card-heading p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
 
 @media (max-width: 520px) {
-  .message-sound-toggle-row { align-items: flex-start; }
   .message-sound-options { grid-template-columns: 1fr; }
   .message-sound-option { min-height: 0; gap: 12px; }
   .message-sound-preview { align-self: flex-start; }
@@ -5700,15 +5689,6 @@ html[data-mode="dark"] .day-divider-label {
 .settings-appearance-card {
   width: min(720px, 100%);
 }
-.settings-appearance-preferences { display: grid; gap: 26px; }
-.appearance-preferences-heading { padding-bottom: 20px; border-bottom: 1px solid var(--border); }
-.appearance-preferences-heading h2 { margin: 0; color: var(--text); font-size: 21px; }
-.appearance-preferences-heading p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
-.appearance-preferences-group + .appearance-preferences-group { padding-top: 26px; border-top: 1px solid var(--border); }
-.appearance-preferences-group h3 { margin: 0; color: var(--text); font-size: 16px; }
-.appearance-preferences-group > .settings-hint { margin-top: 5px; }
-.message-sound-group-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; color: var(--accent); }
-.message-sound-group-heading .settings-hint { margin-bottom: 0; }
 
 @media (max-width: 760px) {
   .settings-layout {

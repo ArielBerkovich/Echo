@@ -4,7 +4,11 @@ import { seedToken, seedWorkspaceFixture } from "./helpers.js";
 async function openMessageSoundPreferences(page) {
   const fixture = await seedWorkspaceFixture(page);
   await seedToken(page, fixture.alice.token);
-  await page.goto("/settings/preferences");
+  await page.goto("/");
+  await expect(page.getByTestId("composer-editor")).toBeVisible();
+  await page.getByTestId("rail-settings").click();
+  await expect(page.getByTestId("settings-page")).toBeVisible();
+  await page.getByRole("button", { name: "Preferences", exact: true }).click();
   await expect(page.getByTestId("preferences-page")).toBeVisible();
   return fixture;
 }

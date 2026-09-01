@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   MESSAGE_SOUNDS,
+  NONE_SOUND_ID,
   messageSoundsEnabled,
   playIncomingMessageSound,
   previewMessageSound,
@@ -26,7 +27,7 @@ function withStorage(fn) {
 test("message sounds default on with the soft chime selected", () => withStorage(() => {
   assert.equal(messageSoundsEnabled(), true);
   assert.equal(selectedMessageSound(), "soft-chime");
-  assert.deepEqual(MESSAGE_SOUNDS.map((sound) => sound.id), ["none", "bright-pop", "short-alert", "clear-ding", "soft-chime", "warm-bell"]);
+  assert.deepEqual(MESSAGE_SOUNDS.map((sound) => sound.id), [NONE_SOUND_ID, "bright-pop", "short-alert", "clear-ding", "soft-chime", "warm-bell"]);
   assert.equal(MESSAGE_SOUNDS[0].url, null);
   assert.ok(MESSAGE_SOUNDS.slice(1).every((sound) => sound.url.endsWith(".wav")));
 }));
@@ -34,8 +35,8 @@ test("message sounds default on with the soft chime selected", () => withStorage
 test("message sound preferences persist and reject unknown sounds", () => withStorage(() => {
   setMessageSoundsEnabled(false);
   assert.equal(messageSoundsEnabled(), false);
-  assert.equal(selectedMessageSound(), "none");
-  assert.equal(setSelectedMessageSound("none"), true);
+  assert.equal(selectedMessageSound(), NONE_SOUND_ID);
+  assert.equal(setSelectedMessageSound(NONE_SOUND_ID), true);
   assert.equal(messageSoundsEnabled(), false);
   assert.equal(setSelectedMessageSound("warm-bell"), true);
   assert.equal(selectedMessageSound(), "warm-bell");

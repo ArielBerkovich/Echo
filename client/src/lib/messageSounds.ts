@@ -3,7 +3,7 @@ import { readString, writeString } from "./storage.js";
 const ENABLED_KEY = "echo.messageSounds.enabled";
 const SOUND_KEY = "echo.messageSounds.sound";
 const DEFAULT_SOUND_ID = "soft-chime";
-const NONE_SOUND_ID = "none";
+export const NONE_SOUND_ID = "none";
 const COOLDOWN_MS = 1000;
 
 export const MESSAGE_SOUNDS = [
