@@ -14,6 +14,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
   const [preparing, setPreparing] = useState(false);
   const [error, setError] = useState(null);
   const searchInputRef = useRef(null);
+  const composerRef = useRef(null);
   const prepareRequestRef = useRef(0);
   const draftChannel = {
     id: "new-message-draft",
@@ -39,14 +40,17 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
   }, [currentUserId, debouncedQuery, users]);
   const availableMatches = matches.filter((user) => !selected.some((candidate) => candidate.id === user.id));
 
-  async function prepare(nextSelected) {
+  async function prepare(nextSelected, focusComposer = false) {
     const requestId = ++prepareRequestRef.current;
     setChannel(null);
     setError(null);
     setPreparing(true);
     try {
       const nextChannel = await onPrepare(nextSelected);
-      if (requestId === prepareRequestRef.current) setChannel(nextChannel);
+      if (requestId === prepareRequestRef.current) {
+        setChannel(nextChannel);
+        if (focusComposer) requestAnimationFrame(() => composerRef.current?.focus());
+      }
     } catch (err) {
       if (requestId === prepareRequestRef.current) setError(err.message);
     } finally {
@@ -54,7 +58,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
     }
   }
 
-  function select(user) {
+  function select(user, focusComposer = false) {
     if (selected.length >= MAX_GROUP_DM_RECIPIENTS) {
       return;
     }
@@ -62,8 +66,8 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
     setSelected(nextSelected);
     setQuery("");
     setDebouncedQuery("");
-    prepare(nextSelected);
-    requestAnimationFrame(() => searchInputRef.current?.focus());
+    prepare(nextSelected, focusComposer);
+    if (!focusComposer) requestAnimationFrame(() => searchInputRef.current?.focus());
   }
 
   function remove(userId) {
@@ -141,7 +145,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
                         .slice(0, 20)[0];
                       if (!firstMatch) return;
                       event.preventDefault();
-                      select(firstMatch);
+                      select(firstMatch, true);
                     }
                   }}
                   placeholder="Search people"
@@ -174,6 +178,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
           <div className={`new-message-compose ${channel ? "has-channel" : ""}`}>
             {preparing ? <div className="people-empty">Opening conversation…</div> : null}
             <Composer
+                ref={composerRef}
                 key="new-message-composer"
                 channel={draftChannel}
                 sendChannel={channel}
