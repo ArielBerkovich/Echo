@@ -8513,9 +8513,9 @@ html[data-mode="dark"] .channel-header {
   overflow-y: hidden;
 }
 .channel-view.has-side-panel .channel-header .ch-name-btn {
-  flex: 1 1 auto;
-  width: 0;
-  max-width: none;
+  flex: 0 1 auto;
+  width: auto;
+  max-width: min(48ch, 100%);
   box-sizing: border-box;
   overflow: hidden;
   text-overflow: ellipsis;
