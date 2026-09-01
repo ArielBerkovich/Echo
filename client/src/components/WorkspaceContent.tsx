@@ -72,6 +72,7 @@ function ActiveWorkspaceView({ view, search, browse, feeds, conversation }) {
         customEmojis={feeds.emojis}
         onJump={feeds.onJump}
         onLoaded={feeds.onActivityLoaded}
+        onReady={feeds.onActivityReady}
       />
     );
   } else if (view === "saved") {

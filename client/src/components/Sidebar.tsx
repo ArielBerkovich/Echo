@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { ChevronDownIcon, CompassIcon, LockKeyholeIcon, SquarePenIcon } from "lucide-react";
-import Avatar from "./Avatar.js";
+import { ChevronDownIcon, CompassIcon, HashIcon, ListFilterIcon, LockKeyholeIcon, MessageCircleIcon, SquarePenIcon, StarIcon } from "lucide-react";
+import Avatar, { GroupAvatar } from "./Avatar.js";
 import { relativeTime } from "../lib/time.js";
 import { useAuthUrls } from "../lib/useAuthUrl.js";
 import { tokenizeEmojiShortcodes } from "../markdown.js";
@@ -30,7 +30,7 @@ function Preview({ body, customEmojis }) {
   for (const token of tokens) {
     if (length >= 40) break;
     if (token.type === "custom") {
-      output.push(<img key={`custom-${output.length}`} className="custom-emoji" src={token.value} alt={token.alt} title={token.alt} />);
+      output.push(<img key={`custom-${output.length}`} className="custom-emoji" src={token.value} alt={token.alt} title="Custom emoji" />);
       length += 1;
       continue;
     }
@@ -49,6 +49,12 @@ function PresenceAvatar({ name, src, size, online, showPresence = true }) {
       {showPresence && <span className={`presence-dot ${online ? "online" : "offline"}`} title={online ? "Online" : "Offline"} />}
     </span>
   );
+}
+
+function DmAvatar({ group, name, src, size, online, showPresence }) {
+  return group
+    ? <GroupAvatar size={size} />
+    : <PresenceAvatar name={name} src={src} size={size} online={online} showPresence={showPresence} />;
 }
 
 function slug(text) {
@@ -88,6 +94,7 @@ export default function Sidebar({
   const [chCollapsed, setChCollapsed] = useState(false); // Channels section collapsed?
   const [starredCollapsed, setStarredCollapsed] = useState(false); // Starred section collapsed?
   const [dmCollapsed, setDmCollapsed] = useState(false); // DMs section collapsed?
+  const [filterOpen, setFilterOpen] = useState(dmsOnly);
   const emojiUrls = useMemo(() => customEmojis.map((emoji) => emoji.url), [customEmojis]);
   const authUrls = useAuthUrls(emojiUrls);
   const previewEmojis = customEmojis
@@ -102,38 +109,44 @@ export default function Sidebar({
   const shownChannels = channels
     .filter((c) => !hiddenSet.has(c.id))
     .filter((c) => !f || c.name.toLowerCase().includes(f));
-  const shownDms = dms.filter((c) => !f || (c.withUser.displayName || "").toLowerCase().includes(f));
+  const dmPeople = (conversation) => conversation.participants?.filter((person) => person.id !== user.id) || [conversation.withUser];
+  const dmLabel = (conversation) => dmPeople(conversation).map((person) => person.displayName).join(", ");
+  const shownDms = dms.filter((c) => !f || dmLabel(c).toLowerCase().includes(f));
   // Starred DMs get their own section; the rest stay under "Direct Messages".
-  const starredDms = shownDms.filter((c) => starredIds.has(c.withUser.id));
-  const regularDms = shownDms.filter((c) => !starredIds.has(c.withUser.id));
+  const starredDms = shownDms.filter((c) => {
+    const people = dmPeople(c);
+    return people.length === 1 ? starredIds.has(people[0].id) : starredChannelIds.has(c.id);
+  });
+  const regularDms = shownDms.filter((c) => !starredDms.includes(c));
   const starredChannels = shownChannels.filter((c) => starredChannelIds.has(c.id));
   const regularChannels = shownChannels.filter((c) => !starredChannelIds.has(c.id));
 
   // Compact DM row used by both the Starred and Direct Messages sections.
   const renderDmRow = (conv) => {
-    const active = activeChannel?.type === "dm" && activeChannel?.dmUserId === conv.withUser.id;
+    const people = dmPeople(conv);
+    const active = activeChannel?.type === "dm" && activeChannel?.id === conv.id;
     const unread = conv.unread > 0;
-    const isStarred = starredIds.has(conv.withUser.id);
-    const label = conv.isSelf ? `${conv.withUser.displayName} (you)` : conv.withUser.displayName;
+    const isStarred = people.length === 1 ? starredIds.has(people[0].id) : starredChannelIds.has(conv.id);
+    const label = conv.isSelf ? `${conv.withUser.displayName} (you)` : dmLabel(conv);
     return (
       <div key={conv.id} className={`channel-item dm-item ${active ? "active" : ""} ${unread ? "unread" : ""}`} data-testid={`dm-row-${slug(conv.withUser.displayName)}`}>
         <button
           className="dm-open"
           data-testid={`dm-open-${slug(conv.withUser.displayName)}`}
-          onClick={() => onOpenDm(conv.withUser, conv.isSelf)}
+          onClick={() => onOpenDm({ ...conv.withUser, participants: people }, conv.isSelf)}
           onMouseEnter={() => onPrefetchDm?.(conv.id)}
           onFocus={() => onPrefetchDm?.(conv.id)}
         >
-          <PresenceAvatar
-            name={conv.withUser.displayName}
-            src={conv.withUser.avatarUrl}
+          <DmAvatar
+            group={people.length > 1}
+            name={label}
+            src={people.length === 1 ? people[0].avatarUrl : null}
             size={20}
-            online={onlineIds.has(conv.withUser.id)}
+            online={people.length === 1 && onlineIds.has(people[0].id)}
             showPresence={!(["azure", "system"].includes(conv.withUser.username))}
           />
           <span className="dm-name">{label}</span>
         </button>
-        {unread && <span className="unread-badge">{conv.unread > 99 ? "99+" : conv.unread}</span>}
         <button
           className={`dm-remove ${isStarred ? "reserved" : ""}`}
           data-testid={`dm-remove-${slug(conv.withUser.displayName)}`}
@@ -149,22 +162,96 @@ export default function Sidebar({
     );
   };
 
+  const starredSection = (starredDms.length > 0 || starredChannels.length > 0) ? (
+    <>
+      <div className="section-label section-toggle starred-section-label">
+        <button
+          type="button"
+          className="sl-collapse"
+          data-testid="starred-toggle"
+          onClick={() => setStarredCollapsed((v) => !v)}
+          aria-expanded={!starredCollapsed}
+        >
+          <Chevron collapsed={starredCollapsed && !f} />
+          <StarIcon className="section-icon starred-icon" size={12} strokeWidth={2.5} aria-hidden="true" />
+          <span className="starred-label">Starred</span>
+        </button>
+      </div>
+      {showStarred && starredChannels.map((c) => (
+        <button
+          key={c.id}
+          type="button"
+          className={`channel-item channel-row starred-channel-row ${!browsingChannels && activeChannel?.id === c.id ? "active" : ""} ${c.unread ? "unread" : ""}`}
+          data-testid={`starred-channel-row-${slug(c.name)}`}
+          aria-current={!browsingChannels && activeChannel?.id === c.id ? "page" : undefined}
+          onClick={() => onSelect(c)}
+          onMouseEnter={() => onPrefetchChannel?.(c.id)}
+          onFocus={() => onPrefetchChannel?.(c.id)}
+        >
+          <span className="ch-mark">{c.type === "private" ? <LockKeyholeIcon className="ch-lock" size={11} strokeWidth={1.6} /> : "#"}</span>
+          <span className="ci-name">{c.name}</span>
+        </button>
+      ))}
+      {showStarred && starredDms.map(renderDmRow)}
+    </>
+  ) : null;
+
   return (
     <aside className={`sidebar ${dmsOnly ? "dms-view" : ""}`} data-testid="sidebar">
       {dmsOnly && (
         <div className="sidebar-header" data-testid="dms-header">
-          <span className="brand-sm">Direct messages</span>
+          <span className="brand-sm">Direct Messages</span>
         </div>
       )}
-      <div className="dm-find">
-        <input
-          data-testid="sidebar-filter"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          placeholder={dmsOnly ? "Find a DM" : "Filter channels & DMs"}
-        />
-        {dmsOnly && <StartConversationButton onClick={onStartConversation} />}
-      </div>
+      {!dmsOnly && (
+        <div className="sidebar-actions" role="group" aria-label="Sidebar actions">
+          <button
+            type="button"
+            className={`add-channel filter-button ${filterOpen ? "active" : ""}`}
+            data-testid="sidebar-filter-toggle"
+            onClick={() => {
+              setFilterOpen((open) => !open);
+              if (filterOpen) setFilter("");
+            }}
+            title={filterOpen ? "Close filter" : "Filter"}
+            aria-label={filterOpen ? "Close filter" : "Filter channels and direct messages"}
+            aria-pressed={filterOpen}
+          >
+            <ListFilterIcon size={14} strokeWidth={1.9} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className={`add-channel browse-channels-button ${browsingChannels ? "active" : ""}`}
+            data-testid="browse-channels"
+            aria-label="Browse all channels"
+            aria-pressed={browsingChannels}
+            aria-controls="channel-browser-pane"
+            title="Browse public channels"
+            onClick={onBrowseChannels}
+          >
+            <CompassIcon size={14} strokeWidth={1.9} aria-hidden="true" />
+          </button>
+          <button type="button" className="add-channel" data-testid="create-channel" onClick={onNewChannel} title="Create channel" aria-label="Create channel">
+            <span className="add-channel-mark" aria-hidden="true">
+              <span />
+              <span />
+            </span>
+          </button>
+          <StartConversationButton onClick={onStartConversation} />
+        </div>
+      )}
+      {(dmsOnly || filterOpen) && (
+        <div className="dm-find">
+          <input
+            data-testid="sidebar-filter"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder={dmsOnly ? "Find a DM" : "Filter channels & DMs"}
+            autoFocus={!dmsOnly}
+          />
+          {dmsOnly && <StartConversationButton onClick={onStartConversation} />}
+        </div>
+      )}
 
       {dmsOnly ? (
         <div className="channel-list">
@@ -181,22 +268,25 @@ export default function Sidebar({
             </button>
           </div>
           {shownDms.filter((c) => !c.isSelf).map((conv) => {
-            const active = activeChannel?.type === "dm" && activeChannel?.dmUserId === conv.withUser.id;
+            const people = dmPeople(conv);
+            const label = dmLabel(conv);
+            const active = activeChannel?.type === "dm" && activeChannel?.id === conv.id;
             const unread = conv.unread > 0;
-            const isStarred = starredIds.has(conv.withUser.id);
+            const isStarred = people.length === 1 ? starredIds.has(people[0].id) : starredChannelIds.has(conv.id);
             return (
-              <div key={conv.id} className={`dm-rich ${active ? "active" : ""} ${unread ? "unread" : ""}`} data-testid={`dm-row-${slug(conv.withUser.displayName)}`}>
-                <button className="dm-open" data-testid={`dm-open-${slug(conv.withUser.displayName)}`} onClick={() => onOpenDm(conv.withUser)}>
-                  <PresenceAvatar
-                    name={conv.withUser.displayName}
-                    src={conv.withUser.avatarUrl}
+              <div key={conv.id} className={`dm-rich ${active ? "active" : ""} ${unread ? "unread" : ""}`} data-testid={`dm-row-${slug(label)}`}>
+                <button className="dm-open" data-testid={`dm-open-${slug(label)}`} onClick={() => onOpenDm({ ...conv.withUser, participants: people })}>
+                  <DmAvatar
+                    group={people.length > 1}
+                    name={label}
+                    src={people.length === 1 ? people[0].avatarUrl : null}
                     size={38}
-                    online={onlineIds.has(conv.withUser.id)}
+                    online={people.length === 1 && onlineIds.has(people[0].id)}
                     showPresence={!(["azure", "system"].includes(conv.withUser.username))}
                   />
                   <div className="dm-text">
                     <div className="dm-row-top">
-                      <span className="dm-name" dir="auto">{conv.withUser.displayName}</span>
+                      <span className="dm-name" dir="auto">{label}</span>
                       {unread && <span className="unread-badge">{conv.unread > 99 ? "99+" : conv.unread}</span>}
                       <span className="dm-time">{relativeTime(conv.lastAt)}</span>
                     </div>
@@ -217,7 +307,8 @@ export default function Sidebar({
         // One scrolling list; the Channels and Direct Messages sections each
         // collapse from their header so you can shrink one to see the other.
         <div className="channel-list">
-          <div className="section-label section-toggle">
+          {starredSection}
+          <div className="section-label section-toggle channels-section-label">
             <button
               type="button"
               className="sl-collapse"
@@ -226,32 +317,9 @@ export default function Sidebar({
               aria-expanded={!chCollapsed}
             >
               <Chevron collapsed={chCollapsed && !f} />
+              <HashIcon className="section-icon" size={12} strokeWidth={2.5} aria-hidden="true" />
               <span>Channels</span>
             </button>
-            <span className="channel-header-actions" role="group" aria-label="Channel actions">
-              <button
-                type="button"
-                className={`add-channel browse-channels-button ${browsingChannels ? "active" : ""}`}
-                data-testid="browse-channels"
-                aria-label="Browse all channels"
-                aria-pressed={browsingChannels}
-                aria-controls="channel-browser-pane"
-                title={
-                  Number.isFinite(publicChannelCount)
-                    ? `Browse ${publicChannelCount} public ${publicChannelCount === 1 ? "channel" : "channels"}`
-                    : "Browse public channels"
-                }
-                onClick={onBrowseChannels}
-              >
-                <CompassIcon size={14} strokeWidth={1.9} aria-hidden="true" />
-              </button>
-              <button type="button" className="add-channel" data-testid="create-channel" onClick={onNewChannel} title="Create channel" aria-label="Create channel">
-                <span className="add-channel-mark" aria-hidden="true">
-                  <span />
-                  <span />
-                </span>
-              </button>
-            </span>
           </div>
           {showChannels &&
             regularChannels.map((c) => (
@@ -267,47 +335,12 @@ export default function Sidebar({
               >
                 <span className="ch-mark">{c.type === "private" ? <LockKeyholeIcon className="ch-lock" size={11} strokeWidth={1.6} /> : "#"}</span>
                 <span className="ci-name">{c.name}</span>
-                {c.unread > 0 && <span className="unread-badge">{c.unread > 99 ? "99+" : c.unread}</span>}
               </button>
             ))}
           {showChannels && shownChannels.length === 0 && (
             <div className="dm-empty">{filter ? "No matching channels." : "No channels yet."}</div>
           )}
-          {(starredDms.length > 0 || starredChannels.length > 0) && (
-            <>
-              <div className="section-label section-toggle starred-section-label">
-                <button
-                  type="button"
-                  className="sl-collapse"
-                  data-testid="starred-toggle"
-                  onClick={() => setStarredCollapsed((v) => !v)}
-                  aria-expanded={!starredCollapsed}
-                >
-                  <Chevron collapsed={starredCollapsed && !f} />
-                  <span className="starred-label">★ Starred</span>
-                </button>
-              </div>
-              {showStarred && starredChannels.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  className={`channel-item channel-row starred-channel-row ${!browsingChannels && activeChannel?.id === c.id ? "active" : ""} ${c.unread ? "unread" : ""}`}
-                  data-testid={`starred-channel-row-${slug(c.name)}`}
-                  aria-current={!browsingChannels && activeChannel?.id === c.id ? "page" : undefined}
-                  onClick={() => onSelect(c)}
-                  onMouseEnter={() => onPrefetchChannel?.(c.id)}
-                  onFocus={() => onPrefetchChannel?.(c.id)}
-                >
-                  <span className="ch-mark">{c.type === "private" ? <LockKeyholeIcon className="ch-lock" size={11} strokeWidth={1.6} /> : "#"}</span>
-                  <span className="ci-name">{c.name}</span>
-                  {c.unread > 0 && <span className="unread-badge">{c.unread > 99 ? "99+" : c.unread}</span>}
-                </button>
-              ))}
-              {showStarred && starredDms.map(renderDmRow)}
-            </>
-          )}
-
-          <div className={`section-label dm-label section-toggle ${starredDms.length > 0 || starredChannels.length > 0 ? "dm-label-after-starred" : ""}`} data-testid="home-dm-section">
+          <div className="section-label dm-label section-toggle" data-testid="home-dm-section">
             <button
               type="button"
               className="sl-collapse"
@@ -316,9 +349,9 @@ export default function Sidebar({
               aria-expanded={!dmCollapsed}
             >
               <Chevron collapsed={dmCollapsed && !f} />
+              <MessageCircleIcon className="section-icon" size={12} strokeWidth={2.5} aria-hidden="true" />
               <span>Direct Messages</span>
             </button>
-            <StartConversationButton onClick={onStartConversation} />
           </div>
           {showDms && regularDms.map(renderDmRow)}
           {showDms && regularDms.length === 0 && (

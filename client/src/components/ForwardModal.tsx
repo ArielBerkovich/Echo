@@ -33,11 +33,24 @@ function labelFor(destination) {
   return destination.kind === "channel" ? `#${destination.label}` : destination.label;
 }
 
+function resultId(destination) {
+  return `forward-destination-${destinationKey(destination).replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+}
+
 function DestinationIcon({ destination }) {
   if (destination.kind === "channel") {
     return <span className="forward-destination-icon" aria-hidden="true">{destination.icon}</span>;
   }
   return <Avatar name={destination.label} src={destination.avatarUrl} size={34} />;
+}
+
+function uniqueById(items) {
+  const seen = new Set();
+  return items.filter((item) => {
+    if (!item?.id || seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
 }
 
 // Recipient-first forwarding flow. Search and selection stay synchronous so
@@ -51,37 +64,49 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
   const [searchFocused, setSearchFocused] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
   const searchRef = useRef(null);
+  const noteComposerRef = useRef(null);
 
   const destinationGroups = useMemo(() => {
-    const channelItems = channels.map((channel) => ({
+    const channelItems = channels
+      .filter((channel) => channel?.id && channel?.name && !channel.isArchived)
+      .map((channel) => ({
       id: channel.id,
       kind: "channel",
       label: channel.name,
       handle: channel.type === "private" ? "Private channel" : "Public channel",
       icon: channel.type === "private" ? "🔒" : "#",
-    }));
-    const dmItems = dms.map((dm) => ({
+      }));
+    const dmItems = uniqueById(dms)
+      .filter((dm) => dm?.id && dm.withUser?.id)
+      .map((dm) => {
+      const participants = (dm.participants || [dm.withUser]).filter((person) => person?.id && person.id !== currentUserId);
+      const isGroup = dm.isGroup || participants.length > 1;
+      return {
       id: dm.id,
       kind: "dm",
-      label: dm.withUser?.displayName || "Direct message",
-      handle: "Direct message",
-      avatarUrl: dm.withUser?.avatarUrl || null,
-    }));
-    const knownDmUserIds = new Set(dms.map((dm) => dm.withUser?.id).filter(Boolean));
-    const people = users
-      .filter((user) => !knownDmUserIds.has(user.id))
+      userId: isGroup ? undefined : dm.withUser.id,
+      label: participants.map((person) => person.displayName || person.username).join(", ") || "Direct message",
+      handle: isGroup ? "Group direct message" : "Direct message",
+      avatarUrl: !isGroup ? dm.withUser?.avatarUrl || null : null,
+      username: !isGroup ? dm.withUser?.username || "" : "",
+      isGroup,
+      };
+      });
+    const knownDmUserIds = new Set(dmItems.filter((dm) => !dm.isGroup).map((dm) => dm.userId));
+    const people = uniqueById(users)
+      .filter((user) => user?.id && user?.username && !knownDmUserIds.has(user.id))
       .map((user) => ({
         id: user.id,
         kind: "user",
         label: user.displayName || user.username || "Person",
         handle: `@${user.username}`,
         avatarUrl: user.avatarUrl || null,
+        username: user.username,
       }));
     return {
-      recent: [...dmItems, ...channelItems],
       all: [...channelItems, ...dmItems, ...people],
     };
-  }, [channels, dms, users]);
+  }, [channels, currentUserId, dms, users]);
 
   const hasQuery = Boolean(query.trim());
   const resultGroups = useMemo(() => {
@@ -90,9 +115,9 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
           .filter((destination) => fuzzyMatch(destination, query))
           .sort((left, right) => matchRank(left, query) - matchRank(right, query))
           .slice(0, MAX_VISIBLE_SEARCH_RESULTS)
-      : destinationGroups.recent.slice(0, MAX_VISIBLE_SEARCH_RESULTS);
+      : [];
 
-    if (!hasQuery) return [{ label: "Recent destinations", items: matches }].filter((group) => group.items.length);
+    if (!hasQuery) return [];
 
     return [
       { label: "Channels", items: matches.filter((item) => item.kind === "channel") },
@@ -102,7 +127,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
 
   const flatResults = useMemo(() => resultGroups.flatMap((group) => group.items), [resultGroups]);
   const selectedKeys = useMemo(() => new Set(selected.map(destinationKey)), [selected]);
-  const showResultList = searchFocused;
+  const showResultList = searchFocused && hasQuery;
   const isSubmitting = status === "submitting";
   const disabled = !selected.length || isSubmitting;
   const noteChannel = useMemo(() => ({
@@ -131,12 +156,25 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
   }
 
   function handleSearchKeyDown(event) {
-    if (event.key === "ArrowDown") {
+    if (event.key === "Tab" && !event.shiftKey) {
+      event.preventDefault();
+      noteComposerRef.current?.focus();
+    } else if (event.key === "Escape" && query) {
+      event.preventDefault();
+      setQuery("");
+      setActiveIndex(0);
+    } else if (event.key === "ArrowDown") {
       event.preventDefault();
       setActiveIndex((index) => flatResults.length ? (index + 1) % flatResults.length : 0);
     } else if (event.key === "ArrowUp") {
       event.preventDefault();
       setActiveIndex((index) => flatResults.length ? (index - 1 + flatResults.length) % flatResults.length : 0);
+    } else if (event.key === "Home" && flatResults.length) {
+      event.preventDefault();
+      setActiveIndex(0);
+    } else if (event.key === "End" && flatResults.length) {
+      event.preventDefault();
+      setActiveIndex(flatResults.length - 1);
     } else if (event.key === "Enter" && flatResults[activeIndex]) {
       event.preventDefault();
       const destination = flatResults[activeIndex];
@@ -168,6 +206,11 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
       className="forward-modal"
       closeClassName="forward-close"
       closeDisabled={isSubmitting}
+      onPointerDownOutside={(event) => {
+        if (event.target instanceof Element && event.target.closest(".text-viewer-backdrop")) {
+          event.preventDefault();
+        }
+      }}
       onClose={onClose}
     >
       <div className="forward-dialog" data-testid="forward-modal">
@@ -184,9 +227,9 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
             {selected.length > 0 && (
               <div className="forward-selected-chips" aria-label="Selected recipients">
                 {selected.map((destination) => (
-                  <span className="forward-chip" key={destinationKey(destination)} title={labelFor(destination)}>
+                  <span className="forward-chip" key={destinationKey(destination)}>
                     <span>{labelFor(destination)}</span>
-                    <button type="button" aria-label={`Remove ${labelFor(destination)}`} onClick={() => removeDestination(destination)} disabled={isSubmitting}>
+                    <button type="button" className="chip-remove" aria-label={`Remove ${labelFor(destination)}`} onClick={() => removeDestination(destination)} disabled={isSubmitting}>
                       <XIcon size={13} aria-hidden="true" />
                     </button>
                   </span>
@@ -211,11 +254,16 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
               autoFocus
               disabled={!destinationGroups.all.length || isSubmitting}
               aria-label="Search people and channels"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-controls="forward-destination-list"
+              aria-expanded={showResultList && flatResults.length > 0}
+              aria-activedescendant={flatResults[activeIndex] ? resultId(flatResults[activeIndex]) : undefined}
             />
 
-            {showResultList && (
-              <div className="forward-destination-list" data-testid="forward-destination-list" aria-label="Recipient search results">
-                {!flatResults.length ? (
+            {showResultList && (flatResults.length > 0 || hasQuery || selected.length > 0) && (
+              <div id="forward-destination-list" className="forward-destination-list" data-testid="forward-destination-list" role="listbox" aria-label="Recipient search results">
+                {!flatResults.length && hasQuery ? (
                   <div className="people-empty">No recipients match “{query.trim()}”</div>
                 ) : resultGroups.map((group) => (
                   <section className="forward-result-group" key={group.label} aria-label={group.label}>
@@ -227,9 +275,13 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
                       return (
                         <button
                           type="button"
+                          id={resultId(destination)}
                           className={`forward-destination-row ${isSelected ? "selected" : ""} ${activeIndex === index ? "keyboard-active" : ""}`}
                           key={destinationKey(destination)}
+                          role="option"
                           aria-pressed={isSelected}
+                          aria-selected={isSelected}
+                          tabIndex={-1}
                           disabled={isSubmitting || atLimit}
                           onMouseEnter={() => setActiveIndex(index)}
                           onClick={() => isSelected ? removeDestination(destination) : addDestination(destination)}
@@ -251,6 +303,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
 
           <div className="forward-note-field" data-testid="forward-note-field">
             <Composer
+              ref={noteComposerRef}
               key={noteChannel.id}
               channel={noteChannel}
               users={users}

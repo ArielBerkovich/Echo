@@ -20,7 +20,9 @@ function tooltipTarget(node: EventTarget | null) {
 }
 
 function tooltipPlacementOrder(target: HTMLElement) {
+  if (target.closest(".sidebar-actions")) return ["below", "above", "left", "right"] as const;
   if (target.closest(".rail")) return ["right", "above", "below", "left"] as const;
+  if (target.closest(".text-viewer-actions, .lightbox-toolbar-actions")) return ["below", "left", "right", "above"] as const;
   // Above is the stable Echo convention. The measured collision pass below
   // changes this only when the actual rendered tooltip cannot fit there.
   return ["above", "below", "left", "right"] as const;
@@ -31,7 +33,7 @@ function tooltipPosition(target: HTMLElement, placement: TooltipState["placement
   const halfWidth = (width || TOOLTIP_MAX_WIDTH) / 2;
   const minLeft = Math.min(TOOLTIP_EDGE + halfWidth, window.innerWidth / 2);
   const maxLeft = Math.max(window.innerWidth - TOOLTIP_EDGE - halfWidth, window.innerWidth / 2);
-  const rightAligned = target.matches("[data-testid='composer-send-options'], [data-testid='channel-members'], .timeline-jump-button") && placement === "above";
+  const rightAligned = target.matches("[data-testid='composer-send-options'], [data-testid='channel-members'], .timeline-jump-button, .message-more-action, .header-action.leave") && placement === "above";
   const centeredLeft = rightAligned
     ? rect.right - halfWidth
     : Math.min(
@@ -133,11 +135,13 @@ export default function ThemedTooltipLayer() {
       if (focusedRef.current === event.target) focusedRef.current = null;
       if (!(event.relatedTarget instanceof Node) || !targetRef.current?.contains(event.relatedTarget)) hide();
     };
+    const onClick = () => hide();
 
     document.addEventListener("pointerover", onPointerOver, true);
     document.addEventListener("pointerout", onPointerOut, true);
     document.addEventListener("focusin", onFocusIn, true);
     document.addEventListener("focusout", onFocusOut, true);
+    document.addEventListener("click", onClick, true);
     window.addEventListener("resize", hide);
     window.addEventListener("scroll", hide, true);
     return () => {
@@ -145,6 +149,7 @@ export default function ThemedTooltipLayer() {
       document.removeEventListener("pointerout", onPointerOut, true);
       document.removeEventListener("focusin", onFocusIn, true);
       document.removeEventListener("focusout", onFocusOut, true);
+      document.removeEventListener("click", onClick, true);
       window.removeEventListener("resize", hide);
       window.removeEventListener("scroll", hide, true);
       hide();
@@ -157,7 +162,7 @@ export default function ThemedTooltipLayer() {
     const placement = tooltipPlacementOrder(tooltip.target).find((candidate) => {
       const position = tooltipPosition(tooltip.target, candidate, width, height);
       const box = tooltipBox(position, candidate, width, height);
-      const rightAnchored = tooltip.target.matches("[data-testid='composer-send-options'], [data-testid='channel-members'], .timeline-jump-button");
+      const rightAnchored = tooltip.target.matches("[data-testid='composer-send-options'], [data-testid='channel-members'], .timeline-jump-button, .message-more-action, .header-action.leave");
       const viewportEdge = rightAnchored ? 4 : TOOLTIP_EDGE;
       const fitsViewport = box.left >= viewportEdge && box.right <= window.innerWidth - viewportEdge
         && box.top >= TOOLTIP_EDGE && box.bottom <= window.innerHeight - TOOLTIP_EDGE;
@@ -173,7 +178,7 @@ export default function ThemedTooltipLayer() {
   }, [tooltip]);
 
   if (!tooltip) return null;
-  const rightAnchored = tooltip.target.matches("[data-testid='composer-send-options'], [data-testid='channel-members'], .timeline-jump-button");
+  const rightAnchored = tooltip.target.matches("[data-testid='composer-send-options'], [data-testid='channel-members'], .timeline-jump-button, .message-more-action, .header-action.leave");
   return (
     <div
       ref={tooltipNodeRef}

@@ -52,6 +52,25 @@ test("keeps a message active while hovering and opening its action menu", async 
   await expect(message).toHaveClass(/menu-open/);
 });
 
+test("supports arrow-key navigation in the message actions menu", async ({ page }) => {
+  const { id, message } = await openFreshMessage(
+    page,
+    "keyboard-actions",
+    `Keyboard action navigation ${fixture.suffix}`
+  );
+  await message.hover();
+  const actions = page.getByTestId(`message-${id}-actions`);
+  await actions.getByTestId(`message-${id}-more`).click();
+
+  const menu = page.getByRole("menu", { name: "Message actions" });
+  const items = menu.getByRole("menuitem");
+  await expect(items.nth(0)).toBeFocused();
+  await menu.press("ArrowDown");
+  await expect(items.nth(1)).toBeFocused();
+  await menu.press("ArrowUp");
+  await expect(items.nth(0)).toBeFocused();
+});
+
 test("keeps a message active through reaction selection", async ({ page }) => {
   const { id, message } = await openFreshMessage(
     page,
@@ -68,10 +87,27 @@ test("keeps a message active through reaction selection", async ({ page }) => {
   await expect(message).toHaveClass(/reaction-open/);
   await expect(message).toHaveClass(/actions-hovered/);
 
-  await picker.getByRole("button", { name: "React with 👍" }).click();
+  await picker.getByRole("button", { name: "React with thumbs up" }).click();
   await expect(picker).toBeHidden();
   await message.hover();
   await expect(message).toHaveClass(/actions-hovered/);
+});
+
+test("shows the intended quick reaction shortcuts", async ({ page }) => {
+  const { id, message } = await openFreshMessage(
+    page,
+    "quick-reaction-shortcuts",
+    `Quick reaction shortcuts ${fixture.suffix}`
+  );
+  await message.hover();
+  await page.getByTestId(`message-${id}-actions`).getByTestId(`message-${id}-add-reaction-action`).click();
+
+  const picker = page.getByRole("dialog", { name: "Choose a reaction" });
+  await expect(picker.getByRole("button", { name: "React with check mark" })).toBeVisible();
+  await expect(picker.getByRole("button", { name: "React with git merge" })).toBeVisible();
+  await expect(picker.getByRole("button", { name: "React with git merge" }).getByAltText(":git-merge:")).toBeVisible();
+  await expect(picker.getByRole("button", { name: "React with 😊" })).toHaveCount(0);
+  await expect(picker.getByRole("button", { name: "React with 😂" })).toHaveCount(0);
 });
 
 test("keeps long-message actions below the channel header while scrolling", async ({ page }) => {

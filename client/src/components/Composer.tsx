@@ -12,12 +12,19 @@ import { readString, writeString } from "../lib/storage.js";
 import { useAttachments } from "../lib/useAttachments.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
 import { buildQuoteMarkdown } from "../lib/quote.js";
+import {
+  LARGE_PASTE_CHARACTERS,
+  MAX_MESSAGE_CHARACTERS,
+  MAX_PASTE_ATTACHMENT_BYTES,
+  createPasteAttachment,
+  pasteByteLength,
+} from "../lib/pasteAttachment.js";
 import Avatar from "./Avatar.js";
 import EmojiPicker from "./EmojiPicker.js";
 import Modal, { ModalActions } from "./Modal.js";
 import { useMentionGate } from "../lib/useMentionGate.js";
 import { MENTION_QUERY_RE } from "../lib/mentions.js";
-import { CalendarClock, ChartNoAxesColumnIncreasing, ChevronRight } from "lucide-react";
+import { CalendarClock, ChartNoAxesColumnIncreasing, ChevronRight, FileIcon, Paperclip, X } from "lucide-react";
 import {
   LinkIcon, OrderedListIcon, BulletListIcon, QuoteIcon, CodeIcon, CodeBlockIcon,
   PlusIcon, SmileyIcon, SendIcon, ChevronIcon,
@@ -28,6 +35,8 @@ const SCHEDULE_PRESETS = [
   { label: "In 1 hour", getWhen: () => new Date(Date.now() + 60 * 60 * 1000) },
   { label: "Tomorrow, 09:00", getWhen: tomorrow9am },
 ];
+
+const MAX_SURVEY_OPTION_CHARACTERS = 80;
 
 function tomorrow9am() {
   const d = new Date();
@@ -62,7 +71,7 @@ function formatScheduleTime(date) {
 // Rich-text message composer: @mention autocomplete, a formatting toolbar,
 // emoji, and file attachments. Owns all of its own editor state — mount it with
 // a `key={channel.id}` so switching channels yields a fresh, empty composer.
-const Composer = forwardRef(function Composer({ channel, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, onDraftChange, onEditSave, onEditCancel, editing = null, placeholder: customPlaceholder, mode = "light", captureScreenDrops = false, showSchedule = true, showSend = true, showAttachments = true, disabled = false }, ref) {
+const Composer = forwardRef(function Composer({ channel, sendChannel = null, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, onDraftChange, onEditSave, onEditCancel, editing = null, placeholder: customPlaceholder, mode = "light", captureScreenDrops = false, showSchedule = true, showSend = true, showAttachments = true, disabled = false }, ref) {
   const isThread = !!parentId; // a thread reply composer (hides channel-level scheduling)
   const [mention, setMention] = useState(null); // { trigger, query, from, to } or null
   const [activeIdx, setActiveIdx] = useState(0);
@@ -78,6 +87,9 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
   const [showScheduled, setShowScheduled] = useState(false); // manage-scheduled modal
   const [editingSched, setEditingSched] = useState(null); // { id, body, at } being edited
   const [surveyDraft, setSurveyDraft] = useState(null);
+  const surveyOptionsListRef = useRef(null);
+  const [pastePrompt, setPastePrompt] = useState(null); // { text, byteLength, tooLong, tooLarge }
+  const [pasteBlockedNotice, setPasteBlockedNotice] = useState(null);
   const [editorState, setEditorState] = useState({
     canSend: false,
     bold: false,
@@ -89,6 +101,29 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
     code: false,
     codeBlock: false,
   });
+  const duplicateSurveyOptionCount = surveyDraft
+    ? surveyDraft.options.filter((option, index, options) => {
+      const normalized = option.trim().toLowerCase();
+      return normalized && options.slice(0, index).some((candidate) => candidate.trim().toLowerCase() === normalized);
+    }).length
+    : 0;
+
+  useEffect(() => {
+    if (!surveyDraft) return;
+    const list = surveyOptionsListRef.current;
+    if (list) list.scrollTop = list.scrollHeight;
+  }, [surveyDraft?.options.length, duplicateSurveyOptionCount]);
+
+  useEffect(() => {
+    if (!pastePrompt) return undefined;
+    const handlePastePromptKeyDown = (event) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      clearPastePrompt();
+    };
+    window.addEventListener("keydown", handlePastePromptKeyDown);
+    return () => window.removeEventListener("keydown", handlePastePromptKeyDown);
+  }, [pastePrompt]);
 
   const keyDownHandlerRef = useRef(null);
   const pasteHandlerRef = useRef(null);
@@ -108,6 +143,7 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
   } = useAttachments({ captureScreenDrops, onError });
 
   const isDm = channel.type === "dm";
+  const targetChannelId = sendChannel?.id || channel.id;
   const scheduledTargetLabel = isDm ? "this conversation" : "this channel";
   const placeholder = customPlaceholder || (isThread
     ? "Reply to thread…"
@@ -144,8 +180,11 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
       syncMentionContext(currentEditor);
       setEditorState(readEditorState(currentEditor));
     },
-  }, [channel.id, parentId, placeholder, disabled]);
+  }, [channel.id, parentId, placeholder]);
   useImperativeHandle(ref, () => ({
+    focus() {
+      editor?.commands.focus();
+    },
     quoteMessage(message) {
       if (!editor || editing) return;
       const html = `${markdownTextToComposerHtml(buildQuoteMarkdown(message))}<p></p>`;
@@ -184,7 +223,7 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
     if (!showSend) return;
     if (!typingActiveRef.current) {
       typingActiveRef.current = true;
-      getSocket().emit("typing", { channelId: channel.id, typing: true });
+      getSocket().emit("typing", { channelId: targetChannelId, typing: true });
     }
     clearTimeout(typingStopRef.current);
     typingStopRef.current = setTimeout(stopTyping, 2500);
@@ -193,7 +232,7 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
     clearTimeout(typingStopRef.current);
     if (typingActiveRef.current) {
       typingActiveRef.current = false;
-      getSocket().emit("typing", { channelId: channel.id, typing: false });
+      getSocket().emit("typing", { channelId: targetChannelId, typing: false });
     }
   }
   // Stop signalling when the composer unmounts (e.g. switching channels).
@@ -201,22 +240,22 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
   // Load pending scheduled messages for this channel (for the banner + manager).
   function refreshScheduled() {
     api
-      .listScheduled(channel.id)
+      .listScheduled(targetChannelId)
       .then(({ scheduled }) => setScheduledMsgs(scheduled))
       .catch(() => {});
   }
   useEffect(() => {
     if (!isThread && showSchedule && !disabled) refreshScheduled(); // scheduling is a channel-level feature
-  }, [channel.id, isThread, showSchedule, disabled]);
+  }, [targetChannelId, isThread, showSchedule, disabled]);
   useEffect(() => {
     if (isThread || !showSchedule || disabled) return;
     const socket = getSocket();
     const onNew = (msg) => {
-      if (msg.channelId === channel.id) refreshScheduled();
+      if (msg.channelId === targetChannelId) refreshScheduled();
     };
     socket.on("message:new", onNew);
     return () => socket.off("message:new", onNew);
-  }, [channel.id, isThread, showSchedule, disabled]);
+  }, [targetChannelId, isThread, showSchedule, disabled]);
 
   const suggestions = useMemo(() => {
     if (!mention) return [];
@@ -300,6 +339,11 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
   }
 
   function handlePaste(e) {
+    if (pastePrompt) {
+      e.preventDefault();
+      setPasteBlockedNotice("Choose an option for the current paste before pasting more content.");
+      return;
+    }
     const images = Array.from(e.clipboardData?.items || [])
       .filter((item) => item.kind === "file" && item.type.startsWith("image/"))
       .map((item) => item.getAsFile())
@@ -313,7 +357,36 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
     const text = e.clipboardData?.getData("text/plain");
     if (!text) return;
     e.preventDefault();
+    const byteLength = pasteByteLength(text);
+    if (byteLength > MAX_PASTE_ATTACHMENT_BYTES) {
+      setPasteBlockedNotice(null);
+      setPastePrompt({ text, byteLength, tooLarge: true });
+      return;
+    }
+    if (text.length > LARGE_PASTE_CHARACTERS) {
+      setPasteBlockedNotice(null);
+      setPastePrompt({ text, byteLength, tooLong: text.length > MAX_MESSAGE_CHARACTERS, tooLarge: false });
+      return;
+    }
     editor?.commands.insertContent(markdownTextToComposerHtml(text));
+  }
+
+  function pasteAsText() {
+    if (!pastePrompt || pastePrompt.tooLong || pastePrompt.tooLarge) return;
+    editor?.commands.insertContent(markdownTextToComposerHtml(pastePrompt.text));
+    clearPastePrompt();
+  }
+
+  function attachPastedText() {
+    if (!pastePrompt || pastePrompt.tooLarge || !showAttachments) return;
+    const file = createPasteAttachment(pastePrompt.text);
+    clearPastePrompt();
+    stageFiles([file]);
+  }
+
+  function clearPastePrompt() {
+    setPastePrompt(null);
+    setPasteBlockedNotice(null);
   }
 
   function applyMention(picked) {
@@ -386,6 +459,11 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
       }
     }
     if (e.key === "Enter" && editor) {
+      if (pastePrompt) {
+        e.preventDefault();
+        setPasteBlockedNotice("Choose an option above before sending this message.");
+        return;
+      }
       if (editor.isActive("codeBlock")) {
         e.preventDefault();
         if (e.shiftKey) editor.chain().focus().insertContent("\n").run();
@@ -417,7 +495,7 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
       onError?.("Echo is reconnecting. Your draft is still here — send it when the connection returns.");
       return false;
     }
-    socket.emit("message:send", { channelId: channel.id, body, attachments, parentId, survey }, (res) => {
+    socket.emit("message:send", { channelId: targetChannelId, body, attachments, parentId, survey }, (res) => {
       if (res?.error) onError?.(res.error);
       else onSent?.();
     });
@@ -431,6 +509,10 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
     const options = surveyDraft.options.map((label) => label.trim()).filter(Boolean);
     if (!question || options.length < 2) {
       setSurveyDraft((draft) => ({ ...draft, error: "Add a question and at least two options." }));
+      return;
+    }
+    if (duplicateSurveyOptionCount > 0) {
+      setSurveyDraft((draft) => ({ ...draft, error: "Each survey option must be unique." }));
       return;
     }
     if (doSend(question, [], { question, options: options.map((label) => ({ label })), allowMultiple: surveyDraft.allowMultiple })) {
@@ -456,6 +538,7 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
   // Schedule the composed message for a given Date (shared by the quick option
   // and the custom dialog).
   async function scheduleFor(when, inScheduleModal = false) {
+    if (pastePrompt) return;
     const reportError = (message) => {
       if (inScheduleModal) setScheduleError(message);
       else onError?.(message);
@@ -473,7 +556,7 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
     try {
       if (inScheduleModal) setScheduleError(null);
       else onError?.(null);
-      await api.scheduleMessage(channel.id, {
+      await api.scheduleMessage(targetChannelId, {
         body,
         attachments: pending,
         scheduledFor: when.toISOString(),
@@ -488,6 +571,7 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
 
   // Open the custom schedule dialog (default: one hour from now).
   function openSchedule() {
+    if (pastePrompt) return;
     onError?.(null);
     setScheduleError(null);
     setSendMenuOpen(false);
@@ -556,6 +640,10 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
   function handleSend(e) {
     e?.preventDefault();
     if (!showSend) return;
+    if (pastePrompt) {
+      setPasteBlockedNotice("Choose an option above before sending this message.");
+      return;
+    }
     const hasText = !!editor && editor.getText().trim() !== "";
     if (!hasText && pending.length === 0) return; // nothing to send
     if (uploading) return; // wait for in-flight uploads
@@ -663,6 +751,40 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
         </button>
       )}
 
+      {pastePrompt && (
+        <div
+          className={`composer-paste-prompt${pastePrompt.tooLarge ? " is-error" : ""}`}
+          role="dialog"
+          aria-label="Paste options"
+          data-testid="composer-paste-prompt"
+        >
+          <div className="composer-paste-content">
+            <span className="composer-paste-icon" aria-hidden="true"><Paperclip size={18} strokeWidth={2} /></span>
+            <div className="composer-paste-copy">
+              <strong>{pastePrompt.tooLarge ? "This paste can’t be attached." : pastePrompt.tooLong ? "Paste exceeds the message limit" : "Attach this paste as a file?"}</strong>
+              {(pastePrompt.tooLarge || pastePrompt.tooLong) && (
+                <span>
+                  {pastePrompt.tooLarge
+                    ? `${formatSize(pastePrompt.byteLength)} · Files are limited to 10 MB.`
+                    : `${pastePrompt.text.length.toLocaleString()} characters · Messages support up to ${MAX_MESSAGE_CHARACTERS.toLocaleString()}.`}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="composer-paste-actions">
+            {!pastePrompt.tooLarge && showAttachments && (
+              <button type="button" className="btn-primary" onClick={attachPastedText}>Attach as file</button>
+            )}
+            {!pastePrompt.tooLarge && pastePrompt.text.length <= MAX_MESSAGE_CHARACTERS && (
+              <button type="button" className="btn-secondary" onClick={pasteAsText}>Paste as text</button>
+            )}
+            <button type="button" className="composer-paste-dismiss" onClick={clearPastePrompt}>
+              {pastePrompt.tooLarge ? "Dismiss" : "Cancel"}
+            </button>
+          </div>
+        </div>
+      )}
+
       {!editing && scheduleAt !== null && (
         <Modal
           title="Schedule message"
@@ -687,7 +809,7 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
               </button>
             ))}
           </div>
-          <label className="schedule-custom-field">
+          <label className="schedule-custom-field survey-question-field">
             <span>Custom date and time</span>
             <input
               className="settings-input schedule-input"
@@ -733,16 +855,34 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
 
       {!editing && surveyDraft && (
         <Modal title="Send a survey" className="survey-modal" testId="survey-modal" onClose={() => setSurveyDraft(null)}>
-          <label className="schedule-custom-field">
+          <label className="schedule-custom-field survey-question-field">
             <span>Question</span>
             <input className="settings-input" autoFocus value={surveyDraft.question} placeholder="What should we do?" onChange={(e) => setSurveyDraft((d) => ({ ...d, question: e.target.value, error: null }))} />
           </label>
-          <div className="schedule-custom-field">
+          <div className="schedule-custom-field survey-options-field">
             <span>Options</span>
-            {surveyDraft.options.map((option, index) => (
-              <input key={index} className="settings-input" value={option} placeholder={`Option ${index + 1}`} onChange={(e) => setSurveyDraft((d) => ({ ...d, options: d.options.map((v, i) => i === index ? e.target.value : v), error: null }))} />
-            ))}
-            {surveyDraft.options.length < 10 && <button type="button" className="btn-secondary" onClick={() => setSurveyDraft((d) => ({ ...d, options: [...d.options, ""] }))}>Add option</button>}
+            <div ref={surveyOptionsListRef} className="survey-options-list">
+              {surveyDraft.options.map((option, index) => {
+                const normalized = option.trim().toLowerCase();
+                const duplicate = normalized && surveyDraft.options.slice(0, index).some((candidate) => (
+                  candidate.trim().toLowerCase() === normalized
+                ));
+                return (
+                  <div className="survey-option-entry" key={index}>
+                    <input
+                      className="settings-input"
+                      maxLength={MAX_SURVEY_OPTION_CHARACTERS}
+                      value={option}
+                      placeholder={`Option ${index + 1}`}
+                      aria-describedby={duplicate ? `survey-option-warning-${index}` : undefined}
+                      onChange={(e) => setSurveyDraft((d) => ({ ...d, options: d.options.map((v, i) => i === index ? e.target.value : v), error: null }))}
+                    />
+                    {duplicate && <span id={`survey-option-warning-${index}`} className="survey-option-warning">This option matches an earlier choice.</span>}
+                  </div>
+                );
+              })}
+            </div>
+            {surveyDraft.options.length < 10 && <button type="button" className="btn-secondary survey-add-option" onClick={() => setSurveyDraft((d) => ({ ...d, options: [...d.options, ""] }))}>Add option</button>}
           </div>
           <label className={`survey-multiple-toggle${surveyDraft.allowMultiple ? " is-enabled" : ""}`}>
             <input
@@ -936,13 +1076,14 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
               {a.isImage ? (
                 <PendingImage attachment={a} />
               ) : (
-                <div className="pending-file">
+                <div className={`pending-file${a.name?.startsWith("pasted.") ? " is-pasted" : ""}`}>
+                  <span className="pending-file-icon" aria-hidden="true"><FileIcon size={18} strokeWidth={1.8} /></span>
                   <span className="pending-file-name">{a.name}</span>
                   <span className="pending-file-meta">{formatSize(a.size)}</span>
                 </div>
               )}
-              <button type="button" className="pending-remove" title="Remove" onClick={() => removePending(a.key)}>
-                ✕
+              <button type="button" className="chip-remove pending-remove" title="Remove" onClick={() => removePending(a.key)}>
+                <X size={13} strokeWidth={2.4} aria-hidden="true" />
               </button>
             </div>
           ))}
@@ -962,7 +1103,7 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
             S
           </button>
           <span className="tb-sep" />
-          <button type="button" className="icon-btn" title="Link" onMouseDown={keepFocus} onClick={openLinkDialog}>
+          <button type="button" className="icon-btn" data-testid="composer-link" title="Link" onMouseDown={keepFocus} onClick={openLinkDialog}>
             <LinkIcon />
           </button>
           <span className="tb-sep" />
@@ -989,6 +1130,12 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
         <EditorContent editor={editor} />
       </div>
 
+      {pasteBlockedNotice && (
+        <div className="composer-paste-notice" data-testid="composer-paste-error" role="alert">
+          {pasteBlockedNotice}
+        </div>
+      )}
+
       <div className="composer-actions">
         <div className="left">
           {showAttachments && <input ref={fileInputRef} type="file" multiple hidden data-testid="composer-attachments" onChange={onPickFiles} />}
@@ -996,7 +1143,24 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
             <PlusIcon />
           </button>}
           {!editing && !isThread && <button type="button" className="icon-btn survey-compose-btn" data-testid="composer-survey" title="Create survey" aria-label="Create survey" onMouseDown={keepFocus} onClick={() => setSurveyDraft({ question: "", options: ["", ""], allowMultiple: false, error: null })}><ChartNoAxesColumnIncreasing size={18} strokeWidth={1.8} /></button>}
-          <button type="button" className={`icon-btn aa ${showFormatting ? "active" : ""}`} title="Formatting" onMouseDown={keepFocus} onClick={() => setShowFormatting((v) => !v)}>
+          <button
+            type="button"
+            className={`icon-btn aa ${showFormatting ? "active" : ""}`}
+            data-testid="composer-formatting"
+            title="Formatting"
+            onMouseDown={keepFocus}
+            onClick={(event) => {
+              // Keyboard activation is handled in onKeyDown so it cannot be
+              // toggled twice by the browser's synthetic click.
+              if (event.detail !== 0) setShowFormatting((v) => !v);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setShowFormatting((v) => !v);
+              }
+            }}
+          >
             Aa
           </button>
           <button type="button" className={`icon-btn emoji-toggle ${emojiOpen ? "active" : ""}`} data-testid="composer-emoji-toggle" title="Emoji" onMouseDown={keepFocus} onClick={() => setEmojiOpen((v) => !v)}>
@@ -1010,9 +1174,9 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
             className={`icon-btn send-btn ${canSend || pending.length ? "ready" : ""}`}
             data-testid="composer-send"
             onMouseDown={keepFocus}
-            disabled={(!canSend && pending.length === 0) || uploading}
+            disabled={(!canSend && pending.length === 0 && !pastePrompt) || uploading}
             aria-label={editing ? "Save edit" : "Send"}
-            title={editing ? "Save edit" : "Send message"}
+            title={pastePrompt ? "Choose how to handle the pasted content first" : editing ? "Save edit" : "Send message"}
           >
             <SendIcon />
           </button>}
@@ -1025,6 +1189,7 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
               title="Send options"
               onMouseDown={keepFocus}
               onClick={() => setSendMenuOpen((v) => !v)}
+              disabled={!!pastePrompt}
             >
               <ChevronIcon />
             </button>
@@ -1037,8 +1202,8 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
                 <button
                   type="button"
                   onClick={scheduleTomorrow9}
-                  disabled={!canSend && pending.length === 0}
-                  title={!canSend && pending.length === 0 ? "Write a message first" : undefined}
+                  disabled={(!canSend && pending.length === 0) || !!pastePrompt}
+                  title={pastePrompt ? "Choose how to handle the pasted content first" : !canSend && pending.length === 0 ? "Write a message first" : undefined}
                 >
                   <span>Tomorrow, 09:00</span>
                   <span className="send-menu-sub">
@@ -1048,8 +1213,8 @@ const Composer = forwardRef(function Composer({ channel, parentId = null, users 
                 <button
                   type="button"
                   onClick={openSchedule}
-                  disabled={!canSend && pending.length === 0}
-                  title={!canSend && pending.length === 0 ? "Write a message first" : undefined}
+                  disabled={(!canSend && pending.length === 0) || !!pastePrompt}
+                  title={pastePrompt ? "Choose how to handle the pasted content first" : !canSend && pending.length === 0 ? "Write a message first" : undefined}
                 >
                   <span>Custom time…</span>
                 </button>

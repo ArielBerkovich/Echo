@@ -23,6 +23,7 @@ describe("User.toPublicJSON", () => {
 
     assert.deepEqual(Object.keys(json).sort(), [
       "avatarUrl",
+      "canChangePassword",
       "displayName",
       "id",
       "isAdmin",
@@ -33,6 +34,7 @@ describe("User.toPublicJSON", () => {
     assert.equal(json.username, "alice");
     assert.equal(json.avatarUrl, "/api/files/avatar.png");
     assert.equal(json.passwordHash, undefined);
+    assert.equal(json.canChangePassword, true);
   });
 
   it("uses null avatar URLs and boolean defaults", () => {
@@ -43,6 +45,20 @@ describe("User.toPublicJSON", () => {
     assert.equal(json.isAdmin, false);
     assert.equal(json.mustResetPassword, false);
     assert.equal(json.onboarded, false);
+    assert.equal(json.canChangePassword, true);
+  });
+
+  it("does not expose password changes for SSO identities", () => {
+    const user = new User({
+      username: "sso-user",
+      displayName: "SSO User",
+      passwordHash: "placeholder",
+      authOrigin: "rhsso",
+      rhssoIssuer: "https://sso.example.test/realms/echo",
+      rhssoSubject: "subject-1",
+    });
+
+    assert.equal(user.toPublicJSON().canChangePassword, false);
   });
 
   it("defaults channel stars independently from VIP users", () => {

@@ -1,5 +1,5 @@
 const STATIC_VIEWS = new Set(["browse", "activity", "saved", "dms", "settings"]);
-const SETTINGS_TABS = new Set(["account", "appearance", "workspace", "integrations", "desktop", "api"]);
+const SETTINGS_TABS = new Set(["account", "appearance", "webhooks", "workspace", "integrations", "desktop", "shortcuts", "api"]);
 
 export function isEchoMessageLink(href, origin = typeof window === "undefined" ? "http://localhost" : window.location.origin) {
   try {
@@ -18,7 +18,9 @@ export function workspacePath({ view = "home", convId = null, convName = null, c
   const messageQuery = messageId
     ? `?message=${encodeURIComponent(messageId)}${threadId ? `&thread=${encodeURIComponent(threadId)}` : ""}`
     : "";
-  const conversation = convName || convId;
+  // Conversation routes use stable IDs so renaming a channel or changing a
+  // DM participant's username does not invalidate copied links.
+  const conversation = convId || convName;
   if (searchQuery) return `/search?q=${encodeURIComponent(searchQuery)}`;
   if (view === "browse") return "/browse";
   if (view === "activity") return "/activity";

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Building2Icon, Code2Icon, DownloadIcon, GitPullRequestIcon, PaletteIcon, UserRoundIcon } from "lucide-react";
+import { Building2Icon, CheckIcon, Code2Icon, DownloadIcon, GitPullRequestIcon, KeyboardIcon, PaletteIcon, UserRoundIcon, WebhookIcon } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { api, getBackendUrl } from "../api.js";
@@ -12,6 +12,7 @@ import { PASSWORD_RULE } from "../lib/password.js";
 import { passwordPairSchema } from "../lib/formSchemas.js";
 import { uploadSizeError } from "../lib/uploads.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
+import { KEYBOARD_SHORTCUT_GROUPS } from "../lib/keyboardShortcuts.js";
 import {
   notifySupported,
   notifyPermission,
@@ -35,7 +36,9 @@ const SETTINGS_TABS = [
   { id: "workspace", label: "Workspace", Icon: Building2Icon, adminOnly: true },
   { id: "integrations", label: "Integrations", Icon: GitPullRequestIcon, adminOnly: true },
   { id: "desktop", label: "Desktop", Icon: DownloadIcon },
+  { id: "shortcuts", label: "Keyboard shortcuts", Icon: KeyboardIcon },
   { id: "api", label: "API", Icon: Code2Icon },
+  { id: "webhooks", label: "Webhooks", Icon: WebhookIcon },
 ];
 
 const AZURE_NOTIFY_OPTIONS = [
@@ -112,6 +115,12 @@ export default function SettingsModal({
   const [jenkinsDownloadError, setJenkinsDownloadError] = useState(null);
   const [desktopDownloads, setDesktopDownloads] = useState(null);
   const [desktopDownloadsError, setDesktopDownloadsError] = useState(null);
+  const [mentionWebhook, setMentionWebhook] = useState(null);
+  const [mentionWebhookUrl, setMentionWebhookUrl] = useState("");
+  const [mentionWebhookEnabled, setMentionWebhookEnabled] = useState(true);
+  const [mentionWebhookLoading, setMentionWebhookLoading] = useState(false);
+  const [mentionWebhookSaved, setMentionWebhookSaved] = useState(false);
+  const [mentionWebhookSecretCopied, setMentionWebhookSecretCopied] = useState(false);
   const workspaceLogoSrc = useAuthUrl(workspaceLogoUrl);
 
   const nameChanged = displayName.trim() !== user.displayName;
@@ -127,6 +136,22 @@ export default function SettingsModal({
       })
       .then((downloads) => !cancelled && setDesktopDownloads(downloads))
       .catch((err) => !cancelled && setDesktopDownloadsError(err.message));
+    return () => { cancelled = true; };
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab !== "webhooks") return;
+    let cancelled = false;
+    setMentionWebhookLoading(true);
+    api.getMentionWebhook()
+      .then(({ webhook }) => {
+        if (cancelled) return;
+        setMentionWebhook(webhook || null);
+        setMentionWebhookUrl(webhook?.url || "");
+        setMentionWebhookEnabled(webhook?.enabled ?? true);
+      })
+      .catch((err) => !cancelled && setError(err.message))
+      .finally(() => !cancelled && setMentionWebhookLoading(false));
     return () => { cancelled = true; };
   }, [activeTab]);
 
@@ -461,6 +486,50 @@ export default function SettingsModal({
     }
   }
 
+  async function saveMentionWebhook() {
+    setMentionWebhookLoading(true);
+    setMentionWebhookSaved(false);
+    setError(null);
+    try {
+      const { webhook } = await api.saveMentionWebhook({ url: mentionWebhookUrl, enabled: mentionWebhookEnabled });
+      setMentionWebhook(webhook);
+      setMentionWebhookUrl(webhook.url);
+      setMentionWebhookEnabled(webhook.enabled);
+      setMentionWebhookSecretCopied(false);
+      setMentionWebhookSaved(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setMentionWebhookLoading(false);
+    }
+  }
+
+  async function removeMentionWebhook() {
+    setMentionWebhookLoading(true);
+    setMentionWebhookSaved(false);
+    setError(null);
+    try {
+      await api.deleteMentionWebhook();
+      setMentionWebhook(null);
+      setMentionWebhookUrl("");
+      setMentionWebhookEnabled(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setMentionWebhookLoading(false);
+    }
+  }
+
+  async function copyMentionWebhookSecret() {
+    if (!mentionWebhook?.signingSecret) return;
+    try {
+      await navigator.clipboard.writeText(mentionWebhook.signingSecret);
+      setMentionWebhookSecretCopied(true);
+    } catch {
+      setError("Couldn't copy the signing secret. Select and copy it manually.");
+    }
+  }
+
   async function setAzureNotification(key, enabled) {
     if (!azureIntegration) return;
     setAzureLoading(true);
@@ -524,8 +593,91 @@ export default function SettingsModal({
               <p className="settings-hint">Play a sound for every new message from another person or integration.</p>
               <MessageSoundControls />
             </section>
-            {!user.isAdmin ? <ChangePassword /> : <AdminPasswordReset users={users} currentUserId={user.id} />}
+            {!user.isAdmin ? (user.canChangePassword ? <ChangePassword /> : <SsoPasswordNotice />) : <AdminPasswordReset users={users} currentUserId={user.id} />}
           </>}
+
+          {activeTab === "webhooks" && <section className="settings-section mention-webhook-settings" data-testid="mention-webhook-settings">
+            <div className="mention-webhook-hero">
+              <span className="mention-webhook-icon" aria-hidden="true"><WebhookIcon size={22} strokeWidth={2} /></span>
+              <div>
+                <h3>Personal webhook</h3>
+                <p>Send a signed event when someone mentions <strong>@{user.username}</strong> or sends you a direct message.</p>
+              </div>
+              <span className={`mention-webhook-status${mentionWebhook?.enabled ? " is-active" : ""}`}>{mentionWebhook?.enabled ? "Active" : mentionWebhook ? "Paused" : "Not configured"}</span>
+            </div>
+            <div className="mention-webhook-card">
+              <div className="mention-webhook-field">
+                <label className="settings-profile-field-label" htmlFor="mention-webhook-url">Destination URL</label>
+                <span>Echo sends your new mention and direct-message events here.</span>
+              </div>
+              <input
+                id="mention-webhook-url"
+                className="settings-input"
+                data-testid="mention-webhook-url"
+                type="url"
+                placeholder="https://example.com/echo-events"
+                value={mentionWebhookUrl}
+                onChange={(event) => { setMentionWebhookUrl(event.target.value); setMentionWebhookSaved(false); }}
+                disabled={mentionWebhookLoading}
+              />
+              <label className="mention-webhook-enabled">
+                <span><strong>Deliver events</strong><small>Send each new @mention and direct message to this endpoint.</small></span>
+                <span className={`integration-switch${mentionWebhookEnabled ? " is-on" : ""}`}><input type="checkbox" checked={mentionWebhookEnabled} disabled={mentionWebhookLoading} onChange={(event) => { setMentionWebhookEnabled(event.target.checked); setMentionWebhookSaved(false); }} /><span className="integration-switch-track"><span /></span></span>
+              </label>
+            </div>
+            <div className="mention-webhook-actions">
+              <button type="button" className="btn-primary" data-testid="mention-webhook-save" disabled={mentionWebhookLoading || !mentionWebhookUrl.trim()} onClick={saveMentionWebhook}>{mentionWebhook ? "Save webhook" : "Create webhook"}</button>
+              {mentionWebhook && <button type="button" className="btn-danger-outline" data-testid="mention-webhook-remove" disabled={mentionWebhookLoading} onClick={removeMentionWebhook}>Remove webhook</button>}
+              {mentionWebhookSaved && <span className="workspace-save-status">Saved ✓</span>}
+            </div>
+            {mentionWebhook?.signingSecret && <div className="mention-webhook-secret">
+              <div>
+                <label className="settings-profile-field-label" htmlFor="mention-webhook-secret">Signing secret</label>
+                <p>Before accepting an event, verify that <code>x-echo-signature</code> is an HMAC-SHA256 of <code>x-echo-timestamp</code>, a period, and the <strong>raw request body</strong>. Keep this secret on your server—never expose it in a browser or commit it.</p>
+              </div>
+              <div className="mention-webhook-secret-value">
+                <input id="mention-webhook-secret" className="settings-input" data-testid="mention-webhook-secret" value={mentionWebhook.signingSecret} readOnly />
+                <button type="button" className="btn-secondary" data-testid="mention-webhook-copy-secret" onClick={copyMentionWebhookSecret} aria-live="polite">
+                  {mentionWebhookSecretCopied ? <><CheckIcon size={15} /> Copied</> : "Copy"}
+                </button>
+              </div>
+            </div>}
+            {mentionWebhook && <section className="mention-webhook-examples" aria-labelledby="mention-webhook-examples-title">
+              <div>
+                <h4 id="mention-webhook-examples-title">What Echo sends</h4>
+                <p>Echo sends JSON with the event type, recipient, message, channel, and author. The request headers also include <code>x-echo-event</code>, <code>x-echo-delivery</code>, <code>x-echo-timestamp</code>, and <code>x-echo-signature</code>.</p>
+              </div>
+              <p className="mention-webhook-thread-note"><code>message.id</code> always identifies the exact new message that triggered this event. For a reply in a thread, <code>message.parentId</code> is the root message’s ID; it is <code>null</code> for a top-level message.</p>
+              <details open>
+                <summary>Someone mentions you <code>user_mentioned</code></summary>
+                <pre>{`{
+  "id": "7ee0d8e7-…",
+  "type": "user_mentioned",
+  "occurredAt": "2026-08-30T19:30:00.000Z",
+  "recipient": { "id": "…", "username": "${user.username}" },
+  "message": {
+    "id": "reply-message-id",
+    "parentId": "thread-root-message-id",
+    "body": "Can you take a look at this?"
+  },
+  "channel": { "id": "…", "name": "general", "type": "public" },
+  "author": { "id": "…", "username": "alex" }
+}`}</pre>
+              </details>
+              <details>
+                <summary>Someone sends you a DM <code>direct_message</code></summary>
+                <pre>{`{
+  "id": "0bb3a1c0-…",
+  "type": "direct_message",
+  "occurredAt": "2026-08-30T19:31:00.000Z",
+  "recipient": { "id": "…", "username": "${user.username}" },
+  "message": { "id": "…", "body": "Do you have a minute?" },
+  "channel": { "id": "…", "type": "dm" },
+  "author": { "id": "…", "username": "alex" }
+}`}</pre>
+              </details>
+            </section>}
+          </section>}
 
           {activeTab === "appearance" && themes.length > 0 && <section className="settings-section settings-appearance-card">
             <h3>Appearance</h3>
@@ -720,6 +872,30 @@ export default function SettingsModal({
 
           {activeTab === "desktop" && <DesktopDownloads downloads={desktopDownloads} error={desktopDownloadsError} />}
 
+          {activeTab === "shortcuts" && (
+            <section className="settings-section settings-shortcuts-section">
+              <h3>Keyboard shortcuts</h3>
+              <p className="settings-hint">Use these shortcuts to move through Echo quickly. Shortcuts are fixed for everyone.</p>
+              <div className="shortcut-groups">
+                {KEYBOARD_SHORTCUT_GROUPS.map((group) => (
+                  <section className="shortcut-group" key={group.label} aria-labelledby={`shortcut-group-${group.label.toLowerCase()}`}>
+                    <h4 id={`shortcut-group-${group.label.toLowerCase()}`}>{group.label}</h4>
+                    <div className="shortcut-list">
+                      {group.shortcuts.map((shortcut) => (
+                        <div className="shortcut-row" key={`${group.label}-${shortcut.description}`}>
+                          <span className="shortcut-description">{shortcut.description}</span>
+                          <span className="shortcut-keys" aria-label={shortcut.keys.join(" ")}>
+                            {shortcut.keys.map((key) => <kbd key={key}>{key}</kbd>)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            </section>
+          )}
+
           {error && <div className="error">{error}</div>}
           {saved && activeTab !== "workspace" && <div className="settings-saved">Saved ✓</div>}
         </main>
@@ -842,6 +1018,15 @@ function MessageSoundControls() {
         ))}
       </div>
     </div>
+  );
+}
+
+function SsoPasswordNotice() {
+  return (
+    <section className="settings-section" data-testid="sso-password-settings">
+      <h3>Password</h3>
+      <p className="settings-hint">Your password is managed by your single sign-on provider.</p>
+    </section>
   );
 }
 

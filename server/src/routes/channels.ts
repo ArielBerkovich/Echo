@@ -14,6 +14,7 @@ import {
 import { deliverMessage, sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, applySurveyVote } from "../deliver.js";
 import { normalizeChannelName } from "../automation.js";
 import { ActivityEvent } from "../models/ActivityEvent.js";
+import { isValidChannelName } from "../lib/channelName.js";
 
 // Whitelist attachment fields (keys produced by /api/uploads). Mirrors the
 // socket sender so the REST and realtime paths behave identically.
@@ -239,6 +240,9 @@ channelsRouter.post("/", async (req, res) => {
   const visibility = type === "private" ? "private" : "public";
 
   const normalized = String(name).toLowerCase().trim();
+  if (!isValidChannelName(normalized)) {
+    return res.status(400).json({ error: "channel names cannot contain underscores, consecutive dashes, or start/end with a dash" });
+  }
   const existing = await Channel.findOne({ name: normalized });
   if (existing) return res.status(409).json({ error: "channel name already exists" });
 
@@ -272,7 +276,8 @@ channelsRouter.post("/:id/star", async (req, res) => {
     return res.status(404).json({ error: "channel not found" });
   }
   const channel = await Channel.findById(req.params.id);
-  if (!channel || channel.isArchived || channel.type === "dm") {
+  const isGroupDm = channel?.type === "dm" && channel.members.length > 2;
+  if (!channel || channel.isArchived || (channel.type === "dm" && !isGroupDm)) {
     return res.status(404).json({ error: "channel not found" });
   }
   if (!channel.members.some((memberId) => memberId.equals(req.user._id))) {
@@ -342,8 +347,12 @@ channelsRouter.post("/:id/members", async (req, res) => {
   if (!channel || channel.isArchived) {
     return res.status(404).json({ error: "channel not found" });
   }
-  if (channel.type === "dm") {
+  const isGroupDm = channel.type === "dm" && channel.members.length > 2;
+  if (channel.type === "dm" && !isGroupDm) {
     return res.status(400).json({ error: "cannot add members to a direct message" });
+  }
+  if (isGroupDm && channel.members.length >= 20) {
+    return res.status(400).json({ error: "group DMs are limited to 20 people" });
   }
   // Everyone is automatically a member of #general, so there's no one to add.
   if ((channel.name || "").toLowerCase() === "general") {
@@ -351,7 +360,7 @@ channelsRouter.post("/:id/members", async (req, res) => {
   }
   // Anyone may add to public channels; private channels are members-only.
   const isMember = channel.members.some((m) => m.equals(req.user._id));
-  if (channel.type === "private" && !isMember) {
+  if ((channel.type === "private" || isGroupDm) && !isMember) {
     return res.status(403).json({ error: "join the channel before adding others" });
   }
 
@@ -730,13 +739,26 @@ channelsRouter.get("/:id/messages", async (req, res) => {
   const ids = docs.map((d) => d._id);
   const stats = await Message.aggregate([
     { $match: { parentId: { $in: ids } } },
-    { $group: { _id: "$parentId", count: { $sum: 1 }, lastReplyAt: { $max: "$createdAt" } } },
+    { $sort: { createdAt: -1 } },
+    {
+      $group: {
+        _id: "$parentId",
+        count: { $sum: 1 },
+        lastReplyAt: { $max: "$createdAt" },
+        replyParticipantIds: { $push: "$author" },
+      },
+    },
   ]);
   const statMap = new Map(stats.map((s) => [s._id.toString(), s]));
 
   const messages = docs.reverse().map((m) => {
     const s = statMap.get(m._id.toString());
-    return { ...m.toPublicJSON(), replyCount: s?.count || 0, lastReplyAt: s?.lastReplyAt || null };
+    return {
+      ...m.toPublicJSON(),
+      replyCount: s?.count || 0,
+      lastReplyAt: s?.lastReplyAt || null,
+      replyParticipantIds: [...new Set((s?.replyParticipantIds || []).map((id) => id.toString()))].slice(0, 2),
+    };
   });
 
   // When the user last read this channel — lets the client open at the first
@@ -785,6 +807,42 @@ channelsRouter.get("/:id/pinned", async (req, res) => {
     .sort({ pinnedAt: 1 })
     .populate("author");
   res.json({ messages: docs.map((m) => m.toPublicJSON()) });
+});
+
+// GET /api/channels/:id/files — attachments in a conversation, newest first.
+// Unlike message history this includes thread replies, because a file shared in
+// a thread is still shared with the whole conversation.
+channelsRouter.get("/:id/files", async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(404).json({ error: "channel not found" });
+  }
+  const channel = await Channel.findById(req.params.id);
+  if (!channel || channel.isArchived) return res.status(404).json({ error: "channel not found" });
+  if (channel.type !== "public" && !channel.members.some((m) => m.equals(req.user._id))) {
+    return res.status(403).json({ error: "access denied" });
+  }
+
+  const limit = Math.min(Math.max(Number.parseInt(String(req.query.limit || "50"), 10) || 50, 1), 100);
+  const query = { channel: channel._id, "attachments.0": { $exists: true } };
+  if (req.query.before) {
+    const before = new Date(String(req.query.before));
+    if (!Number.isNaN(before.getTime())) query.createdAt = { $lt: before };
+  }
+  const docs = await Message.find(query).sort({ createdAt: -1 }).limit(limit).populate("author");
+  const files = docs.flatMap((message) => {
+    const publicMessage = message.toPublicJSON();
+    return publicMessage.attachments.map((attachment) => ({
+      ...attachment,
+      // Use the public message id explicitly: attachment filenames and object
+      // keys can repeat (for example after a forward), but this origin cannot.
+      id: `${publicMessage.id}:${attachment.key}`,
+      messageId: publicMessage.id,
+      createdAt: publicMessage.createdAt,
+      author: publicMessage.author,
+      parentId: publicMessage.parentId,
+    }));
+  });
+  res.json({ files, nextBefore: docs.length === limit ? docs[docs.length - 1].createdAt : null });
 });
 
 // POST /api/channels/:id/messages — send a message (REST equivalent of the

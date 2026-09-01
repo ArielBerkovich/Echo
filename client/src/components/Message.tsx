@@ -6,6 +6,7 @@ import Attachments from "./Attachments.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
 import { getSocket } from "../socket.js";
 import { formatTime } from "../lib/time.js";
+import { replyParticipantNames, visibleReplyParticipants } from "../lib/replyParticipants.js";
 import { isEchoMessageLink, workspacePath } from "../lib/workspaceRoutes.js";
 import {
   ShareIcon, EmojiAddIcon, ReplyIcon, BookmarkIcon, PencilIcon, TrashIcon, PinIcon, CopyIcon, MoreIcon, QuoteIcon,
@@ -138,6 +139,12 @@ function Message({
     }
   }, [showActions, menuOpen, pickerOpen]);
 
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const focusTimer = window.setTimeout(() => menuRef.current?.querySelector("[role=menuitem]")?.focus(), 0);
+    return () => window.clearTimeout(focusTimer);
+  }, [menuOpen]);
+
   useEffect(() => () => {
     if (hoverLeaveTimerRef.current) window.clearTimeout(hoverLeaveTimerRef.current);
   }, []);
@@ -146,6 +153,7 @@ function Message({
   // over the realtime user:update event. Resolve the latest directory entry so
   // an already-open conversation updates without waiting for a new message.
   const author = usersById?.get(m.author?.id) || m.author;
+  const replyNames = replyParticipantNames(m.replyParticipantIds, usersById);
   const messageBody = editing ? (
     <div className="msg-edit">
       <textarea
@@ -178,7 +186,7 @@ function Message({
       onContextMenu={onBodyContextMenu}
     >
       <div dangerouslySetInnerHTML={{ __html: renderMarkdown(m.body) }} />
-      {m.editedAt && <span className="edited-label" title={formatTime(m.editedAt)}> (edited)</span>}
+      {m.editedAt && <span className="edited-label" title="Edited"> (edited)</span>}
     </div>
   );
 
@@ -247,6 +255,16 @@ function Message({
       scrollViewport?.removeEventListener("scroll", measure);
     };
   }, [menuOpen]);
+
+  function onMessageMenuKeyDown(event) {
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    const items = Array.from(menuRef.current?.querySelectorAll("[role=menuitem]") || []);
+    const currentIndex = items.indexOf(document.activeElement);
+    if (currentIndex < 0 || items.length === 0) return;
+    event.preventDefault();
+    const direction = event.key === "ArrowDown" ? 1 : -1;
+    items[(currentIndex + direction + items.length) % items.length]?.focus();
+  }
 
   // Open a profile when an @mention pill in the rendered body is clicked.
   function onBodyClick(e) {
@@ -340,6 +358,18 @@ function Message({
       ref={messageRef}
       data-mid={m.id}
       data-testid={`message-${mid}`}
+      tabIndex={0}
+      aria-label={`Message from ${m.author?.displayName || "unknown sender"}`}
+      onFocus={activateMessage}
+      onKeyDown={(event) => {
+        if (event.currentTarget !== event.target || event.key !== "Enter" || !actionsVisible) return;
+        event.preventDefault();
+        window.setTimeout(() => actionsRef.current?.querySelector("button")?.focus(), 0);
+      }}
+      onMouseDown={(event) => {
+        if (event.target.closest?.("button, a, [data-message-actions]")) return;
+        activateMessage();
+      }}
       onMouseEnter={activateMessage}
       onClick={(event) => {
         if (!window.matchMedia("(max-width: 760px)").matches) return;
@@ -356,14 +386,12 @@ function Message({
       }}
     >
       <div className="avatar-slot">
-        {grouped ? (
-          <span className="grouped-time">{formatTime(m.createdAt)}</span>
-        ) : (
+        {!grouped && (
           <button
             type="button"
             className="avatar-btn"
             data-testid={`message-${mid}-avatar`}
-            title={`View ${author?.displayName || "profile"}`}
+            title="View profile"
             onClick={() => m.author?.id && onOpenProfile?.(m.author.id)}
           >
             <Avatar name={author?.displayName || "?"} src={author?.avatarUrl} size={36} />
@@ -400,7 +428,6 @@ function Message({
 
         {m.forwardedFrom ? (
           <>
-            {m.forwardNote && <div className="forward-divider" aria-hidden="true" />}
             <div className="forwarded-message-card">
               <div className="forwarded-label">
                 <ShareIcon />
@@ -533,14 +560,28 @@ function Message({
                 type="button"
                 className="thread-indicator"
                 data-testid={`message-${mid}-reply-count`}
-                aria-label={`Open thread with ${m.replyCount} ${m.replyCount === 1 ? "reply" : "replies"}`}
+                aria-label={`Open thread with ${m.replyCount} ${m.replyCount === 1 ? "reply" : "replies"}${replyNames ? ` from ${replyNames}` : ""}`}
                 onClick={onOpenThread}
               >
-                <span className="thread-indicator-icon" aria-hidden="true">
-                  <ReplyIcon />
+                <span className="thread-participants" aria-hidden="true">
+                  {visibleReplyParticipants(m.replyParticipantIds).map((id) => {
+                    const participant = usersById?.get(id);
+                    return (
+                      <span className="thread-participant-avatar" key={id}>
+                        <Avatar
+                          name={participant?.displayName || "?"}
+                          src={participant?.avatarUrl}
+                          size={20}
+                          initialsOnly
+                          fallbackIcon
+                        />
+                      </span>
+                    );
+                  })}
                 </span>
-                <span>{m.replyCount} {m.replyCount === 1 ? "reply" : "replies"}</span>
-                <span className="thread-indicator-arrow" aria-hidden="true">›</span>
+                <span className="thread-reply-link">
+                  {m.replyCount} {m.replyCount === 1 ? "reply" : "replies"}
+                </span>
               </button>
             )}
           </div>
@@ -569,6 +610,7 @@ function Message({
           <button
             className="react-toggle"
             data-testid={`message-${mid}-add-reaction-action`}
+            aria-label="Add reaction"
             title="Add reaction"
             onMouseEnter={activateMessage}
             onMouseOver={activateMessage}
@@ -580,16 +622,16 @@ function Message({
             <EmojiAddIcon />
           </button>
           {!inThread && (
-            <button data-testid={`message-${mid}-reply`} title="Reply in thread" onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onOpenThread}>
+            <button data-testid={`message-${mid}-reply`} aria-label="Reply in thread" title="Reply in thread" onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onOpenThread}>
               <ReplyIcon />
             </button>
           )}
           {canQuote && (
-            <button data-testid={`message-${mid}-quote`} title="Quote message" onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onQuote}>
+            <button data-testid={`message-${mid}-quote`} aria-label="Quote message" title="Quote message" onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onQuote}>
               <QuoteIcon />
             </button>
           )}
-          <button data-testid={`message-${mid}-forward`} title="Forward message" onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onForward}>
+          <button data-testid={`message-${mid}-forward`} aria-label="Forward message" title="Forward message" onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onForward}>
             <ShareIcon />
           </button>
           <button
@@ -598,7 +640,7 @@ function Message({
             title="More message actions"
             aria-label="More message actions"
             aria-expanded={menuOpen}
-            className={menuOpen ? "active" : ""}
+            className={`message-more-action${menuOpen ? " active" : ""}`}
             onMouseEnter={activateMessage}
             onMouseOver={activateMessage}
             onClick={onToggleMenu}
@@ -664,6 +706,7 @@ function Message({
             style={menuPosition || { visibility: "hidden" }}
             role="menu"
             aria-label="Message actions"
+            onKeyDown={onMessageMenuKeyDown}
             onMouseDown={(e) => e.stopPropagation()}
           >
             <button type="button" role="menuitem" data-testid={`message-${mid}-copy`} onClick={() => { copyMessage(); onCloseMenu(); }}>

@@ -1,13 +1,12 @@
 import { expect, test } from "@playwright/test";
-import { seedWorkspaceFixture, channelRow, uniqueSuffix } from "./helpers.js";
+import { seedWorkspaceFixture, uniqueSuffix } from "./helpers.js";
 
 let fixture: Awaited<ReturnType<typeof seedWorkspaceFixture>>;
 
 test.beforeEach(async ({ page }) => {
   fixture = await seedWorkspaceFixture(page);
-  await page.goto("/");
-  await channelRow(page, fixture.generalChannel.name).click();
-  await expect(page.getByTestId("channel-title")).toContainText("general");
+  await page.goto(`/channels/${encodeURIComponent(fixture.generalChannel.name)}`);
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.generalChannel.name);
 });
 
 function surveyModal(page) {
@@ -55,7 +54,7 @@ test("uses a polished multiple-selection toggle and records multiple choices", a
   });
   const toggle = modal.getByRole("checkbox", { name: "Allow multiple selections" });
   await expect(toggle).toBeChecked();
-  await expect(modal.locator(".survey-multiple-toggle")).toContainText("On");
+  await expect(modal.locator(".survey-multiple-toggle")).toContainText("Multiple selections");
   await modal.getByRole("button", { name: "Send survey" }).click();
 
   const card = page.locator(".survey-card").filter({ hasText: question }).last();
@@ -66,4 +65,20 @@ test("uses a polished multiple-selection toggle and records multiple choices", a
   await expect(card.getByRole("button", { name: /Reliability/ })).toHaveClass(/selected/);
   await expect(card.getByRole("button", { name: /Performance/ })).toHaveClass(/selected/);
   await expect(card).toContainText("2 votes");
+});
+
+test("warns about duplicate options and blocks sending", async ({ page }) => {
+  const question = `Which duplicate choice ${uniqueSuffix("survey")}?`;
+  const modal = await fillSurvey(page, {
+    question,
+    options: ["Email", "email", "Chat"],
+  });
+
+  await expect(modal.locator(".survey-option-warning")).toHaveText("This option matches an earlier choice.");
+  await expect(modal.locator(".survey-option-entry").nth(0).locator(".survey-option-warning")).toHaveCount(0);
+  await modal.getByRole("button", { name: "Send survey" }).click();
+
+  await expect(modal).toBeVisible();
+  await expect(modal).toContainText("Each survey option must be unique.");
+  await expect(page.locator(".survey-card").filter({ hasText: question })).toHaveCount(0);
 });

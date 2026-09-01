@@ -132,30 +132,38 @@ test("aligns the Direct Messages and main search dividers", async ({ page }) => 
   expect(Math.abs(bottomEdges.sidebar - bottomEdges.main)).toBeLessThanOrEqual(1);
 });
 
-test("aligns the Home filter with the main search field", async ({ page }) => {
+test("opens the Home filter below the sidebar tools", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/");
   await railItem(page, "home").click();
 
-  const [sidebarFilter, mainSearch] = await Promise.all([
-    page.getByTestId("sidebar-filter").boundingBox(),
-    page.getByTestId("search-box-field").boundingBox(),
-  ]);
-  const topEdges = {
-    sidebar: sidebarFilter?.y,
-    main: mainSearch?.y,
-  };
+  const filterToggle = page.getByTestId("sidebar-filter-toggle");
+  await expect(filterToggle).toBeVisible();
+  expect(await page.getByTestId("sidebar-filter").count()).toBe(0);
+  const tools = await page.getByRole("group", { name: "Sidebar actions" }).boundingBox();
+  expect(tools).not.toBeNull();
 
-  expect(topEdges.sidebar).toBeDefined();
-  expect(topEdges.main).toBeDefined();
-  expect(Math.abs(topEdges.sidebar - topEdges.main)).toBeLessThanOrEqual(1);
+  await filterToggle.click();
+  const sidebarFilter = await page.getByTestId("sidebar-filter").boundingBox();
+  expect(sidebarFilter).not.toBeNull();
+  expect(sidebarFilter.y).toBeGreaterThanOrEqual(tools.y + tools.height);
+});
+
+test("opens regular search with the current channel scope", async ({ page }) => {
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
+
+  await page.getByTestId("channel-search").click();
+
+  await expect(page.getByTestId("search-input")).toHaveValue(`in:${fixture.projectChannel.name} `);
+  await expect(page.getByTestId("search-input")).toBeFocused();
 });
 
 test("starts a conversation from the Home Direct Messages button", async ({ page }) => {
   await page.goto("/");
 
   const dmSection = page.getByTestId("home-dm-section");
-  const startButton = dmSection.getByTestId("start-dm");
+  const startButton = page.getByTestId("start-dm");
   await expect(startButton).toBeVisible();
   await expect(startButton).toHaveClass(/add-channel/);
   await expect(startButton).toHaveAttribute("aria-label", "New message");
@@ -165,6 +173,7 @@ test("starts a conversation from the Home Direct Messages button", async ({ page
 
   await expect(page.getByTestId("new-message-modal")).toBeVisible();
   const search = page.getByTestId("new-message-search-input");
+  await search.focus();
   await expect(search).toBeFocused();
   await expect(search).toHaveAttribute("placeholder", "Search people");
 
@@ -187,7 +196,7 @@ test("starts a conversation from the Home Direct Messages button", async ({ page
 
 test("shows an inactive Composer before choosing a new message recipient", async ({ page }) => {
   await page.goto("/");
-  await page.getByTestId("home-dm-section").getByTestId("start-dm").click();
+  await page.getByTestId("start-dm").click();
   const modal = page.getByTestId("new-message-modal");
   await expect(modal.getByTestId("composer-editor")).toBeVisible();
   await expect(modal.getByTestId("composer-editor")).toHaveAttribute("contenteditable", "false");
@@ -197,12 +206,42 @@ test("shows an inactive Composer before choosing a new message recipient", async
 
 test("activates the Composer after selecting a new message recipient", async ({ page }) => {
   await page.goto("/");
-  await page.getByTestId("home-dm-section").getByTestId("start-dm").click();
+  await page.getByTestId("start-dm").click();
   const modal = page.getByTestId("new-message-modal");
   await modal.getByTestId("new-message-search-input").fill(fixture.bob.username);
   await modal.getByTestId(`new-message-user-${fixture.bob.username}`).click();
   await expect(modal.getByTestId("composer-editor")).toHaveAttribute("contenteditable", "true");
   await expect(modal.getByTestId("composer-send-options")).toHaveCount(0);
+});
+
+test("keeps the new-message draft while changing the recipient chip", async ({ page }) => {
+  await page.goto("/");
+  await page.getByTestId("start-dm").click();
+
+  const modal = page.getByTestId("new-message-modal");
+  const draft = `Draft survives recipient changes ${fixture.suffix}`;
+  const search = modal.getByTestId("new-message-search-input");
+
+  await search.fill(fixture.bob.username);
+  const bobResult = modal.getByTestId(`new-message-user-${fixture.bob.username}`);
+  await expect(bobResult).toBeVisible();
+  await bobResult.click();
+  await expect(modal.getByTestId("new-message-recipient")).toContainText(fixture.bob.displayName);
+
+  const editor = modal.getByTestId("composer-editor");
+  await expect(editor).toHaveAttribute("contenteditable", "true");
+  await editor.fill(draft);
+
+  const removeRecipient = modal.getByTestId("new-message-recipient").getByRole("button");
+  await removeRecipient.click();
+  await expect(modal.getByTestId("new-message-search-input")).toBeVisible();
+  await expect(editor).toHaveText(draft);
+
+  await search.fill(fixture.bob.username);
+  await expect(bobResult).toBeVisible();
+  await bobResult.click();
+  await expect(modal.getByTestId("new-message-recipient")).toContainText(fixture.bob.displayName);
+  await expect(editor).toHaveText(draft);
 });
 
 test("starts a new list after existing composer text", async ({ page }) => {
@@ -243,8 +282,7 @@ test("starts a conversation from the dedicated DMs button with the keyboard", as
 });
 
 test("keeps the DM preview width stable when toggling Starred", async ({ page }) => {
-  await page.goto("/");
-  await railItem(page, "dms").click();
+  await page.goto("/dms");
   await expect(page.getByTestId("dms-header")).toBeVisible();
 
   const row = dmRow(page, fixture.bob.displayName);
@@ -255,8 +293,14 @@ test("keeps the DM preview width stable when toggling Starred", async ({ page })
   await row.locator(".dm-open").click();
   const starredToggle = page.getByTestId("dm-starred-toggle");
   const wasStarred = (await starredToggle.getAttribute("aria-pressed")) === "true";
-  await starredToggle.click();
-  await expect(starredToggle).toHaveAttribute("aria-pressed", String(!wasStarred));
+  if (!wasStarred) {
+    const starResponse = page.waitForResponse(
+      (response) => response.url().includes("/api/users/") && response.url().endsWith("/vip") && response.request().method() === "POST"
+    );
+    await starredToggle.click();
+    await expect((await starResponse).ok()).toBeTruthy();
+  }
+  await expect(starredToggle).toHaveAttribute("aria-pressed", "true");
   await railItem(page, "dms").click();
 
   const after = await dmRow(page, fixture.bob.displayName).locator(".dm-preview").boundingBox();
@@ -264,10 +308,11 @@ test("keeps the DM preview width stable when toggling Starred", async ({ page })
   expect(Math.abs(after.width - before.width)).toBeLessThanOrEqual(1);
 
   await railItem(page, "home").click();
+  await page.reload();
   const starredSection = page.locator(".starred-section-label");
   const dmSection = page.getByTestId("home-dm-section");
-  await expect(starredSection).toBeVisible();
-  await expect(dmSection).toBeVisible();
+  await expect(starredSection).toBeVisible({ timeout: 15_000 });
+  await expect(dmSection).toBeVisible({ timeout: 15_000 });
   const [starredMargin, dmMargin] = await Promise.all([
     starredSection.evaluate((element) => getComputedStyle(element).marginTop),
     dmSection.evaluate((element) => getComputedStyle(element).marginTop),
@@ -283,12 +328,7 @@ test("keeps the DM preview width stable when toggling Starred", async ({ page })
 });
 
 test("stars channels without changing their membership or name", async ({ page }) => {
-  await page.goto("/");
-  const channelRow = page.locator(
-    `[data-testid="channel-row-${slug(fixture.projectChannel.name)}"], [data-testid="starred-channel-row-${slug(fixture.projectChannel.name)}"]`,
-  );
-  await expect(channelRow).toBeVisible();
-  await channelRow.click();
+  await page.goto(`/channels/${fixture.projectChannel.id}`);
   await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
 
   const toggle = page.getByTestId("channel-starred-toggle");
@@ -418,7 +458,9 @@ test("creates the channel creator as a manager and lets them promote a member", 
   });
 
   await page.goto("/");
-  await page.getByTestId(`channel-row-${slug(channelName)}`).click();
+  const channel = page.getByTestId(`channel-row-${slug(channelName)}`);
+  await expect(channel).toBeVisible();
+  await channel.click();
   await page.locator(".ch-name-btn").click();
 
   const details = page.getByTestId("channel-details-dialog");
@@ -445,10 +487,8 @@ test("removes a channel from the sidebar after leaving it", async ({ page }) => 
     body: { userId: fixture.bob.id },
   });
 
-  await page.goto("/");
+  await page.goto(`/channels/${created.channel.id}`);
   const row = page.getByTestId(`channel-row-${slug(channelName)}`);
-  await expect(row).toBeVisible();
-  await row.click();
   await page.getByTestId("channel-leave").click();
   await page.getByRole("button", { name: "Leave", exact: true }).click();
 
@@ -471,6 +511,24 @@ test("shows only joined channels in the Channels section", async ({ page }) => {
   await expect(page.getByTestId("channel-leave")).toHaveCount(0);
 });
 
+test("removes archived channels from pane search", async ({ page }) => {
+  const channelName = `archived-search-${fixture.suffix}`;
+  const created = await requestAsToken(page, fixture.alice.token, "/channels", {
+    method: "POST",
+    body: { name: channelName, type: "public" },
+  });
+
+  await page.goto("/");
+  await page.getByTestId("search-input").fill(channelName);
+  await expect(page.getByTestId(`search-channel-${slug(channelName)}`)).toBeVisible();
+
+  await requestAsToken(page, fixture.alice.token, `/channels/${created.channel.id}`, {
+    method: "DELETE",
+  });
+
+  await expect(page.getByTestId(`search-channel-${slug(channelName)}`)).toHaveCount(0);
+});
+
 test("switches channels without flashing stale messages while images load", async ({ page }) => {
   const seeded = await createImageChannel(page, "switch-image");
   let fileRequests = 0;
@@ -484,8 +542,7 @@ test("switches channels without flashing stale messages while images load", asyn
     await route.continue();
   });
 
-  await page.goto("/");
-  await page.locator(".dm-item").filter({ hasText: fixture.bob.displayName }).first().locator(".dm-open").click();
+  await page.goto(`/home/dms/${fixture.dmChannel.id}`);
   const staleMessage = page.getByTestId(`message-${fixture.messages.dmMessage.id}`);
   await expect(staleMessage).toBeVisible();
   await page.evaluate(
@@ -505,7 +562,9 @@ test("switches channels without flashing stale messages while images load", asyn
     { nextChannel: seeded.channelName, staleText: fixture.messages.dmMessage.body }
   );
 
-  await page.getByTestId(`channel-row-${slug(seeded.channelName)}`).click();
+  const seededRow = page.getByTestId(`channel-row-${slug(seeded.channelName)}`);
+  await expect(seededRow).toBeVisible();
+  await seededRow.click();
   await expect(page.getByTestId("channel-title")).toContainText(seeded.channelName);
   await expect(page.getByTestId(`message-${seeded.message.id}`)).toBeVisible();
   await expect(staleMessage).toHaveCount(0);

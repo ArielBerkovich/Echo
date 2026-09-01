@@ -44,7 +44,6 @@ usersRouter.get("/vips", async (req, res) => {
     : await Channel.find({
       _id: { $in: starredChannelIds },
       isArchived: false,
-      type: { $ne: "dm" },
       $or: [{ type: "public" }, { members: req.user._id }],
     }, { _id: 1 }).lean();
   res.json({
@@ -181,6 +180,9 @@ usersRouter.patch("/me", async (req, res) => {
 // is already authenticated with it, so only the new password is needed.
 usersRouter.patch("/me/password", async (req, res) => {
   const { currentPassword, newPassword } = req.body || {};
+  if (req.user.authOrigin === "rhsso" || req.user.rhssoSubject) {
+    return res.status(403).json({ error: "SSO passwords must be changed through your identity provider" });
+  }
   // The admin account isn't allowed to change its own password.
   if (req.user.isAdmin && !req.user.mustResetPassword) {
     return res.status(403).json({ error: "the admin account can't change its own password" });

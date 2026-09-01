@@ -7,6 +7,7 @@ import Message from "./Message.js";
 import Composer from "./Composer.js";
 import ConfirmDialog from "./ConfirmDialog.js";
 import { hasThreadJumpTarget, scrollThreadMessageIntoView } from "../lib/threadNavigation.js";
+import { shouldGroupWithPreviousMessage } from "../lib/messageGrouping.js";
 
 // Right-hand thread view: the root message + its replies + a reply composer.
 // Reuses the full Message (reactions, forward, edit) and Composer (emoji, bold,
@@ -35,6 +36,7 @@ export default function ThreadPanel({
   onChannelUpdated,
   onOpenLightbox,
   openThreadJumpMessageId = null,
+  composerFocusRequest = 0,
 }) {
   const [rootMsg, setRootMsg] = useState(root); // local copy so live edits/reactions apply
   const [replies, setReplies] = useState([]);
@@ -50,6 +52,18 @@ export default function ThreadPanel({
   const scrollerRef = useRef(null);
   const bodyInnerRef = useRef(null); // content wrapper used to track height changes
   const composerRef = useRef(null); // thread reply composer, for quote insertion
+
+  useEffect(() => {
+    if (!composerFocusRequest || !canPost) return undefined;
+    const focusTimer = window.setTimeout(() => composerRef.current?.focus(), 0);
+    return () => window.clearTimeout(focusTimer);
+  }, [composerFocusRequest, canPost]);
+
+  useEffect(() => {
+    if (!canPost) return undefined;
+    const focusTimer = window.setTimeout(() => composerRef.current?.focus(), 0);
+    return () => window.clearTimeout(focusTimer);
+  }, [root.id, canPost]);
   const stickToBottomRef = useRef(true); // should later layout changes keep us pinned?
   const initialScrolledRef = useRef(false); // has the panel been positioned yet?
   const prevReplyCountRef = useRef(0); // reply count last render
@@ -293,30 +307,30 @@ export default function ThreadPanel({
   }
 
   const messages = [rootMsg, ...replies];
-  const conversationLabel = channel.type === "dm"
-    ? channel.dmName || channel.name || "Direct message"
-    : `#${channel.name}`;
 
   return (
     <aside className="thread-panel" data-testid="thread-panel">
       <header className="thread-header" data-testid="thread-header">
         <div className="thread-heading">
           <span className="thread-title">Thread</span>
-          <span className="thread-context" data-testid="thread-context" title={conversationLabel}>in {conversationLabel}</span>
         </div>
         <button className="thread-close" data-testid="thread-close" onClick={onClose} aria-label="Close thread">✕</button>
       </header>
 
       <div ref={scrollerRef} className="thread-body" data-testid="thread-body" onScroll={onBodyScroll} onMouseLeave={() => { if (!menuFor) setActionsFor(null); }}>
         <div ref={bodyInnerRef}>
-          {messages.map((m, index) => (
+          {messages.map((m, index) => {
+            const prev = messages[index - 1];
+            // The thread root is a separate context from its replies.
+            const grouped = index > 1 && shouldGroupWithPreviousMessage(prev, m);
+            return (
             <Fragment key={m.id}>
               <Message
                 m={m}
                 channelId={channel.id}
                 channelType={channel.type}
                 threadRootId={m.parentId ? root.id : null}
-                grouped={false}
+                grouped={grouped}
                 highlighted={highlightId === m.id}
                 currentUserId={user.id}
                 usersById={usersById}
@@ -368,7 +382,8 @@ export default function ThreadPanel({
                 </div>
               )}
             </Fragment>
-          ))}
+            );
+          })}
           <div ref={bottomRef} />
         </div>
         {newMessageCount > 0 && (

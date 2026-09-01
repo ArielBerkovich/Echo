@@ -241,7 +241,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
                             data-testid={`channel-promote-${member.id}`}
                             onClick={() => promoteManager(member)}
                             disabled={promotingId === member.id}
-                            title={`Make ${member.displayName} a manager`}
+                            title="Make manager"
                           >
                             {promotingId === member.id ? "Saving…" : "Make manager"}
                           </button>
@@ -251,7 +251,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
                           className="channel-details-person-remove"
                           data-testid={`channel-remove-${member.id}`}
                           onClick={() => removeMember(member)}
-                          title={`Remove ${member.displayName} from the channel`}
+                          title="Remove from channel"
                           aria-label={`Remove ${member.displayName} from the channel`}
                         >
                           <Trash2Icon size={14} strokeWidth={1.9} aria-hidden="true" />
@@ -323,7 +323,17 @@ function EditableField({ label, value, placeholder, editable, multiline, onSave,
           <span>{label}</span>
         </div>
         {editable && !editing && (
-          <button type="button" className="channel-details-edit" onClick={start}>
+          <button
+            type="button"
+            className="channel-details-edit"
+            onClick={start}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                start();
+              }
+            }}
+          >
             {value ? "Edit" : "Add"}
           </button>
         )}

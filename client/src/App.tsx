@@ -10,7 +10,7 @@ import WorkspaceNavigation from "./components/WorkspaceNavigation.js";
 import WorkspaceOverlays from "./components/WorkspaceOverlays.js";
 import WorkspaceContent from "./components/WorkspaceContent.js";
 import SessionExpiredDialog from "./components/SessionExpiredDialog.js";
-import { readJson, writeJson } from "./lib/storage.js";
+import { readJson, readString, writeJson, writeString } from "./lib/storage.js";
 import { notifyPermission, notifySupported, requestNotifyPermission, setNotifyPref } from "./lib/notify.js";
 import { BUILT_IN_GIT_EMOJIS } from "./lib/gitEmojis.js";
 import { THEMES, useThemePreferences } from "./lib/useThemePreferences.js";
@@ -19,6 +19,7 @@ import { useWorkspaceQueries, workspaceKeys } from "./lib/useWorkspaceQueries.js
 import { queryKeys } from "./lib/queryClient.js";
 import { currentRoute, workspacePath } from "./lib/workspaceRoutes.js";
 import { installMessageSoundUnlock } from "./lib/messageSounds.js";
+import { useHotkeys } from "react-hotkeys-hook";
 
 const HIDDEN_KEY = "echo.hiddenChannels";
 function loadHidden() {
@@ -26,14 +27,48 @@ function loadHidden() {
 }
 
 const RECENTS_KEY = "echo.recentSearches";
+const RECENTS_KEY_PREFIX = "echo.recentSearches.user.";
 const CONNECTION_BANNER_DELAY_MS = 1000;
+const GLOBAL_HOTKEY_OPTIONS = {
+  preventDefault: true,
+  enableOnFormTags: true,
+  enableOnContentEditable: true,
+};
+
+function modifierHotkeys(combo) {
+  return [`ctrl+${combo}`, `meta+${combo}`];
+}
+
+function isEditableTarget(target) {
+  return target instanceof HTMLElement && (
+    target.isContentEditable
+    || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)
+  );
+}
 
 function isMobileViewport() {
   return typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches;
 }
 
-function loadRecents() {
-  return readJson(RECENTS_KEY, []);
+function normalizeRecents(value) {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set();
+  return value.filter((recent) => {
+    if (!recent || !["channel", "user"].includes(recent.type) || !recent.id) return false;
+    const key = `${recent.type}:${recent.id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function recentStorageKey(userId) {
+  return `${RECENTS_KEY_PREFIX}${userId}`;
+}
+
+function isGroupDmChannel(channel) {
+  return channel?.type === "dm"
+    && (channel.members?.length > 2 || channel.participants?.length > 2);
 }
 
 export default function App() {
@@ -48,7 +83,7 @@ export default function App() {
   const [allChannels, setAllChannels] = useState([]); // bounded cache of public channel summaries
   const [catalogCounts, setCatalogCounts] = useState(null);
   const [activeChannel, setActiveChannel] = useState(null);
-  const [recents, setRecents] = useState(loadRecents);
+  const [recents, setRecents] = useState([]);
   const [showCreate, setShowCreate] = useState(false);
   const [showNewMessage, setShowNewMessage] = useState(false);
   const [showAddPeople, setShowAddPeople] = useState(false);
@@ -83,8 +118,15 @@ export default function App() {
   } = useWorkspaceQueries(!!user);
   const [navOpen, setNavOpen] = useState(false); // mobile: rail+sidebar drawer open?
   const [showTour, setShowTour] = useState(false); // first-run walkthrough
+  const [composerFocusRequest, setComposerFocusRequest] = useState(0);
 
   useEffect(() => subscribeAuthExpired(() => setSessionExpired(true)), []);
+  useEffect(() => {
+    // Explicitly close realtime connections before Playwright/browser teardown
+    // so a page with an active WebSocket does not keep the context alive.
+    window.addEventListener("beforeunload", disconnectSocket);
+    return () => window.removeEventListener("beforeunload", disconnectSocket);
+  }, []);
   const { theme, setTheme, mode, setMode, toggleMode } = useThemePreferences();
   const {
     scrollStates,
@@ -115,21 +157,20 @@ export default function App() {
   const viewRef = useRef(view);
   const activeChannelRef = useRef(activeChannel);
 
-  // Use the workspace search pane for the familiar browser find shortcut.
-  // This is intentionally global so it works from conversations, feeds, and
-  // while the composer is focused, just like in Slack and similar clients.
-  useEffect(() => {
-    function onFindShortcut(event) {
-      if (!user || event.defaultPrevented || event.altKey) return;
-      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "f") return;
-
-      event.preventDefault();
-      searchRef.current?.focus();
-    }
-
-    window.addEventListener("keydown", onFindShortcut);
-    return () => window.removeEventListener("keydown", onFindShortcut);
-  }, [user]);
+  const hotkeyOptions = { ...GLOBAL_HOTKEY_OPTIONS, enabled: !!user };
+  useHotkeys(modifierHotkeys("f"), () => searchRef.current?.focus(), hotkeyOptions, [user]);
+  useHotkeys(modifierHotkeys("shift+m"), () => handleStartConversation(), hotkeyOptions, [user]);
+  useHotkeys(modifierHotkeys("shift+o"), () => handleBrowseChannels(), hotkeyOptions, [user]);
+  useHotkeys(modifierHotkeys("shift+c"), () => setShowCreate(true), hotkeyOptions, [user]);
+  useHotkeys(modifierHotkeys("shift+space"), (event) => {
+    if (isEditableTarget(event.target) || !activeChannel) return;
+    setComposerFocusRequest((request) => request + 1);
+  }, hotkeyOptions, [user, activeChannel]);
+  useHotkeys(modifierHotkeys("shift+h"), () => handleViewSelect("home"), hotkeyOptions, [user]);
+  useHotkeys(modifierHotkeys("shift+d"), () => handleViewSelect("dms"), hotkeyOptions, [user]);
+  useHotkeys(modifierHotkeys("shift+a"), () => handleViewSelect("activity"), hotkeyOptions, [user]);
+  useHotkeys(modifierHotkeys("shift+s"), () => handleViewSelect("saved"), hotkeyOptions, [user]);
+  useHotkeys(["ctrl+comma", "meta+comma"], () => openSettings(), hotkeyOptions, [user]);
 
   // Echo's own images should not become native drag sources. This keeps
   // logos, avatars, and message images from being dropped into the composer;
@@ -147,6 +188,24 @@ export default function App() {
   useEffect(() => void (viewRef.current = view), [view]);
   useEffect(() => void (activeChannelRef.current = activeChannel), [activeChannel]);
 
+  // Recents are a client-side cache. Scope them to the signed-in account and
+  // reconcile old entries against the current server snapshot so a deployment
+  // reset cannot leave deleted users or channels in the search UI.
+  useEffect(() => {
+    if (!user || !channelsQuery.isSuccess || !dmsQuery.isSuccess || !usersQuery.isSuccess) return;
+    const scopedKey = recentStorageKey(user.id);
+    const scopedValue = readJson(scopedKey, null);
+    const legacyValue = scopedValue === null ? readJson(RECENTS_KEY, []) : scopedValue;
+    const knownChannelIds = new Set([...channels, ...allChannels].map((channel) => channel.id));
+    const knownUserIds = new Set(users.map((candidate) => candidate.id));
+    const next = normalizeRecents(legacyValue).filter((recent) =>
+      recent.type === "channel" ? knownChannelIds.has(recent.id) : knownUserIds.has(recent.id)
+    );
+    setRecents(next);
+    writeJson(scopedKey, next);
+    if (scopedValue === null && readString(RECENTS_KEY, null) !== null) writeString(RECENTS_KEY, null);
+  }, [user, channelsQuery.isSuccess, dmsQuery.isSuccess, usersQuery.isSuccess, channels, allChannels, users]);
+
   function markNavDuringRestore() {
     if (!restoredRef.current) navDuringRestoreRef.current = true;
   }
@@ -156,7 +215,36 @@ export default function App() {
     if (channel.type !== "dm") return channel.name || null;
     return channel.dmUsername
       || users.find((candidate) => candidate.id === channel.dmUserId)?.username
+      || channel.dmName
       || null;
+  }
+
+  function dmRouteName(conversation) {
+    if (!conversation) return null;
+    if (!conversation.isGroup) return conversation.withUser?.username || null;
+    const people = (conversation.participants || []).filter((person) => person.id !== user.id);
+    return conversation.name?.startsWith("dm-")
+      ? people.map((person) => person.displayName).join(", ")
+      : conversation.name;
+  }
+
+  function activeDmFromConversation(conversation) {
+    const participants = conversation.participants || (conversation.withUser ? [conversation.withUser] : []);
+    const people = participants.filter((person) => person.id !== user.id);
+    const isGroup = conversation.isGroup || people.length > 1;
+    return {
+      id: conversation.id,
+      type: "dm",
+      name: conversation.name,
+      dmName: isGroup ? (conversation.name?.startsWith("dm-") ? people.map((person) => person.displayName).join(", ") : conversation.name) : conversation.withUser?.displayName,
+      dmUsername: isGroup ? undefined : conversation.withUser?.username,
+      dmUserId: isGroup ? undefined : conversation.withUser?.id,
+      participants,
+      members: participants.map((person) => person.id),
+      memberCount: conversation.memberCount ?? participants.length,
+      createdBy: conversation.createdBy,
+      isSelf: conversation.isSelf,
+    };
   }
 
   function setView(nextView, channel = activeChannelRef.current, options = {}) {
@@ -184,16 +272,19 @@ export default function App() {
     setScrollToBottomTarget(null);
   }
 
+  function handleActivityReady() {
+    api.markActivityRead()
+      .then(() => api.getActivity())
+      .then(({ items }) => syncActivity(items || []))
+      .catch(() => {})
+      .finally(() => queryClient.invalidateQueries({ queryKey: queryKeys.activity }));
+  }
+
   function handleViewSelect(nextView) {
     markNavDuringRestore();
     clearNavigationTarget();
     searchRef.current?.clear();
     setSearchQuery(null);
-    if (nextView === "activity") {
-      api.markActivityRead()
-        .catch(() => {})
-        .finally(() => queryClient.invalidateQueries({ queryKey: queryKeys.activity }));
-    }
     if (nextView === "dms") {
       setActiveChannel(null);
       setView(nextView, null);
@@ -424,7 +515,7 @@ export default function App() {
       const dm = conversations.find((d) => d.id === saved.convId);
       if (dm) {
         nextView = "dms";
-        active = { id: dm.id, type: "dm", dmName: dm.withUser.displayName, dmUserId: dm.withUser.id };
+        active = activeDmFromConversation(dm);
       }
     } else if (!isMobileViewport() && saved?.convId) {
       const ch = chs.find((c) => c.id === saved.convId);
@@ -456,27 +547,16 @@ export default function App() {
 
     const currentChannel = activeChannelRef.current;
     const routeConversation = route.convId?.toLowerCase();
-    const currentRouteName = conversationRouteName(currentChannel)?.toLowerCase();
-    if (route.convId && (currentChannel?.id === route.convId || currentRouteName === routeConversation)) {
+    if (route.convId && currentChannel?.id === route.convId) {
       setViewState(route.view);
       applyRouteMessageTarget(currentChannel.id);
-      if (currentChannel?.id === route.convId && currentRouteName) {
-        navigate(workspacePath({
-          view: route.view,
-          convId: currentChannel.id,
-          convName: conversationRouteName(currentChannel),
-          convType: currentChannel.type,
-          messageId: route.messageId,
-          threadId: route.threadId,
-        }), { replace: true });
-      }
       return;
     }
 
     if (route.convType === "dm" && route.convId) {
       let dm = conversations.find((conversation) =>
         conversation.id === route.convId
-        || conversation.withUser.username?.toLowerCase() === routeConversation
+        || dmRouteName(conversation)?.toLowerCase() === routeConversation
       );
       if (!dm) {
         const person = users.find((candidate) => candidate.username.toLowerCase() === routeConversation);
@@ -487,26 +567,35 @@ export default function App() {
       }
       if (!dm) {
         const result = await api.getChannel(route.convId).catch(() => null);
+        if (result?.channel && result.channel.type !== "dm") {
+          const convertedChannel = result.channel;
+          setViewState("home");
+          setActiveChannel(convertedChannel);
+          applyRouteMessageTarget(convertedChannel.id);
+          navigate(workspacePath({
+            view: "home",
+            convId: convertedChannel.id,
+            convName: convertedChannel.name,
+            convType: convertedChannel.type,
+            messageId: route.messageId,
+            threadId: route.threadId,
+          }), { replace: true });
+          return;
+        }
         const other = result?.members?.find((member) => member.id !== user.id)
           || (result?.channel?.members?.length === 1 ? user : null);
         if (result?.channel?.type === "dm" && other) dm = { id: result.channel.id, withUser: other };
       }
       if (dm) {
         setViewState(route.view === "home" ? "home" : "dms");
-        const activeDm = {
-          id: dm.id,
-          type: "dm",
-          dmName: dm.withUser.displayName,
-          dmUsername: dm.withUser.username,
-          dmUserId: dm.withUser.id,
-        };
+        const activeDm = activeDmFromConversation(dm);
         setActiveChannel(activeDm);
         applyRouteMessageTarget(dm.id);
-        if (route.convId === dm.id) {
+        if (route.convId !== dm.id) {
           navigate(workspacePath({
-            view: route.view,
+            view: route.view === "home" ? "home" : "dms",
             convId: dm.id,
-            convName: dm.withUser.username,
+            convName: dm.name,
             convType: "dm",
             messageId: route.messageId,
             threadId: route.threadId,
@@ -528,16 +617,6 @@ export default function App() {
         setViewState("home");
         setActiveChannel(channel);
         applyRouteMessageTarget(channel.id);
-        if (route.convId === channel.id) {
-          navigate(workspacePath({
-            view: "home",
-            convId: channel.id,
-            convName: channel.name,
-            convType: channel.type,
-            messageId: route.messageId,
-            threadId: route.threadId,
-          }), { replace: true });
-        }
         return;
       }
     }
@@ -651,6 +730,7 @@ export default function App() {
     setUser(null);
     setAllChannels([]);
     setCatalogCounts(null);
+    setRecents([]);
     setActiveChannel(null);
     setScrollToBottomTarget(null);
     navigate("/", { replace: true });
@@ -659,7 +739,7 @@ export default function App() {
   function rememberRecent(item) {
     setRecents((prev) => {
       const next = [item, ...prev.filter((r) => !(r.type === item.type && r.id === item.id))].slice(0, 6);
-      writeJson(RECENTS_KEY, next);
+      if (user?.id) writeJson(recentStorageKey(user.id), next);
       return next;
     });
   }
@@ -673,32 +753,55 @@ export default function App() {
 
   function upsertChannel(channel) {
     const active = activeChannelRef.current;
-    if (active?.id === channel.id && active.name !== channel.name) {
+    const existingDm = channel.type === "dm" ? dms.find((conversation) => conversation.id === channel.id) : null;
+    const memberIds = channel.type === "dm" && channel.members?.length
+      ? channel.members
+      : existingDm?.participants?.map((participant) => participant.id) || [];
+    const participantById = new Map([
+      ...(existingDm?.participants || []).map((participant) => [participant.id, participant]),
+      ...users.map((candidate) => [candidate.id, candidate]),
+    ]);
+    const participants = channel.type === "dm"
+      ? memberIds.map((id) => participantById.get(id)).filter(Boolean)
+      : null;
+    const updatedChannel = channel.type === "dm" && participants.length > 2
+      ? {
+          ...channel,
+          participants,
+          dmName: channel.name?.startsWith("dm-")
+            ? participants.filter((participant) => participant.id !== user.id).map((participant) => participant.displayName).join(", ")
+            : channel.name,
+        }
+      : channel;
+    if (active?.id === updatedChannel.id && active.name !== updatedChannel.name) {
       navigate(workspacePath({
         view: viewRef.current,
-        convId: channel.id,
-        convName: channel.name,
-        convType: channel.type,
+        convId: updatedChannel.id,
+        convName: updatedChannel.name,
+        convType: updatedChannel.type,
       }), { replace: true });
     }
     setChannels((prev) => {
-      const exists = prev.some((c) => c.id === channel.id);
+      const exists = prev.some((c) => c.id === updatedChannel.id);
       const next = exists
-        ? prev.map((c) => (c.id === channel.id ? channel : c))
-        : [...prev, channel];
+        ? prev.map((c) => (c.id === updatedChannel.id ? updatedChannel : c))
+        : [...prev, updatedChannel];
       return next.sort((a, b) => a.name.localeCompare(b.name));
     });
     setAllChannels((prev) => {
-      if (channel.type !== "public") {
-        return prev.filter((c) => c.id !== channel.id);
+      if (updatedChannel.type !== "public") {
+        return prev.filter((c) => c.id !== updatedChannel.id);
       }
-      const exists = prev.some((c) => c.id === channel.id);
+      const exists = prev.some((c) => c.id === updatedChannel.id);
       const next = exists
-        ? prev.map((c) => (c.id === channel.id ? channel : c))
-        : [...prev, channel];
+        ? prev.map((c) => (c.id === updatedChannel.id ? updatedChannel : c))
+        : [...prev, updatedChannel];
       return next.sort((a, b) => a.name.localeCompare(b.name));
     });
-    setActiveChannel((prev) => (prev && prev.id === channel.id ? { ...prev, ...channel } : prev));
+    setActiveChannel((prev) => (prev && prev.id === updatedChannel.id ? { ...prev, ...updatedChannel } : prev));
+    setDms((prev) => updatedChannel.type === "dm"
+      ? prev.map((conversation) => conversation.id === updatedChannel.id ? { ...conversation, ...updatedChannel } : conversation)
+      : prev.filter((conversation) => conversation.id !== updatedChannel.id));
   }
 
   async function handleAddMember(userId) {
@@ -829,14 +932,18 @@ export default function App() {
     markNavDuringRestore();
     clearNavigationTarget();
     setSearchQuery(null);
-    const channel = existingChannel || (await api.openDm(target.id)).channel;
+    const channel = existingChannel || (await api.openDm(
+      target.participants?.length > 1 ? target.participants.map((participant) => participant.id) : target.id
+    )).channel;
     const existing = dms.find((d) => d.id === channel.id);
+    const participants = target.participants || existingChannel?.participants || (target.id ? [target] : []);
     const activeDm = {
       ...channel,
       type: "dm",
-      dmName: isSelf ? `${target.displayName} (you)` : target.displayName,
-      dmUsername: target.username,
-      dmUserId: target.id,
+      dmName: isSelf ? `${target.displayName} (you)` : (participants.length > 1 ? participants.filter((person) => person.id !== user.id).map((person) => person.displayName).join(", ") : target.displayName),
+      dmUsername: participants.length > 1 ? undefined : target.username,
+      dmUserId: participants.length > 1 ? undefined : target.id,
+      participants,
       isSelf,
     };
     setActiveChannel(activeDm);
@@ -847,23 +954,30 @@ export default function App() {
     refreshDms();
   }
 
-  async function handlePrepareDm(target) {
-    const { channel } = await api.openDm(target.id);
+  async function handlePrepareDm(targets) {
+    const selected = Array.isArray(targets) ? targets : [targets];
+    const { channel } = await api.openDm(selected.map((target) => target.id));
     return {
       ...channel,
       type: "dm",
-      dmName: target.displayName,
-      dmUsername: target.username,
-      dmUserId: target.id,
+      dmName: selected.map((target) => target.displayName).join(", "),
+      dmUsername: selected.length === 1 ? selected[0].username : undefined,
+      dmUserId: selected.length === 1 ? selected[0].id : undefined,
+      participants: selected,
+      isGroup: selected.length > 1,
     };
   }
 
-  async function handleStartDm(target, channel) {
+  async function handleStartDm(targets, channel) {
+    const selected = Array.isArray(targets) ? targets : [targets];
+    const target = selected.length === 1
+      ? selected[0]
+      : { participants: selected, displayName: selected.map((item) => item.displayName).join(", ") };
     await handleOpenDm(target, false, "dms", channel);
   }
 
   async function handleHideDm(conv) {
-    if (starredIds.has(conv.withUser.id)) return;
+    if (starredIds.has(conv.withUser.id) || starredChannelIds.has(conv.id)) return;
     await api.hideDm(conv.id);
     setDms((prev) => prev.filter((d) => d.id !== conv.id));
     if (activeChannel?.id === conv.id) {
@@ -990,7 +1104,7 @@ export default function App() {
         }
       }
       if (dm) {
-        const activeDm = { id: dm.id, type: "dm", dmName: dm.withUser.displayName, dmUserId: dm.withUser.id };
+        const activeDm = activeDmFromConversation(dm);
         setActiveChannel(activeDm);
         setView("dms", activeDm, { messageId, threadId });
         opened = true;
@@ -1058,12 +1172,7 @@ export default function App() {
           return;
         }
         if (dm) {
-          const activeDm = {
-            id: dm.id,
-            type: "dm",
-            dmName: dm.withUser.displayName,
-            dmUserId: dm.withUser.id,
-          };
+          const activeDm = activeDmFromConversation(dm);
           setActiveChannel(activeDm);
           setView("dms", activeDm, { messageId, threadId });
           setScrollToBottomTarget((prev) => ({ id: (prev?.id || 0) + 1, channelId }));
@@ -1077,12 +1186,7 @@ export default function App() {
       if (channelType === "dm") {
         const conv = dms.find((d) => d.id === channelId);
         if (!conv) return setToast("This was forwarded from a direct message you're not part of.");
-        const activeDm = {
-          id: conv.id,
-          type: "dm",
-          dmName: conv.withUser.displayName,
-          dmUserId: conv.withUser.id,
-        };
+        const activeDm = activeDmFromConversation(conv);
         setActiveChannel(activeDm);
         setView("dms", activeDm, { messageId, threadId });
         if (threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
@@ -1298,6 +1402,7 @@ export default function App() {
           channels={channels}
           dms={dms}
           customEmojis={emojis}
+          activityItems={activityItems}
           hidden={hidden}
           starredIds={starredIds}
           starredChannelIds={starredChannelIds}
@@ -1371,6 +1476,7 @@ export default function App() {
             emojis,
             onJump: handleJump,
             onActivityLoaded: syncActivity,
+            onActivityReady: handleActivityReady,
             onUnsave: (id) => setSavedIds((previous) => {
               const next = new Set(previous);
               next.delete(id);
@@ -1396,6 +1502,7 @@ export default function App() {
           }}
           conversation={{
             channel: activeChannel,
+            composerFocusRequest,
             recoveryEpoch,
             cachedMessages: activeChannel ? getCachedMessages(activeChannel.id) : null,
             initialScrollState: activeInitialScrollState,
@@ -1403,6 +1510,7 @@ export default function App() {
             user,
             users,
             channels: visibleChannels,
+            forwardChannels: channels,
             dms,
             customEmojis: emojis,
             mode,
@@ -1413,12 +1521,15 @@ export default function App() {
             onScrollToBottomTargetConsumed: clearScrollToBottomTarget,
             onOpenProfile: openProfile,
             onOpenChannel: handleOpenChannelTag,
+            onSearchInChannel: (channelName) => searchRef.current?.searchInChannel(channelName),
             onOpenForwardedDm: (target, channel) => handleOpenDm(target, false, "dms", channel),
+            onRememberRecent: rememberRecent,
             onToast: setToast,
             onDmsChanged: refreshDms,
             isStarred: activeChannel?.type === "dm" && starredIds.has(activeChannel.dmUserId),
             onToggleStarred: handleToggleStarred,
-            isChannelStarred: activeChannel?.type !== "dm" && starredChannelIds.has(activeChannel?.id),
+            isChannelStarred: (activeChannel?.type !== "dm" || isGroupDmChannel(activeChannel))
+              && starredChannelIds.has(activeChannel?.id),
             onToggleChannelStarred: handleToggleChannelStarred,
             jumpMessageId,
             scrollToBottomTarget,

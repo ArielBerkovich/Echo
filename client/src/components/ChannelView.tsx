@@ -8,9 +8,9 @@ import {
   useState,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { api } from "../api.js";
+import { api, getBackendUrl, getToken } from "../api.js";
 import { getSocket } from "../socket.js";
-import Avatar from "./Avatar.js";
+import Avatar, { GroupAvatar } from "./Avatar.js";
 import ReactionPicker from "./ReactionPicker.js";
 import ThreadPanel from "./ThreadPanel.js";
 import ForwardModal from "./ForwardModal.js";
@@ -23,8 +23,11 @@ import ConfirmDialog from "./ConfirmDialog.js";
 import LeaveChannelDialog from "./LeaveChannelDialog.js";
 import { LeaveIcon, PinIcon } from "./Icons.js";
 import { formatDayDivider, isDifferentDay } from "../lib/time.js";
+import { shouldGroupWithPreviousMessage } from "../lib/messageGrouping.js";
+import { appendReplyParticipant } from "../lib/replyParticipants.js";
+import { formatSize } from "../lib/format.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
-import { ChevronsDownIcon, StarIcon, UsersRoundIcon } from "lucide-react";
+import { ChevronsDownIcon, DownloadIcon, FileIcon, MessageSquareTextIcon, PaperclipIcon, SearchIcon, StarIcon, UsersRoundIcon } from "lucide-react";
 import { queryKeys } from "../lib/queryClient.js";
 
 // Shimmering placeholder rows shown while a channel's history loads, so the
@@ -48,6 +51,7 @@ function MessagesSkeleton() {
 
 export default function ChannelView({
   channel,
+  composerFocusRequest = 0,
   recoveryEpoch = 0,
   cachedMessages = null,
   initialScrollState = null,
@@ -55,6 +59,7 @@ export default function ChannelView({
   user,
   users = [],
   channels = [],
+  forwardChannels = channels,
   dms = [],
   customEmojis = [],
   savedIds,
@@ -64,7 +69,9 @@ export default function ChannelView({
   onScrollToBottomTargetConsumed,
   onOpenProfile,
   onOpenChannel,
+  onSearchInChannel,
   onOpenForwardedDm,
+  onRememberRecent,
   isStarred = false,
   onToggleStarred,
   isChannelStarred = false,
@@ -110,6 +117,10 @@ export default function ChannelView({
   const [showMembers, setShowMembers] = useState(false); // members side panel open?
   const [showPinned, setShowPinned] = useState(false); // pinned messages panel open?
   const [pinnedMessages, setPinnedMessages] = useState([]); // cached pinned list
+  const [showFiles, setShowFiles] = useState(false);
+  const [files, setFiles] = useState([]);
+  const [filesLoading, setFilesLoading] = useState(false);
+  const [filesError, setFilesError] = useState("");
   const showPinnedRef = useRef(false);
   const [firstUnreadId, setFirstUnreadId] = useState(null); // first message not yet seen
   const [highlightId, setHighlightId] = useState(null); // message highlighted after a jump
@@ -126,6 +137,12 @@ export default function ChannelView({
   const scrollerRef = useRef(null); // the scrollable messages container
   const messagesInnerRef = useRef(null); // content wrapper used for resize-based auto-follow
   const composerRef = useRef(null); // main channel composer, for quote insertion
+
+  useEffect(() => {
+    if (!composerFocusRequest || thread) return undefined;
+    const focusTimer = window.setTimeout(() => composerRef.current?.focus(), 0);
+    return () => window.clearTimeout(focusTimer);
+  }, [composerFocusRequest, thread]);
   const typingTimersRef = useRef({}); // per-user safety timers to clear stale typing
   const firstUnreadRef = useRef(null); // the "New messages" divider, for initial scroll
   const initialScrolledRef = useRef(false); // did we position the initial scroll yet?
@@ -243,7 +260,12 @@ export default function ChannelView({
         setMessages((prev) =>
           prev.map((m) =>
             m.id === msg.parentId
-              ? { ...m, replyCount: (m.replyCount || 0) + 1, lastReplyAt: msg.createdAt }
+              ? {
+                ...m,
+                replyCount: (m.replyCount || 0) + 1,
+                lastReplyAt: msg.createdAt,
+                replyParticipantIds: appendReplyParticipant(m.replyParticipantIds, msg.author?.id),
+              }
               : m
           )
         );
@@ -266,6 +288,19 @@ export default function ChannelView({
           setNewMessageCount((count) => count + 1);
         }
         setMessages((prev) => [...prev, msg]);
+        if (msg.attachments?.length) {
+          setFiles((prev) => [
+            ...msg.attachments.map((attachment) => ({
+              ...attachment,
+              id: `${msg.id}:${attachment.key}`,
+              messageId: msg.id,
+              createdAt: msg.createdAt,
+              author: msg.author,
+              parentId: msg.parentId || null,
+            })),
+            ...prev,
+          ]);
+        }
       }
       // Stay read while viewing. Thread replies aren't visible in the main
       // timeline, so channel replies remain separate Activity items. For DMs,
@@ -329,6 +364,7 @@ export default function ChannelView({
         );
       } else {
         setMessages((prev) => prev.filter((m) => m.id !== id));
+        setFiles((prev) => prev.filter((file) => file.messageId !== id));
       }
     };
     socket.on("message:deleted", onDeleted);
@@ -461,10 +497,26 @@ export default function ChannelView({
     setThreadJumpTargetId(null);
     setShowDetails(false);
     setShowMembers(false);
+    setShowFiles(false);
     setShowPinned(true);
     api.getPinned(channel.id)
       .then(({ messages }) => setPinnedMessages(messages))
       .catch(() => {});
+  }
+
+  function openFilesPanel() {
+    setThread(null);
+    setThreadJumpTargetId(null);
+    setShowDetails(false);
+    setShowMembers(false);
+    setShowPinned(false);
+    setShowFiles(true);
+    setFilesLoading(true);
+    setFilesError("");
+    api.getFiles(channel.id)
+      .then(({ files }) => setFiles(files || []))
+      .catch((error) => setFilesError(error.message || "Couldn't load files."))
+      .finally(() => setFilesLoading(false));
   }
 
   // Returns a promise so the ForwardModal can show per-destination progress.
@@ -889,12 +941,23 @@ export default function ChannelView({
 
   const isDm = channel.type === "dm";
   const dmUser = isDm ? usersById.get(channel.dmUserId) : null;
+  const dmParticipants = (channel.participants || []).filter((person) => person.id !== user.id);
   const dmAvatarName = dmUser?.displayName || channel.dmName || "?";
-  const dmLabel = channel.dmName || dmAvatarName;
+  const dmLabel = channel.dmName || (dmParticipants.length ? dmParticipants.map((person) => person.displayName).join(", ") : dmAvatarName);
   const dmAvatar = dmUser?.avatarUrl || null;
   const isMember = isDm || (channel.members || []).includes(user.id);
+  const isGroupDm = isDm && ((channel.members || []).length > 2 || dmParticipants.length > 1);
+
+  useEffect(() => {
+    if (!isMember || !canPost || openThreadId) return undefined;
+    const focusTimer = window.setTimeout(() => composerRef.current?.focus(), 0);
+    return () => window.clearTimeout(focusTimer);
+  }, [channel.id, canPost, isMember, openThreadId]);
+
   const isCreator = !isDm && channel.createdBy === user.id;
-  const canToggleStarred = isDm && !!dmUser?.id && dmUser.id !== user.id;
+  const canToggleStarred = isDm && dmParticipants.length <= 1 && !!dmUser?.id && dmUser.id !== user.id;
+  const canToggleGroupDmStarred = isGroupDm && isMember;
+  const dmStarred = isGroupDm ? isChannelStarred : isStarred;
   // #general is the default channel — everyone stays in it, so no Leave action.
   const isGeneral = (channel.name || "").toLowerCase() === "general";
 
@@ -908,7 +971,7 @@ export default function ChannelView({
       ? `${typingNames[0]} and ${typingNames.length - 1} others are typing…`
       : "";
 
-  const hasSidePanel = !!thread || showPinned;
+  const hasSidePanel = !!thread || showMembers || showPinned || showFiles;
 
   return (
     <main
@@ -928,29 +991,62 @@ export default function ChannelView({
       <header className="channel-header" data-testid="channel-header">
         {isDm ? (
           <>
-            {canToggleStarred && (
+            {(canToggleStarred || canToggleGroupDmStarred) && (
               <button
                 type="button"
-                className={`dm-starred-toggle ${isStarred ? "active" : ""}`}
+                className={`dm-starred-toggle ${dmStarred ? "active" : ""}`}
                 data-testid="dm-starred-toggle"
-                aria-label={isStarred ? `Remove ${dmLabel} from Starred` : `Mark ${dmLabel} as Starred`}
-                aria-pressed={isStarred}
-                title={isStarred ? "Remove from Starred" : "Mark as Starred"}
-                onClick={() => onToggleStarred?.(dmUser.id)}
+                aria-label={dmStarred ? `Remove ${dmLabel} from Starred` : `Mark ${dmLabel} as Starred`}
+                aria-pressed={dmStarred}
+                title={dmStarred ? "Remove from Starred" : "Mark as Starred"}
+                onClick={() => isGroupDm ? onToggleChannelStarred?.(channel.id) : onToggleStarred?.(dmUser.id)}
               >
-                <StarIcon size={20} strokeWidth={1.9} fill={isStarred ? "currentColor" : "none"} />
+                <StarIcon size={20} strokeWidth={1.9} fill={dmStarred ? "currentColor" : "none"} />
               </button>
             )}
-            <Avatar name={dmAvatarName} src={dmAvatar} size={36} />
-            <button
-              type="button"
-              className="ch-name ch-name-btn dm-name-btn"
-              data-testid="channel-title"
-              title={`View ${dmLabel}'s profile`}
-              onClick={() => dmUser?.id && onOpenProfile?.(dmUser.id)}
-            >
-              {dmLabel}
-            </button>
+            {isGroupDm ? <GroupAvatar size={36} /> : <Avatar name={dmAvatarName} src={dmAvatar} size={36} />}
+            {isGroupDm ? (
+              <span className="ch-name dm-name-btn" data-testid="channel-title">
+                {dmLabel}
+              </span>
+            ) : (
+              <button
+                type="button"
+                className="ch-name ch-name-btn dm-name-btn"
+                data-testid="channel-title"
+                title="View profile"
+                onClick={() => dmUser?.id && onOpenProfile?.(dmUser.id)}
+              >
+                {dmLabel}
+              </button>
+            )}
+            <div className="header-actions">
+              <button
+                type="button"
+                className={`header-action header-action-icon ${showFiles ? "active" : ""}`}
+                data-testid="channel-files"
+                title="View files"
+                aria-label={`Files in ${dmLabel}`}
+                aria-controls="conversation-files-panel"
+                aria-expanded={showFiles}
+                aria-pressed={showFiles}
+                onClick={openFilesPanel}
+              >
+                <PaperclipIcon size={16} strokeWidth={1.8} />
+              </button>
+              {isGroupDm && (
+                <button
+                  type="button"
+                  className="header-action header-action-icon"
+                  data-testid="channel-members"
+                  title="View members"
+                  aria-label="View members"
+                  onClick={() => { setThread(null); setThreadJumpTargetId(null); setShowFiles(false); setShowMembers(true); }}
+                >
+                  <UsersRoundIcon size={16} strokeWidth={1.8} />
+                </button>
+              )}
+            </div>
           </>
         ) : (
           <>
@@ -971,7 +1067,7 @@ export default function ChannelView({
               className="ch-name ch-name-btn"
               data-testid="channel-title"
               title="View channel details"
-              onClick={() => { setThread(null); setThreadJumpTargetId(null); setShowMembers(false); setShowDetails(true); }}
+              onClick={() => { setThread(null); setThreadJumpTargetId(null); setShowFiles(false); setShowMembers(false); setShowDetails(true); }}
             >
               {channel.type === "private" ? "🔒" : "#"} {channel.name}
             </button>
@@ -981,12 +1077,6 @@ export default function ChannelView({
               </span>
             )}
             <div className="header-actions">
-              <button className="header-action header-action-icon" data-testid="channel-pinned" onClick={openPinnedPanel} title="Pinned messages" aria-label="Pinned messages">
-                <PinIcon />
-              </button>
-              <button className="header-action header-action-icon" data-testid="channel-members" title="View members" onClick={() => { setThread(null); setThreadJumpTargetId(null); setShowDetails(false); setShowMembers(true); }}>
-                <UsersRoundIcon size={16} strokeWidth={1.8} />
-              </button>
               {channel.createdBy === user.id && channel.type === "private" && (
                 <button
                   className="header-action header-action-visibility"
@@ -997,6 +1087,34 @@ export default function ChannelView({
                   Make public
                 </button>
               )}
+              <button className="header-action header-action-icon" data-testid="channel-pinned" onClick={openPinnedPanel} title="Pinned messages" aria-label="Pinned messages">
+                <PinIcon />
+              </button>
+              <button
+                type="button"
+                className={`header-action header-action-icon ${showFiles ? "active" : ""}`}
+                data-testid="channel-files"
+                title="View files"
+                aria-label={`Files in #${channel.name}`}
+                aria-controls="conversation-files-panel"
+                aria-expanded={showFiles}
+                aria-pressed={showFiles}
+                onClick={openFilesPanel}
+              >
+                <PaperclipIcon size={16} strokeWidth={1.8} />
+              </button>
+              <button
+                className="header-action header-action-icon channel-search-action"
+                data-testid="channel-search"
+                title="Search messages"
+                aria-label={`Search in #${channel.name}`}
+                onClick={() => onSearchInChannel?.(channel.name)}
+              >
+                <SearchIcon size={15} strokeWidth={1.9} />
+              </button>
+              <button className="header-action header-action-icon" data-testid="channel-members" title="View members" onClick={() => { setThread(null); setThreadJumpTargetId(null); setShowFiles(false); setShowDetails(false); setShowMembers(true); }}>
+                <UsersRoundIcon size={16} strokeWidth={1.8} />
+              </button>
               {!isGeneral && isMember && (
                 <button
                   className="header-action header-action-icon leave"
@@ -1006,7 +1124,6 @@ export default function ChannelView({
                   onClick={() => setConfirmLeave(true)}
                 >
                   <LeaveIcon />
-                  <span>Leave</span>
                 </button>
               )}
             </div>
@@ -1021,7 +1138,7 @@ export default function ChannelView({
           ref={scrollerRef}
           onScroll={onMessagesScroll}
         >
-          <div ref={messagesInnerRef}>
+          <div className="messages-inner" ref={messagesInnerRef}>
           {loadingOlder && <div className="older-loader">Loading earlier messages…</div>}
           {loading ? (
             <MessagesSkeleton />
@@ -1029,7 +1146,7 @@ export default function ChannelView({
             <div className="empty-state">
               {isDm ? (
                 <>
-                  <Avatar name={dmAvatarName} src={dmAvatar} size={56} />
+                  {isGroupDm ? <GroupAvatar size={56} /> : <Avatar name={dmAvatarName} src={dmAvatar} size={56} />}
                   <h3>{dmLabel}</h3>
                   <p>This is the start of your direct message history. Say hello! 👋</p>
                 </>
@@ -1046,6 +1163,7 @@ export default function ChannelView({
               const prev = messages[i - 1];
               // A day divider whenever the calendar day changes (and at the top).
               const isNewDay = !prev || isDifferentDay(prev.createdAt, m.createdAt);
+              const grouped = shouldGroupWithPreviousMessage(prev, m);
               const dayDivider = isNewDay ? (
                 <div className="day-divider">
                   <span className="day-divider-label">{formatDayDivider(m.createdAt)}</span>
@@ -1072,7 +1190,7 @@ export default function ChannelView({
                     m={m}
                     channelId={channel.id}
                     channelType={channel.type}
-                    grouped={false}
+                    grouped={grouped}
                     highlighted={highlightId === m.id}
                     currentUserId={user.id}
                     usersById={usersById}
@@ -1250,6 +1368,7 @@ export default function ChannelView({
             canPost={canPost}
             onOpenLightbox={(src, name, sender) => setThreadLightbox({ src, name, sender })}
             openThreadJumpMessageId={threadJumpTargetId || openThreadJumpMessageId}
+            composerFocusRequest={composerFocusRequest}
           />
         </>
       ) : showMembers ? (
@@ -1260,6 +1379,7 @@ export default function ChannelView({
           onAddPeople={onAddPeople}
           onRemoveMember={onRemoveMember}
           onPromoteManager={onPromoteManager}
+          onUpdated={onChannelUpdated}
           onClose={() => setShowMembers(false)}
         />
       ) : showPinned ? (
@@ -1269,6 +1389,24 @@ export default function ChannelView({
           emojiMap={emojiMap}
           onUnpin={(m) => togglePin(m)}
           onClose={() => setShowPinned(false)}
+        />
+      ) : showFiles ? (
+        <FilesPanel
+          files={files}
+          loading={filesLoading}
+          error={filesError}
+          conversationLabel={isDm ? dmLabel : `#${channel.name}`}
+          onRetry={openFilesPanel}
+          onClose={() => setShowFiles(false)}
+          onJump={(file) => {
+            setShowFiles(false);
+            onJumpToMessage?.({
+              channelId: channel.id,
+              channelType: channel.type,
+              messageId: file.messageId,
+              threadId: file.parentId || undefined,
+            });
+          }}
         />
       ) : showDetails ? (
         <ChannelDetailsPanel
@@ -1287,7 +1425,7 @@ export default function ChannelView({
       {forwarding && (
         <ForwardModal
           message={forwarding}
-          channels={channels}
+          channels={forwardChannels}
           dms={dms}
           users={users}
           channelId={channel.id}
@@ -1307,6 +1445,16 @@ export default function ChannelView({
             const firstLabel = first?.kind === "channel" ? `#${first.label}` : first?.label;
             const remainder = destinations.length - 1;
             onToast?.(`Forwarded to ${firstLabel}${remainder > 0 ? ` and ${remainder} other${remainder === 1 ? "" : "s"}` : ""}`);
+            for (const destination of destinations) {
+              onRememberRecent?.(destination.kind === "channel"
+                ? { type: "channel", id: destination.id, name: destination.label }
+                : {
+                    type: "user",
+                    id: destination.kind === "dm" ? destination.userId : destination.id,
+                    displayName: destination.label,
+                    username: destination.username || destination.handle?.replace(/^@/, ""),
+                  });
+            }
           }}
           onClose={() => setForwarding(null)}
         />
@@ -1362,6 +1510,88 @@ function PinnedPanel({ messages, renderMarkdown, emojiMap, onUnpin, onClose }) {
             </div>
           ))
         )}
+      </div>
+    </aside>
+  );
+}
+
+function fileCategory(file) {
+  const type = String(file.contentType || "").toLowerCase();
+  if (file.isImage || type.startsWith("image/")) return "Images";
+  if (type.startsWith("audio/") || type.startsWith("video/")) return "Audio & video";
+  if (type.includes("pdf") || type.includes("document") || type.includes("spreadsheet") || type.startsWith("text/")) return "Documents";
+  return "Other";
+}
+
+function FilesPanel({ files, loading, error, conversationLabel, onRetry, onClose, onJump }) {
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState("All");
+  const [unavailable, setUnavailable] = useState(new Set());
+  const normalizedQuery = query.trim().toLowerCase();
+  const visibleFiles = useMemo(() => files.filter((file) => {
+    const matchesFilter = filter === "All" || fileCategory(file) === filter;
+    return matchesFilter && (!normalizedQuery || `${file.name} ${file.contentType}`.toLowerCase().includes(normalizedQuery));
+  }), [files, filter, normalizedQuery]);
+
+  const downloadFile = useCallback(async (file) => {
+    try {
+      const response = await fetch(`${getBackendUrl()}${file.url}?download=1`, {
+        headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {},
+      });
+      if (!response.ok) throw new Error("unavailable");
+      const href = URL.createObjectURL(await response.blob());
+      const link = document.createElement("a");
+      link.href = href;
+      link.download = file.name;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(href), 0);
+    } catch {
+      setUnavailable((previous) => new Set(previous).add(file.id));
+    }
+  }, []);
+
+  return (
+    <aside className="side-panel files-panel" id="conversation-files-panel" data-testid="files-panel" role="complementary" aria-label={`Files in ${conversationLabel}`}>
+      <div className="panel-header">
+        <div>
+          <span className="panel-title">Files</span>
+          {!loading && !error && <span className="files-count">{files.length} file{files.length === 1 ? "" : "s"} shared in {conversationLabel}</span>}
+        </div>
+        <button className="panel-close" onClick={onClose} aria-label="Close files">✕</button>
+      </div>
+      <div className="files-panel-controls">
+        <label className="files-search">
+          <SearchIcon size={16} aria-hidden="true" />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search files…" aria-label="Search files" />
+        </label>
+        <div className="files-filters" role="group" aria-label="Filter files">
+          {["All", "Images", "Documents", "Audio & video", "Other"].map((label) => (
+            <button key={label} type="button" className={filter === label ? "active" : ""} aria-pressed={filter === label} onClick={() => setFilter(label)}>{label}</button>
+          ))}
+        </div>
+      </div>
+      <div className="panel-body files-panel-body">
+        {loading ? <div className="files-loading" aria-label="Loading files">{Array.from({ length: 6 }, (_, index) => <div className="file-skeleton skeleton" key={index} />)}</div>
+          : error ? <div className="files-empty"><strong>Couldn’t load files</strong><button type="button" onClick={onRetry}>Try again</button></div>
+          : files.length === 0 ? <div className="files-empty"><PaperclipIcon size={28} aria-hidden="true" /><strong>No files shared here yet</strong><span>Files sent in this conversation will appear here.</span></div>
+          : visibleFiles.length === 0 ? <div className="files-empty"><strong>No matching files</strong><button type="button" onClick={() => { setQuery(""); setFilter("All"); }}>Clear filters</button></div>
+          : visibleFiles.map((file) => (
+            <div className={`file-row${unavailable.has(file.id) ? " unavailable" : ""}`} key={file.id}>
+              <div className="file-type" aria-hidden="true">{fileCategory(file) === "Images" ? "IMG" : (file.name || "FILE").split(".").pop()?.slice(0, 4).toUpperCase()}</div>
+              <div className="file-info">
+                <strong>{file.name}</strong>
+                {unavailable.has(file.id) ? <span>This file is no longer available</span> : <span>{file.contentType || "File"} · {formatSize(file.size)} · {file.author?.displayName || "Unknown"} · {new Date(file.createdAt).toLocaleDateString()}</span>}
+              </div>
+              <div className="file-actions">
+                <button type="button" className="file-download" onClick={() => onJump(file)} title="Jump to message" aria-label={`Jump to the message containing ${file.name}`}>
+                  <MessageSquareTextIcon size={17} strokeWidth={2} />
+                </button>
+                <button type="button" className="file-download" disabled={unavailable.has(file.id)} onClick={() => downloadFile(file)} title="Download file" aria-label={`Download ${file.name}`}>
+                  {unavailable.has(file.id) ? <FileIcon size={17} /> : <DownloadIcon size={17} />}
+                </button>
+              </div>
+            </div>
+          ))}
       </div>
     </aside>
   );

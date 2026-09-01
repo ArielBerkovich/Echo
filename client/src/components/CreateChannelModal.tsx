@@ -71,6 +71,15 @@ export default function CreateChannelModal({ onCreate, onClose }) {
                   shouldValidate: true,
                 });
               }}
+              onKeyDown={(e) => {
+                if (e.key !== "_" && e.key !== "-") return;
+                const start = e.currentTarget.selectionStart ?? 0;
+                const end = e.currentTarget.selectionEnd ?? start;
+                const nextValue = `${name.slice(0, start)}${e.key}${name.slice(end)}`;
+                if (e.key === "_" || nextValue.includes("--")) {
+                  e.preventDefault();
+                }
+              }}
               onBlur={nameField.onBlur}
               placeholder="e.g. marketing"
               maxLength={64}

@@ -212,6 +212,9 @@ export const api = {
   me: () => request("/auth/me"),
   getWorkspace: () => request("/workspace"),
   updateWorkspace: (payload) => request("/workspace", { method: "PATCH", body: payload }),
+  getMentionWebhook: () => request("/mention-webhook"),
+  saveMentionWebhook: (payload) => request("/mention-webhook", { method: "PUT", body: payload }),
+  deleteMentionWebhook: () => request("/mention-webhook", { method: "DELETE" }),
   getAzureDevOpsIntegration: () => request("/integrations/azure-devops"),
   getAllureIntegration: () => request("/integrations/allure"),
   downloadJenkinsPlugin: () => download("/integrations/jenkins/download", "Jenkins plugin download"),
@@ -282,8 +285,15 @@ export const api = {
       body: { optionIds },
     }),
   getPinned: (channelId) => request(`/channels/${channelId}/pinned`),
+  getFiles: (channelId, { before = "", limit = 50 } = {}) => {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (before) params.set("before", before);
+    return request(`/channels/${channelId}/files?${params.toString()}`);
+  },
   listDms: () => request("/dms"),
-  openDm: (userId) => request("/dms", { method: "POST", body: { userId } }),
+  openDm: (userId) => request("/dms", { method: "POST", body: Array.isArray(userId) ? { userIds: userId } : { userId } }),
+  renameGroupDm: (id, name) => request(`/dms/${id}`, { method: "PATCH", body: { name } }),
+  convertGroupDm: (id, payload) => request(`/dms/${id}/convert`, { method: "POST", body: payload }),
   hideDm: (id) => request(`/dms/${id}`, { method: "DELETE" }),
   getActivity: () => request("/activity"),
   markActivityRead: () => request("/activity/read", { method: "POST" }),

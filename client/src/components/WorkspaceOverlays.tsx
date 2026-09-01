@@ -45,7 +45,11 @@ export default function WorkspaceOverlays({
   onFinishTour,
   onClose,
 }) {
-  const canAddPeople = activeChannel && activeChannel.type !== "dm" && activeChannel.name?.toLowerCase() !== "general";
+  const isGroupDm = activeChannel?.type === "dm"
+    && (activeChannel.members?.length > 2 || activeChannel.participants?.length > 2);
+  const canAddPeople = activeChannel
+    && activeChannel.name?.toLowerCase() !== "general"
+    && (activeChannel.type !== "dm" || (isGroupDm && (activeChannel.members?.length || activeChannel.participants?.length || 0) < 20));
 
   return (
     <Suspense fallback={null}>

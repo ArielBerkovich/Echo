@@ -8,7 +8,7 @@ import DisplayNameDialog from "./DisplayNameDialog.js";
 import ConfirmDialog from "./ConfirmDialog.js";
 import { api } from "../api.js";
 import { uploadSizeError } from "../lib/uploads.js";
-import { useAuthUrl } from "../lib/useAuthUrl.js";
+import { useAuthUrl, useAuthUrls } from "../lib/useAuthUrl.js";
 
 const icon = (Icon) => () => <Icon size={22} strokeWidth={2} />;
 const ITEMS = [
@@ -23,7 +23,7 @@ function railNameFontSize(name) {
   return Math.max(6, Math.min(12, 68 / (longestWord * 0.66)));
 }
 
-export default function LeftRail({ view, onSelect, badges = {}, user, workspace, workspaceLoading = false, onLogout, onUpdated }) {
+export default function LeftRail({ view, onSelect, badges = {}, user, workspace, workspaceLoading = false, onLogout, onUpdated, customEmojis = [], latestActivity }) {
   const [clicked, setClicked] = useState(null);
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
@@ -34,6 +34,7 @@ export default function LeftRail({ view, onSelect, badges = {}, user, workspace,
   const railTopRef = useRef(null);
   const itemRefs = useRef(new Map());
   const workspaceLogoSrc = useAuthUrl(workspace?.logoUrl);
+  const customEmojiUrls = useAuthUrls(customEmojis.map((emoji) => emoji.url));
   const brandReady = !workspaceLoading && (!workspace?.logoUrl || !!workspaceLogoSrc);
 
   const activeIndex = ITEMS.findIndex((item) => item.key === view);
@@ -109,13 +110,21 @@ export default function LeftRail({ view, onSelect, badges = {}, user, workspace,
         {activeIndex >= 0 && indicatorOffset != null && <span className="rail-active-indicator" data-testid="rail-active-indicator" aria-hidden="true" />}
         {ITEMS.map(({ key, label, Icon }) => {
           const count = badges[key] || 0;
+          const isLatestReaction = key === "activity" && latestActivity?.kind === "reaction" && latestActivity.unread && latestActivity.emoji;
+          const reactionEmoji = isLatestReaction
+            ? customEmojis.find((emoji) => `:${emoji.name}:`.toLowerCase() === latestActivity.emoji.toLowerCase())
+            : null;
+          const reactionImage = reactionEmoji ? customEmojiUrls.get(reactionEmoji.url) : null;
+          const activityStateLabel = isLatestReaction
+            ? `${label}${count > 1 ? ` · ${count} unread items` : ""} · latest reaction ${latestActivity.emoji}`
+            : label;
           return (
             <button
               key={key}
               type="button"
               className={`rail-item rail-item-${key} ${view === key ? "active" : ""} ${clicked === key ? "clicked" : ""}`}
               data-testid={`rail-${key}`}
-              aria-label={label}
+              aria-label={activityStateLabel}
               title={label}
               aria-current={view === key ? "page" : undefined}
               ref={(node) => {
@@ -127,15 +136,30 @@ export default function LeftRail({ view, onSelect, badges = {}, user, workspace,
                 onSelect(key);
               }}
             >
-              <span className="rail-icon" data-testid="rail-icon">
-                <Icon />
-                {count > 0 && (
-                  <span className={`rail-badge ${key === "home" ? "dot" : ""}`} data-testid={`rail-badge-${key}`} aria-hidden="true">
-                    {key === "home" ? null : count > 99 ? "99+" : count}
+                <span className="rail-icon" data-testid="rail-icon">
+                  <Icon />
+                  {(count > 0 || isLatestReaction) && (
+                    isLatestReaction ? null : (
+                      <span
+                        className={`rail-badge ${key === "home" ? "dot" : ""}`}
+                        data-testid={`rail-badge-${key}`}
+                        aria-hidden="true"
+                      >
+                        {key === "home" ? null : count > 99 ? "99+" : count}
+                      </span>
+                    )
+                  )}
+                </span>
+                {isLatestReaction && (
+                  <span
+                    className="rail-badge rail-badge-emoji"
+                    data-testid={`rail-badge-${key}`}
+                    aria-hidden="true"
+                  >
+                    {reactionImage ? <img className="custom-emoji" src={reactionImage} alt="" /> : latestActivity.emoji}
                   </span>
                 )}
-              </span>
-            </button>
+              </button>
           );
         })}
       </div>

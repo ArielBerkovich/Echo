@@ -115,11 +115,11 @@ test("preserves composer drafts per channel", async ({ page }) => {
 });
 
 test("supports direct workspace routes and browser history", async ({ page }) => {
-  // Legacy ID links remain valid, but are replaced with the readable canonical URL.
+  // ID URLs remain stable, while legacy name URLs continue to resolve.
   await page.goto(`/channels/${fixture.projectChannel.id}`);
 
   await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
-  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.projectChannel.name}$`));
+  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.projectChannel.id}$`));
   await expectRailIndicatorAligned(page, "home");
   await page.setViewportSize({ width: 1600, height: 900 });
   await page.waitForTimeout(450);
@@ -137,7 +137,7 @@ test("supports direct workspace routes and browser history", async ({ page }) =>
   await page.setViewportSize({ width: 1280, height: 720 });
 
   await page.goBack();
-  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.projectChannel.name}$`));
+  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.projectChannel.id}$`));
   await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
 
   await page.goto(`/dms/${fixture.bob.username}`);
@@ -229,7 +229,7 @@ test("browses, filters, and joins public channels while private channels stay in
   await page.getByTestId("browse-channels").click();
   await expect(page.getByTestId("channel-browser")).toBeVisible();
   const browserSearch = page.getByTestId("channel-browser-search");
-  await expect(browserSearch).not.toBeFocused();
+  await expect(browserSearch).toBeFocused();
   await browserSearch.fill(publicName);
   await expect.poll(() => browserSearch.evaluate((input) => getComputedStyle(input).boxShadow)).toBe("none");
   await page.getByTestId("channel-browser-search-clear").click();
@@ -261,6 +261,9 @@ test("keeps channel header actions inside the header when pinned panel is open",
 
   await expect(page.getByTestId("pinned-panel")).toBeVisible();
   const header = await page.getByTestId("channel-header").boundingBox();
+  const pinnedHeader = await page.getByTestId("pinned-panel").locator(".panel-header").boundingBox();
+  expect(pinnedHeader.y).toBe(header.y);
+  expect(pinnedHeader.height).toBe(header.height);
   const leave = await page.getByTestId("channel-leave").boundingBox();
   const bounds = {
     headerRight: header.x + header.width,
@@ -271,6 +274,20 @@ test("keeps channel header actions inside the header when pinned panel is open",
 
   expect(bounds.leaveRight).toBeLessThanOrEqual(bounds.headerRight + 1);
   expect(bounds.documentWidth).toBeLessThanOrEqual(bounds.viewportWidth + 1);
+
+  await page.getByTestId("pinned-panel").getByRole("button", { name: "Close" }).click();
+  await page.getByTestId("channel-members").click();
+  await expect(page.getByTestId("members-panel")).toBeVisible();
+  const membersHeader = await page.getByTestId("members-panel").locator(".members-panel-header").boundingBox();
+  expect(membersHeader.y).toBe(header.y);
+  expect(membersHeader.height).toBe(header.height);
+  await page.getByTestId("members-panel").getByRole("button", { name: "Close members" }).click();
+
+  await page.getByTestId("channel-files").click();
+  await expect(page.getByTestId("files-panel")).toBeVisible();
+  const filesHeader = await page.getByTestId("files-panel").locator(".panel-header").boundingBox();
+  expect(filesHeader.y).toBe(header.y);
+  expect(filesHeader.height).toBe(header.height);
 });
 
 test("aligns thread chrome with the conversation and labels replies clearly", async ({ page }) => {
@@ -284,7 +301,7 @@ test("aligns thread chrome with the conversation and labels replies clearly", as
 
   const thread = page.getByTestId("thread-panel");
   await expect(thread).toBeVisible();
-  await expect(thread.getByTestId("thread-context")).toHaveText(`in #${fixture.projectChannel.name}`);
+  await expect(thread.getByTestId("thread-context")).toHaveCount(0);
   await expect(thread.getByTestId("composer-editor")).toHaveAttribute(
     "data-placeholder",
     "Reply to thread…"
@@ -335,7 +352,7 @@ test("copies a message permalink and reopens the same message", async ({ page })
   expect(copied).toContain(`/channels/${fixture.generalChannel.id}?message=${id}`);
   await page.goto(copied);
   await expect(messageById(page, id)).toBeInViewport();
-  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.generalChannel.name}\\?message=${id}`));
+  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.generalChannel.id}\\?message=${id}`));
 });
 
 test("copies a thread reply permalink and reopens the reply in its thread", async ({ page }) => {
@@ -464,7 +481,7 @@ test("opens Echo message links in the current tab and external links in a new ta
   const echoOpenLink = echoMessage.message.locator(".body a");
   await expect(echoOpenLink).not.toHaveAttribute("target", "_blank");
   await echoOpenLink.click();
-  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.generalChannel.name}\\?message=${fixture.messages.formatted.id}`));
+  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.generalChannel.id}\\?message=${fixture.messages.formatted.id}`));
 
   const externalMessage = await openFreshGeneralMessage(
     page,
@@ -515,8 +532,8 @@ test("clears message actions when leaving the message row but keeps them over th
   expect(messageBox).not.toBeNull();
   expect(messagesBox).not.toBeNull();
   await page.mouse.move(
-    Math.min(messagesBox.x + messagesBox.width - 4, messageBox.x + messageBox.width + 80),
-    messageBox.y + Math.min(8, messageBox.height / 2)
+    messagesBox.x + Math.min(8, messagesBox.width / 2),
+    Math.min(messagesBox.y + messagesBox.height - 8, messageBox.y + messageBox.height + 24)
   );
   await expect(actions).toBeHidden();
 });
@@ -642,9 +659,8 @@ test("uses an empty quoted line to exit a blockquote", async ({ page }) => {
 });
 
 test("sends multiple messages from the same composer", async ({ page }) => {
-  await page.goto("/");
-  await channelRow(page, "general").click();
-  await expect(page.getByTestId("channel-title")).toContainText("general");
+  await page.goto(`/channels/${encodeURIComponent(fixture.generalChannel.name)}`);
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.generalChannel.name);
 
   const composer = page.getByTestId("composer-editor");
   await expect(composer).toBeVisible();
@@ -921,7 +937,7 @@ test("searches messages with filters and displays results", async ({ page }) => 
 test("navigates grouped search results with the keyboard", async ({ page }) => {
   const uniqueSearchToken = fixture.messages.searchHit.body.match(/only-token-[^ ]+/)?.[0];
   expect(uniqueSearchToken).toBeTruthy();
-  await page.goto(`/search?q=${encodeURIComponent(uniqueSearchToken)}`);
+  await page.goto(`/search?q=${encodeURIComponent(`${uniqueSearchToken} in:${fixture.generalChannel.name}`)}`);
 
   const pane = page.getByTestId("search-results-pane");
   await expect(pane).toBeFocused();
@@ -936,12 +952,12 @@ test("navigates grouped search results with the keyboard", async ({ page }) => {
 test("clicking a search result jumps to and highlights that exact message", async ({ page }) => {
   const token = fixture.messages.searchHit.body.match(/only-token-[^ ]+/)?.[0];
   expect(token).toBeTruthy();
-  await page.goto(`/search?q=${encodeURIComponent(token)}`);
+  await page.goto(`/search?q=${encodeURIComponent(`${token} in:${fixture.generalChannel.name}`)}`);
 
   const result = page.getByTestId("search-result").filter({ hasText: fixture.messages.searchHit.body });
   await expect(result).toBeVisible();
   await result.click();
 
-  await expect(page).toHaveURL(new RegExp(`/channels/general\\?message=${fixture.messages.searchHit.id}`));
+  await expect(page).toHaveURL(new RegExp(`/channels/${fixture.generalChannel.id}\\?message=${fixture.messages.searchHit.id}`));
   await expect(messageById(page, fixture.messages.searchHit.id)).toHaveClass(/flash/);
 });
