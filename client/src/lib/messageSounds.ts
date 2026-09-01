@@ -3,20 +3,39 @@ import { readString, writeString } from "./storage.js";
 const ENABLED_KEY = "echo.messageSounds.enabled";
 const SOUND_KEY = "echo.messageSounds.sound";
 const DEFAULT_SOUND_ID = "soft-chime";
+const NONE_SOUND_ID = "none";
 const COOLDOWN_MS = 1000;
 
 export const MESSAGE_SOUNDS = [
   {
-    id: "soft-chime",
-    label: "Soft chime",
-    description: "A subtle, clear notification chime.",
-    url: new URL("../assets/sounds/soft-chime.wav", import.meta.url).href,
+    id: NONE_SOUND_ID,
+    label: "None",
+    description: "Stay silent when new messages arrive.",
+    url: null,
   },
   {
     id: "bright-pop",
     label: "Bright pop",
     description: "A short, crisp message pop.",
     url: new URL("../assets/sounds/bright-pop.wav", import.meta.url).href,
+  },
+  {
+    id: "short-alert",
+    label: "Short alert",
+    description: "A concise, attention-grabbing alert.",
+    url: new URL("../assets/sounds/short-alert.wav", import.meta.url).href,
+  },
+  {
+    id: "clear-ding",
+    label: "Clear ding",
+    description: "A light, simple notification ding.",
+    url: new URL("../assets/sounds/clear-ding.wav", import.meta.url).href,
+  },
+  {
+    id: "soft-chime",
+    label: "Soft chime",
+    description: "A subtle, clear notification chime.",
+    url: new URL("../assets/sounds/soft-chime.wav", import.meta.url).href,
   },
   {
     id: "warm-bell",
@@ -38,13 +57,15 @@ export function setMessageSoundsEnabled(enabled) {
 }
 
 export function selectedMessageSound() {
+  if (!messageSoundsEnabled()) return NONE_SOUND_ID;
   const selected = readString(SOUND_KEY, DEFAULT_SOUND_ID);
-  return MESSAGE_SOUNDS.some((sound) => sound.id === selected) ? selected : DEFAULT_SOUND_ID;
+  return MESSAGE_SOUNDS.some((sound) => sound.id !== NONE_SOUND_ID && sound.id === selected) ? selected : DEFAULT_SOUND_ID;
 }
 
 export function setSelectedMessageSound(soundId) {
   if (!MESSAGE_SOUNDS.some((sound) => sound.id === soundId)) return false;
   writeString(SOUND_KEY, soundId);
+  setMessageSoundsEnabled(soundId !== NONE_SOUND_ID);
   return true;
 }
 
@@ -54,8 +75,10 @@ function soundById(soundId) {
 
 function playAudio(soundId, volume = 1) {
   if (typeof Audio === "undefined") return false;
+  const sound = soundById(soundId);
+  if (!sound.url) return false;
   try {
-    const audio = new Audio(soundById(soundId).url);
+    const audio = new Audio(sound.url);
     audio.volume = volume;
     const playback = audio.play();
     playback?.catch?.(() => {});
@@ -89,8 +112,10 @@ export function installMessageSoundUnlock() {
     window.removeEventListener("pointerdown", unlock, true);
     window.removeEventListener("keydown", unlock, true);
     if (typeof Audio === "undefined") return;
+    const sound = soundById(selectedMessageSound());
+    if (!sound.url) return;
     try {
-      const audio = new Audio(soundById(selectedMessageSound()).url);
+      const audio = new Audio(sound.url);
       audio.volume = 0;
       const playback = audio.play();
       playback?.then?.(() => {

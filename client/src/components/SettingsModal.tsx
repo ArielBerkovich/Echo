@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Building2Icon, CheckIcon, Code2Icon, DownloadIcon, GitPullRequestIcon, KeyboardIcon, PaletteIcon, UserRoundIcon, WebhookIcon } from "lucide-react";
+import { Building2Icon, CheckIcon, Code2Icon, DownloadIcon, GitPullRequestIcon, KeyboardIcon, PaletteIcon, PlayIcon, SlidersHorizontalIcon, UserRoundIcon, Volume2Icon, WebhookIcon, XIcon } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { api, getBackendUrl } from "../api.js";
@@ -23,16 +23,15 @@ import {
 } from "../lib/notify.js";
 import {
   MESSAGE_SOUNDS,
-  messageSoundsEnabled,
   previewMessageSound,
   selectedMessageSound,
-  setMessageSoundsEnabled,
   setSelectedMessageSound,
 } from "../lib/messageSounds.js";
 
 const SETTINGS_TABS = [
   { id: "account", label: "Account", Icon: UserRoundIcon },
   { id: "appearance", label: "Appearance", Icon: PaletteIcon },
+  { id: "preferences", label: "Preferences", Icon: SlidersHorizontalIcon },
   { id: "workspace", label: "Workspace", Icon: Building2Icon, adminOnly: true },
   { id: "integrations", label: "Integrations", Icon: GitPullRequestIcon, adminOnly: true },
   { id: "desktop", label: "Desktop", Icon: DownloadIcon },
@@ -588,13 +587,27 @@ export default function SettingsModal({
               <p className="settings-hint">Get a desktop alert for direct messages, @mentions, and Starred messages when Echo isn't focused.</p>
               <NotificationToggle />
             </section>
-            <section className="settings-section">
-              <h3>Message sounds</h3>
-              <p className="settings-hint">Play a sound for every new message from another person or integration.</p>
-              <MessageSoundControls />
-            </section>
             {!user.isAdmin ? (user.canChangePassword ? <ChangePassword /> : <SsoPasswordNotice />) : <AdminPasswordReset users={users} currentUserId={user.id} />}
           </>}
+
+          {activeTab === "preferences" && <section className="settings-section preferences-page" data-testid="preferences-page">
+            <div className="preferences-hero">
+              <div className="preferences-hero-icon" aria-hidden="true"><Volume2Icon size={20} strokeWidth={2} /></div>
+              <div>
+                <h2>Preferences</h2>
+                <p>Personalize how Echo keeps you informed while you work.</p>
+              </div>
+            </div>
+            <div className="preferences-card">
+              <div className="preferences-card-heading">
+                <div>
+                  <h3>Message sounds</h3>
+                  <p>Choose a sound for new messages.</p>
+                </div>
+              </div>
+              <MessageSoundControls />
+            </div>
+          </section>}
 
           {activeTab === "webhooks" && <section className="settings-section mention-webhook-settings" data-testid="mention-webhook-settings">
             <div className="mention-webhook-hero">
@@ -975,45 +988,33 @@ function NotificationToggle() {
 }
 
 function MessageSoundControls() {
-  const [enabled, setEnabled] = useState(() => messageSoundsEnabled());
   const [selected, setSelected] = useState(() => selectedMessageSound());
-
-  function toggleEnabled() {
-    const next = !enabled;
-    setMessageSoundsEnabled(next);
-    setEnabled(next);
-  }
 
   function selectSound(soundId) {
     if (!setSelectedMessageSound(soundId)) return;
     setSelected(soundId);
+    previewMessageSound(soundId);
   }
 
   return (
     <div className="message-sound-settings">
-      <div className="notify-row">
-        <button type="button" className={enabled ? "btn-secondary" : "btn-primary"} data-testid="message-sound-toggle" onClick={toggleEnabled}>
-          {enabled ? "Turn off message sounds" : "Enable message sounds"}
-        </button>
-        {enabled && <span className="notify-on">On ✓</span>}
-      </div>
       <div className="message-sound-options" role="radiogroup" aria-label="Message sound">
         {MESSAGE_SOUNDS.map((sound) => (
           <div key={sound.id} className={`message-sound-option${selected === sound.id ? " active" : ""}`}>
-            <label>
+            <label className="message-sound-choice">
               <input
                 type="radio"
                 name="message-sound"
                 value={sound.id}
                 checked={selected === sound.id}
-                disabled={!enabled}
                 onChange={() => selectSound(sound.id)}
               />
-              <span><strong>{sound.label}</strong><small>{sound.description}</small></span>
+              <span className="message-sound-icon" aria-hidden="true">{sound.id === "none" ? <XIcon size={16} strokeWidth={2.5} /> : <Volume2Icon size={16} strokeWidth={2} />}</span>
+              <span className="message-sound-choice-copy"><strong>{sound.label}</strong><small>{sound.description}</small></span>
             </label>
-            <button type="button" className="btn-secondary message-sound-preview" data-testid={`message-sound-preview-${sound.id}`} onClick={() => previewMessageSound(sound.id)}>
-              Preview
-            </button>
+            {sound.url ? <button type="button" className="btn-secondary message-sound-preview" data-testid={`message-sound-preview-${sound.id}`} aria-label={`Preview ${sound.label} sound`} onClick={() => previewMessageSound(sound.id)}>
+              <PlayIcon size={13} fill="currentColor" aria-hidden="true" /> Preview
+            </button> : <span className="message-sound-preview-placeholder">No preview</span>}
           </div>
         ))}
       </div>

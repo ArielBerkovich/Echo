@@ -26,12 +26,16 @@ function withStorage(fn) {
 test("message sounds default on with the soft chime selected", () => withStorage(() => {
   assert.equal(messageSoundsEnabled(), true);
   assert.equal(selectedMessageSound(), "soft-chime");
-  assert.deepEqual(MESSAGE_SOUNDS.map((sound) => sound.id), ["soft-chime", "bright-pop", "warm-bell"]);
-  assert.ok(MESSAGE_SOUNDS.every((sound) => sound.url.endsWith(".wav")));
+  assert.deepEqual(MESSAGE_SOUNDS.map((sound) => sound.id), ["none", "bright-pop", "short-alert", "clear-ding", "soft-chime", "warm-bell"]);
+  assert.equal(MESSAGE_SOUNDS[0].url, null);
+  assert.ok(MESSAGE_SOUNDS.slice(1).every((sound) => sound.url.endsWith(".wav")));
 }));
 
 test("message sound preferences persist and reject unknown sounds", () => withStorage(() => {
   setMessageSoundsEnabled(false);
+  assert.equal(messageSoundsEnabled(), false);
+  assert.equal(selectedMessageSound(), "none");
+  assert.equal(setSelectedMessageSound("none"), true);
   assert.equal(messageSoundsEnabled(), false);
   assert.equal(setSelectedMessageSound("warm-bell"), true);
   assert.equal(selectedMessageSound(), "warm-bell");
