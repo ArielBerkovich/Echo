@@ -13,7 +13,6 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
   const [channel, setChannel] = useState(null);
   const [preparing, setPreparing] = useState(false);
   const [error, setError] = useState(null);
-  const composerRef = useRef(null);
   const prepareRequestRef = useRef(0);
   const draftChannel = {
     id: "new-message-draft",
@@ -22,12 +21,6 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
       ? selected.map((user) => user.displayName).join(", ")
       : selected[0]?.displayName || "recipient",
   };
-
-  useEffect(() => {
-    if (!channel || preparing) return undefined;
-    const focusTimer = window.setTimeout(() => composerRef.current?.focus(), 0);
-    return () => window.clearTimeout(focusTimer);
-  }, [channel, preparing]);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(query.trim()), 200);
@@ -177,7 +170,6 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
           <div className={`new-message-compose ${channel ? "has-channel" : ""}`}>
             {preparing ? <div className="people-empty">Opening conversation…</div> : null}
             <Composer
-                ref={composerRef}
                 key="new-message-composer"
                 channel={draftChannel}
                 sendChannel={channel}
