@@ -13,6 +13,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
   const [channel, setChannel] = useState(null);
   const [preparing, setPreparing] = useState(false);
   const [error, setError] = useState(null);
+  const searchInputRef = useRef(null);
   const prepareRequestRef = useRef(0);
   const draftChannel = {
     id: "new-message-draft",
@@ -62,6 +63,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
     setQuery("");
     setDebouncedQuery("");
     prepare(nextSelected);
+    requestAnimationFrame(() => searchInputRef.current?.focus());
   }
 
   function remove(userId) {
@@ -103,7 +105,8 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
                 </span>)}
                 {selected.length < MAX_GROUP_DM_RECIPIENTS ? (
                   <input
-                    className="new-message-search-input new-message-add-input"
+                  className="new-message-search-input new-message-add-input"
+                    ref={searchInputRef}
                     data-testid="new-message-search-input"
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
@@ -123,6 +126,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
               <label className="new-message-search people-filter" data-testid="new-message-search">
                 <input
                   className="new-message-search-input"
+                  ref={searchInputRef}
                   data-testid="new-message-search-input"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}

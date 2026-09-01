@@ -33,6 +33,7 @@ test("creates a group DM from the new-message flow and sends a message", async (
   await search.fill(fourth.user.username);
   await modal.getByTestId(`new-message-user-${fourth.user.username}`).click();
   await expect(modal.getByTestId("new-message-recipient")).toHaveCount(2);
+  await expect(modal.getByTestId("new-message-search-input")).toBeFocused();
 
   const message = `Hello grouped DM ${usernameSuffix}`;
   const composer = modal.getByTestId("composer-editor");
