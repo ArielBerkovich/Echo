@@ -7765,7 +7765,7 @@ html[data-mode="dark"] .day-divider-label {
 .forward-dialog {
   min-height: 0;
   padding: 0;
-  overflow: visible;
+  overflow: hidden;
 }
 .forward-content {
   display: flex;
@@ -7774,7 +7774,7 @@ html[data-mode="dark"] .day-divider-label {
   flex-direction: column;
   gap: 18px;
   padding: 16px 22px 20px;
-  overflow: visible;
+  overflow-y: auto;
 }
 .forward-source-card {
   flex: 0 0 auto;
@@ -7934,7 +7934,6 @@ html[data-mode="dark"] .day-divider-label {
 }
 .forward-note-field .composer {
   margin: 0;
-  overflow: visible;
   border-color: var(--border);
   border-radius: 10px;
   background: var(--surface-2);
