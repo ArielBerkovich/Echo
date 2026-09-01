@@ -59,7 +59,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
     !!onAddPeople &&
     isMember &&
     channel.name?.toLowerCase() !== "general" &&
-    (!isGroupDm || memberIds.length < 20);
+    (!isGroupDm || memberIds.length < 10);
 
   async function renameGroupDm() {
     setSavingName(true);

@@ -33,6 +33,7 @@ test("creates a group DM from the new-message flow and sends a message", async (
   await search.fill(fourth.user.username);
   await modal.getByTestId(`new-message-user-${fourth.user.username}`).click();
   await expect(modal.getByTestId("new-message-recipient")).toHaveCount(2);
+  await expect(modal.getByTestId("new-message-search-input")).toBeFocused();
 
   const message = `Hello grouped DM ${usernameSuffix}`;
   const composer = modal.getByTestId("composer-editor");
@@ -124,6 +125,49 @@ test("lets an added member open and message the group DM", async ({ browser, pag
   await addedPage.getByTestId("composer-send").click();
   await expect(addedPage.getByTestId("messages")).toContainText(`Hello from ${fourth.user.displayName}`);
   await addedPage.close();
+});
+
+test("does not notify existing members when someone is added to a group DM", async ({ page }) => {
+  const usernameSuffix = String(Date.now()).slice(-6);
+  const third = await registerUser(page, {
+    username: `notify.third${usernameSuffix}`,
+    displayName: "Notify Third",
+  });
+  const fourth = await registerUser(page, {
+    username: `notify.fourth${usernameSuffix}`,
+    displayName: "Notify Fourth",
+  });
+  const created = await requestAsToken(page, fixture.alice.token, "/dms", {
+    method: "POST",
+    body: { userIds: [fixture.bob.id, third.user.id] },
+  });
+
+  await page.addInitScript(() => {
+    const notifications = [];
+    class FakeNotification {
+      static permission = "granted";
+      constructor(title, options) {
+        notifications.push({ title, options });
+      }
+    }
+    Object.defineProperty(window, "Notification", { configurable: true, value: FakeNotification });
+    Object.defineProperty(document, "hasFocus", { configurable: true, value: () => false });
+    window.__e2eNotifications = notifications;
+  });
+  await page.goto(`/home/dms/${created.channel.id}`);
+  await expect(page.getByTestId("channel-title")).toContainText(third.user.displayName);
+  await page.evaluate(() => { window.__e2eNotifications.length = 0; });
+
+  await requestAsToken(page, fixture.alice.token, `/channels/${created.channel.id}/members`, {
+    method: "POST",
+    body: { userId: fourth.user.id },
+  });
+
+  await expect.poll(async () => {
+    const result = await requestAsToken(page, fixture.alice.token, `/channels/${created.channel.id}/messages`);
+    return result.messages.filter((message) => message.kind === "system").at(-1)?.body;
+  }).toBe("was added");
+  await expect.poll(() => page.evaluate(() => window.__e2eNotifications.length)).toBe(0);
 });
 
 test("keeps legacy group-DM links working and canonicalizes them to the ID", async ({ page }) => {

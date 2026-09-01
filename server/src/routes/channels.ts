@@ -351,8 +351,8 @@ channelsRouter.post("/:id/members", async (req, res) => {
   if (channel.type === "dm" && !isGroupDm) {
     return res.status(400).json({ error: "cannot add members to a direct message" });
   }
-  if (isGroupDm && channel.members.length >= 20) {
-    return res.status(400).json({ error: "group DMs are limited to 20 people" });
+  if (isGroupDm && channel.members.length >= 10) {
+    return res.status(400).json({ error: "group DMs are limited to 10 people" });
   }
   // Everyone is automatically a member of #general, so there's no one to add.
   if ((channel.name || "").toLowerCase() === "general") {

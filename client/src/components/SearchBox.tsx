@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { SearchIcon, UserPlusIcon } from "lucide-react";
+import { LockKeyholeIcon, SearchIcon, UserPlusIcon } from "lucide-react";
 import Avatar from "./Avatar.js";
 
 // Things "has:" can filter on, suggested as you type the token.
@@ -150,9 +150,12 @@ const SearchBox = forwardRef(function SearchBox(
     return () => document.removeEventListener("mousedown", onDown);
   }, []);
 
-  const publicChannels = useMemo(
-    () => channels.filter((c) => c.type === "public" && !c.isArchived && c.id && c.name),
-    [channels]
+  const searchableChannels = useMemo(
+    () => channels.filter((c) =>
+      (c.type === "public" || (c.type === "private" && memberOf.has(c.id))) &&
+      !c.isArchived && c.id && c.name
+    ),
+    [channels, memberOf]
   );
   const searchableUsers = useMemo(
     () => [
@@ -205,12 +208,12 @@ const SearchBox = forwardRef(function SearchBox(
   const channelCandidates = useMemo(
     () => [
       ...new Map(
-        [...publicChannels, ...remoteChannels]
+        [...searchableChannels, ...remoteChannels]
           .filter((channel) => channel && channel.id && channel.name && !channel.isArchived)
           .map((channel) => [channel.id, channel])
       ).values(),
     ],
-    [publicChannels, remoteChannels]
+    [searchableChannels, remoteChannels]
   );
 
   // Suggestions for the active filter token (channels for in:, users for from:).
@@ -390,7 +393,9 @@ const SearchBox = forwardRef(function SearchBox(
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => (kind === "filter" ? applyFilter(c) : pickChannel(c))}
       >
-        <span className="search-hash">#</span>
+        <span className="search-hash">
+          {c.type === "private" ? <LockKeyholeIcon size={12} strokeWidth={2} aria-hidden="true" /> : "#"}
+        </span>
         <span className="search-name">{c.name}</span>
         {joined ? (
           kind !== "filter" && <span className="search-kind">channel</span>

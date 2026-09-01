@@ -143,12 +143,16 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   } = useAttachments({ captureScreenDrops, onError });
 
   const isDm = channel.type === "dm";
+  const isGroupDm = isDm && (
+    (channel.members || []).length > 2 ||
+    (channel.participants || []).length > 2
+  );
   const targetChannelId = sendChannel?.id || channel.id;
   const scheduledTargetLabel = isDm ? "this conversation" : "this channel";
   const placeholder = customPlaceholder || (isThread
     ? "Reply to thread…"
     : isDm
-      ? `Message ${channel.dmName}`
+      ? isGroupDm ? "Message…" : `Message ${channel.dmName}`
       : `Message #${channel.name}`);
   const editor = useEditor({
     editable: !disabled,

@@ -3794,11 +3794,15 @@ html[data-mode="dark"] .sidebar {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 .members-panel-person {
   display: flex;
   align-items: center;
   gap: 11px;
+  min-width: 0;
   padding: 9px 4px;
   border-radius: 9px;
 }
@@ -3808,7 +3812,16 @@ html[data-mode="dark"] .sidebar {
 .members-panel-person-copy {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
   min-width: 0;
+  overflow: hidden;
+}
+.members-panel-person-copy .channel-details-person-name,
+.members-panel-person-copy .channel-details-person-handle {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .members-panel-remove {
   margin-left: auto;
@@ -8500,9 +8513,9 @@ html[data-mode="dark"] .channel-header {
   overflow-y: hidden;
 }
 .channel-view.has-side-panel .channel-header .ch-name-btn {
-  flex: 1 1 auto;
-  width: 0;
-  max-width: none;
+  flex: 0 1 auto;
+  width: auto;
+  max-width: min(48ch, 100%);
   box-sizing: border-box;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -9813,9 +9826,11 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
   box-shadow: none;
 }
 .new-message-search-selected .new-message-recipient {
+  position: relative;
+  justify-content: center;
   width: auto;
   min-height: 0;
-  padding: 4px 6px 4px 9px;
+  padding: 4px 30px 4px 12px;
   border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
   border-radius: 999px;
   background: color-mix(in srgb, var(--accent) 10%, var(--surface));
@@ -9824,6 +9839,8 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
   font-weight: 650;
 }
 .new-message-search-selected .new-message-recipient button {
+  position: absolute;
+  right: 5px;
   display: inline-flex;
   flex: none;
   align-items: center;
@@ -9837,6 +9854,10 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
   box-shadow: none;
   color: var(--muted);
   line-height: 1;
+}
+.new-message-search-selected .new-message-recipient > span {
+  min-width: 0;
+  text-align: center;
 }
 .new-message-search-selected .new-message-recipient button:hover,
 .new-message-search-selected .new-message-recipient button:focus-visible {

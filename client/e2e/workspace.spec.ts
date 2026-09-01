@@ -9,6 +9,7 @@ import {
   railItem,
   requestAsToken,
   seedWorkspaceFixture,
+  slug,
 } from "./helpers.js";
 
 let fixture: Awaited<ReturnType<typeof seedWorkspaceFixture>>;
@@ -88,6 +89,31 @@ test("opens the workspace search pane with Ctrl+F", async ({ page }) => {
 
   await expect(searchInput).toBeFocused();
   await expect(page.getByTestId("search-hint")).toBeVisible();
+});
+
+test("finds joined private channels in the main search", async ({ page }) => {
+  const channelName = `private-search-${fixture.suffix}`;
+  const created = await requestAsToken(page, fixture.alice.token, "/channels", {
+    method: "POST",
+    body: { name: channelName, type: "private" },
+  });
+
+  try {
+    await page.goto("/");
+    const search = page.getByTestId("search-input");
+    await search.fill(channelName);
+
+    const result = page.getByTestId(`search-channel-${slug(channelName)}`);
+    await expect(result).toBeVisible();
+    await expect(result).toContainText("channel");
+    await expect(result).not.toContainText("Not in channel");
+    await result.click();
+    await expect(page.getByTestId("channel-title")).toContainText(channelName);
+  } finally {
+    await requestAsToken(page, fixture.alice.token, `/channels/${created.channel.id}`, {
+      method: "DELETE",
+    });
+  }
 });
 
 test("preserves composer drafts per channel", async ({ page }) => {

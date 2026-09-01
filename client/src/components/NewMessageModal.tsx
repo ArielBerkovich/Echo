@@ -4,6 +4,8 @@ import Avatar from "./Avatar.js";
 import Composer from "./Composer.js";
 import Modal from "./Modal.js";
 
+const MAX_GROUP_DM_RECIPIENTS = 9;
+
 export default function NewMessageModal({ currentUserId, users, customEmojis, mode, onPrepare, onStart, onClose }) {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -11,6 +13,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
   const [channel, setChannel] = useState(null);
   const [preparing, setPreparing] = useState(false);
   const [error, setError] = useState(null);
+  const searchInputRef = useRef(null);
   const composerRef = useRef(null);
   const prepareRequestRef = useRef(0);
   const draftChannel = {
@@ -20,12 +23,6 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
       ? selected.map((user) => user.displayName).join(", ")
       : selected[0]?.displayName || "recipient",
   };
-
-  useEffect(() => {
-    if (!channel || preparing) return undefined;
-    const focusTimer = window.setTimeout(() => composerRef.current?.focus(), 0);
-    return () => window.clearTimeout(focusTimer);
-  }, [channel, preparing]);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(query.trim()), 200);
@@ -43,14 +40,17 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
   }, [currentUserId, debouncedQuery, users]);
   const availableMatches = matches.filter((user) => !selected.some((candidate) => candidate.id === user.id));
 
-  async function prepare(nextSelected) {
+  async function prepare(nextSelected, focusComposer = false) {
     const requestId = ++prepareRequestRef.current;
     setChannel(null);
     setError(null);
     setPreparing(true);
     try {
       const nextChannel = await onPrepare(nextSelected);
-      if (requestId === prepareRequestRef.current) setChannel(nextChannel);
+      if (requestId === prepareRequestRef.current) {
+        setChannel(nextChannel);
+        if (focusComposer) requestAnimationFrame(() => composerRef.current?.focus());
+      }
     } catch (err) {
       if (requestId === prepareRequestRef.current) setError(err.message);
     } finally {
@@ -58,12 +58,16 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
     }
   }
 
-  function select(user) {
+  function select(user, focusComposer = false) {
+    if (selected.length >= MAX_GROUP_DM_RECIPIENTS) {
+      return;
+    }
     const nextSelected = [...selected, user];
     setSelected(nextSelected);
     setQuery("");
     setDebouncedQuery("");
-    prepare(nextSelected);
+    prepare(nextSelected, focusComposer);
+    if (!focusComposer) requestAnimationFrame(() => searchInputRef.current?.focus());
   }
 
   function remove(userId) {
@@ -103,26 +107,30 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
                     <XIcon size={13} aria-hidden="true" />
                   </button>
                 </span>)}
-                <input
+                {selected.length < MAX_GROUP_DM_RECIPIENTS ? (
+                  <input
                   className="new-message-search-input new-message-add-input"
-                  data-testid="new-message-search-input"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key !== "Enter") return;
-                    const firstMatch = availableMatches[0];
-                    if (!firstMatch) return;
-                    event.preventDefault();
-                    select(firstMatch);
-                  }}
-                  placeholder="Add people"
-                  autoFocus
-                />
+                    ref={searchInputRef}
+                    data-testid="new-message-search-input"
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key !== "Enter") return;
+                      const firstMatch = availableMatches[0];
+                      if (!firstMatch) return;
+                      event.preventDefault();
+                      select(firstMatch);
+                    }}
+                    placeholder="Add people"
+                    autoFocus
+                  />
+                ) : null}
               </div>
             ) : (
               <label className="new-message-search people-filter" data-testid="new-message-search">
                 <input
                   className="new-message-search-input"
+                  ref={searchInputRef}
                   data-testid="new-message-search-input"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
@@ -137,7 +145,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
                         .slice(0, 20)[0];
                       if (!firstMatch) return;
                       event.preventDefault();
-                      select(firstMatch);
+                      select(firstMatch, true);
                     }
                   }}
                   placeholder="Search people"

@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { api } from "../api.js";
 import { getSocket } from "../socket.js";
 import { notificationPreview, notificationsActive, showNotification } from "./notify.js";
-import { playIncomingMessageSound, shouldPlayMessageSound } from "./messageSounds.js";
+import { playIncomingMessageSound } from "./messageSounds.js";
 import { queryKeys } from "./queryClient.js";
 import { appendReplyParticipant } from "./replyParticipants.js";
 
@@ -329,8 +329,7 @@ export function useRealtime({
       const viewingHere = !!active && msg.channelId === active.id && !document.hidden;
       const inChannels = channelsRef.current.some((c) => c.id === msg.channelId);
       const inDms = dmsRef.current.some((d) => d.id === msg.channelId);
-
-      if (shouldPlayMessageSound(msg, user.id)) playIncomingMessageSound();
+      let notificationShown = false;
 
       queryClient.setQueryData(queryKeys.messages(msg.channelId), (history) => {
         if (!history?.messages) return history;
@@ -399,7 +398,7 @@ export function useRealtime({
 
       // Desktop notification — Starred DMs, and channel @mentions.
       // Skipped if you're already focused on that conversation.
-      if (!mine && notificationsActive()) {
+      if (!mine && msg.kind !== "system" && notificationsActive()) {
         const focusedHere = !!active && msg.channelId === active.id && document.hasFocus();
         if (!focusedHere) {
           const sender = msg.author?.displayName || "Someone";
@@ -407,7 +406,7 @@ export function useRealtime({
           if (inDms) {
             const dm = dmsRef.current.find((d) => d.id === msg.channelId);
             const starred = dm && starredRef.current.has(dm.withUser.id);
-            showNotification(starred ? `⭐ ${sender} · Starred message` : `Message from ${sender}`, {
+            notificationShown = showNotification(starred ? `⭐ ${sender} · Starred message` : `Message from ${sender}`, {
               body: preview,
               tag: msg.channelId,
               onClick: () => {
@@ -421,20 +420,21 @@ export function useRealtime({
                   });
                 }
               },
-            });
+            }) || notificationShown;
           } else if (mentionsMe && inChannels) {
             const ch = channelsRef.current.find((c) => c.id === msg.channelId);
-            showNotification(`Mention from ${sender}`, {
+            notificationShown = showNotification(`Mention from ${sender}`, {
               body: `${ch?.name ? `#${ch.name} · ` : ""}${preview}`,
               tag: msg.channelId,
               onClick: () => {
                 setView("home");
                 if (ch) setActiveChannel(ch);
               },
-            });
+            }) || notificationShown;
           }
         }
       }
+      if (notificationShown) playIncomingMessageSound();
     };
     socket.on("message:new", onMessage);
 

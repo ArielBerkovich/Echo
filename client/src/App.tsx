@@ -773,15 +773,18 @@ export default function App() {
             : channel.name,
         }
       : channel;
-    if (active?.id === updatedChannel.id && active.name !== updatedChannel.name) {
+    if (active?.id === updatedChannel.id && (active.name !== updatedChannel.name || active.type !== updatedChannel.type)) {
+      const nextView = updatedChannel.type === "private" ? "home" : viewRef.current;
+      setViewState(nextView);
       navigate(workspacePath({
-        view: viewRef.current,
+        view: nextView,
         convId: updatedChannel.id,
         convName: updatedChannel.name,
         convType: updatedChannel.type,
       }), { replace: true });
     }
     setChannels((prev) => {
+      if (updatedChannel.type === "dm") return prev.filter((c) => c.id !== updatedChannel.id);
       const exists = prev.some((c) => c.id === updatedChannel.id);
       const next = exists
         ? prev.map((c) => (c.id === updatedChannel.id ? updatedChannel : c))
