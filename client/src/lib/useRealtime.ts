@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { api } from "../api.js";
 import { getSocket } from "../socket.js";
 import { notificationPreview, notificationsActive, showNotification } from "./notify.js";
+import { playIncomingMessageSound, shouldPlayMessageSound } from "./messageSounds.js";
 import { queryKeys } from "./queryClient.js";
 import { appendReplyParticipant } from "./replyParticipants.js";
 
@@ -328,6 +329,8 @@ export function useRealtime({
       const viewingHere = !!active && msg.channelId === active.id && !document.hidden;
       const inChannels = channelsRef.current.some((c) => c.id === msg.channelId);
       const inDms = dmsRef.current.some((d) => d.id === msg.channelId);
+
+      if (shouldPlayMessageSound(msg, user.id)) playIncomingMessageSound();
 
       queryClient.setQueryData(queryKeys.messages(msg.channelId), (history) => {
         if (!history?.messages) return history;

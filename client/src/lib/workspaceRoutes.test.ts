@@ -59,6 +59,8 @@ describe("workspace routes", () => {
     assert.equal(parseWorkspacePath("/settings/shortcuts").settingsTab, "shortcuts");
     assert.equal(workspacePath({ view: "settings", settingsTab: "webhooks" }), "/settings/webhooks");
     assert.equal(parseWorkspacePath("/settings/webhooks").settingsTab, "webhooks");
+    assert.equal(parseWorkspacePath("/settings/preferences").settingsTab, "preferences");
+    assert.equal(workspacePath({ view: "settings", settingsTab: "preferences" }), "/settings/preferences");
   });
 
   it("recognizes only same-origin Echo message links", () => {

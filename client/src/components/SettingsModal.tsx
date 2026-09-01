@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Building2Icon, CheckIcon, Code2Icon, DownloadIcon, GitPullRequestIcon, KeyboardIcon, PaletteIcon, UserRoundIcon, WebhookIcon } from "lucide-react";
+import { Building2Icon, CheckIcon, Code2Icon, DownloadIcon, GitPullRequestIcon, KeyboardIcon, PaletteIcon, SlidersHorizontalIcon, UserRoundIcon, Volume2Icon, WebhookIcon } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { api, getBackendUrl } from "../api.js";
@@ -21,10 +21,12 @@ import {
   requestNotifyPermission,
   showTestNotification,
 } from "../lib/notify.js";
+import MessageSoundControls from "./MessageSoundControls.js";
 
 const SETTINGS_TABS = [
   { id: "account", label: "Account", Icon: UserRoundIcon },
   { id: "appearance", label: "Appearance", Icon: PaletteIcon },
+  { id: "preferences", label: "Preferences", Icon: SlidersHorizontalIcon },
   { id: "workspace", label: "Workspace", Icon: Building2Icon, adminOnly: true },
   { id: "integrations", label: "Integrations", Icon: GitPullRequestIcon, adminOnly: true },
   { id: "desktop", label: "Desktop", Icon: DownloadIcon },
@@ -582,6 +584,25 @@ export default function SettingsModal({
             </section>
             {!user.isAdmin ? (user.canChangePassword ? <ChangePassword /> : <SsoPasswordNotice />) : <AdminPasswordReset users={users} currentUserId={user.id} />}
           </>}
+
+          {activeTab === "preferences" && <section className="settings-section preferences-page" data-testid="preferences-page">
+            <div className="preferences-hero">
+              <div className="preferences-hero-icon" aria-hidden="true"><Volume2Icon size={20} strokeWidth={2} /></div>
+              <div>
+                <h2>Preferences</h2>
+                <p>Personalize how Echo keeps you informed while you work.</p>
+              </div>
+            </div>
+            <div className="preferences-card">
+              <div className="preferences-card-heading">
+                <div>
+                  <h3>Message sounds</h3>
+                  <p>Choose a sound for new messages.</p>
+                </div>
+              </div>
+              <MessageSoundControls />
+            </div>
+          </section>}
 
           {activeTab === "webhooks" && <section className="settings-section mention-webhook-settings" data-testid="mention-webhook-settings">
             <div className="mention-webhook-hero">
