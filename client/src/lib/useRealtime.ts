@@ -398,7 +398,7 @@ export function useRealtime({
 
       // Desktop notification — Starred DMs, and channel @mentions.
       // Skipped if you're already focused on that conversation.
-      if (!mine && notificationsActive()) {
+      if (!mine && msg.kind !== "system" && notificationsActive()) {
         const focusedHere = !!active && msg.channelId === active.id && document.hasFocus();
         if (!focusedHere) {
           const sender = msg.author?.displayName || "Someone";
