@@ -177,6 +177,8 @@ test.describe("documented keyboard shortcuts", () => {
 
     const editor = page.getByTestId("new-message-modal").getByTestId("composer-editor");
     await expect(editor).toBeEditable();
+    await expect(recipientSearch).toBeFocused();
+    await recipientSearch.press("Tab");
     await expect(editor).toBeFocused();
     const body = `Keyboard-only DM ${fixture.suffix}`;
     await page.keyboard.type(body);

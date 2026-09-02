@@ -71,7 +71,7 @@ function formatScheduleTime(date) {
 // Rich-text message composer: @mention autocomplete, a formatting toolbar,
 // emoji, and file attachments. Owns all of its own editor state — mount it with
 // a `key={channel.id}` so switching channels yields a fresh, empty composer.
-const Composer = forwardRef(function Composer({ channel, sendChannel = null, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, onDraftChange, onEditSave, onEditCancel, editing = null, placeholder: customPlaceholder, mode = "light", captureScreenDrops = false, showSchedule = true, showSend = true, showAttachments = true, disabled = false }, ref) {
+const Composer = forwardRef(function Composer({ channel, sendChannel = null, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, onSend, sendDisabled = false, allowEmptySend = false, sendAriaLabel, sendTitle, sendTestId, onDraftChange, onEditSave, onEditCancel, editing = null, placeholder: customPlaceholder, mode = "light", captureScreenDrops = false, showSchedule = true, showSend = true, showAttachments = true, disabled = false }, ref) {
   const isThread = !!parentId; // a thread reply composer (hides channel-level scheduling)
   const [mention, setMention] = useState(null); // { trigger, query, from, to } or null
   const [activeIdx, setActiveIdx] = useState(0);
@@ -645,6 +645,10 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
 
   function handleSend(e) {
     e?.preventDefault();
+    if (onSend) {
+      onSend();
+      return;
+    }
     if (!showSend) return;
     if (pastePrompt) {
       setPasteBlockedNotice("Choose an option above before sending this message.");
@@ -1179,11 +1183,11 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
           {showSend && <button
             type="submit"
             className={`icon-btn send-btn ${canSend || pending.length ? "ready" : ""}`}
-            data-testid="composer-send"
+            data-testid={sendTestId || "composer-send"}
             onMouseDown={keepFocus}
-            disabled={(!canSend && pending.length === 0 && !pastePrompt) || uploading}
-            aria-label={editing ? "Save edit" : "Send"}
-            title={pastePrompt ? "Choose how to handle the pasted content first" : editing ? "Save edit" : "Send message"}
+            disabled={sendDisabled || ((!canSend && pending.length === 0 && !pastePrompt) && !allowEmptySend) || uploading}
+            aria-label={sendAriaLabel || (editing ? "Save edit" : "Send")}
+            title={pastePrompt ? "Choose how to handle the pasted content first" : sendTitle || (editing ? "Save edit" : "Send message")}
           >
             <SendIcon />
           </button>}

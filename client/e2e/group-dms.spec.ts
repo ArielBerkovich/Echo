@@ -45,6 +45,80 @@ test("creates a group DM from the new-message flow and sends a message", async (
   await expect(page.getByTestId("message-list").or(page.getByTestId("messages"))).toContainText(message);
 });
 
+test("selects several group-DM recipients and sends with the keyboard", async ({ page }) => {
+  const usernameSuffix = String(Date.now()).slice(-6);
+  const third = await registerUser(page, {
+    username: `keyboard.third${usernameSuffix}`,
+    displayName: "Keyboard Third",
+  });
+  const fourth = await registerUser(page, {
+    username: `keyboard.fourth${usernameSuffix}`,
+    displayName: "Keyboard Fourth",
+  });
+  await onboard(page, third);
+  await onboard(page, fourth);
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "New message" }).first().click();
+  const modal = page.getByTestId("new-message-modal");
+  const search = modal.getByTestId("new-message-search-input");
+
+  await search.fill(third.user.username);
+  await search.press("Enter");
+  await expect(modal.getByTestId("new-message-recipient")).toHaveCount(1);
+  await expect(search).toBeFocused();
+
+  await search.fill(fourth.user.username);
+  await search.press("Enter");
+  await expect(modal.getByTestId("new-message-recipient")).toHaveCount(2);
+  await expect(search).toBeFocused();
+
+  await search.press("Enter");
+  await search.press("Enter");
+  await expect(modal.getByTestId("new-message-recipient")).toHaveCount(2);
+
+  await search.press("Tab");
+  const message = `Keyboard group DM ${usernameSuffix}`;
+  const composer = modal.getByTestId("composer-editor");
+  await expect(composer).toBeFocused();
+  await page.keyboard.type(message);
+  await page.keyboard.press("Enter");
+
+  await expect(modal).toBeHidden();
+  await expect(page.getByTestId("message-list").or(page.getByTestId("messages"))).toContainText(message);
+});
+
+test("chooses a specific new-message recipient with the keyboard", async ({ page }) => {
+  const usernameSuffix = String(Date.now()).slice(-6);
+  const third = await registerUser(page, {
+    username: `choice.third${usernameSuffix}`,
+    displayName: "Choice Third",
+  });
+  const fourth = await registerUser(page, {
+    username: `choice.fourth${usernameSuffix}`,
+    displayName: "Choice Fourth",
+  });
+  await onboard(page, third);
+  await onboard(page, fourth);
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "New message" }).first().click();
+  const modal = page.getByTestId("new-message-modal");
+  const search = modal.getByTestId("new-message-search-input");
+  await search.fill("Choice");
+  const results = modal.locator(".new-message-person");
+  await expect(results.first()).toBeVisible();
+  expect(await results.count()).toBeGreaterThanOrEqual(2);
+  await expect(results.first()).toHaveClass(/keyboard-active/);
+
+  await search.press("ArrowDown");
+  await expect(results.nth(1)).toHaveClass(/keyboard-active/);
+  const selectedName = await results.nth(1).locator(".person-name").textContent();
+  await search.press("Enter");
+
+  await expect(modal.getByTestId("new-message-recipient")).toContainText(selectedName || "");
+});
+
 test("opens a group DM by ID, shows members, and updates its name after adding someone", async ({ page }) => {
   const usernameSuffix = String(Date.now()).slice(-6);
   const third = await registerUser(page, {
