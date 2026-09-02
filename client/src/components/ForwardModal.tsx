@@ -2,8 +2,9 @@ import { useMemo, useRef, useState } from "react";
 import Avatar from "./Avatar.js";
 import Composer from "./Composer.js";
 import Message from "./Message.js";
-import Modal, { ModalActions } from "./Modal.js";
+import Modal from "./Modal.js";
 import { XIcon } from "lucide-react";
+import useRecipientPickerKeyboard from "./useRecipientPickerKeyboard.js";
 
 const MAX_DESTINATIONS = 10;
 const MAX_VISIBLE_SEARCH_RESULTS = 20;
@@ -62,7 +63,6 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState(null);
   const [searchFocused, setSearchFocused] = useState(true);
-  const [activeIndex, setActiveIndex] = useState(0);
   const searchRef = useRef(null);
   const noteComposerRef = useRef(null);
 
@@ -136,6 +136,20 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
     dmName: "the recipient",
   }), [message?.id]);
 
+  const {
+    activeIndex,
+    activeOptionRef,
+    handleKeyDown,
+    setActiveIndex,
+  } = useRecipientPickerKeyboard({
+    items: flatResults,
+    hasQuery,
+    onSelect: (destination) => selectedKeys.has(destinationKey(destination))
+      ? removeDestination(destination)
+      : addDestination(destination),
+    onTab: () => noteComposerRef.current?.focus(),
+  });
+
   function addDestination(destination) {
     if (selectedKeys.has(destinationKey(destination)) || selected.length >= MAX_DESTINATIONS) return;
     setSelected((previous) => [...previous, destination]);
@@ -156,31 +170,13 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
   }
 
   function handleSearchKeyDown(event) {
-    if (event.key === "Tab" && !event.shiftKey) {
-      event.preventDefault();
-      noteComposerRef.current?.focus();
-    } else if (event.key === "Escape" && query) {
+    if (event.key === "Escape" && query) {
       event.preventDefault();
       setQuery("");
       setActiveIndex(0);
-    } else if (event.key === "ArrowDown") {
-      event.preventDefault();
-      setActiveIndex((index) => flatResults.length ? (index + 1) % flatResults.length : 0);
-    } else if (event.key === "ArrowUp") {
-      event.preventDefault();
-      setActiveIndex((index) => flatResults.length ? (index - 1 + flatResults.length) % flatResults.length : 0);
-    } else if (event.key === "Home" && flatResults.length) {
-      event.preventDefault();
-      setActiveIndex(0);
-    } else if (event.key === "End" && flatResults.length) {
-      event.preventDefault();
-      setActiveIndex(flatResults.length - 1);
-    } else if (event.key === "Enter" && flatResults[activeIndex]) {
-      event.preventDefault();
-      const destination = flatResults[activeIndex];
-      if (selectedKeys.has(destinationKey(destination))) removeDestination(destination);
-      else addDestination(destination);
+      return;
     }
+    handleKeyDown(event);
   }
 
   async function submit() {
@@ -276,6 +272,9 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
                         <button
                           type="button"
                           id={resultId(destination)}
+                          ref={(element) => {
+                            if (element && activeIndex === index) activeOptionRef.current = element;
+                          }}
                           className={`forward-destination-row ${isSelected ? "selected" : ""} ${activeIndex === index ? "keyboard-active" : ""}`}
                           key={destinationKey(destination)}
                           role="option"
@@ -312,9 +311,15 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
               onAddCustomEmoji={onAddCustomEmoji}
               onDraftChange={(value) => setNote(value.slice(0, 2000))}
               onError={setError}
+              onSend={submit}
+              sendDisabled={disabled}
+              allowEmptySend
+              sendAriaLabel="Forward message"
+              sendTitle="Forward message"
+              sendTestId="forward-send-selected"
               placeholder="Add context for the recipient…"
               showSchedule={false}
-              showSend={false}
+              showSend
               showAttachments={false}
               disabled={isSubmitting}
             />
@@ -362,18 +367,6 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
           </div>
         </div>
 
-        <ModalActions className="forward-actions" data-testid="forward-actions">
-          <button type="button" className="btn-secondary" onClick={onClose} disabled={isSubmitting}>Cancel</button>
-          <button
-            type="button"
-            className="btn-primary"
-            data-testid="forward-send-selected"
-            disabled={disabled}
-            onClick={submit}
-          >
-            {isSubmitting ? "Forwarding…" : selected.length ? `Forward to ${selected.length}` : "Forward"}
-          </button>
-        </ModalActions>
       </div>
     </Modal>
   );

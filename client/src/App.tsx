@@ -19,6 +19,7 @@ import { useWorkspaceQueries, workspaceKeys } from "./lib/useWorkspaceQueries.js
 import { queryKeys } from "./lib/queryClient.js";
 import { currentRoute, workspacePath } from "./lib/workspaceRoutes.js";
 import { installMessageSoundUnlock } from "./lib/messageSounds.js";
+import { getKeyboardHotkeys } from "./lib/keyboardShortcuts.js";
 import { useHotkeys } from "react-hotkeys-hook";
 
 const HIDDEN_KEY = "echo.hiddenChannels";
@@ -34,10 +35,6 @@ const GLOBAL_HOTKEY_OPTIONS = {
   enableOnFormTags: true,
   enableOnContentEditable: true,
 };
-
-function modifierHotkeys(combo) {
-  return [`ctrl+${combo}`, `meta+${combo}`];
-}
 
 function isEditableTarget(target) {
   return target instanceof HTMLElement && (
@@ -158,19 +155,19 @@ export default function App() {
   const activeChannelRef = useRef(activeChannel);
 
   const hotkeyOptions = { ...GLOBAL_HOTKEY_OPTIONS, enabled: !!user };
-  useHotkeys(modifierHotkeys("f"), () => searchRef.current?.focus(), hotkeyOptions, [user]);
-  useHotkeys(modifierHotkeys("shift+m"), () => handleStartConversation(), hotkeyOptions, [user]);
-  useHotkeys(modifierHotkeys("shift+o"), () => handleBrowseChannels(), hotkeyOptions, [user]);
-  useHotkeys(modifierHotkeys("shift+c"), () => setShowCreate(true), hotkeyOptions, [user]);
-  useHotkeys(modifierHotkeys("shift+space"), (event) => {
+  useHotkeys(getKeyboardHotkeys("focus-search"), () => searchRef.current?.focus(), hotkeyOptions, [user]);
+  useHotkeys(getKeyboardHotkeys("new-message"), () => handleStartConversation(), hotkeyOptions, [user]);
+  useHotkeys(getKeyboardHotkeys("browse-channels"), () => handleBrowseChannels(), hotkeyOptions, [user]);
+  useHotkeys(getKeyboardHotkeys("create-channel"), () => setShowCreate(true), hotkeyOptions, [user]);
+  useHotkeys(getKeyboardHotkeys("focus-composer"), (event) => {
     if (isEditableTarget(event.target) || !activeChannel) return;
     setComposerFocusRequest((request) => request + 1);
   }, hotkeyOptions, [user, activeChannel]);
-  useHotkeys(modifierHotkeys("shift+h"), () => handleViewSelect("home"), hotkeyOptions, [user]);
-  useHotkeys(modifierHotkeys("shift+d"), () => handleViewSelect("dms"), hotkeyOptions, [user]);
-  useHotkeys(modifierHotkeys("shift+a"), () => handleViewSelect("activity"), hotkeyOptions, [user]);
-  useHotkeys(modifierHotkeys("shift+s"), () => handleViewSelect("saved"), hotkeyOptions, [user]);
-  useHotkeys(["ctrl+comma", "meta+comma"], () => openSettings(), hotkeyOptions, [user]);
+  useHotkeys(getKeyboardHotkeys("go-home"), () => handleViewSelect("home"), hotkeyOptions, [user]);
+  useHotkeys(getKeyboardHotkeys("go-dms"), () => handleViewSelect("dms"), hotkeyOptions, [user]);
+  useHotkeys(getKeyboardHotkeys("go-activity"), () => handleViewSelect("activity"), hotkeyOptions, [user]);
+  useHotkeys(getKeyboardHotkeys("go-saved"), () => handleViewSelect("saved"), hotkeyOptions, [user]);
+  useHotkeys(getKeyboardHotkeys("open-settings"), () => openSettings(), hotkeyOptions, [user]);
 
   // Echo's own images should not become native drag sources. This keeps
   // logos, avatars, and message images from being dropped into the composer;

@@ -3,6 +3,7 @@ import { XIcon } from "lucide-react";
 import Avatar from "./Avatar.js";
 import Composer from "./Composer.js";
 import Modal from "./Modal.js";
+import useRecipientPickerKeyboard from "./useRecipientPickerKeyboard.js";
 
 const MAX_GROUP_DM_RECIPIENTS = 9;
 
@@ -13,6 +14,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
   const [channel, setChannel] = useState(null);
   const [preparing, setPreparing] = useState(false);
   const [error, setError] = useState(null);
+  const [focusComposerRequested, setFocusComposerRequested] = useState(false);
   const searchInputRef = useRef(null);
   const composerRef = useRef(null);
   const prepareRequestRef = useRef(0);
@@ -29,18 +31,45 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
     return () => clearTimeout(timer);
   }, [query]);
 
+  useEffect(() => {
+    if (!focusComposerRequested || !channel || preparing) return undefined;
+    const frame = requestAnimationFrame(() => {
+      composerRef.current?.focus();
+      setFocusComposerRequested(false);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [channel, focusComposerRequested, preparing]);
+
   const matches = useMemo(() => {
-    const normalized = debouncedQuery.toLowerCase();
+    const normalized = query.trim().toLowerCase();
     return users
       .filter((user) => user.id !== currentUserId)
       .filter((user) => !normalized
         || user.displayName.toLowerCase().includes(normalized)
         || user.username.toLowerCase().includes(normalized))
       .slice(0, 20);
-  }, [currentUserId, debouncedQuery, users]);
+  }, [currentUserId, query, users]);
   const availableMatches = matches.filter((user) => !selected.some((candidate) => candidate.id === user.id));
+  const {
+    activeIndex,
+    activeItem: activeMatch,
+    activeOptionRef,
+    handleKeyDown,
+    setActiveIndex,
+  } = useRecipientPickerKeyboard({
+    items: availableMatches,
+    hasQuery: Boolean(query.trim()),
+    scrollEnabled: Boolean(debouncedQuery),
+    onSelect: select,
+    onTab: selected.length ? () => setFocusComposerRequested(true) : undefined,
+  });
 
-  async function prepare(nextSelected, focusComposer = false) {
+  function handleSearchChange(value) {
+    setQuery(value);
+    setActiveIndex(0);
+  }
+
+  async function prepare(nextSelected) {
     const requestId = ++prepareRequestRef.current;
     setChannel(null);
     setError(null);
@@ -49,7 +78,6 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
       const nextChannel = await onPrepare(nextSelected);
       if (requestId === prepareRequestRef.current) {
         setChannel(nextChannel);
-        if (focusComposer) requestAnimationFrame(() => composerRef.current?.focus());
       }
     } catch (err) {
       if (requestId === prepareRequestRef.current) setError(err.message);
@@ -58,7 +86,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
     }
   }
 
-  function select(user, focusComposer = false) {
+  function select(user) {
     if (selected.length >= MAX_GROUP_DM_RECIPIENTS) {
       return;
     }
@@ -66,8 +94,9 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
     setSelected(nextSelected);
     setQuery("");
     setDebouncedQuery("");
-    prepare(nextSelected, focusComposer);
-    if (!focusComposer) requestAnimationFrame(() => searchInputRef.current?.focus());
+    setActiveIndex(0);
+    prepare(nextSelected);
+    requestAnimationFrame(() => searchInputRef.current?.focus());
   }
 
   function remove(userId) {
@@ -113,16 +142,15 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
                     ref={searchInputRef}
                     data-testid="new-message-search-input"
                     value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key !== "Enter") return;
-                      const firstMatch = availableMatches[0];
-                      if (!firstMatch) return;
-                      event.preventDefault();
-                      select(firstMatch);
-                    }}
+                    onChange={(event) => handleSearchChange(event.target.value)}
+                    onKeyDown={handleKeyDown}
                     placeholder="Add people"
                     autoFocus
+                    role="combobox"
+                    aria-autocomplete="list"
+                    aria-controls="new-message-people-list"
+                    aria-expanded={Boolean(debouncedQuery && availableMatches.length)}
+                    aria-activedescendant={activeMatch ? `new-message-user-${activeMatch.username}` : undefined}
                   />
                 ) : null}
               </div>
@@ -133,36 +161,32 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
                   ref={searchInputRef}
                   data-testid="new-message-search-input"
                   value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      const normalized = query.trim().toLowerCase();
-                      const firstMatch = users
-                        .filter((user) => user.id !== currentUserId)
-                        .filter((user) => !normalized
-                          || user.displayName.toLowerCase().includes(normalized)
-                          || user.username.toLowerCase().includes(normalized))
-                        .slice(0, 20)[0];
-                      if (!firstMatch) return;
-                      event.preventDefault();
-                      select(firstMatch, true);
-                    }
-                  }}
+                  onChange={(event) => handleSearchChange(event.target.value)}
+                  onKeyDown={handleKeyDown}
                   placeholder="Search people"
                   autoFocus
+                  role="combobox"
+                  aria-autocomplete="list"
+                  aria-controls="new-message-people-list"
+                  aria-expanded={Boolean(debouncedQuery && availableMatches.length)}
+                  aria-activedescendant={activeMatch ? `new-message-user-${activeMatch.username}` : undefined}
                 />
               </label>
             )}
 
-            {debouncedQuery ? <div className="new-message-people" role="listbox" aria-label="People">
-              {availableMatches.length ? availableMatches.map((user) => (
+            {debouncedQuery ? <div id="new-message-people-list" className="new-message-people" role="listbox" aria-label="People">
+              {availableMatches.length ? availableMatches.map((user, index) => (
                 <button
                   type="button"
                   key={user.id}
-                  className="new-message-person"
+                  ref={(element) => {
+                    if (element && activeIndex === index) activeOptionRef.current = element;
+                  }}
+                  className={`new-message-person ${activeIndex === index ? "keyboard-active" : ""}`}
                   data-testid={`new-message-user-${user.username}`}
                   role="option"
                   aria-selected="false"
+                  onMouseEnter={() => setActiveIndex(index)}
                   onClick={() => select(user)}
                 >
                   <Avatar name={user.displayName} src={user.avatarUrl} size={34} />

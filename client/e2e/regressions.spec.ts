@@ -215,6 +215,22 @@ test("activates the Composer after selecting a new message recipient", async ({ 
   await expect(modal.getByTestId("composer-send-options")).toHaveCount(0);
 });
 
+test("moves from selected new-message recipients to the Composer with Tab", async ({ page }) => {
+  await page.goto("/");
+  await page.getByTestId("start-dm").click();
+  const modal = page.getByTestId("new-message-modal");
+  const search = modal.getByTestId("new-message-search-input");
+
+  await search.fill(fixture.bob.username);
+  await modal.getByTestId(`new-message-user-${fixture.bob.username}`).click();
+  await expect(search).toBeFocused();
+  await expect(modal.getByTestId("composer-editor")).toHaveAttribute("contenteditable", "true");
+
+  await search.press("Tab");
+
+  await expect(modal.getByTestId("composer-editor")).toBeFocused();
+});
+
 test("keeps the new-message emoji picker inside the viewport", async ({ page }) => {
   await page.goto("/");
   await page.getByTestId("start-dm").click();
@@ -279,7 +295,7 @@ test("starts a conversation from the dedicated DMs button with the keyboard", as
 
   const startButton = page.getByTestId("start-dm");
   await expect(startButton).toBeVisible();
-  await expect(startButton).toHaveAttribute("title", "New message");
+  await expect(startButton).toHaveAttribute("title", "New message · ⌘/Ctrl+⇧M");
 
   await startButton.click();
 
