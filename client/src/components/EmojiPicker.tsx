@@ -1,4 +1,5 @@
-import { lazy, Suspense, useEffect, useMemo, useRef } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useAuthUrls } from "../lib/useAuthUrl.js";
 
 // A people/group glyph for the avatar-emoji category tab — distinct from the
@@ -27,21 +28,78 @@ const EmojiMartPicker = lazy(async () => {
 // Full emoji picker (all emojis + search) via emoji-mart, plus a "Custom"
 // category fed by workspace-uploaded emoji/GIFs. Closes on the toggle button or
 // any outside click — never on hover-out.
-export default function EmojiPicker({ onPick, onClose, customEmojis = [], onAddCustom, mode = "light" }) {
+export default function EmojiPicker({ onPick, onClose, customEmojis = [], onAddCustom, mode = "light", anchorRef }) {
   const ref = useRef(null);
+  const [viewportStyle, setViewportStyle] = useState(null);
   const authUrls = useAuthUrls(customEmojis.map((e) => e.url));
+
+  useLayoutEffect(() => {
+    if (!anchorRef) return undefined;
+
+    const VIEWPORT_PADDING = 8;
+    const POPOVER_GAP = 8;
+    const DESIRED_PICKER_HEIGHT = 390;
+    // The optional custom-emoji action sits below the emoji-mart element.
+    const FOOTER_HEIGHT = onAddCustom ? 42 : 0;
+
+    function updatePosition() {
+      const anchor = anchorRef.current;
+      if (!anchor) return;
+
+      const anchorRect = anchor.getBoundingClientRect();
+      const composerRect = anchor.closest(".composer")?.getBoundingClientRect() || anchorRect;
+      const viewportWidth = document.documentElement.clientWidth;
+      const viewportHeight = document.documentElement.clientHeight;
+      const width = Math.min(352, viewportWidth - VIEWPORT_PADDING * 2);
+      const left = Math.min(
+        Math.max(composerRect.left + 8, VIEWPORT_PADDING),
+        viewportWidth - width - VIEWPORT_PADDING
+      );
+      const aboveSpace = anchorRect.top - POPOVER_GAP - VIEWPORT_PADDING;
+      const belowTop = anchorRect.bottom + POPOVER_GAP;
+      const belowSpace = viewportHeight - belowTop - VIEWPORT_PADDING;
+      const desiredTotalHeight = DESIRED_PICKER_HEIGHT + FOOTER_HEIGHT;
+      const placeAbove = aboveSpace >= Math.min(desiredTotalHeight, belowSpace);
+      const availableHeight = Math.max(0, placeAbove ? aboveSpace : belowSpace);
+      const pickerHeight = Math.max(0, Math.min(
+        DESIRED_PICKER_HEIGHT,
+        availableHeight - FOOTER_HEIGHT
+      ));
+
+      setViewportStyle({
+        width,
+        left,
+        top: placeAbove ? "auto" : belowTop,
+        bottom: placeAbove ? viewportHeight - anchorRect.top + POPOVER_GAP : "auto",
+        "--emoji-picker-height": `${pickerHeight}px`,
+      });
+    }
+
+    updatePosition();
+    const observer = new ResizeObserver(updatePosition);
+    if (anchorRef.current) observer.observe(anchorRef.current.closest(".composer") || anchorRef.current);
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [anchorRef, onAddCustom]);
 
   useEffect(() => {
     function onDown(e) {
       // Clicks inside the picker (incl. its shadow DOM, retargeted to the host)
-      // and on the emoji toggle button do not dismiss it.
+      // and on this picker's own toggle button do not dismiss it. A different
+      // emoji toggle should close this picker before opening its own.
       if (ref.current && ref.current.contains(e.target)) return;
-      if (e.target.closest && e.target.closest(".emoji-toggle, .react-toggle")) return;
+      const toggle = e.target.closest?.(".emoji-toggle, .react-toggle");
+      if (toggle && (!anchorRef || toggle === anchorRef.current)) return;
       onClose();
     }
     document.addEventListener("mousedown", onDown);
     return () => document.removeEventListener("mousedown", onDown);
-  }, [onClose]);
+  }, [anchorRef, onClose]);
 
   // emoji-mart custom categories: Echo's built-in Git set, workspace uploads,
   // and user-avatar emoji (:username:), each kept distinct in the picker.
@@ -70,8 +128,12 @@ export default function EmojiPicker({ onPick, onClose, customEmojis = [], onAddC
     return cats.length ? cats : undefined;
   }, [customEmojis, authUrls]);
 
-  return (
-    <div className="emoji-popup-wrap" ref={ref}>
+  const picker = (
+    <div
+      className={`emoji-popup-wrap${anchorRef ? " is-viewport-positioned" : ""}`}
+      ref={ref}
+      style={anchorRef ? (viewportStyle || { visibility: "hidden" }) : undefined}
+    >
       <Suspense fallback={<div className="emoji-picker-loading" aria-hidden="true" />}>
         <EmojiMartPicker
           // Remount when the custom set changes so new emoji appear immediately.
@@ -100,4 +162,6 @@ export default function EmojiPicker({ onPick, onClose, customEmojis = [], onAddC
       )}
     </div>
   );
+
+  return anchorRef ? createPortal(picker, document.body) : picker;
 }

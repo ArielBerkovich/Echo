@@ -47,6 +47,36 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe("forwarding", () => {
+  test("keeps the note emoji picker inside the viewport", async ({ page }) => {
+    await openForwardDialog(page);
+    const modal = forwardModal(page);
+    await modal.getByTestId("composer-emoji-toggle").click();
+
+    const picker = page.locator("body > .emoji-popup-wrap.is-viewport-positioned");
+    await expect(picker).toBeVisible();
+    const box = await picker.boundingBox();
+    const viewport = page.viewportSize();
+    expect(box).not.toBeNull();
+    expect(viewport).not.toBeNull();
+    expect(box!.y).toBeGreaterThanOrEqual(7);
+    expect(box!.y + box!.height).toBeLessThanOrEqual(viewport!.height - 7);
+  });
+
+  test("inserts an emoji into the forward note and closes the picker", async ({ page }) => {
+    await openForwardDialog(page);
+    const modal = forwardModal(page);
+    const editor = modal.getByTestId("composer-editor");
+    await modal.getByTestId("composer-emoji-toggle").click();
+
+    const picker = page.locator("body > .emoji-popup-wrap.is-viewport-positioned");
+    await expect(picker).toBeVisible();
+    await picker.locator('button[aria-label="😀"]').first().click();
+
+    await expect(picker).toBeHidden();
+    await expect(editor).toContainText("😀");
+    await expect(modal).toBeVisible();
+  });
+
   test("opens the message reaction picker and focuses emoji choices by keyboard", async ({ page }) => {
     await page.goto("/");
     const source = messageById(page, fixture.messages.searchHit.id);

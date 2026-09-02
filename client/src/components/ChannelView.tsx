@@ -1294,6 +1294,7 @@ export default function ChannelView({
                 onPick={(value) => toggleReaction(reactingTo.id, value)}
                 onClose={() => setReactingTo(null)}
                 onExpand={() => setReactingTo((current) => current && { ...current, expanded: true })}
+                expanded={reactingTo.expanded}
                 customEmojis={customEmojis}
                 onAddCustom={() => {
                   setReactingTo(null);
