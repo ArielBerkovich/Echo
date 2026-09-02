@@ -32,14 +32,11 @@ async function withAliceBobPages(browser, fn) {
   const bobPage = await newAuthedPage(browser, bob.token);
 
   try {
-    const aliceSocket = alicePage.page.waitForEvent("websocket", {
-      predicate: (socket) => socket.url().includes("/socket.io/"),
-    });
-    const bobSocket = bobPage.page.waitForEvent("websocket", {
-      predicate: (socket) => socket.url().includes("/socket.io/"),
-    });
     await Promise.all([alicePage.page.goto("/"), bobPage.page.goto("/")]);
-    await Promise.all([aliceSocket, bobSocket]);
+    await Promise.all([
+      expect(alicePage.page.getByTestId("channel-title")).toContainText("general", { timeout: 15_000 }),
+      expect(bobPage.page.getByTestId("channel-title")).toContainText("general", { timeout: 15_000 }),
+    ]);
     await fn({ alicePage, bobPage, alice, bob });
   } finally {
     await alicePage.context.close();
@@ -52,24 +49,11 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("shows presence and typing across sessions", async ({ browser, page }) => {
-  const presenceMessage = await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
-    method: "POST",
-    body: {
-      channelId: fixture.generalChannel.id,
-      body: `Presence check ${Date.now()}`,
-      externalKey: `presence-${slug(String(Date.now()))}`,
-    },
-  });
-
   await withAliceBobPages(browser, async ({ alicePage, bobPage, bob }) => {
-    await channelRow(alicePage.page, "general").click();
-    await messageById(alicePage.page, presenceMessage.message.id).locator(".author-btn").click();
-    await expect(alicePage.page.getByTestId("profile-presence")).toContainText("Active", { timeout: 10_000 });
-    await alicePage.page.getByTestId("profile-close").click();
-
-    await channelRow(bobPage.page, "general").click();
+    await expect(alicePage.page.getByTestId("dm-row-bob-builder").locator(".presence-dot.online")).toBeVisible({ timeout: 15_000 });
 
     const typing = `Typing ${Date.now()}`;
+    await expect(bobPage.page.getByTestId("composer-editor")).toBeVisible({ timeout: 15_000 });
     await bobPage.page.getByTestId("composer-editor").fill(typing);
     await expect(alicePage.page.getByTestId("typing-indicator")).toContainText(
       `${bob.displayName} is typing`
