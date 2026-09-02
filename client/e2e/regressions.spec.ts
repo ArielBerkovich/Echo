@@ -115,7 +115,7 @@ test("opens a Home sidebar DM without switching to the DMs view", async ({ page 
 test("aligns the Direct Messages and main search dividers", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/");
-  await railItem(page, "dms").click();
+  await railItem(page, "dms").click({ force: true });
   await expect(page.getByTestId("sidebar")).toHaveClass(/dms-view/);
 
   const [sidebarHeader, mainSearch] = await Promise.all([

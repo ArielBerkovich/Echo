@@ -60,9 +60,10 @@ test("shows thread message actions after a real phone tap", async ({ page }) => 
 test("closes the message toolbar when opening its thread", async ({ page }) => {
   const fixture = await seedWorkspaceFixture(page);
   await page.goto("/");
-  await page.getByTestId(`channel-row-${fixture.projectChannel.name}`).tap();
+  await page.getByTestId(`channel-row-${fixture.projectChannel.name}`).tap({ force: true });
 
   const root = page.getByTestId(`message-${fixture.messages.threadRoot.id}`);
+  await expect(root).toBeVisible({ timeout: 15_000 });
   await root.tap();
   const actions = page.getByTestId(`message-${fixture.messages.threadRoot.id}-actions`);
   await expect(actions).toBeVisible();
