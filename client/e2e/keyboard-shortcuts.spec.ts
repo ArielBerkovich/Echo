@@ -118,6 +118,7 @@ test.describe("documented keyboard shortcuts", () => {
 
     const pane = page.getByTestId("search-results-pane");
     await expect(pane).toBeFocused();
+    await expect(page.getByTestId("search-result").first()).toBeVisible();
     await pane.press("ArrowDown");
     await pane.press("Enter");
     await expect(page).toHaveURL(
@@ -195,7 +196,8 @@ test.describe("documented keyboard shortcuts", () => {
     await search.press("ArrowDown");
     await search.press("Enter");
 
-    await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
+    await expect(page).toHaveURL(/\/channels\//);
+    await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name, { timeout: 15_000 });
     await tabTo(page.getByTestId("channel-view").getByTestId("composer-editor"));
     const body = `Keyboard-only channel flow ${fixture.suffix}`;
     await page.keyboard.type(body);

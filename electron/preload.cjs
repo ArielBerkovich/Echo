@@ -38,4 +38,7 @@ contextBridge.exposeInMainWorld("echoDesktopAuth", {
   clearToken() {
     return ipcRenderer.invoke("echo:clear-auth-token");
   },
+  startRhssoLogin() {
+    return ipcRenderer.invoke("echo:start-rhsso-login");
+  },
 });

@@ -377,7 +377,13 @@ export default function Login({ onAuthed, initialError = "" }) {
               <button
                 type="button"
                 className="auth-sso auth-sso-primary"
-                onClick={() => window.location.assign(rhssoLoginUrl())}
+                onClick={() => {
+                  if (window.echoDesktopAuth) {
+                    void window.echoDesktopAuth.startRhssoLogin();
+                  } else {
+                    window.location.assign(rhssoLoginUrl());
+                  }
+                }}
               >
                 Sign in with RHSSO
               </button>

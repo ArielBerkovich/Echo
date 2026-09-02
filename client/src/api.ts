@@ -54,6 +54,9 @@ export function getBackendUrl() {
 
 export function rhssoLoginUrl() {
   const origin = typeof window !== "undefined" ? window.location.origin : "";
+  if (typeof window !== "undefined" && window.echoDesktopAuth) {
+    return `${getBackendUrl()}/api/auth/rhsso/login`;
+  }
   const query = origin ? `?origin=${encodeURIComponent(origin)}` : "";
   return `${getBackendUrl()}/api/auth/rhsso/login${query}`;
 }

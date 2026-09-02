@@ -189,7 +189,7 @@ test("selects an emoji from the full reaction picker", async ({ page }) => {
 });
 
 test("keeps long-message actions below the channel header while scrolling", async ({ page }) => {
-  await page.goto("/channels/general");
+  await page.goto(`/channels/general?message=${fixture.messages.formatted.id}`);
   await expect(page.getByTestId("channel-title")).toContainText("general");
 
   const message = messageById(page, fixture.messages.formatted.id);

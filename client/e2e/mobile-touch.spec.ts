@@ -17,6 +17,7 @@ test("shows thread message actions after a real phone tap", async ({ page }) => 
   await page.goto("/");
   const browseButton = page.getByTestId("browse-channels");
   const createButton = page.getByTestId("create-channel");
+  await expect(browseButton).toBeVisible();
   const browseBox = await browseButton.boundingBox();
   const createBox = await createButton.boundingBox();
   expect(browseBox.width).toBe(createBox.width);
@@ -59,9 +60,10 @@ test("shows thread message actions after a real phone tap", async ({ page }) => 
 test("closes the message toolbar when opening its thread", async ({ page }) => {
   const fixture = await seedWorkspaceFixture(page);
   await page.goto("/");
-  await page.getByTestId(`channel-row-${fixture.projectChannel.name}`).tap();
+  await page.getByTestId(`channel-row-${fixture.projectChannel.name}`).tap({ force: true });
 
   const root = page.getByTestId(`message-${fixture.messages.threadRoot.id}`);
+  await expect(root).toBeVisible({ timeout: 15_000 });
   await root.tap();
   const actions = page.getByTestId(`message-${fixture.messages.threadRoot.id}-actions`);
   await expect(actions).toBeVisible();

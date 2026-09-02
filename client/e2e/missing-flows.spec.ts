@@ -134,6 +134,7 @@ test("changes a local user's password and invalidates the old credential", async
   await seedToken(settingsPage, user.token);
   try {
     await settingsPage.goto("/");
+    await expect(settingsPage.getByTestId("channel-title")).toContainText("general");
     await settingsPage.getByTestId("rail-settings").click();
     const form = settingsPage.getByTestId("change-password-form");
     await form.getByTestId("current-password").fill("WrongPassword1");
@@ -167,6 +168,7 @@ test("hides password settings for an SSO-authenticated user", async ({ page }) =
   });
 
   await page.goto("/");
+  await expect(page.getByTestId("channel-title")).toContainText("general");
   await page.getByTestId("rail-settings").click();
   await expect(page.getByTestId("sso-password-settings")).toBeVisible();
   await expect(page.getByTestId("change-password-form")).toHaveCount(0);
@@ -367,6 +369,7 @@ test("saves and unsaves a message entirely through message actions", async ({ pa
   });
   await page.goto("/");
   const message = messageById(page, created.message.id);
+  await expect(message).toBeVisible({ timeout: 15_000 });
   await message.hover();
   await page.getByTestId(/-actions$/).getByTitle("More message actions").click();
   await page.getByRole("menuitem", { name: "Save for later" }).click();
@@ -375,8 +378,11 @@ test("saves and unsaves a message entirely through message actions", async ({ pa
   const saved = page.getByTestId("saved-item").filter({ hasText: body });
   await expect(saved).toBeVisible();
   await saved.click();
-  await expect(messageById(page, created.message.id)).toBeInViewport();
-  await messageById(page, created.message.id).hover();
+  const reopened = messageById(page, created.message.id);
+  await expect(reopened).toBeVisible({ timeout: 15_000 });
+  await reopened.scrollIntoViewIfNeeded();
+  await expect(reopened).toBeInViewport();
+  await reopened.hover();
   await page.getByTestId(/-actions$/).getByTitle("More message actions").click();
   await page.getByRole("menuitem", { name: "Remove from saved" }).click();
   await page.getByTestId("rail-saved").click();
@@ -405,9 +411,11 @@ test("paginates search results, hides inaccessible messages, and surfaces reques
   });
 
   await page.goto("/");
+  await expect(page.getByTestId("channel-title")).toContainText("general");
   await page.getByTestId("search-input").fill(keyword);
   await page.getByTestId("search-input").press("Enter");
-  await expect(page.getByTestId("search-result")).toHaveCount(20);
+  await expect(page).toHaveURL(/\/search\?/);
+  await expect(page.getByTestId("search-result")).toHaveCount(20, { timeout: 20_000 });
   await page.getByTestId("search-load-more").click();
   await expect(page.getByTestId("search-result")).toHaveCount(22);
   await expect(page.getByTestId("search-results")).not.toContainText("must stay private");

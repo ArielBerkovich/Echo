@@ -84,9 +84,12 @@ test("forgot password delivers Echo's one-time-password instructions to the admi
     await issueButton.click();
 
     await expect(notification).toContainText("One-time password issued and posted below");
-    const reply = adminPage.getByTestId(/^message-[a-f0-9]+$/).filter({
-      hasText: `One-time password for @${requestedUser.user.displayName}`,
-    });
+    // The shared admin DM can contain older reset notices with the same
+    // display name. The newly issued OTP is the last matching message.
+    const reply = adminPage
+      .getByTestId(/^message-[a-f0-9]+$/)
+      .filter({ hasText: `One-time password for @${requestedUser.user.displayName}` })
+      .last();
     await expect(reply).toContainText("It expires in 1 hour");
     const replyText = await reply.innerText();
     const otp = replyText.match(/One-time password[^:]*:\s*([A-Za-z0-9]+)/)?.[1];

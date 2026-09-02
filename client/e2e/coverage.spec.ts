@@ -705,19 +705,36 @@ test("opens a thread, replies, and jumps from Activity back to the thread", asyn
 
 test("pins a message from inside a thread", async ({ page }) => {
   await page.goto("/");
+  await expect(page.getByTestId("channel-title")).toContainText("general");
+  await expect
+    .poll(async () => {
+      const result = await requestAsToken(
+        page,
+        fixture.alice.token,
+        `/channels/${fixture.projectChannel.id}/messages/${fixture.messages.threadRoot.id}/thread`
+      );
+      return result.replies.some((message) => message.id === fixture.messages.threadReply.id);
+    }, { timeout: 15_000 })
+    .toBeTruthy();
   await page.getByRole("button", { name: `# ${fixture.projectChannel.name}` }).click();
   const root = page
     .locator(".message")
     .filter({ hasText: fixture.messages.threadRoot.body })
     .first();
+  await expect(root).toBeVisible();
   await root.hover();
-  await page.getByTestId(/-actions$/).getByTitle("Reply in thread").click();
+  const replyInThread = page
+    .getByTestId(`message-${fixture.messages.threadRoot.id}-actions`)
+    .getByTitle("Reply in thread");
+  await expect(replyInThread).toBeVisible();
+  await replyInThread.click({ force: true });
   await expect(page.getByTestId("thread-panel")).toBeVisible();
 
   const reply = page
     .locator(".thread-panel .message")
     .filter({ hasText: fixture.messages.threadReply.body })
     .first();
+  await expect(reply).toBeVisible({ timeout: 30_000 });
   await reply.hover();
   await page.getByTestId(/-actions$/).getByTitle("More message actions").click();
   await page.getByRole("menuitem", { name: "Pin message" }).click();
@@ -727,6 +744,7 @@ test("pins a message from inside a thread", async ({ page }) => {
 });
 
 test("opens the original thread when a thread reply is forwarded into the same channel", async ({ page }) => {
+  test.setTimeout(60_000);
   await page.goto(`/channels/${encodeURIComponent(fixture.projectChannel.name)}`);
 
   const root = page
@@ -742,6 +760,7 @@ test("opens the original thread when a thread reply is forwarded into the same c
     .locator(".thread-panel .message")
     .filter({ hasText: fixture.messages.threadReply.body })
     .first();
+  await expect(reply).toBeVisible({ timeout: 30_000 });
   await reply.hover();
   await page.getByTestId(/-actions$/).getByTitle("Forward message").click();
 

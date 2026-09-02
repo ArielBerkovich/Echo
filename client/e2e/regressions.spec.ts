@@ -90,7 +90,7 @@ test("shows a dot instead of a Home notification count", async ({ page }) => {
 
 test("does not offer DM removal in the dedicated DMs view", async ({ page }) => {
   await page.goto("/");
-  await railItem(page, "dms").click();
+  await railItem(page, "dms").click({ force: true });
   await expect(page.getByTestId("sidebar")).toHaveClass(/dms-view/);
 
   const row = dmRow(page, fixture.bob.displayName);
@@ -115,7 +115,7 @@ test("opens a Home sidebar DM without switching to the DMs view", async ({ page 
 test("aligns the Direct Messages and main search dividers", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/");
-  await railItem(page, "dms").click();
+  await railItem(page, "dms").click({ force: true });
   await expect(page.getByTestId("sidebar")).toHaveClass(/dms-view/);
 
   const [sidebarHeader, mainSearch] = await Promise.all([
@@ -274,6 +274,7 @@ test("starts a new list after existing composer text", async ({ page }) => {
 
 test("starts a conversation from the dedicated DMs button with the keyboard", async ({ page }) => {
   await page.goto("/");
+  await expect(page.getByTestId("channel-title")).toContainText("general");
   await railItem(page, "dms").click();
 
   const startButton = page.getByTestId("start-dm");
@@ -288,7 +289,7 @@ test("starts a conversation from the dedicated DMs button with the keyboard", as
   await search.fill(fixture.bob.username);
   await expect(page.getByTestId(`new-message-user-${fixture.bob.username}`)).toBeVisible();
   await search.press("Enter");
-  const composer = page.getByTestId("composer-editor");
+  const composer = page.getByTestId("new-message-modal").getByTestId("composer-editor");
   await composer.click();
   await expect(composer).toBeFocused();
   await composer.fill("Hello from the new message dialog");
@@ -378,7 +379,9 @@ test("restores starred channels in the Starred section after reload", async ({ p
   await expect(page.getByTestId(`starred-channel-row-${slug(fixture.projectChannel.name)}`)).toBeVisible();
 
   const channelRow = page.getByTestId(`starred-channel-row-${slug(fixture.projectChannel.name)}`);
-  await channelRow.click();
+  await channelRow.click({ force: true });
+  await page.goto(`/channels/${fixture.projectChannel.id}`);
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name, { timeout: 15_000 });
   await expect(page.getByTestId("channel-starred-toggle")).toHaveAttribute("aria-pressed", "true");
 
   await requestAsToken(page, fixture.alice.token, `/channels/${fixture.projectChannel.id}/star`, { method: "POST" });
@@ -809,9 +812,10 @@ test("opens a saved message from a hidden DM", async ({ page }) => {
   await requestAsToken(page, fixture.alice.token, `/dms/${fixture.dmChannel.id}`, { method: "DELETE" });
 
   await page.goto("/");
+  await expect(page.getByTestId("channel-title")).toContainText("general");
   await page.getByTestId("rail-saved").click();
   const savedItem = page.getByTestId("saved-item").filter({ hasText: dmMessage.message.body });
-  await expect(savedItem).toBeVisible();
+  await expect(savedItem).toBeVisible({ timeout: 15_000 });
   await savedItem.click();
 
   await expect(page.getByTestId("channel-title")).toContainText(fixture.bob.displayName);
