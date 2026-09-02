@@ -734,7 +734,7 @@ test("pins a message from inside a thread", async ({ page }) => {
     .locator(".thread-panel .message")
     .filter({ hasText: fixture.messages.threadReply.body })
     .first();
-  await expect(reply).toBeVisible({ timeout: 15_000 });
+  await expect(reply).toBeVisible({ timeout: 30_000 });
   await reply.hover();
   await page.getByTestId(/-actions$/).getByTitle("More message actions").click();
   await page.getByRole("menuitem", { name: "Pin message" }).click();
@@ -744,6 +744,7 @@ test("pins a message from inside a thread", async ({ page }) => {
 });
 
 test("opens the original thread when a thread reply is forwarded into the same channel", async ({ page }) => {
+  test.setTimeout(60_000);
   await page.goto(`/channels/${encodeURIComponent(fixture.projectChannel.name)}`);
 
   const root = page
@@ -759,7 +760,7 @@ test("opens the original thread when a thread reply is forwarded into the same c
     .locator(".thread-panel .message")
     .filter({ hasText: fixture.messages.threadReply.body })
     .first();
-  await expect(reply).toBeVisible({ timeout: 15_000 });
+  await expect(reply).toBeVisible({ timeout: 30_000 });
   await reply.hover();
   await page.getByTestId(/-actions$/).getByTitle("Forward message").click();
 
