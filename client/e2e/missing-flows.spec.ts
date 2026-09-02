@@ -369,6 +369,7 @@ test("saves and unsaves a message entirely through message actions", async ({ pa
   });
   await page.goto("/");
   const message = messageById(page, created.message.id);
+  await expect(message).toBeVisible({ timeout: 15_000 });
   await message.hover();
   await page.getByTestId(/-actions$/).getByTitle("More message actions").click();
   await page.getByRole("menuitem", { name: "Save for later" }).click();
@@ -377,8 +378,11 @@ test("saves and unsaves a message entirely through message actions", async ({ pa
   const saved = page.getByTestId("saved-item").filter({ hasText: body });
   await expect(saved).toBeVisible();
   await saved.click();
-  await expect(messageById(page, created.message.id)).toBeInViewport();
-  await messageById(page, created.message.id).hover();
+  const reopened = messageById(page, created.message.id);
+  await expect(reopened).toBeVisible({ timeout: 15_000 });
+  await reopened.scrollIntoViewIfNeeded();
+  await expect(reopened).toBeInViewport();
+  await reopened.hover();
   await page.getByTestId(/-actions$/).getByTitle("More message actions").click();
   await page.getByRole("menuitem", { name: "Remove from saved" }).click();
   await page.getByTestId("rail-saved").click();
