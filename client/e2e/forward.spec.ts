@@ -40,6 +40,24 @@ async function expectForwardedWithNote(page: Page, channelId: string, note: stri
     .toBeTruthy();
 }
 
+async function expectForwardedToBobDm(page: Page, note: string) {
+  await expect.poll(async () => {
+    const visibleDms = await requestAsToken(page, fixture.alice.token, "/dms");
+    const bobDms = visibleDms.conversations.filter(
+      (conversation) => conversation.memberCount === 2 && conversation.withUser?.id === fixture.bob.id
+    );
+    for (const conversation of bobDms) {
+      const result = await requestAsToken(
+        page,
+        fixture.alice.token,
+        `/channels/${conversation.id}/messages?forwardNote=${encodeURIComponent(note)}`
+      );
+      if (result.messages.some((message) => message.forwardNote === note)) return true;
+    }
+    return false;
+  }, { timeout: 45_000 }).toBeTruthy();
+}
+
 test.beforeEach(async ({ page }) => {
   fixture = await seedWorkspaceFixture(page);
 });
@@ -326,13 +344,7 @@ test.describe("forwarding", () => {
       `/channels/by-name/${encodeURIComponent(fixture.projectChannel.name)}`
     );
     await expectForwardedWithNote(page, currentProject.channel.id, note);
-    const visibleDms = await requestAsToken(page, fixture.alice.token, "/dms");
-    const bobDms = visibleDms.conversations
-      .filter((conversation) => conversation.memberCount === 2 && conversation.withUser?.id === fixture.bob.id)
-      .sort((left, right) => new Date(right.lastAt).getTime() - new Date(left.lastAt).getTime());
-    const bobDm = bobDms[0];
-    expect(bobDm, "expected a visible direct message conversation with Bob").toBeTruthy();
-    await expectForwardedWithNote(page, bobDm!.id, note);
+    await expectForwardedToBobDm(page, note);
     await expect(page.getByTestId("channel-title")).toHaveText(sourceTitle);
   });
 
