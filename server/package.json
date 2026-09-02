@@ -1,6 +1,6 @@
 {
   "name": "echo-server",
-  "version": "0.25.0",
+  "version": "0.35.0",
   "private": true,
   "type": "module",
   "main": "dist/index.js",
