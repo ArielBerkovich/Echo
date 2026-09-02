@@ -12,7 +12,7 @@ function StartConversationButton({ onClick }) {
       className="add-channel start-conversation"
       data-testid="start-dm"
       onClick={onClick}
-      title="New message"
+      title="New message · ⌘/Ctrl+⇧M"
       aria-label="New message"
     >
       <SquarePenIcon size={15} strokeWidth={2} aria-hidden="true" />
@@ -239,12 +239,12 @@ export default function Sidebar({
             aria-label="Browse all channels"
             aria-pressed={browsingChannels}
             aria-controls="channel-browser-pane"
-            title="Browse public channels"
+            title="Browse channels · ⌘/Ctrl+⇧O"
             onClick={onBrowseChannels}
           >
             <CompassIcon size={14} strokeWidth={1.9} aria-hidden="true" />
           </button>
-          <button type="button" className="add-channel" data-testid="create-channel" onClick={onNewChannel} title="Create channel" aria-label="Create channel">
+          <button type="button" className="add-channel" data-testid="create-channel" onClick={onNewChannel} title="Create channel · ⌘/Ctrl+⇧C" aria-label="Create channel">
             <span className="add-channel-mark" aria-hidden="true">
               <span />
               <span />

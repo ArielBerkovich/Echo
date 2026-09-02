@@ -12,10 +12,10 @@ import { useAuthUrl, useAuthUrls } from "../lib/useAuthUrl.js";
 
 const icon = (Icon) => () => <Icon size={22} strokeWidth={2} />;
 const ITEMS = [
-  { key: "home", label: "Home", Icon: icon(HomeIcon) },
-  { key: "dms", label: "DMs", Icon: icon(MessageSquareTextIcon) },
-  { key: "activity", label: "Activity", Icon: icon(ActivityIcon) },
-  { key: "saved", label: "Saved", Icon: icon(BookmarkIcon) },
+  { key: "home", label: "Home", shortcut: "⌘/Ctrl+⇧H", Icon: icon(HomeIcon) },
+  { key: "dms", label: "DMs", shortcut: "⌘/Ctrl+⇧D", Icon: icon(MessageSquareTextIcon) },
+  { key: "activity", label: "Activity", shortcut: "⌘/Ctrl+⇧A", Icon: icon(ActivityIcon) },
+  { key: "saved", label: "Saved", shortcut: "⌘/Ctrl+⇧S", Icon: icon(BookmarkIcon) },
 ];
 
 function railNameFontSize(name) {
@@ -108,7 +108,7 @@ export default function LeftRail({ view, onSelect, badges = {}, user, workspace,
         style={{ "--rail-indicator-offset": indicatorOffset == null ? "0px" : `${indicatorOffset}px` }}
       >
         {activeIndex >= 0 && indicatorOffset != null && <span className="rail-active-indicator" data-testid="rail-active-indicator" aria-hidden="true" />}
-        {ITEMS.map(({ key, label, Icon }) => {
+        {ITEMS.map(({ key, label, shortcut, Icon }) => {
           const count = badges[key] || 0;
           const isLatestReaction = key === "activity" && latestActivity?.kind === "reaction" && latestActivity.unread && latestActivity.emoji;
           const reactionEmoji = isLatestReaction
@@ -125,7 +125,7 @@ export default function LeftRail({ view, onSelect, badges = {}, user, workspace,
               className={`rail-item rail-item-${key} ${view === key ? "active" : ""} ${clicked === key ? "clicked" : ""}`}
               data-testid={`rail-${key}`}
               aria-label={activityStateLabel}
-              title={label}
+              title={`${label} · ${shortcut}`}
               aria-current={view === key ? "page" : undefined}
               ref={(node) => {
                 if (node) itemRefs.current.set(key, node);
@@ -196,7 +196,7 @@ export default function LeftRail({ view, onSelect, badges = {}, user, workspace,
                 pulse("settings");
                 onSelect("settings");
               }}
-              title="Settings"
+              title="Settings · ⌘/Ctrl+,"
               aria-label="Settings"
             >
               <SettingsIcon size={16} strokeWidth={1.8} />

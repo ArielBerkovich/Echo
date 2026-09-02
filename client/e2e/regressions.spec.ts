@@ -295,7 +295,7 @@ test("starts a conversation from the dedicated DMs button with the keyboard", as
 
   const startButton = page.getByTestId("start-dm");
   await expect(startButton).toBeVisible();
-  await expect(startButton).toHaveAttribute("title", "New message");
+  await expect(startButton).toHaveAttribute("title", "New message · ⌘/Ctrl+⇧M");
 
   await startButton.click();
 
