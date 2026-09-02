@@ -30,6 +30,11 @@ td.addRule("listItemParagraph", {
   replacement: (content) => content,
 });
 
+td.addRule("customEmoji", {
+  filter: (node) => node.nodeName === "IMG" && node.getAttribute("data-custom-emoji") === "true",
+  replacement: (_content, node) => node.getAttribute("alt") || "",
+});
+
 export function htmlToMarkdown(html) {
   // Strip zero-width spaces (used as caret anchors inside empty code spans).
   return td.turndown(normalizeCodeBlockBreaks(html)).replace(/​/g, "").trim();

@@ -32,11 +32,15 @@ export default function EmojiPicker({ onPick, onClose, customEmojis = [], onAddC
   const ref = useRef(null);
   const [viewportStyle, setViewportStyle] = useState(null);
   const authUrls = useAuthUrls(customEmojis.map((e) => e.url));
+  const customEmojiByName = useMemo(
+    () => new Map(customEmojis.map((emoji) => [emoji.name, emoji])),
+    [customEmojis]
+  );
 
   useLayoutEffect(() => {
     if (!anchorRef) return undefined;
 
-    const VIEWPORT_PADDING = 8;
+    const VIEWPORT_PADDING = 10;
     const POPOVER_GAP = 8;
     const DESIRED_PICKER_HEIGHT = 390;
     // The optional custom-emoji action sits below the emoji-mart element.
@@ -47,6 +51,8 @@ export default function EmojiPicker({ onPick, onClose, customEmojis = [], onAddC
       if (!anchor) return;
 
       const anchorRect = anchor.getBoundingClientRect();
+      const modal = anchor.closest(".modal");
+      const modalRect = modal?.getBoundingClientRect();
       const composerRect = anchor.closest(".composer")?.getBoundingClientRect() || anchorRect;
       const viewportWidth = document.documentElement.clientWidth;
       const viewportHeight = document.documentElement.clientHeight;
@@ -66,11 +72,16 @@ export default function EmojiPicker({ onPick, onClose, customEmojis = [], onAddC
         availableHeight - FOOTER_HEIGHT
       ));
 
+      const modalPositioned = Boolean(modalRect);
       setViewportStyle({
         width,
-        left,
-        top: placeAbove ? "auto" : belowTop,
-        bottom: placeAbove ? viewportHeight - anchorRect.top + POPOVER_GAP : "auto",
+        left: modalPositioned ? left - modalRect.left : left,
+        top: modalPositioned
+          ? (placeAbove ? "auto" : belowTop - modalRect.top)
+          : (placeAbove ? "auto" : belowTop),
+        bottom: modalPositioned
+          ? (placeAbove ? modalRect.bottom - anchorRect.top + POPOVER_GAP : "auto")
+          : (placeAbove ? viewportHeight - anchorRect.top + POPOVER_GAP : "auto"),
         "--emoji-picker-height": `${pickerHeight}px`,
       });
     }
@@ -130,7 +141,7 @@ export default function EmojiPicker({ onPick, onClose, customEmojis = [], onAddC
 
   const picker = (
     <div
-      className={`emoji-popup-wrap${anchorRef ? " is-viewport-positioned" : ""}`}
+      className={`emoji-popup-wrap${anchorRef ? " is-viewport-positioned" : ""}${anchorRef?.current?.closest(".modal") ? " is-modal-positioned" : ""}`}
       ref={ref}
       style={anchorRef ? (viewportStyle || { visibility: "hidden" }) : undefined}
     >
@@ -144,8 +155,20 @@ export default function EmojiPicker({ onPick, onClose, customEmojis = [], onAddC
           skinTonePosition="search"
           navPosition="top"
           dynamicWidth
-          // Native emoji return `.native`; custom ones return a `:shortcode:`.
-          onEmojiSelect={(emoji) => onPick(emoji.native || `:${emoji.id}:`)}
+          // In a modal, move focus from the composer into emoji-mart's search
+          // input. Keeping the editor focused prevents the picker from
+          // receiving keyboard and scroll interactions through the dialog's
+          // focus boundary.
+          autoFocus={Boolean(anchorRef?.current?.closest(".modal"))}
+          // Native emoji return `.native`. For custom emoji pass the stable
+          // source URL rather than this picker's temporary blob URL; the
+          // composer retains its own authenticated asset reference after this
+          // picker closes.
+          onEmojiSelect={(emoji) => {
+            if (emoji.native) return onPick(emoji.native);
+            const customEmoji = customEmojiByName.get(emoji.id);
+            onPick(customEmoji ? { name: customEmoji.name, url: customEmoji.url } : `:${emoji.id}:`);
+          }}
         />
       </Suspense>
       {onAddCustom && (
@@ -163,5 +186,12 @@ export default function EmojiPicker({ onPick, onClose, customEmojis = [], onAddC
     </div>
   );
 
-  return anchorRef ? createPortal(picker, document.body) : picker;
+  // A picker opened from a modal must stay inside the dialog's DOM subtree.
+  // Radix traps focus in that subtree; portaling directly to body makes the
+  // emoji-mart search input immediately lose focus and also puts its pointer
+  // events behind the dialog's outside-interaction layer. The modal itself is
+  // intentionally left as the positioning container so the picker can still
+  // use viewport coordinates and escape the composer layout.
+  const portalContainer = anchorRef?.current?.closest(".modal") || document.body;
+  return anchorRef ? createPortal(picker, portalContainer) : picker;
 }

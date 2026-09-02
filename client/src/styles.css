@@ -9654,11 +9654,24 @@ html[data-mode="dark"] .new-messages-button:hover {
 .emoji-popup-wrap.is-viewport-positioned {
   position: fixed;
   right: auto;
-  z-index: 120;
+  /* This is a body portal. Keep it above every chat-view overlay, including
+     floating message action controls and their menus. */
+  z-index: 10001;
   box-sizing: border-box;
   /* Radix modal dialogs disable pointer events outside their content. This
      picker is intentionally portaled outside to avoid overflow clipping. */
   pointer-events: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+.emoji-popup-wrap.is-modal-positioned {
+  position: absolute;
+}
+/* Modal-hosted pickers are portaled into the dialog so Radix's focus trap and
+   outside-interaction handling continue to include the picker. */
+.modal:has(> .emoji-popup-wrap) {
+  position: relative;
+  overflow: visible;
 }
 .emoji-popup-wrap em-emoji-picker {
   width: min(352px, calc(100vw - 16px));
@@ -9668,6 +9681,8 @@ html[data-mode="dark"] .new-messages-button:hover {
   --rgb-input: 248, 250, 252;
   --rgb-color: 15, 31, 58;
   --rgb-accent: 37, 99, 235;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
 }
 .emoji-popup-wrap.is-viewport-positioned em-emoji-picker {
   width: 100%;

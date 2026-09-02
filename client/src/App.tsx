@@ -1557,7 +1557,7 @@ export default function App() {
         user={user}
         users={users}
         activeChannel={activeChannel}
-        customEmojis={customEmojis}
+        customEmojis={emojis}
         onlineIds={onlineIds}
         starredIds={starredIds}
         theme={theme}

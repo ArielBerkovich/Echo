@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
+import { Node } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import { api } from "../api.js";
@@ -10,7 +11,7 @@ import { formatSize } from "../lib/format.js";
 import { formatDateTime } from "../lib/time.js";
 import { readString, writeString } from "../lib/storage.js";
 import { useAttachments } from "../lib/useAttachments.js";
-import { useAuthUrl } from "../lib/useAuthUrl.js";
+import { useAuthUrl, useAuthUrls } from "../lib/useAuthUrl.js";
 import { buildQuoteMarkdown } from "../lib/quote.js";
 import {
   LARGE_PASTE_CHARACTERS,
@@ -68,10 +69,40 @@ function formatScheduleTime(date) {
   });
 }
 
+const CustomEmoji = Node.create({
+  name: "customEmoji",
+  inline: true,
+  group: "inline",
+  atom: true,
+  selectable: false,
+  addAttributes() {
+    return {
+      name: { default: "" },
+      src: { default: "" },
+    };
+  },
+  parseHTML() {
+    return [{ tag: 'img[data-custom-emoji="true"]' }];
+  },
+  renderHTML({ node }) {
+    return ["img", {
+      class: "custom-emoji",
+      "data-custom-emoji": "true",
+      src: node.attrs.src,
+      alt: `:${node.attrs.name}:`,
+      draggable: "false",
+    }];
+  },
+});
+
 // Rich-text message composer: @mention autocomplete, a formatting toolbar,
 // emoji, and file attachments. Owns all of its own editor state — mount it with
 // a `key={channel.id}` so switching channels yields a fresh, empty composer.
 const Composer = forwardRef(function Composer({ channel, sendChannel = null, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, onSend, sendDisabled = false, allowEmptySend = false, sendAriaLabel, sendTitle, sendTestId, onDraftChange, onEditSave, onEditCancel, editing = null, placeholder: customPlaceholder, mode = "light", captureScreenDrops = false, showSchedule = true, showSend = true, showAttachments = true, disabled = false }, ref) {
+  // Keep custom-emoji blob URLs alive for the full composer lifetime. The
+  // picker unmounts immediately after a selection, so its URLs cannot safely
+  // be used by an emoji node inserted into this editor.
+  const customEmojiUrls = useAuthUrls(customEmojis.map((emoji) => emoji.url));
   const isThread = !!parentId; // a thread reply composer (hides channel-level scheduling)
   const [mention, setMention] = useState(null); // { trigger, query, from, to } or null
   const [activeIdx, setActiveIdx] = useState(0);
@@ -159,6 +190,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     editable: !disabled,
     extensions: [
       StarterKit.configure({ heading: { levels: [1, 2, 3] }, trailingNode: false }),
+      CustomEmoji,
       Placeholder.configure({ placeholder }),
     ],
     editorProps: {
@@ -427,7 +459,13 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
 
   // Insert at the saved caret and dismiss the picker after one selection.
   function insertEmoji(emoji) {
-    editor?.chain().focus().insertContent(emoji).run();
+    const customEmojiSrc = typeof emoji === "object" ? customEmojiUrls.get(emoji.url) : null;
+    const content = typeof emoji === "string"
+      ? emoji
+      : customEmojiSrc
+        ? { type: "customEmoji", attrs: { name: emoji.name, src: customEmojiSrc } }
+        : `:${emoji?.name || ""}:`;
+    if (content) editor?.chain().focus().insertContent(content).run();
     setEmojiOpen(false);
   }
 
