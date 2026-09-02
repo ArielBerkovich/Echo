@@ -88,6 +88,7 @@ const SearchBox = forwardRef(function SearchBox(
   const wrapRef = useRef(null);
   const inputRef = useRef(null);
   const highlightRef = useRef(null);
+  const navItemRefs = useRef([]);
 
   const memberOf = useMemo(
     () => (myChannelIds instanceof Set ? myChannelIds : new Set(myChannelIds || [])),
@@ -280,6 +281,10 @@ const SearchBox = forwardRef(function SearchBox(
     setActiveIdx((i) => (i < navItems.length ? i : 0));
   }, [navItems.length]);
 
+  useEffect(() => {
+    navItemRefs.current[activeIdx]?.scrollIntoView({ block: "nearest" });
+  }, [activeIdx, navItems.length]);
+
   function close() {
     setOpen(false);
     setQuery("");
@@ -387,6 +392,7 @@ const SearchBox = forwardRef(function SearchBox(
     return (
       <button
         key={`${kind}-${c.id}`}
+        ref={(element) => { navItemRefs.current[idx] = element; }}
         className={`search-row ${idx === activeIdx ? "active" : ""}`}
         data-testid={`search-channel-${slug(c.name)}`}
         onMouseEnter={() => setActiveIdx(idx)}
@@ -409,6 +415,7 @@ const SearchBox = forwardRef(function SearchBox(
   const personRow = (u, idx, kind) => (
     <button
       key={`${kind}-${u.id}`}
+      ref={(element) => { navItemRefs.current[idx] = element; }}
       className={`search-row ${idx === activeIdx ? "active" : ""}`}
       data-testid={`search-user-${slug(u.username)}`}
       onMouseEnter={() => setActiveIdx(idx)}
@@ -480,6 +487,7 @@ const SearchBox = forwardRef(function SearchBox(
                 ) : filter.type === "has" ? (
                 <button
                   key={item.key}
+                  ref={(element) => { navItemRefs.current[idx] = element; }}
                   className={`search-row ${idx === activeIdx ? "active" : ""}`}
                   data-testid={`search-has-${item.key}`}
                   onMouseEnter={() => setActiveIdx(idx)}
@@ -508,6 +516,7 @@ const SearchBox = forwardRef(function SearchBox(
                       <div className="search-section">Actions</div>
                       <button
                         type="button"
+                        ref={(element) => { navItemRefs.current[0] = element; }}
                         className={`search-row search-action-row ${activeIdx === 0 ? "active" : ""}`}
                         data-testid="search-add-people"
                         onMouseEnter={() => setActiveIdx(0)}
@@ -528,6 +537,7 @@ const SearchBox = forwardRef(function SearchBox(
                       : (
                           <button
                             key={`recent-${r.id}`}
+                            ref={(element) => { navItemRefs.current[idx + (addPeopleChannel ? 1 : 0)] = element; }}
                             className={`search-row ${idx + (addPeopleChannel ? 1 : 0) === activeIdx ? "active" : ""}`}
                             data-testid={`search-user-${slug(r.displayName)}`}
                             onMouseEnter={() => setActiveIdx(idx + (addPeopleChannel ? 1 : 0))}
@@ -549,6 +559,7 @@ const SearchBox = forwardRef(function SearchBox(
 
               {q && !peoplePicker && (
                 <button
+                  ref={(element) => { navItemRefs.current[0] = element; }}
                   className={`search-row search-messages-row ${activeIdx === 0 ? "active" : ""}`}
                   data-testid="search-messages-row"
                   onMouseEnter={() => setActiveIdx(0)}
