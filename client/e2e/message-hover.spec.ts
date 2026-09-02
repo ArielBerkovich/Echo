@@ -110,6 +110,84 @@ test("shows the intended quick reaction shortcuts", async ({ page }) => {
   await expect(picker.getByRole("button", { name: "React with 😂" })).toHaveCount(0);
 });
 
+test("returns to compact reactions when the reaction button is clicked again", async ({ page }) => {
+  const { id, message } = await openFreshMessage(
+    page,
+    "reaction-picker-reopen",
+    `Reopen reaction picker ${fixture.suffix}`
+  );
+  await message.hover();
+  const addReaction = page.getByTestId(`message-${id}-add-reaction-action`);
+  await addReaction.click();
+
+  const quickPicker = page.getByRole("dialog", { name: "Choose a reaction" });
+  await quickPicker.getByRole("button", { name: /More emojis/ }).click();
+  const fullPicker = page.locator(".reaction-picker-full");
+  await expect(fullPicker).toBeVisible();
+  const fullBox = await fullPicker.boundingBox();
+  const viewport = page.viewportSize();
+  expect(fullBox).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect(fullBox!.x).toBeGreaterThanOrEqual(7);
+  expect(fullBox!.x + fullBox!.width).toBeLessThanOrEqual(viewport!.width - 7);
+  expect(fullBox!.y).toBeGreaterThanOrEqual(7);
+  expect(fullBox!.y + fullBox!.height).toBeLessThanOrEqual(viewport!.height - 7);
+
+  await addReaction.click();
+  await expect(fullPicker).toBeHidden();
+  await expect(quickPicker).toBeVisible();
+  await expect(quickPicker.getByRole("button", { name: "React with thumbs up" })).toBeVisible();
+});
+
+test("switches from full reactions to one composer picker anchored by its button", async ({ page }) => {
+  const { id, message } = await openFreshMessage(
+    page,
+    "reaction-to-composer-picker",
+    `Switch emoji picker ${fixture.suffix}`
+  );
+  await message.hover();
+  await page.getByTestId(`message-${id}-add-reaction-action`).click();
+  await page.getByRole("dialog", { name: "Choose a reaction" })
+    .getByRole("button", { name: /More emojis/ })
+    .click();
+  await expect(page.locator(".reaction-picker-full")).toBeVisible();
+
+  const composerToggle = page.getByTestId("composer-emoji-toggle");
+  await composerToggle.click();
+  const composerPicker = page.locator("body > .emoji-popup-wrap.is-viewport-positioned");
+  await expect(page.locator(".reaction-picker-full")).toBeHidden();
+  await expect(composerPicker).toBeVisible();
+  await expect(page.locator(".emoji-popup-wrap")).toHaveCount(1);
+  await page.waitForTimeout(200);
+
+  const pickerBox = await composerPicker.boundingBox();
+  const toggleBox = await composerToggle.boundingBox();
+  expect(pickerBox).not.toBeNull();
+  expect(toggleBox).not.toBeNull();
+  expect(toggleBox!.y - (pickerBox!.y + pickerBox!.height)).toBeGreaterThanOrEqual(7);
+  expect(toggleBox!.y - (pickerBox!.y + pickerBox!.height)).toBeLessThanOrEqual(9);
+});
+
+test("selects an emoji from the full reaction picker", async ({ page }) => {
+  const { id, message } = await openFreshMessage(
+    page,
+    "full-reaction-selection",
+    `Full reaction selection ${fixture.suffix}`
+  );
+  await message.hover();
+  await page.getByTestId(`message-${id}-add-reaction-action`).click();
+  await page.getByRole("dialog", { name: "Choose a reaction" })
+    .getByRole("button", { name: /More emojis/ })
+    .click();
+
+  const fullPicker = page.locator(".reaction-picker-full");
+  await expect(fullPicker).toBeVisible();
+  await fullPicker.locator('button[aria-label="😀"]').first().click();
+
+  await expect(fullPicker).toBeHidden();
+  await expect(message.locator(".reaction-emoji")).toContainText("😀");
+});
+
 test("keeps long-message actions below the channel header while scrolling", async ({ page }) => {
   await page.goto("/channels/general");
   await expect(page.getByTestId("channel-title")).toContainText("general");

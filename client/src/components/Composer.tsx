@@ -88,6 +88,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   const [editingSched, setEditingSched] = useState(null); // { id, body, at } being edited
   const [surveyDraft, setSurveyDraft] = useState(null);
   const surveyOptionsListRef = useRef(null);
+  const emojiToggleRef = useRef(null);
   const [pastePrompt, setPastePrompt] = useState(null); // { text, byteLength, tooLong, tooLarge }
   const [pasteBlockedNotice, setPasteBlockedNotice] = useState(null);
   const [editorState, setEditorState] = useState({
@@ -424,9 +425,10 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     setLinkDraft(null);
   }
 
-  // Insert at the saved caret; keep the picker open for picking several.
+  // Insert at the saved caret and dismiss the picker after one selection.
   function insertEmoji(emoji) {
     editor?.chain().focus().insertContent(emoji).run();
+    setEmojiOpen(false);
   }
 
   function handleKeyDown(e) {
@@ -1066,6 +1068,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
           onClose={() => setEmojiOpen(false)}
           customEmojis={customEmojis}
           mode={mode}
+          anchorRef={emojiToggleRef}
           onAddCustom={() => {
             setEmojiOpen(false);
             onAddCustomEmoji?.();
@@ -1167,7 +1170,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
           >
             Aa
           </button>
-          <button type="button" className={`icon-btn emoji-toggle ${emojiOpen ? "active" : ""}`} data-testid="composer-emoji-toggle" title="Emoji" onMouseDown={keepFocus} onClick={() => setEmojiOpen((v) => !v)}>
+          <button ref={emojiToggleRef} type="button" className={`icon-btn emoji-toggle ${emojiOpen ? "active" : ""}`} data-testid="composer-emoji-toggle" title="Emoji" onMouseDown={keepFocus} onClick={() => setEmojiOpen((v) => !v)}>
             <SmileyIcon />
           </button>
         </div>

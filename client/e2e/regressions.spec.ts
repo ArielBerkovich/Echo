@@ -215,6 +215,22 @@ test("activates the Composer after selecting a new message recipient", async ({ 
   await expect(modal.getByTestId("composer-send-options")).toHaveCount(0);
 });
 
+test("keeps the new-message emoji picker inside the viewport", async ({ page }) => {
+  await page.goto("/");
+  await page.getByTestId("start-dm").click();
+  const modal = page.getByTestId("new-message-modal");
+  await modal.getByTestId("composer-emoji-toggle").click();
+
+  const picker = page.locator("body > .emoji-popup-wrap.is-viewport-positioned");
+  await expect(picker).toBeVisible();
+  const box = await picker.boundingBox();
+  const viewport = page.viewportSize();
+  expect(box).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect(box!.y).toBeGreaterThanOrEqual(7);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(viewport!.height - 7);
+});
+
 test("keeps the new-message draft while changing the recipient chip", async ({ page }) => {
   await page.goto("/");
   await page.getByTestId("start-dm").click();

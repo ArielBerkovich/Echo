@@ -38,6 +38,14 @@ export default function Modal({
             aria-describedby={undefined}
             onEscapeKeyDown={(event) => closeDisabled && event.preventDefault()}
             onPointerDownOutside={(event) => {
+              const target = event.detail?.originalEvent?.target;
+              // Composer emoji pickers are portaled to the document so they
+              // can escape a modal's overflow clipping. Treat that portal as
+              // part of the dialog instead of dismissing/blocking its click.
+              if (target instanceof Element && target.closest(".emoji-popup-wrap")) {
+                event.preventDefault();
+                return;
+              }
               if (closeDisabled) event.preventDefault();
               onPointerDownOutside?.(event);
             }}

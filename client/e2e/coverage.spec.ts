@@ -672,6 +672,19 @@ test("closes the emoji picker when typing in the composer", async ({ page }) => 
   await expect(composer).toHaveText("x");
 });
 
+test("closes the composer emoji picker after selecting an emoji", async ({ page }) => {
+  await page.goto("/");
+  const composer = page.getByTestId("composer-editor");
+  await page.getByRole("button", { name: "Emoji", exact: true }).click();
+  const picker = page.locator(".emoji-popup-wrap");
+  await expect(picker).toBeVisible();
+
+  await picker.locator('button[aria-label="😀"]').first().click();
+
+  await expect(picker).toBeHidden();
+  await expect(composer).toContainText("😀");
+});
+
 test("opens a thread, replies, and jumps from Activity back to the thread", async ({ page }) => {
   await page.goto("/");
   const composer = page.getByTestId("composer-editor");

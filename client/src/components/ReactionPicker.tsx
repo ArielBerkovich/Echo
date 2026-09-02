@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import EmojiPicker from "./EmojiPicker.js";
 import { BUILT_IN_GIT_EMOJIS } from "../lib/gitEmojis.js";
 
@@ -28,8 +28,7 @@ function ReactionGlyph({ value }) {
 
 // A compact reaction menu that keeps the common choices close to the message.
 // The full emoji picker remains available for less common reactions.
-export default function ReactionPicker({ onPick, onClose, onExpand, customEmojis = [], onAddCustom, mode = "light" }) {
-  const [showAll, setShowAll] = useState(false);
+export default function ReactionPicker({ onPick, onClose, onExpand, expanded = false, customEmojis = [], onAddCustom, mode = "light" }) {
   const ref = useRef(null);
 
   useEffect(() => {
@@ -45,12 +44,14 @@ export default function ReactionPicker({ onPick, onClose, onExpand, customEmojis
       window.clearTimeout(focusTimer);
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [onClose, showAll]);
+  }, [onClose, expanded]);
 
   useEffect(() => {
     function onDown(e) {
       if (ref.current?.contains(e.target)) return;
-      if (e.target.closest?.(".emoji-toggle, .react-toggle")) return;
+      // Let another reaction trigger reposition/reset this picker, but close it
+      // when the composer emoji trigger is opening its own picker.
+      if (e.target.closest?.(".react-toggle")) return;
       onClose();
     }
     document.addEventListener("mousedown", onDown);
@@ -58,11 +59,10 @@ export default function ReactionPicker({ onPick, onClose, onExpand, customEmojis
   }, [onClose]);
 
   function showFullPicker() {
-    setShowAll(true);
     onExpand?.();
   }
 
-  if (showAll) {
+  if (expanded) {
     return (
       <div className="reaction-picker-full" ref={ref}>
         <EmojiPicker
