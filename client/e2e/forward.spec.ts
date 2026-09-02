@@ -334,7 +334,12 @@ test.describe("forwarding", () => {
     await send.click();
     await expect(modal).toBeHidden();
 
-    await expectForwardedWithNote(page, fixture.projectChannel.id, note);
+    const currentProject = await requestAsToken(
+      page,
+      fixture.alice.token,
+      `/channels/by-name/${encodeURIComponent(fixture.projectChannel.name)}`
+    );
+    await expectForwardedWithNote(page, currentProject.channel.id, note);
     const visibleDms = await requestAsToken(page, fixture.alice.token, "/dms");
     const bobDms = visibleDms.conversations
       .filter((conversation) => conversation.memberCount === 2 && conversation.withUser?.id === fixture.bob.id)

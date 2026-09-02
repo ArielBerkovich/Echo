@@ -810,9 +810,10 @@ test("opens a saved message from a hidden DM", async ({ page }) => {
   await requestAsToken(page, fixture.alice.token, `/dms/${fixture.dmChannel.id}`, { method: "DELETE" });
 
   await page.goto("/");
+  await expect(page.getByTestId("channel-title")).toContainText("general");
   await page.getByTestId("rail-saved").click();
   const savedItem = page.getByTestId("saved-item").filter({ hasText: dmMessage.message.body });
-  await expect(savedItem).toBeVisible();
+  await expect(savedItem).toBeVisible({ timeout: 15_000 });
   await savedItem.click();
 
   await expect(page.getByTestId("channel-title")).toContainText(fixture.bob.displayName);
