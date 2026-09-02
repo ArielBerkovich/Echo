@@ -237,8 +237,9 @@ test("keeps the new-message emoji picker inside the viewport", async ({ page }) 
   const modal = page.getByTestId("new-message-modal");
   await modal.getByTestId("composer-emoji-toggle").click();
 
-  const picker = page.locator("body > .emoji-popup-wrap.is-viewport-positioned");
+  const picker = page.locator(".emoji-popup-wrap.is-viewport-positioned");
   await expect(picker).toBeVisible();
+  await expect(picker.locator('input[type="search"]')).toBeFocused();
   const box = await picker.boundingBox();
   const viewport = page.viewportSize();
   expect(box).not.toBeNull();

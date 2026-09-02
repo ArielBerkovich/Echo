@@ -66,7 +66,9 @@ export default function ReactionPicker({ onPick, onClose, onExpand, expanded = f
     return (
       <div className="reaction-picker-full" ref={ref}>
         <EmojiPicker
-          onPick={onPick}
+          // Reactions are stored as native emoji or `:shortcode:` strings;
+          // unlike a composer, they do not render an inline editor node.
+          onPick={(value) => onPick(typeof value === "string" ? value : `:${value.name}:`)}
           onClose={onClose}
           customEmojis={customEmojis}
           onAddCustom={onAddCustom}
