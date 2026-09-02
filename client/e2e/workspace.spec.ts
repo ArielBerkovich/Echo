@@ -242,6 +242,7 @@ test("browses, filters, and joins public channels while private channels stay in
   expect(Array.isArray(legacyCatalog.channels.find((channel) => channel.name === publicName)?.members)).toBe(true);
 
   await page.goto("/");
+  await expect(page.getByTestId("channel-title")).toContainText("general");
   await page.getByTestId("browse-channels").click();
 
   await expect(page.getByTestId("channel-browser")).toBeVisible();
@@ -720,6 +721,7 @@ test("shows activity items and marks activity as read", async ({ page }) => {
   const activityRail = railItem(page, "activity");
   await expect(activityRail).toBeVisible();
   await activityRail.click();
+  await expect(page).toHaveURL(/\/activity(?:$|\?)/);
 
   await expect(page.getByTestId("activity-header")).toContainText("Activity", { timeout: 15_000 });
   const activityItem = page.getByTestId("activity-item").first();
@@ -942,6 +944,7 @@ test("searches messages with filters and displays results", async ({ page }) => 
   });
 
   await page.goto("/");
+  await expect(page.getByTestId("channel-title")).toContainText("general");
   const searchInput = page.getByTestId("search-input");
   await searchInput.fill(`Welcome in:general from:@${fixture.alice.username} has:link`);
   // Put the caret outside the filter token so Enter submits the complete
@@ -949,6 +952,7 @@ test("searches messages with filters and displays results", async ({ page }) => 
   await searchInput.press("Home");
   await searchInput.press("Enter");
 
+  await expect(page).toHaveURL(/\/search\?/);
   await expect(page.getByTestId("search-results-header")).toContainText("Search");
   await expect(page.locator(".search-chip-from")).toContainText(`@${fixture.alice.username}`);
   await expect(page.getByText("in: #general")).toBeVisible();

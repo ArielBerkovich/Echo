@@ -118,6 +118,7 @@ test.describe("documented keyboard shortcuts", () => {
 
     const pane = page.getByTestId("search-results-pane");
     await expect(pane).toBeFocused();
+    await expect(page.getByTestId("search-result").first()).toBeVisible();
     await pane.press("ArrowDown");
     await pane.press("Enter");
     await expect(page).toHaveURL(

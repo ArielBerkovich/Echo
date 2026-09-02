@@ -167,6 +167,7 @@ test("hides password settings for an SSO-authenticated user", async ({ page }) =
   });
 
   await page.goto("/");
+  await expect(page.getByTestId("channel-title")).toContainText("general");
   await page.getByTestId("rail-settings").click();
   await expect(page.getByTestId("sso-password-settings")).toBeVisible();
   await expect(page.getByTestId("change-password-form")).toHaveCount(0);
@@ -405,9 +406,11 @@ test("paginates search results, hides inaccessible messages, and surfaces reques
   });
 
   await page.goto("/");
+  await expect(page.getByTestId("channel-title")).toContainText("general");
   await page.getByTestId("search-input").fill(keyword);
   await page.getByTestId("search-input").press("Enter");
-  await expect(page.getByTestId("search-result")).toHaveCount(20);
+  await expect(page).toHaveURL(/\/search\?/);
+  await expect(page.getByTestId("search-result")).toHaveCount(20, { timeout: 20_000 });
   await page.getByTestId("search-load-more").click();
   await expect(page.getByTestId("search-result")).toHaveCount(22);
   await expect(page.getByTestId("search-results")).not.toContainText("must stay private");

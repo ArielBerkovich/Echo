@@ -17,6 +17,7 @@ test("shows thread message actions after a real phone tap", async ({ page }) => 
   await page.goto("/");
   const browseButton = page.getByTestId("browse-channels");
   const createButton = page.getByTestId("create-channel");
+  await expect(browseButton).toBeVisible();
   const browseBox = await browseButton.boundingBox();
   const createBox = await createButton.boundingBox();
   expect(browseBox.width).toBe(createBox.width);

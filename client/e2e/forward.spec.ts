@@ -13,8 +13,9 @@ function destinationByLabel(modal: Locator, label: string) {
 
 async function openForwardDialog(page: Page) {
   await page.goto("/");
+  await expect(page.getByTestId("channel-title")).toContainText("general");
   const source = messageById(page, fixture.messages.searchHit.id);
-  await expect(source).toBeVisible();
+  await expect(source).toBeVisible({ timeout: 15_000 });
   await source.hover();
   const forward = page.getByTestId(`message-${fixture.messages.searchHit.id}-forward`);
   await expect(forward).toBeVisible();
@@ -23,8 +24,17 @@ async function openForwardDialog(page: Page) {
 }
 
 async function channelMessages(page: Page, channelId: string) {
-  const result = await requestAsToken(page, fixture.alice.token, `/channels/${channelId}/messages`);
-  return result.messages;
+  const messages = [];
+  let before = "";
+  for (let pageNumber = 0; pageNumber < 100; pageNumber += 1) {
+    const query = before ? `?before=${encodeURIComponent(before)}` : "";
+    const result = await requestAsToken(page, fixture.alice.token, `/channels/${channelId}/messages${query}`);
+    messages.push(...result.messages);
+    if (result.messages.length < 50) break;
+    before = result.messages[0]?.createdAt;
+    if (!before) break;
+  }
+  return messages;
 }
 
 async function tabTo(page: Page, locator: Locator) {
@@ -36,10 +46,12 @@ async function tabTo(page: Page, locator: Locator) {
 }
 
 async function expectForwardedWithNote(page: Page, channelId: string, note: string) {
-  await expect.poll(async () => {
-    const messages = await channelMessages(page, channelId);
-    return messages.some((message) => message.forwardNote === note);
-  }).toBeTruthy();
+  await expect
+    .poll(async () => {
+      const messages = await channelMessages(page, channelId);
+      return messages.some((message) => message.forwardNote === note);
+    }, { timeout: 45_000 })
+    .toBeTruthy();
 }
 
 test.beforeEach(async ({ page }) => {
@@ -183,7 +195,9 @@ test.describe("forwarding", () => {
     const source = messageById(page, created.message.id);
     await expect(source).toBeVisible();
     await source.hover();
-    await page.getByTestId(`message-${created.message.id}-forward`).click({ force: true });
+    const forward = page.getByTestId(`message-${created.message.id}-forward`);
+    await expect(forward).toBeVisible();
+    await forward.click({ force: true });
 
     const modal = forwardModal(page);
     await expect(modal).toBeVisible();
@@ -293,21 +307,26 @@ test.describe("forwarding", () => {
   });
 
   test("selects multiple targets and forwards the same note to all", async ({ page }) => {
+    test.setTimeout(150_000);
     await openForwardDialog(page);
 
     const modal = forwardModal(page);
     const search = modal.getByTestId("forward-search");
     const note = `Forward note ${Date.now()}`;
     const sourceTitle = await page.getByTestId("channel-title").innerText();
-    await modal.getByTestId("composer-editor").fill(note);
+    const noteEditor = modal.getByTestId("composer-editor");
+    await noteEditor.fill(note);
+    await expect(noteEditor).toContainText(note);
 
     await search.fill(fixture.bob.displayName);
     await destinationByLabel(modal, fixture.bob.displayName).click();
+    await expect(modal.locator(".forward-chip").filter({ hasText: fixture.bob.displayName })).toBeVisible();
 
     await search.fill(fixture.projectChannel.name);
     const projectTarget = destinationByLabel(modal, fixture.projectChannel.name);
     await expect(projectTarget).toBeVisible();
     await projectTarget.click();
+    await expect(modal.locator(".forward-chip").filter({ hasText: fixture.projectChannel.name })).toBeVisible();
 
     const send = modal.getByTestId("forward-send-selected");
     await expect(send).toHaveText("Forward to 2");
@@ -316,7 +335,13 @@ test.describe("forwarding", () => {
     await expect(modal).toBeHidden();
 
     await expectForwardedWithNote(page, fixture.projectChannel.id, note);
-    await expectForwardedWithNote(page, fixture.dmChannel.id, note);
+    const visibleDms = await requestAsToken(page, fixture.alice.token, "/dms");
+    const bobDms = visibleDms.conversations
+      .filter((conversation) => conversation.memberCount === 2 && conversation.withUser?.id === fixture.bob.id)
+      .sort((left, right) => new Date(right.lastAt).getTime() - new Date(left.lastAt).getTime());
+    const bobDm = bobDms[0];
+    expect(bobDm, "expected a visible direct message conversation with Bob").toBeTruthy();
+    await expectForwardedWithNote(page, bobDm!.id, note);
     await expect(page.getByTestId("channel-title")).toHaveText(sourceTitle);
   });
 

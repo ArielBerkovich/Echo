@@ -269,6 +269,7 @@ test("shows and permanently dismisses every supported Activity kind", async ({ b
     }).toEqual([...expectedKinds].sort());
 
     await page.goto("/");
+    await expect(page.getByTestId("channel-title")).toContainText("general");
     await expect(page.getByTestId("rail-activity")).toBeVisible();
     await page.getByTestId("rail-activity").click();
     await expect(page).toHaveURL(/\/activity$/);

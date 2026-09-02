@@ -274,6 +274,7 @@ test("starts a new list after existing composer text", async ({ page }) => {
 
 test("starts a conversation from the dedicated DMs button with the keyboard", async ({ page }) => {
   await page.goto("/");
+  await expect(page.getByTestId("channel-title")).toContainText("general");
   await railItem(page, "dms").click();
 
   const startButton = page.getByTestId("start-dm");
@@ -288,7 +289,7 @@ test("starts a conversation from the dedicated DMs button with the keyboard", as
   await search.fill(fixture.bob.username);
   await expect(page.getByTestId(`new-message-user-${fixture.bob.username}`)).toBeVisible();
   await search.press("Enter");
-  const composer = page.getByTestId("composer-editor");
+  const composer = page.getByTestId("new-message-modal").getByTestId("composer-editor");
   await composer.click();
   await expect(composer).toBeFocused();
   await composer.fill("Hello from the new message dialog");
