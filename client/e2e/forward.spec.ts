@@ -34,8 +34,8 @@ async function tabTo(page: Page, locator: Locator) {
 async function expectForwardedWithNote(page: Page, channelId: string, note: string) {
   await expect
     .poll(async () => {
-      const result = await requestAsToken(page, fixture.alice.token, `/search/messages?q=${encodeURIComponent(fixture.messages.searchHit.body.split(" ").find((term) => term.startsWith("only-token-")) || fixture.messages.searchHit.body)}`);
-      return result.results.some((message) => message.channelId === channelId && message.forwardNote === note);
+      const result = await requestAsToken(page, fixture.alice.token, `/channels/${channelId}/messages?forwardNote=${encodeURIComponent(note)}`);
+      return result.messages.some((message) => message.forwardNote === note);
     }, { timeout: 45_000 })
     .toBeTruthy();
 }

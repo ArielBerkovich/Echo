@@ -701,6 +701,7 @@ channelsRouter.get("/:id/messages", async (req, res) => {
   }
 
   const base = { channel: channel._id, parentId: null }; // top-level only
+  if (req.query.forwardNote) base.forwardNote = String(req.query.forwardNote);
 
   // `docs` is built newest-first here; the mapping below reverses it to
   // chronological order (oldest at top) for rendering.

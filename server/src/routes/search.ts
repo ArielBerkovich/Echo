@@ -118,7 +118,6 @@ searchRouter.get("/messages", async (req, res) => {
       parentId: m.parentId ? m.parentId.toString() : null,
       author: m.author?.toPublicJSON?.() || null,
       body: m.body,
-      forwardNote: m.forwardNote || "",
       createdAt: m.createdAt,
     };
   });
