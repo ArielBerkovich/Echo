@@ -70,6 +70,9 @@ function Message({
   canQuote = false,
 }) {
   const isMine = m.author?.id === currentUserId;
+  // A forward is an immutable snapshot of the source message. Its sender may
+  // delete their copy, but must not be able to alter the forwarded content.
+  const canEdit = isMine && !m.forwardedFrom;
   const actionsVisible = showActions;
   const [copied, setCopied] = useState(false);
   const [issuingPassword, setIssuingPassword] = useState(false);
@@ -737,9 +740,11 @@ function Message({
             )}
             {isMine && (
               <>
-                <button type="button" role="menuitem" data-testid={`message-${mid}-edit`} onClick={() => { onStartEdit(); onCloseMenu(); }}>
-                  <PencilIcon /> Edit message
-                </button>
+                {canEdit && (
+                  <button type="button" role="menuitem" data-testid={`message-${mid}-edit`} onClick={() => { onStartEdit(); onCloseMenu(); }}>
+                    <PencilIcon /> Edit message
+                  </button>
+                )}
                 <button type="button" role="menuitem" data-testid={`message-${mid}-delete`} className="danger" onClick={() => { onDelete(); onCloseMenu(); }}>
                   <TrashIcon /> Delete message
                 </button>

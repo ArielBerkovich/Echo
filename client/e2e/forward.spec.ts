@@ -259,6 +259,30 @@ test.describe("forwarding", () => {
     await expectForwardedWithNote(page, fixture.projectChannel.id, note);
   });
 
+  test("does not offer editing for a forwarded message", async ({ page }) => {
+    await openForwardDialog(page);
+
+    const modal = forwardModal(page);
+    await modal.getByTestId("forward-search").fill(fixture.projectChannel.name);
+    await destinationByLabel(modal, fixture.projectChannel.name).click();
+    await modal.getByTestId("forward-send-selected").click();
+    await expect(modal).toBeHidden();
+
+    await page.goto(`/channels/${fixture.projectChannel.name}`);
+    const forwarded = page.locator(".message").filter({ has: page.locator(".forwarded-message-card") }).last();
+    await expect(forwarded).toBeVisible();
+    const messageId = (await forwarded.getAttribute("data-testid"))?.replace("message-", "");
+    if (!messageId) throw new Error("forwarded message test id was missing");
+
+    await forwarded.focus();
+    const actions = page.getByTestId(`message-${messageId}-actions`);
+    await expect(actions).toBeVisible();
+    await actions.getByTestId(`message-${messageId}-more`).click();
+    const menu = page.getByRole("menu", { name: "Message actions" });
+    await expect(menu.getByRole("menuitem", { name: "Edit message" })).toHaveCount(0);
+    await expect(menu.getByRole("menuitem", { name: "Delete message" })).toBeVisible();
+  });
+
   test("preserves Hebrew notes when forwarding", async ({ page }) => {
     await openForwardDialog(page);
 
