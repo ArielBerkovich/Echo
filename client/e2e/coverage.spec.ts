@@ -723,7 +723,11 @@ test("pins a message from inside a thread", async ({ page }) => {
     .first();
   await expect(root).toBeVisible();
   await root.hover();
-  await page.getByTestId(`message-${fixture.messages.threadRoot.id}-actions`).getByTitle("Reply in thread").click();
+  const replyInThread = page
+    .getByTestId(`message-${fixture.messages.threadRoot.id}-actions`)
+    .getByTitle("Reply in thread");
+  await expect(replyInThread).toBeVisible();
+  await replyInThread.click({ force: true });
   await expect(page.getByTestId("thread-panel")).toBeVisible();
 
   const reply = page
