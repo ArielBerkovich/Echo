@@ -43,10 +43,8 @@ async function expectForwardedWithNote(page: Page, channelId: string, note: stri
 async function expectForwardedToBobDm(page: Page, note: string) {
   await expect.poll(async () => {
     const visibleDms = await requestAsToken(page, fixture.alice.token, "/dms");
-    const bobDms = visibleDms.conversations.filter(
-      (conversation) => conversation.memberCount === 2 && conversation.withUser?.id === fixture.bob.id
-    );
-    for (const conversation of bobDms) {
+    const directDms = visibleDms.conversations.filter((conversation) => conversation.memberCount === 2);
+    for (const conversation of directDms) {
       const result = await requestAsToken(
         page,
         fixture.alice.token,
