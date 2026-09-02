@@ -9654,7 +9654,8 @@ html[data-mode="dark"] .new-messages-button:hover {
 .emoji-popup-wrap.is-viewport-positioned {
   position: fixed;
   right: auto;
-  z-index: 120;
+  /* Keep the composer picker above message action menus (z-index: 1000). */
+  z-index: 1100;
   box-sizing: border-box;
   /* Radix modal dialogs disable pointer events outside their content. This
      picker is intentionally portaled outside to avoid overflow clipping. */
