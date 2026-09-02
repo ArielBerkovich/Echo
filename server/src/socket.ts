@@ -282,6 +282,7 @@ export function attachSocket(httpServer) {
         const message = await Message.findById(messageId);
         if (!message) return ackError(ack, "message_edit", "message not found");
         if (message.kind === "system") return ackError(ack, "message_edit", "system messages cannot be edited");
+        if (message.forwardedFrom) return ackError(ack, "message_edit", "forwarded messages cannot be edited");
         if (!message.author.equals(socket.user._id)) {
           return ackError(ack, "message_edit", "you can only edit your own messages");
         }
