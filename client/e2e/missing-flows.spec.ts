@@ -134,6 +134,7 @@ test("changes a local user's password and invalidates the old credential", async
   await seedToken(settingsPage, user.token);
   try {
     await settingsPage.goto("/");
+    await expect(settingsPage.getByTestId("channel-title")).toContainText("general");
     await settingsPage.getByTestId("rail-settings").click();
     const form = settingsPage.getByTestId("change-password-form");
     await form.getByTestId("current-password").fill("WrongPassword1");
