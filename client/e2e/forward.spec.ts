@@ -23,20 +23,6 @@ async function openForwardDialog(page: Page) {
   await expect(forwardModal(page)).toBeVisible();
 }
 
-async function channelMessages(page: Page, channelId: string) {
-  const messages = [];
-  let before = "";
-  for (let pageNumber = 0; pageNumber < 100; pageNumber += 1) {
-    const query = before ? `?before=${encodeURIComponent(before)}` : "";
-    const result = await requestAsToken(page, fixture.alice.token, `/channels/${channelId}/messages${query}`);
-    messages.push(...result.messages);
-    if (result.messages.length < 50) break;
-    before = result.messages[0]?.createdAt;
-    if (!before) break;
-  }
-  return messages;
-}
-
 async function tabTo(page: Page, locator: Locator) {
   for (let attempt = 0; attempt < 100; attempt += 1) {
     if (await locator.evaluate((element) => element === document.activeElement).catch(() => false)) return;
@@ -48,8 +34,8 @@ async function tabTo(page: Page, locator: Locator) {
 async function expectForwardedWithNote(page: Page, channelId: string, note: string) {
   await expect
     .poll(async () => {
-      const messages = await channelMessages(page, channelId);
-      return messages.some((message) => message.forwardNote === note);
+      const result = await requestAsToken(page, fixture.alice.token, `/search/messages?q=${encodeURIComponent(fixture.messages.searchHit.body.split(" ").find((term) => term.startsWith("only-token-")) || fixture.messages.searchHit.body)}`);
+      return result.results.some((message) => message.channelId === channelId && message.forwardNote === note);
     }, { timeout: 45_000 })
     .toBeTruthy();
 }
