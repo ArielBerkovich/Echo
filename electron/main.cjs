@@ -9,6 +9,7 @@ const UPDATE_CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000;
 const notificationState = new Map();
 let mainWindow;
 let setupWindow;
+let rhssoWindow;
 let updateFeedUrl;
 let updateCheckTimer;
 let updateCheckInFlight = false;
@@ -125,6 +126,73 @@ function isAppUrl(value, uiUrl) {
   }
 }
 
+function clientDistPath() {
+  return app.isPackaged
+    ? path.join(process.resourcesPath, "client-dist")
+    : path.join(__dirname, "../client/dist");
+}
+
+function rhssoCallbackFragment(value) {
+  try {
+    const url = new URL(value);
+    const params = new URLSearchParams(url.hash.slice(1));
+    if (!["rhsso_token", "rhsso_error", "rhsso_creation", "migration", "migration_error"]
+      .some((key) => params.has(key))) return null;
+    return url.hash.slice(1);
+  } catch {
+    return null;
+  }
+}
+
+function showRhssoResult(fragment) {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  void mainWindow.webContents.executeJavaScript(
+    `window.location.hash = ${JSON.stringify(`#${fragment}`)}; window.location.reload();`
+  );
+}
+
+function closeRhssoWindow() {
+  if (rhssoWindow && !rhssoWindow.isDestroyed()) rhssoWindow.close();
+  rhssoWindow = undefined;
+}
+
+function startRhssoLogin() {
+  const baseUrl = backendUrl();
+  if (!baseUrl) return { ok: false, error: "Echo is not configured" };
+
+  closeRhssoWindow();
+  rhssoWindow = new BrowserWindow({
+    title: "Echo sign-in",
+    width: 520,
+    height: 760,
+    parent: mainWindow,
+    modal: true,
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+  rhssoWindow.webContents.on("will-redirect", (event, targetUrl) => {
+    const fragment = rhssoCallbackFragment(targetUrl);
+    if (!fragment) return;
+    event.preventDefault();
+    showRhssoResult(fragment);
+    closeRhssoWindow();
+  });
+  rhssoWindow.webContents.on("will-navigate", (event, targetUrl) => {
+    const fragment = rhssoCallbackFragment(targetUrl);
+    if (!fragment) return;
+    event.preventDefault();
+    showRhssoResult(fragment);
+    closeRhssoWindow();
+  });
+  rhssoWindow.on("closed", () => {
+    rhssoWindow = undefined;
+  });
+  rhssoWindow.loadURL(`${baseUrl.replace(/\/+$/, "")}/api/auth/rhsso/login`);
+  return { ok: true };
+}
+
 function desktopUpdatePlatform() {
   if (process.platform === "win32") return "windows";
   if (process.platform === "linux" && process.env.APPIMAGE) return "linux";
@@ -226,10 +294,7 @@ function createWindow(url, uiUrl = null) {
 
   if (uiUrl) mainWindow.loadURL(uiUrl);
   else {
-    const clientDist = app.isPackaged
-      ? path.join(process.resourcesPath, "client-dist")
-      : path.join(__dirname, "../client/dist");
-    mainWindow.loadFile(path.join(clientDist, "index.html"));
+    mainWindow.loadFile(path.join(clientDistPath(), "index.html"));
   }
   mainWindow.on("closed", () => {
     mainWindow = undefined;
@@ -307,6 +372,7 @@ ipcMain.handle("echo:clear-auth-token", () => {
   clearAuthToken();
   return { ok: true };
 });
+ipcMain.handle("echo:start-rhsso-login", () => startRhssoLogin());
 
 ipcMain.on("echo:show-notification", (event, { id, title, body, tag } = {}) => {
   // Keep this check in the privileged process so renderer focus races cannot

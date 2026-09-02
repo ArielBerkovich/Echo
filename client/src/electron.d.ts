@@ -17,6 +17,7 @@ declare global {
       loadToken(): Promise<string | null>;
       saveToken(token: string): Promise<{ ok: boolean }>;
       clearToken(): Promise<{ ok: boolean }>;
+      startRhssoLogin(): Promise<{ ok: boolean; error?: string }>;
     };
   }
 }
