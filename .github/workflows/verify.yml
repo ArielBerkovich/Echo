@@ -111,7 +111,7 @@ jobs:
         working-directory: client
         run: npm run build
 
-  e2e:
+  e2e-shards:
     name: E2E (${{ matrix.shard }})
     runs-on: ubuntu-latest
     timeout-minutes: 3
@@ -246,6 +246,20 @@ jobs:
         env:
           E2E_WORKERS: 1
         run: npm run test:e2e -- --shard=${{ matrix.shard }}
+
+  # Preserve the established required-check name while the work runs in
+  # isolated shards above. Branch protection accepts this only after every
+  # shard succeeds.
+  e2e:
+    name: E2E
+    runs-on: ubuntu-latest
+    needs: e2e-shards
+    if: always()
+    steps:
+      - name: Verify E2E shards
+        env:
+          E2E_SHARDS_RESULT: ${{ needs.e2e-shards.result }}
+        run: test "$E2E_SHARDS_RESULT" = success
 
   e2e-rhsso:
     name: E2E (RHSSO)
