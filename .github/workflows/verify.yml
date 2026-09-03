@@ -239,10 +239,16 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: client/package-lock.json
+          cache-dependency-path: |
+            client/package-lock.json
+            electron/package-lock.json
 
       - name: Install client dependencies
         working-directory: client
+        run: npm ci
+
+      - name: Install Electron dependencies
+        working-directory: electron
         run: npm ci
 
       - name: Cache Playwright browsers
@@ -283,6 +289,16 @@ jobs:
         env:
           ECHO_URL: http://localhost:8091
         run: npm run test:e2e:rhsso
+
+      - name: Build the desktop renderer
+        working-directory: client
+        run: ELECTRON_BUILD=1 npm run build
+
+      - name: Run Electron RHSSO E2E tests
+        working-directory: electron
+        env:
+          ECHO_URL: http://localhost:8091
+        run: xvfb-run --auto-servernum npm run test:e2e:rhsso
 
       - name: Show RHSSO stack logs on failure
         if: failure()

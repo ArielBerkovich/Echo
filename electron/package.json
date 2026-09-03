@@ -13,12 +13,14 @@
   "scripts": {
     "start": "electron .",
     "start:dev": "ELECTRON_START_URL=http://localhost:5173 electron .",
-    "dist": "ELECTRON_BUILD=1 npm --prefix ../client run build && electron-builder"
+    "dist": "ELECTRON_BUILD=1 npm --prefix ../client run build && electron-builder",
+    "test:e2e:rhsso": "playwright test --config playwright.rhsso.config.cjs"
   },
   "dependencies": {
     "electron-updater": "^6.8.9"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "electron": "^37.2.6",
     "electron-builder": "^25.1.8"
   },
