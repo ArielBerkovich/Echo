@@ -111,12 +111,20 @@ jobs:
         working-directory: client
         run: npm run build
 
-  e2e:
-    name: E2E
+  e2e-shards:
+    name: E2E (${{ matrix.shard }})
     runs-on: ubuntu-latest
-    needs:
-      - unit
-      - compile
+    timeout-minutes: 3
+    strategy:
+      fail-fast: false
+      matrix:
+        shard:
+          - 1/6
+          - 2/6
+          - 3/6
+          - 4/6
+          - 5/6
+          - 6/6
     services:
       minio:
         image: minio/minio:latest
@@ -170,35 +178,53 @@ jobs:
             -p 27017:27017 \
             mongo:7 mongod --replSet rs0 --bind_ip_all
 
+          mongo_ready=false
           for i in $(seq 1 60); do
             if docker exec echo-e2e-mongo mongosh --quiet --eval \
               'try { rs.status().ok } catch (e) { rs.initiate({_id:"rs0", members:[{_id:0, host:"127.0.0.1:27017"}]}) }' \
               >/dev/null 2>&1; then
               docker exec echo-e2e-mongo mongosh --quiet --eval \
-                'db.hello().isWritablePrimary' | grep -q true && break
+                'db.hello().isWritablePrimary' | grep -q true && {
+                  mongo_ready=true
+                  break
+                }
             fi
-            sleep 2
+            sleep 1
           done
+          if [ "$mongo_ready" != true ]; then
+            docker logs echo-e2e-mongo
+            exit 1
+          fi
 
       - name: Start server
         working-directory: server
         run: |
+          minio_ready=false
           for i in $(seq 1 60); do
             if curl -fsS http://127.0.0.1:9000/minio/health/live >/dev/null; then
+              minio_ready=true
               break
             fi
-            sleep 2
+            sleep 1
           done
+          if [ "$minio_ready" != true ]; then
+            exit 1
+          fi
 
           npm start > /tmp/echo-server.log 2>&1 &
           echo $! > /tmp/echo-server.pid
 
+          server_ready=false
           for i in $(seq 1 60); do
             if curl -fsS http://127.0.0.1:4000/api/health >/dev/null; then
-              exit 0
+              server_ready=true
+              break
             fi
-            sleep 2
+            sleep 1
           done
+          if [ "$server_ready" = true ]; then
+            exit 0
+          fi
 
           cat /tmp/echo-server.log
           exit 1
@@ -219,7 +245,21 @@ jobs:
       - name: Run E2E tests
         env:
           E2E_WORKERS: 1
-        run: npm run test:e2e
+        run: npm run test:e2e -- --shard=${{ matrix.shard }}
+
+  # Preserve the established required-check name while the work runs in
+  # isolated shards above. Branch protection accepts this only after every
+  # shard succeeds.
+  e2e:
+    name: E2E
+    runs-on: ubuntu-latest
+    needs: e2e-shards
+    if: always()
+    steps:
+      - name: Verify E2E shards
+        env:
+          E2E_SHARDS_RESULT: ${{ needs.e2e-shards.result }}
+        run: test "$E2E_SHARDS_RESULT" = success
 
   e2e-rhsso:
     name: E2E (RHSSO)
