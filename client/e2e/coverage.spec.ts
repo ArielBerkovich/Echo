@@ -41,9 +41,10 @@ async function messageId(page, channelName, body) {
   );
 }
 
-function toLocalDatetimeInput(date) {
+function toLocalDatetimeInput(date, includeSeconds = false) {
   const pad = (n) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  const value = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return includeSeconds ? `${value}:${pad(date.getSeconds())}` : value;
 }
 
 test("manages channels, members, visibility, and leaving", async ({ page }) => {
@@ -491,9 +492,17 @@ test("schedules a message and clears the banner after delivery", async ({ page }
   await composer.fill(scheduledBody);
   await page.getByRole("button", { name: "Send options" }).click();
   await page.locator(".send-menu button").filter({ hasText: "Custom time…" }).click();
-  const scheduleWhen = toLocalDatetimeInput(new Date(Date.now() + 60_000));
   const scheduleModal = page.locator(".modal").filter({ hasText: "Schedule message" });
-  await scheduleModal.locator('input[type="datetime-local"]').fill(scheduleWhen);
+  const scheduleInput = scheduleModal.locator('input[type="datetime-local"]');
+  // The production control deliberately rounds to five-minute slots and
+  // disallows times less than a minute away. The scheduler itself accepts
+  // second-precision future timestamps, so relax those browser-only guards
+  // here to verify delivery without a fixed one-minute pause.
+  await scheduleInput.evaluate((input) => {
+    input.min = "";
+    input.step = "1";
+  });
+  await scheduleInput.fill(toLocalDatetimeInput(new Date(Date.now() + 5_000), true));
   await scheduleModal.getByRole("button", { name: "Schedule" }).click();
 
   await expect(page.getByText(/scheduled message/i)).toBeVisible();
