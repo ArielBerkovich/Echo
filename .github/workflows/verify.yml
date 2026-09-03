@@ -279,10 +279,21 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: client/package-lock.json
+          cache-dependency-path: |
+            server/package-lock.json
+            client/package-lock.json
+            electron/package-lock.json
+
+      - name: Install server dependencies
+        working-directory: server
+        run: npm ci
 
       - name: Install client dependencies
         working-directory: client
+        run: npm ci
+
+      - name: Install Electron dependencies
+        working-directory: electron
         run: npm ci
 
       - name: Cache Playwright browsers
@@ -301,21 +312,57 @@ jobs:
 
       - name: Start Echo with RHSSO enabled
         run: |
-          docker compose -p echo-rhsso-ci -f docker-compose.rhsso.yml up -d --build
+          docker compose -p echo-rhsso-ci \
+            -f docker-compose.rhsso.yml -f docker-compose.rhsso.ci.yml up -d \
+            mongo mongo-init minio rhsso
+
+          npm --prefix server run build
 
           for i in $(seq 1 90); do
-            if curl -fsS http://127.0.0.1:8091/api/health >/dev/null &&
+            if curl -fsS http://127.0.0.1:9000/minio/health/live >/dev/null &&
                curl -fsS http://127.0.0.1:8180/realms/echo/.well-known/openid-configuration >/dev/null; then
               break
             fi
             sleep 2
           done
 
-          curl -fsS -X POST http://127.0.0.1:8091/api/auth/register \
+          setsid env \
+            PORT=4000 \
+            METRICS_PORT=8092 \
+            MONGO_URI='mongodb://127.0.0.1:27017/echo?replicaSet=rs0&directConnection=true' \
+            JWT_SECRET=echo-rhsso-local-demo-secret \
+            CLIENT_ORIGIN=http://localhost:8091 \
+            S3_ENDPOINT=http://127.0.0.1:9000 \
+            S3_ACCESS_KEY=echo \
+            S3_SECRET_KEY=echo-dev-secret \
+            S3_BUCKET=echo-uploads \
+            RHSSO_ENABLED=true \
+            RHSSO_URL=http://localhost:8180 \
+            RHSSO_REALM=echo \
+            RHSSO_CLIENT_ID=echo \
+            RHSSO_USERNAME_CLAIM=preferred_username \
+            RHSSO_DISPLAY_NAME_CLAIM=name \
+            node server/dist/index.js > "$RUNNER_TEMP/echo-rhsso-server.log" 2>&1 &
+          echo "$!" > "$RUNNER_TEMP/echo-rhsso-server.pid"
+
+          setsid env ECHO_API_PROXY_TARGET=http://127.0.0.1:4000 \
+            npm --prefix client run dev -- --port 8091 \
+            > "$RUNNER_TEMP/echo-rhsso-client.log" 2>&1 &
+          echo "$!" > "$RUNNER_TEMP/echo-rhsso-client.pid"
+
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4000/api/health >/dev/null &&
+               curl -fsS http://127.0.0.1:8091/api/health >/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+
+          curl -fsS -X POST http://127.0.0.1:4000/api/auth/register \
             -H 'Content-Type: application/json' \
             --data '{"username":"admin","password":"Password1"}'
 
-          curl -fsS http://127.0.0.1:8091/api/auth/setup-status |
+          curl -fsS http://127.0.0.1:4000/api/auth/setup-status |
             grep -q '"rhssoEnabled":true'
 
       - name: Run real RHSSO E2E tests
@@ -324,10 +371,36 @@ jobs:
           ECHO_URL: http://localhost:8091
         run: npm run test:e2e:rhsso
 
+      - name: Build the desktop renderer
+        working-directory: client
+        run: ELECTRON_BUILD=1 npm run build
+
+      - name: Run Electron RHSSO E2E tests
+        working-directory: electron
+        env:
+          ECHO_URL: http://localhost:8091
+        run: xvfb-run --auto-servernum npm run test:e2e:rhsso
+
       - name: Show RHSSO stack logs on failure
         if: failure()
-        run: docker compose -p echo-rhsso-ci -f docker-compose.rhsso.yml logs --no-color
+        run: |
+          docker compose -p echo-rhsso-ci \
+            -f docker-compose.rhsso.yml -f docker-compose.rhsso.ci.yml logs --no-color
+          if test -f "$RUNNER_TEMP/echo-rhsso-server.log"; then
+            cat "$RUNNER_TEMP/echo-rhsso-server.log"
+          fi
+          if test -f "$RUNNER_TEMP/echo-rhsso-client.log"; then
+            cat "$RUNNER_TEMP/echo-rhsso-client.log"
+          fi
 
       - name: Stop RHSSO stack
         if: always()
-        run: docker compose -p echo-rhsso-ci -f docker-compose.rhsso.yml down -v
+        run: |
+          if test -f "$RUNNER_TEMP/echo-rhsso-server.pid"; then
+            kill -- "-$(< "$RUNNER_TEMP/echo-rhsso-server.pid")" || true
+          fi
+          if test -f "$RUNNER_TEMP/echo-rhsso-client.pid"; then
+            kill -- "-$(< "$RUNNER_TEMP/echo-rhsso-client.pid")" || true
+          fi
+          docker compose -p echo-rhsso-ci \
+            -f docker-compose.rhsso.yml -f docker-compose.rhsso.ci.yml down -v

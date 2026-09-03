@@ -1,0 +1,10 @@
+# Fast CI override: expose the stateful RHSSO dependencies to the server and
+# Vite client running directly on the GitHub runner.
+services:
+  mongo:
+    ports:
+      - "27017:27017"
+
+  minio:
+    ports:
+      - "9000:9000"
