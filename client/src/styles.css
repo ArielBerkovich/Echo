@@ -5923,6 +5923,15 @@ html[data-mode="dark"] .day-divider-label {
   background: color-mix(in srgb, var(--accent) 25%, var(--surface));
   color: var(--accent);
 }
+.channel-details-add-primary:active {
+  transform: translateY(1px);
+}
+.channel-details-edit:hover,
+.channel-details-add:hover,
+.channel-details-add.active {
+  background: color-mix(in srgb, var(--active-bg) 18%, var(--surface));
+  color: var(--active-bg);
+}
 .channel-details-value {
   color: var(--text);
   font-size: 14px;
