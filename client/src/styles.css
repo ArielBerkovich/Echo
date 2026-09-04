@@ -8427,6 +8427,10 @@ html[data-mode="dark"] .channel-header {
 .header-action:hover {
   background: var(--border);
 }
+.header-action-icon:hover {
+  background: var(--active-soft);
+  color: var(--accent);
+}
 .header-action.leave {
   background: none;
   color: var(--danger);
@@ -8473,6 +8477,10 @@ html[data-mode="dark"] .channel-header {
   display: none;
 }
 .header-action.active {
+  background: var(--active-bg);
+  color: var(--active-fg);
+}
+.header-action-icon.active:hover {
   background: var(--active-bg);
   color: var(--active-fg);
 }

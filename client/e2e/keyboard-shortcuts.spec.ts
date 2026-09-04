@@ -103,6 +103,7 @@ test.describe("documented keyboard shortcuts", () => {
     await page.keyboard.press("Control+k");
     await page.getByTestId("search-action-view-members").click();
     await expect(page.getByTestId("members-panel")).toBeVisible();
+    await expect(page.getByTestId("channel-members")).toHaveClass(/active/);
     await expect(page.getByTestId("members-panel").locator("button[aria-label='Close members']")).toHaveClass(/icon-button-close/);
     await expect(page.getByTestId("members-panel").locator("button[aria-label='Close members'] svg")).toHaveAttribute("width", "18");
     await page.keyboard.press("Escape");
@@ -111,6 +112,7 @@ test.describe("documented keyboard shortcuts", () => {
     await page.keyboard.press("Control+k");
     await page.getByTestId("search-action-view-files").click();
     await expect(page.getByTestId("files-panel")).toBeVisible();
+    await expect(page.getByTestId("channel-files")).toHaveClass(/active/);
     await expect(page.getByTestId("files-panel").locator("button[aria-label='Close files']")).toHaveClass(/icon-button-close/);
     await expect(page.getByTestId("files-panel").locator("button[aria-label='Close files'] svg")).toHaveAttribute("width", "18");
     await page.keyboard.press("Escape");
@@ -119,6 +121,7 @@ test.describe("documented keyboard shortcuts", () => {
     await page.keyboard.press("Control+k");
     await page.getByTestId("search-action-view-pinned").click();
     await expect(page.getByTestId("pinned-panel")).toBeVisible();
+    await expect(page.getByTestId("channel-pinned")).toHaveClass(/active/);
     await expect(page.getByTestId("pinned-panel").locator("button[aria-label='Close']")).toHaveClass(/icon-button-close/);
     await expect(page.getByTestId("pinned-panel").locator("button[aria-label='Close'] svg")).toHaveAttribute("width", "18");
     await page.keyboard.press("Escape");

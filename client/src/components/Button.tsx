@@ -19,3 +19,18 @@ export const CloseButton = forwardRef(function CloseButton({ label = "Close", si
     </IconButton>
   );
 });
+
+export function ChannelOptionButton({ label, active = false, icon, className, ...props }) {
+  return (
+    <button
+      type="button"
+      className={cn("header-action", "header-action-icon", active && "active", className)}
+      aria-label={label}
+      aria-expanded={active}
+      aria-pressed={active}
+      {...props}
+    >
+      {icon}
+    </button>
+  );
+}

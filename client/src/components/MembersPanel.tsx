@@ -122,7 +122,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
   }
 
   return (
-    <aside className="details-panel members-panel" data-testid="members-panel" role="dialog" aria-labelledby="members-panel-title">
+    <aside id="members-panel" className="details-panel members-panel" data-testid="members-panel" role="dialog" aria-labelledby="members-panel-title">
       <header className="members-panel-header">
         <div className="members-panel-title">
           <span className="members-panel-icon" aria-hidden="true">
