@@ -1,5 +1,6 @@
 const SHORTCUTS = [
   { id: "focus-search", group: "Navigation", keys: ["⌘ / Ctrl", "F"], hotkeys: ["ctrl+f", "meta+f"], description: "Focus workspace search" },
+  { id: "open-switcher", group: "Navigation", keys: ["⌘ / Ctrl", "K"], hotkeys: ["ctrl+k", "meta+k"], description: "Open quick switcher" },
   { id: "new-message", group: "Navigation", keys: ["⌘ / Ctrl", "⇧", "M"], hotkeys: ["ctrl+shift+m", "meta+shift+m"], description: "Start a new direct message" },
   { id: "browse-channels", group: "Navigation", keys: ["⌘ / Ctrl", "⇧", "O"], hotkeys: ["ctrl+shift+o", "meta+shift+o"], description: "Browse public channels" },
   { id: "create-channel", group: "Navigation", keys: ["⌘ / Ctrl", "⇧", "C"], hotkeys: ["ctrl+shift+c", "meta+shift+c"], description: "Create a new channel" },

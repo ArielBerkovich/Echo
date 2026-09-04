@@ -1,16 +1,10 @@
-import { memo, useEffect, useRef } from "react";
+import { memo } from "react";
 
 export function FeedLayout({ title, subtitle, testId, actions, children }) {
-  const headerRef = useRef(null);
-
-  useEffect(() => {
-    headerRef.current?.focus();
-  }, []);
-
   return (
     <main className="channel-view">
       <div className="channel-main">
-        <header ref={headerRef} className="channel-header" data-testid={`${testId}-header`} tabIndex={-1}>
+        <header className="channel-header" data-testid={`${testId}-header`}>
           <span className="ch-name">{title}</span>
           <span className="ch-meta">{subtitle}</span>
           {actions ? <div className="header-actions">{actions}</div> : null}

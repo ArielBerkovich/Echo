@@ -13,6 +13,7 @@ export default function Modal({
   closeClassName = "",
   closeTestId,
   closeDisabled = false,
+  onOpenAutoFocus,
   onPointerDownOutside,
   showHeader = true,
   showClose = true,
@@ -35,6 +36,7 @@ export default function Modal({
               className
             )}
             data-testid={testId}
+            onOpenAutoFocus={onOpenAutoFocus}
             aria-describedby={undefined}
             onEscapeKeyDown={(event) => closeDisabled && event.preventDefault()}
             onPointerDownOutside={(event) => {

@@ -64,8 +64,7 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
   useEffect(() => {
     if (!restoreFocusAfterDismissRef.current) return;
     restoreFocusAfterDismissRef.current = false;
-    const target = document.querySelector('[data-testid="activity-item"]')
-      || document.querySelector('[data-testid="activity-header"]');
+    const target = document.querySelector('[data-testid="activity-item"]');
     target?.focus();
   }, [items]);
 

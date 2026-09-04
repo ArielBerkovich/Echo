@@ -1,7 +1,9 @@
 import {
   Fragment,
+  forwardRef,
   useCallback,
   useEffect,
+  useImperativeHandle,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -58,7 +60,7 @@ function MessagesSkeleton() {
   );
 }
 
-export default function ChannelView({
+const ChannelView = forwardRef(function ChannelView({
   channel,
   composerFocusRequest = 0,
   recoveryEpoch = 0,
@@ -107,7 +109,7 @@ export default function ChannelView({
   openThreadJumpMessageId = null,
   onThreadOpened,
   mode = "light",
-}) {
+}, ref) {
   const queryClient = useQueryClient();
   const hasUsableCache = cachedMessages !== null && !hasUnread;
   const canPost = channel.type === "dm" || !channel.readOnly || channel.createdBy === user.id || (channel.managers || []).includes(user.id);
@@ -513,6 +515,15 @@ export default function ChannelView({
       .catch(() => {});
   }
 
+  function openMembersPanel() {
+    setThread(null);
+    setThreadJumpTargetId(null);
+    setShowDetails(false);
+    setShowPinned(false);
+    setShowFiles(false);
+    setShowMembers(true);
+  }
+
   function openFilesPanel() {
     setThread(null);
     setThreadJumpTargetId(null);
@@ -527,6 +538,12 @@ export default function ChannelView({
       .catch((error) => setFilesError(error.message || "Couldn't load files."))
       .finally(() => setFilesLoading(false));
   }
+
+  useImperativeHandle(ref, () => ({
+    openMembersPanel,
+    openPinnedPanel,
+    openFilesPanel,
+  }));
 
   // Returns a promise so the ForwardModal can show per-destination progress.
   async function forwardTo(dest, options = {}) {
@@ -998,6 +1015,21 @@ export default function ChannelView({
           onClose={() => setThreadLightbox(null)}
         />
       )}
+      {!isMember && (
+        <div className="join-bar">
+          <span className="join-text">
+            You're previewing <strong>#{channel.name}</strong>
+          </span>
+          <button
+            className="join-btn"
+            data-testid="join-channel"
+            aria-label={`Join channel #${channel.name}`}
+            onClick={() => onJoin(channel)}
+          >
+            Join channel
+          </button>
+        </div>
+      )}
       <header className="channel-header" data-testid="channel-header">
         {isDm ? (
           <>
@@ -1052,7 +1084,7 @@ export default function ChannelView({
                   data-testid="channel-members"
                   title="View members"
                   aria-label="View members"
-                  onClick={() => { setThread(null); setThreadJumpTargetId(null); setShowFiles(false); setShowMembers(true); }}
+                  onClick={openMembersPanel}
                 >
                   <UsersRoundIcon size={16} strokeWidth={1.8} />
                 </button>
@@ -1123,7 +1155,7 @@ export default function ChannelView({
               >
                 <SearchIcon size={15} strokeWidth={1.9} />
               </button>
-              <button className="header-action header-action-icon" data-testid="channel-members" title="View members" onClick={() => { setThread(null); setThreadJumpTargetId(null); setShowFiles(false); setShowDetails(false); setShowMembers(true); }}>
+              <button className="header-action header-action-icon" data-testid="channel-members" title="View members" onClick={openMembersPanel}>
                 <UsersRoundIcon size={16} strokeWidth={1.8} />
               </button>
               {!isGeneral && isMember && (
@@ -1314,17 +1346,6 @@ export default function ChannelView({
         </div>
       )}
 
-      {!isMember && (
-        <div className="join-bar">
-          <span className="join-text">
-            You're previewing <strong>#{channel.name}</strong>
-          </span>
-          <button className="join-btn" onClick={() => onJoin(channel)}>
-            Join channel
-          </button>
-        </div>
-      )}
-
       {isMember && canPost && (
         <Composer
           ref={composerRef}
@@ -1494,7 +1515,9 @@ export default function ChannelView({
       />
     </main>
   );
-}
+});
+
+export default ChannelView;
 
 function PinnedPanel({ messages, renderMarkdown, emojiMap, onUnpin, onClose }) {
   return (
@@ -1516,7 +1539,7 @@ function PinnedPanel({ messages, renderMarkdown, emojiMap, onUnpin, onClose }) {
                 className="pinned-item-body markdown"
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(m.body || "") }}
               />
-              <button className="pinned-unpin" data-testid={`pinned-${m.id}-unpin`} onClick={() => onUnpin(m)} title="Unpin">
+              <button className="pinned-unpin" data-testid={`pinned-${m.id}-unpin`} onClick={() => onUnpin(m)}>
                 Unpin
               </button>
             </div>

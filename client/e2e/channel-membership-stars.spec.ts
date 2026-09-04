@@ -101,6 +101,12 @@ test("keeps the active channel open as a preview after leaving", async ({ page }
     await expect(page).toHaveURL(previewUrl);
     await expect(page.getByText(`You're previewing #${channel.name}`)).toBeVisible();
     await expect(page.getByRole("button", { name: "Join channel" })).toBeVisible();
+    const previewFocusableOrder = await page.locator(".channel-main").evaluate((main) =>
+      [...main.querySelectorAll("button, [href], input, select, textarea, [tabindex]")]
+        .filter((element) => !element.hasAttribute("disabled") && element.tabIndex >= 0)
+        .map((element) => element.getAttribute("data-testid") || element.getAttribute("aria-label") || element.textContent?.trim())
+    );
+    expect(previewFocusableOrder[0]).toBe("join-channel");
     await expect(page.getByTestId("channel-starred-toggle")).toHaveCount(0);
     await expect(page.getByTestId("channel-leave")).toHaveCount(0);
     await expect(page.getByTestId("composer")).toHaveCount(0);
