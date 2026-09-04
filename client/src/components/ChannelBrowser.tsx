@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CompassIcon, HashIcon, PlusIcon, SearchIcon, UsersIcon, XIcon } from "lucide-react";
 import { api } from "../api.js";
 import { queryKeys } from "../lib/queryClient.js";
@@ -67,6 +67,7 @@ export default function ChannelBrowser({
         cursor: page.cursor,
         limit: PAGE_SIZE,
       }),
+    placeholderData: keepPreviousData,
   });
   const channels = catalog?.channels || [];
   const counts = catalog?.counts || EMPTY_COUNTS;
