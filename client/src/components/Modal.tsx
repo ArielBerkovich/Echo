@@ -39,7 +39,12 @@ export default function Modal({
             data-testid={testId}
             onOpenAutoFocus={onOpenAutoFocus}
             aria-describedby={undefined}
-            onEscapeKeyDown={(event) => closeDisabled && event.preventDefault()}
+            onEscapeKeyDown={(event) => {
+              // Escape belongs to the topmost modal. Prevent background
+              // panels with document-level handlers from seeing the same key.
+              event.stopPropagation();
+              if (closeDisabled) event.preventDefault();
+            }}
             onPointerDownOutside={(event) => {
               const target = event.detail?.originalEvent?.target;
               // Composer emoji pickers are portaled to the document so they
