@@ -189,7 +189,7 @@ function Message({
       onContextMenu={onBodyContextMenu}
     >
       <div dangerouslySetInnerHTML={{ __html: renderMarkdown(m.body) }} />
-      {m.editedAt && <span className="edited-label" title="Edited"> (edited)</span>}
+      {m.editedAt && <span className="edited-label"> (edited)</span>}
     </div>
   );
 

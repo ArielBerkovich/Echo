@@ -38,8 +38,7 @@ export default function SavedFeed({ user, users = [], customEmojis = [], onJump,
   useEffect(() => {
     if (!restoreFocusAfterUnsaveRef.current) return;
     restoreFocusAfterUnsaveRef.current = false;
-    const target = document.querySelector('[data-testid="saved-item"]')
-      || document.querySelector('[data-testid="saved-header"]');
+    const target = document.querySelector('[data-testid="saved-item"]');
     target?.focus();
   }, [items]);
 

@@ -1,6 +1,28 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { LockKeyholeIcon, SearchIcon, UserPlusIcon } from "lucide-react";
+import {
+  ActivityIcon,
+  BookmarkIcon,
+  HashIcon,
+  HomeIcon,
+  LockKeyholeIcon,
+  MessageSquarePlusIcon,
+  MessageSquareTextIcon,
+  SearchIcon,
+  SettingsIcon,
+  UserPlusIcon,
+} from "lucide-react";
 import Avatar from "./Avatar.js";
+
+const QUICK_ACTIONS = [
+  { id: "new-message", label: "New message", keywords: ["new", "message", "dm"], shortcut: "⌘/Ctrl+⇧M", Icon: MessageSquarePlusIcon },
+  { id: "create-channel", label: "Create channel", keywords: ["create", "new", "channel"], shortcut: "⌘/Ctrl+⇧C", Icon: HashIcon },
+  { id: "browse-channels", label: "Browse channels", keywords: ["browse", "channels"], shortcut: "⌘/Ctrl+⇧O", Icon: HashIcon },
+  { id: "home", label: "Go to Home", keywords: ["home"], shortcut: "⌘/Ctrl+⇧H", Icon: HomeIcon },
+  { id: "dms", label: "Go to Direct messages", keywords: ["dm", "dms", "direct", "messages"], shortcut: "⌘/Ctrl+⇧D", Icon: MessageSquareTextIcon },
+  { id: "activity", label: "Go to Activity", keywords: ["activity", "notifications"], shortcut: "⌘/Ctrl+⇧A", Icon: ActivityIcon },
+  { id: "saved", label: "Go to Saved", keywords: ["saved", "bookmarks"], shortcut: "⌘/Ctrl+⇧S", Icon: BookmarkIcon },
+  { id: "settings", label: "Open Settings", keywords: ["settings", "preferences"], shortcut: "⌘/Ctrl+,", Icon: SettingsIcon },
+];
 
 // Things "has:" can filter on, suggested as you type the token.
 const HAS_OPTIONS = [
@@ -74,6 +96,7 @@ const SearchBox = forwardRef(function SearchBox(
     onFindChannels,
     onPickUser,
     onAddPeople,
+    onQuickAction,
     onSearchMessages,
     variant = "default",
   },
@@ -85,6 +108,7 @@ const SearchBox = forwardRef(function SearchBox(
   const [activeIdx, setActiveIdx] = useState(0);
   const [remoteChannels, setRemoteChannels] = useState([]);
   const [conversationPickerOpen, setConversationPickerOpen] = useState(false);
+  const [quickSwitcherOpen, setQuickSwitcherOpen] = useState(false);
   const wrapRef = useRef(null);
   const inputRef = useRef(null);
   const highlightRef = useRef(null);
@@ -106,12 +130,23 @@ const SearchBox = forwardRef(function SearchBox(
   useImperativeHandle(ref, () => ({
     focus() {
       setConversationPickerOpen(false);
+      setQuickSwitcherOpen(false);
       inputRef.current?.focus();
       setOpen(true);
+    },
+    openSwitcher() {
+      setConversationPickerOpen(false);
+      setQuickSwitcherOpen(true);
+      setQuery("");
+      setCaret(0);
+      setActiveIdx(0);
+      setOpen(true);
+      requestAnimationFrame(() => inputRef.current?.focus());
     },
     searchInChannel(channelName) {
       const next = `in:${channelName} `;
       setConversationPickerOpen(false);
+      setQuickSwitcherOpen(false);
       setQuery(next);
       setCaret(next.length);
       setActiveIdx(0);
@@ -128,6 +163,7 @@ const SearchBox = forwardRef(function SearchBox(
       setCaret(0);
       setActiveIdx(0);
       setConversationPickerOpen(true);
+      setQuickSwitcherOpen(false);
       setOpen(true);
       requestAnimationFrame(() => inputRef.current?.focus());
     },
@@ -137,6 +173,7 @@ const SearchBox = forwardRef(function SearchBox(
       setCaret(0);
       setActiveIdx(0);
       setConversationPickerOpen(false);
+      setQuickSwitcherOpen(false);
     },
   }));
 
@@ -145,6 +182,7 @@ const SearchBox = forwardRef(function SearchBox(
       if (wrapRef.current && !wrapRef.current.contains(e.target)) {
         setOpen(false);
         setConversationPickerOpen(false);
+        setQuickSwitcherOpen(false);
       }
     }
     document.addEventListener("mousedown", onDown);
@@ -171,6 +209,13 @@ const SearchBox = forwardRef(function SearchBox(
   const q = query.trim().toLowerCase();
   const hasFilterTokens = /(?:^|\s)(in:|from:|has:)/i.test(query);
   const peoplePicker = variant === "people-picker" || conversationPickerOpen;
+  const matchingQuickActions = useMemo(
+    () => quickSwitcherOpen && !peoplePicker && !hasFilterTokens
+      ? QUICK_ACTIONS.filter((action) => !q || [action.label, ...action.keywords]
+        .some((value) => value.toLowerCase().includes(q)))
+      : [],
+    [hasFilterTokens, peoplePicker, q, quickSwitcherOpen]
+  );
   const recentItems = useMemo(
     () => [...new Map(
       (Array.isArray(recents) ? recents : [])
@@ -182,7 +227,7 @@ const SearchBox = forwardRef(function SearchBox(
 
   const filter = activeFilterAt(query, caret);
   const shouldFindChannels =
-    filter?.type === "in" || (!!q && !hasFilterTokens && !peoplePicker);
+    filter?.type === "in" || (!!q && !hasFilterTokens && !peoplePicker && !quickSwitcherOpen);
   const channelLookup = filter?.type === "in" ? filter.query : q;
 
   useEffect(() => {
@@ -234,11 +279,11 @@ const SearchBox = forwardRef(function SearchBox(
 
   // Quick-nav results (only when not building a filtered query).
   const channelHits =
-    q && !hasFilterTokens
+    q && !hasFilterTokens && !quickSwitcherOpen
       ? channelCandidates.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 6)
       : [];
   const peopleHits =
-    (q || peoplePicker) && !hasFilterTokens
+    (q || peoplePicker) && !hasFilterTokens && !quickSwitcherOpen
       ? searchableUsers
           .filter(
             (u) => u.username.toLowerCase().includes(q) || u.displayName.toLowerCase().includes(q)
@@ -250,6 +295,9 @@ const SearchBox = forwardRef(function SearchBox(
   // order the rows are rendered. activeIdx indexes into this. Keeping it flat
   // means Enter/hover/click all share one notion of "the highlighted row".
   const navItems = useMemo(() => {
+    if (quickSwitcherOpen) {
+      return matchingQuickActions.map((item) => ({ kind: "action", item }));
+    }
     if (filter && filterSuggestions.length) {
       return filterSuggestions.map((item) => ({ kind: "filter", item }));
     }
@@ -259,12 +307,14 @@ const SearchBox = forwardRef(function SearchBox(
     if (q && !hasFilterTokens) {
       return [
         { kind: "search" },
+        ...matchingQuickActions.map((item) => ({ kind: "action", item })),
         ...channelHits.map((item) => ({ kind: "channel", item })),
         ...peopleHits.map((item) => ({ kind: "people", item })),
       ];
     }
     if (!q) {
       return [
+        ...matchingQuickActions.map((item) => ({ kind: "action", item })),
         ...(addPeopleChannel ? [{ kind: "add-people" }] : []),
         ...recentItems.map((r) =>
         r.type === "channel"
@@ -274,7 +324,7 @@ const SearchBox = forwardRef(function SearchBox(
       ];
     }
     return [];
-  }, [filter, filterSuggestions, q, hasFilterTokens, channelHits, peopleHits, recentItems, addPeopleChannel, peoplePicker]);
+  }, [filter, filterSuggestions, q, hasFilterTokens, matchingQuickActions, channelHits, peopleHits, recentItems, addPeopleChannel, peoplePicker, quickSwitcherOpen]);
 
   // Reset/clamp the highlight whenever the navigable set changes.
   useEffect(() => {
@@ -289,6 +339,7 @@ const SearchBox = forwardRef(function SearchBox(
     setOpen(false);
     setQuery("");
     setConversationPickerOpen(false);
+    setQuickSwitcherOpen(false);
   }
   function pickChannel(c) {
     onPickChannel(c);
@@ -347,6 +398,9 @@ const SearchBox = forwardRef(function SearchBox(
       case "add-people":
         close();
         return onAddPeople?.();
+      case "action":
+        close();
+        return onQuickAction?.(it.item.id);
       default:
         return undefined;
     }
@@ -368,12 +422,11 @@ const SearchBox = forwardRef(function SearchBox(
       return;
     }
     if (e.key === "Escape") {
-      setOpen(false);
-      setConversationPickerOpen(false);
+      close();
       return;
     }
     // Tab always completes a filter token from the highlighted suggestion.
-    if (e.key === "Tab" && filter && filterSuggestions.length) {
+    if (e.key === "Tab" && !quickSwitcherOpen && filter && filterSuggestions.length) {
       e.preventDefault();
       applyFilter(filterSuggestions[activeIdx] || filterSuggestions[0]);
       return;
@@ -432,6 +485,26 @@ const SearchBox = forwardRef(function SearchBox(
   const channelStart = 1;
   const peopleStart = peoplePicker ? 0 : 1 + channelHits.length;
 
+  function actionRow(action, idx) {
+    const Icon = action.Icon;
+    return (
+      <button
+        key={action.id}
+        type="button"
+        ref={(element) => { navItemRefs.current[idx] = element; }}
+        className={`search-row search-action-row ${idx === activeIdx ? "active" : ""}`}
+        data-testid={`search-action-${action.id}`}
+        onMouseEnter={() => setActiveIdx(idx)}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => activate({ kind: "action", item: action })}
+      >
+        <Icon size={17} strokeWidth={1.9} aria-hidden="true" />
+        <span className="search-name">{action.label}</span>
+        <span className="search-kind">{action.shortcut}</span>
+      </button>
+    );
+  }
+
   return (
     <div className="search-box" ref={wrapRef} data-testid="search-box">
       <div className="search-box-field" data-testid="search-box-field">
@@ -441,7 +514,7 @@ const SearchBox = forwardRef(function SearchBox(
           <div className="search-input-wrap">
           {!query && (
             <span className="search-placeholder" aria-hidden="true">
-              {peoplePicker ? "Find someone to message" : "Search messages, people, and channels"}
+              {quickSwitcherOpen ? "Search commands" : peoplePicker ? "Find someone to message" : "Search messages, people, and channels"}
             </span>
           )}
           <div className="search-highlight" ref={highlightRef} aria-hidden="true" dir="auto">
@@ -451,6 +524,7 @@ const SearchBox = forwardRef(function SearchBox(
             ref={inputRef}
             className="search-input"
             data-testid="search-input"
+            aria-label={quickSwitcherOpen ? "Search commands" : "Search messages, people, and channels"}
             value={query}
             onFocus={() => setOpen(true)}
             onClick={syncCaret}
@@ -469,7 +543,16 @@ const SearchBox = forwardRef(function SearchBox(
         </div>
 
       {open && (
-        <div className="search-dropdown">
+        <div className="search-dropdown" role={quickSwitcherOpen ? "dialog" : undefined} aria-label={quickSwitcherOpen ? "Commands" : undefined}>
+          {quickSwitcherOpen ? (
+            <>
+              <div className="search-section">Commands</div>
+              {matchingQuickActions.length > 0
+                ? matchingQuickActions.map((action, idx) => actionRow(action, idx))
+                : <div className="people-empty">No commands match.</div>}
+            </>
+          ) : (
+            <>
           {/* Filter autocomplete (in:/from:/has:) — takes over the dropdown */}
           {filter ? (
             <>
@@ -511,15 +594,21 @@ const SearchBox = forwardRef(function SearchBox(
                     Press <b>Enter</b> to search messages. Filter with <code>in:channel</code>,{" "}
                     <code>from:@user</code>, and <code>has:file</code>.
                   </div>
-                  {addPeopleChannel && (
+                  {matchingQuickActions.length > 0 && (
                     <>
                       <div className="search-section">Actions</div>
+                      {matchingQuickActions.map((action, idx) => actionRow(action, idx))}
+                    </>
+                  )}
+                  {addPeopleChannel && (
+                    <>
+                      {!matchingQuickActions.length && <div className="search-section">Actions</div>}
                       <button
                         type="button"
-                        ref={(element) => { navItemRefs.current[0] = element; }}
-                        className={`search-row search-action-row ${activeIdx === 0 ? "active" : ""}`}
+                        ref={(element) => { navItemRefs.current[matchingQuickActions.length] = element; }}
+                        className={`search-row search-action-row ${activeIdx === matchingQuickActions.length ? "active" : ""}`}
                         data-testid="search-add-people"
-                        onMouseEnter={() => setActiveIdx(0)}
+                        onMouseEnter={() => setActiveIdx(matchingQuickActions.length)}
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => activate({ kind: "add-people" })}
                       >
@@ -533,14 +622,14 @@ const SearchBox = forwardRef(function SearchBox(
                   {recentItems.length === 0 && <div className="people-empty">No recent searches.</div>}
                   {recentItems.map((r, idx) =>
                     r.type === "channel"
-                      ? channelRow(r, idx + (addPeopleChannel ? 1 : 0), "recent")
+                      ? channelRow(r, idx + matchingQuickActions.length + (addPeopleChannel ? 1 : 0), "recent")
                       : (
                           <button
                             key={`recent-${r.id}`}
-                            ref={(element) => { navItemRefs.current[idx + (addPeopleChannel ? 1 : 0)] = element; }}
-                            className={`search-row ${idx + (addPeopleChannel ? 1 : 0) === activeIdx ? "active" : ""}`}
+                            ref={(element) => { navItemRefs.current[idx + matchingQuickActions.length + (addPeopleChannel ? 1 : 0)] = element; }}
+                            className={`search-row ${idx + matchingQuickActions.length + (addPeopleChannel ? 1 : 0) === activeIdx ? "active" : ""}`}
                             data-testid={`search-user-${slug(r.displayName)}`}
-                            onMouseEnter={() => setActiveIdx(idx + (addPeopleChannel ? 1 : 0))}
+                            onMouseEnter={() => setActiveIdx(idx + matchingQuickActions.length + (addPeopleChannel ? 1 : 0))}
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => pickUser(r)}
                           >
@@ -558,29 +647,39 @@ const SearchBox = forwardRef(function SearchBox(
               )}
 
               {q && !peoplePicker && (
-                <button
-                  ref={(element) => { navItemRefs.current[0] = element; }}
-                  className={`search-row search-messages-row ${activeIdx === 0 ? "active" : ""}`}
-                  data-testid="search-messages-row"
-                  onMouseEnter={() => setActiveIdx(0)}
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={submitMessageSearch}
-                >
-                  <SearchIcon size={15} strokeWidth={1.8} />
-                  <span className="search-name">Search messages for “{query.trim()}”</span>
-                  <span className="search-kind">Enter ↵</span>
-                </button>
+                <>
+                  <button
+                    ref={(element) => { navItemRefs.current[0] = element; }}
+                    className={`search-row search-messages-row ${activeIdx === 0 ? "active" : ""}`}
+                    data-testid="search-messages-row"
+                    onMouseEnter={() => setActiveIdx(0)}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={submitMessageSearch}
+                  >
+                    <SearchIcon size={15} strokeWidth={1.8} />
+                    <span className="search-name">Search messages for “{query.trim()}”</span>
+                    <span className="search-kind">Enter ↵</span>
+                  </button>
+                  {matchingQuickActions.length > 0 && (
+                    <>
+                      <div className="search-section">Actions</div>
+                      {matchingQuickActions.map((action, idx) => actionRow(action, idx + 1))}
+                    </>
+                  )}
+                </>
               )}
 
               {!peoplePicker && channelHits.length > 0 && <div className="search-section">Channels</div>}
-              {!peoplePicker && channelHits.map((c, i) => channelRow(c, channelStart + i, "hit"))}
+              {!peoplePicker && channelHits.map((c, i) => channelRow(c, channelStart + matchingQuickActions.length + i, "hit"))}
 
               {peopleHits.length > 0 && <div className="search-section">People</div>}
-              {peopleHits.map((u, i) => personRow(u, peopleStart + i, "hit"))}
+              {peopleHits.map((u, i) => personRow(u, peopleStart + matchingQuickActions.length + i, "hit"))}
 
-              {(q || peoplePicker) && !hasFilterTokens && channelHits.length === 0 && peopleHits.length === 0 && (
+              {(q || peoplePicker) && !hasFilterTokens && matchingQuickActions.length === 0 && channelHits.length === 0 && peopleHits.length === 0 && (
                 <div className="people-empty">No people match.</div>
               )}
+            </>
+          )}
             </>
           )}
         </div>

@@ -1520,7 +1520,7 @@ function PinnedPanel({ messages, renderMarkdown, emojiMap, onUnpin, onClose }) {
                 className="pinned-item-body markdown"
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(m.body || "") }}
               />
-              <button className="pinned-unpin" data-testid={`pinned-${m.id}-unpin`} onClick={() => onUnpin(m)} title="Unpin">
+              <button className="pinned-unpin" data-testid={`pinned-${m.id}-unpin`} onClick={() => onUnpin(m)}>
                 Unpin
               </button>
             </div>

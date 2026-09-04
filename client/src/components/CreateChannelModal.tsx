@@ -33,11 +33,15 @@ export default function CreateChannelModal({ onCreate, onClose }) {
   const readOnlyField = register("readOnly");
 
   useEffect(() => {
-    inputRef.current?.focus();
     const onKey = (e) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  function focusNameOnOpen(event) {
+    event.preventDefault();
+    requestAnimationFrame(() => inputRef.current?.focus());
+  }
 
   const submit = handleSubmit(async (values) => {
     setError(null);
@@ -50,7 +54,7 @@ export default function CreateChannelModal({ onCreate, onClose }) {
   });
 
   return (
-    <Modal title="Create a channel" onClose={onClose}>
+    <Modal title="Create a channel" onClose={onClose} onOpenAutoFocus={focusNameOnOpen}>
       <form data-testid="create-channel-modal" onSubmit={submit}>
         <label className="field">
           <span className="field-label">Name</span>

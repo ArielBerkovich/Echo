@@ -34,6 +34,7 @@ export default function WorkspaceContent({ view, search, browse, feeds, conversa
           onFindChannels={search.onFindChannels}
           onPickUser={search.onPickUser}
           onAddPeople={search.onAddPeople}
+          onQuickAction={search.onQuickAction}
           onSearchMessages={search.onSearchMessages}
         />
       </div>

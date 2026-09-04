@@ -156,6 +156,7 @@ export default function App() {
 
   const hotkeyOptions = { ...GLOBAL_HOTKEY_OPTIONS, enabled: !!user };
   useHotkeys(getKeyboardHotkeys("focus-search"), () => searchRef.current?.focus(), hotkeyOptions, [user]);
+  useHotkeys(getKeyboardHotkeys("open-switcher"), () => searchRef.current?.openSwitcher(), hotkeyOptions, [user]);
   useHotkeys(getKeyboardHotkeys("new-message"), () => handleStartConversation(), hotkeyOptions, [user]);
   useHotkeys(getKeyboardHotkeys("browse-channels"), () => handleBrowseChannels(), hotkeyOptions, [user]);
   useHotkeys(getKeyboardHotkeys("create-channel"), () => setShowCreate(true), hotkeyOptions, [user]);
@@ -324,6 +325,26 @@ export default function App() {
     setSearchQuery(null);
     setNavOpen(false);
     setShowNewMessage(true);
+  }
+
+  function handleQuickAction(actionId) {
+    switch (actionId) {
+      case "new-message":
+        return handleStartConversation();
+      case "create-channel":
+        return setShowCreate(true);
+      case "browse-channels":
+        return handleBrowseChannels();
+      case "home":
+      case "dms":
+      case "activity":
+      case "saved":
+        return handleViewSelect(actionId);
+      case "settings":
+        return openSettings();
+      default:
+        return undefined;
+    }
   }
 
   function handleSidebarOpenDm(target, isSelf) {
@@ -1445,6 +1466,7 @@ export default function App() {
             onFindChannels: findPublicChannels,
             onPickUser: handlePickUser,
             onAddPeople: () => setShowAddPeople(true),
+            onQuickAction: handleQuickAction,
             onSearchMessages: handleSearchMessages,
             onJump: handleSearchJump,
             onClose: () => {

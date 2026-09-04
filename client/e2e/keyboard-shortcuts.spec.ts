@@ -16,13 +16,59 @@ test.describe("documented keyboard shortcuts", () => {
     throw new Error(`Could not reach ${await locator.getAttribute("data-testid")} with Tab`);
   }
 
-  test("opens search with Ctrl+F", async ({ page }) => {
+  test("keeps Ctrl+F focused on workspace search and opens the switcher with Ctrl+K", async ({ page }) => {
     await page.goto("/");
     const search = page.getByTestId("search-input");
     await expect(page.getByTestId("composer-editor")).toBeVisible();
 
     await page.keyboard.press("Control+f");
     await expect(search).toBeFocused();
+    await expect(page.getByTestId("search-action-new-message")).toHaveCount(0);
+
+    await page.getByTestId("composer-editor").focus();
+    await page.keyboard.press("Control+k");
+    await expect(search).toBeFocused();
+    await expect(page.getByTestId("search-action-new-message")).toBeVisible();
+  });
+
+  test("opens matching quick-switcher actions", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByTestId("composer-editor")).toBeVisible();
+    const search = page.getByTestId("search-input");
+    await page.keyboard.press("Control+k");
+    await expect(page.getByTestId("search-action-new-message")).toBeVisible();
+    await expect(page.getByRole("dialog", { name: "Commands" })).toBeVisible();
+    await search.fill("settings");
+
+    await expect(page.getByTestId("search-action-settings")).toBeVisible();
+    await expect(page.getByTestId("search-messages-row")).toHaveCount(0);
+    await expect(page.getByTestId("search-channel-general")).toHaveCount(0);
+    await page.getByTestId("search-action-settings").click();
+    await expect(page).toHaveURL(/\/settings\/account$/);
+  });
+
+  test("hands command focus to form fields, not feed headers", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByTestId("composer-editor")).toBeVisible();
+
+    await page.keyboard.press("Control+k");
+    await page.getByTestId("search-action-create-channel").click();
+    await expect(page.getByTestId("create-channel-name")).toBeFocused();
+    await page.getByTestId("create-channel-cancel").click();
+
+    await page.keyboard.press("Control+k");
+    await page.getByTestId("search-action-activity").click();
+    const activityHeader = page.getByTestId("activity-header");
+    await expect(activityHeader).toBeVisible();
+    await expect(activityHeader).not.toHaveAttribute("tabindex");
+    await expect(activityHeader).not.toBeFocused();
+
+    await page.keyboard.press("Control+k");
+    await page.getByTestId("search-action-saved").click();
+    const savedHeader = page.getByTestId("saved-header");
+    await expect(savedHeader).toBeVisible();
+    await expect(savedHeader).not.toHaveAttribute("tabindex");
+    await expect(savedHeader).not.toBeFocused();
   });
 
   test("navigates to every primary view and opens a new DM", async ({ page }) => {
@@ -49,20 +95,21 @@ test.describe("documented keyboard shortcuts", () => {
     await page.keyboard.press("Control+Shift+a");
     await expect(page.getByTestId("activity-header")).toBeVisible();
     await expect(page.getByTestId("rail-activity")).toHaveClass(/active/);
-    await expect(page.getByTestId("activity-header")).toBeFocused();
+    await expect(page.getByTestId("activity-header")).not.toHaveAttribute("tabindex");
+    await expect(page.getByTestId("activity-header")).not.toBeFocused();
 
     await page.keyboard.press("Control+Shift+s");
     await expect(page.getByTestId("saved-header")).toBeVisible();
     await expect(page.getByTestId("rail-saved")).toHaveClass(/active/);
-    await expect(page.getByTestId("saved-header")).toBeFocused();
+    await expect(page.getByTestId("saved-header")).not.toHaveAttribute("tabindex");
+    await expect(page.getByTestId("saved-header")).not.toBeFocused();
     const savedItem = page.getByTestId("saved-item").first();
     await expect(savedItem).toBeVisible();
     await savedItem.getByRole("button", { name: "Remove from saved" }).focus();
     await page.keyboard.press("Enter");
     await expect.poll(() => page.evaluate(() => {
       const active = document.activeElement;
-      return active?.getAttribute("data-testid") === "saved-header"
-        || active?.getAttribute("data-testid") === "saved-item";
+      return active?.getAttribute("data-testid") !== "saved-header";
     })).toBe(true);
 
     await page.keyboard.press("Control+Shift+m");
