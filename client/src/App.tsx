@@ -1058,9 +1058,6 @@ export default function App() {
     });
     setActiveChannel(joined);
     cacheCatalogChannels([{ ...joined, joined: true }]);
-    // Refresh the complete sidebar in the background without delaying the
-    // catalog row update or the transition into the joined channel.
-    api.listChannels().then(({ channels: fresh }) => setChannels(fresh)).catch(() => {});
     return joined;
   }
 
