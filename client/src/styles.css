@@ -9703,6 +9703,12 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
   padding: 16px 4px;
   text-align: center;
 }
+.people-results-hint {
+  color: var(--muted);
+  padding: 10px 4px 6px;
+  font-size: 12px;
+  text-align: center;
+}
 
 /* Single-recipient DM composer. */
 .new-message-modal {

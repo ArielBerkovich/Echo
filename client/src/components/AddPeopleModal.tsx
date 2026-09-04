@@ -1,6 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Avatar from "./Avatar.js";
 import Modal, { ModalActions } from "./Modal.js";
+
+const INITIAL_RESULT_LIMIT = 25;
+const SEARCH_RESULT_LIMIT = 50;
 
 // Pick workspace members to add to a channel. Adding is immediate; the person
 // then drops out of the list. "Done" closes the dialog.
@@ -15,19 +18,26 @@ export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
     return () => window.clearTimeout(focusTimer);
   }, []);
 
-  const memberIds = new Set(
-    (channel.members?.length ? channel.members : (channel.participants || []).map((member) => member.id))
+  const memberIds = useMemo(
+    () => new Set(
+      channel.members?.length
+        ? channel.members
+        : (channel.participants || []).map((member) => member.id)
+    ),
+    [channel.members, channel.participants]
   );
   const isGroupDm = channel.type === "dm" && memberIds.size > 2;
   const q = filter.trim().toLowerCase();
-  const available = users
+  const available = useMemo(() => users
     .filter((u) => !memberIds.has(u.id))
     .filter(
       (u) =>
         !q ||
         u.displayName.toLowerCase().includes(q) ||
         u.username.toLowerCase().includes(q)
-    );
+    ), [memberIds, q, users]);
+  const resultLimit = q ? SEARCH_RESULT_LIMIT : INITIAL_RESULT_LIMIT;
+  const visibleUsers = available.slice(0, resultLimit);
 
   async function add(u) {
     setAdding(u.id);
@@ -61,7 +71,8 @@ export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
           {isGroupDm && memberIds.size >= 10 ? null : available.length === 0 ? (
             <div className="people-empty">Everyone in the workspace is already here.</div>
           ) : (
-            available.map((u) => (
+            <>
+            {visibleUsers.map((u) => (
               <div className="person-row" key={u.id}>
                 <Avatar name={u.displayName} src={u.avatarUrl} size={32} />
                 <div className="person-info">
@@ -72,7 +83,13 @@ export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
                   {adding === u.id ? "Adding…" : "Add"}
                 </button>
               </div>
-            ))
+            ))}
+            {available.length > visibleUsers.length && (
+              <div className="people-results-hint">
+                {q ? "Refine your search to see more people." : "Search to find more people."}
+              </div>
+            )}
+            </>
           )}
         </div>
 
