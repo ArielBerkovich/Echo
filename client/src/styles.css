@@ -303,6 +303,54 @@ html[data-theme="sand"][data-mode="light"] {
   --code-border: #ddd0b8;
 }
 
+/* High contrast — explicit black/white surfaces and a vivid blue action color
+   keep text, controls, and focus indicators legible for low-vision users. */
+html[data-theme="high-contrast"] {
+  --accent: #005fcc;
+  --active-bg: #005fcc;
+  --active-fg: #ffffff;
+  --on-navy: #ffffff;
+  --on-navy-muted: #ffffff;
+  --sidebar-bg: linear-gradient(180deg, #000000, #111111);
+  --rail-bg: #000000;
+  --border: #000000;
+  --tooltip-bg: #000000;
+  --tooltip-fg: #ffffff;
+  --tooltip-border: #ffffff;
+  --input-focus-border: #005fcc;
+  --input-focus-ring: color-mix(in srgb, #005fcc 42%, transparent);
+  --input-focus-shadow: 0 0 0 3px var(--input-focus-ring);
+}
+html[data-theme="high-contrast"][data-mode="light"] {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f0f0f0;
+  --text: #000000;
+  --muted: #333333;
+  --code-bg: #f0f0f0;
+  --code-text: #000000;
+  --code-border: #000000;
+  --shadow-sm: 0 1px 0 #000000;
+  --shadow-md: 0 2px 0 #000000;
+  --shadow-lg: 0 4px 0 #000000;
+}
+html[data-theme="high-contrast"][data-mode="dark"] {
+  --bg: #000000;
+  --surface: #111111;
+  --surface-2: #222222;
+  --text: #ffffff;
+  --muted: #dddddd;
+  --border: #ffffff;
+  --code-bg: #000000;
+  --code-text: #ffffff;
+  --code-border: #ffffff;
+  --accent: #66d9ff;
+  --active-bg: #ffdf00;
+  --active-fg: #000000;
+  --input-focus-border: #66d9ff;
+  --input-focus-ring: color-mix(in srgb, #66d9ff 48%, transparent);
+}
+
 /* Rose — soft pink; signature pink surfaces in light mode. */
 
 /* ---- Theme-tinted dark surfaces so the chat panel stays on-brand in dark

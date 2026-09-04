@@ -8,6 +8,7 @@ export const THEMES = [
   { id: "midnight", label: "Midnight", swatch: ["#1a1640", "#15132e", "#8b5cf6"] },
   { id: "dracula", label: "Dracula", swatch: ["#343746", "#282a36", "#bd93f9"] },
   { id: "sand", label: "Sand", swatch: ["#5a4632", "#fffdf8", "#c2682a"] },
+  { id: "high-contrast", label: "High contrast", swatch: ["#000000", "#ffffff", "#005fcc"] },
 ];
 
 const DEFAULT_THEME = "nord";
