@@ -10236,7 +10236,9 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   }
   .thread-panel,
   .details-panel:not(.channel-details-dialog),
-  .pinned-panel {
+  .pinned-panel,
+  .files-panel,
+  .members-panel {
     position: absolute;
     top: 0;
     right: 0;
