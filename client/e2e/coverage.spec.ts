@@ -111,12 +111,13 @@ test("virtualizes the add-people directory while keeping all users reachable", a
     } while (index >= 0);
     return code;
   };
-  const people = await Promise.all(
+  const registrations = await Promise.all(
     Array.from({ length: 36 }, (_, index) => registerUser(page, {
       username: `virtual${indexCode(index)}.user${uniqueUserSuffix}`,
       displayName: `Virtual${indexCode(index)} User`,
     }))
   );
+  const people = registrations.map(({ user }) => user);
 
   await page.goto("/");
   await page.getByRole("button", { name: "Create channel" }).click();
