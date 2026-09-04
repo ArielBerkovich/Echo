@@ -88,6 +88,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
             className="details-panel channel-details-dialog"
             data-testid="channel-details-dialog"
             aria-describedby={undefined}
+            onEscapeKeyDown={(event) => event.stopPropagation()}
           >
         <header className="channel-details-header">
           <div className="channel-details-heading">
