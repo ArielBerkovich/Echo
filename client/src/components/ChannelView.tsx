@@ -1628,7 +1628,6 @@ function FilesPanel({ files, loading, error, conversationLabel, onRetry, onClose
       <div className="panel-header">
         <div>
           <span className="panel-title">Files</span>
-          {!loading && !error && <span className="files-count">{files.length} file{files.length === 1 ? "" : "s"} shared in {conversationLabel}</span>}
         </div>
         <CloseButton size="sm" onClick={onClose} label="Close files" />
       </div>
