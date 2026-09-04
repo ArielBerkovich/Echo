@@ -69,11 +69,16 @@ test.describe("custom emoji pickers", () => {
 
   test("inserts a Git emoji into a forward note", async ({ page }) => {
     await page.goto("/");
+    await expect(page.getByTestId("channel-title")).toContainText("general");
     const source = messageById(page, fixture.messages.searchHit.id);
+    await expect(source).toBeVisible({ timeout: 15_000 });
     await source.hover();
-    await page.getByTestId(`message-${fixture.messages.searchHit.id}-forward`).click({ force: true });
+    const forward = page.getByTestId(`message-${fixture.messages.searchHit.id}-forward`);
+    await expect(forward).toBeVisible();
+    await forward.click({ force: true });
 
     const modal = page.getByTestId("forward-modal");
+    await expect(modal).toBeVisible();
     const editor = modal.getByTestId("composer-editor");
     await modal.getByTestId("composer-emoji-toggle").click();
     const picker = emojiPicker(page);
