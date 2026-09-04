@@ -220,7 +220,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
                     <div className="channel-details-person-copy">
                       <button
                         type="button"
-                        className="channel-details-person-name channel-details-profile-link"
+                        className="channel-details-person-name channel-details-profile-link interactive-name"
                         onClick={() => onOpenProfile?.(member.id)}
                       >
                         {member.displayName}
@@ -269,7 +269,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
             <div className="channel-details-created">
               <Avatar name={creator?.displayName || "Echo"} src={creator?.avatarUrl} size={32} />
               {creator ? (
-                <button type="button" className="channel-details-created-name channel-details-profile-link" onClick={() => onOpenProfile?.(creator.id)}>
+                <button type="button" className="channel-details-created-name channel-details-profile-link interactive-name" onClick={() => onOpenProfile?.(creator.id)}>
                   {creator.displayName}
                 </button>
               ) : (

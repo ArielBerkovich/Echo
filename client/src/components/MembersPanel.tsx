@@ -210,7 +210,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
                 <div className="members-panel-person-copy">
                   <button
                     type="button"
-                    className="channel-details-person-name channel-details-profile-link"
+                    className="channel-details-person-name channel-details-profile-link interactive-name"
                     onClick={() => onOpenProfile?.(member.id)}
                   >
                     {member.displayName}

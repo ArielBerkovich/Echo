@@ -412,7 +412,7 @@ function Message({
           <div className="meta">
             <button
               type="button"
-              className="author author-btn"
+              className="author author-btn interactive-name"
               data-testid={`message-${mid}-author`}
               dir="auto"
               onClick={() => m.author?.id && onOpenProfile?.(m.author.id)}

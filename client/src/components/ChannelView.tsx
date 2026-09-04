@@ -1087,7 +1087,7 @@ const ChannelView = forwardRef(function ChannelView({
             ) : (
               <button
                 type="button"
-                className="ch-name ch-name-btn dm-name-btn"
+                className="ch-name ch-name-btn dm-name-btn interactive-name"
                 data-testid="channel-title"
                 aria-label={dmLabel}
                 title="View profile"
@@ -1135,7 +1135,7 @@ const ChannelView = forwardRef(function ChannelView({
               </button>
             )}
             <button
-              className="ch-name ch-name-btn"
+              className="ch-name ch-name-btn interactive-name"
               data-testid="channel-title"
               title="View channel details"
               onClick={openDetailsPanel}
