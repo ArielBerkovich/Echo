@@ -89,7 +89,6 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
       testId="channel-details-dialog"
       showHeader={false}
       showClose={false}
-      unstyled
       onClose={onClose}
     >
         <header className="channel-details-header">

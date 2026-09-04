@@ -15,7 +15,6 @@ export default function Modal({
   closeTestId,
   closeDisabled = false,
   onOpenAutoFocus,
-  unstyled = false,
   onPointerDownOutside,
   showHeader = true,
   showClose = true,
@@ -34,7 +33,7 @@ export default function Modal({
         >
           <Dialog.Content
             className={cn(
-              !unstyled && "modal z-[101] w-[480px] max-w-[calc(100vw-40px)] rounded-2xl bg-[var(--surface)] p-6 shadow-[var(--shadow-lg)]",
+              "modal z-[101] w-[480px] max-w-[calc(100vw-40px)] rounded-2xl bg-[var(--surface)] p-6 shadow-[var(--shadow-lg)]",
               className
             )}
             data-testid={testId}

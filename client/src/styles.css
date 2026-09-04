@@ -5763,6 +5763,7 @@ html[data-mode="dark"] .day-divider-label {
   max-height: min(780px, calc(100vh - 40px));
   min-height: 0;
   overflow: hidden;
+  padding: 0;
   border: 1px solid var(--border);
   border-radius: 20px;
   background: var(--surface);
