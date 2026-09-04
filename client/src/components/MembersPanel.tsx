@@ -4,6 +4,7 @@ import { SearchIcon, UsersRoundIcon } from "lucide-react";
 import Avatar from "./Avatar.js";
 import ConfirmDialog from "./ConfirmDialog.js";
 import { CloseButton } from "./Button.js";
+import { Button } from "./Button.js";
 import { Input, InputShell } from "./Input.js";
 
 export default function MembersPanel({ channel, users = [], onOpenProfile, onAddPeople, onRemoveMember, onPromoteManager, onUpdated, onClose }) {
@@ -149,14 +150,14 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
                   aria-label="Group DM name"
                   autoFocus
                 />
-                <button type="button" onClick={renameGroupDm} disabled={savingName || !name.trim()}>{savingName ? "Saving…" : "Save"}</button>
-                <button type="button" onClick={() => setEditName(false)} disabled={savingName}>Cancel</button>
+                <Button variant="primary" onClick={renameGroupDm} disabled={savingName || !name.trim()}>{savingName ? "Saving…" : "Save"}</Button>
+                <Button variant="secondary" onClick={() => setEditName(false)} disabled={savingName}>Cancel</Button>
                 {managementError && <div className="error members-panel-error group-dm-error" role="alert">{managementError}</div>}
               </div>
             ) : (
-              <button type="button" className="members-panel-action" onClick={() => { setName(channel.name?.startsWith("dm-") ? "" : channel.name || ""); setEditName(true); }}>
+              <Button variant="subtle" className="members-panel-action" onClick={() => { setName(channel.name?.startsWith("dm-") ? "" : channel.name || ""); setEditName(true); }}>
                 Rename group DM
-              </button>
+              </Button>
             )}
             {convertOpen ? (
               <div className="group-dm-convert-editor">
@@ -167,21 +168,21 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
                   placeholder="New private channel name"
                   aria-label="New private channel name"
                 />
-                <button type="button" onClick={convertGroupDm} disabled={converting || !name.trim()}>{converting ? "Converting…" : "Convert"}</button>
-                <button type="button" onClick={() => setConvertOpen(false)} disabled={converting}>Cancel</button>
+                <Button variant="primary" onClick={convertGroupDm} disabled={converting || !name.trim()}>{converting ? "Converting…" : "Convert"}</Button>
+                <Button variant="secondary" onClick={() => setConvertOpen(false)} disabled={converting}>Cancel</Button>
                 {managementError && <div className="error members-panel-error group-dm-error" role="alert">{managementError}</div>}
               </div>
             ) : (
-              <button type="button" className="members-panel-action" onClick={() => { setName(""); setConvertOpen(true); }}>
+              <Button variant="subtle" className="members-panel-action" onClick={() => { setName(""); setConvertOpen(true); }}>
                 Convert to private channel
-              </button>
+              </Button>
             )}
           </section>
         )}
         {canAddPeople && (
-          <button ref={addPeopleRef} type="button" className="members-panel-add" onClick={onAddPeople}>
+          <Button ref={addPeopleRef} variant="subtle" className="channel-add-people members-panel-add" onClick={onAddPeople}>
             + Add people
-          </button>
+          </Button>
         )}
 
         <InputShell className="channel-details-search members-panel-search">

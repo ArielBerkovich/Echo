@@ -2,7 +2,14 @@ import { forwardRef } from "react";
 import { XIcon } from "lucide-react";
 import { cn } from "../lib/cn.js";
 
-const variantClasses = { primary: "btn-primary", secondary: "btn-secondary", danger: "btn-danger", link: "link" };
+const variantClasses = {
+  primary: "btn-primary",
+  secondary: "btn-secondary",
+  danger: "btn-danger",
+  "danger-outline": "btn-danger-outline",
+  subtle: "btn-subtle",
+  link: "link",
+};
 
 export const Button = forwardRef(function Button({ variant = "secondary", className, type = "button", ...props }, ref) {
   return <button ref={ref} type={type} className={cn(variantClasses[variant] || variantClasses.secondary, className)} {...props} />;
