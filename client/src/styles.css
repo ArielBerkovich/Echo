@@ -24,6 +24,9 @@
   --active-bg-2: color-mix(in srgb, var(--active-bg) 68%, #000);
   --active-soft: color-mix(in srgb, var(--active-bg) 11%, var(--surface));
   --active-ring: color-mix(in srgb, var(--active-bg) 34%, transparent);
+  --input-focus-border: color-mix(in srgb, var(--accent) 72%, var(--border));
+  --input-focus-ring: color-mix(in srgb, var(--accent) 24%, transparent);
+  --input-focus-shadow: 0 0 0 2px var(--input-focus-ring), 0 2px 5px color-mix(in srgb, var(--text) 7%, transparent);
 
   /* Surfaces (bright) */
   --bg: #f5f8fd;
@@ -533,8 +536,12 @@ input {
 }
 input:focus {
   outline: none;
-  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 24%, transparent);
+  border-color: var(--input-focus-border);
+  box-shadow: var(--input-focus-shadow);
+}
+.input-shell:focus-within {
+  border-color: var(--input-focus-border);
+  box-shadow: var(--input-focus-shadow);
 }
 :focus-visible {
   outline: 2px solid color-mix(in srgb, var(--accent) 72%, transparent);
@@ -1100,8 +1107,8 @@ input:focus {
 }
 .input-wrap input:focus {
   outline: none;
-  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 24%, transparent);
+  border-color: var(--input-focus-border);
+  box-shadow: var(--input-focus-shadow);
 }
 .username-composed {
   min-width: 0;
@@ -1113,8 +1120,8 @@ input:focus {
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .username-composed:focus-within {
-  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 24%, transparent);
+  border-color: var(--input-focus-border);
+  box-shadow: var(--input-focus-shadow);
 }
 .username-composed input {
   flex: 1 1 auto;
@@ -1690,10 +1697,6 @@ html[data-mode="dark"] .backend-connection-error {
   border-radius: 10px;
   padding: 0 12px;
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
-}
-.name-input:focus-within {
-  border-color: var(--blue-400);
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
 }
 .name-prefix {
   color: var(--muted);
@@ -3104,8 +3107,8 @@ html[data-mode="dark"] .sidebar {
   color: var(--on-navy-muted);
 }
 .dm-find input:focus {
-  border-color: var(--cyan);
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+  border-color: var(--input-focus-border);
+  box-shadow: var(--input-focus-shadow);
 }
 .dm-find .start-conversation {
   flex: none;
@@ -3450,9 +3453,7 @@ html[data-mode="dark"] .sidebar {
 }
 .search-box-field:focus-within {
   background: var(--surface);
-  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
   color: var(--accent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent), 0 2px 5px color-mix(in srgb, var(--text) 7%, transparent);
   transform: translateY(-1px);
 }
 .search-box-field:hover:not(:focus-within) {
@@ -4534,8 +4535,8 @@ html[data-mode="dark"] .day-divider-label {
 }
 .settings-input:focus {
   outline: none;
-  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 24%, transparent);
+  border-color: var(--input-focus-border);
+  box-shadow: var(--input-focus-shadow);
 }
 .settings-handle {
   margin-top: 8px;
@@ -5969,8 +5970,8 @@ html[data-mode="dark"] .day-divider-label {
   margin: 16px 0 14px;
 }
 .channel-details-search:focus-within {
-  border-color: var(--active-bg);
-  box-shadow: 0 0 0 2px var(--active-ring);
+  border-color: var(--input-focus-border);
+  box-shadow: var(--input-focus-shadow);
 }
 .channel-details-search input {
   width: 100%;
@@ -7351,8 +7352,8 @@ html[data-mode="dark"] .day-divider-label {
 }
 .forward-destination-search:focus {
   outline: none;
-  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 24%, transparent);
+  border-color: var(--input-focus-border);
+  box-shadow: var(--input-focus-shadow);
 }
 .forward-selected-chips {
   display: flex;
@@ -7426,8 +7427,8 @@ html[data-mode="dark"] .day-divider-label {
 }
 .forward-note-editor:focus {
   outline: none;
-  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 24%, transparent);
+  border-color: var(--input-focus-border);
+  box-shadow: var(--input-focus-shadow);
 }
 .forward-note-editor:disabled {
   opacity: 0.65;
@@ -8504,10 +8505,6 @@ html[data-mode="dark"] .channel-header {
   border-radius: 8px;
   background: var(--surface);
   color: var(--muted);
-}
-.files-search:focus-within {
-  border-color: var(--active-bg);
-  box-shadow: 0 0 0 2px var(--active-ring);
 }
 .files-search input {
   min-width: 0;
@@ -11631,10 +11628,6 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   border-radius: 10px;
   background: var(--surface);
   color: var(--muted);
-  box-shadow: var(--shadow-sm);
-}
-.channel-browser-search:focus-within {
-  border-color: var(--accent);
   box-shadow: var(--shadow-sm);
 }
 .channel-browser-search input {

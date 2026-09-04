@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CompassIcon, HashIcon, PlusIcon, SearchIcon, UsersIcon, XIcon } from "lucide-react";
 import { api } from "../api.js";
 import { queryKeys } from "../lib/queryClient.js";
+import { Input, InputShell } from "./Input.js";
 
 const FILTERS = [
   { id: "all", label: "All" },
@@ -171,13 +172,14 @@ export default function ChannelBrowser({
 
         <div ref={contentRef} className="channel-browser-content">
           <div className="channel-browser-tools">
-            <label className="channel-browser-search">
+            <InputShell className="channel-browser-search">
               <SearchIcon size={17} strokeWidth={1.8} aria-hidden="true" />
               <span className="sr-only">Search public channels</span>
-              <input
+              <Input
                 ref={searchInputRef}
                 type="search"
                 data-testid="channel-browser-search"
+                aria-label="Search public channels"
                 value={query}
                 onChange={(event) => {
                   setQuery(event.target.value);
@@ -203,7 +205,7 @@ export default function ChannelBrowser({
                   <XIcon size={15} strokeWidth={2} aria-hidden="true" />
                 </button>
               ) : null}
-            </label>
+            </InputShell>
             <div className="channel-browser-filters" role="group" aria-label="Filter public channels">
               {FILTERS.map((item) => (
                 <button

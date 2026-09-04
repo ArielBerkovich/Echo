@@ -22,6 +22,7 @@ import Message, { SystemMessage } from "./Message.js";
 import { LightboxImage } from "./Attachments.js";
 import Composer from "./Composer.js";
 import { ChannelOptionButton, CloseButton } from "./Button.js";
+import { Input, InputShell } from "./Input.js";
 import ConfirmDialog from "./ConfirmDialog.js";
 import LeaveChannelDialog from "./LeaveChannelDialog.js";
 import { LeaveIcon, PinIcon } from "./Icons.js";
@@ -1631,10 +1632,10 @@ function FilesPanel({ files, loading, error, conversationLabel, onRetry, onClose
         <CloseButton size="sm" onClick={onClose} label="Close files" />
       </div>
       <div className="files-panel-controls">
-        <label className="files-search">
+        <InputShell className="files-search">
           <SearchIcon size={16} aria-hidden="true" />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search files…" aria-label="Search files" />
-        </label>
+          <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search files…" aria-label="Search files" />
+        </InputShell>
         <div className="files-filters" role="group" aria-label="Filter files">
           {["All", "Images", "Documents", "Audio & video", "Other"].map((label) => (
             <button key={label} type="button" className={filter === label ? "active" : ""} aria-pressed={filter === label} onClick={() => setFilter(label)}>{label}</button>
