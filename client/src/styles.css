@@ -8471,13 +8471,6 @@ html[data-mode="dark"] .channel-header {
   background: var(--active-bg);
   color: var(--active-fg);
 }
-.files-count {
-  display: block;
-  margin-top: 3px;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 500;
-}
 .files-panel-controls {
   padding: 12px 16px 8px;
   border-bottom: 0;
