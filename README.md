@@ -56,6 +56,19 @@ docker compose -p echo-rhsso-demo -f docker-compose.rhsso.yml up -d --build
 
 Then open [http://localhost:8091](http://localhost:8091), create the local `admin` account, and choose **Sign in with RHSSO**. The demo user is `jane.doe` / `UserPassword1`; the Keycloak console is available at [http://localhost:8180](http://localhost:8180) with `admin` / `AdminPassword1`.
 
+To run the RHSSO end-to-end suites locally, build the desktop renderer and run
+the browser and Electron tests against that stack:
+
+```bash
+npm --prefix client install
+npm --prefix electron install
+ELECTRON_BUILD=1 npm --prefix client run build
+ECHO_URL=http://localhost:8091 npm --prefix client run test:e2e:rhsso
+ECHO_URL=http://localhost:8091 npm --prefix electron run test:e2e:rhsso
+```
+
+On a headless Linux machine, wrap the Electron command with `xvfb-run --auto-servernum`.
+
 Stop the demo and remove its data with:
 
 ```bash
