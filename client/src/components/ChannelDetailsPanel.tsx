@@ -3,7 +3,7 @@ import { useState } from "react";
 import { api } from "../api.js";
 import { formatDate } from "../lib/time.js";
 import Avatar from "./Avatar.js";
-import { CloseButton } from "./Button.js";
+import { Button, CloseButton } from "./Button.js";
 import { Input, InputShell } from "./Input.js";
 import {
   FileTextIcon,
@@ -174,10 +174,10 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
             </div>
 
             {canAddPeople && (
-              <button type="button" className="channel-details-add channel-details-add-primary" onClick={onAddPeople}>
+              <Button variant="subtle" className="channel-add-people channel-details-add-primary" onClick={onAddPeople}>
                 <PlusIcon size={17} strokeWidth={2.2} />
                 <span>Add people to this channel</span>
-              </button>
+              </Button>
             )}
 
             <InputShell className="channel-details-search channel-details-member-filter">
@@ -322,8 +322,8 @@ function EditableField({ label, value, placeholder, editable, multiline, onSave,
           <span>{label}</span>
         </div>
         {editable && !editing && (
-          <button
-            type="button"
+          <Button
+            variant="subtle"
             className="channel-details-edit"
             onClick={start}
             onKeyDown={(event) => {
@@ -334,7 +334,7 @@ function EditableField({ label, value, placeholder, editable, multiline, onSave,
             }}
           >
             {value ? "Edit" : "Add"}
-          </button>
+          </Button>
         )}
       </div>
 

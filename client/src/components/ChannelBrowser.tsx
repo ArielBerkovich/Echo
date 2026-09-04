@@ -4,6 +4,7 @@ import { CompassIcon, HashIcon, PlusIcon, SearchIcon, UsersIcon, XIcon } from "l
 import { api } from "../api.js";
 import { queryKeys } from "../lib/queryClient.js";
 import { Input, InputShell } from "./Input.js";
+import { Button } from "./Button.js";
 
 const FILTERS = [
   { id: "all", label: "All" },
@@ -164,10 +165,10 @@ export default function ChannelBrowser({
           <span className="ch-meta">
             {counts.all} {counts.all === 1 ? "channel" : "channels"}
           </span>
-          <button type="button" className="btn-primary channel-browser-create" onClick={onCreate}>
+          <Button variant="primary" className="channel-browser-create" onClick={onCreate}>
             <PlusIcon size={16} strokeWidth={2} aria-hidden="true" />
             Create
-          </button>
+          </Button>
         </header>
 
         <div ref={contentRef} className="channel-browser-content">

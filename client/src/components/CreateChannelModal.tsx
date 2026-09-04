@@ -3,6 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import { Check, ChevronDown, Globe2, LockKeyhole } from "lucide-react";
 import Modal, { ModalActions } from "./Modal.js";
+import { Button } from "./Button.js";
 import { channelSchema, normalizeChannelNameInput } from "../lib/formSchemas.js";
 import { Input, InputShell } from "./Input.js";
 
@@ -171,12 +172,12 @@ export default function CreateChannelModal({ onCreate, onClose }) {
         {error && <div className="error">{error}</div>}
 
         <ModalActions>
-          <button type="button" className="btn-secondary" data-testid="create-channel-cancel" onClick={onClose}>
+                  <Button variant="secondary" data-testid="create-channel-cancel" onClick={onClose}>
             Cancel
-          </button>
-          <button type="submit" className="btn-primary" data-testid="create-channel-submit" disabled={isSubmitting}>
+                  </Button>
+                  <Button type="submit" variant="primary" data-testid="create-channel-submit" disabled={isSubmitting}>
             {isSubmitting ? "Creating…" : "Create"}
-          </button>
+                  </Button>
         </ModalActions>
       </form>
     </Modal>
