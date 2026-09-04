@@ -102,6 +102,7 @@ test("manages channels, members, visibility, and leaving", async ({ page }) => {
 
 test("virtualizes the add-people directory while keeping all users reachable", async ({ page }) => {
   const suffix = uniqueSuffix("virtual");
+  const uniqueUserSuffix = suffix.replace(/[^a-z0-9]/gi, "").slice(-8).toLowerCase();
   const indexCode = (index) => {
     let code = "";
     do {
@@ -112,7 +113,7 @@ test("virtualizes the add-people directory while keeping all users reachable", a
   };
   const people = await Promise.all(
     Array.from({ length: 36 }, (_, index) => registerUser(page, {
-      username: `virtual${indexCode(index)}.user`,
+      username: `virtual${indexCode(index)}.user${uniqueUserSuffix}`,
       displayName: `Virtual${indexCode(index)} User`,
     }))
   );
