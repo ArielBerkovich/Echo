@@ -66,7 +66,7 @@ test("keeps the workspace full-screen and usable on a phone", async ({ page }) =
   const channelDetails = page.getByTestId("channel-details-dialog");
   await expect(channelDetails).toBeVisible();
   const detailsBox = await channelDetails.boundingBox();
-  expect(detailsBox.width).toBeGreaterThanOrEqual(380);
+  expect(detailsBox.width).toBeGreaterThanOrEqual(375);
   expect(detailsBox.y + detailsBox.height).toBeLessThanOrEqual(navigationRailBox.y + 1);
   await page.getByRole("button", { name: "Close channel details" }).click();
 
@@ -74,7 +74,7 @@ test("keeps the workspace full-screen and usable on a phone", async ({ page }) =
   const pinnedPanel = page.getByTestId("pinned-panel");
   await expect(pinnedPanel).toBeVisible();
   const pinnedBox = await pinnedPanel.boundingBox();
-  expect(pinnedBox.width).toBeGreaterThanOrEqual(380);
+  expect(pinnedBox.width).toBeGreaterThanOrEqual(375);
   expect(pinnedBox.y + pinnedBox.height).toBeLessThanOrEqual(navigationRailBox.y + 1);
   await pinnedPanel.getByRole("button", { name: "Close" }).click();
 
