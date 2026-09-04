@@ -8,6 +8,7 @@ import Composer from "./Composer.js";
 import ConfirmDialog from "./ConfirmDialog.js";
 import { hasThreadJumpTarget, scrollThreadMessageIntoView } from "../lib/threadNavigation.js";
 import { shouldGroupWithPreviousMessage } from "../lib/messageGrouping.js";
+import { CloseButton } from "./Button.js";
 
 // Right-hand thread view: the root message + its replies + a reply composer.
 // Reuses the full Message (reactions, forward, edit) and Composer (emoji, bold,
@@ -314,7 +315,7 @@ export default function ThreadPanel({
         <div className="thread-heading">
           <span className="thread-title">Thread</span>
         </div>
-        <button className="thread-close" data-testid="thread-close" onClick={onClose} aria-label="Close thread">✕</button>
+        <CloseButton size="sm" data-testid="thread-close" onClick={onClose} label="Close thread" />
       </header>
 
       <div ref={scrollerRef} className="thread-body" data-testid="thread-body" onScroll={onBodyScroll} onMouseLeave={() => { if (!menuFor) setActionsFor(null); }}>

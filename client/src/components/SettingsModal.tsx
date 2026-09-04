@@ -22,6 +22,7 @@ import {
   showTestNotification,
 } from "../lib/notify.js";
 import MessageSoundControls from "./MessageSoundControls.js";
+import { CloseButton } from "./Button.js";
 
 const SETTINGS_TABS = [
   { id: "account", label: "Account", Icon: UserRoundIcon },
@@ -796,7 +797,7 @@ export default function SettingsModal({
               <section className="integration-dialog" role="dialog" aria-modal="true" aria-labelledby="jenkins-integration-title">
                 <div className="integration-dialog-header">
                   <div className="integration-dialog-title"><JenkinsIntegrationIcon /><div><h3 id="jenkins-integration-title">Jenkins</h3><p>Pipeline notifications</p></div></div>
-                  <button type="button" className="settings-close" onClick={() => setJenkinsOptionsOpen(false)} aria-label="Close Jenkins configuration">✕</button>
+                  <CloseButton onClick={() => setJenkinsOptionsOpen(false)} label="Close Jenkins configuration" />
                 </div>
                 <div className="integration-dialog-body jenkins-settings-body">
                   <div className="integration-dialog-section">
@@ -831,7 +832,7 @@ export default function SettingsModal({
               <section className="integration-dialog" role="dialog" aria-modal="true" aria-labelledby="allure-integration-title">
                 <div className="integration-dialog-header">
                   <div className="integration-dialog-title"><img className="allure-integration-icon" src="/allure-docker-icon.png" alt="" /><div><h3 id="allure-integration-title">allure docker service</h3><p>Integration settings</p></div></div>
-                  <button type="button" className="settings-close" onClick={() => setAllureOptionsOpen(false)} aria-label="Close integration settings">✕</button>
+                  <CloseButton onClick={() => setAllureOptionsOpen(false)} label="Close integration settings" />
                 </div>
                 <div className="integration-dialog-body allure-settings-body">
                   <label className="settings-profile-field-label" htmlFor="allure-url">Allure service URL</label>
@@ -863,7 +864,7 @@ export default function SettingsModal({
               <section className="integration-dialog" role="dialog" aria-modal="true" aria-labelledby="azure-integration-title">
                 <div className="integration-dialog-header">
                   <div className="integration-dialog-title"><img className="azure-integration-icon" src="/azure-devops-icon.svg" alt="" /><div><h3 id="azure-integration-title">Azure DevOps</h3><p>Integration settings</p></div></div>
-                  <button type="button" className="settings-close" onClick={() => setAzureOptionsOpen(false)} aria-label="Close integration settings">✕</button>
+                  <CloseButton onClick={() => setAzureOptionsOpen(false)} label="Close integration settings" />
                 </div>
                 <div className="integration-dialog-body">
                   <div className="integration-option-row"><div><strong>Integration status</strong><span>{azureIntegration.active ? "Azure events are enabled" : "Azure events are disabled"}</span></div><label className={`integration-switch${azureIntegration.active ? " is-on" : ""}`}><input type="checkbox" checked={!!azureIntegration.active} disabled={azureLoading} onChange={(event) => setAzureActive(event.target.checked)} /><span className="integration-switch-track"><span /></span></label></div>

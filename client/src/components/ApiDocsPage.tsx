@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ChevronDownIcon } from "lucide-react";
 import { api, getBackendUrl } from "../api.js";
 import { apiEndpointKey } from "../lib/apiDocs.js";
+import { CloseButton } from "./Button.js";
 
 const ORIGIN = getBackendUrl() || (typeof window !== "undefined" ? window.location.origin : "https://your-echo-host");
 
@@ -287,7 +288,7 @@ export default function ApiDocsPage({ onClose, embedded = false }) {
     <div className="settings-page api-page" data-testid="api-reference-page">
       <header className="settings-page-head">
         <h2>API reference</h2>
-        <button className="settings-close" onClick={onClose} aria-label="Close API reference">✕</button>
+        <CloseButton onClick={onClose} label="Close API reference" />
       </header>
       <div className="settings-page-body">{content}</div>
     </div>

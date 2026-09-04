@@ -3,6 +3,7 @@ import { useState } from "react";
 import { api } from "../api.js";
 import { formatDate } from "../lib/time.js";
 import Avatar from "./Avatar.js";
+import { CloseButton } from "./Button.js";
 import {
   FileTextIcon,
   HashIcon,
@@ -11,7 +12,6 @@ import {
   SearchIcon,
   Trash2Icon,
   UsersRoundIcon,
-  XIcon,
 } from "lucide-react";
 
 // Centered channel information dialog. Members can edit the channel metadata,
@@ -102,9 +102,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
             </div>
           </div>
           <Dialog.Close asChild>
-            <button type="button" className="channel-details-close" aria-label="Close channel details">
-              <XIcon size={19} strokeWidth={1.8} />
-            </button>
+            <CloseButton size="sm" label="Close channel details" />
           </Dialog.Close>
         </header>
 

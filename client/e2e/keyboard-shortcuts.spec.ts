@@ -75,21 +75,54 @@ test.describe("documented keyboard shortcuts", () => {
     await expect(page.getByTestId("composer-editor")).toBeVisible();
 
     await page.keyboard.press("Control+k");
-    await expect(page.getByText("Current channel", { exact: true })).toBeVisible();
+    await expect(page.getByTestId("quick-switcher-current-section")).toBeVisible();
+    await page.getByTestId("search-input").fill("ch");
+    await expect(page.getByTestId("search-action-search-channel")).toBeVisible();
+    await expect(page.getByTestId("search-action-view-files")).toHaveCount(0);
+    await page.getByTestId("search-input").fill("");
     expect(await page.getByTestId("search-action-view-files").evaluate((element) => {
-      const commands = document.querySelector(".search-section:last-of-type");
+      const commands = document.querySelector('[data-testid="quick-switcher-commands-section"]');
       return element.getBoundingClientRect().top < commands.getBoundingClientRect().top;
     })).toBe(true);
+    await page.getByTestId("search-action-search-channel").click();
+    await expect(page.getByTestId("search-input")).toHaveValue(`in:${fixture.generalChannel.name} `);
+
+    await page.keyboard.press("Control+k");
+    await page.getByTestId("search-action-view-channel-details").click();
+    await expect(page.getByTestId("channel-details-dialog")).toBeVisible();
+    await page.keyboard.press("Escape");
+
+    await page.keyboard.press("Control+k");
+    await page.getByTestId("search-action-toggle-channel-starred").click();
+    await expect(page.getByTestId("channel-starred-toggle")).toHaveAttribute("aria-pressed", "true");
+
+    await page.keyboard.press("Control+k");
+    await expect(page.getByTestId("search-action-toggle-channel-starred")).toContainText("Unstar channel");
+    await page.keyboard.press("Escape");
+
+    await page.keyboard.press("Control+k");
     await page.getByTestId("search-action-view-members").click();
     await expect(page.getByTestId("members-panel")).toBeVisible();
+    await expect(page.getByTestId("members-panel").locator("button[aria-label='Close members']")).toHaveClass(/icon-button-close/);
+    await expect(page.getByTestId("members-panel").locator("button[aria-label='Close members'] svg")).toHaveAttribute("width", "18");
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("members-panel")).toBeHidden();
 
     await page.keyboard.press("Control+k");
     await page.getByTestId("search-action-view-files").click();
     await expect(page.getByTestId("files-panel")).toBeVisible();
+    await expect(page.getByTestId("files-panel").locator("button[aria-label='Close files']")).toHaveClass(/icon-button-close/);
+    await expect(page.getByTestId("files-panel").locator("button[aria-label='Close files'] svg")).toHaveAttribute("width", "18");
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("files-panel")).toBeHidden();
 
     await page.keyboard.press("Control+k");
     await page.getByTestId("search-action-view-pinned").click();
     await expect(page.getByTestId("pinned-panel")).toBeVisible();
+    await expect(page.getByTestId("pinned-panel").locator("button[aria-label='Close']")).toHaveClass(/icon-button-close/);
+    await expect(page.getByTestId("pinned-panel").locator("button[aria-label='Close'] svg")).toHaveAttribute("width", "18");
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("pinned-panel")).toBeHidden();
   });
 
   test("limits channel commands to eligible channel contexts", async ({ page }) => {
@@ -118,7 +151,10 @@ test.describe("documented keyboard shortcuts", () => {
     await expect(page.getByTestId("new-message-modal")).toBeHidden();
 
     await page.keyboard.press("Control+k");
-    await expect(page.getByTestId("quick-switcher-current-section")).toHaveCount(0);
+    await expect(page.getByTestId("quick-switcher-current-section")).toContainText("Current conversation");
+    await expect(page.getByTestId("search-action-view-files")).toBeVisible();
+    await expect(page.getByTestId("search-action-view-profile")).toBeVisible();
+    await expect(page.getByTestId("search-action-view-members")).toHaveCount(0);
   });
 
   test("hands command focus to form fields, not feed headers", async ({ page }) => {
@@ -212,10 +248,14 @@ test.describe("documented keyboard shortcuts", () => {
 
     const thread = page.getByTestId("thread-panel");
     await expect(thread).toBeVisible();
+    await expect(thread.locator("button[aria-label='Close thread']")).toHaveClass(/icon-button-close/);
+    await expect(thread.locator("button[aria-label='Close thread'] svg")).toHaveAttribute("width", "18");
     const threadComposer = thread.getByTestId("composer-editor");
     await expect(threadComposer).toBeFocused();
     await page.keyboard.press("Control+Shift+Space");
     await expect(threadComposer).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(thread).toBeHidden();
   });
 
   test("uses search arrows, Enter, Tab filter completion, and Escape", async ({ page }) => {
