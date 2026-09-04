@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api.js";
-import { SearchIcon, UsersRoundIcon, XIcon } from "lucide-react";
+import { SearchIcon, UsersRoundIcon } from "lucide-react";
 import Avatar from "./Avatar.js";
 import ConfirmDialog from "./ConfirmDialog.js";
+import { CloseButton } from "./Button.js";
 
 export default function MembersPanel({ channel, users = [], onOpenProfile, onAddPeople, onRemoveMember, onPromoteManager, onUpdated, onClose }) {
   const [query, setQuery] = useState("");
@@ -132,9 +133,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
             <span>{channel.memberCount ?? members.length} people in {isGroupDm ? "this group DM" : `#${channel.name}`}</span>
           </div>
         </div>
-        <button type="button" className="channel-details-close" onClick={onClose} aria-label="Close members">
-          <XIcon size={19} strokeWidth={1.8} />
-        </button>
+        <CloseButton size="sm" onClick={onClose} label="Close members" />
       </header>
 
       <div className="members-panel-body">

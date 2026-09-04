@@ -1,5 +1,6 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { cn } from "../lib/cn.js";
+import { CloseButton } from "./Button.js";
 
 export function ModalActions({ children, className = "", ...props }) {
   return <div className={cn("modal-actions mt-[22px] flex justify-end gap-2.5", className)} {...props}>{children}</div>;
@@ -57,9 +58,7 @@ export default function Modal({
                 <Dialog.Title className="m-0 text-[21px] font-extrabold tracking-[-0.01em]">{title}</Dialog.Title>
                 {showClose && (
                   <Dialog.Close asChild>
-                    <button type="button" className="modal-close" aria-label={closeLabel} disabled={closeDisabled}>
-                      ✕
-                    </button>
+                    <CloseButton label={closeLabel} disabled={closeDisabled} />
                   </Dialog.Close>
                 )}
               </div>
@@ -68,15 +67,12 @@ export default function Modal({
                 <Dialog.Title className="sr-only">{title}</Dialog.Title>
                 {showClose && (
                   <Dialog.Close asChild>
-                    <button
-                      type="button"
-                      className={cn("modal-close", closeClassName)}
+                    <CloseButton
+                      className={closeClassName}
+                      label={closeLabel}
                       data-testid={closeTestId}
-                      aria-label={closeLabel}
                       disabled={closeDisabled}
-                    >
-                      ✕
-                    </button>
+                    />
                   </Dialog.Close>
                 )}
               </>

@@ -103,14 +103,26 @@ test.describe("documented keyboard shortcuts", () => {
     await page.keyboard.press("Control+k");
     await page.getByTestId("search-action-view-members").click();
     await expect(page.getByTestId("members-panel")).toBeVisible();
+    await expect(page.getByTestId("members-panel").locator("button[aria-label='Close members']")).toHaveClass(/icon-button-close/);
+    await expect(page.getByTestId("members-panel").locator("button[aria-label='Close members'] svg")).toHaveAttribute("width", "18");
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("members-panel")).toBeHidden();
 
     await page.keyboard.press("Control+k");
     await page.getByTestId("search-action-view-files").click();
     await expect(page.getByTestId("files-panel")).toBeVisible();
+    await expect(page.getByTestId("files-panel").locator("button[aria-label='Close files']")).toHaveClass(/icon-button-close/);
+    await expect(page.getByTestId("files-panel").locator("button[aria-label='Close files'] svg")).toHaveAttribute("width", "18");
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("files-panel")).toBeHidden();
 
     await page.keyboard.press("Control+k");
     await page.getByTestId("search-action-view-pinned").click();
     await expect(page.getByTestId("pinned-panel")).toBeVisible();
+    await expect(page.getByTestId("pinned-panel").locator("button[aria-label='Close']")).toHaveClass(/icon-button-close/);
+    await expect(page.getByTestId("pinned-panel").locator("button[aria-label='Close'] svg")).toHaveAttribute("width", "18");
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("pinned-panel")).toBeHidden();
   });
 
   test("limits channel commands to eligible channel contexts", async ({ page }) => {
@@ -236,10 +248,14 @@ test.describe("documented keyboard shortcuts", () => {
 
     const thread = page.getByTestId("thread-panel");
     await expect(thread).toBeVisible();
+    await expect(thread.locator("button[aria-label='Close thread']")).toHaveClass(/icon-button-close/);
+    await expect(thread.locator("button[aria-label='Close thread'] svg")).toHaveAttribute("width", "18");
     const threadComposer = thread.getByTestId("composer-editor");
     await expect(threadComposer).toBeFocused();
     await page.keyboard.press("Control+Shift+Space");
     await expect(threadComposer).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(thread).toBeHidden();
   });
 
   test("uses search arrows, Enter, Tab filter completion, and Escape", async ({ page }) => {

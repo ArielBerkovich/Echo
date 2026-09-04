@@ -21,6 +21,7 @@ import MembersPanel from "./MembersPanel.js";
 import Message, { SystemMessage } from "./Message.js";
 import { LightboxImage } from "./Attachments.js";
 import Composer from "./Composer.js";
+import { CloseButton } from "./Button.js";
 import ConfirmDialog from "./ConfirmDialog.js";
 import LeaveChannelDialog from "./LeaveChannelDialog.js";
 import { LeaveIcon, PinIcon } from "./Icons.js";
@@ -554,6 +555,27 @@ const ChannelView = forwardRef(function ChannelView({
     openPinnedPanel,
     openFilesPanel,
   }));
+
+  useEffect(() => {
+    if (!thread && !showMembers && !showPinned && !showFiles) return undefined;
+    function onKeyDown(event) {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      event.preventDefault();
+      if (thread) {
+        setThread(null);
+        setThreadJumpTargetId(null);
+        setThreadLightbox(null);
+      } else if (showMembers) {
+        setShowMembers(false);
+      } else if (showPinned) {
+        setShowPinned(false);
+      } else if (showFiles) {
+        setShowFiles(false);
+      }
+    }
+    document.addEventListener("keydown", onKeyDown, true);
+    return () => document.removeEventListener("keydown", onKeyDown, true);
+  }, [showFiles, showMembers, showPinned, thread]);
 
   // Returns a promise so the ForwardModal can show per-destination progress.
   async function forwardTo(dest, options = {}) {
@@ -1534,7 +1556,7 @@ function PinnedPanel({ messages, renderMarkdown, emojiMap, onUnpin, onClose }) {
     <aside className="side-panel pinned-panel" data-testid="pinned-panel">
       <div className="panel-header">
         <span className="panel-title">Pinned messages</span>
-        <button className="panel-close" onClick={onClose} aria-label="Close">✕</button>
+        <CloseButton size="sm" onClick={onClose} label="Close" />
       </div>
       <div className="panel-body">
         {messages.length === 0 ? (
@@ -1602,7 +1624,7 @@ function FilesPanel({ files, loading, error, conversationLabel, onRetry, onClose
           <span className="panel-title">Files</span>
           {!loading && !error && <span className="files-count">{files.length} file{files.length === 1 ? "" : "s"} shared in {conversationLabel}</span>}
         </div>
-        <button className="panel-close" onClick={onClose} aria-label="Close files">✕</button>
+        <CloseButton size="sm" onClick={onClose} label="Close files" />
       </div>
       <div className="files-panel-controls">
         <label className="files-search">
