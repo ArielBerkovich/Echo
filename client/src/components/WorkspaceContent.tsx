@@ -20,20 +20,32 @@ export default function WorkspaceContent({ view, search, browse, feeds, conversa
     (activeChannel.members || []).includes(conversation.user.id)
       ? activeChannel
       : null;
+  const isMember = activeChannel && (activeChannel.members || []).includes(conversation.user.id);
   const currentChannelActions = view === "home" && activeChannel && activeChannel.type !== "dm"
     ? [
         ...(addPeopleChannel ? [{ id: "add-people", label: "Add people", keywords: ["add", "people", "members", "invite"], group: "Current channel" }] : []),
+        { id: "search-channel", label: "Search this channel", keywords: ["search", "channel", "messages"], group: "Current channel" },
+        { id: "view-channel-details", label: "View channel details", keywords: ["details", "topic", "description"], group: "Current channel" },
         { id: "view-members", label: "View members", keywords: ["members", "people", "participants"], group: "Current channel" },
-        { id: "view-files", label: "View files", keywords: ["files", "attachments"], group: "Current channel" },
+        { id: "view-files", label: "View files", keywords: ["files"], group: "Current channel" },
         { id: "view-pinned", label: "View pinned messages", keywords: ["pinned", "pins", "messages"], group: "Current channel" },
+        ...(isMember ? [{
+          id: "toggle-channel-starred",
+          label: conversation.isChannelStarred ? "Unstar channel" : "Star channel",
+          keywords: ["star", "starred", "favorite", "favourite"],
+          group: "Current channel",
+        }] : []),
       ]
     : [];
 
   function handleQuickAction(actionId) {
     if (actionId === "add-people") return search.onAddPeople?.();
+    if (actionId === "search-channel") return search.inputRef.current?.searchInChannel(activeChannel.name);
+    if (actionId === "view-channel-details") return channelViewRef.current?.openDetailsPanel();
     if (actionId === "view-members") return channelViewRef.current?.openMembersPanel();
     if (actionId === "view-files") return channelViewRef.current?.openFilesPanel();
     if (actionId === "view-pinned") return channelViewRef.current?.openPinnedPanel();
+    if (actionId === "toggle-channel-starred") return conversation.onToggleChannelStarred?.(activeChannel.id);
     return search.onQuickAction?.(actionId);
   }
 

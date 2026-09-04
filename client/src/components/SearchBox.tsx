@@ -4,6 +4,7 @@ import {
   BookmarkIcon,
   HashIcon,
   HomeIcon,
+  InfoIcon,
   LockKeyholeIcon,
   MessageSquarePlusIcon,
   MessageSquareTextIcon,
@@ -11,6 +12,8 @@ import {
   SettingsIcon,
   PaperclipIcon,
   PinIcon,
+  SearchCheckIcon,
+  StarIcon,
   UserPlusIcon,
   UsersRoundIcon,
 } from "lucide-react";
@@ -486,7 +489,15 @@ const SearchBox = forwardRef(function SearchBox(
   const peopleStart = peoplePicker ? 0 : 1 + channelHits.length;
 
   function actionRow(action, idx) {
-    const Icon = action.Icon || (action.id === "add-people" ? UserPlusIcon : action.id === "view-members" ? UsersRoundIcon : action.id === "view-files" ? PaperclipIcon : PinIcon);
+    const Icon = action.Icon || (
+      action.id === "add-people" ? UserPlusIcon
+        : action.id === "search-channel" ? SearchCheckIcon
+          : action.id === "view-channel-details" ? InfoIcon
+            : action.id === "view-members" ? UsersRoundIcon
+              : action.id === "view-files" ? PaperclipIcon
+                : action.id === "toggle-channel-starred" ? StarIcon
+                  : PinIcon
+    );
     return (
       <button
         key={action.id}

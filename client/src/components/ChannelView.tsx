@@ -524,6 +524,15 @@ const ChannelView = forwardRef(function ChannelView({
     setShowMembers(true);
   }
 
+  function openDetailsPanel() {
+    setThread(null);
+    setThreadJumpTargetId(null);
+    setShowMembers(false);
+    setShowPinned(false);
+    setShowFiles(false);
+    setShowDetails(true);
+  }
+
   function openFilesPanel() {
     setThread(null);
     setThreadJumpTargetId(null);
@@ -540,6 +549,7 @@ const ChannelView = forwardRef(function ChannelView({
   }
 
   useImperativeHandle(ref, () => ({
+    openDetailsPanel,
     openMembersPanel,
     openPinnedPanel,
     openFilesPanel,
@@ -1110,7 +1120,7 @@ const ChannelView = forwardRef(function ChannelView({
               className="ch-name ch-name-btn"
               data-testid="channel-title"
               title="View channel details"
-              onClick={() => { setThread(null); setThreadJumpTargetId(null); setShowFiles(false); setShowMembers(false); setShowDetails(true); }}
+              onClick={openDetailsPanel}
             >
               {channel.type === "private" ? "🔒" : "#"} {channel.name}
             </button>

@@ -75,11 +75,32 @@ test.describe("documented keyboard shortcuts", () => {
     await expect(page.getByTestId("composer-editor")).toBeVisible();
 
     await page.keyboard.press("Control+k");
-    await expect(page.getByText("Current channel", { exact: true })).toBeVisible();
+    await expect(page.getByTestId("quick-switcher-current-section")).toBeVisible();
+    await page.getByTestId("search-input").fill("ch");
+    await expect(page.getByTestId("search-action-search-channel")).toBeVisible();
+    await expect(page.getByTestId("search-action-view-files")).toHaveCount(0);
+    await page.getByTestId("search-input").fill("");
     expect(await page.getByTestId("search-action-view-files").evaluate((element) => {
-      const commands = document.querySelector(".search-section:last-of-type");
+      const commands = document.querySelector('[data-testid="quick-switcher-commands-section"]');
       return element.getBoundingClientRect().top < commands.getBoundingClientRect().top;
     })).toBe(true);
+    await page.getByTestId("search-action-search-channel").click();
+    await expect(page.getByTestId("search-input")).toHaveValue(`in:${fixture.generalChannel.name} `);
+
+    await page.keyboard.press("Control+k");
+    await page.getByTestId("search-action-view-channel-details").click();
+    await expect(page.getByTestId("channel-details-dialog")).toBeVisible();
+    await page.keyboard.press("Escape");
+
+    await page.keyboard.press("Control+k");
+    await page.getByTestId("search-action-toggle-channel-starred").click();
+    await expect(page.getByTestId("channel-starred-toggle")).toHaveAttribute("aria-pressed", "true");
+
+    await page.keyboard.press("Control+k");
+    await expect(page.getByTestId("search-action-toggle-channel-starred")).toContainText("Unstar channel");
+    await page.keyboard.press("Escape");
+
+    await page.keyboard.press("Control+k");
     await page.getByTestId("search-action-view-members").click();
     await expect(page.getByTestId("members-panel")).toBeVisible();
 
