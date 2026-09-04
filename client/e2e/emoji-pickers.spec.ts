@@ -75,7 +75,10 @@ test.describe("custom emoji pickers", () => {
 
     const modal = page.getByTestId("forward-modal");
     const editor = modal.getByTestId("composer-editor");
-    await modal.getByTestId("composer-emoji-toggle").click();
+    await expect(editor).toBeVisible();
+    const emojiToggle = modal.getByTestId("composer-emoji-toggle");
+    await expect(emojiToggle).toBeVisible();
+    await emojiToggle.click();
     const picker = emojiPicker(page);
     await expect(picker.locator('input[type="search"]')).toBeFocused();
 
