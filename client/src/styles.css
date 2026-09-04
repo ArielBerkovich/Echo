@@ -8555,8 +8555,7 @@ html[data-mode="dark"] .channel-header {
 .files-empty { min-height: 180px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 8px; padding: 22px; text-align: center; color: var(--muted); font-size: 13px; }
 .files-empty strong { color: var(--text); font-size: 14px; }
 .files-empty button { color: var(--accent); background: transparent; font-weight: 700; }
-.files-loading { display: grid; gap: 8px; padding: 4px; }
-.file-skeleton { height: 60px; border-radius: 9px; }
+.files-loading { min-height: 180px; }
 
 .messages-shell {
   flex: 1;
