@@ -12258,6 +12258,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     inset: 0 0 calc(72px + env(safe-area-inset-bottom));
     align-items: stretch;
     padding: 0;
+    overflow: hidden;
   }
 
   .modal.channel-details-dialog {
