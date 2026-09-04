@@ -5756,7 +5756,9 @@ html[data-mode="dark"] .day-divider-label {
   background: color-mix(in srgb, var(--rail-bg) 35%, rgba(0, 0, 0, 0.52));
   overflow-y: auto;
 }
-.channel-details-dialog {
+/* The shared Modal supplies responsive padding and Tailwind utility classes.
+   Keep this full-bleed dialog's header/content flush with its own frame. */
+.modal.channel-details-dialog {
   width: min(720px, calc(100vw - 32px));
   max-width: none;
   height: min(780px, calc(100vh - 40px));
@@ -11105,7 +11107,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     align-items: flex-end;
     padding: 10px;
   }
-  .channel-details-dialog {
+  .modal.channel-details-dialog {
     width: 100%;
     height: calc(100vh - 20px);
     max-height: calc(100vh - 20px);
@@ -12269,7 +12271,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     padding: 0;
   }
 
-  .channel-details-dialog {
+  .modal.channel-details-dialog {
     width: 100%;
     height: 100%;
     max-height: none;
