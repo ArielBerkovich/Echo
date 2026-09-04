@@ -4,6 +4,7 @@ import { SearchIcon, UsersRoundIcon } from "lucide-react";
 import Avatar from "./Avatar.js";
 import ConfirmDialog from "./ConfirmDialog.js";
 import { CloseButton } from "./Button.js";
+import { Input, InputShell } from "./Input.js";
 
 export default function MembersPanel({ channel, users = [], onOpenProfile, onAddPeople, onRemoveMember, onPromoteManager, onUpdated, onClose }) {
   const [query, setQuery] = useState("");
@@ -122,7 +123,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
   }
 
   return (
-    <aside className="details-panel members-panel" data-testid="members-panel" role="dialog" aria-labelledby="members-panel-title">
+    <aside id="members-panel" className="details-panel members-panel" data-testid="members-panel" role="dialog" aria-labelledby="members-panel-title">
       <header className="members-panel-header">
         <div className="members-panel-title">
           <span className="members-panel-icon" aria-hidden="true">
@@ -183,16 +184,16 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
           </button>
         )}
 
-        <div className="channel-details-search members-panel-search">
+        <InputShell className="channel-details-search members-panel-search">
           <SearchIcon size={16} strokeWidth={1.8} aria-hidden="true" />
-          <input
+          <Input
             ref={searchRef}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search members"
             aria-label="Search members"
           />
-        </div>
+        </InputShell>
 
         {memberError && <div className="error members-panel-error" role="alert">{memberError}</div>}
 

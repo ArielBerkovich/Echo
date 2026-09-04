@@ -19,6 +19,7 @@ import {
   UserRoundIcon,
 } from "lucide-react";
 import Avatar from "./Avatar.js";
+import { Input } from "./Input.js";
 
 const QUICK_ACTIONS = [
   { id: "new-message", label: "New message", keywords: ["new", "message", "dm"], shortcut: "⌘/Ctrl+⇧M", Icon: MessageSquarePlusIcon },
@@ -520,7 +521,7 @@ const SearchBox = forwardRef(function SearchBox(
 
   return (
     <div className="search-box" ref={wrapRef} data-testid="search-box">
-      <div className="search-box-field" data-testid="search-box-field">
+      <div className="input-shell search-box-field" data-testid="search-box-field">
         <span className="search-icon-badge" aria-hidden="true">
           <SearchIcon size={15} strokeWidth={2.1} />
         </span>
@@ -533,7 +534,7 @@ const SearchBox = forwardRef(function SearchBox(
           <div className="search-highlight" ref={highlightRef} aria-hidden="true" dir="auto">
             {renderHighlighted(query)}
           </div>
-          <input
+          <Input
             ref={inputRef}
             className="search-input"
             data-testid="search-input"

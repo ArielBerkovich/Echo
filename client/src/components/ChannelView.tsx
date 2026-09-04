@@ -21,7 +21,8 @@ import MembersPanel from "./MembersPanel.js";
 import Message, { SystemMessage } from "./Message.js";
 import { LightboxImage } from "./Attachments.js";
 import Composer from "./Composer.js";
-import { CloseButton } from "./Button.js";
+import { ChannelOptionButton, CloseButton } from "./Button.js";
+import { Input, InputShell } from "./Input.js";
 import ConfirmDialog from "./ConfirmDialog.js";
 import LeaveChannelDialog from "./LeaveChannelDialog.js";
 import { LeaveIcon, PinIcon } from "./Icons.js";
@@ -1096,30 +1097,25 @@ const ChannelView = forwardRef(function ChannelView({
               </button>
             )}
             <div className="header-actions">
-              <button
-                type="button"
-                className={`header-action header-action-icon ${showFiles ? "active" : ""}`}
+              <ChannelOptionButton
+                active={showFiles}
                 data-testid="channel-files"
                 title="View files"
-                aria-label={`Files in ${dmLabel}`}
+                label={`Files in ${dmLabel}`}
                 aria-controls="conversation-files-panel"
-                aria-expanded={showFiles}
-                aria-pressed={showFiles}
                 onClick={openFilesPanel}
-              >
-                <PaperclipIcon size={16} strokeWidth={1.8} />
-              </button>
+                icon={<PaperclipIcon size={16} strokeWidth={1.8} />}
+              />
               {isGroupDm && (
-                <button
-                  type="button"
-                  className="header-action header-action-icon"
+                <ChannelOptionButton
+                  active={showMembers}
                   data-testid="channel-members"
                   title="View members"
-                  aria-label="View members"
+                  label="View members"
+                  aria-controls="members-panel"
                   onClick={openMembersPanel}
-                >
-                  <UsersRoundIcon size={16} strokeWidth={1.8} />
-                </button>
+                  icon={<UsersRoundIcon size={16} strokeWidth={1.8} />}
+                />
               )}
             </div>
           </>
@@ -1162,34 +1158,43 @@ const ChannelView = forwardRef(function ChannelView({
                   Make public
                 </button>
               )}
-              <button className="header-action header-action-icon" data-testid="channel-pinned" onClick={openPinnedPanel} title="Pinned messages" aria-label="Pinned messages">
-                <PinIcon />
-              </button>
-              <button
-                type="button"
-                className={`header-action header-action-icon ${showFiles ? "active" : ""}`}
+              <ChannelOptionButton
+                active={showPinned}
+                data-testid="channel-pinned"
+                onClick={openPinnedPanel}
+                title="Pinned messages"
+                label="Pinned messages"
+                aria-controls="pinned-panel"
+                icon={<PinIcon />}
+              />
+              <ChannelOptionButton
+                active={showFiles}
                 data-testid="channel-files"
                 title="View files"
-                aria-label={`Files in #${channel.name}`}
+                label={`Files in #${channel.name}`}
                 aria-controls="conversation-files-panel"
-                aria-expanded={showFiles}
-                aria-pressed={showFiles}
                 onClick={openFilesPanel}
-              >
-                <PaperclipIcon size={16} strokeWidth={1.8} />
-              </button>
-              <button
-                className="header-action header-action-icon channel-search-action"
+                icon={<PaperclipIcon size={16} strokeWidth={1.8} />}
+              />
+              <ChannelOptionButton
+                className="channel-search-action"
                 data-testid="channel-search"
                 title="Search messages"
-                aria-label={`Search in #${channel.name}`}
+                label={`Search in #${channel.name}`}
+                aria-expanded={undefined}
+                aria-pressed={undefined}
                 onClick={() => onSearchInChannel?.(channel.name)}
-              >
-                <SearchIcon size={15} strokeWidth={1.9} />
-              </button>
-              <button className="header-action header-action-icon" data-testid="channel-members" title="View members" onClick={openMembersPanel}>
-                <UsersRoundIcon size={16} strokeWidth={1.8} />
-              </button>
+                icon={<SearchIcon size={15} strokeWidth={1.9} />}
+              />
+              <ChannelOptionButton
+                active={showMembers}
+                data-testid="channel-members"
+                title="View members"
+                label="View members"
+                aria-controls="members-panel"
+                onClick={openMembersPanel}
+                icon={<UsersRoundIcon size={16} strokeWidth={1.8} />}
+              />
               {!isGeneral && isMember && (
                 <button
                   className="header-action header-action-icon leave"
@@ -1553,7 +1558,7 @@ export default ChannelView;
 
 function PinnedPanel({ messages, renderMarkdown, emojiMap, onUnpin, onClose }) {
   return (
-    <aside className="side-panel pinned-panel" data-testid="pinned-panel">
+    <aside id="pinned-panel" className="side-panel pinned-panel" data-testid="pinned-panel">
       <div className="panel-header">
         <span className="panel-title">Pinned messages</span>
         <CloseButton size="sm" onClick={onClose} label="Close" />
@@ -1627,10 +1632,10 @@ function FilesPanel({ files, loading, error, conversationLabel, onRetry, onClose
         <CloseButton size="sm" onClick={onClose} label="Close files" />
       </div>
       <div className="files-panel-controls">
-        <label className="files-search">
+        <InputShell className="files-search">
           <SearchIcon size={16} aria-hidden="true" />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search files…" aria-label="Search files" />
-        </label>
+          <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search files…" aria-label="Search files" />
+        </InputShell>
         <div className="files-filters" role="group" aria-label="Filter files">
           {["All", "Images", "Documents", "Audio & video", "Other"].map((label) => (
             <button key={label} type="button" className={filter === label ? "active" : ""} aria-pressed={filter === label} onClick={() => setFilter(label)}>{label}</button>

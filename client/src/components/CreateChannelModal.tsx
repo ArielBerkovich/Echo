@@ -4,6 +4,7 @@ import { useForm, useWatch } from "react-hook-form";
 import { Check, ChevronDown, Globe2, LockKeyhole } from "lucide-react";
 import Modal, { ModalActions } from "./Modal.js";
 import { channelSchema, normalizeChannelNameInput } from "../lib/formSchemas.js";
+import { Input, InputShell } from "./Input.js";
 
 // "Create a channel" dialog with a name field and public/private choice.
 export default function CreateChannelModal({ onCreate, onClose }) {
@@ -58,9 +59,9 @@ export default function CreateChannelModal({ onCreate, onClose }) {
       <form data-testid="create-channel-modal" onSubmit={submit}>
         <label className="field">
           <span className="field-label">Name</span>
-          <div className="name-input">
+          <InputShell className="name-input">
             <span className="name-prefix">{type === "private" ? "🔒" : "#"}</span>
-            <input
+            <Input
               data-testid="create-channel-name"
               {...nameField}
               ref={(el) => {
@@ -88,7 +89,7 @@ export default function CreateChannelModal({ onCreate, onClose }) {
               placeholder="e.g. marketing"
               maxLength={64}
             />
-          </div>
+          </InputShell>
           {errors.name && <span className="field-hint error small">{errors.name.message}</span>}
         </label>
 

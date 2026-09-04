@@ -4,6 +4,7 @@ import { api } from "../api.js";
 import { formatDate } from "../lib/time.js";
 import Avatar from "./Avatar.js";
 import { CloseButton } from "./Button.js";
+import { Input, InputShell } from "./Input.js";
 import {
   FileTextIcon,
   HashIcon,
@@ -179,15 +180,15 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
               </button>
             )}
 
-            <div className="channel-details-search channel-details-member-filter">
+            <InputShell className="channel-details-search channel-details-member-filter">
               <SearchIcon size={16} strokeWidth={1.8} aria-hidden="true" />
-              <input
+              <Input
                 value={memberQuery}
                 onChange={(event) => setMemberQuery(event.target.value)}
                 placeholder="Search members"
                 aria-label="Search members"
               />
-            </div>
+            </InputShell>
 
             <div className="channel-details-managers" data-testid="channel-details-managers" aria-label="Channel managers">
               <span className="channel-details-managers-label">Managers</span>
