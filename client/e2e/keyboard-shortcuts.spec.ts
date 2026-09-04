@@ -24,6 +24,7 @@ test.describe("documented keyboard shortcuts", () => {
     await page.keyboard.press("Control+f");
     await expect(search).toBeFocused();
     await expect(page.getByTestId("search-action-new-message")).toHaveCount(0);
+    await expect(page.getByTestId("search-action-view-files")).toHaveCount(0);
 
     await page.getByTestId("composer-editor").focus();
     await page.keyboard.press("Control+k");
@@ -45,6 +46,28 @@ test.describe("documented keyboard shortcuts", () => {
     await expect(page.getByTestId("search-channel-general")).toHaveCount(0);
     await page.getByTestId("search-action-settings").click();
     await expect(page).toHaveURL(/\/settings\/account$/);
+  });
+
+  test("offers current-channel actions only in the command palette", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByTestId("composer-editor")).toBeVisible();
+
+    await page.keyboard.press("Control+k");
+    await expect(page.getByText("Current channel", { exact: true })).toBeVisible();
+    expect(await page.getByTestId("search-action-view-files").evaluate((element) => {
+      const commands = document.querySelector(".search-section:last-of-type");
+      return element.getBoundingClientRect().top < commands.getBoundingClientRect().top;
+    })).toBe(true);
+    await page.getByTestId("search-action-view-members").click();
+    await expect(page.getByTestId("members-panel")).toBeVisible();
+
+    await page.keyboard.press("Control+k");
+    await page.getByTestId("search-action-view-files").click();
+    await expect(page.getByTestId("files-panel")).toBeVisible();
+
+    await page.keyboard.press("Control+k");
+    await page.getByTestId("search-action-view-pinned").click();
+    await expect(page.getByTestId("pinned-panel")).toBeVisible();
   });
 
   test("hands command focus to form fields, not feed headers", async ({ page }) => {

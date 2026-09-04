@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useRef } from "react";
 import SearchBox from "./SearchBox.js";
 
 // Conversation history, feeds, and browse/search results pull in markdown,
@@ -13,12 +13,29 @@ const SettingsModal = lazy(() => import("./SettingsModal.js"));
 
 export default function WorkspaceContent({ view, search, browse, feeds, conversation }) {
   const activeChannel = conversation.channel;
+  const channelViewRef = useRef(null);
   const addPeopleChannel = activeChannel &&
     activeChannel.type !== "dm" &&
     activeChannel.name?.toLowerCase() !== "general" &&
     (activeChannel.members || []).includes(conversation.user.id)
       ? activeChannel
       : null;
+  const currentChannelActions = activeChannel?.type !== "dm"
+    ? [
+        ...(addPeopleChannel ? [{ id: "add-people", label: "Add people", keywords: ["add", "people", "members", "invite"], group: "Current channel" }] : []),
+        { id: "view-members", label: "View members", keywords: ["members", "people", "participants"], group: "Current channel" },
+        { id: "view-files", label: "View files", keywords: ["files", "attachments"], group: "Current channel" },
+        { id: "view-pinned", label: "View pinned messages", keywords: ["pinned", "pins", "messages"], group: "Current channel" },
+      ]
+    : [];
+
+  function handleQuickAction(actionId) {
+    if (actionId === "add-people") return search.onAddPeople?.();
+    if (actionId === "view-members") return channelViewRef.current?.openMembersPanel();
+    if (actionId === "view-files") return channelViewRef.current?.openFilesPanel();
+    if (actionId === "view-pinned") return channelViewRef.current?.openPinnedPanel();
+    return search.onQuickAction?.(actionId);
+  }
 
   return (
     <div className="chat-pane">
@@ -29,12 +46,11 @@ export default function WorkspaceContent({ view, search, browse, feeds, conversa
           myChannelIds={search.myChannelIds}
           users={conversation.users}
           recents={search.recents}
-          addPeopleChannel={addPeopleChannel}
+          currentChannelActions={currentChannelActions}
           onPickChannel={search.onPickChannel}
           onFindChannels={search.onFindChannels}
           onPickUser={search.onPickUser}
-          onAddPeople={search.onAddPeople}
-          onQuickAction={search.onQuickAction}
+          onQuickAction={handleQuickAction}
           onSearchMessages={search.onSearchMessages}
         />
       </div>
@@ -44,12 +60,13 @@ export default function WorkspaceContent({ view, search, browse, feeds, conversa
         browse={browse}
         feeds={feeds}
         conversation={conversation}
+        channelViewRef={channelViewRef}
       />
     </div>
   );
 }
 
-function ActiveWorkspaceView({ view, search, browse, feeds, conversation }) {
+function ActiveWorkspaceView({ view, search, browse, feeds, conversation, channelViewRef }) {
   let content;
   if (search.query) {
     content = <SearchResults query={search.query} onJump={search.onJump} onClose={search.onClose} />;
@@ -96,7 +113,7 @@ function ActiveWorkspaceView({ view, search, browse, feeds, conversation }) {
     );
   } else {
     const { channel, ...props } = conversation;
-    content = <ChannelView key={channel.id} channel={channel} {...props} />;
+    content = <ChannelView ref={channelViewRef} key={channel.id} channel={channel} {...props} />;
   }
 
   return <Suspense fallback={<div className="empty-state"><p>Loading…</p></div>}>{content}</Suspense>;

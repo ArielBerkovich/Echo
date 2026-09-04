@@ -9,7 +9,10 @@ import {
   MessageSquareTextIcon,
   SearchIcon,
   SettingsIcon,
+  PaperclipIcon,
+  PinIcon,
   UserPlusIcon,
+  UsersRoundIcon,
 } from "lucide-react";
 import Avatar from "./Avatar.js";
 
@@ -91,11 +94,10 @@ const SearchBox = forwardRef(function SearchBox(
     users,
     recents,
     myChannelIds,
-    addPeopleChannel = null,
+    currentChannelActions = [],
     onPickChannel,
     onFindChannels,
     onPickUser,
-    onAddPeople,
     onQuickAction,
     onSearchMessages,
     variant = "default",
@@ -210,11 +212,13 @@ const SearchBox = forwardRef(function SearchBox(
   const hasFilterTokens = /(?:^|\s)(in:|from:|has:)/i.test(query);
   const peoplePicker = variant === "people-picker" || conversationPickerOpen;
   const matchingQuickActions = useMemo(
-    () => quickSwitcherOpen && !peoplePicker && !hasFilterTokens
-      ? QUICK_ACTIONS.filter((action) => !q || [action.label, ...action.keywords]
-        .some((value) => value.toLowerCase().includes(q)))
-      : [],
-    [hasFilterTokens, peoplePicker, q, quickSwitcherOpen]
+    () => {
+      if (!quickSwitcherOpen || peoplePicker || hasFilterTokens) return [];
+      const matches = [...QUICK_ACTIONS, ...currentChannelActions].filter((action) => !q || [action.label, ...action.keywords]
+        .some((value) => value.toLowerCase().includes(q)));
+      return [...matches.filter((action) => action.group === "Current channel"), ...matches.filter((action) => !action.group)];
+    },
+    [currentChannelActions, hasFilterTokens, peoplePicker, q, quickSwitcherOpen]
   );
   const recentItems = useMemo(
     () => [...new Map(
@@ -315,7 +319,6 @@ const SearchBox = forwardRef(function SearchBox(
     if (!q) {
       return [
         ...matchingQuickActions.map((item) => ({ kind: "action", item })),
-        ...(addPeopleChannel ? [{ kind: "add-people" }] : []),
         ...recentItems.map((r) =>
         r.type === "channel"
           ? { kind: "recent-channel", item: r }
@@ -324,7 +327,7 @@ const SearchBox = forwardRef(function SearchBox(
       ];
     }
     return [];
-  }, [filter, filterSuggestions, q, hasFilterTokens, matchingQuickActions, channelHits, peopleHits, recentItems, addPeopleChannel, peoplePicker, quickSwitcherOpen]);
+  }, [filter, filterSuggestions, q, hasFilterTokens, matchingQuickActions, channelHits, peopleHits, recentItems, peoplePicker, quickSwitcherOpen]);
 
   // Reset/clamp the highlight whenever the navigable set changes.
   useEffect(() => {
@@ -395,9 +398,6 @@ const SearchBox = forwardRef(function SearchBox(
       case "people":
       case "recent-user":
         return pickUser(it.item);
-      case "add-people":
-        close();
-        return onAddPeople?.();
       case "action":
         close();
         return onQuickAction?.(it.item.id);
@@ -486,7 +486,7 @@ const SearchBox = forwardRef(function SearchBox(
   const peopleStart = peoplePicker ? 0 : 1 + channelHits.length;
 
   function actionRow(action, idx) {
-    const Icon = action.Icon;
+    const Icon = action.Icon || (action.id === "add-people" ? UserPlusIcon : action.id === "view-members" ? UsersRoundIcon : action.id === "view-files" ? PaperclipIcon : PinIcon);
     return (
       <button
         key={action.id}
@@ -500,7 +500,7 @@ const SearchBox = forwardRef(function SearchBox(
       >
         <Icon size={17} strokeWidth={1.9} aria-hidden="true" />
         <span className="search-name">{action.label}</span>
-        <span className="search-kind">{action.shortcut}</span>
+        {action.shortcut && <span className="search-kind">{action.shortcut}</span>}
       </button>
     );
   }
@@ -546,9 +546,13 @@ const SearchBox = forwardRef(function SearchBox(
         <div className="search-dropdown" role={quickSwitcherOpen ? "dialog" : undefined} aria-label={quickSwitcherOpen ? "Commands" : undefined}>
           {quickSwitcherOpen ? (
             <>
-              <div className="search-section">Commands</div>
               {matchingQuickActions.length > 0
-                ? matchingQuickActions.map((action, idx) => actionRow(action, idx))
+                ? <>
+                    {matchingQuickActions.some((action) => action.group === "Current channel") && <div className="search-section">Current channel</div>}
+                    {matchingQuickActions.filter((action) => action.group === "Current channel").map((action, idx) => actionRow(action, idx))}
+                    {matchingQuickActions.some((action) => !action.group) && <div className="search-section">Commands</div>}
+                    {matchingQuickActions.filter((action) => !action.group).map((action, idx) => actionRow(action, matchingQuickActions.filter((item) => item.group === "Current channel").length + idx))}
+                  </>
                 : <div className="people-empty">No commands match.</div>}
             </>
           ) : (
@@ -600,36 +604,18 @@ const SearchBox = forwardRef(function SearchBox(
                       {matchingQuickActions.map((action, idx) => actionRow(action, idx))}
                     </>
                   )}
-                  {addPeopleChannel && (
-                    <>
-                      {!matchingQuickActions.length && <div className="search-section">Actions</div>}
-                      <button
-                        type="button"
-                        ref={(element) => { navItemRefs.current[matchingQuickActions.length] = element; }}
-                        className={`search-row search-action-row ${activeIdx === matchingQuickActions.length ? "active" : ""}`}
-                        data-testid="search-add-people"
-                        onMouseEnter={() => setActiveIdx(matchingQuickActions.length)}
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => activate({ kind: "add-people" })}
-                      >
-                        <UserPlusIcon size={17} strokeWidth={1.9} />
-                        <span className="search-name">Add people</span>
-                        <span className="search-kind">to #{addPeopleChannel.name}</span>
-                      </button>
-                    </>
-                  )}
                   <div className="search-section">Recent</div>
                   {recentItems.length === 0 && <div className="people-empty">No recent searches.</div>}
                   {recentItems.map((r, idx) =>
                     r.type === "channel"
-                      ? channelRow(r, idx + matchingQuickActions.length + (addPeopleChannel ? 1 : 0), "recent")
+                      ? channelRow(r, idx, "recent")
                       : (
                           <button
                             key={`recent-${r.id}`}
-                            ref={(element) => { navItemRefs.current[idx + matchingQuickActions.length + (addPeopleChannel ? 1 : 0)] = element; }}
-                            className={`search-row ${idx + matchingQuickActions.length + (addPeopleChannel ? 1 : 0) === activeIdx ? "active" : ""}`}
+                            ref={(element) => { navItemRefs.current[idx] = element; }}
+                            className={`search-row ${idx === activeIdx ? "active" : ""}`}
                             data-testid={`search-user-${slug(r.displayName)}`}
-                            onMouseEnter={() => setActiveIdx(idx + matchingQuickActions.length + (addPeopleChannel ? 1 : 0))}
+                            onMouseEnter={() => setActiveIdx(idx)}
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => pickUser(r)}
                           >
