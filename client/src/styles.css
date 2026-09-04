@@ -350,8 +350,8 @@ html[data-theme="high-contrast"][data-mode="dark"] {
   --code-text: #f5f7fa;
   --code-border: #b8c4d1;
   --accent: #9bc7f5;
-  --active-bg: #9bc7f5;
-  --active-fg: #0b0f14;
+  --active-bg: #245b8f;
+  --active-fg: #ffffff;
   --input-focus-border: #9bc7f5;
   --input-focus-ring: color-mix(in srgb, #9bc7f5 48%, transparent);
   --success: #9fe6b5;
@@ -374,6 +374,10 @@ html[data-theme="high-contrast"] .sidebar-footer .status::before {
 }
 html[data-theme="high-contrast"] .sidebar-footer .status {
   color: var(--on-navy);
+}
+html[data-theme="high-contrast"] .dm-rich.active .dm-name,
+html[data-theme="high-contrast"] .dm-rich.active .dm-preview {
+  color: var(--active-fg);
 }
 html[data-theme="high-contrast"] .mention-webhook-status.is-active {
   background: color-mix(in srgb, var(--success) 18%, var(--surface));
