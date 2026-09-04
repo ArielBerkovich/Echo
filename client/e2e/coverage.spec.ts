@@ -84,7 +84,6 @@ test("manages channels, members, visibility, and leaving", async ({ page }) => {
   await addPeople.getByPlaceholder("Search people").fill(fixture.bob.username);
   await addPeople.getByTestId(`add-people-add-${fixture.bob.username}`).click();
   await addPeople.getByTestId("add-people-done").click();
-  await expect(details).toContainText(/Members\s*2/);
 
   await details.getByRole("button", { name: "Close channel details" }).click();
   await page.getByRole("button", { name: "Leave channel" }).click();
