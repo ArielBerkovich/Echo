@@ -303,59 +303,61 @@ html[data-theme="sand"][data-mode="light"] {
   --code-border: #ddd0b8;
 }
 
-/* High contrast — explicit black/white surfaces and a vivid blue action color
-   keep text, controls, and focus indicators legible for low-vision users. */
+/* High contrast — strong value separation with a restrained neutral palette
+   keeps the interface legible without making every surface pure black/white. */
 html[data-theme="high-contrast"] {
   --accent: #005fcc;
   --active-bg: #005fcc;
   --active-fg: #ffffff;
-  --on-navy: #ffffff;
-  --on-navy-muted: #ffffff;
-  --sidebar-bg: linear-gradient(180deg, #000000, #111111);
-  --rail-bg: #000000;
-  --border: #000000;
-  --tooltip-bg: #000000;
+  --on-navy: #f8fafc;
+  --on-navy-muted: #d8e1eb;
+  --sidebar-bg: linear-gradient(180deg, #111923, #0b1016);
+  --rail-bg: #0b1016;
+  --border: #52606d;
+  --tooltip-bg: #111923;
   --tooltip-fg: #ffffff;
-  --tooltip-border: #ffffff;
+  --tooltip-border: #d8e1eb;
   --input-focus-border: #005fcc;
   --input-focus-ring: color-mix(in srgb, #005fcc 42%, transparent);
   --input-focus-shadow: 0 0 0 3px var(--input-focus-ring);
   --success: #006b2d;
-  --warning: #7a4f00;
+  --warning: #b54708;
   --info: #005fcc;
   --danger: #b00020;
 }
 html[data-theme="high-contrast"][data-mode="light"] {
-  --bg: #ffffff;
+  --bg: #f7f8fa;
   --surface: #ffffff;
-  --surface-2: #f0f0f0;
-  --text: #000000;
-  --muted: #333333;
-  --code-bg: #f0f0f0;
-  --code-text: #000000;
-  --code-border: #000000;
-  --shadow-sm: 0 1px 0 #000000;
-  --shadow-md: 0 2px 0 #000000;
-  --shadow-lg: 0 4px 0 #000000;
+  --surface-2: #e9edf2;
+  --border: #52606d;
+  --text: #111827;
+  --muted: #374151;
+  --code-bg: #eef1f4;
+  --code-text: #111827;
+  --code-border: #52606d;
+  --shadow-sm: 0 1px 3px rgba(17, 24, 39, 0.16);
+  --shadow-md: 0 4px 14px rgba(17, 24, 39, 0.18);
+  --shadow-lg: 0 12px 32px rgba(17, 24, 39, 0.22);
 }
 html[data-theme="high-contrast"][data-mode="dark"] {
-  --bg: #000000;
-  --surface: #111111;
-  --surface-2: #222222;
-  --text: #ffffff;
-  --muted: #dddddd;
-  --border: #ffffff;
-  --code-bg: #000000;
-  --code-text: #ffffff;
+  --bg: #0b0f14;
+  --surface: #151b23;
+  --surface-2: #222b36;
+  --text: #f5f7fa;
+  --muted: #d5dde7;
+  --border: #b8c4d1;
+  --code-bg: #0b0f14;
+  --code-text: #f5f7fa;
+  --code-border: #b8c4d1;
   --code-border: #ffffff;
-  --accent: #66d9ff;
-  --active-bg: #ffdf00;
-  --active-fg: #000000;
-  --input-focus-border: #66d9ff;
-  --input-focus-ring: color-mix(in srgb, #66d9ff 48%, transparent);
+  --accent: #66b5ff;
+  --active-bg: #2f9bff;
+  --active-fg: #061018;
+  --input-focus-border: #66b5ff;
+  --input-focus-ring: color-mix(in srgb, #66b5ff 48%, transparent);
   --success: #66ff99;
-  --warning: #ffdf00;
-  --info: #66d9ff;
+  --warning: #ffb000;
+  --info: #66b5ff;
   --danger: #ff6b6b;
 }
 
