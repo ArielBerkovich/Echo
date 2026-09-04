@@ -114,7 +114,7 @@ test("virtualizes the add-people directory while keeping all users reachable", a
   const people = await Promise.all(
     Array.from({ length: 36 }, (_, index) => registerUser(page, {
       username: `virtualperson${suffix.replace(/[^a-z]/gi, "")}${indexCode(index)}`,
-      displayName: `Virtual Person ${String(index).padStart(2, "0")}`,
+      displayName: `Virtual Person ${indexCode(index)}`,
     }))
   );
 

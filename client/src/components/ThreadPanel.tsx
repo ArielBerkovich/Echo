@@ -313,8 +313,8 @@ export default function ThreadPanel({
     <aside
       className="thread-panel"
       data-testid="thread-panel"
-      onKeyDown={(event) => {
-        if (event.key !== "Escape" || event.defaultPrevented) return;
+      onKeyDownCapture={(event) => {
+        if (event.key !== "Escape" || editing) return;
         event.preventDefault();
         event.stopPropagation();
         onClose();
