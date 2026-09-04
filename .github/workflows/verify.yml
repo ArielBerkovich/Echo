@@ -114,7 +114,9 @@ jobs:
   e2e-shards:
     name: E2E (${{ matrix.shard }})
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    # Shard 1 contains the largest UI specs; setup and server startup are
+    # included in the job timeout, so three minutes is too tight.
+    timeout-minutes: 6
     strategy:
       fail-fast: false
       matrix:
