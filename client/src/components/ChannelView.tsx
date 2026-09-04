@@ -535,18 +535,25 @@ const ChannelView = forwardRef(function ChannelView({
   }
 
   function openFilesPanel() {
+    if (showFiles) return;
     setThread(null);
     setThreadJumpTargetId(null);
     setShowDetails(false);
     setShowMembers(false);
     setShowPinned(false);
     setShowFiles(true);
+    loadFiles();
+  }
+
+  function loadFiles() {
     setFilesLoading(true);
     setFilesError("");
-    api.getFiles(channel.id)
-      .then(({ files }) => setFiles(files || []))
-      .catch((error) => setFilesError(error.message || "Couldn't load files."))
-      .finally(() => setFilesLoading(false));
+    window.requestAnimationFrame(() => {
+      api.getFiles(channel.id)
+        .then(({ files }) => setFiles(files || []))
+        .catch((error) => setFilesError(error.message || "Couldn't load files."))
+        .finally(() => setFilesLoading(false));
+    });
   }
 
   useImperativeHandle(ref, () => ({
@@ -1465,7 +1472,7 @@ const ChannelView = forwardRef(function ChannelView({
           loading={filesLoading}
           error={filesError}
           conversationLabel={isDm ? dmLabel : `#${channel.name}`}
-          onRetry={openFilesPanel}
+          onRetry={loadFiles}
           onClose={() => setShowFiles(false)}
           onJump={(file) => {
             setShowFiles(false);
@@ -1643,7 +1650,7 @@ function FilesPanel({ files, loading, error, conversationLabel, onRetry, onClose
         </div>
       </div>
       <div className="panel-body files-panel-body">
-        {loading ? <div className="files-loading" aria-label="Loading files">{Array.from({ length: 6 }, (_, index) => <div className="file-skeleton skeleton" key={index} />)}</div>
+        {loading ? <div className="files-empty files-loading" aria-label="Loading files"><span>Loading files…</span></div>
           : error ? <div className="files-empty"><strong>Couldn’t load files</strong><button type="button" onClick={onRetry}>Try again</button></div>
           : files.length === 0 ? <div className="files-empty"><PaperclipIcon size={28} aria-hidden="true" /><strong>No files shared here yet</strong><span>Files sent in this conversation will appear here.</span></div>
           : visibleFiles.length === 0 ? <div className="files-empty"><strong>No matching files</strong><button type="button" onClick={() => { setQuery(""); setFilter("All"); }}>Clear filters</button></div>
