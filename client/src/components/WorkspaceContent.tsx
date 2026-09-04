@@ -21,8 +21,26 @@ export default function WorkspaceContent({ view, search, browse, feeds, conversa
       ? activeChannel
       : null;
   const isMember = activeChannel && (activeChannel.members || []).includes(conversation.user.id);
-  const currentChannelActions = view === "home" && activeChannel && activeChannel.type !== "dm"
-    ? [
+  const isGroupDm = activeChannel?.type === "dm"
+    && ((activeChannel.members?.length || 0) > 2 || (activeChannel.participants?.length || 0) > 2);
+  const dmUserId = activeChannel?.dmUserId;
+  const isActiveConversationView = view === "home"
+    || (view === "dms" && activeChannel?.type === "dm");
+  const currentChannelActions = isActiveConversationView && activeChannel
+    ? activeChannel.type === "dm"
+      ? [
+        { id: "view-files", label: "View files", keywords: ["files"], group: "Current conversation" },
+        ...(isGroupDm
+          ? [{ id: "view-members", label: "View members", keywords: ["members", "people", "participants"], group: "Current conversation" }]
+          : [{ id: "view-profile", label: "View profile", keywords: ["profile", "person", "user"], group: "Current conversation" }]),
+        ...(isGroupDm || dmUserId ? [{
+          id: "toggle-dm-starred",
+          label: (isGroupDm ? conversation.isChannelStarred : conversation.isStarred) ? "Unstar conversation" : "Star conversation",
+          keywords: ["star", "starred", "favorite", "favourite"],
+          group: "Current conversation",
+        }] : []),
+      ]
+      : [
         ...(addPeopleChannel ? [{ id: "add-people", label: "Add people", keywords: ["add", "people", "members", "invite"], group: "Current channel" }] : []),
         { id: "search-channel", label: "Search this channel", keywords: ["search", "channel", "messages"], group: "Current channel" },
         { id: "view-channel-details", label: "View channel details", keywords: ["details", "topic", "description"], group: "Current channel" },
@@ -46,6 +64,12 @@ export default function WorkspaceContent({ view, search, browse, feeds, conversa
     if (actionId === "view-files") return channelViewRef.current?.openFilesPanel();
     if (actionId === "view-pinned") return channelViewRef.current?.openPinnedPanel();
     if (actionId === "toggle-channel-starred") return conversation.onToggleChannelStarred?.(activeChannel.id);
+    if (actionId === "view-profile") return conversation.onOpenProfile?.(dmUserId);
+    if (actionId === "toggle-dm-starred") {
+      return isGroupDm
+        ? conversation.onToggleChannelStarred?.(activeChannel.id)
+        : conversation.onToggleStarred?.(dmUserId);
+    }
     return search.onQuickAction?.(actionId);
   }
 

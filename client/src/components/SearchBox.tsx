@@ -16,6 +16,7 @@ import {
   StarIcon,
   UserPlusIcon,
   UsersRoundIcon,
+  UserRoundIcon,
 } from "lucide-react";
 import Avatar from "./Avatar.js";
 
@@ -219,7 +220,7 @@ const SearchBox = forwardRef(function SearchBox(
       if (!quickSwitcherOpen || peoplePicker || hasFilterTokens) return [];
       const matches = [...QUICK_ACTIONS, ...currentChannelActions].filter((action) => !q || [action.label, ...action.keywords]
         .some((value) => value.toLowerCase().includes(q)));
-      return [...matches.filter((action) => action.group === "Current channel"), ...matches.filter((action) => !action.group)];
+      return [...matches.filter((action) => action.group), ...matches.filter((action) => !action.group)];
     },
     [currentChannelActions, hasFilterTokens, peoplePicker, q, quickSwitcherOpen]
   );
@@ -493,6 +494,7 @@ const SearchBox = forwardRef(function SearchBox(
       action.id === "add-people" ? UserPlusIcon
         : action.id === "search-channel" ? SearchCheckIcon
           : action.id === "view-channel-details" ? InfoIcon
+            : action.id === "view-profile" ? UserRoundIcon
             : action.id === "view-members" ? UsersRoundIcon
               : action.id === "view-files" ? PaperclipIcon
                 : action.id === "toggle-channel-starred" ? StarIcon
@@ -559,10 +561,10 @@ const SearchBox = forwardRef(function SearchBox(
             <>
               {matchingQuickActions.length > 0
                 ? <>
-                    {matchingQuickActions.some((action) => action.group === "Current channel") && <div className="search-section" data-testid="quick-switcher-current-section">Current channel</div>}
-                    {matchingQuickActions.filter((action) => action.group === "Current channel").map((action, idx) => actionRow(action, idx))}
+                    {matchingQuickActions.some((action) => action.group) && <div className="search-section" data-testid="quick-switcher-current-section">{matchingQuickActions.find((action) => action.group).group}</div>}
+                    {matchingQuickActions.filter((action) => action.group).map((action, idx) => actionRow(action, idx))}
                     {matchingQuickActions.some((action) => !action.group) && <div className="search-section" data-testid="quick-switcher-commands-section">Commands</div>}
-                    {matchingQuickActions.filter((action) => !action.group).map((action, idx) => actionRow(action, matchingQuickActions.filter((item) => item.group === "Current channel").length + idx))}
+                    {matchingQuickActions.filter((action) => !action.group).map((action, idx) => actionRow(action, matchingQuickActions.filter((item) => item.group).length + idx))}
                   </>
                 : <div className="people-empty">No commands match.</div>}
             </>
