@@ -320,6 +320,10 @@ html[data-theme="high-contrast"] {
   --input-focus-border: #005fcc;
   --input-focus-ring: color-mix(in srgb, #005fcc 42%, transparent);
   --input-focus-shadow: 0 0 0 3px var(--input-focus-ring);
+  --success: #006b2d;
+  --warning: #7a4f00;
+  --info: #005fcc;
+  --danger: #b00020;
 }
 html[data-theme="high-contrast"][data-mode="light"] {
   --bg: #ffffff;
@@ -349,7 +353,64 @@ html[data-theme="high-contrast"][data-mode="dark"] {
   --active-fg: #000000;
   --input-focus-border: #66d9ff;
   --input-focus-ring: color-mix(in srgb, #66d9ff 48%, transparent);
+  --success: #66ff99;
+  --warning: #ffdf00;
+  --info: #66d9ff;
+  --danger: #ff6b6b;
 }
+
+/* Keep semantic states readable in High Contrast even where older components
+   still use literal status colors. Their labels/icons remain the meaning cue;
+   these overrides keep the colors supplemental rather than essential. */
+html[data-theme="high-contrast"] .profile-presence.online,
+html[data-theme="high-contrast"] .notify-on,
+html[data-theme="high-contrast"] .mention-webhook-status.is-active {
+  color: var(--success);
+}
+html[data-theme="high-contrast"] .profile-presence.online .profile-dot,
+html[data-theme="high-contrast"] .sidebar-footer .status::before {
+  background: var(--success);
+}
+html[data-theme="high-contrast"] .sidebar-footer .status {
+  color: var(--on-navy);
+}
+html[data-theme="high-contrast"] .mention-webhook-status.is-active {
+  background: color-mix(in srgb, var(--success) 18%, var(--surface));
+  border-color: var(--success);
+}
+html[data-theme="high-contrast"] .search-chip-from,
+html[data-theme="high-contrast"] .search-chip-in,
+html[data-theme="high-contrast"] .search-chip-has {
+  border: 1px solid currentColor;
+  background: var(--surface);
+}
+html[data-theme="high-contrast"] .search-chip-from,
+html[data-theme="high-contrast"] .search-highlight .kw-from,
+html[data-theme="high-contrast"] .m-get {
+  color: var(--info);
+}
+html[data-theme="high-contrast"] .search-chip-in,
+html[data-theme="high-contrast"] .search-highlight .kw-in,
+html[data-theme="high-contrast"] .m-post {
+  color: var(--success);
+}
+html[data-theme="high-contrast"] .search-chip-has,
+html[data-theme="high-contrast"] .search-highlight .kw-has,
+html[data-theme="high-contrast"] .m-patch {
+  color: var(--warning);
+}
+html[data-theme="high-contrast"] .m-delete {
+  background: var(--danger);
+}
+html[data-theme="high-contrast"] .m-get,
+html[data-theme="high-contrast"] .m-post,
+html[data-theme="high-contrast"] .m-patch,
+html[data-theme="high-contrast"] .m-delete {
+  color: var(--active-fg);
+}
+html[data-theme="high-contrast"] .m-get { background: var(--info); }
+html[data-theme="high-contrast"] .m-post { background: var(--success); }
+html[data-theme="high-contrast"] .m-patch { background: var(--warning); }
 
 /* Rose — soft pink; signature pink surfaces in light mode. */
 
