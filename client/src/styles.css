@@ -3600,6 +3600,9 @@ html[data-mode="dark"] .sidebar {
 
 /* "Join channel" bar shown when previewing a channel you're not in */
 .join-bar {
+  /* Keep the join action first in the preview's keyboard order while it
+     remains visually below the message preview. */
+  order: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;

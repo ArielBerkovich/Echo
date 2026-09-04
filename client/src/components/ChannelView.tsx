@@ -998,6 +998,21 @@ export default function ChannelView({
           onClose={() => setThreadLightbox(null)}
         />
       )}
+      {!isMember && (
+        <div className="join-bar">
+          <span className="join-text">
+            You're previewing <strong>#{channel.name}</strong>
+          </span>
+          <button
+            className="join-btn"
+            data-testid="join-channel"
+            aria-label={`Join channel #${channel.name}`}
+            onClick={() => onJoin(channel)}
+          >
+            Join channel
+          </button>
+        </div>
+      )}
       <header className="channel-header" data-testid="channel-header">
         {isDm ? (
           <>
@@ -1311,17 +1326,6 @@ export default function ChannelView({
         <div className="typing-indicator" data-testid="typing-indicator">
           <span className="typing-dots"><i /><i /><i /></span>
           {typingText}
-        </div>
-      )}
-
-      {!isMember && (
-        <div className="join-bar">
-          <span className="join-text">
-            You're previewing <strong>#{channel.name}</strong>
-          </span>
-          <button className="join-btn" onClick={() => onJoin(channel)}>
-            Join channel
-          </button>
         </div>
       )}
 
