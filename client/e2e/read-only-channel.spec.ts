@@ -28,7 +28,7 @@ async function removeTestChannel(page, channelId) {
   await rawApi(page, fixture.alice.token, `/channels/${channelId}`, { method: "DELETE" });
 }
 
-test("creates a managers-only channel from advanced options and enforces posting access", async ({ browser, page }) => {
+test("creates a managers-only channel and enforces posting access", async ({ browser, page }) => {
   const channelName = `readonly-create-${uniqueSuffix("channel")}`.toLowerCase();
   let channelId;
   const bobContext = await browser.newContext();
@@ -38,7 +38,6 @@ test("creates a managers-only channel from advanced options and enforces posting
     await page.goto("/");
     await page.getByTestId("create-channel").click();
     await page.getByTestId("create-channel-name").fill(channelName);
-    await page.getByRole("button", { name: "Advanced options" }).click();
     const toggle = page.getByTestId("create-channel-readonly-toggle");
     await expect(toggle).not.toBeChecked();
     await page.locator("label.channel-readonly-toggle").click();

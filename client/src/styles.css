@@ -1812,30 +1812,6 @@ html[data-mode="dark"] .backend-connection-error {
 }
 .channel-advanced-options {
   margin-top: 4px;
-  border-top: 1px solid var(--border);
-}
-.channel-advanced-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 13px 0;
-  border: 0;
-  background: transparent;
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 700;
-  text-align: left;
-}
-.channel-advanced-toggle svg {
-  color: var(--muted);
-  transition: transform 160ms ease;
-}
-.channel-advanced-toggle.is-open svg {
-  transform: rotate(180deg);
-}
-.channel-advanced-toggle:hover {
-  color: var(--accent);
 }
 .channel-advanced-panel {
   display: flex;
