@@ -32,6 +32,17 @@ const QUICK_ACTIONS = [
   { id: "settings", label: "Open Settings", keywords: ["settings", "preferences"], shortcut: "⌘/Ctrl+,", Icon: SettingsIcon },
 ];
 
+const QUICK_ACTIONS = [
+  { id: "new-message", label: "New message", keywords: ["new", "message", "dm"], shortcut: "⌘/Ctrl+⇧M", Icon: MessageSquarePlusIcon },
+  { id: "create-channel", label: "Create channel", keywords: ["create", "new", "channel"], shortcut: "⌘/Ctrl+⇧C", Icon: HashIcon },
+  { id: "browse-channels", label: "Browse channels", keywords: ["browse", "channels"], shortcut: "⌘/Ctrl+⇧O", Icon: HashIcon },
+  { id: "home", label: "Go to Home", keywords: ["home"], shortcut: "⌘/Ctrl+⇧H", Icon: HomeIcon },
+  { id: "dms", label: "Go to Direct messages", keywords: ["dm", "dms", "direct", "messages"], shortcut: "⌘/Ctrl+⇧D", Icon: MessageSquareTextIcon },
+  { id: "activity", label: "Go to Activity", keywords: ["activity", "notifications"], shortcut: "⌘/Ctrl+⇧A", Icon: ActivityIcon },
+  { id: "saved", label: "Go to Saved", keywords: ["saved", "bookmarks"], shortcut: "⌘/Ctrl+⇧S", Icon: BookmarkIcon },
+  { id: "settings", label: "Open Settings", keywords: ["settings", "preferences"], shortcut: "⌘/Ctrl+,", Icon: SettingsIcon },
+];
+
 // Things "has:" can filter on, suggested as you type the token.
 const HAS_OPTIONS = [
   { key: "file", label: "Has a file" },
