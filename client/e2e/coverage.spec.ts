@@ -133,7 +133,9 @@ test("virtualizes the add-people directory while keeping all users reachable", a
   const virtualContent = list.locator(".people-virtual-content");
   await expect(virtualContent).toHaveAttribute("style", /height:/);
   await list.evaluate((element) => element.scrollTop = element.scrollHeight);
-  const lastPerson = people.at(-1);
+  // The directory is sorted by display name, so the final registration is
+  // not necessarily the last row in the scrollable list.
+  const lastPerson = [...people].sort((a, b) => a.displayName.localeCompare(b.displayName)).at(-1);
   await expect(addPeople.getByTestId(`add-people-add-${lastPerson.username}`)).toBeVisible();
 
   await addPeople.getByTestId("add-people-search").fill(lastPerson.username);
