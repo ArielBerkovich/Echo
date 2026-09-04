@@ -565,7 +565,7 @@ const ChannelView = forwardRef(function ChannelView({
       // handles their Escape dismissal, but this capture listener runs first;
       // leave the event alone so closing a form does not also close the panel
       // behind it.
-      if (event.target instanceof Element && event.target.closest('[role="dialog"]')) return;
+      if (document.querySelector('[role="dialog"]')) return;
       event.preventDefault();
       if (thread) {
         setThread(null);
