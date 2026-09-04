@@ -118,7 +118,7 @@ test.describe("documented keyboard shortcuts", () => {
     await expect(page.getByTestId("new-message-modal")).toBeHidden();
 
     await page.keyboard.press("Control+k");
-    await expect(page.getByText("Current channel", { exact: true })).toHaveCount(0);
+    await expect(page.getByTestId("quick-switcher-current-section")).toHaveCount(0);
   });
 
   test("hands command focus to form fields, not feed headers", async ({ page }) => {
@@ -136,6 +136,10 @@ test.describe("documented keyboard shortcuts", () => {
     await expect(activityHeader).toBeVisible();
     await expect(activityHeader).not.toHaveAttribute("tabindex");
     await expect(activityHeader).not.toBeFocused();
+
+    await page.keyboard.press("Control+k");
+    await expect(page.getByTestId("quick-switcher-current-section")).toHaveCount(0);
+    await page.keyboard.press("Escape");
 
     await page.keyboard.press("Control+k");
     await page.getByTestId("search-action-saved").click();

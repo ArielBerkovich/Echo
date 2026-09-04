@@ -20,7 +20,7 @@ export default function WorkspaceContent({ view, search, browse, feeds, conversa
     (activeChannel.members || []).includes(conversation.user.id)
       ? activeChannel
       : null;
-  const currentChannelActions = activeChannel?.type !== "dm"
+  const currentChannelActions = view === "home" && activeChannel && activeChannel.type !== "dm"
     ? [
         ...(addPeopleChannel ? [{ id: "add-people", label: "Add people", keywords: ["add", "people", "members", "invite"], group: "Current channel" }] : []),
         { id: "view-members", label: "View members", keywords: ["members", "people", "participants"], group: "Current channel" },

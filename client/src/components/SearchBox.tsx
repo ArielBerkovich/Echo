@@ -548,9 +548,9 @@ const SearchBox = forwardRef(function SearchBox(
             <>
               {matchingQuickActions.length > 0
                 ? <>
-                    {matchingQuickActions.some((action) => action.group === "Current channel") && <div className="search-section">Current channel</div>}
+                    {matchingQuickActions.some((action) => action.group === "Current channel") && <div className="search-section" data-testid="quick-switcher-current-section">Current channel</div>}
                     {matchingQuickActions.filter((action) => action.group === "Current channel").map((action, idx) => actionRow(action, idx))}
-                    {matchingQuickActions.some((action) => !action.group) && <div className="search-section">Commands</div>}
+                    {matchingQuickActions.some((action) => !action.group) && <div className="search-section" data-testid="quick-switcher-commands-section">Commands</div>}
                     {matchingQuickActions.filter((action) => !action.group).map((action, idx) => actionRow(action, matchingQuickActions.filter((item) => item.group === "Current channel").length + idx))}
                   </>
                 : <div className="people-empty">No commands match.</div>}
