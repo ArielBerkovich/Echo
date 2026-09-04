@@ -213,7 +213,7 @@ jobs:
             exit 1
           fi
 
-          npm start > /tmp/echo-server.log 2>&1 &
+          nohup npm start > /tmp/echo-server.log 2>&1 &
           echo $! > /tmp/echo-server.pid
 
           server_ready=false
@@ -247,7 +247,13 @@ jobs:
       - name: Run E2E tests
         env:
           E2E_WORKERS: 1
-        run: npm run test:e2e -- --shard=${{ matrix.shard }}
+        run: |
+          if ! curl -fsS http://127.0.0.1:4000/api/health >/dev/null; then
+            echo "Echo server is unavailable before starting the E2E shard"
+            cat /tmp/echo-server.log
+            exit 1
+          fi
+          npm run test:e2e -- --shard=${{ matrix.shard }}
 
   # Preserve the established required-check name while the work runs in
   # isolated shards above. Branch protection accepts this only after every

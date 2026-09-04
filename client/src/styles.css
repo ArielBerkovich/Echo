@@ -175,8 +175,8 @@ html[data-mode="dark"] {
 
 /* Aubergine — warm stone highlights against deep wine navigation. */
 html[data-theme="aubergine"] {
-  --accent: #8c8580;
-  --active-bg: #6f6863;
+  --accent: #76536d;
+  --active-bg: #5d4056;
   --on-navy: #fff5ef;
   --on-navy-muted: #d8abbf;
   --sidebar-bg: linear-gradient(165deg, #5b1b42 0%, #43122f 52%, #321022 100%);
@@ -192,6 +192,10 @@ html[data-theme="aubergine"][data-mode="light"] {
   --code-bg: #f3e9e5;
   --code-text: #35232c;
   --code-border: #ddcec9;
+}
+html[data-theme="aubergine"][data-mode="dark"] {
+  --accent: #b28aa8;
+  --active-bg: #8e6a88;
 }
 
 /* Azure — clean sky blue; deep navy surfaces in dark mode. */
@@ -1913,9 +1917,6 @@ html[data-mode="dark"] .backend-connection-error {
   border: 0;
   padding: 0;
   cursor: pointer;
-}
-.author-btn:hover {
-  text-decoration: underline;
 }
 .mention[data-mention] {
   cursor: pointer;
@@ -6177,9 +6178,6 @@ html[data-mode="dark"] .day-divider-label {
   background: transparent;
   padding: 0;
 }
-.channel-details-profile-link:hover {
-  color: var(--accent);
-}
 .channel-details-person-handle,
 .channel-details-created-date {
   color: var(--muted);
@@ -8387,10 +8385,6 @@ html[data-mode="dark"] .channel-header {
 }
 .channel-header .ch-name-btn {
   text-align: left;
-}
-.channel-header .ch-name-btn:hover,
-.channel-header .ch-meta-btn:hover {
-  background: var(--surface-2);
 }
 .channel-header .ch-topic {
   font-size: 13px;
@@ -12446,4 +12440,12 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   .app[data-mobile-nav="true"] .app-nav .sidebar {
     top: calc(58px + env(safe-area-inset-top));
   }
+}
+
+/* Shared hover treatment for clickable people and channel names. Keep this
+   at the end so component base typography cannot override the interaction state. */
+.interactive-name:hover {
+  background: transparent;
+  color: var(--accent);
+  text-decoration: none;
 }
