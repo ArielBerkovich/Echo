@@ -9677,6 +9677,13 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
   overflow-y: auto;
   margin: -4px 0 4px;
 }
+.people-virtual-content {
+  position: relative;
+}
+.people-virtual-content .person-row {
+  position: absolute;
+  inset: 0 0 auto;
+}
 .person-row {
   display: flex;
   align-items: center;
