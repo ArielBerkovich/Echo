@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { enableClipboardStub, requestAsToken, seedWorkspaceFixture, slug, uniqueSuffix } from "./helpers.js";
+import { enableClipboardStub, registerUser, requestAsToken, seedWorkspaceFixture, slug, uniqueSuffix } from "./helpers.js";
 
 const ONE_BY_ONE_PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAEklEQVR42mP8/5+hHgAHggJ/PFvdcQAAAABJRU5ErkJggg==",
@@ -99,6 +99,37 @@ test("manages channels, members, visibility, and leaving", async ({ page }) => {
   await page.reload();
   await expect(page.getByTestId(`channel-row-${slug(channelName)}`)).toHaveCount(0);
   await expect(page.getByTestId("channel-row-general")).toBeVisible();
+});
+
+test("virtualizes the add-people directory while keeping all users reachable", async ({ page }) => {
+  const suffix = uniqueSuffix("virtual");
+  const people = await Promise.all(
+    Array.from({ length: 36 }, (_, index) => registerUser(page, {
+      username: `virtual.${suffix}.${index}`,
+      displayName: `Virtual Person ${String(index).padStart(2, "0")}`,
+    }))
+  );
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "Create channel" }).click();
+  const createModal = page.locator(".modal").filter({ hasText: "Create a channel" });
+  const channelName = `virtual-room-${suffix}`.toLowerCase();
+  await createModal.getByPlaceholder("e.g. marketing").fill(channelName);
+  await createModal.getByRole("button", { name: "Create" }).click();
+  await page.locator(".ch-name-btn").click();
+  await page.getByRole("button", { name: "Add people" }).click();
+
+  const addPeople = page.getByTestId("add-people-modal");
+  const list = addPeople.locator(".people-list");
+  const virtualContent = list.locator(".people-virtual-content");
+  await expect(virtualContent).toHaveAttribute("style", /height:/);
+  await list.evaluate((element) => element.scrollTop = element.scrollHeight);
+  const lastPerson = people.at(-1);
+  await expect(addPeople.getByTestId(`add-people-add-${lastPerson.username}`)).toBeVisible();
+
+  await addPeople.getByTestId("add-people-search").fill(lastPerson.username);
+  await expect(addPeople.getByTestId(`add-people-add-${lastPerson.username}`)).toBeVisible();
+  await expect(list).toHaveJSProperty("scrollTop", 0);
 });
 
 test("joins a public channel, hides a channel locally, and restores it from search", async ({ page }) => {
