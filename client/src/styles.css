@@ -306,8 +306,8 @@ html[data-theme="sand"][data-mode="light"] {
 /* High contrast — strong value separation with a restrained neutral palette
    keeps the interface legible without making every surface pure black/white. */
 html[data-theme="high-contrast"] {
-  --accent: #005fcc;
-  --active-bg: #005fcc;
+  --accent: #1f5f99;
+  --active-bg: #1f5f99;
   --active-fg: #ffffff;
   --on-navy: #f8fafc;
   --on-navy-muted: #d8e1eb;
@@ -317,13 +317,13 @@ html[data-theme="high-contrast"] {
   --tooltip-bg: #111923;
   --tooltip-fg: #ffffff;
   --tooltip-border: #d8e1eb;
-  --input-focus-border: #005fcc;
-  --input-focus-ring: color-mix(in srgb, #005fcc 42%, transparent);
+  --input-focus-border: #1f5f99;
+  --input-focus-ring: color-mix(in srgb, #1f5f99 42%, transparent);
   --input-focus-shadow: 0 0 0 3px var(--input-focus-ring);
-  --success: #006b2d;
-  --warning: #b54708;
-  --info: #005fcc;
-  --danger: #b00020;
+  --success: #28613b;
+  --warning: #8a5a00;
+  --info: #1f5f99;
+  --danger: #9f2d35;
 }
 html[data-theme="high-contrast"][data-mode="light"] {
   --bg: #f7f8fa;
@@ -349,16 +349,15 @@ html[data-theme="high-contrast"][data-mode="dark"] {
   --code-bg: #0b0f14;
   --code-text: #f5f7fa;
   --code-border: #b8c4d1;
-  --code-border: #ffffff;
-  --accent: #66b5ff;
-  --active-bg: #2f9bff;
-  --active-fg: #061018;
-  --input-focus-border: #66b5ff;
-  --input-focus-ring: color-mix(in srgb, #66b5ff 48%, transparent);
-  --success: #66ff99;
-  --warning: #ffb000;
-  --info: #66b5ff;
-  --danger: #ff6b6b;
+  --accent: #9bc7f5;
+  --active-bg: #9bc7f5;
+  --active-fg: #0b0f14;
+  --input-focus-border: #9bc7f5;
+  --input-focus-ring: color-mix(in srgb, #9bc7f5 48%, transparent);
+  --success: #9fe6b5;
+  --warning: #ffd27a;
+  --info: #9bc7f5;
+  --danger: #ff9b9f;
 }
 
 /* Keep semantic states readable in High Contrast even where older components
