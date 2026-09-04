@@ -561,11 +561,6 @@ const ChannelView = forwardRef(function ChannelView({
     if (!thread && !showMembers && !showPinned && !showFiles) return undefined;
     function onKeyDown(event) {
       if (event.key !== "Escape" || event.defaultPrevented) return;
-      // Modal dialogs are a higher layer than channel side panels. Radix
-      // handles their Escape dismissal, but this capture listener runs first;
-      // leave the event alone so closing a form does not also close the panel
-      // behind it.
-      if (document.querySelector('[role="dialog"]')) return;
       event.preventDefault();
       if (thread) {
         setThread(null);
@@ -579,8 +574,8 @@ const ChannelView = forwardRef(function ChannelView({
         setShowFiles(false);
       }
     }
-    document.addEventListener("keydown", onKeyDown, true);
-    return () => document.removeEventListener("keydown", onKeyDown, true);
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
   }, [showFiles, showMembers, showPinned, thread]);
 
   // Returns a promise so the ForwardModal can show per-destination progress.
