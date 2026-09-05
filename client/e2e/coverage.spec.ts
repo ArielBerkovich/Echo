@@ -532,7 +532,7 @@ test("schedules a message and clears the banner after delivery", async ({ page }
   const composer = page.getByTestId("composer-editor");
   const scheduledBody = `Scheduled ${Date.now()}`;
   await composer.fill(scheduledBody);
-  await page.getByRole("button", { name: "Send options" }).click();
+  await page.getByRole("button", { name: "Schedule message" }).click();
   await page.locator(".send-menu button").filter({ hasText: "Custom time…" }).click();
   const scheduleModal = page.locator(".modal").filter({ hasText: "Schedule message" });
   const scheduleInput = scheduleModal.locator('input[type="datetime-local"]');
@@ -564,7 +564,7 @@ test("uses conversation wording for scheduled messages in DMs", async ({ page })
   await dmComposer.fill(`DM scheduled ${Date.now()}`);
   await expect(dmComposer).not.toBeEmpty();
   await expect(dmComposerForm.getByTestId("composer-send")).toBeEnabled();
-  const sendOptions = dmComposerForm.getByRole("button", { name: "Send options" });
+  const sendOptions = dmComposerForm.getByRole("button", { name: "Schedule message" });
   await expect(sendOptions).toBeEnabled();
   await sendOptions.click();
   await dmComposerForm.locator(".send-menu button:not(:disabled)").filter({ hasText: "Tomorrow, 09:00" }).click();
@@ -575,7 +575,7 @@ test("makes custom scheduling clear and submits the selected local date and time
   await page.goto("/");
   const body = `Custom schedule ${uniqueSuffix("e2e")}`;
   await page.getByTestId("composer-editor").fill(body);
-  await page.getByRole("button", { name: "Send options" }).click();
+  await page.getByRole("button", { name: "Schedule message" }).click();
   await page.locator(".send-menu button").filter({ hasText: "Custom time…" }).click();
 
   const modal = page.locator(".modal").filter({ hasText: "Schedule message" });
@@ -602,7 +602,7 @@ test("shows invalid schedule times inside the schedule dialog", async ({ page })
   await page.goto("/");
 
   await page.getByTestId("composer-editor").fill(`Invalid schedule ${Date.now()}`);
-  await page.getByRole("button", { name: "Send options" }).click();
+  await page.getByRole("button", { name: "Schedule message" }).click();
   await page.locator(".send-menu button").filter({ hasText: "Custom time…" }).click();
 
   const scheduleModal = page.locator(".modal").filter({ hasText: "Schedule message" });
@@ -620,7 +620,7 @@ test("edits and cancels a scheduled message", async ({ page }) => {
   const composer = page.getByTestId("composer-editor");
   const scheduledBody = `Scheduled ${Date.now()}`;
   await composer.fill(scheduledBody);
-  await page.getByRole("button", { name: "Send options" }).click();
+  await page.getByRole("button", { name: "Schedule message" }).click();
   await page.locator(".send-menu button").filter({ hasText: "Tomorrow, 09:00" }).click();
 
   await expect(page.getByText(/scheduled message/i)).toBeVisible();

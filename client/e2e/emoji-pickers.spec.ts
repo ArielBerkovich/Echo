@@ -27,6 +27,17 @@ function emojiPicker(page: Page) {
   return page.locator(".emoji-popup-wrap");
 }
 
+async function openForwardDialog(page: Page) {
+  await page.goto("/");
+  const source = messageById(page, fixture.messages.searchHit.id);
+  await expect(source).toBeVisible({ timeout: 15_000 });
+  await source.hover();
+  const forward = page.getByTestId(`message-${fixture.messages.searchHit.id}-forward`);
+  await expect(forward).toBeVisible();
+  await forward.click({ force: true });
+  await expect(page.getByTestId("forward-modal")).toBeVisible();
+}
+
 test.describe("custom emoji pickers", () => {
   test("inserts a Git emoji from the channel composer above message controls", async ({ page }) => {
     await page.goto("/");
@@ -68,10 +79,7 @@ test.describe("custom emoji pickers", () => {
   });
 
   test("inserts a Git emoji into a forward note", async ({ page }) => {
-    await page.goto("/");
-    const source = messageById(page, fixture.messages.searchHit.id);
-    await source.hover();
-    await page.getByTestId(`message-${fixture.messages.searchHit.id}-forward`).click({ force: true });
+    await openForwardDialog(page);
 
     const modal = page.getByTestId("forward-modal");
     const editor = modal.getByTestId("composer-editor");
