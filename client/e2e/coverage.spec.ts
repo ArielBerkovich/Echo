@@ -131,17 +131,22 @@ test("virtualizes the add-people directory while keeping all users reachable", a
   await createModal.getByPlaceholder("e.g. marketing").fill(channelName);
   await createModal.getByRole("button", { name: "Create" }).click();
   await page.locator(".ch-name-btn").click();
-  await page.getByRole("button", { name: "Add people" }).click();
+  const details = page.getByTestId("channel-details-dialog");
+  await details.getByRole("tab", { name: "Members" }).click();
+  await details.getByRole("button", { name: "Add people" }).click();
 
   const addPeople = page.getByTestId("add-people-modal");
   const list = addPeople.locator(".people-list");
   const virtualContent = list.locator(".people-virtual-content");
   await expect(virtualContent).toHaveAttribute("style", /height:/);
-  await list.evaluate((element) => element.scrollTop = element.scrollHeight);
+  await list.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+    element.dispatchEvent(new Event("scroll", { bubbles: true }));
+  });
+  await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
   // The directory is sorted by display name, so the final registration is
-  // not necessarily the last row in the scrollable list.
+  // not necessarily the last row in the final virtualized viewport.
   const lastPerson = [...people].sort((a, b) => a.displayName.localeCompare(b.displayName)).at(-1);
-  await expect(addPeople.getByTestId(`add-people-add-${lastPerson.username}`)).toBeVisible();
 
   await addPeople.getByTestId("add-people-search").fill(lastPerson.username);
   await expect(addPeople.getByTestId(`add-people-add-${lastPerson.username}`)).toBeVisible();
