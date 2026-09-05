@@ -14,7 +14,7 @@ test("creates and manages a retrospective board", async ({ page }) => {
   await page.getByTestId("composer-retro").click();
   const createModal = page.locator(".retro-create-modal");
   await createModal.locator("input.settings-input").fill(title);
-  await createModal.getByRole("button", { name: "Create board" }).click();
+  await createModal.getByRole("button", { name: "Create retrospective" }).click();
 
   const message = page.locator(".retro-message-card").filter({ hasText: title }).last();
   await expect(message).toBeVisible();
@@ -54,7 +54,7 @@ test("shows optional linked work URL for backlog ideas", async ({ page }) => {
   await page.getByTestId("composer-retro").click();
   const createModal = page.locator(".retro-create-modal");
   await createModal.locator("input.settings-input").fill(title);
-  await createModal.getByRole("button", { name: "Create board" }).click();
+  await createModal.getByRole("button", { name: "Create retrospective" }).click();
   await page.locator(".retro-message-card").filter({ hasText: title }).last().click();
 
   const board = page.locator(".retro-modal");
