@@ -28,7 +28,7 @@ import { MENTION_QUERY_RE } from "../lib/mentions.js";
 import { CalendarClock, ChartNoAxesColumnIncreasing, ChevronRight, FileIcon, Paperclip, X } from "lucide-react";
 import {
   LinkIcon, OrderedListIcon, BulletListIcon, QuoteIcon, CodeIcon, CodeBlockIcon,
-  PlusIcon, SmileyIcon, SendIcon, ChevronIcon,
+  PlusIcon, SmileyIcon, SendIcon,
 } from "./ComposerIcons.js";
 
 const SCHEDULE_PRESETS = [
@@ -117,6 +117,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   const [scheduledMsgs, setScheduledMsgs] = useState([]); // pending scheduled messages for this channel
   const [showScheduled, setShowScheduled] = useState(false); // manage-scheduled modal
   const [editingSched, setEditingSched] = useState(null); // { id, body, at } being edited
+  const [undoScheduled, setUndoScheduled] = useState(null); // canceled message available to restore
   const [surveyDraft, setSurveyDraft] = useState(null);
   const surveyOptionsListRef = useRef(null);
   const emojiToggleRef = useRef(null);
@@ -145,6 +146,12 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     const list = surveyOptionsListRef.current;
     if (list) list.scrollTop = list.scrollHeight;
   }, [surveyDraft?.options.length, duplicateSurveyOptionCount]);
+
+  useEffect(() => {
+    if (!undoScheduled) return undefined;
+    const timer = setTimeout(() => setUndoScheduled(null), 6000);
+    return () => clearTimeout(timer);
+  }, [undoScheduled]);
 
   useEffect(() => {
     if (!pastePrompt) return undefined;
@@ -639,10 +646,30 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   }
 
   async function cancelScheduled(id) {
+    const scheduled = scheduledMsgs.find((message) => message.id === id);
     try {
       await api.cancelScheduled(id);
       setScheduledMsgs((prev) => prev.filter((s) => s.id !== id));
+      if (scheduled) setUndoScheduled({ scheduled, busy: false });
     } catch (err) {
+      onError?.(err.message);
+    }
+  }
+
+  async function undoCancelScheduled() {
+    if (!undoScheduled || undoScheduled.busy) return;
+    setUndoScheduled((current) => current && { ...current, busy: true });
+    try {
+      await api.scheduleMessage(undoScheduled.scheduled.channelId, {
+        body: undoScheduled.scheduled.body,
+        parentId: undoScheduled.scheduled.parentId,
+        attachments: undoScheduled.scheduled.attachments,
+        scheduledFor: undoScheduled.scheduled.scheduledFor,
+      });
+      setUndoScheduled(null);
+      refreshScheduled();
+    } catch (err) {
+      setUndoScheduled((current) => current && { ...current, busy: false });
       onError?.(err.message);
     }
   }
@@ -966,21 +993,34 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
           {scheduleError && <div className="error schedule-error" role="alert">{scheduleError}</div>}
           {scheduledMsgs.length > 0 && (
             <div className="scheduled-modal-intro">
-              <span className="scheduled-modal-count">{scheduledMsgs.length}</span>
+              <span className="scheduled-modal-icon" aria-hidden="true">
+                <CalendarClock size={18} strokeWidth={1.9} />
+              </span>
               <div>
-                <strong>Queued for {scheduledTargetLabel}</strong>
+                <span className="scheduled-modal-eyebrow">Upcoming messages</span>
+                <strong><span className="scheduled-modal-count">{scheduledMsgs.length}</span> queued for {scheduledTargetLabel}</strong>
                 <span>These messages will be sent automatically at their scheduled time.</span>
               </div>
             </div>
           )}
           {scheduledMsgs.length === 0 ? (
-            <p className="settings-hint">No scheduled messages for {scheduledTargetLabel}.</p>
+            <div className="scheduled-empty">
+              <span className="scheduled-empty-icon" aria-hidden="true">
+                <CalendarClock size={22} strokeWidth={1.8} />
+              </span>
+              <strong>Nothing scheduled</strong>
+              <span>Messages you schedule for {scheduledTargetLabel} will appear here.</span>
+            </div>
           ) : (
             <div className="scheduled-list">
               {scheduledMsgs.map((s, index) =>
                 editingSched?.id === s.id ? (
                   <div className="scheduled-item editing" key={s.id}>
                     <div className="scheduled-edit">
+                      <div className="scheduled-edit-heading">
+                        <strong>Edit scheduled message</strong>
+                        <span>Update the message or choose a new delivery time.</span>
+                      </div>
                       <textarea
                         className="settings-input"
                         rows={2}
@@ -1027,12 +1067,20 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                         Edit
                       </button>
                       <button type="button" className="link-danger" onClick={() => cancelScheduled(s.id)}>
-                        Cancel
+                        Cancel scheduled message
                       </button>
                     </div>
                   </div>
                 )
               )}
+            </div>
+          )}
+          {undoScheduled && (
+            <div className="scheduled-undo" role="status">
+              <span>Scheduled message canceled.</span>
+              <button type="button" onClick={undoCancelScheduled} disabled={undoScheduled.busy}>
+                {undoScheduled.busy ? "Restoring…" : "Undo"}
+              </button>
             </div>
           )}
         </Modal>
@@ -1233,14 +1281,15 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
           {!editing && !isThread && showSchedule && showSend && (
             <button
               type="button"
-              className="icon-btn chevron-btn"
+              className="icon-btn schedule-btn"
               data-testid="composer-send-options"
-              title="Send options"
+              aria-label="Schedule message"
+              title="Schedule message"
               onMouseDown={keepFocus}
               onClick={() => setSendMenuOpen((v) => !v)}
               disabled={!!pastePrompt}
             >
-              <ChevronIcon />
+              <CalendarClock size={19} strokeWidth={1.7} />
             </button>
           )}
           {!editing && !isThread && showSchedule && showSend && sendMenuOpen && (
@@ -1252,7 +1301,6 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                   type="button"
                   onClick={scheduleTomorrow9}
                   disabled={(!canSend && pending.length === 0) || !!pastePrompt}
-                  title={pastePrompt ? "Choose how to handle the pasted content first" : !canSend && pending.length === 0 ? "Write a message first" : undefined}
                 >
                   <span>Tomorrow, 09:00</span>
                   <span className="send-menu-sub">
@@ -1263,7 +1311,6 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                   type="button"
                   onClick={openSchedule}
                   disabled={(!canSend && pending.length === 0) || !!pastePrompt}
-                  title={pastePrompt ? "Choose how to handle the pasted content first" : !canSend && pending.length === 0 ? "Write a message first" : undefined}
                 >
                   <span>Custom time…</span>
                 </button>

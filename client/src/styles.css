@@ -9373,23 +9373,37 @@ html[data-mode="dark"] .new-messages-button:hover {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: -4px 0 14px;
-  padding: 10px 12px;
+  margin: -4px 0 16px;
+  padding: 12px 13px;
   border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border));
   border-radius: 12px;
   background: color-mix(in srgb, var(--accent) 7%, var(--surface));
 }
-.scheduled-modal-count {
+.scheduled-modal-icon {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 34px;
+  height: 34px;
   flex: none;
-  border-radius: 9px;
-  background: var(--accent);
-  color: var(--active-fg);
-  font-size: 13px;
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 13%, var(--surface));
+  color: var(--accent);
+}
+.scheduled-modal-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  margin-right: 2px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  color: var(--accent);
+  font-size: 11px;
   font-weight: 800;
+  vertical-align: 1px;
 }
 .scheduled-modal-intro div {
   display: flex;
@@ -9398,8 +9412,16 @@ html[data-mode="dark"] .new-messages-button:hover {
   gap: 2px;
 }
 .scheduled-modal-intro strong {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 750;
+}
+.scheduled-modal-eyebrow {
+  color: var(--accent) !important;
+  font-size: 10px !important;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  line-height: 1.2;
+  text-transform: uppercase;
 }
 .scheduled-modal-intro span:not(.scheduled-modal-count) {
   color: var(--muted);
@@ -9410,10 +9432,41 @@ html[data-mode="dark"] .new-messages-button:hover {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin: 4px 0 0;
+  margin: 0;
   max-height: min(390px, 48vh);
   overflow-y: auto;
   padding: 2px;
+}
+.scheduled-empty {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 6px;
+  padding: 34px 18px 30px;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-2) 46%, var(--surface));
+  text-align: center;
+}
+.scheduled-empty-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 4px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  color: var(--accent);
+}
+.scheduled-empty strong {
+  color: var(--text);
+  font-size: 14px;
+}
+.scheduled-empty > span:last-child {
+  max-width: 290px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
 }
 .scheduled-item {
   display: grid;
@@ -9523,6 +9576,32 @@ html[data-mode="dark"] .new-messages-button:hover {
   background: color-mix(in srgb, var(--danger) 9%, var(--surface));
   text-decoration: none;
 }
+.scheduled-undo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--border));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+  color: var(--text);
+  font-size: 12px;
+}
+.scheduled-undo button {
+  border: 0;
+  padding: 3px 5px;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+.scheduled-undo button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
 .scheduled-item.editing {
   grid-template-columns: 1fr;
   display: block;
@@ -9532,6 +9611,20 @@ html[data-mode="dark"] .new-messages-button:hover {
   flex-direction: column;
   gap: 8px;
   width: 100%;
+}
+.scheduled-edit-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 2px;
+}
+.scheduled-edit-heading strong {
+  color: var(--text);
+  font-size: 13px;
+}
+.scheduled-edit-heading span {
+  color: var(--muted);
+  font-size: 11.5px;
 }
 .scheduled-edit textarea.settings-input {
   resize: vertical;
@@ -9579,7 +9672,7 @@ html[data-mode="dark"] .new-messages-button:hover {
   opacity: 1;
   cursor: default;
 }
-.chevron-btn { color: #b7b7b7; }
+.schedule-btn { color: #b7b7b7; }
 
 /* Emoji picker (emoji-mart) — anchored above the composer */
 .emoji-popup-wrap {
