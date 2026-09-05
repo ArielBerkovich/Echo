@@ -5826,6 +5826,7 @@ html[data-mode="dark"] .day-divider-label {
   min-height: 42px;
   padding: 0 10px;
   border: 0;
+  border-bottom: 2px solid transparent;
   border-radius: 7px;
   background: transparent;
   color: var(--muted);
@@ -5838,7 +5839,7 @@ html[data-mode="dark"] .day-divider-label {
   color: var(--text);
 }
 .channel-details-tab.active {
-  background: var(--active-soft);
+  border-bottom-color: var(--accent);
   color: var(--accent);
 }
 .channel-details-tab:focus-visible {
