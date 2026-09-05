@@ -8963,7 +8963,7 @@ html[data-mode="dark"] .new-messages-button:hover {
   border: 1px solid rgba(29, 28, 29, 0.18);
   border-radius: 12px;
   background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .composer:focus-within {
@@ -9042,8 +9042,8 @@ html[data-mode="dark"] .new-messages-button:hover {
   box-sizing: border-box;
   flex-wrap: nowrap;
   height: 45px;
-  background: #f8f8f8;
-  border-bottom: 1px solid #ececec;
+  background: transparent;
+  border-bottom: 0;
   border-radius: 11px 11px 0 0;
 }
 
@@ -9199,6 +9199,13 @@ html[data-mode="dark"] .new-messages-button:hover {
 }
 .composer-actions .right {
   position: relative;
+}
+.composer-keyboard-hint {
+  margin-right: 4px;
+  color: #8d8d8d;
+  font-size: 11px;
+  line-height: 1;
+  white-space: nowrap;
 }
 .send-btn {
   padding-inline: 10px;
@@ -10376,6 +10383,12 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   }
   .chat-pane {
     margin: 8px;
+  }
+}
+
+@media (max-width: 420px) {
+  .composer-keyboard-hint {
+    display: none;
   }
 }
 

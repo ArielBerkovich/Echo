@@ -617,6 +617,7 @@ test("uses Enter for new list items and Shift+Enter for list line breaks", async
   await expect(editor).toBeVisible();
 
   await editor.click();
+  await page.getByTestId("composer-formatting").click();
   await page.getByTitle("Bulleted list").click();
   await page.keyboard.type("List item one");
   await page.keyboard.press("Enter");
@@ -639,6 +640,7 @@ test("starts lists after existing composer text", async ({ page }) => {
   const editor = page.getByTestId("composer-editor");
   await expect(editor).toBeVisible();
 
+  await page.getByTestId("composer-formatting").click();
   for (const [title, listSelector] of [["Ordered list", "ol"], ["Bulleted list", "ul"]]) {
     await editor.fill("Regular text");
     await page.getByTitle(title).click();
@@ -660,6 +662,7 @@ test("uses Shift+Enter for code newlines and Enter to exit the block", async ({ 
   await expect(editor).toBeVisible();
 
   await editor.click();
+  await page.getByTestId("composer-formatting").click();
   await page.getByTitle("Code block").click();
   await page.keyboard.type("const value = 1;");
   await page.keyboard.down("Shift");
@@ -678,7 +681,10 @@ test("updates composer formatting buttons immediately", async ({ page }) => {
   await page.goto("/");
 
   const editor = page.getByTestId("composer-editor");
+  await expect(page.getByTestId("composer").locator(".composer-toolbar")).toHaveCount(0);
+  await expect(page.getByText("Enter to send · Shift+Enter for new line")).toBeVisible();
   await editor.click();
+  await page.getByTestId("composer-formatting").click();
 
   for (const testId of ["composer-bold", "composer-italic", "composer-strikethrough", "composer-blockquote", "composer-code", "composer-code-block"]) {
     const button = page.getByTestId(testId);
@@ -694,6 +700,7 @@ test("uses an empty quoted line to exit a blockquote", async ({ page }) => {
 
   const editor = page.getByTestId("composer-editor");
   await editor.click();
+  await page.getByTestId("composer-formatting").click();
   await page.getByTitle("Blockquote").click();
   await page.keyboard.type("Quoted text");
   await page.keyboard.press("Enter");

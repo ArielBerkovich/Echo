@@ -282,6 +282,7 @@ test("starts a new list after existing composer text", async ({ page }) => {
   await page.goto("/");
   const editor = page.getByTestId("composer-editor").first();
   await editor.fill("Regular text");
+  await page.getByTestId("composer-formatting").first().click();
   await page.getByTitle("Bulleted list").first().click();
   await page.keyboard.type("List item");
   await expect(editor.locator(":scope > p")).toHaveText("Regular text");

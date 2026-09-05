@@ -107,7 +107,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   const [mention, setMention] = useState(null); // { trigger, query, from, to } or null
   const [activeIdx, setActiveIdx] = useState(0);
   const [emojiOpen, setEmojiOpen] = useState(false);
-  const [showFormatting, setShowFormatting] = useState(true);
+  const [showFormatting, setShowFormatting] = useState(false);
   const [linkDraft, setLinkDraft] = useState(null); // { text, url } for the link dialog
   // Guards sends that @-mention non-members of a private channel.
   const { gate, mentionModal } = useMentionGate({ channel, users, onChannelUpdated });
@@ -1266,6 +1266,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
         </div>
 
         <div className="right">
+          {!editing && <span className="composer-keyboard-hint">Enter to send · Shift+Enter for new line</span>}
           {showSend && <button
             type="submit"
             className={`icon-btn send-btn ${canSend || pending.length ? "ready" : ""}`}

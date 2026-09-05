@@ -45,6 +45,7 @@ test("keeps the workspace full-screen and usable on a phone", async ({ page }) =
 
   await page.getByTestId(`channel-row-${fixture.projectChannel.name}`).click();
   await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
+  await page.getByTestId("composer-formatting").click();
   const composerToolbar = page.getByTestId("composer").locator(".composer-toolbar");
   const toolbarWidth = await composerToolbar.evaluate((element) => ({
     client: element.clientWidth,
