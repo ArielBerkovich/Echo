@@ -5938,7 +5938,8 @@ html[data-mode="dark"] .day-divider-label {
 .channel-details-add-primary {
   justify-content: center;
   width: 100%;
-  margin-top: 14px;
+  margin-top: 0;
+  margin-bottom: 16px;
 }
 .channel-add-people {
   display: inline-flex;
@@ -6001,6 +6002,7 @@ html[data-mode="dark"] .day-divider-label {
   margin-top: 12px;
 }
 .channel-details-members-section {
+  margin-top: 0;
   padding: 0;
   border: 0;
   background: transparent;
@@ -6018,10 +6020,16 @@ html[data-mode="dark"] .day-divider-label {
   font-weight: 750;
 }
 .channel-details-actions-section {
-  margin-top: 12px;
+  margin-top: 0;
 }
 .channel-details-actions-section > .channel-details-section-hint {
   margin-bottom: 12px;
+}
+.channel-details-posting-section {
+  margin-top: 0;
+}
+.channel-details-posting-section + .channel-details-actions-section {
+  margin-top: 18px;
 }
 .channel-details-actions-list {
   display: flex;
@@ -6094,7 +6102,7 @@ html[data-mode="dark"] .day-divider-label {
   color: var(--muted);
 }
 .channel-details-member-filter {
-  margin: 16px 0 14px;
+  margin: 0 0 14px;
 }
 .channel-details-search:focus-within {
   border-color: var(--input-focus-border);
