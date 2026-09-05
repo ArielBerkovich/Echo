@@ -13,7 +13,6 @@ import {
   PlusIcon,
   SearchIcon,
   Trash2Icon,
-  UsersRoundIcon,
   LogOutIcon,
   Globe2Icon,
 } from "lucide-react";
@@ -234,17 +233,6 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
           </div>}
 
           {activeTab === "members" && <section className="channel-details-section channel-details-members-section cd-section" role="tabpanel" id="channel-details-panel-members" aria-labelledby="channel-details-tab-members">
-            <div className="channel-details-section-head">
-              <div>
-                <div className="channel-details-section-title">
-                  <UsersRoundIcon size={16} strokeWidth={1.9} aria-hidden="true" />
-                  <span>Members</span>
-                  <span className="channel-details-count">{channel.memberCount ?? members.length}</span>
-                </div>
-                <p className="channel-details-section-hint">People who can see and participate in this channel.</p>
-              </div>
-            </div>
-
             {canAddPeople && (
               <Button variant="subtle" className="channel-add-people channel-details-add-primary" onClick={onAddPeople}>
                 <PlusIcon size={17} strokeWidth={2.2} />
