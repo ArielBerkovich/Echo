@@ -6011,10 +6011,9 @@ html[data-mode="dark"] .day-divider-label {
   background: transparent;
 }
 .channel-details-created-section .channel-details-section-title {
-  color: var(--muted);
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 750;
 }
 .channel-details-actions-section {
   margin-top: 12px;
