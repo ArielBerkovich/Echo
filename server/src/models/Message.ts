@@ -40,6 +40,22 @@ const messageSchema = new mongoose.Schema(
       },
       default: null,
     },
+    // A collaborative retrospective board, carried by a normal chat message.
+    retro: {
+      type: {
+        _id: false,
+        title: { type: String, required: true, maxlength: 500 },
+        items: [{
+          _id: false,
+          id: { type: String, required: true, maxlength: 64 },
+          text: { type: String, required: true, maxlength: 1000 },
+          column: { type: String, enum: ["went-well", "to-improve", "backlog", "action-items"], required: true },
+          author: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+          link: { type: String, default: null, maxlength: 2048 },
+        }],
+      },
+      default: null,
+    },
     // "user" messages are normal; "system" are join/create event logs.
     kind: { type: String, enum: ["user", "system"], default: "user" },
     // Set on thread replies — points at the root message of the thread.
@@ -203,6 +219,15 @@ messageSchema.methods.toPublicJSON = function () {
             label: o.label,
             votes: (o.votes || []).map((id) => id.toString()),
             voteCount: (o.votes || []).length,
+          })),
+        }
+      : null,
+    retro: this.retro
+      ? {
+          title: this.retro.title,
+          items: (this.retro.items || []).map((item) => ({
+            id: item.id, text: item.text, column: item.column,
+            authorId: item.author.toString(), link: item.link || null,
           })),
         }
       : null,

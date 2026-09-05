@@ -160,6 +160,12 @@ export default function ThreadPanel({
       setReplies((prev) => prev.map((r) => (r.id === messageId ? { ...r, survey } : r)));
     };
     socket.on("message:survey", onSurvey);
+    const onRetro = ({ messageId, retro }) => {
+      if (!retro) return;
+      setRootMsg((prev) => (prev.id === messageId ? { ...prev, retro } : prev));
+      setReplies((prev) => prev.map((r) => (r.id === messageId ? { ...r, retro } : r)));
+    };
+    socket.on("message:retro", onRetro);
     socket.on("message:pin", onPin);
 
     return () => {
@@ -169,6 +175,7 @@ export default function ThreadPanel({
       socket.off("message:deleted", onDeleted);
       socket.off("message:reaction", onReaction);
       socket.off("message:survey", onSurvey);
+      socket.off("message:retro", onRetro);
       socket.off("message:pin", onPin);
     };
   }, [channel.id, root.id, user.id, recoveryEpoch]);

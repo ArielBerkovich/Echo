@@ -8,6 +8,55 @@ import mongoose from "mongoose";
 
 export const MAX_MESSAGE_ATTACHMENTS = 10;
 export const MAX_SURVEY_OPTION_CHARACTERS = 80;
+const RETRO_COLUMNS = new Set(["went-well", "to-improve", "backlog", "action-items"]);
+
+export function sanitizeRetro(retro) {
+  if (!retro || typeof retro !== "object") return null;
+  const title = String(retro.title || "").trim().slice(0, 500);
+  return title ? { title, items: [] } : null;
+}
+
+export function retroError(retro) {
+  if (retro === undefined || retro === null) return null;
+  return sanitizeRetro(retro) ? null : "a retrospective needs a title";
+}
+
+export async function updateRetro(message, userId, change) {
+  if (!message?.retro) throw new Error("retro board not found");
+  const action = change?.action;
+  const items = message.retro.items || [];
+  if (action === "add") {
+    const text = String(change.text || "").trim().slice(0, 1000);
+    const column = String(change.column || "");
+    const link = String(change.link || "").trim().slice(0, 2048);
+    if (!text || !RETRO_COLUMNS.has(column)) throw new Error("add an idea and choose a valid column");
+    if (link && !["backlog", "action-items"].includes(column)) throw new Error("links are available for backlog and action items");
+    items.push({ id: new mongoose.Types.ObjectId().toString(), text, column, author: userId, link: link || null });
+  } else if (action === "move") {
+    const item = items.find((candidate) => candidate.id === String(change.itemId));
+    const column = String(change.column || "");
+    if (!item || !RETRO_COLUMNS.has(column)) throw new Error("choose a valid item and column");
+    item.column = column;
+    if (!["backlog", "action-items"].includes(column)) item.link = null;
+  } else if (action === "edit" || action === "delete") {
+    const item = items.find((candidate) => candidate.id === String(change.itemId));
+    if (!item) throw new Error("idea not found");
+    if (String(item.author) !== String(userId) && String(message.author) !== String(userId)) {
+      throw new Error("you can only edit your own idea");
+    }
+    if (action === "delete") message.retro.items = items.filter((candidate) => candidate.id !== item.id);
+    else {
+      const text = String(change.text || "").trim().slice(0, 1000);
+      const link = String(change.link || "").trim().slice(0, 2048);
+      if (!text) throw new Error("an idea needs text");
+      if (link && !["backlog", "action-items"].includes(item.column)) throw new Error("links are available for backlog and action items");
+      item.text = text; item.link = link || null;
+    }
+  } else throw new Error("invalid retro update");
+  message.markModified("retro.items");
+  await message.save();
+  return message;
+}
 
 export function sanitizeSurvey(survey) {
   if (!survey || typeof survey !== "object") return null;
@@ -112,7 +161,7 @@ export function sanitizeAttachments(attachments) {
 // channel room, DM room joins so both participants receive it, and
 // `activity:bump` to anyone it's "activity" for. Shared by the live socket
 // sender and the scheduled-message dispatcher so both behave identically.
-export async function deliverMessage({ channel, authorId, body, parentId, attachments, survey, idempotencyKey, passwordHelpRequest }) {
+export async function deliverMessage({ channel, authorId, body, parentId, attachments, survey, retro, idempotencyKey, passwordHelpRequest }) {
   const io = getIO();
   const cid = channel._id.toString();
 
@@ -124,6 +173,7 @@ export async function deliverMessage({ channel, authorId, body, parentId, attach
     parentId: parentId || null,
     attachments: attachments || [],
     survey: survey || null,
+    retro: retro || null,
     passwordHelpRequest: passwordHelpRequest || null,
     ...activityMetadata,
   };
