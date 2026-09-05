@@ -5740,8 +5740,8 @@ html[data-mode="dark"] .day-divider-label {
   flex-direction: column;
   width: min(520px, calc(100vw - 32px));
   max-width: none;
-  height: min(680px, calc(100vh - 40px));
-  max-height: min(680px, calc(100vh - 40px));
+  height: min(600px, calc(100vh - 40px));
+  max-height: min(600px, calc(100vh - 40px));
   min-height: 0;
   overflow: hidden;
   padding: 0;
