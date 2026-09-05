@@ -5816,7 +5816,6 @@ html[data-mode="dark"] .day-divider-label {
   flex: none;
   gap: 4px;
   padding: 0 26px;
-  border-bottom: 1px solid var(--border);
   background: var(--surface);
 }
 .channel-details-tab {
@@ -5827,7 +5826,7 @@ html[data-mode="dark"] .day-divider-label {
   min-height: 42px;
   padding: 0 10px;
   border: 0;
-  border-bottom: 2px solid transparent;
+  border-radius: 7px;
   background: transparent;
   color: var(--muted);
   font-size: 12.5px;
@@ -5839,13 +5838,12 @@ html[data-mode="dark"] .day-divider-label {
   color: var(--text);
 }
 .channel-details-tab.active {
-  border-bottom-color: var(--accent);
+  background: var(--active-soft);
   color: var(--accent);
 }
 .channel-details-tab:focus-visible {
   outline: 2px solid var(--active-ring);
   outline-offset: -2px;
-  border-radius: 6px 6px 0 0;
 }
 .channel-details-tab-count {
   min-width: 20px;
@@ -5995,7 +5993,6 @@ html[data-mode="dark"] .day-divider-label {
   margin-top: 18px;
   padding: 14px 4px 0;
   border: 0;
-  border-top: 1px solid var(--border);
   border-radius: 0;
   background: transparent;
 }
