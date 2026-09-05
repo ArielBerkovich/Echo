@@ -94,7 +94,7 @@ test("keeps the active channel open as a preview after leaving", async ({ page }
     const previewUrl = page.url();
     await page.getByTestId("channel-title").click();
     const details = page.getByTestId("channel-details-dialog");
-    await details.getByRole("tab", { name: "Settings" }).click();
+    await details.getByRole("tab", { name: "Actions" }).click();
     await details.getByTestId("channel-leave").click();
     await expect(page.getByText("Choose a manager before leaving")).toBeVisible();
     await page.getByRole("button", { name: /Bob Builder/ }).click();

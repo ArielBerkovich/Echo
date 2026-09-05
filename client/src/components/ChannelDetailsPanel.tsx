@@ -116,7 +116,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
           {[
             ["details", "Details"],
             ["members", "Members"],
-            ["settings", "Settings"],
+            ["actions", "Actions"],
           ].map(([tab, label]) => (
             <button
               type="button"
@@ -171,7 +171,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
             </section>
           </div>}
 
-          {activeTab === "settings" && <div className="channel-details-tabpanel" role="tabpanel" id="channel-details-panel-settings" aria-labelledby="channel-details-tab-settings">
+          {activeTab === "actions" && <div className="channel-details-tabpanel" role="tabpanel" id="channel-details-panel-actions" aria-labelledby="channel-details-tab-actions">
             {canManagePosting && (
               <section className="channel-details-section channel-details-posting-section cd-section">
                 <div className="channel-details-section-head">

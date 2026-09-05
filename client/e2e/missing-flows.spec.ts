@@ -75,7 +75,7 @@ test("enforces channel manager boundaries and deletes an empty owned channel", a
     await expect(details).not.toContainText(`@${fixture.bob.username}`);
     await expect(bobPage.getByTestId(`channel-row-${slug(name)}`)).toHaveCount(0);
 
-    await details.getByRole("tab", { name: "Settings" }).click();
+    await details.getByRole("tab", { name: "Actions" }).click();
     await details.getByRole("button", { name: "Leave channel" }).click();
     await page.getByRole("button", { name: "Delete channel" }).click();
     await expect(page.getByTestId(`channel-row-${slug(name)}`)).toHaveCount(0);
