@@ -86,7 +86,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
   return (
     <Modal
       title="Channel details"
-      className="details-panel channel-details-dialog"
+      className={`details-panel channel-details-dialog channel-details-dialog-${activeTab}`}
       backdropClassName="channel-details-backdrop"
       testId="channel-details-dialog"
       showHeader={false}
