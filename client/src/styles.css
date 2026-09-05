@@ -5868,7 +5868,7 @@ html[data-mode="dark"] .day-divider-label {
 .channel-details-fields {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 18px;
+  gap: 10px;
 }
 .channel-details-section {
   min-width: 0;
@@ -5914,6 +5914,9 @@ html[data-mode="dark"] .day-divider-label {
 }
 .channel-details-field {
   min-height: 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-2) 55%, transparent);
 }
 .channel-details-edit {
   display: inline-flex;
