@@ -1152,14 +1152,15 @@ export default function App() {
     navigate(workspacePath({ searchQuery: q }));
   }
 
-  // Jump from a search result to the message in its conversation. Thread
-  // replies aren't in the main timeline, so we jump to their thread root.
+  // Preserve the matching reply and its root so thread search results open
+  // the thread at the exact reply, including when the destination is reloaded.
   function handleSearchJump(result) {
     markNavDuringRestore();
     searchRef.current?.clear();
     handleJumpToMessage({
       channelId: result.channelId,
-      messageId: result.parentId || result.id,
+      messageId: result.id,
+      threadId: result.parentId || undefined,
       channelType: result.channelType,
       channelName: result.channelName,
     });
