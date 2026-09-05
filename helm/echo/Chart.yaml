@@ -2,8 +2,8 @@ apiVersion: v2
 name: echo
 description: Echo self-hosted team chat platform.
 type: application
-version: 0.35.0
-appVersion: "0.35.0"
+version: 0.36.0
+appVersion: "0.36.0"
 keywords:
   - chat
   - collaboration
