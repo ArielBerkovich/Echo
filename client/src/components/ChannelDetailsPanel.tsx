@@ -39,7 +39,13 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
   const isManager = (channel.managers || []).includes(user.id);
   const canManagePosting = channel.type !== "dm" && (isCreator || isManager);
   const canManageMembers = isCreator || isManager;
-  const canAddPeople = isMember && channel.type !== "dm" && channel.name?.toLowerCase() !== "general";
+  const isGeneralChannel = channel.name?.toLowerCase() === "general";
+  const canAddPeople = isMember && channel.type !== "dm" && !isGeneralChannel;
+  const tabs = [
+    ["details", "Details"],
+    ["members", "Members"],
+    ...(!isGeneralChannel ? [["actions", "Actions"]] : []),
+  ];
   const q = memberQuery.trim().toLowerCase();
   const shownMembers = q
     ? members.filter(
@@ -112,11 +118,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
         </header>
 
         <nav className="channel-details-tabs" role="tablist" aria-label="Channel details sections">
-          {[
-            ["details", "Details"],
-            ["members", "Members"],
-            ["actions", "Actions"],
-          ].map(([tab, label]) => (
+          {tabs.map(([tab, label]) => (
             <button
               type="button"
               role="tab"
