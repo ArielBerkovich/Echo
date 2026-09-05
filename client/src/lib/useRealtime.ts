@@ -33,9 +33,7 @@ export function useRealtime({
   onAuthInvalid,
 }) {
   const queryClient = useQueryClient();
-  // Activity badge counts (live). Top-level mentions keyed by channel (cleared
-  // when you open the channel); thread mentions keyed by their root (cleared
-  // when you open the thread).
+  // Activity badge counts follow server acknowledgments of visible sources.
   const [activityUnread, setActivityUnread] = useState({});
   const [activityThreadUnread, setActivityThreadUnread] = useState({});
   const [onlineIds, setOnlineIds] = useState(() => new Set()); // ids of users currently connected
@@ -68,24 +66,6 @@ export function useRealtime({
     setActivityUnread(byChannel);
     setActivityThreadUnread(byThread);
   }
-
-  function clearChannelActivity(channelId) {
-    setActivityUnread((prev) => {
-      if (!prev[channelId]) return prev;
-      const next = { ...prev };
-      delete next[channelId];
-      return next;
-    });
-  }
-  function clearThreadActivity(rootId) {
-    setActivityThreadUnread((prev) => {
-      if (!prev[rootId]) return prev;
-      const next = { ...prev };
-      delete next[rootId];
-      return next;
-    });
-  }
-
   // Socket.IO restores the transport after a server restart, but transport
   // recovery alone is not enough: events may have been missed and public
   // channel previews are not among the rooms the server automatically rejoins.
@@ -386,16 +366,6 @@ export function useRealtime({
         inChannels && (msg.mentionsEveryone === true || /@everyone\b/i.test(body));
       const mentionsMe = personallyMentioned || broadcastsAll;
 
-      // Activity badge: count @mentions and @everyone broadcasts you haven't
-      // seen yet. Thread replies are tracked by their thread; top-level by channel.
-      if (mentionsMe && !mine) {
-        if (msg.parentId) {
-          setActivityThreadUnread((prev) => ({ ...prev, [msg.parentId]: (prev[msg.parentId] || 0) + 1 }));
-        } else if (!viewingHere) {
-          setActivityUnread((prev) => ({ ...prev, [msg.channelId]: (prev[msg.channelId] || 0) + 1 }));
-        }
-      }
-
       // Desktop notification — Starred DMs, and channel @mentions.
       // Skipped if you're already focused on that conversation.
       if (!mine && msg.kind !== "system" && notificationsActive()) {
@@ -441,17 +411,17 @@ export function useRealtime({
     // Server flags a message as "activity" for us — re-sync the badge (works even
     // for mentions in channels we haven't joined, where no message:new arrives).
     const onActivityBump = () => {
-      queryClient.fetchQuery({
-        queryKey: queryKeys.activity,
-        queryFn: async () => (await api.getActivity()).items || [],
-        staleTime: 0,
-      }).then(syncActivity).catch(() => {});
+      // Invalidate instead of joining an in-flight fetch: that fetch may have
+      // started before this new activity existed and would lose the bump.
+      queryClient.invalidateQueries({ queryKey: queryKeys.activity }).catch(() => {});
     };
     socket.on("activity:bump", onActivityBump);
+    socket.on("channel:catalog", onActivityBump);
 
     return () => {
       socket.off("message:new", onMessage);
       socket.off("activity:bump", onActivityBump);
+      socket.off("channel:catalog", onActivityBump);
     };
   }, [user]);
 
@@ -465,7 +435,5 @@ export function useRealtime({
     connectionStatus,
     recoveryEpoch,
     syncActivity,
-    clearChannelActivity,
-    clearThreadActivity,
   };
 }

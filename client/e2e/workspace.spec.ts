@@ -723,17 +723,17 @@ test("sends multiple messages from the same composer", async ({ page }) => {
   await expect(page.locator(".message").filter({ hasText: second })).toBeVisible({ timeout: 10_000 });
 });
 
-test("shows activity items and marks activity as read", async ({ page }) => {
+test("shows activity items and marks activity as read after opening its message", async ({ page }) => {
   const markedRead = page.waitForResponse(
     (res) => res.url().includes("/api/activity/read") && res.request().method() === "POST"
   );
 
-  await page.goto("/");
-  await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+  await page.goto("/activity");
+  const created = await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
     method: "POST",
     body: {
       channelId: fixture.generalChannel.id,
-      body: `Activity ping ${Date.now()}`,
+      body: `Activity ping ${Date.now()} @${fixture.alice.username}`,
       externalKey: `activity-${Date.now()}`,
     },
   });
@@ -743,8 +743,11 @@ test("shows activity items and marks activity as read", async ({ page }) => {
   await expect(page).toHaveURL(/\/activity(?:$|\?)/);
 
   await expect(page.getByTestId("activity-header")).toContainText("Activity", { timeout: 15_000 });
-  const activityItem = page.getByTestId("activity-item").first();
+  const activityItem = page.getByTestId("activity-item").filter({ hasText: "Activity ping" }).first();
   await expect(activityItem).toBeVisible();
+  await expect(activityItem).toHaveClass(/unread/);
+  await activityItem.click();
+  await expect(page.getByTestId(`message-${created.message.id}`)).toBeInViewport();
   await markedRead;
 });
 

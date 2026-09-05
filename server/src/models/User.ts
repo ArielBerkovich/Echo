@@ -40,9 +40,10 @@ const userSchema = new mongoose.Schema(
     // Has this user completed the first-run walkthrough? (Per-account, not
     // per-browser, so it follows them across devices.)
     onboarded: { type: Boolean, default: false },
-    // Last time the user opened the Activity panel — used to mark reaction
-    // activity read.
+    // Legacy Activity-panel timestamp, retained for upgrade compatibility.
     activitySeenAt: { type: Date, default: null },
+    // Frozen legacy read markers preserve read state when upgrading to item reads.
+    activityReadBaseline: { type: mongoose.Schema.Types.Mixed, default: null },
     // Activity entries the user explicitly dismissed from their feed.
     dismissedActivityIds: [{ type: String }],
     // Messages this user has saved ("save for later" / bookmark).

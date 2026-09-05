@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router";
 import { api, consumeRhssoCallback, getToken, restoreNativeToken, setToken, subscribeAuthExpired } from "./api.js";
 import { disconnectSocket } from "./socket.js";
 import { useRealtime } from "./lib/useRealtime.js";
+import { useActivityReads } from "./lib/useActivityReads.js";
 import Login from "./components/Login.js";
 import ForcePasswordReset from "./components/ForcePasswordReset.js";
 import WorkspaceNavigation from "./components/WorkspaceNavigation.js";
@@ -113,6 +114,7 @@ export default function App() {
     setStarredChannelIds,
     activityItems,
   } = useWorkspaceQueries(!!user);
+  useActivityReads(user?.id, activityItems);
   const [navOpen, setNavOpen] = useState(false); // mobile: rail+sidebar drawer open?
   const [showTour, setShowTour] = useState(false); // first-run walkthrough
   const [composerFocusRequest, setComposerFocusRequest] = useState(0);
@@ -271,11 +273,7 @@ export default function App() {
   }
 
   function handleActivityReady() {
-    api.markActivityRead()
-      .then(() => api.getActivity())
-      .then(({ items }) => syncActivity(items || []))
-      .catch(() => {})
-      .finally(() => queryClient.invalidateQueries({ queryKey: queryKeys.activity }));
+    queryClient.invalidateQueries({ queryKey: queryKeys.activity });
   }
 
   function handleViewSelect(nextView) {
@@ -392,8 +390,6 @@ export default function App() {
     connectionStatus,
     recoveryEpoch,
     syncActivity,
-    clearChannelActivity,
-    clearThreadActivity,
   } =
     useRealtime({
       user,
@@ -492,8 +488,6 @@ export default function App() {
   async function handleRead(channelId) {
     setChannels((prev) => prev.map((c) => (c.id === channelId && c.unread ? { ...c, unread: 0 } : c)));
     setDms((prev) => prev.map((d) => (d.id === channelId && d.unread ? { ...d, unread: 0 } : d)));
-    // Opening the conversation clears its activity items (server marks them read).
-    clearChannelActivity(channelId);
     const now = Date.now();
     const elapsed = now - (markReadAtRef.current[channelId] || 0);
     if (elapsed < 1500) {
@@ -1576,7 +1570,6 @@ export default function App() {
             onChannelUpdated: upsertChannel,
             onJoin: handleJoinChannel,
             onRead: handleRead,
-            onThreadRead: clearThreadActivity,
             openThreadId: activeChannel && openThreadReq?.channelId === activeChannel.id ? openThreadReq.rootId : null,
             openThreadJumpMessageId: activeChannel && openThreadReq?.channelId === activeChannel.id ? openThreadReq.messageId : null,
             onThreadOpened: () => setOpenThreadReq(null),

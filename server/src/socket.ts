@@ -330,6 +330,10 @@ export function attachSocket(httpServer) {
 
         const channelId = message.channel.toString();
         const parentId = message.parentId ? message.parentId.toString() : null;
+        const removedMessages = await Message.find(
+          parentId ? { _id: message._id } : { $or: [{ _id: message._id }, { parentId: message._id }] },
+          { mentionedUserIds: 1, threadRootAuthor: 1, author: 1 }
+        );
         await Message.deleteOne({ _id: message._id });
         // A thread root takes its replies with it.
         if (!parentId) await Message.deleteMany({ parentId: message._id });
@@ -339,6 +343,15 @@ export function attachSocket(httpServer) {
           channelId,
           parentId,
         });
+        // Mention recipients can be outside the channel room. Refresh their
+        // feed too, including reactions and activities in deleted threads.
+        const recipients = new Set(deleteChannel.members.map((id) => id.toString()));
+        for (const removed of removedMessages) {
+          for (const id of [...(removed.mentionedUserIds || []), removed.threadRootAuthor, removed.author]) {
+            if (id) recipients.add(id.toString());
+          }
+        }
+        for (const id of recipients) io.to(userRoom(id)).emit("activity:bump");
         ack?.({ ok: true });
       } catch (err) {
         ackError(ack, "message_delete", err.message || "could not delete message");

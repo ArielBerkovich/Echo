@@ -1,5 +1,6 @@
 import { verifyToken } from "../auth.js";
 import { User } from "../models/User.js";
+import { ensureActivityReadBaseline } from "../lib/activityReadBaseline.js";
 
 // Express middleware: validates the Bearer token and attaches req.user.
 export async function requireAuth(req, res, next) {
@@ -17,6 +18,7 @@ export async function requireAuth(req, res, next) {
     if ((payload.tv ?? 0) !== (user.tokenVersion ?? 0)) {
       return res.status(401).json({ error: "Token has been invalidated" });
     }
+    await ensureActivityReadBaseline(user);
     req.user = user;
     next();
   } catch {

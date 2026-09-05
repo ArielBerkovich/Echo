@@ -2,18 +2,37 @@ import { Router } from "express";
 import mongoose from "mongoose";
 import { Channel } from "../models/Channel.js";
 import { Message } from "../models/Message.js";
-import { Read } from "../models/Read.js";
 import { ActivityEvent } from "../models/ActivityEvent.js";
 import { User } from "../models/User.js";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { ActivityRead } from "../models/ActivityRead.js";
+import { emitToUser } from "../realtime.js";
 
 export const activityRouter = Router();
 activityRouter.use(requireAuth);
 
-// POST /api/activity/read — mark reaction activity seen (clears its unread).
+// Acknowledge only the exact activity versions the client actually displayed.
 activityRouter.post("/read", async (req, res) => {
-  req.user.activitySeenAt = new Date();
-  await req.user.save();
+  const entries = req.body?.items;
+  if (!Array.isArray(entries) || entries.length > 200 || entries.some((entry) =>
+    !entry || typeof entry.id !== "string" || typeof entry.createdAt !== "string" || !Number.isFinite(Date.parse(entry.createdAt))
+  )) return res.status(400).json({ error: "items must contain activity ids and createdAt timestamps" });
+  const visible = new Map((await getActivityItems(req.user)).map((item) => [item.id, item]));
+  const accepted = entries.filter((entry) => {
+    const item = visible.get(entry.id);
+    return item && new Date(item.createdAt).getTime() === Date.parse(entry.createdAt);
+  });
+  if (accepted.length) {
+    await ActivityRead.bulkWrite(accepted.map((entry) => ({ updateOne: {
+      filter: { user: req.user._id, activityId: entry.id },
+      update: {
+        $max: { seenThrough: new Date(entry.createdAt) },
+        $set: { activityCreatedAt: new Date(entry.createdAt) },
+      },
+      upsert: true,
+    } })));
+    emitToUser(req.user._id.toString(), "activity:bump");
+  }
   res.json({ ok: true });
 });
 
@@ -77,10 +96,12 @@ activityRouter.delete("/:id", async (req, res) => {
 const ACTIVITY_WINDOW_DAYS = 30;
 
 // GET /api/activity — your @mentions, channel-wide broadcasts, and replies in
-// threads you started from the last 30 days. Each item is flagged `unread`
-// until you've opened its conversation.
+// threads you started from the last 30 days, with per-item read state.
 activityRouter.get("/", async (req, res) => {
-  const me = req.user;
+  res.json({ items: await getActivityItems(req.user) });
+});
+
+async function getActivityItems(me) {
   const since = new Date(Date.now() - ACTIVITY_WINDOW_DAYS * 24 * 60 * 60 * 1000);
 
   const visible = await Channel.find(
@@ -112,12 +133,9 @@ activityRouter.get("/", async (req, res) => {
     .limit(200)
     .populate("author");
 
-  // When did I last open each conversation? An item is "unread" (not yet seen)
-  // until I've read where it lives: the channel's main timeline for top-level
-  // messages, or the specific thread for replies. Tracking these separately
-  // means a mention buried in a thread stays in Activity until I open that
-  // thread — opening the channel's main view doesn't silently clear it.
-  const reads = await Read.find({ user: me._id, channel: { $in: visibleChanIds } });
+  // Preserve historical read state using the frozen pre-upgrade markers.
+  // New channel/thread read timestamps never clear activity implicitly.
+  const reads = me.activityReadBaseline.reads || [];
   const channelReadMap = new Map(); // channelId -> lastReadAt (main timeline)
   const threadReadMap = new Map(); // threadRootId -> lastReadAt
   for (const r of reads) {
@@ -147,9 +165,8 @@ activityRouter.get("/", async (req, res) => {
     };
   });
 
-  // Stored activity events: reactions to my messages and channels I was added
-  // to. Reactions are unread until I open the Activity panel; channel-adds are
-  // unread until I open the channel (like a mention).
+  // Stored events retain their legacy state below; explicit acknowledgments
+  // are applied to all activity kinds at the end.
   // Remove stale persisted activity as soon as access is lost. Removal notices
   // are intentionally kept so the user can still understand why the channel
   // disappeared; they contain no channel message content.
@@ -180,7 +197,7 @@ activityRouter.get("/", async (req, res) => {
     { body: 1, channel: 1, parentId: 1 }
   );
   const reactedMap = new Map(reactedMsgs.map((m) => [m._id.toString(), m]));
-  const seenAt = me.activitySeenAt ? new Date(me.activitySeenAt) : null;
+  const seenAt = me.activityReadBaseline.seenAt ? new Date(me.activityReadBaseline.seenAt) : null;
   const eventItems = events
     .map((e) => {
       const c = chanMap.get(e.channel.toString());
@@ -240,5 +257,8 @@ activityRouter.get("/", async (req, res) => {
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 200);
 
-  res.json({ items: all });
-});
+  const acknowledged = await ActivityRead.find({ user: me._id, activityId: { $in: all.map((item) => item.id) } });
+  const readMap = new Map(acknowledged.map((read) => [read.activityId, read.seenThrough]));
+  return all.map((item) => ({ ...item, unread: item.unread &&
+    !(readMap.has(item.id) && new Date(readMap.get(item.id)) >= new Date(item.createdAt)) }));
+}

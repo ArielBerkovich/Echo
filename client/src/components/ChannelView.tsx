@@ -985,7 +985,6 @@ const ChannelView = forwardRef(function ChannelView({
   }, [jumpMessageId, messages, channel.id, loading, historyReady]);
 
   // Open a specific thread on request (e.g. clicking a thread reply in Activity).
-  // Mounting ThreadPanel marks the thread read, clearing it from Activity.
   useEffect(() => {
     if (!openThreadId) return;
     if (openThreadJumpMessageId) setThreadJumpTargetId(openThreadJumpMessageId);
@@ -1318,7 +1317,7 @@ const ChannelView = forwardRef(function ChannelView({
             <div ref={bottomRef} />
           </div>
         </div>
-        {(showScrollToLatest || newMessageCount > 0) && (
+        {((showScrollToLatest || newMessageCount > 0) && (!thread || newMessageCount > 0)) && (
           <button
             type="button"
             className="new-messages-button timeline-jump-button"
