@@ -66,6 +66,7 @@ test.describe("post-login forms are keyboard operable", () => {
     await pressEnter(details.getByRole("button", { name: "Save" }).first());
     await expect(details).toContainText(`Keyboard topic ${fixture.suffix}`);
 
+    await details.getByRole("tab", { name: "Members" }).click();
     await pressEnter(details.getByRole("button", { name: "Add people to this channel" }));
     const addPeople = page.getByTestId("add-people-modal");
     await expect(addPeople).toBeVisible();

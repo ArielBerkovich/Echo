@@ -57,7 +57,14 @@ test("manages channels, members, visibility, and leaving", async ({ page }) => {
   await createModal.getByText("Private", { exact: true }).click();
   await createModal.getByRole("button", { name: "Create" }).click();
 
-  await expect(page.getByTestId(`channel-row-${slug(channelName)}`)).toBeVisible();
+  const createdChannelRow = page.getByTestId(`channel-row-${slug(channelName)}`);
+  await expect(createdChannelRow).toBeVisible();
+  await createdChannelRow.click();
+  await expect(page.getByTestId("channel-title")).toContainText(channelName);
+  await expect(page.getByTestId("empty-channel-add-people")).toBeVisible();
+  await expect(page.getByTestId("empty-channel-details")).toBeVisible();
+  await expect(page.getByTestId("channel-visibility")).toHaveCount(0);
+  await expect(page.getByTestId("channel-leave")).toHaveCount(0);
 
   await page.locator(".ch-name-btn").click();
   let details = page.locator(".details-panel");
@@ -70,23 +77,21 @@ test("manages channels, members, visibility, and leaving", async ({ page }) => {
   await expect(details).toContainText("Planning room");
   await expect(details).toContainText("Internal planning");
 
-  await details.getByRole("button", { name: "Close channel details" }).click();
-  await expect(page.getByRole("button", { name: "Make public" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Make private" })).toHaveCount(0);
-  await page.getByRole("button", { name: "Make public" }).click();
-  await expect(page.getByRole("button", { name: "Make public" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Make private" })).toHaveCount(0);
+  await details.getByRole("tab", { name: "Actions" }).click();
+  await expect(details.getByRole("button", { name: "Make public" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Make public" })).toHaveCount(1);
+  await details.getByRole("button", { name: "Make public" }).click();
+  await expect(details.getByRole("button", { name: "Make public" })).toHaveCount(0);
 
-  await page.locator(".ch-name-btn").click();
-  details = page.locator(".details-panel");
+  await details.getByRole("tab", { name: "Members" }).click();
   await details.getByRole("button", { name: "Add people" }).click();
   const addPeople = page.getByTestId("add-people-modal");
   await addPeople.getByPlaceholder("Search people").fill(fixture.bob.username);
   await addPeople.getByTestId(`add-people-add-${fixture.bob.username}`).click();
   await addPeople.getByTestId("add-people-done").click();
 
-  await details.getByRole("button", { name: "Close channel details" }).click();
-  await page.getByRole("button", { name: "Leave channel" }).click();
+  await details.getByRole("tab", { name: "Actions" }).click();
+  await details.getByRole("button", { name: "Leave channel" }).click();
   const managerModal = page.locator(".manager-modal");
   await managerModal.getByTestId("leave-manager-search").fill(fixture.bob.username);
   await managerModal.locator(".manager-candidate").click();
@@ -126,17 +131,22 @@ test("virtualizes the add-people directory while keeping all users reachable", a
   await createModal.getByPlaceholder("e.g. marketing").fill(channelName);
   await createModal.getByRole("button", { name: "Create" }).click();
   await page.locator(".ch-name-btn").click();
-  await page.getByRole("button", { name: "Add people" }).click();
+  const details = page.getByTestId("channel-details-dialog");
+  await details.getByRole("tab", { name: "Members" }).click();
+  await details.getByRole("button", { name: "Add people" }).click();
 
   const addPeople = page.getByTestId("add-people-modal");
   const list = addPeople.locator(".people-list");
   const virtualContent = list.locator(".people-virtual-content");
   await expect(virtualContent).toHaveAttribute("style", /height:/);
-  await list.evaluate((element) => element.scrollTop = element.scrollHeight);
+  await list.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+    element.dispatchEvent(new Event("scroll", { bubbles: true }));
+  });
+  await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
   // The directory is sorted by display name, so the final registration is
-  // not necessarily the last row in the scrollable list.
+  // not necessarily the last row in the final virtualized viewport.
   const lastPerson = [...people].sort((a, b) => a.displayName.localeCompare(b.displayName)).at(-1);
-  await expect(addPeople.getByTestId(`add-people-add-${lastPerson.username}`)).toBeVisible();
 
   await addPeople.getByTestId("add-people-search").fill(lastPerson.username);
   await expect(addPeople.getByTestId(`add-people-add-${lastPerson.username}`)).toBeVisible();

@@ -501,6 +501,7 @@ test("creates the channel creator as a manager and lets them promote a member", 
   await page.locator(".ch-name-btn").click();
 
   const details = page.getByTestId("channel-details-dialog");
+  await details.getByRole("tab", { name: "Members" }).click();
   await expect(details.locator(".channel-details-managers")).toContainText(fixture.alice.displayName);
   const bobRow = details.locator(".channel-details-person").filter({ hasText: fixture.bob.displayName });
   await bobRow.getByRole("button", { name: "Make manager" }).click();
@@ -526,7 +527,10 @@ test("removes a channel from the sidebar after leaving it", async ({ page }) => 
 
   await page.goto(`/channels/${created.channel.id}`);
   const row = page.getByTestId(`channel-row-${slug(channelName)}`);
-  await page.getByTestId("channel-leave").click();
+  await page.getByTestId("channel-title").click();
+  const details = page.getByTestId("channel-details-dialog");
+  await details.getByRole("tab", { name: "Actions" }).click();
+  await details.getByTestId("channel-leave").click();
   await page.getByRole("button", { name: "Leave", exact: true }).click();
 
   await expect(row).toHaveCount(0);

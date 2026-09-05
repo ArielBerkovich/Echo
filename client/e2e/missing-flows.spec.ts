@@ -69,13 +69,14 @@ test("enforces channel manager boundaries and deletes an empty owned channel", a
     await page.getByTestId(`channel-row-${slug(name)}`).click();
     await page.getByTestId("channel-title").click();
     const details = page.getByTestId("channel-details-dialog");
+    await details.getByRole("tab", { name: "Members" }).click();
     await details.getByPlaceholder("Search members").fill(fixture.bob.username);
     await details.getByTestId(`channel-remove-${fixture.bob.id}`).click();
     await expect(details).not.toContainText(`@${fixture.bob.username}`);
     await expect(bobPage.getByTestId(`channel-row-${slug(name)}`)).toHaveCount(0);
 
-    await details.getByRole("button", { name: "Close channel details" }).click();
-    await page.getByRole("button", { name: "Leave channel" }).click();
+    await details.getByRole("tab", { name: "Actions" }).click();
+    await details.getByRole("button", { name: "Leave channel" }).click();
     await page.getByRole("button", { name: "Delete channel" }).click();
     await expect(page.getByTestId(`channel-row-${slug(name)}`)).toHaveCount(0);
     const archived = await rawApi(page, fixture.alice.token, `/channels/${created.channel.id}`);

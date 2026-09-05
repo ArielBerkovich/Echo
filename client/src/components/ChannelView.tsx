@@ -25,13 +25,13 @@ import { ChannelOptionButton, CloseButton } from "./Button.js";
 import { Input, InputShell } from "./Input.js";
 import ConfirmDialog from "./ConfirmDialog.js";
 import LeaveChannelDialog from "./LeaveChannelDialog.js";
-import { LeaveIcon, PinIcon } from "./Icons.js";
+import { PinIcon } from "./Icons.js";
 import { formatDayDivider, isDifferentDay } from "../lib/time.js";
 import { shouldGroupWithPreviousMessage } from "../lib/messageGrouping.js";
 import { appendReplyParticipant } from "../lib/replyParticipants.js";
 import { formatSize } from "../lib/format.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
-import { ChevronsDownIcon, DownloadIcon, FileIcon, MessageSquareTextIcon, PaperclipIcon, SearchIcon, StarIcon, UsersRoundIcon } from "lucide-react";
+import { ChevronsDownIcon, DownloadIcon, FileIcon, FileTextIcon, MessageSquareTextIcon, PaperclipIcon, SearchIcon, StarIcon, UsersRoundIcon } from "lucide-react";
 import { queryKeys } from "../lib/queryClient.js";
 
 // Shimmering placeholder rows shown while a channel's history loads, so the
@@ -1154,16 +1154,6 @@ const ChannelView = forwardRef(function ChannelView({
               </span>
             )}
             <div className="header-actions">
-              {channel.createdBy === user.id && channel.type === "private" && (
-                <button
-                  className="header-action header-action-visibility"
-                  data-testid="channel-visibility"
-                  title="Change who can join"
-                  onClick={() => onChangeVisibility(channel, "public")}
-                >
-                  Make public
-                </button>
-              )}
               <ChannelOptionButton
                 active={showPinned}
                 data-testid="channel-pinned"
@@ -1201,17 +1191,6 @@ const ChannelView = forwardRef(function ChannelView({
                 onClick={openMembersPanel}
                 icon={<UsersRoundIcon size={16} strokeWidth={1.8} />}
               />
-              {!isGeneral && isMember && (
-                <button
-                  className="header-action header-action-icon leave"
-                  data-testid="channel-leave"
-                  title="Leave channel"
-                  aria-label="Leave channel"
-                  onClick={() => setConfirmLeave(true)}
-                >
-                  <LeaveIcon />
-                </button>
-              )}
             </div>
           </>
         )}
@@ -1241,11 +1220,16 @@ const ChannelView = forwardRef(function ChannelView({
                   <div className="empty-state-glyph">{channel.type === "private" ? "🔒" : "#"}</div>
                   <h3>{channel.name}</h3>
                   <p>This is the very beginning of the {channel.type === "private" ? "private " : ""}#{channel.name} channel. Say hello! 👋</p>
+                  {isMember && <ChannelSetupActions channel={channel} onAddPeople={onAddPeople} onOpenDetails={openDetailsPanel} />}
                 </>
               )}
             </div>
           ) : (
-            messages.map((m, i) => {
+            <>
+              {messages.every((message) => message.kind === "system") && isMember && !isDm && (
+                <ChannelSetupActions channel={channel} onAddPeople={onAddPeople} onOpenDetails={openDetailsPanel} inline />
+              )}
+              {messages.map((m, i) => {
               const prev = messages[i - 1];
               // A day divider whenever the calendar day changes (and at the top).
               const isNewDay = !prev || isDifferentDay(prev.createdAt, m.createdAt);
@@ -1328,7 +1312,8 @@ const ChannelView = forwardRef(function ChannelView({
                   />
                 </Fragment>
               );
-            })
+              })}
+            </>
           )}
             <div ref={bottomRef} />
           </div>
@@ -1494,6 +1479,11 @@ const ChannelView = forwardRef(function ChannelView({
           user={user}
           onAddPeople={onAddPeople}
           onPromoteManager={onPromoteManager}
+          onChangeVisibility={() => onChangeVisibility?.(channel, "public")}
+          onLeave={() => {
+            setShowDetails(false);
+            setConfirmLeave(true);
+          }}
           onUpdated={(updated) => onChannelUpdated?.(updated)}
           onOpenProfile={onOpenProfile}
           onClose={() => setShowDetails(false)}
@@ -1563,6 +1553,27 @@ const ChannelView = forwardRef(function ChannelView({
 });
 
 export default ChannelView;
+
+function ChannelSetupActions({ channel, onAddPeople, onOpenDetails, inline = false }) {
+  return (
+    <div className={`empty-state-setup${inline ? " channel-setup-inline" : ""}`} aria-label="Set up this channel">
+      <strong>Make this space useful</strong>
+      <span>Add people and a little context so everyone knows what belongs here.</span>
+      <div className="empty-state-actions">
+        {channel.name?.toLowerCase() !== "general" && (
+          <button type="button" className="empty-state-action primary" data-testid="empty-channel-add-people" onClick={onAddPeople}>
+            <UsersRoundIcon size={16} strokeWidth={1.9} />
+            Add people
+          </button>
+        )}
+        <button type="button" className="empty-state-action" data-testid="empty-channel-details" onClick={onOpenDetails}>
+          <FileTextIcon size={16} strokeWidth={1.9} />
+          Add topic or description
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function PinnedPanel({ messages, renderMarkdown, emojiMap, onUnpin, onClose }) {
   return (
