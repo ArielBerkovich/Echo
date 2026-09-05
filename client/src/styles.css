@@ -5750,15 +5750,6 @@ html[data-mode="dark"] .day-divider-label {
   background: var(--surface);
   box-shadow: var(--shadow-lg), 0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent);
 }
-.modal.channel-details-dialog-details,
-.modal.channel-details-dialog-actions {
-  height: auto;
-  max-height: min(600px, calc(100vh - 40px));
-}
-.modal.channel-details-dialog-details .channel-details-content,
-.modal.channel-details-dialog-actions .channel-details-content {
-  flex: none;
-}
 .channel-details-header {
   display: flex;
   flex: none;
@@ -11420,11 +11411,6 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     height: calc(100vh - 20px);
     max-height: calc(100vh - 20px);
     border-radius: 18px 18px 0 0;
-  }
-  .modal.channel-details-dialog-details,
-  .modal.channel-details-dialog-actions {
-    height: calc(100vh - 20px);
-    max-height: calc(100vh - 20px);
   }
   .channel-details-header {
     padding: 19px 14px 17px 16px;
