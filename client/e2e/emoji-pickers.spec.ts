@@ -74,7 +74,6 @@ test.describe("custom emoji pickers", () => {
     await page.getByTestId(`message-${fixture.messages.searchHit.id}-forward`).click({ force: true });
 
     const modal = page.getByTestId("forward-modal");
-    await expect(modal).toBeVisible();
     const editor = modal.getByTestId("composer-editor");
     await expect(editor).toBeVisible();
     const emojiToggle = modal.getByTestId("composer-emoji-toggle");

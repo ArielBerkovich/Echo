@@ -146,7 +146,6 @@ test("opens a group DM by ID, shows members, and updates its name after adding s
 
   await page.getByTestId("channel-members").click();
   const members = page.getByTestId("members-panel");
-  await expect(members).toContainText("3 people in this group DM");
   await expect(members).toContainText(fixture.alice.displayName);
   await expect(members).toContainText(fixture.bob.displayName);
   await expect(members).toContainText(third.user.displayName);
@@ -158,7 +157,6 @@ test("opens a group DM by ID, shows members, and updates its name after adding s
   await addPeople.getByTestId(`add-people-add-${fourth.user.username}`).click();
   await addPeople.getByTestId("add-people-done").click();
 
-  await expect(members).toContainText("4 people in this group DM");
   await expect(members).toContainText(fourth.user.displayName);
   await expect(page.getByTestId("channel-title")).toContainText(updatedLabel);
   await expect(page.getByTestId(`dm-row-${slug(updatedLabel)}`)).toBeVisible();

@@ -529,7 +529,6 @@ const ChannelView = forwardRef(function ChannelView({
   function openDetailsPanel() {
     setThread(null);
     setThreadJumpTargetId(null);
-    setShowMembers(false);
     setShowPinned(false);
     setShowFiles(false);
     setShowDetails(true);
@@ -574,8 +573,8 @@ const ChannelView = forwardRef(function ChannelView({
         setShowFiles(false);
       }
     }
-    document.addEventListener("keydown", onKeyDown, true);
-    return () => document.removeEventListener("keydown", onKeyDown, true);
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
   }, [showFiles, showMembers, showPinned, thread]);
 
   // Returns a promise so the ForwardModal can show per-destination progress.
@@ -1478,7 +1477,9 @@ const ChannelView = forwardRef(function ChannelView({
             });
           }}
         />
-      ) : showDetails ? (
+      ) : null}
+
+      {showDetails && (
         <ChannelDetailsPanel
           channel={channel}
           users={users}
@@ -1490,7 +1491,7 @@ const ChannelView = forwardRef(function ChannelView({
           onOpenProfile={onOpenProfile}
           onClose={() => setShowDetails(false)}
         />
-      ) : null}
+      )}
 
       {forwarding && (
         <ForwardModal

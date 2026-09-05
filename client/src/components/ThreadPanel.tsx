@@ -310,7 +310,16 @@ export default function ThreadPanel({
   const messages = [rootMsg, ...replies];
 
   return (
-    <aside className="thread-panel" data-testid="thread-panel">
+    <aside
+      className="thread-panel"
+      data-testid="thread-panel"
+      onKeyDownCapture={(event) => {
+        if (event.key !== "Escape" || editing) return;
+        event.preventDefault();
+        event.stopPropagation();
+        onClose();
+      }}
+    >
       <header className="thread-header" data-testid="thread-header">
         <div className="thread-heading">
           <span className="thread-title">Thread</span>

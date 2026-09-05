@@ -103,6 +103,21 @@ test.describe("post-login forms are keyboard operable", () => {
     await expect(page.locator(".survey-question").filter({ hasText: `Keyboard survey ${fixture.suffix}` })).toBeVisible();
   });
 
+  test("Escape closes a modal before the channel panel behind it", async ({ page }) => {
+    await page.goto(`/channels/${encodeURIComponent(fixture.generalChannel.name)}`);
+    await page.getByRole("button", { name: "Pinned messages" }).click();
+    const pinned = page.getByTestId("pinned-panel");
+    await expect(pinned).toBeVisible();
+
+    await page.getByTestId("start-dm").click();
+    const newMessage = page.getByTestId("new-message-modal");
+    await expect(newMessage).toBeVisible();
+    await page.keyboard.press("Escape");
+
+    await expect(newMessage).toBeHidden();
+    await expect(pinned).toBeVisible();
+  });
+
   test("opens and cancels the schedule form from the composer by keyboard", async ({ page }) => {
     await page.goto(`/channels/${encodeURIComponent(fixture.generalChannel.name)}`);
     const editor = page.getByTestId("composer-editor");

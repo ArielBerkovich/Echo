@@ -5,6 +5,7 @@ import { formatDate } from "../lib/time.js";
 import Avatar from "./Avatar.js";
 import { Button, CloseButton } from "./Button.js";
 import { Input, InputShell } from "./Input.js";
+import Modal from "./Modal.js";
 import {
   FileTextIcon,
   HashIcon,
@@ -81,14 +82,15 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
   const ChannelIcon = channel.type === "private" ? LockKeyholeIcon : HashIcon;
 
   return (
-    <Dialog.Root open onOpenChange={(open) => !open && onClose()}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="channel-details-backdrop modal-backdrop">
-          <Dialog.Content
-            className="details-panel channel-details-dialog"
-            data-testid="channel-details-dialog"
-            aria-describedby={undefined}
-          >
+    <Modal
+      title="Channel details"
+      className="details-panel channel-details-dialog"
+      backdropClassName="channel-details-backdrop"
+      testId="channel-details-dialog"
+      showHeader={false}
+      showClose={false}
+      onClose={onClose}
+    >
         <header className="channel-details-header">
           <div className="channel-details-heading">
             <span className="channel-details-icon" aria-hidden="true">
@@ -281,10 +283,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
 
           {error && <div className="error">{error}</div>}
         </div>
-          </Dialog.Content>
-        </Dialog.Overlay>
-      </Dialog.Portal>
-    </Dialog.Root>
+    </Modal>
   );
 }
 

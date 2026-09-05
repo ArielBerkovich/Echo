@@ -128,6 +128,27 @@ test.describe("documented keyboard shortcuts", () => {
     await expect(page.getByTestId("pinned-panel")).toBeHidden();
   });
 
+  test("keeps the members panel open behind channel details", async ({ page }) => {
+    await page.goto(`/channels/${encodeURIComponent(fixture.projectChannel.name)}`);
+    await page.getByRole("button", { name: "View members" }).click();
+    await expect(page.getByTestId("members-panel")).toBeVisible();
+
+    await page.keyboard.press("Control+k");
+    await page.getByTestId("search-action-view-channel-details").click();
+    await expect(page.getByTestId("channel-details-dialog")).toBeVisible();
+    await expect(page.getByTestId("members-panel")).toBeVisible();
+    await page.getByRole("button", { name: "Close channel details" }).click();
+    await expect(page.getByTestId("channel-details-dialog")).toBeHidden();
+    await expect(page.getByTestId("members-panel")).toBeVisible();
+
+    await page.keyboard.press("Control+k");
+    await page.getByTestId("search-action-view-channel-details").click();
+    await expect(page.getByTestId("channel-details-dialog")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("channel-details-dialog")).toBeHidden();
+    await expect(page.getByTestId("members-panel")).toBeVisible();
+  });
+
   test("limits channel commands to eligible channel contexts", async ({ page }) => {
     await page.goto(`/channels/${encodeURIComponent(fixture.projectChannel.name)}`);
     await expect(page.getByTestId("composer-editor")).toBeVisible();

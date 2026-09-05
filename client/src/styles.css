@@ -1812,30 +1812,6 @@ html[data-mode="dark"] .backend-connection-error {
 }
 .channel-advanced-options {
   margin-top: 4px;
-  border-top: 1px solid var(--border);
-}
-.channel-advanced-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 13px 0;
-  border: 0;
-  background: transparent;
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 700;
-  text-align: left;
-}
-.channel-advanced-toggle svg {
-  color: var(--muted);
-  transition: transform 160ms ease;
-}
-.channel-advanced-toggle.is-open svg {
-  transform: rotate(180deg);
-}
-.channel-advanced-toggle:hover {
-  color: var(--accent);
 }
 .channel-advanced-panel {
   display: flex;
@@ -5756,13 +5732,17 @@ html[data-mode="dark"] .day-divider-label {
   background: color-mix(in srgb, var(--rail-bg) 35%, rgba(0, 0, 0, 0.52));
   overflow-y: auto;
 }
-.channel-details-dialog {
-  width: min(720px, calc(100vw - 32px));
+/* The shared Modal supplies responsive padding and Tailwind utility classes.
+   Keep this full-bleed dialog's header/content flush with its own frame. */
+.modal.channel-details-dialog {
+  box-sizing: border-box;
+  width: min(640px, calc(100vw - 32px));
   max-width: none;
   height: min(780px, calc(100vh - 40px));
   max-height: min(780px, calc(100vh - 40px));
   min-height: 0;
   overflow: hidden;
+  padding: 0;
   border: 1px solid var(--border);
   border-radius: 20px;
   background: var(--surface);
@@ -9698,6 +9678,13 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
   overflow-y: auto;
   margin: -4px 0 4px;
 }
+.people-virtual-content {
+  position: relative;
+}
+.people-virtual-content .person-row {
+  position: absolute;
+  inset: 0 0 auto;
+}
 .person-row {
   display: flex;
   align-items: center;
@@ -9722,6 +9709,12 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
 .people-empty {
   color: var(--muted);
   padding: 16px 4px;
+  text-align: center;
+}
+.people-results-hint {
+  color: var(--muted);
+  padding: 10px 4px 6px;
+  font-size: 12px;
   text-align: center;
 }
 
@@ -11104,7 +11097,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     align-items: flex-end;
     padding: 10px;
   }
-  .channel-details-dialog {
+  .modal.channel-details-dialog {
     width: 100%;
     height: calc(100vh - 20px);
     max-height: calc(100vh - 20px);
@@ -12266,9 +12259,10 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     inset: 0 0 calc(72px + env(safe-area-inset-bottom));
     align-items: stretch;
     padding: 0;
+    overflow: hidden;
   }
 
-  .channel-details-dialog {
+  .modal.channel-details-dialog {
     width: 100%;
     height: 100%;
     max-height: none;

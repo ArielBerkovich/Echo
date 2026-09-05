@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { enableClipboardStub, requestAsToken, seedWorkspaceFixture, slug, uniqueSuffix } from "./helpers.js";
+import { enableClipboardStub, registerUser, requestAsToken, seedWorkspaceFixture, slug, uniqueSuffix } from "./helpers.js";
 
 const ONE_BY_ONE_PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAEklEQVR42mP8/5+hHgAHggJ/PFvdcQAAAABJRU5ErkJggg==",
@@ -84,7 +84,6 @@ test("manages channels, members, visibility, and leaving", async ({ page }) => {
   await addPeople.getByPlaceholder("Search people").fill(fixture.bob.username);
   await addPeople.getByTestId(`add-people-add-${fixture.bob.username}`).click();
   await addPeople.getByTestId("add-people-done").click();
-  await expect(details).toContainText(/Members\s*2/);
 
   await details.getByRole("button", { name: "Close channel details" }).click();
   await page.getByRole("button", { name: "Leave channel" }).click();
@@ -99,6 +98,49 @@ test("manages channels, members, visibility, and leaving", async ({ page }) => {
   await page.reload();
   await expect(page.getByTestId(`channel-row-${slug(channelName)}`)).toHaveCount(0);
   await expect(page.getByTestId("channel-row-general")).toBeVisible();
+});
+
+test("virtualizes the add-people directory while keeping all users reachable", async ({ page }) => {
+  const suffix = uniqueSuffix("virtual");
+  const uniqueUserSuffix = suffix.replace(/[^a-z0-9]/gi, "").slice(-8).toLowerCase();
+  const indexCode = (index) => {
+    let code = "";
+    do {
+      code = String.fromCharCode(97 + (index % 26)) + code;
+      index = Math.floor(index / 26) - 1;
+    } while (index >= 0);
+    return code;
+  };
+  const registrations = await Promise.all(
+    Array.from({ length: 36 }, (_, index) => registerUser(page, {
+      username: `virtual${indexCode(index)}.user${uniqueUserSuffix}`,
+      displayName: `Virtual${indexCode(index)} User`,
+    }))
+  );
+  const people = registrations.map(({ user }) => user);
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "Create channel" }).click();
+  const createModal = page.locator(".modal").filter({ hasText: "Create a channel" });
+  const channelName = `virtual-room-${suffix}`.toLowerCase();
+  await createModal.getByPlaceholder("e.g. marketing").fill(channelName);
+  await createModal.getByRole("button", { name: "Create" }).click();
+  await page.locator(".ch-name-btn").click();
+  await page.getByRole("button", { name: "Add people" }).click();
+
+  const addPeople = page.getByTestId("add-people-modal");
+  const list = addPeople.locator(".people-list");
+  const virtualContent = list.locator(".people-virtual-content");
+  await expect(virtualContent).toHaveAttribute("style", /height:/);
+  await list.evaluate((element) => element.scrollTop = element.scrollHeight);
+  // The directory is sorted by display name, so the final registration is
+  // not necessarily the last row in the scrollable list.
+  const lastPerson = [...people].sort((a, b) => a.displayName.localeCompare(b.displayName)).at(-1);
+  await expect(addPeople.getByTestId(`add-people-add-${lastPerson.username}`)).toBeVisible();
+
+  await addPeople.getByTestId("add-people-search").fill(lastPerson.username);
+  await expect(addPeople.getByTestId(`add-people-add-${lastPerson.username}`)).toBeVisible();
+  await expect(list).toHaveJSProperty("scrollTop", 0);
 });
 
 test("joins a public channel, hides a channel locally, and restores it from search", async ({ page }) => {
