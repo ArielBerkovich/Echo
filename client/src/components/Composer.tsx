@@ -25,7 +25,7 @@ import EmojiPicker from "./EmojiPicker.js";
 import Modal, { ModalActions } from "./Modal.js";
 import { useMentionGate } from "../lib/useMentionGate.js";
 import { MENTION_QUERY_RE } from "../lib/mentions.js";
-import { CalendarClock, ChartNoAxesColumnIncreasing, ChevronRight, FileIcon, Paperclip, X } from "lucide-react";
+import { CalendarClock, ChartNoAxesColumnIncreasing, ChevronRight, FileIcon, LayoutPanelTop, Paperclip, X } from "lucide-react";
 import {
   LinkIcon, OrderedListIcon, BulletListIcon, QuoteIcon, CodeIcon, CodeBlockIcon,
   PlusIcon, SmileyIcon, SendIcon,
@@ -98,7 +98,7 @@ const CustomEmoji = Node.create({
 // Rich-text message composer: @mention autocomplete, a formatting toolbar,
 // emoji, and file attachments. Owns all of its own editor state — mount it with
 // a `key={channel.id}` so switching channels yields a fresh, empty composer.
-const Composer = forwardRef(function Composer({ channel, sendChannel = null, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, onSend, sendDisabled = false, allowEmptySend = false, sendAriaLabel, sendTitle, sendTestId, onDraftChange, onEditSave, onEditCancel, editing = null, placeholder: customPlaceholder, mode = "light", captureScreenDrops = false, showSchedule = true, showSend = true, showAttachments = true, disabled = false }, ref) {
+const Composer = forwardRef(function Composer({ channel, sendChannel = null, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, onSend, initialContent = null, sendDisabled = false, allowEmptySend = false, sendAriaLabel, sendTitle, sendTestId, onDraftChange, onEditSave, onEditCancel, editing = null, placeholder: customPlaceholder, mode = "light", captureScreenDrops = false, showSchedule = true, showSend = true, showAttachments = true, submitOnEnter = false, disabled = false }, ref) {
   // Keep custom-emoji blob URLs alive for the full composer lifetime. The
   // picker unmounts immediately after a selection, so its URLs cannot safely
   // be used by an emoji node inserted into this editor.
@@ -119,6 +119,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   const [editingSched, setEditingSched] = useState(null); // { id, body, at } being edited
   const [undoScheduled, setUndoScheduled] = useState(null); // canceled message available to restore
   const [surveyDraft, setSurveyDraft] = useState(null);
+  const [retroDraft, setRetroDraft] = useState(null);
   const surveyOptionsListRef = useRef(null);
   const emojiToggleRef = useRef(null);
   const [pastePrompt, setPastePrompt] = useState(null); // { text, byteLength, tooLong, tooLarge }
@@ -243,7 +244,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     if (!editing) {
       const key = draftStorageKey(channel.id, isThread);
       const draft = key ? readString(key, "") : "";
-      editor.commands.setContent(draft ? composerContent(draft) : "<p></p>", false);
+      editor.commands.setContent(initialContent !== null ? composerContent(initialContent) : draft ? composerContent(draft) : "<p></p>", false);
       setEditorState((current) => ({
         ...current,
         canSend: editor.getText().trim().length > 0,
@@ -259,7 +260,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     requestAnimationFrame(() => {
       if (!editor.isDestroyed) editor.commands.focus("end");
     });
-  }, [channel.id, editor, editing?.id, isThread, replacePending]);
+  }, [channel.id, editor, editing?.id, initialContent, isThread, replacePending]);
   const { canSend = false, ...active } = editorState;
 
   // Tell others we're typing (throttled), and auto-clear after a short pause.
@@ -532,21 +533,21 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
         || editor.isActive("orderedList")
         || editor.isActive("blockquote")
       ) return;
-      if (!showSend) return;
+      if (!showSend && !submitOnEnter) return;
       e.preventDefault();
       handleSend();
     }
   }
 
   // Actually emit the message and reset the composer.
-  function doSend(body, attachments, survey = null) {
+  function doSend(body, attachments, survey = null, retro = null) {
     onError?.(null);
     const socket = getSocket();
     if (!socket.connected) {
       onError?.("Echo is reconnecting. Your draft is still here — send it when the connection returns.");
       return false;
     }
-    socket.emit("message:send", { channelId: targetChannelId, body, attachments, parentId, survey }, (res) => {
+    socket.emit("message:send", { channelId: targetChannelId, body, attachments, parentId, survey, retro }, (res) => {
       if (res?.error) onError?.(res.error);
       else onSent?.();
     });
@@ -569,6 +570,11 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     if (doSend(question, [], { question, options: options.map((label) => ({ label })), allowMultiple: surveyDraft.allowMultiple })) {
       setSurveyDraft(null);
     }
+  }
+  function sendRetro() {
+    const title = retroDraft?.title.trim();
+    if (!title) return setRetroDraft((draft) => ({ ...draft, error: "Give your retrospective a title." }));
+    if (doSend(title, [], null, { title })) setRetroDraft(null);
   }
 
   function resetComposer() {
@@ -711,7 +717,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   function handleSend(e) {
     e?.preventDefault();
     if (onSend) {
-      onSend();
+      onSend(editor ? htmlToMarkdown(editor.getHTML()).trim() : "");
       return;
     }
     if (!showSend) return;
@@ -979,6 +985,14 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
           </ModalActions>
         </Modal>
       )}
+      {!editing && retroDraft && (
+        <Modal title={<><span className="retro-create-title-icon"><LayoutPanelTop size={20} /></span><span>Start a retrospective</span></>} className="survey-modal retro-create-modal" onClose={() => setRetroDraft(null)}>
+          <p className="settings-hint">A shared board for capturing wins, improvements, and next steps.</p>
+          <label className="schedule-custom-field survey-question-field"><span>Board title</span><input className="settings-input" autoFocus value={retroDraft.title} maxLength={500} placeholder="Sprint retrospective" onChange={(event) => setRetroDraft((draft) => ({ ...draft, title: event.target.value, error: null }))} onKeyDown={(event) => { if (event.key === "Enter") sendRetro(); }} /></label>
+          {retroDraft.error && <div className="error" role="alert">{retroDraft.error}</div>}
+          <ModalActions><button type="button" className="btn-secondary" onClick={() => setRetroDraft(null)}>Cancel</button><button type="button" className="btn-primary" disabled={!retroDraft.title.trim()} onClick={sendRetro}>Create retrospective</button></ModalActions>
+        </Modal>
+      )}
 
       {!editing && showScheduled && (
         <Modal
@@ -1240,6 +1254,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
             <PlusIcon />
           </button>}
           {!editing && !isThread && <button type="button" className="icon-btn survey-compose-btn" data-testid="composer-survey" title="Create survey" aria-label="Create survey" onMouseDown={keepFocus} onClick={() => setSurveyDraft({ question: "", options: ["", ""], allowMultiple: false, error: null })}><ChartNoAxesColumnIncreasing size={18} strokeWidth={1.8} /></button>}
+          {!editing && !isThread && <button type="button" className="icon-btn survey-compose-btn" data-testid="composer-retro" title="Create retrospective" aria-label="Create retrospective" onMouseDown={keepFocus} onClick={() => setRetroDraft({ title: "", error: null })}><LayoutPanelTop size={18} strokeWidth={1.8} /></button>}
           <button
             type="button"
             className={`icon-btn aa ${showFormatting ? "active" : ""}`}

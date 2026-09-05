@@ -1,6 +1,7 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ArrowUpRight, ChartNoAxesColumnIncreasing, Check, LoaderCircle } from "lucide-react";
+import RetroBoard from "./RetroBoard.js";
 import Avatar from "./Avatar.js";
 import Attachments from "./Attachments.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
@@ -80,6 +81,7 @@ function Message({
   const [surveyState, setSurveyState] = useState(m.survey || null);
   const [surveyVoting, setSurveyVoting] = useState(false);
   const [surveyVoteError, setSurveyVoteError] = useState("");
+  const [retroState, setRetroState] = useState(m.retro || null);
   const [menuPosition, setMenuPosition] = useState(null);
   const [linkAction, setLinkAction] = useState(null);
   const [actionsPosition, setActionsPosition] = useState(null);
@@ -95,6 +97,7 @@ function Message({
   pickerOpenRef.current = pickerOpen;
   const mid = m.id;
   useEffect(() => setSurveyState(m.survey || null), [m.survey]);
+  useEffect(() => setRetroState(m.retro || null), [m.retro]);
   function voteSurvey(optionId) {
     const current = surveyState;
     if (!current) return;
@@ -450,13 +453,13 @@ function Message({
                 ) : null)}
               </div>
               <div className="forwarded-message-label">Forwarded message</div>
-              {messageBody}
+              {m.retro ? <RetroBoard messageId={m.id} retro={m.retro} usersById={usersById} currentUserId={currentUserId} creatorId={m.author?.id} /> : messageBody}
               {messageAttachments}
             </div>
           </>
         ) : (
           <>
-            {!surveyState && messageBody}
+            {!surveyState && !retroState && messageBody}
             {surveyState && (
               <div className="survey-card" data-testid={`survey-${m.id}`} aria-label="Survey">
                 {(() => {
@@ -495,6 +498,7 @@ function Message({
                 })()}
               </div>
             )}
+            {retroState && <RetroBoard messageId={m.id} retro={retroState} usersById={usersById} currentUserId={currentUserId} creatorId={m.author?.id} />}
             {messageAttachments}
           </>
         )}

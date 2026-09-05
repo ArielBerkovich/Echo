@@ -336,6 +336,12 @@ const ChannelView = forwardRef(function ChannelView({
       setPinnedMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, survey } : m)));
     };
     socket.on("message:survey", onSurvey);
+    const onRetro = ({ messageId, retro }) => {
+      if (!messageId || !retro) return;
+      setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, retro } : m)));
+      setPinnedMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, retro } : m)));
+    };
+    socket.on("message:retro", onRetro);
 
     const onUpdate = (u) => {
       if (u.channelId !== channel.id || u.parentId) return; // thread edits handled in panel
@@ -410,6 +416,7 @@ const ChannelView = forwardRef(function ChannelView({
       socket.off("message:new", onNew);
       socket.off("message:reaction", onReaction);
       socket.off("message:survey", onSurvey);
+      socket.off("message:retro", onRetro);
       socket.off("message:update", onUpdate);
       socket.off("message:deleted", onDeleted);
       socket.off("message:pin", onPin);
