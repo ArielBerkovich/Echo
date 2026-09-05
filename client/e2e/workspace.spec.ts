@@ -991,3 +991,40 @@ test("clicking a search result jumps to and highlights that exact message", asyn
   await expect(page).toHaveURL(new RegExp(`/channels/${fixture.generalChannel.id}\\?message=${fixture.messages.searchHit.id}`));
   await expect(messageById(page, fixture.messages.searchHit.id)).toHaveClass(/flash/);
 });
+
+for (const layout of ["desktop", "mobile"]) {
+  for (const conversation of ["channel", "dm"]) {
+    test(`${layout} ${conversation} thread search reveals the matching reply and survives reload`, async ({ page }) => {
+      if (layout === "mobile") await page.setViewportSize({ width: 390, height: 844 });
+      const channelId = conversation === "channel" ? fixture.projectChannel.id : fixture.dmChannel.id;
+      const token = `thread-search-${layout}-${conversation}-${fixture.suffix}`;
+      const { message: root } = await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
+        method: "POST",
+        body: { channelId, body: "Search regression thread root" },
+      });
+      const { message: reply } = await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+        method: "POST",
+        body: { channelId, parentId: root.id, body: token },
+      });
+
+      await page.goto(`/search?q=${encodeURIComponent(token)}`);
+      const result = page.getByTestId("search-result").filter({ hasText: token });
+      await expect(result).toContainText("in thread");
+      await result.click();
+
+      const thread = page.getByTestId("thread-panel");
+      const matchingReply = thread.getByTestId(`message-${reply.id}`);
+      await expect(thread).toBeVisible();
+      await expect(matchingReply).toBeInViewport();
+      await expect(matchingReply).toHaveClass(/flash/);
+      await expect(page).toHaveURL((url) =>
+        url.searchParams.get("message") === reply.id && url.searchParams.get("thread") === root.id
+      );
+
+      await page.reload();
+      await expect(thread).toBeVisible();
+      await expect(matchingReply).toBeInViewport();
+      await expect(matchingReply).toHaveClass(/flash/);
+    });
+  }
+}
