@@ -86,6 +86,7 @@ export default function WorkspaceContent({ view, search, browse, feeds, conversa
           onPickChannel={search.onPickChannel}
           onFindChannels={search.onFindChannels}
           onPickUser={search.onPickUser}
+          onPickDm={search.onPickDm}
           onQuickAction={handleQuickAction}
           onSearchMessages={search.onSearchMessages}
         />

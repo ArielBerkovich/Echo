@@ -470,6 +470,37 @@ test("opens people and channels searched from Activity and Saved", async ({ page
   await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
 });
 
+test("tracks conversations opened from the sidebar as recent", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate((userId) => {
+    localStorage.removeItem(`echo.recentSearches.user.${userId}`);
+  }, fixture.alice.id);
+
+  await page.getByTestId(`channel-row-${slug(fixture.projectChannel.name)}`).click();
+  await expect.poll(() => page.evaluate((userId) => {
+    return JSON.parse(localStorage.getItem(`echo.recentSearches.user.${userId}`) || "[]")[0];
+  }, fixture.alice.id)).toMatchObject({
+    type: "channel",
+    id: fixture.projectChannel.id,
+    name: fixture.projectChannel.name,
+  });
+
+  await dmRow(page, fixture.bob.displayName).locator(".dm-open").click();
+  await expect.poll(() => page.evaluate((userId) => {
+    return JSON.parse(localStorage.getItem(`echo.recentSearches.user.${userId}`) || "[]")[0];
+  }, fixture.alice.id)).toMatchObject({
+    type: "user",
+    id: fixture.bob.id,
+    displayName: fixture.bob.displayName,
+  });
+
+  await page.reload();
+  await page.getByTestId("search-input").click();
+  await expect(page.getByText("Recent", { exact: true })).toBeVisible();
+  await expect(page.getByTestId(`search-user-${slug(fixture.bob.displayName)}`)).toBeVisible();
+  await expect(page.getByTestId(`search-channel-${slug(fixture.projectChannel.name)}`)).toBeVisible();
+});
+
 test("restores the last channel after visiting Saved and Activity", async ({ page }) => {
   await page.goto(`/channels/${fixture.projectChannel.name}`);
   await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);

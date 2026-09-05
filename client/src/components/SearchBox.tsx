@@ -18,7 +18,7 @@ import {
   UsersRoundIcon,
   UserRoundIcon,
 } from "lucide-react";
-import Avatar from "./Avatar.js";
+import Avatar, { GroupAvatar } from "./Avatar.js";
 import { Input } from "./Input.js";
 
 const QUICK_ACTIONS = [
@@ -103,6 +103,7 @@ const SearchBox = forwardRef(function SearchBox(
     onPickChannel,
     onFindChannels,
     onPickUser,
+    onPickDm,
     onQuickAction,
     onSearchMessages,
     variant = "default",
@@ -325,9 +326,11 @@ const SearchBox = forwardRef(function SearchBox(
       return [
         ...matchingQuickActions.map((item) => ({ kind: "action", item })),
         ...recentItems.map((r) =>
-        r.type === "channel"
-          ? { kind: "recent-channel", item: r }
-          : { kind: "recent-user", item: r }
+          r.type === "channel"
+            ? { kind: "recent-channel", item: r }
+            : r.type === "dm"
+              ? { kind: "recent-dm", item: r }
+              : { kind: "recent-user", item: r }
         ),
       ];
     }
@@ -355,6 +358,10 @@ const SearchBox = forwardRef(function SearchBox(
   }
   function pickUser(u) {
     onPickUser(u);
+    close();
+  }
+  function pickDm(dm) {
+    onPickDm(dm);
     close();
   }
   function submitMessageSearch() {
@@ -403,6 +410,8 @@ const SearchBox = forwardRef(function SearchBox(
       case "people":
       case "recent-user":
         return pickUser(it.item);
+      case "recent-dm":
+        return pickDm(it.item);
       case "action":
         close();
         return onQuickAction?.(it.item.id);
@@ -619,10 +628,26 @@ const SearchBox = forwardRef(function SearchBox(
                     </>
                   )}
                   <div className="search-section">Recent</div>
-                  {recentItems.length === 0 && <div className="people-empty">No recent searches.</div>}
+                  {recentItems.length === 0 && <div className="people-empty">No recent conversations.</div>}
                   {recentItems.map((r, idx) =>
                     r.type === "channel"
                       ? channelRow(r, idx, "recent")
+                      : r.type === "dm"
+                        ? (
+                            <button
+                              key={`recent-dm-${r.id}`}
+                              ref={(element) => { navItemRefs.current[idx] = element; }}
+                              className={`search-row ${idx === activeIdx ? "active" : ""}`}
+                              data-testid={`search-dm-${slug(r.displayName)}`}
+                              onMouseEnter={() => setActiveIdx(idx)}
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => pickDm(r)}
+                            >
+                              <GroupAvatar size={24} />
+                              <span className="search-name">{r.displayName}</span>
+                              <span className="search-kind">Group DM</span>
+                            </button>
+                          )
                       : (
                           <button
                             key={`recent-${r.id}`}
