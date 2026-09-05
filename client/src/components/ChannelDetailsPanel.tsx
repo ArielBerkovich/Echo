@@ -132,7 +132,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
           ))}
         </nav>
 
-        <div className="channel-details-content">
+        <div className={`channel-details-content channel-details-content-${activeTab}`}>
           {activeTab === "details" && <div className="channel-details-tabpanel" role="tabpanel" id="channel-details-panel-details" aria-labelledby="channel-details-tab-details">
             <div className="channel-details-overview-title">About this channel</div>
             <div className="channel-details-fields">

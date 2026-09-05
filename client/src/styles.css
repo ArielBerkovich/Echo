@@ -6003,9 +6003,18 @@ html[data-mode="dark"] .day-divider-label {
 }
 .channel-details-members-section {
   margin-top: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   padding: 0;
   border: 0;
   background: transparent;
+}
+.channel-details-content-members {
+  overflow: hidden;
+}
+.channel-details-content-members .channel-details-members-section {
+  height: 100%;
 }
 .channel-details-created-section {
   margin-top: 18px;
@@ -6135,7 +6144,8 @@ html[data-mode="dark"] .day-divider-label {
   overflow-y: auto;
 }
 .channel-details-member-list {
-  max-height: 250px;
+  flex: 1;
+  min-height: 0;
   margin-top: 15px;
   overflow-y: auto;
 }
