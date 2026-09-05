@@ -27,6 +27,7 @@ test("creates and manages a retrospective board", async ({ page }) => {
     .filter({ hasText: title })
     .last();
   await expect(message).toBeVisible();
+  await expect(message).toHaveCSS("margin-top", "12px");
   await message.click();
   const board = page.locator(".retro-modal");
   await expect(board).toBeVisible();

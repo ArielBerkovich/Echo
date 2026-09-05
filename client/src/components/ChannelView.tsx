@@ -84,7 +84,6 @@ const ChannelView = forwardRef(function ChannelView({
   onOpenChannel,
   onSearchInChannel,
   onOpenForwardedDm,
-  onRememberRecent,
   isStarred = false,
   onToggleStarred,
   isChannelStarred = false,
@@ -1519,16 +1518,6 @@ const ChannelView = forwardRef(function ChannelView({
             const firstLabel = first?.kind === "channel" ? `#${first.label}` : first?.label;
             const remainder = destinations.length - 1;
             onToast?.(`Forwarded to ${firstLabel}${remainder > 0 ? ` and ${remainder} other${remainder === 1 ? "" : "s"}` : ""}`);
-            for (const destination of destinations) {
-              onRememberRecent?.(destination.kind === "channel"
-                ? { type: "channel", id: destination.id, name: destination.label }
-                : {
-                    type: "user",
-                    id: destination.kind === "dm" ? destination.userId : destination.id,
-                    displayName: destination.label,
-                    username: destination.username || destination.handle?.replace(/^@/, ""),
-                  });
-            }
           }}
           onClose={() => setForwarding(null)}
         />

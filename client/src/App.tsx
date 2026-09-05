@@ -21,6 +21,12 @@ import { queryKeys } from "./lib/queryClient.js";
 import { currentRoute, workspacePath } from "./lib/workspaceRoutes.js";
 import { installMessageSoundUnlock } from "./lib/messageSounds.js";
 import { getKeyboardHotkeys } from "./lib/keyboardShortcuts.js";
+import {
+  addRecentConversation,
+  MAX_RECENT_CONVERSATIONS,
+  normalizeRecents,
+  recentForConversation,
+} from "./lib/recentConversations.js";
 import { useHotkeys } from "react-hotkeys-hook";
 
 const HIDDEN_KEY = "echo.hiddenChannels";
@@ -46,18 +52,6 @@ function isEditableTarget(target) {
 
 function isMobileViewport() {
   return typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches;
-}
-
-function normalizeRecents(value) {
-  if (!Array.isArray(value)) return [];
-  const seen = new Set();
-  return value.filter((recent) => {
-    if (!recent || !["channel", "user"].includes(recent.type) || !recent.id) return false;
-    const key = `${recent.type}:${recent.id}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
 }
 
 function recentStorageKey(userId) {
@@ -197,10 +191,17 @@ export default function App() {
     const scopedValue = readJson(scopedKey, null);
     const legacyValue = scopedValue === null ? readJson(RECENTS_KEY, []) : scopedValue;
     const knownChannelIds = new Set([...channels, ...allChannels].map((channel) => channel.id));
+    const knownDmIds = new Set(dms.map((conversation) => conversation.id));
     const knownUserIds = new Set(users.map((candidate) => candidate.id));
-    const next = normalizeRecents(legacyValue).filter((recent) =>
-      recent.type === "channel" ? knownChannelIds.has(recent.id) : knownUserIds.has(recent.id)
-    );
+    const next = normalizeRecents(legacyValue)
+      .filter((recent) =>
+        recent.type === "channel"
+          ? knownChannelIds.has(recent.id)
+          : recent.type === "dm"
+            ? knownDmIds.has(recent.id)
+            : knownUserIds.has(recent.id)
+      )
+      .slice(0, MAX_RECENT_CONVERSATIONS);
     setRecents(next);
     writeJson(scopedKey, next);
     if (scopedValue === null && readString(RECENTS_KEY, null) !== null) writeString(RECENTS_KEY, null);
@@ -750,11 +751,33 @@ export default function App() {
 
   function rememberRecent(item) {
     setRecents((prev) => {
-      const next = [item, ...prev.filter((r) => !(r.type === item.type && r.id === item.id))].slice(0, 6);
+      const next = addRecentConversation(prev, item);
       if (user?.id) writeJson(recentStorageKey(user.id), next);
       return next;
     });
   }
+
+  // "Recent" means recently opened conversations, independent of whether the
+  // user arrived through the sidebar, search, a link, Activity, or restoration.
+  useEffect(() => {
+    const conversationVisible = !searchQuery && activeChannel
+      && (view === "home" || (view === "dms" && activeChannel.type === "dm"));
+    if (!user?.id || !conversationVisible) return;
+    const recent = recentForConversation(activeChannel, user.id);
+    if (recent) rememberRecent(recent);
+  }, [
+    user?.id,
+    view,
+    searchQuery,
+    activeChannel?.id,
+    activeChannel?.type,
+    activeChannel?.name,
+    activeChannel?.dmName,
+    activeChannel?.dmUsername,
+    activeChannel?.dmUserId,
+    activeChannel?.isSelf,
+    activeChannel?.participants,
+  ]);
 
   async function handleCreateChannel(name, type, readOnly = false) {
     const { channel } = await api.createChannel(name, type, readOnly);
@@ -1029,7 +1052,6 @@ export default function App() {
     const full = channels.find((c) => c.id === picked.id) || allChannels.find((c) => c.id === picked.id) || picked;
     setActiveChannel(full);
     setView("home", full);
-    rememberRecent({ type: "channel", id: picked.id, name: picked.name });
   }
 
   async function handleOpenChannelTag(name) {
@@ -1061,7 +1083,20 @@ export default function App() {
   function handlePickUser(picked) {
     markNavDuringRestore();
     handleOpenDm(picked);
-    rememberRecent({ type: "user", id: picked.id, displayName: picked.displayName, username: picked.username });
+  }
+
+  function handlePickDm(picked) {
+    const conversation = dms.find((candidate) => candidate.id === picked.id);
+    if (!conversation) {
+      setToast("That conversation is no longer available.");
+      return;
+    }
+    markNavDuringRestore();
+    clearNavigationTarget();
+    setSearchQuery(null);
+    const activeDm = activeDmFromConversation(conversation);
+    setActiveChannel(activeDm);
+    setView("dms", activeDm);
   }
 
   function resolveJumpChannel({ channelId, channelType, channelName }) {
@@ -1467,6 +1502,7 @@ export default function App() {
             onPickChannel: handlePickChannel,
             onFindChannels: findPublicChannels,
             onPickUser: handlePickUser,
+            onPickDm: handlePickDm,
             onAddPeople: () => setShowAddPeople(true),
             onQuickAction: handleQuickAction,
             onSearchMessages: handleSearchMessages,
@@ -1547,7 +1583,6 @@ export default function App() {
             onOpenChannel: handleOpenChannelTag,
             onSearchInChannel: (channelName) => searchRef.current?.searchInChannel(channelName),
             onOpenForwardedDm: (target, channel) => handleOpenDm(target, false, "dms", channel),
-            onRememberRecent: rememberRecent,
             onToast: setToast,
             onDmsChanged: refreshDms,
             isStarred: activeChannel?.type === "dm" && starredIds.has(activeChannel.dmUserId),
