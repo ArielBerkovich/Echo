@@ -6157,7 +6157,7 @@ html[data-mode="dark"] .day-divider-label {
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 10px;
+  margin-top: 0;
   padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: 9px;
