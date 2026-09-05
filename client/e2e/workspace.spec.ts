@@ -284,6 +284,25 @@ test("keeps channel header actions inside the header when pinned panel is open",
   await page.goto("/");
   await page.getByText(fixture.projectChannel.name, { exact: true }).click();
   await expect(page.getByTestId("channel-topic")).toHaveCSS("text-align", "left");
+
+  for (const testId of ["channel-pinned", "channel-files", "channel-search", "channel-members"]) {
+    const action = page.getByTestId(testId);
+    const buttonBox = await action.boundingBox();
+    const iconBox = await action.locator("svg").boundingBox();
+    expect(buttonBox).not.toBeNull();
+    expect(iconBox).not.toBeNull();
+    expect(iconBox.x + iconBox.width / 2).toBeCloseTo(buttonBox.x + buttonBox.width / 2, 0);
+    expect(iconBox.y + iconBox.height / 2).toBeCloseTo(buttonBox.y + buttonBox.height / 2, 0);
+  }
+
+  await page.getByTestId("channel-files").hover();
+  const filesTooltip = page.locator(".echo-tooltip");
+  await expect(filesTooltip).toBeVisible();
+  const filesButtonBox = await page.getByTestId("channel-files").boundingBox();
+  const filesTooltipBox = await filesTooltip.boundingBox();
+  expect(filesTooltipBox.x + filesTooltipBox.width / 2).toBeCloseTo(filesButtonBox.x + filesButtonBox.width / 2, 0);
+  await page.mouse.move(0, 0);
+
   await page.getByRole("button", { name: "Pinned messages" }).click();
 
   await expect(page.getByTestId("pinned-panel")).toBeVisible();
