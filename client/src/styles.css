@@ -5990,6 +5990,11 @@ html[data-mode="dark"] .day-divider-label {
 .channel-details-created-section {
   margin-top: 12px;
 }
+.channel-details-members-section {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
 .channel-details-created-section {
   margin-top: 18px;
   padding: 14px 4px 0;
