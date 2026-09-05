@@ -6371,13 +6371,16 @@ html[data-mode="dark"] .day-divider-label {
 }
 .channel-details-person-remove {
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: center;
   gap: 5px;
   background: transparent;
   color: var(--danger);
   opacity: 0;
   line-height: 1;
+}
+.channel-details-person-remove svg {
+  align-self: baseline;
 }
 .channel-details-person:hover .channel-details-person-remove,
 .channel-details-person-remove:focus-visible {
