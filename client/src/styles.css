@@ -6025,6 +6025,10 @@ html[data-mode="dark"] .day-divider-label {
 .channel-details-actions-section > .channel-details-section-hint {
   margin-bottom: 12px;
 }
+.channel-details-actions-section .channel-details-section-title,
+.channel-details-posting-section .channel-details-section-title {
+  font-size: 14px;
+}
 .channel-details-posting-section {
   margin-top: 0;
 }
@@ -6153,7 +6157,7 @@ html[data-mode="dark"] .day-divider-label {
   font-weight: 700;
 }
 .channel-details-posting-section {
-  margin-top: 16px;
+  margin-top: 0;
 }
 .channel-readonly-toggle {
   position: relative;
