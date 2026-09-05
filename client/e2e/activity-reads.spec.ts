@@ -126,6 +126,29 @@ test("a hidden tab does not read messages until it becomes visible", async ({ pa
   await expectUnread(page, target.id, false);
 });
 
+test("an unfocused browser window does not read a visible activity source", async ({ page }) => {
+  const target = await message(page);
+  await page.addInitScript(() => {
+    let focused = false;
+    Object.defineProperty(document, "hasFocus", {
+      configurable: true,
+      value: () => focused,
+    });
+    window.addEventListener("test-focus", () => { focused = true; });
+    window.addEventListener("test-blur", () => { focused = false; });
+  });
+  await page.goto(location(target.id));
+  await expect(page.getByTestId(`message-${target.id}`)).toBeInViewport({ ratio: 0.5 });
+  await page.waitForTimeout(900);
+  await expectUnread(page, target.id, true);
+
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event("test-focus"));
+    window.dispatchEvent(new Event("focus"));
+  });
+  await expectUnread(page, target.id, false);
+});
+
 test("acknowledgments reject malformed input and cannot read another user's activity", async ({ page }) => {
   const target = await message(page);
   const entry = await activity(page, target.id);
