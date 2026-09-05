@@ -315,7 +315,6 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
                           aria-label={`Remove ${member.displayName} from the channel`}
                         >
                           <Trash2Icon size={14} strokeWidth={1.9} aria-hidden="true" />
-                          <span className="channel-details-remove-label">Remove</span>
                         </button>
                       </div>
                     )}
