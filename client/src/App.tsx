@@ -1048,12 +1048,19 @@ export default function App() {
   }
 
   async function handleJoinChannel(channel) {
-    await api.joinChannel(channel.id);
-    const { channels: fresh } = await api.listChannels();
-    setChannels(fresh);
-    const joined = fresh.find((c) => c.id === channel.id) || channel;
+    const { channel: joinedPayload } = await api.joinChannel(channel.id);
+    const joined = joinedPayload || { ...channel, joined: true };
+    setChannels((previous) => {
+      const next = previous.some((item) => item.id === joined.id)
+        ? previous.map((item) => item.id === joined.id ? joined : item)
+        : [...previous, joined];
+      return next;
+    });
     setActiveChannel(joined);
     cacheCatalogChannels([{ ...joined, joined: true }]);
+    // Refresh the complete sidebar in the background without delaying the
+    // catalog row update or the transition into the joined channel.
+    api.listChannels().then(({ channels: fresh }) => setChannels(fresh)).catch(() => {});
     return joined;
   }
 
