@@ -5991,6 +5991,20 @@ html[data-mode="dark"] .day-divider-label {
 .channel-details-created-section {
   margin-top: 12px;
 }
+.channel-details-created-section {
+  margin-top: 18px;
+  padding: 14px 4px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+}
+.channel-details-created-section .channel-details-section-title {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
 .channel-details-actions-section {
   margin-top: 12px;
 }
