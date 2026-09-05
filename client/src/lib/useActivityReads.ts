@@ -6,7 +6,11 @@ import { queryKeys } from "./queryClient.js";
 // Clip against every scroll container as well as the viewport. Using the
 // available viewport height lets very tall messages qualify too.
 export function isActivitySourceVisible(node) {
-  if (!node.isConnected || document.visibilityState !== "visible") return false;
+  if (
+    !node.isConnected
+    || document.visibilityState !== "visible"
+    || (typeof document.hasFocus === "function" && !document.hasFocus())
+  ) return false;
   const rect = node.getBoundingClientRect();
   if (!rect.width || !rect.height) return false;
   let left = 0, top = 0, right = window.innerWidth, bottom = window.innerHeight;
@@ -65,6 +69,8 @@ export function useActivityReads(userId, items) {
     let retryAt = 0;
     const resetVisibility = () => visibleSince.clear();
     document.addEventListener("visibilitychange", resetVisibility);
+    window.addEventListener("blur", resetVisibility);
+    window.addEventListener("focus", resetVisibility);
     const timer = window.setInterval(async () => {
       const now = performance.now();
       const visible = new Map();
@@ -96,6 +102,8 @@ export function useActivityReads(userId, items) {
       clearInterval(timer);
       observer.disconnect();
       document.removeEventListener("visibilitychange", resetVisibility);
+      window.removeEventListener("blur", resetVisibility);
+      window.removeEventListener("focus", resetVisibility);
     };
   }, [userId, items, queryClient]);
 }
