@@ -5827,7 +5827,7 @@ html[data-mode="dark"] .day-divider-label {
   padding: 0 10px;
   border: 0;
   border-bottom: 2px solid transparent;
-  border-radius: 7px;
+  border-radius: 0;
   background: transparent;
   color: var(--muted);
   font-size: 12.5px;
