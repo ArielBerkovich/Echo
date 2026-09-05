@@ -5942,7 +5942,7 @@ html[data-mode="dark"] .day-divider-label {
   justify-content: center;
   width: 100%;
   margin-top: 0;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 .channel-add-people {
   display: inline-flex;
@@ -6118,7 +6118,7 @@ html[data-mode="dark"] .day-divider-label {
   color: var(--muted);
 }
 .channel-details-member-filter {
-  margin: 0 0 12px;
+  margin: 0 0 8px;
 }
 .channel-details-search:focus-within {
   border-color: var(--input-focus-border);
