@@ -5735,6 +5735,7 @@ html[data-mode="dark"] .day-divider-label {
 /* The shared Modal supplies responsive padding and Tailwind utility classes.
    Keep this full-bleed dialog's header/content flush with its own frame. */
 .modal.channel-details-dialog {
+  box-sizing: border-box;
   width: min(640px, calc(100vw - 32px));
   max-width: none;
   height: min(780px, calc(100vh - 40px));
