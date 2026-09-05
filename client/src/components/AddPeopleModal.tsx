@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Avatar from "./Avatar.js";
 import Modal, { ModalActions } from "./Modal.js";
+import useRecipientPickerKeyboard from "./useRecipientPickerKeyboard.js";
 
 const PEOPLE_ROW_HEIGHT = 52;
 const PEOPLE_LIST_HEIGHT = 340;
@@ -45,6 +46,36 @@ export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
   );
   const visibleUsers = available.slice(firstVisible, lastVisible);
 
+  const {
+    activeIndex,
+    activeOptionRef,
+    handleKeyDown,
+    setActiveIndex,
+  } = useRecipientPickerKeyboard({
+    items: available,
+    hasQuery: Boolean(q),
+    // The list is virtualized, so the parent scrolls to an off-screen active
+    // row before it can be rendered and assigned activeOptionRef.
+    scrollEnabled: false,
+    onSelect: add,
+  });
+
+  useEffect(() => {
+    setActiveIndex((index) => Math.min(index, Math.max(available.length - 1, 0)));
+  }, [available.length]);
+
+  useEffect(() => {
+    if (!q || !available.length || !listRef.current) return;
+    const list = listRef.current;
+    const targetTop = activeIndex * PEOPLE_ROW_HEIGHT;
+    const targetBottom = targetTop + PEOPLE_ROW_HEIGHT;
+    if (targetTop < list.scrollTop) {
+      list.scrollTo({ top: targetTop });
+    } else if (targetBottom > list.scrollTop + PEOPLE_LIST_HEIGHT) {
+      list.scrollTo({ top: targetBottom - PEOPLE_LIST_HEIGHT });
+    }
+  }, [activeIndex, available.length, q]);
+
   async function add(u) {
     setAdding(u.id);
     setError(null);
@@ -70,9 +101,11 @@ export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
           value={filter}
           onChange={(e) => {
             setFilter(e.target.value);
+            setActiveIndex(0);
             setListScrollTop(0);
             listRef.current?.scrollTo({ top: 0 });
           }}
+          onKeyDown={handleKeyDown}
           placeholder="Search people"
           autoFocus
         />
@@ -86,8 +119,16 @@ export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
             <div className="people-empty">Everyone in the workspace is already here.</div>
           ) : (
             <div className="people-virtual-content" style={{ height: available.length * PEOPLE_ROW_HEIGHT }}>
-              {visibleUsers.map((u, index) => (
-                <div className="person-row" key={u.id} style={{ transform: `translateY(${(firstVisible + index) * PEOPLE_ROW_HEIGHT}px)` }}>
+              {visibleUsers.map((u, index) => {
+                const rowIndex = firstVisible + index;
+                return (
+                <div
+                  className={`person-row ${rowIndex === activeIndex ? "active" : ""}`}
+                  key={u.id}
+                  ref={rowIndex === activeIndex ? activeOptionRef : undefined}
+                  style={{ transform: `translateY(${rowIndex * PEOPLE_ROW_HEIGHT}px)` }}
+                  onMouseEnter={() => setActiveIndex(rowIndex)}
+                >
                   <Avatar name={u.displayName} src={u.avatarUrl} size={32} />
                   <div className="person-info">
                     <div className="person-name">{u.displayName}</div>
@@ -97,7 +138,8 @@ export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
                     {adding === u.id ? "Adding…" : "Add"}
                   </button>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

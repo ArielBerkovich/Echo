@@ -9683,6 +9683,10 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
   gap: 12px;
   padding: 8px 4px;
 }
+.person-row:hover,
+.person-row.active {
+  background: var(--active-soft);
+}
 .person-info {
   flex: 1;
   min-width: 0;

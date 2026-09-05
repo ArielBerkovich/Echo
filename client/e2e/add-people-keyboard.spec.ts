@@ -28,12 +28,17 @@ test("selects an Add People result with ArrowDown and Enter", async ({ page }) =
   const search = addPeople.getByTestId("add-people-search");
   await expect(search).toBeFocused();
   await search.fill(`keyboard${suffix}`);
-  await expect(addPeople.locator(".person-row")).toHaveCount(candidates.length);
+  const rows = addPeople.locator(".person-row");
+  await expect(rows).toHaveCount(candidates.length);
 
+  await search.press("ArrowDown");
+  await expect(rows.nth(1)).toHaveClass(/active/);
+  await search.press("ArrowUp");
+  await expect(rows.nth(0)).toHaveClass(/active/);
   await search.press("ArrowDown");
   await search.press("Enter");
 
   // Enter should add the highlighted result and remove it from the available
   // list. Currently AddPeopleModal has no keyboard selection state/handler.
-  await expect(addPeople.locator(".person-row")).toHaveCount(candidates.length - 1);
+  await expect(rows).toHaveCount(candidates.length - 1);
 });
