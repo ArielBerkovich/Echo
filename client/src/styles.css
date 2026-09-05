@@ -5736,6 +5736,8 @@ html[data-mode="dark"] .day-divider-label {
    Keep this full-bleed dialog's header/content flush with its own frame. */
 .modal.channel-details-dialog {
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
   width: min(520px, calc(100vw - 32px));
   max-width: none;
   height: min(680px, calc(100vh - 40px));
@@ -5750,6 +5752,7 @@ html[data-mode="dark"] .day-divider-label {
 }
 .channel-details-header {
   display: flex;
+  flex: none;
   align-items: flex-start;
   justify-content: space-between;
   gap: 20px;
