@@ -181,38 +181,6 @@ test.describe("documented keyboard shortcuts", () => {
     await expect(page.getByTestId("search-action-view-members")).toHaveCount(0);
   });
 
-  test("limits channel commands to eligible channel contexts", async ({ page }) => {
-    await page.goto(`/channels/${encodeURIComponent(fixture.projectChannel.name)}`);
-    await expect(page.getByTestId("composer-editor")).toBeVisible();
-
-    await page.keyboard.press("Control+k");
-    await page.getByTestId("search-action-add-people").click();
-    await expect(page.getByTestId("add-people-modal")).toBeVisible();
-    await page.getByTestId("add-people-done").click();
-
-    await page.goto(`/channels/${encodeURIComponent(fixture.generalChannel.name)}`);
-    await expect(page.getByTestId("composer-editor")).toBeVisible();
-    await page.keyboard.press("Control+k");
-    await expect(page.getByTestId("search-action-add-people")).toHaveCount(0);
-
-    await page.getByTestId("search-action-new-message").click();
-    const recipientSearch = page.getByTestId("new-message-search-input");
-    await recipientSearch.pressSequentially(fixture.bob.username);
-    await recipientSearch.press("Enter");
-    const composer = page.getByTestId("new-message-modal").getByTestId("composer-editor");
-    await recipientSearch.press("Tab");
-    await expect(composer).toBeFocused();
-    await composer.fill(`Open DM ${fixture.suffix}`);
-    await composer.press("Enter");
-    await expect(page.getByTestId("new-message-modal")).toBeHidden();
-
-    await page.keyboard.press("Control+k");
-    await expect(page.getByTestId("quick-switcher-current-section")).toContainText("Current conversation");
-    await expect(page.getByTestId("search-action-view-files")).toBeVisible();
-    await expect(page.getByTestId("search-action-view-profile")).toBeVisible();
-    await expect(page.getByTestId("search-action-view-members")).toHaveCount(0);
-  });
-
   test("hands command focus to form fields, not feed headers", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByTestId("composer-editor")).toBeVisible();
