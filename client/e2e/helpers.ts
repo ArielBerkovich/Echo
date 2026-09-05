@@ -21,10 +21,27 @@ export async function openLocalAuth(page) {
 
 export async function registerUser(page, { username, password = DEFAULT_PASSWORD, displayName }) {
   const [firstName, ...lastParts] = String(displayName || "Test User").split(/\s+/);
-  const response = await page.request.post("/api/auth/register", {
+  const registration = () => page.request.post("/api/auth/register", {
     data: { username, password, firstName, lastName: lastParts.join(" ") || "User" },
   });
-  const body = await response.json().catch(() => ({}));
+
+  let response = await registration();
+  let body = await response.json().catch(() => ({}));
+
+  // The first account is reserved for the workspace admin. Parallel E2E
+  // workers can race here before any worker has completed that bootstrap.
+  // Create the required admin account and retry the intended registration.
+  if (!response.ok() && body.error === "The first account must use the username admin" && username !== "admin") {
+    const adminResponse = await page.request.post("/api/auth/register", {
+      data: { username: "admin", password: DEFAULT_PASSWORD, firstName: "Admin", lastName: "User" },
+    });
+    if (!adminResponse.ok() && adminResponse.status() !== 409) {
+      await adminResponse.json().catch(() => ({}));
+    }
+    response = await registration();
+    body = await response.json().catch(() => ({}));
+  }
+
   expect(
     response.ok(),
     `failed to register ${username} (${response.status()}): ${body.error || "unknown error"}`
