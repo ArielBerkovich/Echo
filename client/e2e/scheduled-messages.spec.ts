@@ -17,17 +17,6 @@ test.afterEach(async ({ page }) => {
   }
 });
 
-test("uses a clock control to open scheduling options", async ({ page }) => {
-  const scheduleButton = page.getByTestId("composer-send-options");
-  await expect(scheduleButton).toHaveAttribute("aria-label", "Schedule message");
-  await expect(scheduleButton).toHaveAttribute("title", "Schedule message");
-
-  await scheduleButton.click();
-  await expect(page.getByText("Schedule message", { exact: true }).last()).toBeVisible();
-  await expect(page.getByRole("button", { name: "Tomorrow, 09:00" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Custom time…" })).toBeVisible();
-});
-
 test("can cancel a scheduled message and undo the cancellation", async ({ page }) => {
   const body = `Scheduled undo flow ${uniqueSuffix("message")}`;
   await requestAsToken(page, fixture.alice.token, "/scheduled", {

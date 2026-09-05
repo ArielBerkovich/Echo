@@ -122,7 +122,10 @@ test.describe("post-login forms are keyboard operable", () => {
     await page.goto(`/channels/${encodeURIComponent(fixture.generalChannel.name)}`);
     const editor = page.getByTestId("composer-editor");
     await editor.fill(`Keyboard scheduled ${fixture.suffix}`);
-    await pressEnter(page.getByTestId("composer-send-options"));
+    const scheduleButton = page.getByTestId("composer-send-options");
+    await expect(scheduleButton).toHaveAttribute("aria-label", "Schedule message");
+    await expect(scheduleButton).toHaveAttribute("title", "Schedule message");
+    await pressEnter(scheduleButton);
     await pressEnter(page.getByRole("button", { name: "Custom time…" }));
     await expect(page.getByRole("dialog", { name: "Schedule message" })).toBeVisible();
     await page.keyboard.press("Escape");
