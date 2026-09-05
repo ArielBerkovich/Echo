@@ -314,7 +314,7 @@ export default function ThreadPanel({
       className="thread-panel"
       data-testid="thread-panel"
       onKeyDownCapture={(event) => {
-        if (event.key !== "Escape" || editing) return;
+        if (event.key !== "Escape" || event.defaultPrevented || editing) return;
         event.preventDefault();
         event.stopPropagation();
         onClose();

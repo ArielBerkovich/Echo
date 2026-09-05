@@ -8471,13 +8471,6 @@ html[data-mode="dark"] .channel-header {
   background: var(--active-bg);
   color: var(--active-fg);
 }
-.files-count {
-  display: block;
-  margin-top: 3px;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 500;
-}
 .files-panel-controls {
   padding: 12px 16px 8px;
   border-bottom: 0;
@@ -8562,8 +8555,7 @@ html[data-mode="dark"] .channel-header {
 .files-empty { min-height: 180px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 8px; padding: 22px; text-align: center; color: var(--muted); font-size: 13px; }
 .files-empty strong { color: var(--text); font-size: 14px; }
 .files-empty button { color: var(--accent); background: transparent; font-weight: 700; }
-.files-loading { display: grid; gap: 8px; padding: 4px; }
-.file-skeleton { height: 60px; border-radius: 9px; }
+.files-loading { min-height: 180px; }
 
 .messages-shell {
   flex: 1;
@@ -10237,7 +10229,9 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   }
   .thread-panel,
   .details-panel:not(.channel-details-dialog),
-  .pinned-panel {
+  .pinned-panel,
+  .files-panel,
+  .members-panel {
     position: absolute;
     top: 0;
     right: 0;
