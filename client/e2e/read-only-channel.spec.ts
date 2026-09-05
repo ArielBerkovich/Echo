@@ -129,6 +129,7 @@ test("toggles managers-only mode from channel details and persists after reload"
     await page.getByTestId(`channel-row-${slug(channelName)}`).click();
     await page.getByTestId("channel-title").click();
     const details = page.getByTestId("channel-details-dialog");
+    await details.getByRole("tab", { name: "Settings" }).click();
     const toggle = details.getByTestId("channel-readonly-toggle");
     await expect(toggle).not.toBeChecked();
     await details.locator("label.channel-readonly-toggle").click();
@@ -138,13 +139,16 @@ test("toggles managers-only mode from channel details and persists after reload"
 
     await page.reload();
     await page.getByTestId("channel-title").click();
-    await expect(page.getByTestId("channel-details-dialog").getByTestId("channel-readonly-toggle")).toBeChecked();
+    const reloadedDetails = page.getByTestId("channel-details-dialog");
+    await reloadedDetails.getByRole("tab", { name: "Settings" }).click();
+    await expect(reloadedDetails.getByTestId("channel-readonly-toggle")).toBeChecked();
 
     await seedToken(bobPage, fixture.bob.token);
     await bobPage.goto(`/channels/${channelName}`);
     await expect(bobPage.getByTestId("channel-readonly-notice")).toBeVisible();
     await expect(bobPage.getByTestId("composer-editor")).toHaveCount(0);
 
+    await page.getByTestId("channel-details-dialog").getByRole("tab", { name: "Settings" }).click();
     await page.getByTestId("channel-details-dialog").locator("label.channel-readonly-toggle").click();
     await expect(page.getByTestId("channel-details-dialog").getByTestId("channel-readonly-toggle")).not.toBeChecked();
     await bobPage.reload();

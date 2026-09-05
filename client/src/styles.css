@@ -5811,6 +5811,55 @@ html[data-mode="dark"] .day-divider-label {
   overscroll-behavior: contain;
   padding: 22px 26px 26px;
 }
+.channel-details-tabs {
+  display: flex;
+  flex: none;
+  gap: 4px;
+  padding: 0 26px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.channel-details-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 0 10px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: color 140ms ease, border-color 140ms ease;
+}
+.channel-details-tab:hover {
+  color: var(--text);
+}
+.channel-details-tab.active {
+  border-bottom-color: var(--accent);
+  color: var(--accent);
+}
+.channel-details-tab:focus-visible {
+  outline: 2px solid var(--active-ring);
+  outline-offset: -2px;
+  border-radius: 6px 6px 0 0;
+}
+.channel-details-tab-count {
+  min-width: 20px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--active-soft);
+  color: inherit;
+  font-size: 10px;
+  line-height: 1.2;
+  text-align: center;
+}
+.channel-details-tabpanel {
+  min-height: 100%;
+}
 .channel-details-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -11314,6 +11363,9 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   }
   .channel-details-header {
     padding: 19px 14px 17px 16px;
+  }
+  .channel-details-tabs {
+    padding-inline: 16px;
   }
   .channel-details-content {
     padding: 16px 18px 20px;

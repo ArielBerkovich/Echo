@@ -24,6 +24,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
   const [error, setError] = useState(null);
   const [memberQuery, setMemberQuery] = useState("");
   const [promotingId, setPromotingId] = useState(null);
+  const [activeTab, setActiveTab] = useState("details");
 
   const byId = new Map(users.map((u) => [u.id, u]));
   const creator = byId.get(channel.createdBy);
@@ -111,61 +112,128 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
           </Dialog.Close>
         </header>
 
-        <div className="channel-details-content">
-          <div className="channel-details-fields">
-            <EditableField
-              label="Topic"
-              icon={<FileTextIcon size={15} strokeWidth={1.9} />}
-              value={channel.topic}
-              placeholder="Add a topic to help people know what this channel is for."
-              editable={isMember}
-              onSave={(value) => save({ topic: value })}
-            />
-            <EditableField
-              label="Description"
-              icon={<FileTextIcon size={15} strokeWidth={1.9} />}
-              value={channel.description}
-              placeholder="Add a description for this channel."
-              editable={isMember}
-              multiline
-              onSave={(value) => save({ description: value })}
-            />
-          </div>
+        <nav className="channel-details-tabs" role="tablist" aria-label="Channel details sections">
+          {[
+            ["details", "Details"],
+            ["members", "Members"],
+            ["settings", "Settings"],
+          ].map(([tab, label]) => (
+            <button
+              type="button"
+              role="tab"
+              key={tab}
+              id={`channel-details-tab-${tab}`}
+              aria-selected={activeTab === tab}
+              className={`channel-details-tab${activeTab === tab ? " active" : ""}`}
+              onClick={() => setActiveTab(tab)}
+            >
+              {label}
+              {tab === "members" && <span className="channel-details-tab-count">{channel.memberCount ?? members.length}</span>}
+            </button>
+          ))}
+        </nav>
 
-          {canManagePosting && (
-            <section className="channel-details-section channel-details-posting-section cd-section">
-              <div className="channel-details-section-head">
-                <div>
-                  <div className="channel-details-section-title">Posting permissions</div>
-                  <p className="channel-details-section-hint">
-                    {channel.readOnly
-                      ? "Only the channel creator and managers can post messages and replies."
-                      : "Everyone in this channel can post messages and replies."}
-                  </p>
+        <div className="channel-details-content">
+          {activeTab === "details" && <div className="channel-details-tabpanel" role="tabpanel" id="channel-details-panel-details" aria-labelledby="channel-details-tab-details">
+            <div className="channel-details-fields">
+              <EditableField
+                label="Topic"
+                icon={<FileTextIcon size={15} strokeWidth={1.9} />}
+                value={channel.topic}
+                placeholder="Add a topic to help people know what this channel is for."
+                editable={isMember}
+                onSave={(value) => save({ topic: value })}
+              />
+              <EditableField
+                label="Description"
+                icon={<FileTextIcon size={15} strokeWidth={1.9} />}
+                value={channel.description}
+                placeholder="Add a description for this channel."
+                editable={isMember}
+                multiline
+                onSave={(value) => save({ description: value })}
+              />
+            </div>
+
+            <section className="channel-details-section channel-details-created-section">
+              <div className="channel-details-section-title">Created by</div>
+              <div className="channel-details-created">
+                <Avatar name={creator?.displayName || "Echo"} src={creator?.avatarUrl} size={32} />
+                {creator ? (
+                  <button type="button" className="channel-details-created-name channel-details-profile-link interactive-name" onClick={() => onOpenProfile?.(creator.id)}>
+                    {creator.displayName}
+                  </button>
+                ) : (
+                  <span className="channel-details-created-name">Echo</span>
+                )}
+                {channel.createdAt && <span className="channel-details-created-date">{formatDate(channel.createdAt)}</span>}
+              </div>
+            </section>
+          </div>}
+
+          {activeTab === "settings" && <div className="channel-details-tabpanel" role="tabpanel" id="channel-details-panel-settings" aria-labelledby="channel-details-tab-settings">
+            {canManagePosting && (
+              <section className="channel-details-section channel-details-posting-section cd-section">
+                <div className="channel-details-section-head">
+                  <div>
+                    <div className="channel-details-section-title">Posting permissions</div>
+                    <p className="channel-details-section-hint">
+                      {channel.readOnly
+                        ? "Only the channel creator and managers can post messages and replies."
+                        : "Everyone in this channel can post messages and replies."}
+                    </p>
+                  </div>
+                  <label className={`channel-readonly-toggle${channel.readOnly ? " is-enabled" : ""}`}>
+                    <input
+                      type="checkbox"
+                      checked={!!channel.readOnly}
+                      data-testid="channel-readonly-toggle"
+                      aria-label="Managers only"
+                      onChange={(event) => {
+                        void save({ readOnly: event.target.checked }).catch(() => {});
+                      }}
+                    />
+                    <span className="channel-readonly-switch" aria-hidden="true">
+                      <span className="channel-readonly-switch-thumb" />
+                    </span>
+                    <span className="channel-readonly-toggle-copy">
+                      <span>Managers only</span>
+                      <span className="channel-readonly-toggle-state">{channel.readOnly ? "On" : "Off"}</span>
+                    </span>
+                  </label>
                 </div>
-                <label className={`channel-readonly-toggle${channel.readOnly ? " is-enabled" : ""}`}>
-                  <input
-                    type="checkbox"
-                    checked={!!channel.readOnly}
-                    data-testid="channel-readonly-toggle"
-                    aria-label="Managers only"
-                    onChange={(event) => {
-                      void save({ readOnly: event.target.checked }).catch(() => {});
-                    }}
-                  />
-                  <span className="channel-readonly-switch" aria-hidden="true">
-                    <span className="channel-readonly-switch-thumb" />
-                  </span>
-                  <span className="channel-readonly-toggle-copy">
-                    <span>Managers only</span>
-                    <span className="channel-readonly-toggle-state">{channel.readOnly ? "On" : "Off"}</span>
-                  </span>
-                </label>
+              </section>
+            )}
+
+          {(channel.createdBy === user.id && channel.type === "private" || isMember && channel.name?.toLowerCase() !== "general") && (
+            <section className="channel-details-section channel-details-actions-section">
+              <div className="channel-details-section-title">Channel actions</div>
+              <p className="channel-details-section-hint">Less frequent changes live here so the conversation stays focused.</p>
+              <div className="channel-details-actions-list">
+                {channel.createdBy === user.id && channel.type === "private" && (
+                  <button type="button" className="channel-details-action channel-details-action-visibility" data-testid="channel-visibility" onClick={onChangeVisibility}>
+                    <Globe2Icon size={16} strokeWidth={1.9} />
+                    <span>
+                      <strong>Make public</strong>
+                      <small>Let anyone in the workspace discover and join this channel.</small>
+                    </span>
+                  </button>
+                )}
+                {isMember && channel.name?.toLowerCase() !== "general" && (
+                  <button type="button" className="channel-details-action channel-details-action-danger" data-testid="channel-leave" onClick={onLeave}>
+                    <LogOutIcon size={16} strokeWidth={1.9} />
+                    <span>
+                      <strong>Leave channel</strong>
+                      <small>Stop receiving updates from this conversation.</small>
+                    </span>
+                  </button>
+                )}
               </div>
             </section>
           )}
+          </div>}
 
-          <section className="channel-details-section channel-details-members-section cd-section">
+          {activeTab === "members" && <section className="channel-details-section channel-details-members-section cd-section" role="tabpanel" id="channel-details-panel-members" aria-labelledby="channel-details-tab-members">
             <div className="channel-details-section-head">
               <div>
                 <div className="channel-details-section-title">
@@ -266,49 +334,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
                 ))
               )}
             </div>
-          </section>
-
-          <section className="channel-details-section channel-details-created-section">
-            <div className="channel-details-section-title">Created by</div>
-            <div className="channel-details-created">
-              <Avatar name={creator?.displayName || "Echo"} src={creator?.avatarUrl} size={32} />
-              {creator ? (
-                <button type="button" className="channel-details-created-name channel-details-profile-link interactive-name" onClick={() => onOpenProfile?.(creator.id)}>
-                  {creator.displayName}
-                </button>
-              ) : (
-                <span className="channel-details-created-name">Echo</span>
-              )}
-              {channel.createdAt && <span className="channel-details-created-date">{formatDate(channel.createdAt)}</span>}
-            </div>
-          </section>
-
-          {(channel.createdBy === user.id && channel.type === "private" || isMember && channel.name?.toLowerCase() !== "general") && (
-            <section className="channel-details-section channel-details-actions-section">
-              <div className="channel-details-section-title">Channel actions</div>
-              <p className="channel-details-section-hint">Less frequent changes live here so the conversation stays focused.</p>
-              <div className="channel-details-actions-list">
-                {channel.createdBy === user.id && channel.type === "private" && (
-                  <button type="button" className="channel-details-action channel-details-action-visibility" data-testid="channel-visibility" onClick={onChangeVisibility}>
-                    <Globe2Icon size={16} strokeWidth={1.9} />
-                    <span>
-                      <strong>Make public</strong>
-                      <small>Let anyone in the workspace discover and join this channel.</small>
-                    </span>
-                  </button>
-                )}
-                {isMember && channel.name?.toLowerCase() !== "general" && (
-                  <button type="button" className="channel-details-action channel-details-action-danger" data-testid="channel-leave" onClick={onLeave}>
-                    <LogOutIcon size={16} strokeWidth={1.9} />
-                    <span>
-                      <strong>Leave channel</strong>
-                      <small>Stop receiving updates from this conversation.</small>
-                    </span>
-                  </button>
-                )}
-              </div>
-            </section>
-          )}
+          </section>}
 
           {error && <div className="error">{error}</div>}
         </div>

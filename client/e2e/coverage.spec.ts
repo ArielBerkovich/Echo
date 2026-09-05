@@ -77,17 +77,20 @@ test("manages channels, members, visibility, and leaving", async ({ page }) => {
   await expect(details).toContainText("Planning room");
   await expect(details).toContainText("Internal planning");
 
+  await details.getByRole("tab", { name: "Settings" }).click();
   await expect(details.getByRole("button", { name: "Make public" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Make public" })).toHaveCount(1);
   await details.getByRole("button", { name: "Make public" }).click();
   await expect(details.getByRole("button", { name: "Make public" })).toHaveCount(0);
 
+  await details.getByRole("tab", { name: "Members" }).click();
   await details.getByRole("button", { name: "Add people" }).click();
   const addPeople = page.getByTestId("add-people-modal");
   await addPeople.getByPlaceholder("Search people").fill(fixture.bob.username);
   await addPeople.getByTestId(`add-people-add-${fixture.bob.username}`).click();
   await addPeople.getByTestId("add-people-done").click();
 
+  await details.getByRole("tab", { name: "Settings" }).click();
   await details.getByRole("button", { name: "Leave channel" }).click();
   const managerModal = page.locator(".manager-modal");
   await managerModal.getByTestId("leave-manager-search").fill(fixture.bob.username);
