@@ -5866,10 +5866,9 @@ html[data-mode="dark"] .day-divider-label {
 }
 .channel-details-section {
   min-width: 0;
-  padding: 16px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--surface);
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 .channel-details-section-head {
   display: flex;
@@ -5909,6 +5908,9 @@ html[data-mode="dark"] .day-divider-label {
 }
 .channel-details-field {
   min-height: 118px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--surface);
 }
 .channel-details-edit {
   display: inline-flex;
