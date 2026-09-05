@@ -5942,6 +5942,65 @@ html[data-mode="dark"] .day-divider-label {
 .channel-details-created-section {
   margin-top: 12px;
 }
+.channel-details-actions-section {
+  margin-top: 12px;
+}
+.channel-details-actions-section > .channel-details-section-hint {
+  margin-bottom: 12px;
+}
+.channel-details-actions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.channel-details-action {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 11px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-2);
+  color: var(--text);
+  text-align: left;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+.channel-details-action svg {
+  flex: none;
+  margin-top: 1px;
+}
+.channel-details-action span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.channel-details-action strong {
+  font-size: 12.5px;
+  font-weight: 750;
+}
+.channel-details-action small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+.channel-details-action-visibility {
+  color: var(--accent);
+}
+.channel-details-action-visibility:hover,
+.channel-details-action-visibility:focus-visible {
+  border-color: var(--accent);
+  background: var(--active-soft);
+}
+.channel-details-action-danger {
+  color: var(--danger);
+}
+.channel-details-action-danger:hover,
+.channel-details-action-danger:focus-visible {
+  border-color: color-mix(in srgb, var(--danger) 55%, var(--border));
+  background: color-mix(in srgb, var(--danger) 8%, var(--surface));
+}
 .channel-details-add-box {
   margin-top: 14px;
   padding: 10px;
@@ -8730,6 +8789,69 @@ html[data-mode="dark"] .new-messages-button:hover {
   color: #fff;
   background: linear-gradient(135deg, var(--blue-400), var(--navy-600));
   box-shadow: var(--shadow-md);
+}
+.empty-state-setup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: min(100%, 380px);
+  margin-top: 10px;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+}
+.channel-setup-inline {
+  margin: 14px auto 18px;
+}
+.empty-state-setup strong {
+  color: var(--text);
+  font-size: 13px;
+}
+.empty-state-setup > span {
+  max-width: 300px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.empty-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 7px;
+}
+.empty-state-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 7px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+}
+.empty-state-action:hover,
+.empty-state-action:focus-visible {
+  border-color: var(--accent);
+  background: var(--active-soft);
+  color: var(--accent);
+}
+.empty-state-action.primary {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  background: var(--accent);
+  color: var(--active-fg);
+}
+.empty-state-action.primary:hover,
+.empty-state-action.primary:focus-visible {
+  border-color: var(--accent);
+  background: var(--active-bg);
+  color: var(--active-fg);
 }
 
 /* ---- Loading skeletons ---- */

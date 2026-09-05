@@ -14,11 +14,13 @@ import {
   SearchIcon,
   Trash2Icon,
   UsersRoundIcon,
+  LogOutIcon,
+  Globe2Icon,
 } from "lucide-react";
 
 // Centered channel information dialog. Members can edit the channel metadata,
 // add people, and manage existing members without leaving the conversation.
-export default function ChannelDetailsPanel({ channel, users = [], user, onUpdated, onOpenProfile, onAddPeople, onPromoteManager, onClose }) {
+export default function ChannelDetailsPanel({ channel, users = [], user, onUpdated, onOpenProfile, onAddPeople, onPromoteManager, onChangeVisibility, onLeave, onClose }) {
   const [error, setError] = useState(null);
   const [memberQuery, setMemberQuery] = useState("");
   const [promotingId, setPromotingId] = useState(null);
@@ -280,6 +282,33 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
               {channel.createdAt && <span className="channel-details-created-date">{formatDate(channel.createdAt)}</span>}
             </div>
           </section>
+
+          {(channel.createdBy === user.id && channel.type === "private" || isMember && channel.name?.toLowerCase() !== "general") && (
+            <section className="channel-details-section channel-details-actions-section">
+              <div className="channel-details-section-title">Channel actions</div>
+              <p className="channel-details-section-hint">Less frequent changes live here so the conversation stays focused.</p>
+              <div className="channel-details-actions-list">
+                {channel.createdBy === user.id && channel.type === "private" && (
+                  <button type="button" className="channel-details-action channel-details-action-visibility" data-testid="channel-visibility" onClick={onChangeVisibility}>
+                    <Globe2Icon size={16} strokeWidth={1.9} />
+                    <span>
+                      <strong>Make public</strong>
+                      <small>Let anyone in the workspace discover and join this channel.</small>
+                    </span>
+                  </button>
+                )}
+                {isMember && channel.name?.toLowerCase() !== "general" && (
+                  <button type="button" className="channel-details-action channel-details-action-danger" data-testid="channel-leave" onClick={onLeave}>
+                    <LogOutIcon size={16} strokeWidth={1.9} />
+                    <span>
+                      <strong>Leave channel</strong>
+                      <small>Stop receiving updates from this conversation.</small>
+                    </span>
+                  </button>
+                )}
+              </div>
+            </section>
+          )}
 
           {error && <div className="error">{error}</div>}
         </div>

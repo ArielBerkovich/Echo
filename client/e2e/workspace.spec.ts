@@ -310,15 +310,15 @@ test("keeps channel header actions inside the header when pinned panel is open",
   const pinnedHeader = await page.getByTestId("pinned-panel").locator(".panel-header").boundingBox();
   expect(pinnedHeader.y).toBe(header.y);
   expect(pinnedHeader.height).toBe(header.height);
-  const leave = await page.getByTestId("channel-leave").boundingBox();
+  const lastRoutineAction = await page.getByTestId("channel-members").boundingBox();
   const bounds = {
     headerRight: header.x + header.width,
-    leaveRight: leave.x + leave.width,
+    lastActionRight: lastRoutineAction.x + lastRoutineAction.width,
     documentWidth: await page.evaluate(() => document.documentElement.scrollWidth),
     viewportWidth: await page.evaluate(() => window.innerWidth),
   };
 
-  expect(bounds.leaveRight).toBeLessThanOrEqual(bounds.headerRight + 1);
+  expect(bounds.lastActionRight).toBeLessThanOrEqual(bounds.headerRight + 1);
   expect(bounds.documentWidth).toBeLessThanOrEqual(bounds.viewportWidth + 1);
 
   await page.getByTestId("pinned-panel").getByRole("button", { name: "Close" }).click();

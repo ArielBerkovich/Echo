@@ -57,7 +57,14 @@ test("manages channels, members, visibility, and leaving", async ({ page }) => {
   await createModal.getByText("Private", { exact: true }).click();
   await createModal.getByRole("button", { name: "Create" }).click();
 
-  await expect(page.getByTestId(`channel-row-${slug(channelName)}`)).toBeVisible();
+  const createdChannelRow = page.getByTestId(`channel-row-${slug(channelName)}`);
+  await expect(createdChannelRow).toBeVisible();
+  await createdChannelRow.click();
+  await expect(page.getByTestId("channel-title")).toContainText(channelName);
+  await expect(page.getByTestId("empty-channel-add-people")).toBeVisible();
+  await expect(page.getByTestId("empty-channel-details")).toBeVisible();
+  await expect(page.getByTestId("channel-visibility")).toHaveCount(0);
+  await expect(page.getByTestId("channel-leave")).toHaveCount(0);
 
   await page.locator(".ch-name-btn").click();
   let details = page.locator(".details-panel");
@@ -70,23 +77,18 @@ test("manages channels, members, visibility, and leaving", async ({ page }) => {
   await expect(details).toContainText("Planning room");
   await expect(details).toContainText("Internal planning");
 
-  await details.getByRole("button", { name: "Close channel details" }).click();
-  await expect(page.getByRole("button", { name: "Make public" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Make private" })).toHaveCount(0);
-  await page.getByRole("button", { name: "Make public" }).click();
-  await expect(page.getByRole("button", { name: "Make public" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Make private" })).toHaveCount(0);
+  await expect(details.getByRole("button", { name: "Make public" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Make public" })).toHaveCount(1);
+  await details.getByRole("button", { name: "Make public" }).click();
+  await expect(details.getByRole("button", { name: "Make public" })).toHaveCount(0);
 
-  await page.locator(".ch-name-btn").click();
-  details = page.locator(".details-panel");
   await details.getByRole("button", { name: "Add people" }).click();
   const addPeople = page.getByTestId("add-people-modal");
   await addPeople.getByPlaceholder("Search people").fill(fixture.bob.username);
   await addPeople.getByTestId(`add-people-add-${fixture.bob.username}`).click();
   await addPeople.getByTestId("add-people-done").click();
 
-  await details.getByRole("button", { name: "Close channel details" }).click();
-  await page.getByRole("button", { name: "Leave channel" }).click();
+  await details.getByRole("button", { name: "Leave channel" }).click();
   const managerModal = page.locator(".manager-modal");
   await managerModal.getByTestId("leave-manager-search").fill(fixture.bob.username);
   await managerModal.locator(".manager-candidate").click();

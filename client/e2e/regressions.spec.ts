@@ -526,7 +526,8 @@ test("removes a channel from the sidebar after leaving it", async ({ page }) => 
 
   await page.goto(`/channels/${created.channel.id}`);
   const row = page.getByTestId(`channel-row-${slug(channelName)}`);
-  await page.getByTestId("channel-leave").click();
+  await page.getByTestId("channel-title").click();
+  await page.getByTestId("channel-details-dialog").getByTestId("channel-leave").click();
   await page.getByRole("button", { name: "Leave", exact: true }).click();
 
   await expect(row).toHaveCount(0);
