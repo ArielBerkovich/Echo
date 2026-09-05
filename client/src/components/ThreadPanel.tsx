@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { ChevronsDownIcon } from "lucide-react";
 import { api } from "../api.js";
 import { getSocket } from "../socket.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
@@ -232,7 +233,8 @@ export default function ThreadPanel({
       if (!stickToBottomRef.current) return;
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
-        scrollToExactBottom();
+        // A permalink jump can disable following after this frame was queued.
+        if (stickToBottomRef.current) scrollToExactBottom();
       });
     });
 
@@ -267,8 +269,7 @@ export default function ThreadPanel({
     requestAnimationFrame(scrollToExactBottom);
   }
 
-  // Opening the thread (and seeing any new reply while it's open) marks it read,
-  // so thread mentions clear from Activity once you've actually seen them.
+  // Keep conversation read markers separate from per-activity visibility reads.
   useEffect(() => {
     api.markRead(channel.id, root.id).catch(() => {});
     onThreadRead?.(root.id);
@@ -327,6 +328,7 @@ export default function ThreadPanel({
         <CloseButton size="sm" data-testid="thread-close" onClick={onClose} label="Close thread" />
       </header>
 
+      <div className="thread-messages-shell">
       <div ref={scrollerRef} className="thread-body" data-testid="thread-body" onScroll={onBodyScroll} onMouseLeave={() => { if (!menuFor) setActionsFor(null); }}>
         <div ref={bodyInnerRef}>
           {messages.map((m, index) => {
@@ -396,14 +398,20 @@ export default function ThreadPanel({
           })}
           <div ref={bottomRef} />
         </div>
+      </div>
         {newMessageCount > 0 && (
           <button
             type="button"
-            className="new-messages-button"
+            className="new-messages-button timeline-jump-button"
             data-testid="thread-new-messages-button"
             onClick={scrollToNewMessages}
+            aria-label={`Scroll to latest, ${newMessageCount} new ${newMessageCount === 1 ? "message" : "messages"}`}
+            title="View new messages"
           >
-            {newMessageCount === 1 ? "1 new message" : `${newMessageCount} new messages`} ↓
+            <span className="new-messages-count" aria-hidden="true">
+              {newMessageCount > 99 ? "99+" : newMessageCount}
+            </span>
+            <ChevronsDownIcon size={17} strokeWidth={2.2} aria-hidden="true" />
           </button>
         )}
       </div>

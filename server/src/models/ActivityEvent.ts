@@ -13,7 +13,12 @@ const activityEventSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
+const ACTIVITY_RETENTION_SECONDS = 30 * 24 * 60 * 60;
+
 activityEventSchema.index({ recipient: 1, createdAt: -1 });
+// Keep persisted activity aligned with the feed's rolling 30-day window.
+// Mongo's TTL monitor performs this cleanup asynchronously.
+activityEventSchema.index({ createdAt: 1 }, { expireAfterSeconds: ACTIVITY_RETENTION_SECONDS });
 // One event per (recipient, actor, message, emoji) — re-reacting just refreshes it.
 activityEventSchema.index({ recipient: 1, actor: 1, message: 1, emoji: 1 }, { unique: true });
 

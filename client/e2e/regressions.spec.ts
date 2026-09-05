@@ -788,6 +788,9 @@ test("threads offer new replies while scrolled up and follow your own reply", as
     el.dispatchEvent(new Event("scroll", { bubbles: true }));
   });
   const position = await scroller.evaluate((el) => el.scrollTop);
+  // A thread reply must not create a channel-level jump control while the
+  // thread is the active reading surface.
+  await expect(page.getByTestId("new-messages-button")).toHaveCount(0);
 
   const incomingBody = `Thread reply while reading ${Date.now()}`;
   await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
@@ -801,7 +804,13 @@ test("threads offer new replies while scrolled up and follow your own reply", as
   });
 
   const newRepliesButton = page.getByTestId("thread-new-messages-button");
-  await expect(newRepliesButton).toHaveText("1 new message ↓");
+  await expect(newRepliesButton).toHaveAttribute("aria-label", "Scroll to latest, 1 new message");
+  await expect(newRepliesButton.locator(".new-messages-count")).toHaveText("1");
+  await expect(newRepliesButton.locator("svg.lucide-chevrons-down")).toHaveCount(1);
+  const buttonTop = (await newRepliesButton.boundingBox()).y;
+  const composerTop = (await page.locator(".thread-panel .composer").boundingBox()).y;
+  expect(buttonTop).toBeLessThan(composerTop);
+  expect(buttonTop).toBeGreaterThan(composerTop - 100);
   await expect.poll(() => scroller.evaluate((el) => el.scrollTop)).toBeGreaterThanOrEqual(position - 2);
   await newRepliesButton.click();
   await expect.poll(async () => scroller.evaluate((el) => el.scrollHeight - el.scrollTop - el.clientHeight)).toBeLessThanOrEqual(2);
@@ -818,6 +827,58 @@ test("threads offer new replies while scrolled up and follow your own reply", as
   await expect(page.locator(".thread-panel .message").filter({ hasText: ownBody })).toBeVisible();
   await expect.poll(async () => scroller.evaluate((el) => el.scrollHeight - el.scrollTop - el.clientHeight)).toBeLessThanOrEqual(2);
   await expect(newRepliesButton).toHaveCount(0);
+});
+
+test("top-level messages keep their jump control in the channel while a thread is open", async ({ page }) => {
+  const channel = fixture.projectChannel;
+  for (let i = 0; i < 24; i += 1) {
+    await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+      method: "POST",
+      body: {
+        channelId: channel.id,
+        body: `Channel surface seed ${i} ${Date.now()}`,
+        externalKey: `channel-surface-seed-${fixture.suffix}-${i}`,
+      },
+    });
+  }
+  await page.goto("/");
+  await page.getByTestId(`channel-row-${slug(channel.name)}`).click();
+  const channelScroller = page.getByTestId("messages");
+  await page.getByTestId(`message-${fixture.messages.threadRoot.id}-reply-count`).click();
+  await expect(page.getByTestId("thread-panel")).toBeVisible();
+  await channelScroller.evaluate((el) => {
+    el.scrollTop = 0;
+    el.dispatchEvent(new Event("scroll", { bubbles: true }));
+  });
+  await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: channel.id,
+      body: `Top-level while thread open ${Date.now()}`,
+      externalKey: `channel-surface-live-${fixture.suffix}`,
+    },
+  });
+  await expect(page.getByTestId("new-messages-button")).toHaveAttribute(
+    "aria-label",
+    "Scroll to latest, 1 new message"
+  );
+  await expect(page.getByTestId("thread-new-messages-button")).toHaveCount(0);
+});
+
+test("thread replies do not create a channel new-message popup when the thread is closed", async ({ page }) => {
+  await page.goto("/");
+  await page.getByTestId(`channel-row-${slug(fixture.projectChannel.name)}`).click();
+  await expect(page.getByTestId("new-messages-button")).toHaveCount(0);
+  await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.projectChannel.id,
+      parentId: fixture.messages.threadRoot.id,
+      body: `Closed thread reply ${Date.now()}`,
+      externalKey: `closed-thread-live-${fixture.suffix}`,
+    },
+  });
+  await expect(page.getByTestId("new-messages-button")).toHaveCount(0);
 });
 
 test("opens a saved message from a hidden DM", async ({ page }) => {

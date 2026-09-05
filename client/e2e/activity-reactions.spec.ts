@@ -50,7 +50,7 @@ test("groups reactions by message, keeps messages separate, and dismisses the wh
   });
 
   // Start from a read feed so this test only exercises the reactions it creates.
-  await requestAsToken(page, fixture.alice.token, "/activity/read", { method: "POST" });
+  await requestAsToken(page, fixture.alice.token, "/activity/read", { method: "POST", body: { items: (await requestAsToken(page, fixture.alice.token, "/activity")).items } });
   const bobPage = await openBobInGeneral(browser, [grouped.message.id, separate.message.id]);
   try {
     await addReaction(bobPage, grouped.message.id, "👍");
@@ -89,14 +89,14 @@ test("groups reactions by message, keeps messages separate, and dismisses the wh
   }).toBe(0);
 });
 
-test("shows the newest unread reaction on the rail and clears it after the feed is read", async ({ browser, page }) => {
+test("shows unread reactions on the rail and clears the group only after viewing its source", async ({ browser, page }) => {
   const stamp = uniqueSuffix("reaction-badge");
   const body = `Latest reaction ${stamp}`;
   const message = await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
     method: "POST",
     body: { channelId: fixture.generalChannel.id, body },
   });
-  await requestAsToken(page, fixture.alice.token, "/activity/read", { method: "POST" });
+  await requestAsToken(page, fixture.alice.token, "/activity/read", { method: "POST", body: { items: (await requestAsToken(page, fixture.alice.token, "/activity")).items } });
 
   const bobPage = await openBobInGeneral(browser, [message.message.id]);
   try {
@@ -106,7 +106,7 @@ test("shows the newest unread reaction on the rail and clears it after the feed 
     await bobPage.close();
   }
 
-  await page.goto("/");
+  await page.goto("/activity");
   const activityRail = page.getByTestId("rail-activity");
   const emojiBadge = page.getByTestId("rail-badge-activity");
   await expect(activityRail).toHaveAttribute("aria-label", /❤️/);
@@ -116,6 +116,10 @@ test("shows the newest unread reaction on the rail and clears it after the feed 
   await activityRail.click();
   await expect(page).toHaveURL(/\/activity$/);
   await expect(page.getByTestId("activity-item").filter({ hasText: body })).toHaveCount(1);
+  await page.waitForTimeout(900);
+  await expect(emojiBadge).toHaveText("❤️");
+  await page.getByTestId("activity-item").filter({ hasText: body }).click();
+  await expect(messageById(page, message.message.id)).toBeInViewport();
   await expect.poll(async () => page.locator("[data-testid=rail-badge-activity].rail-badge-emoji").count()).toBe(0);
   await expect(activityRail).toHaveAttribute("aria-label", "Activity");
 

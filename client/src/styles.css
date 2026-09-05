@@ -3918,6 +3918,16 @@ html[data-mode="dark"] .sidebar {
   flex-direction: column;
   gap: 6px;
 }
+.thread-messages-shell {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  position: relative;
+  display: flex;
+}
+.thread-messages-shell > .new-messages-button.timeline-jump-button {
+  bottom: 10px;
+}
 .thread-body > div {
   width: 100%;
 }

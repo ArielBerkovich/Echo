@@ -108,6 +108,7 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
             className={`activity-item ${it.kind === "channel_add" || it.kind === "channel_remove" ? "activity-notification" : ""} ${it.unread ? "unread" : ""}`}
             data-testid="activity-item"
             data-activity-kind={it.kind}
+            data-activity-notice-id={!it.messageId ? it.id : undefined}
             role="button"
             tabIndex={0}
             onClick={() => onJump(it)}
