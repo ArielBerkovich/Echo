@@ -6339,6 +6339,10 @@ html[data-mode="dark"] .day-divider-label {
   flex: none;
 }
 .channel-details-person-promote {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
   padding: 5px 8px;
   border: 1px solid transparent;
   border-radius: 7px;
@@ -6346,6 +6350,7 @@ html[data-mode="dark"] .day-divider-label {
   color: var(--accent);
   font-size: 12px;
   font-weight: 700;
+  line-height: 1;
   opacity: 0;
 }
 .channel-details-person-actions .channel-details-person-remove {
@@ -6371,16 +6376,13 @@ html[data-mode="dark"] .day-divider-label {
 }
 .channel-details-person-remove {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: center;
   gap: 5px;
   background: transparent;
   color: var(--danger);
   opacity: 0;
   line-height: 1;
-}
-.channel-details-person-remove svg {
-  align-self: baseline;
 }
 .channel-details-person:hover .channel-details-person-remove,
 .channel-details-person-remove:focus-visible {
