@@ -8,7 +8,7 @@ type TooltipState = {
   placement: "above" | "below" | "left" | "right";
 };
 
-const TOOLTIP_DELAY = 420;
+const TOOLTIP_DELAY = 550;
 const TOOLTIP_EDGE = 12;
 const TOOLTIP_MAX_WIDTH = 280;
 
