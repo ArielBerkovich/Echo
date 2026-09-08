@@ -24,7 +24,7 @@ import Avatar from "./Avatar.js";
 import EmojiPicker from "./EmojiPicker.js";
 import Modal, { ModalActions } from "./Modal.js";
 import { useMentionGate } from "../lib/useMentionGate.js";
-import { MENTION_QUERY_RE } from "../lib/mentions.js";
+import { MENTION_QUERY_RE, peopleSearchSuggestions } from "../lib/mentions.js";
 import { CalendarClock, ChartNoAxesColumnIncreasing, ChevronRight, FileIcon, LayoutPanelTop, Paperclip, X } from "lucide-react";
 import {
   LinkIcon, OrderedListIcon, BulletListIcon, QuoteIcon, CodeIcon, CodeBlockIcon,
@@ -106,6 +106,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   const isThread = !!parentId; // a thread reply composer (hides channel-level scheduling)
   const [mention, setMention] = useState(null); // { trigger, query, from, to } or null
   const [activeIdx, setActiveIdx] = useState(0);
+  const activeMentionItemRef = useRef(null);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [showFormatting, setShowFormatting] = useState(true);
   const [linkDraft, setLinkDraft] = useState(null); // { text, url } for the link dialog
@@ -221,6 +222,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     },
     onCreate: ({ editor: currentEditor }) => syncEditorState(currentEditor),
     onUpdate: ({ editor: currentEditor }) => syncEditorState(currentEditor),
+    onBlur: () => setMention(null),
     onSelectionUpdate: ({ editor: currentEditor }) => {
       syncMentionContext(currentEditor);
       setEditorState(readEditorState(currentEditor));
@@ -318,11 +320,13 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
           { id: "__everyone", username: "everyone", displayName: "Notify everyone in this channel", broadcast: true },
         ].filter((s) => q === "" || s.username.startsWith(q))
       : [];
-    const people = users
-      .filter((u) => u.username.toLowerCase().includes(q) || u.displayName.toLowerCase().includes(q))
-      .slice(0, 6);
-    return [...specials, ...people].slice(0, 8);
+    const people = peopleSearchSuggestions(users, q);
+    return [...specials, ...people];
   }, [mention, users, channels, isDm]);
+
+  useEffect(() => {
+    activeMentionItemRef.current?.scrollIntoView({ block: "nearest" });
+  }, [activeIdx, suggestions.length]);
 
   // ---- Tiptap editor integration ----
 
@@ -1143,26 +1147,29 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       {mention && suggestions.length > 0 && (
         <div className="mention-popup">
           <div className="mention-popup-head">{mention.trigger === "#" ? "Public channels" : "People"}</div>
-          {suggestions.map((u, idx) => (
-            <button
-              type="button"
-              key={u.id}
-              className={`mention-item ${idx === activeIdx ? "active" : ""}`}
-              onMouseEnter={() => setActiveIdx(idx)}
-              onMouseDown={keepFocus}
-              onClick={() => applyMention(u)}
-            >
-              {u.channelTag ? (
-                <span className="mention-channel-mark">#</span>
-              ) : u.broadcast ? (
-                <span className="mention-mega">📣</span>
-              ) : (
-                <Avatar name={u.displayName} src={u.avatarUrl} size={26} />
-              )}
-              <span className="mi-name">{u.channelTag ? `#${u.name}` : u.broadcast ? `@${u.username}` : u.displayName}</span>
-              <span className="mi-handle">{u.channelTag ? "Public channel" : u.broadcast ? u.displayName : `@${u.username}`}</span>
-            </button>
-          ))}
+          <div className="mention-popup-results">
+            {suggestions.map((u, idx) => (
+              <button
+                ref={idx === activeIdx ? activeMentionItemRef : null}
+                type="button"
+                key={u.id}
+                className={`mention-item ${idx === activeIdx ? "active" : ""}`}
+                onMouseEnter={() => setActiveIdx(idx)}
+                onMouseDown={keepFocus}
+                onClick={() => applyMention(u)}
+              >
+                {u.channelTag ? (
+                  <span className="mention-channel-mark">#</span>
+                ) : u.broadcast ? (
+                  <span className="mention-mega">📣</span>
+                ) : (
+                  <Avatar name={u.displayName} src={u.avatarUrl} size={26} />
+                )}
+                <span className="mi-name">{u.channelTag ? `#${u.name}` : u.broadcast ? `@${u.username}` : u.displayName}</span>
+                <span className="mi-handle">{u.channelTag ? "Public channel" : u.broadcast ? u.displayName : `@${u.username}`}</span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

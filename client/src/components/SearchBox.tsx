@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import Avatar, { GroupAvatar } from "./Avatar.js";
 import { Input } from "./Input.js";
+import { peopleSearchSuggestions } from "../lib/mentions.js";
 
 const QUICK_ACTIONS = [
   { id: "new-message", label: "New message", keywords: ["new", "message", "dm"], shortcut: "⌘/Ctrl+⇧M", Icon: MessageSquarePlusIcon },
@@ -282,9 +283,7 @@ const SearchBox = forwardRef(function SearchBox(
     if (filter.type === "has") {
       return HAS_OPTIONS.filter((o) => o.key.startsWith(fq));
     }
-    return searchableUsers
-      .filter((u) => u.username.toLowerCase().includes(fq) || u.displayName.toLowerCase().includes(fq))
-      .slice(0, 8);
+    return peopleSearchSuggestions(searchableUsers, fq, 8);
   }, [filter, channelCandidates, searchableUsers]);
 
   // Quick-nav results (only when not building a filtered query).
@@ -294,11 +293,7 @@ const SearchBox = forwardRef(function SearchBox(
       : [];
   const peopleHits =
     (q || peoplePicker) && !hasFilterTokens && !quickSwitcherOpen
-      ? searchableUsers
-          .filter(
-            (u) => u.username.toLowerCase().includes(q) || u.displayName.toLowerCase().includes(q)
-          )
-          .slice(0, 8)
+      ? peopleSearchSuggestions(searchableUsers, q, 8)
       : [];
 
   // A single flat list of everything the arrow keys can move through, in the

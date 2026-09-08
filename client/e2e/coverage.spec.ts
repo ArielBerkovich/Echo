@@ -394,6 +394,33 @@ test("handles mention autocomplete, @everyone, and attachments", async ({ page }
   await expect(hebrewAttachment.locator(".att-file-name")).toHaveText(hebrewFilename);
 });
 
+test("scrolls through users when a partial query leaves one shared display name", async ({ page }) => {
+  const duplicateKey = Date.now().toString().replace(/\d/g, (digit) => String.fromCharCode(97 + Number(digit)));
+  const duplicateDisplayName = `Mention${duplicateKey} Duplicate`;
+  await Promise.all(Array.from({ length: 7 }, (_, index) => registerUser(page, {
+    username: `mention${duplicateKey}.duplicate${index}`,
+    displayName: duplicateDisplayName,
+  })));
+
+  await page.goto("/");
+  const composer = page.getByTestId("composer-editor");
+  await composer.fill(`@${duplicateDisplayName.split(" ")[0]} `);
+
+  const results = page.locator(".mention-popup-results");
+  await expect(results.locator(".mention-item")).toHaveCount(7);
+  await expect.poll(() => results.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
+
+  for (let index = 0; index < 6; index += 1) await composer.press("ArrowDown");
+  await expect(results.locator(".mention-item").last()).toHaveClass(/active/);
+  await expect.poll(() => results.evaluate((element) => element.scrollTop > 0)).toBe(true);
+
+  await page.getByTestId("messages").click({ position: { x: 10, y: 10 } });
+  await expect(page.locator(".mention-popup")).toBeHidden();
+
+  await page.getByTestId("search-input").fill(`${duplicateDisplayName.split(" ")[0]} `);
+  await expect(page.locator('.search-dropdown [data-testid^="search-user-"]')).toHaveCount(7);
+});
+
 test("opens mention autocomplete after a soft line break", async ({ page }) => {
   await page.goto("/");
   const composer = page.getByTestId("composer-editor");

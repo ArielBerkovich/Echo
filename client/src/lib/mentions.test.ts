@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { MENTION_QUERY_RE, nonMemberMentions } from "./mentions.js";
+import { MENTION_QUERY_RE, nonMemberMentions, peopleSearchSuggestions } from "./mentions.js";
 
 const users = [
   { id: "u1", username: "alice" },
@@ -59,5 +59,26 @@ describe("mention autocomplete query", () => {
 
   it("does not carry a mention query across a line break", () => {
     assert.equal("hello @Bob\nBuilder".match(MENTION_QUERY_RE), null);
+  });
+});
+
+describe("mention people suggestions", () => {
+  const duplicateUsers = Array.from({ length: 7 }, (_, index) => ({
+    id: `duplicate-${index}`,
+    username: `duplicate.${index}`,
+    displayName: "Same Person",
+  }));
+
+  it("keeps searches with different remaining display names limited", () => {
+    const variedUsers = [...duplicateUsers, {
+      id: "different",
+      username: "different",
+      displayName: "Same Organization",
+    }];
+    assert.equal(peopleSearchSuggestions(variedUsers, "Same").length, 6);
+  });
+
+  it("returns every result as soon as all remaining users share a display name", () => {
+    assert.deepEqual(peopleSearchSuggestions(duplicateUsers, "Same "), duplicateUsers);
   });
 });

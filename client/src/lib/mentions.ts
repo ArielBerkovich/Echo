@@ -7,6 +7,22 @@
 // this pattern is specifically for the composer's autocomplete query.
 export const MENTION_QUERY_RE = /(?:^|\s)([@#])([\p{L}\p{N}\p{M}_. -]*)$/u;
 
+export function peopleSearchSuggestions(users, query, limit = 6) {
+  const normalizedQuery = String(query || "").toLowerCase();
+  const matches = users.filter((user) => (
+    String(user.username || "").toLowerCase().includes(normalizedQuery)
+    || String(user.displayName || "").toLowerCase().includes(normalizedQuery)
+  ));
+  const sharedDisplayName = String(matches[0]?.displayName || "").toLowerCase();
+  const onlyDuplicateDisplayNames = normalizedQuery
+    && matches.length > limit
+    && sharedDisplayName
+    && matches.every((user) => String(user.displayName || "").toLowerCase() === sharedDisplayName);
+
+  if (onlyDuplicateDisplayNames) return matches;
+  return matches.slice(0, limit);
+}
+
 export function nonMemberMentions(channel, users, body) {
   if (channel.type !== "private") return [];
   const memberIds = new Set(channel.members || []);
