@@ -353,12 +353,15 @@ test("handles mention autocomplete, @everyone, and attachments", async ({ page }
   await page.goto("/");
 
   const composer = page.getByTestId("composer-editor");
-  await composer.fill(`Hello @${fixture.bob.username}`);
+  await composer.fill(`Hello @${fixture.bob.displayName}`);
   await expect(page.locator(".mention-popup")).toBeVisible();
-  await page.locator(".mention-item").first().click();
+  const bobSuggestion = page.locator(".mention-item").filter({ hasText: fixture.bob.displayName }).first();
+  const selectedUsername = (await bobSuggestion.locator(".mi-handle").textContent())?.replace(/^@/, "");
+  expect(selectedUsername).toBeTruthy();
+  await bobSuggestion.click();
   await page.keyboard.press("Enter");
   const bobMessage = page.locator(".message").filter({ hasText: "Hello" }).last();
-  await expect(bobMessage.locator(`.mention[data-mention="${fixture.bob.username}"]`)).toHaveText(
+  await expect(bobMessage.locator(`.mention[data-mention="${selectedUsername}"]`)).toHaveText(
     `@${fixture.bob.displayName}`
   );
 

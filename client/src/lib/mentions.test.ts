@@ -51,4 +51,13 @@ describe("mention autocomplete query", () => {
     const match = "hello @carol.smith".match(MENTION_QUERY_RE);
     assert.deepEqual(match?.slice(1), ["@", "carol.smith"]);
   });
+
+  it("keeps matching while a full display name with spaces is typed", () => {
+    const match = "hello @Bob Builder".match(MENTION_QUERY_RE);
+    assert.deepEqual(match?.slice(1), ["@", "Bob Builder"]);
+  });
+
+  it("does not carry a mention query across a line break", () => {
+    assert.equal("hello @Bob\nBuilder".match(MENTION_QUERY_RE), null);
+  });
 });
