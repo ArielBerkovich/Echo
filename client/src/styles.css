@@ -9175,6 +9175,11 @@ html[data-mode="dark"] .new-messages-button:hover {
   color: var(--muted);
   padding: 6px 8px;
 }
+.mention-popup-results {
+  max-height: 276px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 .mention-item {
   display: flex;
   align-items: center;
