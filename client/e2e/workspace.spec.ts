@@ -35,16 +35,13 @@ async function openFreshGeneralMessage(page, key, body) {
   return { id: created.message.id, message };
 }
 
-async function expectRailIndicatorAligned(page, view = "home") {
-  const [indicatorBox, iconBox] = await Promise.all([
-    page.getByTestId("rail-active-indicator").boundingBox(),
-    page.getByTestId(`rail-${view}`).getByTestId("rail-icon").boundingBox(),
-  ]);
-  const centers = {
-    indicator: indicatorBox ? indicatorBox.y + indicatorBox.height / 2 : 0,
-    icon: iconBox ? iconBox.y + iconBox.height / 2 : 0,
-  };
-  expect(Math.abs(centers.indicator - centers.icon), JSON.stringify(centers)).toBeLessThan(1);
+async function expectStaticRailSelection(page, view = "home") {
+  await expect(page.getByTestId("rail-active-indicator")).toHaveCount(0);
+  const selected = page.getByTestId(`rail-${view}`);
+  await expect(selected).toHaveAttribute("aria-current", "page");
+  await expect(selected).toHaveClass(/\bactive\b/);
+  await expect(selected).toHaveCSS("transition-duration", "0s");
+  await expect(selected.getByTestId("rail-icon")).toHaveCSS("animation-name", "none");
 }
 
 test("restores an authenticated session into the default channel", async ({ page }) => {
@@ -146,20 +143,17 @@ test("supports direct workspace routes and browser history", async ({ page }) =>
 
   await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
   await expect(page).toHaveURL(new RegExp(`/channels/${fixture.projectChannel.id}$`));
-  await expectRailIndicatorAligned(page, "home");
+  await expectStaticRailSelection(page, "home");
   await page.setViewportSize({ width: 1600, height: 900 });
-  await page.waitForTimeout(450);
-  await expectRailIndicatorAligned(page, "home");
+  await expectStaticRailSelection(page, "home");
   await page.setViewportSize({ width: 1280, height: 720 });
 
   await railItem(page, "activity").click();
   await expect(page).toHaveURL(/\/activity$/);
   await expect(railItem(page, "activity")).toHaveClass(/active/);
-  await page.waitForTimeout(450);
-  await expectRailIndicatorAligned(page, "activity");
+  await expectStaticRailSelection(page, "activity");
   await page.setViewportSize({ width: 1600, height: 900 });
-  await page.waitForTimeout(450);
-  await expectRailIndicatorAligned(page, "activity");
+  await expectStaticRailSelection(page, "activity");
   await page.setViewportSize({ width: 1280, height: 720 });
 
   await page.goBack();
