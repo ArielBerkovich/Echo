@@ -11,6 +11,14 @@ function isProtectedFileUrl(url) {
   return !!url?.startsWith("/api/files/");
 }
 
+// Read completed entries without acquiring resources during React render.
+// The effect below still owns retention/release and starts any missing fetch.
+function cachedAuthUrl(url, token) {
+  if (!isProtectedFileUrl(url)) return url || null;
+  if (cacheToken !== token) return null;
+  return fileCache.get(url)?.src || null;
+}
+
 function discardEntry(url, entry) {
   if (fileCache.get(url) !== entry) return;
   fileCache.delete(url);
@@ -99,45 +107,62 @@ function acquireAuthUrl(url) {
 // local blob URL so <img> and <a> elements work without exposing the JWT.
 // Returns null while loading, and the original url if it's not an api/files path.
 export function useAuthUrl(url) {
-  const [resolved, setResolved] = useState(() => ({ source: url, src: isProtectedFileUrl(url) ? null : url }));
+  const token = getToken();
+  const [resolved, setResolved] = useState(() => ({ source: url, token, src: cachedAuthUrl(url, token) }));
 
   useEffect(() => {
     let cancelled = false;
     const handle = acquireAuthUrl(url);
     handle.promise.then((src) => {
-      if (!cancelled) setResolved({ source: url, src });
+      if (!cancelled) setResolved((previous) =>
+        previous.source === url && previous.token === token && previous.src === src
+          ? previous
+          : { source: url, token, src }
+      );
     });
 
     return () => {
       cancelled = true;
       handle.release();
     };
-  }, [url]);
+  }, [url, token]);
 
-  return resolved.source === url ? resolved.src : (isProtectedFileUrl(url) ? null : url);
+  return resolved.source === url && resolved.token === token ? resolved.src : cachedAuthUrl(url, token);
 }
 
 // Resolve several protected file URLs together (used by custom emoji lists).
 // Keeping this here makes all authenticated media follow the same lifecycle
 // and ensures blob URLs are revoked when the source set changes.
 export function useAuthUrls(urls = []) {
+  const token = getToken();
   const sourceUrls = useMemo(() => urls.filter(Boolean), [urls]);
   const signature = sourceUrls.join("\u0000");
-  const [resolved, setResolved] = useState(() => new Map());
+  const cached = useMemo(() => new Map(sourceUrls
+    .map((url) => [url, cachedAuthUrl(url, token)])
+    .filter(([, src]) => src)), [signature, token]);
+  const [resolved, setResolved] = useState(() => ({ signature, token, urls: cached }));
 
   useEffect(() => {
     let cancelled = false;
     const handles = sourceUrls.map((url) => [url, acquireAuthUrl(url)]);
     Promise.all(handles.map(async ([url, handle]) => [url, await handle.promise]))
       .then((entries) => {
-        if (!cancelled) setResolved(new Map(entries.filter(([, src]) => src)));
+        if (cancelled) return;
+        const next = new Map(entries.filter(([, src]) => src));
+        setResolved((previous) =>
+          previous.signature === signature && previous.token === token &&
+          previous.urls.size === next.size &&
+          [...next].every(([url, src]) => previous.urls.get(url) === src)
+            ? previous
+            : { signature, token, urls: next }
+        );
       });
 
     return () => {
       cancelled = true;
       handles.forEach(([, handle]) => handle.release());
     };
-  }, [signature]);
+  }, [signature, token]);
 
-  return resolved;
+  return resolved.signature === signature && resolved.token === token ? resolved.urls : cached;
 }

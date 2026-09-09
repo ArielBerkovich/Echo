@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { ActivityIcon, BookmarkIcon, HomeIcon, MessageSquareTextIcon, SettingsIcon } from "lucide-react";
 import Avatar from "./Avatar.js";
 import { LeaveIcon } from "./Icons.js";
@@ -25,47 +25,13 @@ function railNameFontSize(name) {
 }
 
 export default function LeftRail({ view, onSelect, badges = {}, user, workspace, workspaceLoading = false, onLogout, onUpdated, customEmojis = [], latestActivity }) {
-  const [clicked, setClicked] = useState(null);
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
   const [displayNameDialogOpen, setDisplayNameDialogOpen] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
-  const [indicatorOffset, setIndicatorOffset] = useState(null);
-  const clickTimerRef = useRef(null);
-  const railTopRef = useRef(null);
-  const itemRefs = useRef(new Map());
   const workspaceLogoSrc = useAuthUrl(workspace?.logoUrl);
   const customEmojiUrls = useAuthUrls(customEmojis.map((emoji) => emoji.url));
   const brandReady = !workspaceLoading && (!workspace?.logoUrl || !!workspaceLogoSrc);
-
-  const activeIndex = ITEMS.findIndex((item) => item.key === view);
-
-  useLayoutEffect(() => {
-    const railTop = railTopRef.current;
-    const activeItem = itemRefs.current.get(view);
-    if (!railTop || !activeItem) return undefined;
-
-    const updateIndicatorPosition = () => {
-      const railTopRect = railTop.getBoundingClientRect();
-      const activeItemRect = activeItem.getBoundingClientRect();
-      setIndicatorOffset(
-        activeItemRect.top + activeItemRect.height / 2 - railTopRect.top - railTop.clientTop
-      );
-    };
-
-    updateIndicatorPosition();
-    const observer = new ResizeObserver(updateIndicatorPosition);
-    observer.observe(railTop);
-    observer.observe(activeItem);
-    return () => observer.disconnect();
-  }, [view]);
-  useEffect(() => () => clearTimeout(clickTimerRef.current), []);
-
-  function pulse(key) {
-    clearTimeout(clickTimerRef.current);
-    setClicked(key);
-    clickTimerRef.current = setTimeout(() => setClicked(null), 650);
-  }
 
   function onAvatarFileSelected(file) {
     if (!file) return;
@@ -103,12 +69,7 @@ export default function LeftRail({ view, onSelect, badges = {}, user, workspace,
           : <Logo size={54} />}
         {!workspaceLoading && workspace?.name && workspace.name !== "Echo" && <span className="rail-brand-name">{workspace.name}</span>}
       </div>
-      <div
-        ref={railTopRef}
-        className="rail-top"
-        style={{ "--rail-indicator-offset": indicatorOffset == null ? "0px" : `${indicatorOffset}px` }}
-      >
-        {activeIndex >= 0 && indicatorOffset != null && <span className="rail-active-indicator" data-testid="rail-active-indicator" aria-hidden="true" />}
+      <div className="rail-top">
         {ITEMS.map(({ key, label, shortcutId, Icon }) => {
           const count = badges[key] || 0;
           const isLatestReaction = key === "activity" && latestActivity?.kind === "reaction" && latestActivity.unread && latestActivity.emoji;
@@ -123,19 +84,12 @@ export default function LeftRail({ view, onSelect, badges = {}, user, workspace,
             <button
               key={key}
               type="button"
-              className={`rail-item rail-item-${key} ${view === key ? "active" : ""} ${clicked === key ? "clicked" : ""}`}
+              className={`rail-item rail-item-${key} ${view === key ? "active" : ""}`}
               data-testid={`rail-${key}`}
               aria-label={activityStateLabel}
               title={shortcutTitle(label, shortcutId)}
               aria-current={view === key ? "page" : undefined}
-              ref={(node) => {
-                if (node) itemRefs.current.set(key, node);
-                else itemRefs.current.delete(key);
-              }}
-              onClick={() => {
-                pulse(key);
-                onSelect(key);
-              }}
+              onClick={() => onSelect(key)}
             >
                 <span className="rail-icon" data-testid="rail-icon">
                   <Icon />
@@ -191,12 +145,10 @@ export default function LeftRail({ view, onSelect, badges = {}, user, workspace,
           <div className="rail-account-actions">
             <button
               type="button"
-              className={`rail-account-action rail-settings-action${view === "settings" ? " active" : ""}${clicked === "settings" ? " clicked" : ""}`}
+              className={`rail-account-action rail-settings-action${view === "settings" ? " active" : ""}`}
               data-testid="rail-settings"
-              onClick={() => {
-                pulse("settings");
-                onSelect("settings");
-              }}
+              onClick={() => onSelect("settings")}
+              aria-current={view === "settings" ? "page" : undefined}
               title={shortcutTitle("Settings", "open-settings")}
               aria-label="Settings"
             >

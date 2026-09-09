@@ -2134,6 +2134,9 @@ html[data-mode="dark"] .backend-connection-error {
   border-right: 1px solid color-mix(in srgb, var(--on-navy) 10%, transparent);
   overflow: hidden;
 }
+.rail button {
+  transition: none;
+}
 .rail-brand {
   position: relative;
   z-index: 1;
@@ -2156,16 +2159,6 @@ html[data-mode="dark"] .backend-connection-error {
   width: 54px;
   height: 54px;
   flex: none;
-}
-.rail-brand.ready > * {
-  animation: rail-brand-fade-in 240ms ease-out both;
-}
-@keyframes rail-brand-fade-in {
-  from { opacity: 0; transform: translateY(3px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .rail-brand.ready > * { animation: none; }
 }
 .rail-brand-name {
   display: block;
@@ -2228,11 +2221,7 @@ html[data-mode="dark"] .backend-connection-error {
   border-color: transparent;
   box-shadow: none;
 }
-.rail-account-avatar {
-  transition: transform 160ms ease, filter 160ms ease;
-}
 .rail-account-button:is(:hover, :focus-visible) .rail-account-avatar {
-  transform: scale(1.08);
   filter: brightness(1.08);
 }
 .rail-account-button:hover,
@@ -2254,8 +2243,6 @@ html[data-mode="dark"] .backend-connection-error {
   font-weight: 700;
   text-align: center;
   display: inline-block;
-  transition: color 160ms ease, transform 160ms ease;
-  transform-origin: center;
 }
 .rail-account-name-button {
   width: 68px;
@@ -2267,7 +2254,6 @@ html[data-mode="dark"] .backend-connection-error {
 }
 .rail-account-name-button:is(:hover, :focus-visible) .rail-account-name {
   color: #fff;
-  transform: scale(1.12);
 }
 .display-name-dialog-field {
   display: grid;
@@ -2293,7 +2279,6 @@ html[data-mode="dark"] .backend-connection-error {
   padding: 0;
   border-radius: 10px;
   color: color-mix(in srgb, var(--on-navy-muted) 82%, transparent);
-  transition: color 160ms ease, filter 160ms ease, transform 160ms ease;
 }
 .rail-account-actions {
   width: 68px;
@@ -2318,7 +2303,7 @@ html[data-mode="dark"] .backend-connection-error {
   border-color: transparent;
   background: transparent;
 }
-.rail-settings-action.active { color: color-mix(in srgb, var(--on-navy-muted) 82%, transparent); }
+.rail-settings-action.active { color: color-mix(in srgb, var(--active-bg) 72%, white); }
 .rail-account-action:hover,
 .rail-settings-action:hover,
 .rail-signout:hover {
@@ -2326,15 +2311,6 @@ html[data-mode="dark"] .backend-connection-error {
   border-color: transparent;
   background: transparent;
   filter: drop-shadow(0 0 6px color-mix(in srgb, var(--active-bg) 60%, transparent));
-  transform: translateY(-1px);
-}
-.rail-settings-action.clicked svg {
-  animation: settings-click 650ms cubic-bezier(0.2, 0.85, 0.35, 1.25) both;
-}
-@keyframes settings-click {
-  0%, 100% { transform: rotate(0deg) scale(1); }
-  32% { transform: rotate(24deg) scale(1.18); }
-  62% { transform: rotate(-12deg) scale(0.94); }
 }
 .rail-signout:hover {
   color: #f87171;
@@ -2362,7 +2338,6 @@ html[data-mode="dark"] .backend-connection-error {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.02em;
-  transition: color 0.18s ease, background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
 }
 .rail-item > * {
   pointer-events: none;
@@ -2376,19 +2351,6 @@ html[data-mode="dark"] .backend-connection-error {
   background: color-mix(in srgb, var(--active-bg) 16%, transparent);
   border-color: color-mix(in srgb, var(--active-bg) 36%, transparent);
 }
-.rail-active-indicator {
-  position: absolute;
-  left: -4px;
-  top: var(--rail-indicator-offset, 0px);
-  width: 3px;
-  height: 20px;
-  border-radius: 999px;
-  background: var(--active-bg);
-  transform: translateY(-50%);
-  transition: top 420ms cubic-bezier(0.22, 1, 0.36, 1);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--active-bg) 75%, transparent);
-  pointer-events: none;
-}
 .rail-icon {
   position: relative;
   width: 34px;
@@ -2397,49 +2359,9 @@ html[data-mode="dark"] .backend-connection-error {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.18s ease, color 0.18s ease;
-}
-.rail-item:hover .rail-icon {
-  transform: translateY(-1px);
 }
 .rail-item.active .rail-icon {
   color: color-mix(in srgb, var(--active-bg) 72%, white);
-}
-.rail-item.clicked .rail-icon {
-  animation-duration: 0.62s;
-  animation-timing-function: cubic-bezier(0.2, 0.85, 0.35, 1.25);
-  animation-fill-mode: both;
-}
-.rail-item-home.clicked .rail-icon { animation-name: rail-home-pop; }
-.rail-item-dms.clicked .rail-icon { animation-name: rail-dm-wiggle; }
-.rail-item-activity.clicked .rail-icon { animation-name: rail-activity-spark; }
-.rail-item-saved.clicked .rail-icon { animation-name: rail-saved-pop; }
-.rail-item-settings.clicked .rail-icon { animation-name: rail-saved-pop; }
-@keyframes rail-home-pop {
-  0%, 100% { transform: scale(1); }
-  35% { transform: scale(1.16) rotate(-5deg); }
-  68% { transform: scale(0.94) rotate(3deg); }
-}
-@keyframes rail-dm-wiggle {
-  0%, 100% { transform: rotate(0); }
-  20% { transform: rotate(-10deg) translateX(-2px); }
-  45% { transform: rotate(9deg) translateX(2px); }
-  70% { transform: rotate(-5deg); }
-}
-@keyframes rail-activity-spark {
-  0%, 100% { transform: scale(1); filter: brightness(1); }
-  35% { transform: scale(1.12) rotate(8deg); filter: brightness(1.45) drop-shadow(0 0 7px var(--cyan)); }
-  65% { transform: scale(0.96) rotate(-5deg); }
-}
-@keyframes rail-saved-pop {
-  0%, 100% { transform: scale(1); }
-  40% { transform: scale(1.2) translateY(-2px); }
-  72% { transform: scale(0.94) translateY(1px); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .rail-item.clicked .rail-icon { animation: none; }
-  .rail-settings-action.clicked svg { animation: none; }
-  .rail-active-indicator { transition: none; }
 }
 .rail-badge {
   position: absolute;
@@ -3582,6 +3504,23 @@ html[data-mode="dark"] .sidebar {
   color: rgba(255, 255, 255, 0.85);
 }
 
+.workspace-views {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+.workspace-views > * {
+  grid-area: 1 / 1;
+}
+.workspace-other-view {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
 .channel-view {
   flex: 1;
   display: flex;
@@ -12440,9 +12379,6 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     border-radius: 14px;
   }
 
-  .rail-active-indicator {
-    display: none;
-  }
 
   .rail-account {
     width: auto;
