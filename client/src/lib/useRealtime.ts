@@ -329,7 +329,7 @@ export function useRealtime({
       });
 
       // Channel sidebar: bump unread locally (no refetch).
-      if (inChannels && !mine && !viewingHere) {
+      if (inChannels && msg.kind !== "system" && !mine && !viewingHere) {
         setChannels((prev) =>
           prev.map((c) => (c.id === msg.channelId ? { ...c, unread: (c.unread || 0) + 1 } : c))
         );

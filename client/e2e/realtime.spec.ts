@@ -248,6 +248,9 @@ test("uses distinct system messages for self-joins and added members", async ({ 
       .getByRole("button", { name: `Join #${selfJoinName}` })
       .click();
 
+    await expect(channelRow(bobPage.page, selfJoinName)).toBeVisible();
+    await expect(channelRow(bobPage.page, selfJoinName)).not.toHaveClass(/unread/);
+
     await expect.poll(async () => {
       const messages = await requestAsToken(
         page,
@@ -264,6 +267,7 @@ test("uses distinct system messages for self-joins and added members", async ({ 
     });
 
     await expect(alicePage.page.getByTestId(`channel-row-${addedMemberName}`)).toBeVisible();
+    await expect(channelRow(bobPage.page, addedMemberName)).not.toHaveClass(/unread/);
     await alicePage.page.getByTestId(`channel-row-${addedMemberName}`).click();
     await expect.poll(async () => {
       const messages = await requestAsToken(

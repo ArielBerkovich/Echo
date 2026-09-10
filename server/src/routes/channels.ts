@@ -66,7 +66,7 @@ async function withUnread(channels, userId) {
   // One aggregation for all channels: count messages from others newer than
   // each channel's last-read time (instead of a countDocuments per channel).
   const counts = await Message.aggregate([
-    { $match: { $or: ids.map((id) => ({ channel: id, author: { $ne: userId }, createdAt: { $gt: readMap.get(id.toString()) || new Date(0) } })) } },
+    { $match: { kind: { $ne: "system" }, $or: ids.map((id) => ({ channel: id, author: { $ne: userId }, createdAt: { $gt: readMap.get(id.toString()) || new Date(0) } })) } },
     { $group: { _id: "$channel", unread: { $sum: 1 } } },
   ]);
   const countMap = new Map(counts.map((c) => [c._id.toString(), c.unread]));
