@@ -16,6 +16,7 @@ import { cardError, sanitizeCard } from "../lib/messageCard.js";
 import { normalizeChannelName } from "../automation.js";
 import { ActivityEvent } from "../models/ActivityEvent.js";
 import { isValidChannelName } from "../lib/channelName.js";
+import { CustomEmoji } from "../models/CustomEmoji.js";
 
 // Whitelist attachment fields (keys produced by /api/uploads). Mirrors the
 // socket sender so the REST and realtime paths behave identically.
@@ -924,4 +925,82 @@ channelsRouter.post("/:id/messages/:messageId/survey-vote", async (req, res) => 
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
+});
+
+// POST /api/channels/:channelId/messages/:messageId/reactions — toggle the
+// caller's reaction for an emoji. The response contains the complete reaction
+// summary so REST clients and realtime clients can apply the same shape.
+channelsRouter.post(["/:id/messages/:messageId/reactions", "/:id/messages/:messageId/reaction"], async (req, res) => {
+  const { id, messageId } = req.params;
+  if (!mongoose.isValidObjectId(id) || !mongoose.isValidObjectId(messageId)) {
+    return res.status(404).json({ error: "message not found" });
+  }
+
+  const emoji = typeof req.body?.emoji === "string" ? req.body.emoji.trim() : "";
+  if (!emoji) return res.status(400).json({ error: "emoji is required" });
+  if (emoji.length > 64) return res.status(400).json({ error: "emoji must be 64 characters or fewer" });
+
+  // Native Unicode emoji are self-contained. A shortcode, however, must
+  // resolve to a workspace custom emoji (or one of Echo's built-in Git
+  // emoji), otherwise clients would persist a reaction that renders as plain
+  // text and cannot be displayed consistently.
+  const shortcode = /^:([a-z0-9_-]{2,32}):$/i.exec(emoji);
+  if (shortcode) {
+    const builtIn = new Set([
+      "git", "git-branch", "git-commit", "git-merge", "git-pull-request",
+      "git-pull-request-closed", "merged", "github",
+    ]);
+    const custom = await CustomEmoji.exists({ name: shortcode[1].toLowerCase() });
+    if (!custom && !builtIn.has(shortcode[1].toLowerCase())) {
+      return res.status(404).json({ error: `custom emoji :${shortcode[1]}: not found` });
+    }
+  }
+
+  const channel = await Channel.findById(id);
+  const message = await Message.findOne({ _id: messageId, channel: id });
+  if (!channel || channel.isArchived || !message) {
+    return res.status(404).json({ error: "message not found" });
+  }
+  if (channel.type !== "public" && !channel.members.some((memberId) => memberId.equals(req.user._id))) {
+    return res.status(403).json({ error: "access denied" });
+  }
+
+  const userId = req.user._id;
+  let added = false;
+  let entry = message.reactions.find((reaction) => reaction.emoji === emoji);
+  if (!entry) {
+    message.reactions.push({ emoji, users: [userId] });
+    added = true;
+  } else {
+    const index = entry.users.findIndex((id) => id.equals(userId));
+    if (index >= 0) {
+      entry.users.splice(index, 1);
+    } else {
+      entry.users.push(userId);
+      added = true;
+    }
+    if (entry.users.length === 0) {
+      message.reactions = message.reactions.filter((reaction) => reaction.emoji !== emoji);
+    }
+  }
+  await message.save();
+
+  if (added && message.kind !== "system" && !message.author.equals(userId)) {
+    await ActivityEvent.updateOne(
+      { recipient: message.author, actor: userId, message: message._id, emoji },
+      { $set: { channel: message.channel, createdAt: new Date() } },
+      { upsert: true }
+    ).catch(() => {});
+    emitToUser(message.author.toString(), "activity:bump");
+  }
+
+  const reactions = message.reactions.map((reaction) => ({
+    emoji: reaction.emoji,
+    users: reaction.users.map((id) => id.toString()),
+  }));
+  emitToChannel(channel._id.toString(), "message:reaction", {
+    messageId: message._id.toString(),
+    reactions,
+  });
+  res.json({ messageId: message._id.toString(), reactions, added });
 });

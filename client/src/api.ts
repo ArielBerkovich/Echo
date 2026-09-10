@@ -287,6 +287,11 @@ export const api = {
       method: "POST",
       body: { optionIds },
     }),
+  toggleReaction: (channelId, messageId, emoji) =>
+    request(`/channels/${channelId}/messages/${messageId}/reactions`, {
+      method: "POST",
+      body: { emoji },
+    }),
   getPinned: (channelId) => request(`/channels/${channelId}/pinned`),
   getFiles: (channelId, { before = "", limit = 50 } = {}) => {
     const params = new URLSearchParams({ limit: String(limit) });
