@@ -56,6 +56,26 @@ const messageSchema = new mongoose.Schema(
       },
       default: null,
     },
+    // A linked status or summary card supplied by a user or automation.
+    card: {
+      type: {
+        _id: false,
+        eyebrow: { type: String, default: "", maxlength: 120 },
+        title: { type: String, required: true, maxlength: 300 },
+        description: { type: String, default: "", maxlength: 1000 },
+        url: { type: String, required: true, maxlength: 2048 },
+        color: { type: String, default: "", maxlength: 32 },
+        titleColor: { type: String, default: "", maxlength: 32 },
+        timestamp: { type: Date, default: null },
+        attributes: [{
+          _id: false,
+          label: { type: String, required: true, maxlength: 64 },
+          value: { type: String, required: true, maxlength: 400 },
+          type: { type: String, enum: ["text", "user"], default: "text" },
+        }],
+      },
+      default: null,
+    },
     // "user" messages are normal; "system" are join/create event logs.
     kind: { type: String, enum: ["user", "system"], default: "user" },
     // Set on thread replies — points at the root message of the thread.
@@ -228,6 +248,22 @@ messageSchema.methods.toPublicJSON = function () {
           items: (this.retro.items || []).map((item) => ({
             id: item.id, text: item.text, column: item.column,
             authorId: item.author.toString(), link: item.link || null,
+          })),
+        }
+      : null,
+    card: this.card
+      ? {
+          eyebrow: this.card.eyebrow || "",
+          title: this.card.title,
+          description: this.card.description || "",
+          url: this.card.url,
+          color: this.card.color || "",
+          titleColor: this.card.titleColor || "",
+          timestamp: this.card.timestamp ? this.card.timestamp.toISOString() : null,
+          attributes: (this.card.attributes || []).map((attribute) => ({
+            label: attribute.label,
+            value: attribute.value,
+            type: attribute.type || "text",
           })),
         }
       : null,

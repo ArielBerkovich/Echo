@@ -12787,3 +12787,49 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 .retro-column > header > span { color: var(--retro-tone); }
 .retro-item, .retro-item:hover, .retro-item:focus-within { border-color: var(--retro-tone); }
 .retro-column-submit, .retro-column-submit:hover:not(:disabled) { color: #fff; }
+.markdown a.message-card { display: grid; gap: 8px; width: 420px; max-width: 100%; box-sizing: border-box; margin-top: 12px; padding: 15px 17px 16px; border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 8px; background: var(--surface); color: inherit; text-decoration: none; overflow-wrap: anywhere; box-shadow: 0 2px 7px color-mix(in srgb, var(--text) 6%, transparent); transition: border-color .16s ease, box-shadow .16s ease; }
+.markdown a.message-card:hover, .markdown a.message-card:focus-visible { border-color: var(--accent); text-decoration: none; box-shadow: 0 4px 12px color-mix(in srgb, var(--text) 10%, transparent); }
+.message-card-eyebrow { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 12px; font-weight: 600; }
+.message-card-eyebrow span { color: var(--accent); font-size: 17px; line-height: .8; }
+.message-card-title { color: var(--text); font-size: 16px; line-height: 1.35; }
+.message-card-description { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.4; }
+.message-card-attributes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 14px; margin: 3px 0 0; padding-top: 10px; border-top: 1px solid var(--border); }
+.message-card-attributes div { min-width: 0; }
+.message-card-attributes dt { color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.message-card-attributes dd { margin: 2px 0 0; overflow: hidden; color: var(--text); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.message-card-person { display: inline-flex; align-items: center; gap: 6px; }
+.message-card-person .avatar { flex: none; border-radius: 50%; }
+.message-card-type-icon { display: block; flex: none; margin-inline-end: 1px; color: var(--card-accent, var(--accent)); }
+
+/* Compact update cards: readable metadata without stretching the timeline. */
+.markdown a.message-card {
+  width: 580px;
+  gap: 6px;
+  padding: 16px 18px;
+  border-left-width: 3px;
+  border-left-color: var(--card-accent, var(--accent));
+  border-radius: 6px 12px 12px 6px;
+  background: color-mix(in srgb, var(--surface) 94%, var(--surface-2));
+  box-shadow: none;
+}
+.markdown a.message-card:hover { border-color: var(--card-accent, var(--accent)); }
+.markdown a.message-card:focus-visible { outline: 2px solid var(--card-accent, var(--accent)); outline-offset: 3px; }
+.message-card-eyebrow { font-size: 11px; letter-spacing: .035em; color: var(--muted); }
+.message-card-eyebrow > span { color: inherit; font-size: inherit; line-height: inherit; }
+.message-card-eyebrow time { margin-left: auto; color: var(--muted); font-weight: 500; letter-spacing: 0; white-space: nowrap; }
+.message-card-heading { display: flex; align-items: baseline; gap: 12px; }
+.message-card-heading > svg { flex: none; margin-left: auto; color: var(--muted); }
+.message-card-title { color: var(--card-title-color, var(--card-accent, var(--link-color))); font-size: 15px; line-height: 1.45; font-weight: 600; }
+.markdown .message-card > .message-card-description { margin: 2px 0 0; font-size: 13px; line-height: 1.55; white-space: pre-wrap; }
+.message-card-attributes { display: flex; flex-wrap: wrap; gap: 10px 20px; margin: 6px 0 0; padding-top: 12px; border-color: color-mix(in srgb, var(--border) 65%, transparent); }
+.message-card-attributes .message-card-field { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; max-width: 100%; }
+.message-card-attributes dt { font-size: 12px; font-weight: 400; letter-spacing: normal; text-transform: none; }
+.message-card-attributes dt::after { content: ":"; }
+.message-card-attributes dd { display: inline-flex; align-items: center; gap: 5px; min-height: 20px; margin: 0; white-space: normal; overflow: visible; font-size: 12px; line-height: 20px; font-weight: 500; }
+.message-card-status { display: inline-flex; align-items: center; gap: 6px; padding: 1px 7px; border-radius: 5px; background: var(--surface-2); }
+.message-card-status::before { content: ""; width: 5px; height: 5px; flex: none; border-radius: 50%; background: var(--muted); }
+.markdown .message-card-person .avatar { width: 20px; height: 20px; margin: 0; box-shadow: none; }
+@media (max-width: 520px) {
+  .markdown a.message-card { padding: 12px 14px; }
+  .message-card-attributes { gap: 8px 14px; }
+}

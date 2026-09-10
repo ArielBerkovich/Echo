@@ -11,7 +11,7 @@ import { passwordProblem } from "../password.js";
 import { ensureDmChannel } from "../lib/dms.js";
 import { aliasesByUserId } from "../lib/userAliases.js";
 import { ensureDmChannel, ensureSelfDmChannel } from "../lib/dms.js";
-import { deliverMessage, sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError } from "../deliver.js";
+import { deliverMessage, sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, sanitizeCard, cardError } from "../deliver.js";
 
 export const usersRouter = Router();
 usersRouter.use(requireAuth);
@@ -64,12 +64,14 @@ usersRouter.post("/:username/messages", async (req, res) => {
     : await ensureDmChannel(req.user._id, recipient._id);
   const text = String(req.body?.body || "").trim();
   const survey = sanitizeSurvey(req.body?.survey);
+  const card = sanitizeCard(req.body?.card);
   if (surveyError(req.body?.survey)) return res.status(400).json({ error: surveyError(req.body?.survey) });
+  if (cardError(req.body?.card)) return res.status(400).json({ error: cardError(req.body?.card) });
   const attachmentError = attachmentLimitError(req.body?.attachments);
   if (attachmentError) return res.status(400).json({ error: attachmentError });
   const attachments = sanitizeAttachments(req.body?.attachments);
-  if (!text && attachments.length === 0 && !survey) {
-    return res.status(400).json({ error: "message needs text or an attachment" });
+  if (!text && attachments.length === 0 && !survey && !card) {
+    return res.status(400).json({ error: "message needs text, an attachment, or a card" });
   }
   const parentId = req.body?.parentId && mongoose.isValidObjectId(req.body.parentId)
     ? req.body.parentId
@@ -91,6 +93,7 @@ usersRouter.post("/:username/messages", async (req, res) => {
     parentId,
     attachments,
     survey,
+    card,
     idempotencyKey,
   });
   res.status(201).json({ message, channel: channel.toPublicJSON(), withUser: recipient.toPublicJSON(), isSelf });

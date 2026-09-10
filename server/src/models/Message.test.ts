@@ -22,6 +22,34 @@ describe("Message.toPublicJSON", () => {
     assert.deepEqual(json.survey.options[0].votes, [voter.toString()]);
   });
 
+  it("serializes a linked card", () => {
+    const message = new Message({
+      channel: new mongoose.Types.ObjectId(),
+      author: new mongoose.Types.ObjectId(),
+      card: {
+        eyebrow: "Work item 42",
+        title: "Fix sign-in",
+        description: "Users cannot sign in",
+        url: "https://example.com/items/42",
+        color: "red",
+        titleColor: "#991b1b",
+        timestamp: "2026-09-10T10:15:00Z",
+        attributes: [{ label: "Assignee", value: "alice", type: "user" }],
+      },
+    });
+
+    assert.deepEqual(message.toPublicJSON().card, {
+      eyebrow: "Work item 42",
+      title: "Fix sign-in",
+      description: "Users cannot sign in",
+      url: "https://example.com/items/42",
+      color: "red",
+      titleColor: "#991b1b",
+      timestamp: "2026-09-10T10:15:00.000Z",
+      attributes: [{ label: "Assignee", value: "alice", type: "user" }],
+    });
+  });
+
   it("serializes message metadata, attachments, forwarding, pins, and reactions", () => {
     const author = {
       _id: new mongoose.Types.ObjectId(),

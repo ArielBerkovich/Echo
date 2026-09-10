@@ -12,6 +12,32 @@ export function openApiDocument() {
         bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" },
       },
       schemas: {
+        MessageCard: {
+          type: "object",
+          required: ["title", "url"],
+          properties: {
+            eyebrow: { type: "string", maxLength: 120, example: "Build #1842" },
+            title: { type: "string", maxLength: 300, example: "Client production build failed" },
+            description: { type: "string", maxLength: 1000 },
+            url: { type: "string", format: "uri", maxLength: 2048 },
+            color: { type: "string", description: "Named theme color or #RRGGBB", example: "red" },
+            titleColor: { type: "string", description: "Named theme color or #RRGGBB", example: "red" },
+            timestamp: { type: "string", format: "date-time", description: "Event time in ISO 8601 Zulu format ending in Z", example: "2026-09-10T10:15:00Z" },
+            attributes: {
+              type: "array",
+              maxItems: 12,
+              items: {
+                type: "object",
+                required: ["label", "value"],
+                properties: {
+                  label: { type: "string", maxLength: 64, example: "Status" },
+                  value: { type: "string", maxLength: 400, example: "Failed" },
+                  type: { type: "string", enum: ["text", "user"], default: "text" },
+                },
+              },
+            },
+          },
+        },
         AutomationMessage: {
           type: "object",
           properties: {
@@ -93,11 +119,11 @@ export function openApiDocument() {
               "application/json": {
                 schema: {
                   type: "object",
-                  required: ["body"],
                   properties: {
                     body: { type: "string" },
                     parentId: { type: "string" },
                     attachments: { type: "array" },
+                    card: { $ref: "#/components/schemas/MessageCard" },
                     survey: {
                       type: "object",
                       required: ["question", "options"],
@@ -125,11 +151,11 @@ export function openApiDocument() {
               "application/json": {
                 schema: {
                   type: "object",
-                  required: ["body"],
                   properties: {
                     body: { type: "string" },
                     parentId: { type: "string" },
                     attachments: { type: "array" },
+                    card: { $ref: "#/components/schemas/MessageCard" },
                     survey: { $ref: "#/paths/~1api~1channels~1{channelName}~1messages/post/requestBody/content/application~1json/schema/properties/survey" },
                   },
                 },
