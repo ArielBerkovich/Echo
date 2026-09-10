@@ -8,7 +8,8 @@ import { canPostToChannel, Channel } from "./models/Channel.js";
 import { Message } from "./models/Message.js";
 import { ActivityEvent } from "./models/ActivityEvent.js";
 import { setIO } from "./realtime.js";
-import { deliverMessage, sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, applySurveyVote, sanitizeRetro, retroError, updateRetro, sanitizeCard, cardError } from "./deliver.js";
+import { deliverMessage, sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, applySurveyVote, sanitizeRetro, retroError, updateRetro } from "./deliver.js";
+import { cardError, sanitizeCard } from "./lib/messageCard.js";
 import { buildMessageActivityMetadata } from "./lib/messageActivity.js";
 import { roomFor, userRoom } from "./lib/rooms.js";
 import { activeConnections, recordSocketError } from "./metrics.js";
@@ -226,9 +227,10 @@ export function attachSocket(httpServer) {
         const normalizedSurvey = sanitizeSurvey(survey);
         const normalizedRetro = sanitizeRetro(retro);
         const normalizedCard = sanitizeCard(card);
+        const invalidCard = cardError(card);
         if (surveyError(survey)) return ackError(ack, "message_send", surveyError(survey));
         if (retroError(retro)) return ackError(ack, "message_send", retroError(retro));
-        if (cardError(card)) return ackError(ack, "message_send", cardError(card));
+        if (invalidCard) return ackError(ack, "message_send", invalidCard);
         if (!text && files.length === 0 && !normalizedSurvey && !normalizedRetro && !normalizedCard) {
           return ackError(ack, "message_send", "message needs text, an attachment, or a card");
         }

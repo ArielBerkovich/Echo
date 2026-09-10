@@ -11,7 +11,8 @@ import {
   joinUserToChannel,
   removeUserFromChannel,
 } from "../realtime.js";
-import { deliverMessage, sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, applySurveyVote, sanitizeRetro, retroError, sanitizeCard, cardError } from "../deliver.js";
+import { deliverMessage, sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, applySurveyVote, sanitizeRetro, retroError } from "../deliver.js";
+import { cardError, sanitizeCard } from "../lib/messageCard.js";
 import { normalizeChannelName } from "../automation.js";
 import { ActivityEvent } from "../models/ActivityEvent.js";
 import { isValidChannelName } from "../lib/channelName.js";
@@ -853,9 +854,10 @@ channelsRouter.post("/:id/messages", async (req, res) => {
   const survey = sanitizeSurvey(req.body?.survey);
   const retro = sanitizeRetro(req.body?.retro);
   const card = sanitizeCard(req.body?.card);
+  const invalidCard = cardError(req.body?.card);
   if (surveyError(req.body?.survey)) return res.status(400).json({ error: surveyError(req.body?.survey) });
   if (retroError(req.body?.retro)) return res.status(400).json({ error: retroError(req.body?.retro) });
-  if (cardError(req.body?.card)) return res.status(400).json({ error: cardError(req.body?.card) });
+  if (invalidCard) return res.status(400).json({ error: invalidCard });
   const attachmentError = attachmentLimitError(req.body?.attachments);
   if (attachmentError) return res.status(400).json({ error: attachmentError });
   const files = sanitizeAttachments(req.body?.attachments);

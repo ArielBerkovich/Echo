@@ -8,69 +8,7 @@ import mongoose from "mongoose";
 
 export const MAX_MESSAGE_ATTACHMENTS = 10;
 export const MAX_SURVEY_OPTION_CHARACTERS = 80;
-export const MAX_CARD_ATTRIBUTES = 12;
-const CARD_COLORS = new Set(["blue", "cyan", "green", "amber", "orange", "red", "pink", "purple", "gray"]);
 const RETRO_COLUMNS = new Set(["went-well", "to-improve", "backlog", "action-items"]);
-
-function sanitizeCardColor(value) {
-  const color = String(value || "").trim().toLowerCase();
-  if (!color) return "";
-  return CARD_COLORS.has(color) || /^#[0-9a-f]{6}$/.test(color) ? color : null;
-}
-
-function sanitizeCardTimestamp(value) {
-  const timestamp = String(value || "").trim();
-  if (!timestamp) return "";
-  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(timestamp)) return null;
-  const parsed = new Date(timestamp);
-  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
-}
-
-export function sanitizeCard(card) {
-  if (!card || typeof card !== "object" || Array.isArray(card)) return null;
-  const title = String(card.title || "").trim().slice(0, 300);
-  const urlText = String(card.url || "").trim().slice(0, 2048);
-  let url;
-  try {
-    url = new URL(urlText);
-  } catch {
-    return null;
-  }
-  if (!title || !["http:", "https:"].includes(url.protocol) || url.username || url.password) return null;
-  const color = sanitizeCardColor(card.color);
-  const titleColor = sanitizeCardColor(card.titleColor);
-  const timestamp = sanitizeCardTimestamp(card.timestamp);
-  if (color === null || titleColor === null || timestamp === null) return null;
-  const attributes = (Array.isArray(card.attributes) ? card.attributes : [])
-    .map((attribute) => ({
-      label: String(attribute?.label || "").trim().slice(0, 64),
-      value: String(attribute?.value || "").trim().slice(0, 400),
-      type: ["user", "person"].includes(String(attribute?.type || "").toLowerCase()) ? "user" : "text",
-    }))
-    .filter((attribute) => attribute.label && attribute.value)
-    .slice(0, MAX_CARD_ATTRIBUTES);
-  return {
-    eyebrow: String(card.eyebrow || "").trim().slice(0, 120),
-    title,
-    description: String(card.description || "").trim().slice(0, 1000),
-    url: url.toString(),
-    color,
-    titleColor,
-    timestamp,
-    attributes,
-  };
-}
-
-export function cardError(card) {
-  if (card === undefined || card === null) return null;
-  if (Array.isArray(card?.attributes) && card.attributes.length > MAX_CARD_ATTRIBUTES) {
-    return `a card can have up to ${MAX_CARD_ATTRIBUTES} attributes`;
-  }
-  if (card?.timestamp && sanitizeCardTimestamp(card.timestamp) === null) {
-    return "card timestamp must be an ISO 8601 Zulu time ending in Z";
-  }
-  return sanitizeCard(card) ? null : "a card needs a title, a valid HTTP(S) URL, and valid colors";
-}
 
 export function sanitizeRetro(retro) {
   if (!retro || typeof retro !== "object") return null;

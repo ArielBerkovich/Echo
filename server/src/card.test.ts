@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { cardError, sanitizeCard } from "./deliver.js";
+import { cardError, sanitizeCard } from "./lib/messageCard.js";
 
 describe("message card validation", () => {
   it("normalizes a complete card and user attributes", () => {
