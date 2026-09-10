@@ -9,6 +9,8 @@ import { getSocket } from "../socket.js";
 import { formatTime } from "../lib/time.js";
 import { replyParticipantNames, visibleReplyParticipants } from "../lib/replyParticipants.js";
 import { isEchoMessageLink, workspacePath } from "../lib/workspaceRoutes.js";
+import { parseCardMarkup } from "../lib/cards.js";
+import Card from "./Card.js";
 import {
   ShareIcon, EmojiAddIcon, ReplyIcon, BookmarkIcon, PencilIcon, TrashIcon, PinIcon, CopyIcon, MoreIcon, QuoteIcon,
 } from "./Icons.js";
@@ -160,6 +162,8 @@ function Message({
   // an already-open conversation updates without waiting for a new message.
   const author = usersById?.get(m.author?.id) || m.author;
   const replyNames = replyParticipantNames(m.replyParticipantIds, usersById);
+  const cardMarkup = m.card ? null : parseCardMarkup(m.body);
+  const messageCard = m.card || cardMarkup?.card;
   const messageBody = editing ? (
     <div className="msg-edit">
       <textarea
@@ -191,8 +195,10 @@ function Message({
       onClick={onBodyClick}
       onContextMenu={onBodyContextMenu}
     >
-      <div dangerouslySetInnerHTML={{ __html: renderMarkdown(m.body) }} />
+      {cardMarkup?.before && <div dangerouslySetInnerHTML={{ __html: renderMarkdown(cardMarkup.before) }} />}
+      {!cardMarkup && m.body && <div dangerouslySetInnerHTML={{ __html: renderMarkdown(m.body) }} />}
       {m.editedAt && <span className="edited-label"> (edited)</span>}
+      {messageCard && <Card card={messageCard} usersById={usersById} />}
     </div>
   );
 

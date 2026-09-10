@@ -161,7 +161,7 @@ export function sanitizeAttachments(attachments) {
 // channel room, DM room joins so both participants receive it, and
 // `activity:bump` to anyone it's "activity" for. Shared by the live socket
 // sender and the scheduled-message dispatcher so both behave identically.
-export async function deliverMessage({ channel, authorId, body, parentId, attachments, survey, retro, idempotencyKey, passwordHelpRequest }) {
+export async function deliverMessage({ channel, authorId, body, parentId, attachments, survey, retro, card, idempotencyKey, passwordHelpRequest }) {
   const io = getIO();
   const cid = channel._id.toString();
 
@@ -174,6 +174,7 @@ export async function deliverMessage({ channel, authorId, body, parentId, attach
     attachments: attachments || [],
     survey: survey || null,
     retro: retro || null,
+    card: card || null,
     passwordHelpRequest: passwordHelpRequest || null,
     ...activityMetadata,
   };

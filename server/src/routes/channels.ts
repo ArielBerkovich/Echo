@@ -12,6 +12,7 @@ import {
   removeUserFromChannel,
 } from "../realtime.js";
 import { deliverMessage, sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, applySurveyVote, sanitizeRetro, retroError } from "../deliver.js";
+import { cardError, sanitizeCard } from "../lib/messageCard.js";
 import { normalizeChannelName } from "../automation.js";
 import { ActivityEvent } from "../models/ActivityEvent.js";
 import { isValidChannelName } from "../lib/channelName.js";
@@ -852,13 +853,16 @@ channelsRouter.post("/:id/messages", async (req, res) => {
   const text = String(req.body?.body || "").trim();
   const survey = sanitizeSurvey(req.body?.survey);
   const retro = sanitizeRetro(req.body?.retro);
+  const card = sanitizeCard(req.body?.card);
+  const invalidCard = cardError(req.body?.card);
   if (surveyError(req.body?.survey)) return res.status(400).json({ error: surveyError(req.body?.survey) });
   if (retroError(req.body?.retro)) return res.status(400).json({ error: retroError(req.body?.retro) });
+  if (invalidCard) return res.status(400).json({ error: invalidCard });
   const attachmentError = attachmentLimitError(req.body?.attachments);
   if (attachmentError) return res.status(400).json({ error: attachmentError });
   const files = sanitizeAttachments(req.body?.attachments);
-  if (!text && files.length === 0 && !survey && !retro) {
-    return res.status(400).json({ error: "message needs text or an attachment" });
+  if (!text && files.length === 0 && !survey && !retro && !card) {
+    return res.status(400).json({ error: "message needs text, an attachment, or a card" });
   }
   const channelKey = decodeURIComponent(String(req.params.id));
   const channel = mongoose.isValidObjectId(channelKey)
@@ -892,6 +896,7 @@ channelsRouter.post("/:id/messages", async (req, res) => {
     attachments: files,
     survey,
     retro,
+    card,
     idempotencyKey: idempotencyKey || null,
   });
   res.status(201).json({ message });

@@ -9,6 +9,7 @@ import { Message } from "./models/Message.js";
 import { ActivityEvent } from "./models/ActivityEvent.js";
 import { setIO } from "./realtime.js";
 import { deliverMessage, sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, applySurveyVote, sanitizeRetro, retroError, updateRetro } from "./deliver.js";
+import { cardError, sanitizeCard } from "./lib/messageCard.js";
 import { buildMessageActivityMetadata } from "./lib/messageActivity.js";
 import { roomFor, userRoom } from "./lib/rooms.js";
 import { activeConnections, recordSocketError } from "./metrics.js";
@@ -217,7 +218,7 @@ export function attachSocket(httpServer) {
     });
 
     // Persist an incoming message and fan it out to everyone in the room.
-    socket.on("message:send", async ({ channelId, body, parentId, attachments, survey, retro } = {}, ack) => {
+    socket.on("message:send", async ({ channelId, body, parentId, attachments, survey, retro, card } = {}, ack) => {
       try {
         const text = String(body || "").trim();
         const attachmentError = attachmentLimitError(attachments);
@@ -225,10 +226,13 @@ export function attachSocket(httpServer) {
         const files = sanitizeAttachments(attachments);
         const normalizedSurvey = sanitizeSurvey(survey);
         const normalizedRetro = sanitizeRetro(retro);
+        const normalizedCard = sanitizeCard(card);
+        const invalidCard = cardError(card);
         if (surveyError(survey)) return ackError(ack, "message_send", surveyError(survey));
         if (retroError(retro)) return ackError(ack, "message_send", retroError(retro));
-        if (!text && files.length === 0 && !normalizedSurvey && !normalizedRetro) {
-          return ackError(ack, "message_send", "message needs text or an attachment");
+        if (invalidCard) return ackError(ack, "message_send", invalidCard);
+        if (!text && files.length === 0 && !normalizedSurvey && !normalizedRetro && !normalizedCard) {
+          return ackError(ack, "message_send", "message needs text, an attachment, or a card");
         }
 
         const channel = await Channel.findById(channelId);
@@ -251,6 +255,7 @@ export function attachSocket(httpServer) {
           attachments: files,
           survey: normalizedSurvey,
           retro: normalizedRetro,
+          card: normalizedCard,
         });
         ack?.({ ok: true, message: payload });
       } catch (err) {
@@ -443,6 +448,7 @@ export function attachSocket(httpServer) {
           author: socket.user._id,
           body: source.body,
           ...(source.retro ? { retro: source.retro } : {}),
+          ...(source.card ? { card: source.card } : {}),
           attachments: sourceAttachments,
           ...(await buildMessageActivityMetadata({ body: source.body, parentId: null })),
           forwardNote: String(note || "").trim(),
