@@ -187,6 +187,33 @@ export function openApiDocument() {
           responses: { 200: { description: "Updated survey" }, 400: { description: "Invalid selection" } },
         },
       },
+      "/api/channels/{channelId}/messages/{messageId}/reactions": {
+        post: {
+          summary: "Toggle an emoji reaction on a message",
+          parameters: [
+            { name: "channelId", in: "path", required: true, schema: { type: "string" } },
+            { name: "messageId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["emoji"],
+                  properties: { emoji: { type: "string", maxLength: 64, example: "👍" } },
+                },
+              },
+            },
+          },
+          responses: {
+            200: { description: "Updated reaction summary" },
+            400: { description: "Invalid emoji" },
+            403: { description: "Access denied" },
+            404: { description: "Message not found" },
+          },
+        },
+      },
       "/api/webhooks": {
         get: { summary: "List incoming webhooks", responses: { 200: { description: "Webhook list" } } },
         post: {
