@@ -15,13 +15,11 @@ test.use({
 test("shows thread message actions after a real phone tap", async ({ page }) => {
   const fixture = await seedWorkspaceFixture(page);
   await page.goto("/");
-  const browseButton = page.getByTestId("browse-channels");
+  const browseButton = page.getByTestId("more-browse-channels");
   const createButton = page.getByTestId("create-channel");
+  await page.getByTestId("sidebar-more").tap();
   await expect(browseButton).toBeVisible();
-  const browseBox = await browseButton.boundingBox();
-  const createBox = await createButton.boundingBox();
-  expect(browseBox.width).toBe(createBox.width);
-  expect(browseBox.height).toBe(createBox.height);
+  await expect(createButton).toBeVisible();
   await browseButton.tap();
   await expect(page.getByTestId("channel-browser")).toBeVisible();
   await page.getByTestId("rail-home").tap();

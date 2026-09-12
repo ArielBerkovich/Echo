@@ -38,7 +38,8 @@ test("keeps the workspace full-screen and usable on a phone", async ({ page }) =
   await expect(page.getByTestId("pane-search")).toBeVisible();
   await expect(page.getByTestId("sidebar")).toBeVisible();
 
-  await page.getByTestId("browse-channels").click();
+  await page.getByTestId("sidebar-more").click();
+  await page.getByTestId("more-browse-channels").click();
   await expect(page.getByTestId("channel-browser")).toBeVisible();
   await page.getByTestId("rail-home").click();
   await expect(page.getByTestId("sidebar")).toBeVisible();

@@ -136,7 +136,8 @@ test.describe("post-login forms are keyboard operable", () => {
 
   test("opens channel browser, settings, and custom-emoji forms with keyboard focus", async ({ page }) => {
     await page.goto(`/channels/${encodeURIComponent(fixture.generalChannel.name)}`);
-    await pressEnter(page.getByTestId("browse-channels"));
+    await pressEnter(page.getByTestId("sidebar-more"));
+    await pressEnter(page.getByTestId("more-browse-channels"));
     const browserSearch = page.getByTestId("channel-browser-search");
     await expect(browserSearch).toBeFocused();
     await browserSearch.pressSequentially("project");
