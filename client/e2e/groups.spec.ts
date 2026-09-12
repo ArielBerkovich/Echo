@@ -30,6 +30,7 @@ test("opens the groups workspace and shows Echo members", async ({ page }) => {
   });
 
   await page.goto("/");
+  await page.getByTestId("sidebar-more").click();
   await page.getByTestId("open-groups").click();
 
   const panel = page.getByTestId("groups-panel");

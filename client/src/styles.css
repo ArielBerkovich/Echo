@@ -3034,6 +3034,7 @@ html[data-mode="dark"] .sidebar {
   flex: none;
 }
 .sidebar-actions {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -3047,6 +3048,38 @@ html[data-mode="dark"] .sidebar {
   height: 28px;
   border-radius: 8px;
 }
+.sidebar-more-trigger { margin-left: auto; }
+.sidebar-more-menu {
+  position: absolute;
+  top: 48px;
+  right: 10px;
+  z-index: 31;
+  min-width: 220px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  animation: fadeInUp .12s ease both;
+}
+.sidebar-more-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.sidebar-more-menu button:hover, .sidebar-more-menu button:focus-visible { background: var(--surface-hover, rgba(80, 100, 140, .1)); outline: 0; }
+.sidebar-more-menu button svg { color: var(--accent); flex: none; }
+.sidebar-more-menu button span { display: grid; gap: 2px; }
+.sidebar-more-menu button strong { font-size: 13px; }
+.sidebar-more-menu button small { color: var(--muted); font-size: 11px; }
 .dm-rich {
   display: flex;
   align-items: stretch;
