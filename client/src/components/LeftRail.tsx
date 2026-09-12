@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIcon, BookmarkIcon, CompassIcon, ContactRoundIcon, HomeIcon, MessageSquareTextIcon, SettingsIcon } from "lucide-react";
 import Avatar from "./Avatar.js";
 import { LeaveIcon } from "./Icons.js";
@@ -31,9 +31,26 @@ export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroup
   const [displayNameDialogOpen, setDisplayNameDialogOpen] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef(null);
   const workspaceLogoSrc = useAuthUrl(workspace?.logoUrl);
   const customEmojiUrls = useAuthUrls(customEmojis.map((emoji) => emoji.url));
   const brandReady = !workspaceLoading && (!workspace?.logoUrl || !!workspaceLogoSrc);
+
+  useEffect(() => {
+    if (!moreOpen) return undefined;
+    const closeOnOutsidePointer = (event) => {
+      if (!moreRef.current?.contains(event.target)) setMoreOpen(false);
+    };
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setMoreOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [moreOpen]);
 
   function onAvatarFileSelected(file) {
     if (!file) return;
@@ -120,7 +137,7 @@ export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroup
           );
         })}
         {onOpenGroups ? (
-          <div className="rail-more-wrap">
+          <div className="rail-more-wrap" ref={moreRef}>
             <button type="button" className={`rail-item rail-more-trigger ${moreOpen ? "active" : ""}`} data-testid="sidebar-more" onClick={() => setMoreOpen((open) => !open)} title="More workspace options" aria-label="More workspace options" aria-expanded={moreOpen} aria-haspopup="menu">
               <span className="rail-icon"><MoreIcon /></span>
             </button>
