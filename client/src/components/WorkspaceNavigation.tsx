@@ -46,8 +46,9 @@ export default function WorkspaceNavigation({
   return (
     <div className="app-nav">
       <LeftRail
-        view={view === "browse" ? "home" : view}
+        view={view}
         onSelect={onSelectView}
+        onBrowseChannels={onBrowseChannels}
         user={user}
         workspace={workspace}
         workspaceLoading={workspaceLoading}

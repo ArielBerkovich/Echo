@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronDownIcon, CompassIcon, ContactRoundIcon, HashIcon, ListFilterIcon, LockKeyholeIcon, MessageCircleIcon, SquarePenIcon, StarIcon } from "lucide-react";
+import { ChevronDownIcon, ContactRoundIcon, HashIcon, ListFilterIcon, LockKeyholeIcon, MessageCircleIcon, SquarePenIcon, StarIcon } from "lucide-react";
 import Avatar, { GroupAvatar } from "./Avatar.js";
 import { relativeTime } from "../lib/time.js";
 import { useAuthUrls } from "../lib/useAuthUrl.js";
@@ -247,7 +247,6 @@ export default function Sidebar({
           {moreOpen ? <>
             <div className="menu-overlay" onMouseDown={() => setMoreOpen(false)} />
             <div className="sidebar-more-menu" role="menu" aria-label="More workspace options">
-              {onBrowseChannels ? <button type="button" role="menuitem" data-testid="browse-channels" onClick={() => { setMoreOpen(false); onBrowseChannels(); }} aria-pressed={browsingChannels}><CompassIcon size={16} aria-hidden="true" /><span><strong>Browse channels</strong><small>Find public channels</small></span></button> : null}
               {onOpenGroups ? <button type="button" role="menuitem" data-testid="open-groups" onClick={() => { setMoreOpen(false); onOpenGroups(); }}><ContactRoundIcon size={16} aria-hidden="true" /><span><strong>User groups</strong><small>Browse directory teams</small></span></button> : null}
             </div>
           </> : null}

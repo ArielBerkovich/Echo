@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ActivityIcon, BookmarkIcon, HomeIcon, MessageSquareTextIcon, SettingsIcon } from "lucide-react";
+import { ActivityIcon, BookmarkIcon, CompassIcon, HomeIcon, MessageSquareTextIcon, SettingsIcon } from "lucide-react";
 import Avatar from "./Avatar.js";
 import { LeaveIcon } from "./Icons.js";
 import Logo from "./Logo.js";
@@ -24,7 +24,7 @@ function railNameFontSize(name) {
   return Math.max(6, Math.min(12, 68 / (longestWord * 0.66)));
 }
 
-export default function LeftRail({ view, onSelect, badges = {}, user, workspace, workspaceLoading = false, onLogout, onUpdated, customEmojis = [], latestActivity }) {
+export default function LeftRail({ view, onSelect, onBrowseChannels, badges = {}, user, workspace, workspaceLoading = false, onLogout, onUpdated, customEmojis = [], latestActivity }) {
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
   const [displayNameDialogOpen, setDisplayNameDialogOpen] = useState(false);
@@ -117,6 +117,11 @@ export default function LeftRail({ view, onSelect, badges = {}, user, workspace,
               </button>
           );
         })}
+        {onBrowseChannels ? (
+          <button type="button" className={`rail-item rail-item-browse ${view === "browse" ? "active" : ""}`} data-testid="browse-channels" aria-label="Browse all channels" aria-pressed={view === "browse"} aria-controls="channel-browser-pane" title={shortcutTitle("Browse channels", "browse-channels")} onClick={onBrowseChannels}>
+            <span className="rail-icon"><CompassIcon size={22} strokeWidth={2} /></span>
+          </button>
+        ) : null}
       </div>
       {user && (
         <div className="rail-account">
