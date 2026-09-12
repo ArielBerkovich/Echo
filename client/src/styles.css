@@ -2136,7 +2136,7 @@ html[data-mode="dark"] .backend-connection-error {
   align-items: center;
   padding: 14px 9px 18px;
   border-right: 1px solid color-mix(in srgb, var(--on-navy) 10%, transparent);
-  overflow: hidden;
+  overflow: visible;
 }
 .rail button {
   transition: none;
@@ -3080,13 +3080,13 @@ html[data-mode="dark"] .sidebar {
 .sidebar-more-menu button span { display: grid; gap: 2px; }
 .sidebar-more-menu button strong { font-size: 13px; }
 .sidebar-more-menu button small { color: var(--muted); font-size: 11px; }
-.rail-more-wrap { position: relative; }
+.rail-more-wrap { position: relative; z-index: 100; }
 .rail-more-trigger { border: 0; }
 .rail-more-menu {
   position: absolute;
   left: calc(100% + 8px);
   bottom: 0;
-  z-index: 31;
+  z-index: 1001;
   min-width: 220px;
   padding: 6px;
   border: 1px solid var(--border);
