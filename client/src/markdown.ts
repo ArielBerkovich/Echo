@@ -66,6 +66,27 @@ export function preserveMarkdownBlankLines(text) {
   return output.join("\n");
 }
 
+// Marked lexes a leading `#name` as a heading before inline extensions get a
+// chance to see it. Protect known channel tags as HTML before parsing so a
+// channel reference remains a tag even when it starts the message.
+export function protectChannelTags(text, publicChannels) {
+  const channels = publicChannels instanceof Set ? publicChannels : new Set(publicChannels);
+  const lines = String(text ?? "").split(/(\r?\n)/);
+  let inFence = false;
+  return lines.map((line) => {
+    if (/^\s{0,3}(`{3,}|~{3,})/.test(line)) {
+      inFence = !inFence;
+      return line;
+    }
+    if (inFence) return line;
+    return line.replace(/(^|[^\\\w])#([a-z0-9_-]+)/gi, (match, prefix, name) => {
+      const normalized = name.toLowerCase();
+      if (!channels.has(normalized)) return match;
+      return `${prefix}<span class="channel-tag" data-channel-tag="${normalized}">#${normalized}</span>`;
+    });
+  }).join("");
+}
+
 export function formatEchoDateTime(value) {
   const iso = String(value || "");
   const match = ECHO_DATETIME_RE.exec(iso);
@@ -279,7 +300,7 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
     const cached = renderedCache.get(source);
     if (cached !== undefined) return cached;
 
-    const html = marked.parse(preserveMarkdownBlankLines(source));
+    const html = marked.parse(protectChannelTags(preserveMarkdownBlankLines(source), publicChannels));
     // Sanitize: allow only the safe subset markdown produces. `class` is kept so
     // our mention pills stay styled.
     const safe = DOMPurify.sanitize(html, {
