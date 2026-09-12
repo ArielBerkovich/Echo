@@ -49,6 +49,7 @@ export default function WorkspaceNavigation({
         view={view}
         onSelect={onSelectView}
         onBrowseChannels={onBrowseChannels}
+        onOpenGroups={onOpenGroups}
         user={user}
         workspace={workspace}
         workspaceLoading={workspaceLoading}

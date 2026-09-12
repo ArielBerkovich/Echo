@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ActivityIcon, BookmarkIcon, CompassIcon, HomeIcon, MessageSquareTextIcon, SettingsIcon } from "lucide-react";
+import { ActivityIcon, BookmarkIcon, CompassIcon, ContactRoundIcon, HomeIcon, MessageSquareTextIcon, SettingsIcon } from "lucide-react";
 import Avatar from "./Avatar.js";
 import { LeaveIcon } from "./Icons.js";
 import Logo from "./Logo.js";
@@ -10,6 +10,7 @@ import { api } from "../api.js";
 import { uploadSizeError } from "../lib/uploads.js";
 import { useAuthUrl, useAuthUrls } from "../lib/useAuthUrl.js";
 import { shortcutTitle } from "../lib/keyboardShortcuts.js";
+import { MoreIcon } from "./Icons.js";
 
 const icon = (Icon) => () => <Icon size={22} strokeWidth={2} />;
 const ITEMS = [
@@ -24,11 +25,12 @@ function railNameFontSize(name) {
   return Math.max(6, Math.min(12, 68 / (longestWord * 0.66)));
 }
 
-export default function LeftRail({ view, onSelect, onBrowseChannels, badges = {}, user, workspace, workspaceLoading = false, onLogout, onUpdated, customEmojis = [], latestActivity }) {
+export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroups, badges = {}, user, workspace, workspaceLoading = false, onLogout, onUpdated, customEmojis = [], latestActivity }) {
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
   const [displayNameDialogOpen, setDisplayNameDialogOpen] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const workspaceLogoSrc = useAuthUrl(workspace?.logoUrl);
   const customEmojiUrls = useAuthUrls(customEmojis.map((emoji) => emoji.url));
   const brandReady = !workspaceLoading && (!workspace?.logoUrl || !!workspaceLogoSrc);
@@ -121,6 +123,19 @@ export default function LeftRail({ view, onSelect, onBrowseChannels, badges = {}
           <button type="button" className={`rail-item rail-item-browse ${view === "browse" ? "active" : ""}`} data-testid="browse-channels" aria-label="Browse all channels" aria-pressed={view === "browse"} aria-controls="channel-browser-pane" title={shortcutTitle("Browse channels", "browse-channels")} onClick={onBrowseChannels}>
             <span className="rail-icon"><CompassIcon size={22} strokeWidth={2} /></span>
           </button>
+        ) : null}
+        {onOpenGroups ? (
+          <div className="rail-more-wrap">
+            <button type="button" className={`rail-item rail-more-trigger ${moreOpen ? "active" : ""}`} data-testid="sidebar-more" onClick={() => setMoreOpen((open) => !open)} title="More workspace options" aria-label="More workspace options" aria-expanded={moreOpen} aria-haspopup="menu">
+              <span className="rail-icon"><MoreIcon /></span>
+            </button>
+            {moreOpen ? <>
+              <div className="menu-overlay" onMouseDown={() => setMoreOpen(false)} />
+              <div className="rail-more-menu" role="menu" aria-label="More workspace options">
+                <button type="button" role="menuitem" data-testid="open-groups" onClick={() => { setMoreOpen(false); onOpenGroups(); }}><ContactRoundIcon size={16} aria-hidden="true" /><span><strong>User groups</strong><small>Browse directory teams</small></span></button>
+              </div>
+            </> : null}
+          </div>
         ) : null}
       </div>
       {user && (

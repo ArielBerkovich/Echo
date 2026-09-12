@@ -1,11 +1,10 @@
 import { useMemo, useState } from "react";
-import { ChevronDownIcon, ContactRoundIcon, HashIcon, ListFilterIcon, LockKeyholeIcon, MessageCircleIcon, SquarePenIcon, StarIcon } from "lucide-react";
+import { ChevronDownIcon, HashIcon, ListFilterIcon, LockKeyholeIcon, MessageCircleIcon, SquarePenIcon, StarIcon } from "lucide-react";
 import Avatar, { GroupAvatar } from "./Avatar.js";
 import { relativeTime } from "../lib/time.js";
 import { useAuthUrls } from "../lib/useAuthUrl.js";
 import { shortcutTitle } from "../lib/keyboardShortcuts.js";
 import { tokenizeEmojiShortcodes } from "../markdown.js";
-import { MoreIcon } from "./Icons.js";
 
 function StartConversationButton({ onClick }) {
   return (
@@ -107,7 +106,6 @@ export default function Sidebar({
   const [starredCollapsed, setStarredCollapsed] = useState(false); // Starred section collapsed?
   const [dmCollapsed, setDmCollapsed] = useState(false); // DMs section collapsed?
   const [filterOpen, setFilterOpen] = useState(dmsOnly);
-  const [moreOpen, setMoreOpen] = useState(false);
   const emojiUrls = useMemo(() => customEmojis.map((emoji) => emoji.url), [customEmojis]);
   const authUrls = useAuthUrls(emojiUrls);
   const previewEmojis = customEmojis
@@ -243,13 +241,6 @@ export default function Sidebar({
             </span>
           </button>
           <StartConversationButton onClick={onStartConversation} />
-          <button type="button" className={`add-channel sidebar-more-trigger${moreOpen ? " active" : ""}`} data-testid="sidebar-more" onClick={() => setMoreOpen((open) => !open)} title="More workspace options" aria-label="More workspace options" aria-expanded={moreOpen} aria-haspopup="menu"><MoreIcon size={16} aria-hidden="true" /></button>
-          {moreOpen ? <>
-            <div className="menu-overlay" onMouseDown={() => setMoreOpen(false)} />
-            <div className="sidebar-more-menu" role="menu" aria-label="More workspace options">
-              {onOpenGroups ? <button type="button" role="menuitem" data-testid="open-groups" onClick={() => { setMoreOpen(false); onOpenGroups(); }}><ContactRoundIcon size={16} aria-hidden="true" /><span><strong>User groups</strong><small>Browse directory teams</small></span></button> : null}
-            </div>
-          </> : null}
         </div>
       )}
       {(dmsOnly || filterOpen) && (
