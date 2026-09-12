@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronDownIcon, CompassIcon, HashIcon, ListFilterIcon, LockKeyholeIcon, MessageCircleIcon, SquarePenIcon, StarIcon, UsersRoundIcon } from "lucide-react";
+import { ChevronDownIcon, CompassIcon, ContactRoundIcon, HashIcon, ListFilterIcon, LockKeyholeIcon, MessageCircleIcon, SquarePenIcon, StarIcon } from "lucide-react";
 import Avatar, { GroupAvatar } from "./Avatar.js";
 import { relativeTime } from "../lib/time.js";
 import { useAuthUrls } from "../lib/useAuthUrl.js";
@@ -252,7 +252,7 @@ export default function Sidebar({
               <span />
             </span>
           </button>
-          {onOpenGroups ? <button type="button" className="add-channel" data-testid="open-groups" onClick={onOpenGroups} title="View groups" aria-label="View groups"><UsersRoundIcon size={15} aria-hidden="true" /></button> : null}
+          {onOpenGroups ? <button type="button" className="add-channel" data-testid="open-groups" onClick={onOpenGroups} title="View groups" aria-label="View groups"><ContactRoundIcon size={15} aria-hidden="true" /></button> : null}
           <StartConversationButton onClick={onStartConversation} />
         </div>
       )}

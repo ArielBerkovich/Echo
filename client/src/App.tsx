@@ -280,7 +280,13 @@ export default function App() {
     queryClient.invalidateQueries({ queryKey: queryKeys.activity });
   }
 
+  function leaveGroupsView() {
+    setShowGroups(false);
+    setGroupToOpen(null);
+  }
+
   function handleViewSelect(nextView) {
+    leaveGroupsView();
     markNavDuringRestore();
     clearNavigationTarget();
     searchRef.current?.clear();
@@ -305,6 +311,7 @@ export default function App() {
   }
 
   function handleSidebarSelect(channel) {
+    leaveGroupsView();
     markNavDuringRestore();
     clearNavigationTarget();
     setSearchQuery(null);
@@ -314,6 +321,7 @@ export default function App() {
   }
 
   function handleBrowseChannels() {
+    leaveGroupsView();
     markNavDuringRestore();
     clearNavigationTarget();
     setSearchQuery(null);
@@ -322,6 +330,7 @@ export default function App() {
   }
 
   function handleStartConversation() {
+    leaveGroupsView();
     markNavDuringRestore();
     clearNavigationTarget();
     setSearchQuery(null);
@@ -970,6 +979,7 @@ export default function App() {
   }
 
   async function handleOpenDm(target, isSelf = false, destination = "dms", existingChannel = null) {
+    leaveGroupsView();
     markNavDuringRestore();
     clearNavigationTarget();
     setSearchQuery(null);
@@ -1047,6 +1057,7 @@ export default function App() {
   }
 
   function handlePickChannel(picked) {
+    leaveGroupsView();
     markNavDuringRestore();
     clearNavigationTarget();
     setSearchQuery(null);

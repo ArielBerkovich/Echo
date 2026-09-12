@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRightIcon, SearchIcon, UsersRoundIcon } from "lucide-react";
+import { ChevronRightIcon, ContactRoundIcon, SearchIcon } from "lucide-react";
 import { api } from "../api.js";
 import Avatar from "./Avatar.js";
 import { CloseButton } from "./Button.js";
@@ -90,14 +90,14 @@ export default function GroupsPanel({ onClose, onOpenProfile, openGroup = null }
             {!groupsLoading && groups.length === 0 ? <div className="people-empty">No groups are available.</div> : null}
             {!groupsLoading && groups.length > 0 && filteredGroups.length === 0 ? <div className="people-empty">No groups match that search.</div> : null}
             {filteredGroups.map((group) => <button type="button" key={`${group.provider}:${group.id}`} className={`groups-panel-group${selected?.id === group.id && selected?.provider === group.provider ? " active" : ""}`} onClick={() => selectGroup(group)}>
-              <span className="groups-panel-group-icon"><UsersRoundIcon size={17} aria-hidden="true" /></span>
+              <span className="groups-panel-group-icon"><ContactRoundIcon size={17} aria-hidden="true" /></span>
               <span className="groups-panel-group-copy"><strong>{group.name}</strong><small>@{groupHandle(group.name)} · {group.provider}</small></span>
               <ChevronRightIcon className="groups-panel-group-arrow" size={15} aria-hidden="true" />
             </button>)}
           </div>
           <div className="groups-panel-members" aria-live="polite">
             {!selected ? <div className="people-empty">Choose a group to view its members.</div> : <>
-              <div className="groups-panel-members-head"><div className="groups-panel-detail-title"><span className="groups-panel-detail-icon"><UsersRoundIcon size={20} aria-hidden="true" /></span><div><h3>{selected.name}</h3><p className="groups-panel-handle">@{groupHandle(selected.name)}</p></div></div><span className="groups-panel-provider">{selected.provider}</span></div>
+              <div className="groups-panel-members-head"><div className="groups-panel-detail-title"><span className="groups-panel-detail-icon"><ContactRoundIcon size={20} aria-hidden="true" /></span><div><h3>{selected.name}</h3><p className="groups-panel-handle">@{groupHandle(selected.name)}</p></div></div><span className="groups-panel-provider">{selected.provider}</span></div>
               <p className="groups-panel-detail-meta">{membersLoading ? "Loading members…" : `${echoMembers.length} Echo member${echoMembers.length === 1 ? "" : "s"}`} · Directory-managed</p>
               {!membersLoading ? <><label className="sr-only" htmlFor="member-search">Search members</label><input id="member-search" className="groups-panel-filter" value={memberQuery} onChange={(event) => setMemberQuery(event.target.value)} placeholder="Search members" /></> : null}
               {membersLoading ? <div className="people-empty">Loading members…</div> : filteredMembers.length === 0 ? <div className="people-empty">{echoMembers.length === 0 ? "No Echo members are in this group." : "No members match that search."}</div> : filteredMembers.map((member) => <button type="button" className="person-row groups-panel-member" key={member.id} onClick={() => onOpenProfile(member.echoUser)} aria-label={`View profile for ${member.displayName}`}>
