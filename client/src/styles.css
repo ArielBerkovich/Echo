@@ -3950,6 +3950,10 @@ html[data-mode="dark"] .sidebar {
 .groups-panel-group small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 11px; }
 .groups-panel-group-arrow { margin-left: auto; color: var(--muted); opacity: 0; transition: opacity 120ms ease, transform 120ms ease; }
 .groups-panel-group:hover .groups-panel-group-arrow, .groups-panel-group:focus-visible .groups-panel-group-arrow { opacity: 1; transform: translateX(2px); }
+.groups-empty-state { display: grid; justify-items: center; gap: 7px; padding: 42px 24px; text-align: center; color: var(--muted); }
+.groups-empty-state-icon { display: inline-flex; align-items: center; justify-content: center; width: 54px; height: 54px; margin-bottom: 4px; border-radius: 16px; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface-2)); }
+.groups-empty-state strong { color: var(--text); font-size: 14px; }
+.groups-empty-state p { max-width: 220px; margin: 0; font-size: 12px; line-height: 1.5; }
 .groups-panel-members { padding: 18px 20px; }
 .groups-panel-members h3 { margin: 0; }
 .groups-panel-members-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 2px; }
