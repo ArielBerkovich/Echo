@@ -236,18 +236,6 @@ export default function Sidebar({
           >
             <ListFilterIcon size={14} strokeWidth={1.9} aria-hidden="true" />
           </button>
-          <button
-            type="button"
-            className={`add-channel browse-channels-button ${browsingChannels ? "active" : ""}`}
-            data-testid="browse-channels"
-            aria-label="Browse all channels"
-            aria-pressed={browsingChannels}
-            aria-controls="channel-browser-pane"
-            title={shortcutTitle("Browse channels", "browse-channels")}
-            onClick={onBrowseChannels}
-          >
-            <CompassIcon size={14} strokeWidth={1.9} aria-hidden="true" />
-          </button>
           <button type="button" className="add-channel" data-testid="create-channel" onClick={onNewChannel} title={shortcutTitle("Create channel", "create-channel")} aria-label="Create channel">
             <span className="add-channel-mark" aria-hidden="true">
               <span />
@@ -259,6 +247,7 @@ export default function Sidebar({
           {moreOpen ? <>
             <div className="menu-overlay" onMouseDown={() => setMoreOpen(false)} />
             <div className="sidebar-more-menu" role="menu" aria-label="More workspace options">
+              {onBrowseChannels ? <button type="button" role="menuitem" data-testid="browse-channels" onClick={() => { setMoreOpen(false); onBrowseChannels(); }} aria-pressed={browsingChannels}><CompassIcon size={16} aria-hidden="true" /><span><strong>Browse channels</strong><small>Find public channels</small></span></button> : null}
               {onOpenGroups ? <button type="button" role="menuitem" data-testid="open-groups" onClick={() => { setMoreOpen(false); onOpenGroups(); }}><ContactRoundIcon size={16} aria-hidden="true" /><span><strong>User groups</strong><small>Browse directory teams</small></span></button> : null}
             </div>
           </> : null}
