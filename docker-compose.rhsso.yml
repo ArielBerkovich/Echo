@@ -32,7 +32,7 @@ services:
         exit 1
 
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest
     restart: unless-stopped
     command: server /data
     environment:

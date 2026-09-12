@@ -37,7 +37,7 @@ services:
   # Self-hosted, S3-compatible object storage for file uploads. Fully
   # air-gapped: nothing leaves the Docker network at runtime.
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest
     restart: unless-stopped
     command: server /data
     environment:
