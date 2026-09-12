@@ -7,3 +7,4 @@ services:
       - "4000:4000"
     environment:
       - CLIENT_ORIGIN=http://localhost:5173
+      - RHSSO_ALLOWED_CLIENT_ORIGINS=http://localhost:5173,http://127.0.0.1:5173

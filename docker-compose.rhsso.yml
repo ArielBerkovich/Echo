@@ -32,7 +32,7 @@ services:
         exit 1
 
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest
     restart: unless-stopped
     command: server /data
     environment:
@@ -81,6 +81,8 @@ services:
       RHSSO_CLIENT_ID: echo
       RHSSO_USERNAME_CLAIM: preferred_username
       RHSSO_DISPLAY_NAME_CLAIM: name
+      RHSSO_DIRECTORY_CLIENT_ID: ${RHSSO_DIRECTORY_CLIENT_ID:-}
+      RHSSO_DIRECTORY_CLIENT_SECRET: ${RHSSO_DIRECTORY_CLIENT_SECRET:-}
     depends_on:
       mongo-init:
         condition: service_completed_successfully

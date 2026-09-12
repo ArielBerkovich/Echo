@@ -83,6 +83,17 @@ const messageSchema = new mongoose.Schema(
     // Denormalized activity fields. These let /api/activity use indexed lookups
     // instead of scanning recent message bodies with regexes.
     mentionedUserIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "User", index: true }],
+    // RHSSO group mentions are resolved at send time. Keeping the recipient
+    // snapshot makes notification/audit behavior stable if the directory later changes.
+    mentionedGroups: [{
+      _id: false,
+      provider: { type: String, required: true, default: "rhsso" },
+      id: { type: String, required: true },
+      name: { type: String, required: true },
+      path: { type: String, required: true },
+      memberCount: { type: Number, required: true },
+      echoMemberIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    }],
     mentionsEveryone: { type: Boolean, default: false, index: true },
     threadRootAuthor: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null, index: true },
     // External automation metadata. `idempotencyKey` prevents duplicate posts
@@ -195,6 +206,10 @@ messageSchema.methods.toPublicJSON = function () {
     kind: this.kind || "user",
     parentId: this.parentId ? this.parentId.toString() : null,
     mentionedUserIds: (this.mentionedUserIds || []).map((id) => id.toString()),
+    mentionedGroups: (this.mentionedGroups || []).map((group) => ({
+      provider: group.provider || "rhsso", id: group.id, name: group.name, path: group.path, memberCount: group.memberCount,
+      echoMemberIds: (group.echoMemberIds || []).map((id) => id.toString()),
+    })),
     mentionsEveryone: !!this.mentionsEveryone,
     externalKey: this.externalKey || null,
     automation: this.automation

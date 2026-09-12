@@ -7,11 +7,12 @@ import SearchBox from "./SearchBox.js";
 const ActivityFeed = lazy(() => import("./ActivityFeed.js"));
 const ChannelBrowser = lazy(() => import("./ChannelBrowser.js"));
 const ChannelView = lazy(() => import("./ChannelView.js"));
+const GroupsPanel = lazy(() => import("./GroupsPanel.js"));
 const SavedFeed = lazy(() => import("./SavedFeed.js"));
 const SearchResults = lazy(() => import("./SearchResults.js"));
 const SettingsModal = lazy(() => import("./SettingsModal.js"));
 
-export default function WorkspaceContent({ view, search, browse, feeds, conversation }) {
+export default function WorkspaceContent({ view, groups, search, browse, feeds, conversation }) {
   const activeChannel = conversation.channel;
   const channelViewRef = useRef(null);
   const addPeopleChannel = activeChannel &&
@@ -93,6 +94,7 @@ export default function WorkspaceContent({ view, search, browse, feeds, conversa
       </div>
       <ActiveWorkspaceView
         view={view}
+        groups={groups}
         search={search}
         browse={browse}
         feeds={feeds}
@@ -103,9 +105,11 @@ export default function WorkspaceContent({ view, search, browse, feeds, conversa
   );
 }
 
-function ActiveWorkspaceView({ view, search, browse, feeds, conversation, channelViewRef }) {
+function ActiveWorkspaceView({ view, groups, search, browse, feeds, conversation, channelViewRef }) {
   let content;
-  if (search.query) {
+  if (groups) {
+    content = <GroupsPanel {...groups} />;
+  } else if (search.query) {
     content = <SearchResults query={search.query} onJump={search.onJump} onClose={search.onClose} />;
   } else if (view === "browse") {
     content = (

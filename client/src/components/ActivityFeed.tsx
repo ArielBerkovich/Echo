@@ -5,6 +5,7 @@ import { api } from "../api.js";
 import { getSocket } from "../socket.js";
 import { formatDateTime } from "../lib/time.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
+import { decorateGroupMentions, displayGroupMentions } from "../lib/groupMentions.js";
 import { queryKeys } from "../lib/queryClient.js";
 import Avatar from "./Avatar.js";
 import ConfirmDialog from "./ConfirmDialog.js";
@@ -132,7 +133,10 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
                 context={activityContext(it)}
                 time={formatDateTime(it.createdAt)}
                 body={it.body}
-                renderMarkdown={renderMarkdown}
+                renderMarkdown={(body) => decorateGroupMentions(
+                  renderMarkdown(displayGroupMentions(body, it.mentionedGroups)),
+                  it.mentionedGroups,
+                )}
               />
             </div>
             <button

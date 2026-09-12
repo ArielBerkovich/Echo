@@ -22,6 +22,7 @@ import { azureDevOpsRouter } from "./routes/azureDevOps.js";
 import { allureRouter } from "./routes/allure.js";
 import { jenkinsRouter } from "./routes/jenkins.js";
 import { mentionWebhooksRouter } from "./routes/mentionWebhooks.js";
+import { groupsRouter } from "./routes/groups.js";
 
 export function createApp() {
   const app = express();
@@ -45,6 +46,7 @@ export function createApp() {
   app.use("/api/auth", authRouter);
   app.use("/api/channels", channelsRouter);
   app.use("/api/users", usersRouter);
+  app.use("/api/groups", groupsRouter);
   app.use("/api/workspace", workspaceRouter);
   app.use("/api/dms", dmsRouter);
   app.use("/api/activity", activityRouter);

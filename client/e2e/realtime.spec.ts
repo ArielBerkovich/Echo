@@ -185,7 +185,8 @@ test("updates a browsed channel when another member adds the current user", asyn
       body: { name: channelName, type: "public" },
     });
 
-    await alicePage.page.getByTestId("browse-channels").click();
+    await alicePage.page.getByTestId("sidebar-more").click();
+    await alicePage.page.getByTestId("more-browse-channels").click();
     await alicePage.page.getByTestId("channel-browser-search").fill(channelName);
     const row = alicePage.page.getByTestId(`browse-channel-${channelName}`);
     await expect(row.getByRole("button", { name: `Join #${channelName}` })).toBeVisible();
@@ -215,7 +216,8 @@ test("updates an open members panel when another user joins from Browse", async 
     await expect(membersPanel).toBeVisible();
     await expect(membersPanel).not.toContainText(alice.displayName);
 
-    await alicePage.page.getByTestId("browse-channels").click();
+    await alicePage.page.getByTestId("sidebar-more").click();
+    await alicePage.page.getByTestId("more-browse-channels").click();
     await alicePage.page.getByTestId("channel-browser-search").fill(channelName);
     await alicePage.page
       .getByTestId(`browse-channel-${channelName}`)
@@ -241,7 +243,8 @@ test("uses distinct system messages for self-joins and added members", async ({ 
   });
 
   await withAliceBobPages(browser, async ({ alicePage, bobPage }) => {
-    await alicePage.page.getByTestId("browse-channels").click();
+    await alicePage.page.getByTestId("sidebar-more").click();
+    await alicePage.page.getByTestId("more-browse-channels").click();
     await alicePage.page.getByTestId("channel-browser-search").fill(selfJoinName);
     await alicePage.page
       .getByTestId(`browse-channel-${selfJoinName}`)

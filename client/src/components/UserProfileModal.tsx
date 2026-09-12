@@ -7,6 +7,7 @@ import { StarIcon } from "lucide-react";
 export default function UserProfileModal({ user, currentUserId, online, isStarred, onToggleStarred, onMessage, onClose }) {
   if (!user) return null;
   const isSelf = user.id === currentUserId;
+  const isDirectoryOnly = user.directoryOnly === true;
 
   return (
     <Modal
@@ -22,14 +23,14 @@ export default function UserProfileModal({ user, currentUserId, online, isStarre
         <Avatar name={user.displayName} src={user.avatarUrl} size={96} />
         <div className="profile-name" dir="auto">{user.displayName}</div>
         <div className="profile-handle">@{user.username}</div>
-        {!(["azure", "system"].includes(user.username)) && (
+        {isDirectoryOnly ? <div className="profile-directory-source">Managed in RHSSO</div> : !(["azure", "system"].includes(user.username)) && (
           <div className={`profile-presence ${online ? "online" : ""}`} data-testid="profile-presence">
             <span className="profile-dot" />
             {online ? "Active" : "Away"}
           </div>
         )}
       </div>
-      {!isSelf && (
+      {!isSelf && !isDirectoryOnly && (
         <div className="profile-actions">
           <button
             type="button"

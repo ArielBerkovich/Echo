@@ -233,6 +233,8 @@ export const api = {
   updateAzureDevOpsIntegration: (id, payload) =>
     request(`/integrations/azure-devops/${encodeURIComponent(id)}`, { method: "PATCH", body: payload }),
   listUsers: () => request("/users"),
+  listGroups: () => request("/groups"),
+  getGroup: (provider, groupId) => request(`/groups/${encodeURIComponent(provider)}/${encodeURIComponent(groupId)}`),
   getUser: (userId) => request(`/users/${encodeURIComponent(userId)}`),
   listChannels: () => request("/channels"),
   listAllChannels: () => request("/channels?scope=all"),

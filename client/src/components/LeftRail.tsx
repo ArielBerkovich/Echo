@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ActivityIcon, BookmarkIcon, HomeIcon, MessageSquareTextIcon, SettingsIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ActivityIcon, BookmarkIcon, CompassIcon, ContactRoundIcon, HomeIcon, MessageSquareTextIcon, SettingsIcon } from "lucide-react";
 import Avatar from "./Avatar.js";
 import { LeaveIcon } from "./Icons.js";
 import Logo from "./Logo.js";
@@ -10,6 +10,7 @@ import { api } from "../api.js";
 import { uploadSizeError } from "../lib/uploads.js";
 import { useAuthUrl, useAuthUrls } from "../lib/useAuthUrl.js";
 import { shortcutTitle } from "../lib/keyboardShortcuts.js";
+import { MoreIcon } from "./Icons.js";
 
 const icon = (Icon) => () => <Icon size={22} strokeWidth={2} />;
 const ITEMS = [
@@ -24,14 +25,32 @@ function railNameFontSize(name) {
   return Math.max(6, Math.min(12, 68 / (longestWord * 0.66)));
 }
 
-export default function LeftRail({ view, onSelect, badges = {}, user, workspace, workspaceLoading = false, onLogout, onUpdated, customEmojis = [], latestActivity }) {
+export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroups, badges = {}, user, workspace, workspaceLoading = false, onLogout, onUpdated, customEmojis = [], latestActivity }) {
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
   const [displayNameDialogOpen, setDisplayNameDialogOpen] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef(null);
   const workspaceLogoSrc = useAuthUrl(workspace?.logoUrl);
   const customEmojiUrls = useAuthUrls(customEmojis.map((emoji) => emoji.url));
   const brandReady = !workspaceLoading && (!workspace?.logoUrl || !!workspaceLogoSrc);
+
+  useEffect(() => {
+    if (!moreOpen) return undefined;
+    const closeOnOutsidePointer = (event) => {
+      if (!moreRef.current?.contains(event.target)) setMoreOpen(false);
+    };
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setMoreOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [moreOpen]);
 
   function onAvatarFileSelected(file) {
     if (!file) return;
@@ -117,6 +136,20 @@ export default function LeftRail({ view, onSelect, badges = {}, user, workspace,
               </button>
           );
         })}
+        {onOpenGroups ? (
+          <div className="rail-more-wrap" ref={moreRef}>
+            <button type="button" className={`rail-item rail-more-trigger ${moreOpen ? "active" : ""}`} data-testid="sidebar-more" onClick={() => setMoreOpen((open) => !open)} title={moreOpen ? undefined : "More workspace options"} aria-label="More workspace options" aria-expanded={moreOpen} aria-haspopup="menu">
+              <span className="rail-icon"><MoreIcon /></span>
+            </button>
+            {moreOpen ? <>
+              <div className="menu-overlay" onMouseDown={() => setMoreOpen(false)} />
+              <div className="rail-more-menu" role="menu" aria-label="More workspace options">
+                {onBrowseChannels ? <button type="button" role="menuitem" data-testid="more-browse-channels" onClick={() => { setMoreOpen(false); onBrowseChannels(); }} aria-pressed={view === "browse"}><CompassIcon size={16} aria-hidden="true" /><span><strong>Browse channels</strong><small>Find public channels</small></span></button> : null}
+                <button type="button" role="menuitem" data-testid="open-groups" onClick={() => { setMoreOpen(false); onOpenGroups(); }}><ContactRoundIcon size={16} aria-hidden="true" /><span><strong>User groups</strong><small>Browse directory teams</small></span></button>
+              </div>
+            </> : null}
+          </div>
+        ) : null}
       </div>
       {user && (
         <div className="rail-account">

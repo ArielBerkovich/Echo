@@ -237,17 +237,17 @@ test("browses, filters, and joins public channels while private channels stay in
 
   await page.goto("/");
   await expect(page.getByTestId("channel-title")).toContainText("general");
-  await page.getByTestId("browse-channels").click();
+  await page.getByTestId("sidebar-more").click();
+  await page.getByTestId("more-browse-channels").click();
 
   await expect(page.getByTestId("channel-browser")).toBeVisible();
-  await expect(page.getByTestId("browse-channels")).toHaveClass(/active/);
-  await expect(page.getByTestId("browse-channels")).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByTestId("channel-row-general")).not.toHaveClass(/active/);
   await page.getByTestId(`channel-row-${fixture.projectChannel.name}`).click();
   await expect(page.getByTestId("channel-browser")).toBeHidden();
   await expect(page.getByText(`#${fixture.projectChannel.name}`, { exact: true }).first()).toBeVisible();
 
-  await page.getByTestId("browse-channels").click();
+  await page.getByTestId("sidebar-more").click();
+  await page.getByTestId("more-browse-channels").click();
   await expect(page.getByTestId("channel-browser")).toBeVisible();
   const browserSearch = page.getByTestId("channel-browser-search");
   await expect(browserSearch).toBeFocused();

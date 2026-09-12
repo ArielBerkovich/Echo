@@ -30,6 +30,7 @@ export default function ThreadPanel({
   savedIds,
   onToggleSave,
   onOpenProfile,
+  onOpenGroup,
   onOpenChannel,
   onAddCustomEmoji,
   onClose,
@@ -360,6 +361,7 @@ export default function ThreadPanel({
                 saved={savedIds?.has(m.id)}
                 onToggleSave={() => onToggleSave?.(m.id)}
                 onOpenProfile={onOpenProfile}
+                onOpenGroup={onOpenGroup}
                 onOpenChannel={onOpenChannel}
                 showActions={actionsFor === m.id}
                 onActivate={() => {

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronDownIcon, CompassIcon, HashIcon, ListFilterIcon, LockKeyholeIcon, MessageCircleIcon, SquarePenIcon, StarIcon } from "lucide-react";
+import { ChevronDownIcon, HashIcon, ListFilterIcon, LockKeyholeIcon, MessageCircleIcon, SquarePenIcon, StarIcon } from "lucide-react";
 import Avatar, { GroupAvatar } from "./Avatar.js";
 import { relativeTime } from "../lib/time.js";
 import { useAuthUrls } from "../lib/useAuthUrl.js";
@@ -88,6 +88,7 @@ export default function Sidebar({
   onSelect,
   onPrefetchChannel,
   onNewChannel,
+  onOpenGroups,
   onBrowseChannels,
   browsingChannels = false,
   publicChannelCount = null,
@@ -232,18 +233,6 @@ export default function Sidebar({
             aria-pressed={filterOpen}
           >
             <ListFilterIcon size={14} strokeWidth={1.9} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            className={`add-channel browse-channels-button ${browsingChannels ? "active" : ""}`}
-            data-testid="browse-channels"
-            aria-label="Browse all channels"
-            aria-pressed={browsingChannels}
-            aria-controls="channel-browser-pane"
-            title={shortcutTitle("Browse channels", "browse-channels")}
-            onClick={onBrowseChannels}
-          >
-            <CompassIcon size={14} strokeWidth={1.9} aria-hidden="true" />
           </button>
           <button type="button" className="add-channel" data-testid="create-channel" onClick={onNewChannel} title={shortcutTitle("Create channel", "create-channel")} aria-label="Create channel">
             <span className="add-channel-mark" aria-hidden="true">

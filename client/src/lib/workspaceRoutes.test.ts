@@ -5,6 +5,7 @@ import { currentRoute, isEchoMessageLink, parseWorkspacePath, workspacePath } fr
 describe("workspace routes", () => {
   it("builds stable paths for workspace views and conversations", () => {
     assert.equal(workspacePath({ view: "activity" }), "/activity");
+    assert.equal(workspacePath({ view: "groups" }), "/groups");
     assert.equal(workspacePath({ view: "settings" }), "/settings/account");
     assert.equal(workspacePath({ view: "home", convId: "id-1", convName: "channel 1", convType: "public" }), "/channels/id-1");
     assert.equal(workspacePath({ view: "dms", convId: "id-2", convName: "alice", convType: "dm" }), "/dms/id-2");
@@ -27,6 +28,9 @@ describe("workspace routes", () => {
   it("parses view, conversation, and search routes", () => {
     assert.deepEqual(parseWorkspacePath("/saved"), {
       overlay: null, view: "saved", convId: null, convType: null, searchQuery: null,
+    });
+    assert.deepEqual(parseWorkspacePath("/groups"), {
+      overlay: null, view: "groups", convId: null, convType: null, searchQuery: null,
     });
     assert.deepEqual(parseWorkspacePath("/channels/abc"), {
       overlay: null, view: "home", convId: "abc", convType: "channel", searchQuery: null,

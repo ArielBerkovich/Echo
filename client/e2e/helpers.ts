@@ -5,12 +5,21 @@ const DEFAULT_PASSWORD = "Password1";
 const FIXTURE_ID = uniqueSuffix("e2e");
 let workspaceFixturePromise = null;
 
+function apiRequestUrl(path) {
+  const baseUrl = process.env.ECHO_E2E_BASE_URL || process.env.ECHO_URL || "http://127.0.0.1:5173";
+  return new URL(path, baseUrl).toString();
+}
+
+function request(page, method, path, options) {
+  return page.request[method](apiRequestUrl(path), options);
+}
+
 export function uniqueSuffix(prefix = "e2e") {
   return `${prefix}-${Date.now()}-${crypto.randomBytes(3).toString("hex")}`;
 }
 
 export async function openLocalAuth(page) {
-  const statusResponse = await page.request.get("/api/auth/setup-status");
+  const statusResponse = await request(page, "get", "/api/auth/setup-status");
   const { rhssoEnabled } = await statusResponse.json();
   if (!rhssoEnabled) return;
 
@@ -21,7 +30,7 @@ export async function openLocalAuth(page) {
 
 export async function registerUser(page, { username, password = DEFAULT_PASSWORD, displayName }) {
   const [firstName, ...lastParts] = String(displayName || "Test User").split(/\s+/);
-  const registration = () => page.request.post("/api/auth/register", {
+  const registration = () => request(page, "post", "/api/auth/register", {
     data: { username, password, firstName, lastName: lastParts.join(" ") || "User" },
   });
 
@@ -32,7 +41,7 @@ export async function registerUser(page, { username, password = DEFAULT_PASSWORD
   // workers can race here before any worker has completed that bootstrap.
   // Create the required admin account and retry the intended registration.
   if (!response.ok() && body.error === "The first account must use the username admin" && username !== "admin") {
-    const adminResponse = await page.request.post("/api/auth/register", {
+    const adminResponse = await request(page, "post", "/api/auth/register", {
       data: { username: "admin", password: DEFAULT_PASSWORD, firstName: "Admin", lastName: "User" },
     });
     if (!adminResponse.ok() && adminResponse.status() !== 409) {
@@ -50,14 +59,14 @@ export async function registerUser(page, { username, password = DEFAULT_PASSWORD
 }
 
 async function loginOrRegisterUser(page, user) {
-  const loginResponse = await page.request.post("/api/auth/login", {
+  const loginResponse = await request(page, "post", "/api/auth/login", {
     data: { username: user.username, password: user.password },
   });
   if (loginResponse.ok()) {
     return loginResponse.json();
   }
 
-  const registerResponse = await page.request.post("/api/auth/register", {
+  const registerResponse = await request(page, "post", "/api/auth/register", {
     data: {
       username: user.username,
       password: user.password,
@@ -70,7 +79,7 @@ async function loginOrRegisterUser(page, user) {
     throw new Error(body.error || `failed to bootstrap ${user.username}`);
   }
 
-  const retryResponse = await page.request.post("/api/auth/login", {
+  const retryResponse = await request(page, "post", "/api/auth/login", {
     data: { username: user.username, password: user.password },
   });
   expect(retryResponse.ok(), `failed to log in as ${user.username}`).toBeTruthy();
@@ -78,10 +87,10 @@ async function loginOrRegisterUser(page, user) {
 }
 
 async function ensureWorkspaceAdmin(page) {
-  const statusResponse = await page.request.get("/api/auth/setup-status");
+  const statusResponse = await request(page, "get", "/api/auth/setup-status");
   const { needsSetup } = await statusResponse.json();
   if (!needsSetup) return;
-  const response = await page.request.post("/api/auth/register", {
+  const response = await request(page, "post", "/api/auth/register", {
     data: { username: "admin", password: DEFAULT_PASSWORD },
   });
   if (response.ok() || response.status() === 409) return;
@@ -91,7 +100,7 @@ async function ensureWorkspaceAdmin(page) {
   // response from the losing worker as a bootstrap failure.
   for (let attempt = 0; attempt < 10; attempt += 1) {
     await new Promise((resolve) => setTimeout(resolve, 100));
-    const retryStatus = await page.request.get("/api/auth/setup-status");
+    const retryStatus = await request(page, "get", "/api/auth/setup-status");
     const retryBody = await retryStatus.json().catch(() => ({}));
     if (retryStatus.ok() && !retryBody.needsSetup) return;
   }
@@ -101,7 +110,7 @@ async function ensureWorkspaceAdmin(page) {
 }
 
 export async function loginAndSeedToken(page, username, password) {
-  const response = await page.request.post("/api/auth/login", {
+  const response = await request(page, "post", "/api/auth/login", {
     data: { username, password },
   });
   expect(response.ok(), `failed to log in as ${username}`).toBeTruthy();
@@ -135,7 +144,7 @@ export async function requestAsToken(page, token, path, options = {}) {
       },
     };
   }
-  const response = await page.request.fetch(`/api${path}`, {
+  const response = await page.request.fetch(apiRequestUrl(`/api${path}`), {
     method: options.method || "GET",
     headers: {
       ...(options.headers || {}),
@@ -149,7 +158,7 @@ export async function requestAsToken(page, token, path, options = {}) {
 }
 
 export async function uploadAsToken(page, token, file) {
-  const response = await page.request.post("/api/uploads", {
+  const response = await request(page, "post", "/api/uploads", {
     headers: { Authorization: `Bearer ${token}` },
     multipart: { files: file },
   });
@@ -189,8 +198,7 @@ export async function seedWorkspaceFixture(page) {
     await seedToken(page, aliceAuth.token);
 
     const projectChannelName = `project-alpha-${suffix}`;
-    const projectResponse = await page.request.get(
-      `/api/channels/by-name/${encodeURIComponent(projectChannelName)}`,
+    const projectResponse = await request(page, "get", `/api/channels/by-name/${encodeURIComponent(projectChannelName)}`,
       {
         headers: { Authorization: `Bearer ${aliceAuth.token}` },
       }

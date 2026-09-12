@@ -81,6 +81,7 @@ const ChannelView = forwardRef(function ChannelView({
   onRememberScroll,
   onScrollToBottomTargetConsumed,
   onOpenProfile,
+  onOpenGroup,
   onOpenChannel,
   onSearchInChannel,
   onOpenForwardedDm,
@@ -1275,6 +1276,7 @@ const ChannelView = forwardRef(function ChannelView({
                     saved={savedIds?.has(m.id)}
                     onToggleSave={() => onToggleSave?.(m.id)}
                     onOpenProfile={onOpenProfile}
+                    onOpenGroup={onOpenGroup}
                     onOpenChannel={onOpenChannel}
                     showActions={actionsFor === m.id}
                     onActivate={() => {
@@ -1426,6 +1428,7 @@ const ChannelView = forwardRef(function ChannelView({
             savedIds={savedIds}
             onToggleSave={onToggleSave}
             onOpenProfile={onOpenProfile}
+            onOpenGroup={onOpenGroup}
             onOpenChannel={onOpenChannel}
             onAddCustomEmoji={onAddCustomEmoji}
             onClose={() => { setThread(null); setThreadJumpTargetId(null); setThreadLightbox(null); }}

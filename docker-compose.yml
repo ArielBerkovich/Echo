@@ -37,7 +37,7 @@ services:
   # Self-hosted, S3-compatible object storage for file uploads. Fully
   # air-gapped: nothing leaves the Docker network at runtime.
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest
     restart: unless-stopped
     command: server /data
     environment:
@@ -89,6 +89,8 @@ services:
       - RHSSO_CLIENT_ID=echo
       - RHSSO_USERNAME_CLAIM=preferred_username
       - RHSSO_DISPLAY_NAME_CLAIM=name
+      - RHSSO_DIRECTORY_CLIENT_ID=${RHSSO_DIRECTORY_CLIENT_ID:-}
+      - RHSSO_DIRECTORY_CLIENT_SECRET=${RHSSO_DIRECTORY_CLIENT_SECRET:-}
       - RHSSO_ALLOWED_CLIENT_ORIGINS=http://localhost:8090,http://127.0.0.1:8090,http://${ECHO_PUBLIC_HOST:-localhost}:8090
     depends_on:
       mongo:

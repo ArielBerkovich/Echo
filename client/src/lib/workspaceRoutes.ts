@@ -1,4 +1,4 @@
-const STATIC_VIEWS = new Set(["browse", "activity", "saved", "dms", "settings"]);
+const STATIC_VIEWS = new Set(["browse", "groups", "activity", "saved", "dms", "settings"]);
 const SETTINGS_TABS = new Set(["account", "appearance", "preferences", "webhooks", "workspace", "integrations", "desktop", "shortcuts", "api"]);
 
 export function isEchoMessageLink(href, origin = typeof window === "undefined" ? "http://localhost" : window.location.origin) {
@@ -23,6 +23,7 @@ export function workspacePath({ view = "home", convId = null, convName = null, c
   const conversation = convId || convName;
   if (searchQuery) return `/search?q=${encodeURIComponent(searchQuery)}`;
   if (view === "browse") return "/browse";
+  if (view === "groups") return "/groups";
   if (view === "activity") return "/activity";
   if (view === "saved") return "/saved";
   if (view === "settings") return `/settings/${SETTINGS_TABS.has(settingsTab) ? settingsTab : "account"}`;
