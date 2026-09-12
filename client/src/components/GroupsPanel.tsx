@@ -94,7 +94,11 @@ export default function GroupsPanel({ onClose, onOpenProfile, openGroup = null }
           <div className="groups-panel-list" aria-label="Available groups">
             <div className="groups-panel-list-head"><label className="sr-only" htmlFor="group-search">Search user groups</label><div className="groups-panel-search"><SearchIcon size={15} aria-hidden="true" /><input id="group-search" className="groups-panel-filter" value={groupQuery} onChange={(event) => setGroupQuery(event.target.value)} placeholder="Search user groups" /></div></div>
             {groupsLoading ? <div className="people-empty">Loading groups…</div> : null}
-            {!groupsLoading && groups.length === 0 ? <div className="people-empty">No groups are available.</div> : null}
+            {!groupsLoading && groups.length === 0 ? <div className="groups-empty-state" data-testid="groups-empty-state">
+              <span className="groups-empty-state-icon"><ContactRoundIcon size={25} aria-hidden="true" /></span>
+              <strong>No user groups yet</strong>
+              <p>Groups appear here when they have at least one member in Echo.</p>
+            </div> : null}
             {!groupsLoading && groups.length > 0 && filteredGroups.length === 0 ? <div className="people-empty">No groups match that search.</div> : null}
             {filteredGroups.map((group) => <button type="button" key={`${group.provider}:${group.id}`} className={`groups-panel-group${selected?.id === group.id && selected?.provider === group.provider ? " active" : ""}`} onClick={() => selectGroup(group)}>
               <span className="groups-panel-group-icon"><ContactRoundIcon size={17} aria-hidden="true" /></span>

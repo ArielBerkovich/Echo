@@ -34,7 +34,15 @@ export async function listGroups() {
   const groups = await Promise.all(available.map(async ([id, provider]: any) =>
     (await provider.listGroups()).map((group: any) => publicGroup(id, group))
   ));
-  return groups.flat();
+  const listedGroups = groups.flat();
+  // Keep directory-only groups out of every consumer of this endpoint. In
+  // particular, this prevents empty groups from appearing in the mention
+  // picker before a user has opened the group details.
+  const withEchoMembers = await Promise.all(listedGroups.map(async (group: any) => {
+    const members = await getGroupMembers(group.provider, group.id);
+    return members?.some((member: any) => member.echoUser) ? group : null;
+  }));
+  return withEchoMembers.filter(Boolean);
 }
 
 export async function getGroup(providerId: string, groupId: string) {
