@@ -119,11 +119,6 @@ export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroup
               </button>
           );
         })}
-        {onBrowseChannels ? (
-          <button type="button" className={`rail-item rail-item-browse ${view === "browse" ? "active" : ""}`} data-testid="browse-channels" aria-label="Browse all channels" aria-pressed={view === "browse"} aria-controls="channel-browser-pane" title={shortcutTitle("Browse channels", "browse-channels")} onClick={onBrowseChannels}>
-            <span className="rail-icon"><CompassIcon size={22} strokeWidth={2} /></span>
-          </button>
-        ) : null}
         {onOpenGroups ? (
           <div className="rail-more-wrap">
             <button type="button" className={`rail-item rail-more-trigger ${moreOpen ? "active" : ""}`} data-testid="sidebar-more" onClick={() => setMoreOpen((open) => !open)} title="More workspace options" aria-label="More workspace options" aria-expanded={moreOpen} aria-haspopup="menu">
