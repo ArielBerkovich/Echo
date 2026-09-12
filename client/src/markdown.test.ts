@@ -2,7 +2,23 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { Marked } from "marked";
 
-import { formatEchoDateTime, preserveMarkdownBlankLines } from "./markdown.js";
+import { formatEchoDateTime, preserveMarkdownBlankLines, protectChannelTags } from "./markdown.js";
+
+describe("channel tags", () => {
+  it("protects a channel tag at the start of a message from heading parsing", () => {
+    assert.equal(
+      protectChannelTags("#team-leaders-forum", new Set(["team-leaders-forum"])),
+      '<span class="channel-tag" data-channel-tag="team-leaders-forum">#team-leaders-forum</span>'
+    );
+  });
+
+  it("does not rewrite unknown tags or fenced code", () => {
+    assert.equal(
+      protectChannelTags("#missing\n```\n#team-leaders-forum\n```", new Set(["team-leaders-forum"])),
+      "#missing\n```\n#team-leaders-forum\n```"
+    );
+  });
+});
 
 describe("Echo datetime tokens", () => {
   it("formats valid ISO timestamps in the browser locale", () => {
