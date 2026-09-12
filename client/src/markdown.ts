@@ -232,22 +232,6 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
         },
       },
       {
-        name: "channelTag",
-        level: "inline",
-        start(src) {
-          const i = src.indexOf("#");
-          return i < 0 ? undefined : i;
-        },
-        tokenizer(src) {
-          const m = /^#([a-z0-9_-]+)/i.exec(src);
-          if (!m || !publicChannels.has(m[1].toLowerCase())) return undefined;
-          return { type: "channelTag", raw: m[0], name: m[1].toLowerCase() };
-        },
-        renderer(token) {
-          return `<span class="channel-tag" data-channel-tag="${token.name}">#${token.name}</span>`;
-        },
-      },
-      {
         // ":shortcode:" -> the emoji character (skips unknown codes).
         name: "emoji",
         level: "inline",
