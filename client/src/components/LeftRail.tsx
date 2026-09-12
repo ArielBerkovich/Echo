@@ -138,7 +138,7 @@ export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroup
         })}
         {onOpenGroups ? (
           <div className="rail-more-wrap" ref={moreRef}>
-            <button type="button" className={`rail-item rail-more-trigger ${moreOpen ? "active" : ""}`} data-testid="sidebar-more" onClick={() => setMoreOpen((open) => !open)} title="More workspace options" aria-label="More workspace options" aria-expanded={moreOpen} aria-haspopup="menu">
+            <button type="button" className={`rail-item rail-more-trigger ${moreOpen ? "active" : ""}`} data-testid="sidebar-more" onClick={() => setMoreOpen((open) => !open)} title={moreOpen ? undefined : "More workspace options"} aria-label="More workspace options" aria-expanded={moreOpen} aria-haspopup="menu">
               <span className="rail-icon"><MoreIcon /></span>
             </button>
             {moreOpen ? <>

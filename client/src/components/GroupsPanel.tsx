@@ -71,17 +71,24 @@ export default function GroupsPanel({ onClose, onOpenProfile, openGroup = null }
     if (group && (selected?.provider !== group.provider || selected?.id !== group.id)) selectGroup(group);
   }, [groups, groupsLoading, openGroup, selected?.id, selected?.provider, selectGroup]);
 
+  useEffect(() => {
+    if (groupsLoading || openGroup || selected || groups.length === 0) return;
+    selectGroup(groups[0]);
+  }, [groups, groupsLoading, openGroup, selected, selectGroup]);
+
   return (
-    <aside className="groups-panel" data-testid="groups-panel" aria-label="User groups">
+    <main className="groups-panel" data-testid="groups-panel" aria-label="User groups">
       <header className="groups-panel-header">
-        <div>
-          <h2>User groups</h2>
-          <p>Notify teams with one mention</p>
+        <span className="groups-panel-title">
+          <ContactRoundIcon size={20} strokeWidth={1.8} aria-hidden="true" />
+          <span>User groups</span>
+        </span>
+        <div className="groups-panel-header-actions">
+          <span className="groups-panel-count">{groups.length} {groups.length === 1 ? "group" : "groups"}</span>
+          <CloseButton size="sm" onClick={onClose} label="Close groups" />
         </div>
-        <CloseButton size="sm" onClick={onClose} label="Close groups" />
       </header>
       <div className="groups-panel-body">
-        <div className="groups-panel-summary"><strong>{groups.length} group{groups.length === 1 ? "" : "s"}</strong><span>Managed by your directory</span></div>
         {error ? <div className="error" role="alert">{error}</div> : null}
         <div className="groups-panel-layout">
           <div className="groups-panel-list" aria-label="Available groups">
@@ -109,6 +116,6 @@ export default function GroupsPanel({ onClose, onOpenProfile, openGroup = null }
           </div>
         </div>
       </div>
-    </aside>
+    </main>
   );
 }

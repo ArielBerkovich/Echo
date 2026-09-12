@@ -15,7 +15,7 @@ test("opens the groups workspace and shows Echo members", async ({ page }) => {
       body: JSON.stringify({ groups: [{ provider: "rhsso", id: "design-group", name: "Design", path: "/Design" }] }),
     });
   });
-  await page.route("**/api/groups/rhsso/design-group", async (route) => {
+  await page.route(/\/api\/groups\/rhsso\/design-group(?:\?.*)?$/, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -32,12 +32,14 @@ test("opens the groups workspace and shows Echo members", async ({ page }) => {
   await page.goto("/");
   await page.getByTestId("sidebar-more").click();
   await page.getByTestId("open-groups").click();
+  await expect(page).toHaveURL(/\/groups$/);
 
   const panel = page.getByTestId("groups-panel");
   await expect(panel).toBeVisible();
+  await expect(page.getByTestId("pane-search")).toBeVisible();
   await expect(panel).toContainText("1 group");
   await panel.getByRole("button", { name: /Design/ }).click();
-  await expect(panel).toContainText("Alice Test");
+  await expect(panel).toContainText("Alice Directory");
   await expect(panel).not.toContainText("External User");
 });
 
@@ -58,26 +60,32 @@ test("renders a group mention as a clickable pill that opens its group", async (
       body: JSON.stringify({ groups: [{ provider: "rhsso", id: "design-group", name: "Design", path: "/Design" }] }),
     });
   });
-  await page.route("**/api/groups/rhsso/design-group", async (route) => {
+  await page.route(/\/api\/groups\/rhsso\/design-group(?:\?.*)?$/, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({ group: { provider: "rhsso", id: "design-group", name: "Design", path: "/Design" }, members: [] }),
     });
   });
-  await page.route(`**/api/channels/${fixture.generalChannel.id}/messages*`, async (route) => {
+  await page.route("**/api/channels/**/messages**", async (route) => {
     const response = await route.fetch();
     const payload = await response.json();
     payload.messages = payload.messages.map((message) => message.id === created.message.id
-      ? { ...message, mentionedGroups: [{ provider: "rhsso", id: "design-group", name: "Design", path: "/Design" }] }
+      ? { ...message, body: "Please review with @Design", mentionedGroups: [{ provider: "rhsso", id: "design-group", name: "Design", path: "/Design" }] }
       : message);
-    await route.fulfill({ response, json: payload });
+    await route.fulfill({
+      status: response.status(),
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
   });
 
   await page.goto("/channels/general");
   const message = messageById(page, created.message.id);
   const groupMention = message.locator(".mention--group");
   await expect(groupMention).toHaveText("@Design");
+  await expect(groupMention).toHaveAttribute("aria-label", "@Design, group");
+  await expect(groupMention.locator("svg.mention-group-icon")).toBeVisible();
   await groupMention.click();
   await expect(page.getByTestId("groups-panel")).toBeVisible();
   await expect(page.getByTestId("groups-panel")).toContainText("Design");

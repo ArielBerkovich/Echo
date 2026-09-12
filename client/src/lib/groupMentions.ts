@@ -2,6 +2,8 @@ function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+const GROUP_ICON = `<svg class="mention-group-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
+
 export function displayGroupMentions(body, groups = []) {
   let output = String(body || "");
   for (const group of groups) {
@@ -44,7 +46,9 @@ export function decorateGroupMentions(html, groups = []) {
         pill.className = "mention mention--group";
         pill.dataset.groupProvider = String(group.provider || "rhsso");
         pill.dataset.groupId = String(group.id || "");
-        pill.textContent = match[0];
+        pill.setAttribute("aria-label", `${match[0]}, group`);
+        pill.innerHTML = `${GROUP_ICON}<span class="mention-group-label"></span>`;
+        pill.querySelector(".mention-group-label").textContent = match[0];
         fragment.appendChild(pill);
         last = match.index + match[0].length;
       }

@@ -16,12 +16,16 @@
       "redirectUris": [
         "http://localhost:8090/api/auth/rhsso/callback",
         "http://localhost:8091/api/auth/rhsso/callback",
-        "http://localhost:8090/api/auth/rhsso/callback"
+        "http://localhost:8090/api/auth/rhsso/callback",
+        "http://localhost:5173/api/auth/rhsso/callback",
+        "http://127.0.0.1:5173/api/auth/rhsso/callback"
       ],
       "webOrigins": [
         "http://localhost:8090",
         "http://localhost:8091",
-        "http://localhost:8090"
+        "http://localhost:8090",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173"
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256"

@@ -30,7 +30,6 @@ import {
 import { useHotkeys } from "react-hotkeys-hook";
 
 const HIDDEN_KEY = "echo.hiddenChannels";
-const GroupsPanel = lazy(() => import("./components/GroupsPanel.js"));
 function loadHidden() {
   return new Set(readJson(HIDDEN_KEY, []));
 }
@@ -83,11 +82,10 @@ export default function App() {
   const [showAddEmoji, setShowAddEmoji] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showApiDocs, setShowApiDocs] = useState(false); // REST API reference page
-  const [showGroups, setShowGroups] = useState(false);
   const [groupToOpen, setGroupToOpen] = useState(null);
   const [profileUser, setProfileUser] = useState(null); // user whose profile card is open
   const [hidden, setHidden] = useState(loadHidden); // hidden channel ids
-  const [view, setViewState] = useState("home"); // home | browse | dms | activity | saved | settings
+  const [view, setViewState] = useState("home"); // home | browse | groups | dms | activity | saved | settings
   const {
     channels,
     setChannels,
@@ -281,8 +279,17 @@ export default function App() {
   }
 
   function leaveGroupsView() {
-    setShowGroups(false);
     setGroupToOpen(null);
+  }
+
+  function handleOpenGroups(group = null) {
+    markNavDuringRestore();
+    clearNavigationTarget();
+    searchRef.current?.clear();
+    setSearchQuery(null);
+    setGroupToOpen(group);
+    setView("groups");
+    setNavOpen(false);
   }
 
   function handleViewSelect(nextView) {
@@ -534,7 +541,7 @@ export default function App() {
     if (saved?.view === "browse") {
       nextView = "browse";
       active = chs.find((channel) => channel.id === saved.convId) || active;
-    } else if (saved?.view === "activity" || saved?.view === "saved" || saved?.view === "settings") {
+    } else if (saved?.view === "groups" || saved?.view === "activity" || saved?.view === "saved" || saved?.view === "settings") {
       nextView = saved.view; // full-page views, no conversation needed
     } else if (!isMobileViewport() && saved?.convType === "dm" && saved.convId) {
       const dm = conversations.find((d) => d.id === saved.convId);
@@ -1461,10 +1468,10 @@ export default function App() {
         </div>
       )}
       <div
-        className={`app ${navOpen ? "nav-open" : ""} ${showGroups ? "groups-open" : ""}`}
+        className={`app ${navOpen ? "nav-open" : ""}`}
         data-testid="app-root"
         data-nav-open={navOpen ? "true" : "false"}
-        data-mobile-nav={isMobileViewport() && !activeChannel && !searchQuery && view !== "browse" ? "true" : "false"}
+        data-mobile-nav={isMobileViewport() && !activeChannel && !searchQuery && view !== "browse" && view !== "groups" ? "true" : "false"}
       >
         <WorkspaceNavigation
           view={view}
@@ -1488,7 +1495,7 @@ export default function App() {
           onSelectChannel={handleSidebarSelect}
           onPrefetchChannel={prefetchMessages}
           onCreateChannel={() => setShowCreate(true)}
-          onOpenGroups={() => { setGroupToOpen(null); setShowGroups(true); }}
+          onOpenGroups={() => handleOpenGroups()}
           onBrowseChannels={handleBrowseChannels}
           onStartConversation={handleStartConversation}
           onOpenDm={handleSidebarOpenDm}
@@ -1507,6 +1514,11 @@ export default function App() {
 
         <WorkspaceContent
           view={view}
+          groups={view === "groups" ? {
+            openGroup: groupToOpen,
+            onClose: () => handleViewSelect(activeChannel?.type === "dm" ? "dms" : "home"),
+            onOpenProfile: setProfileUser,
+          } : null}
           onOpenNavigation={() => setNavOpen(true)}
           search={{
             inputRef: searchRef,
@@ -1595,7 +1607,7 @@ export default function App() {
             onRememberScroll: rememberScrollState,
             onScrollToBottomTargetConsumed: clearScrollToBottomTarget,
             onOpenProfile: openProfile,
-            onOpenGroup: (group) => { setGroupToOpen(group); setShowGroups(true); },
+            onOpenGroup: handleOpenGroups,
             onOpenChannel: handleOpenChannelTag,
             onSearchInChannel: (channelName) => searchRef.current?.searchInChannel(channelName),
             onOpenForwardedDm: (target, channel) => handleOpenDm(target, false, "dms", channel),
@@ -1626,7 +1638,6 @@ export default function App() {
             onThreadOpened: () => setOpenThreadReq(null),
           }}
         />
-        {showGroups ? <Suspense fallback={null}><GroupsPanel openGroup={groupToOpen} onClose={() => setShowGroups(false)} onOpenProfile={setProfileUser} /></Suspense> : null}
       </div>
       <WorkspaceOverlays
         user={user}
