@@ -10,6 +10,7 @@ import { formatTime } from "../lib/time.js";
 import { replyParticipantNames, visibleReplyParticipants } from "../lib/replyParticipants.js";
 import { isEchoMessageLink, workspacePath } from "../lib/workspaceRoutes.js";
 import { parseCardMarkup } from "../lib/cards.js";
+import { decorateGroupMentions, displayGroupMentions } from "../lib/groupMentions.js";
 import Card from "./Card.js";
 import {
   ShareIcon, EmojiAddIcon, ReplyIcon, BookmarkIcon, PencilIcon, TrashIcon, PinIcon, CopyIcon, MoreIcon, QuoteIcon,
@@ -62,6 +63,7 @@ function Message({
   onEditSave,
   onEditCancel,
   onOpenProfile, // (idOrUsername) => open a user's profile card
+  onOpenGroup, // ({ provider, id }) => open the group directory panel
   onOpenChannel, // (channelName) => open a public channel from a #tag
   showActions, // is this message's hover toolbar the active (only) one?
   onActivate, // mark this message as the active one (mouse entered it)
@@ -196,7 +198,7 @@ function Message({
       onContextMenu={onBodyContextMenu}
     >
       {cardMarkup?.before && <div dangerouslySetInnerHTML={{ __html: renderMarkdown(cardMarkup.before) }} />}
-      {!cardMarkup && m.body && <div dangerouslySetInnerHTML={{ __html: renderMarkdown(m.body) }} />}
+      {!cardMarkup && m.body && <div dangerouslySetInnerHTML={{ __html: decorateGroupMentions(renderMarkdown(displayGroupMentions(m.body, m.mentionedGroups)), m.mentionedGroups) }} />}
       {m.editedAt && <span className="edited-label"> (edited)</span>}
       {messageCard && <Card card={messageCard} usersById={usersById} />}
     </div>
@@ -280,6 +282,12 @@ function Message({
 
   // Open a profile when an @mention pill in the rendered body is clicked.
   function onBodyClick(e) {
+    const groupPill = e.target.closest?.(".mention--group[data-group-id]");
+    if (groupPill) {
+      e.preventDefault();
+      onOpenGroup?.({ provider: groupPill.dataset.groupProvider || "rhsso", id: groupPill.dataset.groupId });
+      return;
+    }
     const channelTag = e.target.closest?.(".channel-tag[data-channel-tag]");
     if (channelTag) {
       e.preventDefault();

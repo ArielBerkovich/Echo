@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router";
 import { api, consumeRhssoCallback, getToken, restoreNativeToken, setToken, subscribeAuthExpired } from "./api.js";
@@ -30,6 +30,7 @@ import {
 import { useHotkeys } from "react-hotkeys-hook";
 
 const HIDDEN_KEY = "echo.hiddenChannels";
+const GroupsPanel = lazy(() => import("./components/GroupsPanel.js"));
 function loadHidden() {
   return new Set(readJson(HIDDEN_KEY, []));
 }
@@ -82,6 +83,8 @@ export default function App() {
   const [showAddEmoji, setShowAddEmoji] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showApiDocs, setShowApiDocs] = useState(false); // REST API reference page
+  const [showGroups, setShowGroups] = useState(false);
+  const [groupToOpen, setGroupToOpen] = useState(null);
   const [profileUser, setProfileUser] = useState(null); // user whose profile card is open
   const [hidden, setHidden] = useState(loadHidden); // hidden channel ids
   const [view, setViewState] = useState("home"); // home | browse | dms | activity | saved | settings
@@ -1474,6 +1477,7 @@ export default function App() {
           onSelectChannel={handleSidebarSelect}
           onPrefetchChannel={prefetchMessages}
           onCreateChannel={() => setShowCreate(true)}
+          onOpenGroups={() => { setGroupToOpen(null); setShowGroups(true); }}
           onBrowseChannels={handleBrowseChannels}
           onStartConversation={handleStartConversation}
           onOpenDm={handleSidebarOpenDm}
@@ -1580,6 +1584,7 @@ export default function App() {
             onRememberScroll: rememberScrollState,
             onScrollToBottomTargetConsumed: clearScrollToBottomTarget,
             onOpenProfile: openProfile,
+            onOpenGroup: (group) => { setGroupToOpen(group); setShowGroups(true); },
             onOpenChannel: handleOpenChannelTag,
             onSearchInChannel: (channelName) => searchRef.current?.searchInChannel(channelName),
             onOpenForwardedDm: (target, channel) => handleOpenDm(target, false, "dms", channel),
@@ -1610,6 +1615,7 @@ export default function App() {
             onThreadOpened: () => setOpenThreadReq(null),
           }}
         />
+        {showGroups ? <Suspense fallback={null}><GroupsPanel openGroup={groupToOpen} onClose={() => setShowGroups(false)} onOpenProfile={setProfileUser} /></Suspense> : null}
       </div>
       <WorkspaceOverlays
         user={user}

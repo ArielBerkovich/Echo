@@ -111,6 +111,11 @@ rhsso:
   realm: ""
   clientId: ""
   clientSecret: ""
+  # Optional confidential service client for the read-only RHSSO group directory.
+  # It needs permission to view groups and users; leave both empty to disable
+  # the Groups view and group mentions.
+  directoryClientId: ""
+  directoryClientSecret: ""
   # Standard OIDC defaults. Dot-separated nested claim paths are supported.
   usernameClaim: preferred_username
   displayNameClaim: name

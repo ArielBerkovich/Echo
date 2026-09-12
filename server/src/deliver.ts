@@ -166,6 +166,22 @@ export async function deliverMessage({ channel, authorId, body, parentId, attach
   const cid = channel._id.toString();
 
   const activityMetadata = await buildMessageActivityMetadata({ body, parentId });
+  // A group ping never grants access. For private channels retain only group
+  // members who are already channel members; public channels are visible to
+  // every Echo account. Explicit @user mentions preserve their existing flow.
+  const allowedGroupMembers = channel.type === "private"
+    ? new Set(channel.members.map((member) => member.toString()))
+    : null;
+  const mentionedGroups = (channel.type === "dm" ? [] : activityMetadata.mentionedGroups).map((group) => ({
+    ...group,
+    echoMemberIds: group.echoMemberIds.filter((id) => !allowedGroupMembers || allowedGroupMembers.has(String(id))),
+  }));
+  const mentionedIds = new Map(activityMetadata.mentionedUserIds.map((id) => [String(id), id]));
+  for (const group of mentionedGroups) {
+    for (const id of group.echoMemberIds) mentionedIds.set(String(id), id);
+  }
+  activityMetadata.mentionedUserIds = [...mentionedIds.values()];
+  activityMetadata.mentionedGroups = mentionedGroups;
   const doc = {
     channel: channel._id,
     author: authorId,
@@ -176,6 +192,7 @@ export async function deliverMessage({ channel, authorId, body, parentId, attach
     retro: retro || null,
     card: card || null,
     passwordHelpRequest: passwordHelpRequest || null,
+    mentionedGroups: activityMetadata.mentionedGroups,
     ...activityMetadata,
   };
   const idem = String(idempotencyKey || "").trim().slice(0, 128);

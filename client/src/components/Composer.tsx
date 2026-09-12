@@ -95,6 +95,54 @@ const CustomEmoji = Node.create({
   },
 });
 
+// The token is what the server resolves for delivery; the label is what the
+// author sees and edits. Keeping both on an atomic node prevents opaque IDs
+// from leaking into the composer while avoiding name-collision ambiguity.
+const GroupMention = Node.create({
+  name: "groupMention",
+  inline: true,
+  group: "inline",
+  atom: true,
+  selectable: false,
+  addAttributes() {
+    return {
+      token: { default: "" },
+      label: { default: "" },
+    };
+  },
+  parseHTML() {
+    return [{
+      tag: "span[data-group-mention]",
+      getAttrs: (element) => ({
+        token: element.getAttribute("data-group-mention") || "",
+        label: element.getAttribute("data-group-label") || element.textContent?.replace(/^@/, "") || "",
+      }),
+    }];
+  },
+  renderHTML({ node }) {
+    return ["span", {
+      class: "composer-group-mention",
+      "data-group-mention": node.attrs.token,
+      "data-group-label": node.attrs.label,
+      contenteditable: "false",
+    }, `@${node.attrs.label}`];
+  },
+  renderText({ node }) {
+    return `@${node.attrs.label}`;
+  },
+});
+
+function deliveryMarkdown(currentEditor) {
+  const html = currentEditor.getHTML();
+  if (typeof document === "undefined") return htmlToMarkdown(html);
+  const template = document.createElement("template");
+  template.innerHTML = html;
+  template.content.querySelectorAll("[data-group-mention]").forEach((element) => {
+    element.textContent = element.getAttribute("data-group-mention") || element.textContent;
+  });
+  return htmlToMarkdown(template.innerHTML);
+}
+
 // Rich-text message composer: @mention autocomplete, a formatting toolbar,
 // emoji, and file attachments. Owns all of its own editor state — mount it with
 // a `key={channel.id}` so switching channels yields a fresh, empty composer.
@@ -105,6 +153,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   const customEmojiUrls = useAuthUrls(customEmojis.map((emoji) => emoji.url));
   const isThread = !!parentId; // a thread reply composer (hides channel-level scheduling)
   const [mention, setMention] = useState(null); // { trigger, query, from, to } or null
+  const [rhssoGroups, setRhssoGroups] = useState([]);
   const [activeIdx, setActiveIdx] = useState(0);
   const activeMentionItemRef = useRef(null);
   const [emojiOpen, setEmojiOpen] = useState(false);
@@ -195,11 +244,25 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     : isDm
       ? isGroupDm ? "Message…" : `Message ${channel.dmName}`
       : `Message #${channel.name}`);
+
+  // Groups are loaded only for the mention picker and only once per composer
+  // lifetime. RHSSO directory access is optional, so a 404 simply means no
+  // group suggestions rather than an error in the compose flow.
+  useEffect(() => {
+    let cancelled = false;
+    api.listGroups().then(({ groups }) => {
+      if (!cancelled) setRhssoGroups(Array.isArray(groups) ? groups : []);
+    }).catch(() => {
+      if (!cancelled) setRhssoGroups([]);
+    });
+    return () => { cancelled = true; };
+  }, []);
   const editor = useEditor({
     editable: !disabled,
     extensions: [
       StarterKit.configure({ heading: { levels: [1, 2, 3] }, trailingNode: false }),
       CustomEmoji,
+      GroupMention,
       Placeholder.configure({ placeholder }),
     ],
     editorProps: {
@@ -320,9 +383,13 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
           { id: "__everyone", username: "everyone", displayName: "Notify everyone in this channel", broadcast: true },
         ].filter((s) => q === "" || s.username.startsWith(q))
       : [];
+    const groups = !isDm ? rhssoGroups
+      .filter((group) => group.name.toLowerCase().includes(q) || group.path.toLowerCase().includes(q))
+      .slice(0, 8)
+      .map((group) => ({ ...group, username: `group.${group.provider}.${group.id}`, displayName: group.name, groupMention: true })) : [];
     const people = peopleSearchSuggestions(users, q);
-    return [...specials, ...people];
-  }, [mention, users, channels, isDm]);
+    return [...specials, ...groups, ...people];
+  }, [mention, users, channels, isDm, rhssoGroups]);
 
   useEffect(() => {
     activeMentionItemRef.current?.scrollIntoView({ block: "nearest" });
@@ -440,6 +507,14 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
 
   function applyMention(picked) {
     if (!mention || !editor) return;
+    if (picked.groupMention) {
+      editor.chain().focus().insertContentAt({ from: mention.from, to: mention.to }, [
+        { type: "groupMention", attrs: { token: `@${picked.username}`, label: picked.displayName } },
+        { type: "text", text: " " },
+      ]).run();
+      setMention(null);
+      return;
+    }
     const value = mention.trigger === "#" ? `#${picked.name}` : `@${picked.username}`;
     editor.chain().focus().insertContentAt({ from: mention.from, to: mention.to }, `${value} `).run();
     setMention(null);
@@ -613,7 +688,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       reportError("Write a message before scheduling it.");
       return;
     }
-    const body = hasText ? htmlToMarkdown(editor.getHTML()) : "";
+    const body = hasText ? deliveryMarkdown(editor) : "";
     try {
       if (inScheduleModal) setScheduleError(null);
       else onError?.(null);
@@ -721,7 +796,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   function handleSend(e) {
     e?.preventDefault();
     if (onSend) {
-      onSend(editor ? htmlToMarkdown(editor.getHTML()).trim() : "");
+      onSend(editor ? deliveryMarkdown(editor).trim() : "");
       return;
     }
     if (!showSend) return;
@@ -732,7 +807,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     const hasText = !!editor && editor.getText().trim() !== "";
     if (!hasText && pending.length === 0) return; // nothing to send
     if (uploading) return; // wait for in-flight uploads
-    const body = hasText ? htmlToMarkdown(editor.getHTML()) : "";
+    const body = hasText ? deliveryMarkdown(editor) : "";
     if (editing) {
       if (!body.trim() && pending.length === 0) return;
       onError?.(null);
@@ -1146,7 +1221,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
 
       {mention && suggestions.length > 0 && (
         <div className="mention-popup">
-          <div className="mention-popup-head">{mention.trigger === "#" ? "Public channels" : "People"}</div>
+          <div className="mention-popup-head">{mention.trigger === "#" ? "Public channels" : "People and groups"}</div>
           <div className="mention-popup-results">
             {suggestions.map((u, idx) => (
               <button
@@ -1162,11 +1237,13 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                   <span className="mention-channel-mark">#</span>
                 ) : u.broadcast ? (
                   <span className="mention-mega">📣</span>
+                ) : u.groupMention ? (
+                  <span className="mention-mega">👥</span>
                 ) : (
                   <Avatar name={u.displayName} src={u.avatarUrl} size={26} />
                 )}
                 <span className="mi-name">{u.channelTag ? `#${u.name}` : u.broadcast ? `@${u.username}` : u.displayName}</span>
-                <span className="mi-handle">{u.channelTag ? "Public channel" : u.broadcast ? u.displayName : `@${u.username}`}</span>
+                <span className="mi-handle">{u.channelTag ? "Public channel" : u.broadcast ? u.displayName : u.groupMention ? u.path : `@${u.username}`}</span>
               </button>
             ))}
           </div>

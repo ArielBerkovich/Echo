@@ -1897,6 +1897,9 @@ html[data-mode="dark"] .backend-connection-error {
 .mention[data-mention] {
   cursor: pointer;
 }
+.mention--group {
+  cursor: pointer;
+}
 .channel-tag {
   display: inline-block;
   padding: 0 3px;
@@ -1939,7 +1942,8 @@ html[data-mode="dark"] .backend-connection-error {
   color: var(--muted);
   font-size: 14px;
 }
-.profile-presence {
+.profile-presence,
+.profile-directory-source {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -3813,9 +3817,73 @@ html[data-mode="dark"] .sidebar {
 .members-panel-error {
   margin: 0 0 10px;
 }
-.group-dm-error {
-  margin: 0;
+.group-dm-error { margin: 0; }
+
+/* Directory group panel. It shares the right edge of the workspace with
+   thread/details panels while keeping its two long lists independently scrollable. */
+.groups-panel {
+  width: 460px;
+  max-width: 42vw;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid var(--border);
+  background: var(--surface);
 }
+.groups-panel-header {
+  min-height: 64px;
+  box-sizing: border-box;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.groups-panel-header h2 { margin: 0; font-size: 16px; }
+.groups-panel-header p { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
+.groups-panel-body { flex: 1; min-height: 0; overflow: hidden; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.groups-panel-summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; color: var(--muted); font-size: 12px; }
+.groups-panel-summary strong { color: var(--text); font-size: 13px; }
+.groups-panel-layout {
+  display: grid;
+  grid-template-columns: minmax(180px, .8fr) minmax(240px, 1.2fr);
+  gap: 12px;
+  min-height: 300px;
+  flex: 1;
+  min-height: 0;
+}
+.groups-panel-list, .groups-panel-members { overflow: auto; border: 1px solid var(--border, #d9dce3); border-radius: 8px; }
+.groups-panel-list-head { position: sticky; top: 0; z-index: 1; padding: 8px; border-bottom: 1px solid var(--border); background: var(--surface); }
+.groups-panel-filter { width: 100%; box-sizing: border-box; padding: 7px 9px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-2); color: var(--text); font: inherit; font-size: 12px; }
+.groups-panel-filter:focus { border-color: var(--accent); outline: 2px solid color-mix(in srgb, var(--accent) 24%, transparent); outline-offset: 1px; }
+.groups-panel-group { display: flex; gap: 8px; width: 100%; padding: 10px; text-align: left; border: 0; border-bottom: 1px solid var(--border, #d9dce3); background: transparent; color: inherit; cursor: pointer; }
+.groups-panel-group.active, .groups-panel-group:hover { background: var(--surface-hover, rgba(80, 100, 140, .1)); }
+.groups-panel-group span { min-width: 0; display: grid; gap: 2px; }
+.groups-panel-group small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .7; }
+.groups-panel-members { padding: 10px; }
+.groups-panel-members h3 { margin: 0; }
+.groups-panel-members-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.groups-panel-members-head .field-hint { margin: 3px 0 0; }
+.groups-panel-member {
+  width: 100%;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.groups-panel-member:hover { background: var(--surface-hover, rgba(80, 100, 140, .1)); }
+.groups-panel-member:focus-visible { outline: 2px solid var(--active-ring); outline-offset: 1px; }
+.groups-panel-member-arrow { flex: none; color: var(--muted); opacity: 0; transition: opacity 120ms ease, transform 120ms ease; }
+.groups-panel-member:hover .groups-panel-member-arrow, .groups-panel-member:focus-visible .groups-panel-member-arrow { opacity: 1; transform: translateX(2px); }
+@media (max-width: 1200px) {
+  .app { position: relative; }
+  .groups-panel { position: absolute; top: 0; right: 0; bottom: 0; z-index: 18; width: min(440px, 94%); max-width: 94%; box-shadow: var(--shadow-lg); }
+}
+@media (max-width: 600px) { .groups-panel-layout { grid-template-columns: 1fr; height: auto; } .groups-panel-list { max-height: 180px; } }
 .thread-header {
   display: flex;
   align-items: center;
@@ -9088,6 +9156,15 @@ html[data-mode="dark"] .new-messages-button:hover {
 .mention--broadcast {
   background: rgba(124, 58, 237, 0.14);
   color: #6d28d9;
+}
+.composer-group-mention {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  font-weight: 650;
+  white-space: nowrap;
 }
 
 /* @mention autocomplete popup */

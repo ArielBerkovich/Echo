@@ -96,6 +96,21 @@ Useful defaults:
 
 Set `MONGO_URI` to use an external MongoDB replica set or cluster. Set `ECHO_PUBLIC_HOST` when the RHSSO demo is accessed from another machine.
 
+### RHSSO groups
+
+To enable the read-only Groups view and `@group` mentions, create a separate
+confidential RHSSO client with service accounts enabled. Grant its service
+account only permission to view realm groups and users, then configure:
+
+```bash
+RHSSO_DIRECTORY_CLIENT_ID=echo-directory
+RHSSO_DIRECTORY_CLIENT_SECRET=change-me
+```
+
+Echo does not create or modify RHSSO groups. Group mentions notify only group
+members who already have Echo accounts (and, for private channels, are already
+members of that channel).
+
 ## Development
 
 Run the UI against the Docker services:

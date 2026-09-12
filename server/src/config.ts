@@ -27,6 +27,10 @@ export const config = {
     usernameClaim: process.env.RHSSO_USERNAME_CLAIM || "preferred_username",
     displayNameClaim: process.env.RHSSO_DISPLAY_NAME_CLAIM || "name",
     redirectUri: process.env.RHSSO_REDIRECT_URI || "",
+    // Optional confidential client used only to read the RHSSO group directory.
+    // Keep this separate from Echo's public PKCE client.
+    directoryClientId: process.env.RHSSO_DIRECTORY_CLIENT_ID || "",
+    directoryClientSecret: process.env.RHSSO_DIRECTORY_CLIENT_SECRET || "",
     allowedClientOrigins: String(
       process.env.RHSSO_ALLOWED_CLIENT_ORIGINS || process.env.CLIENT_ORIGIN || "http://localhost:8080"
     )

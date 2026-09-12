@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { Message } from "../models/Message.js";
 import { User } from "../models/User.js";
 import { UserAlias } from "../models/UserAlias.js";
+import { resolveGroupMentions } from "../groupDirectory.js";
 
 const MENTION_RE = /@([\w.-]+)/g;
 
@@ -19,15 +20,19 @@ export function mentionsEveryone(body) {
 }
 
 export async function buildMessageActivityMetadata({ body, parentId }) {
-  const [mentionedUsers, root] = await Promise.all([
+  const [mentionedUsers, root, mentionedGroups] = await Promise.all([
     findMentionedUsers(body),
     parentId && mongoose.isValidObjectId(parentId)
       ? Message.findById(parentId, { author: 1 }).lean()
       : Promise.resolve(null),
+    // A directory client is optional. Text that happens to look like a group
+    // handle remains ordinary text when RHSSO groups are unavailable.
+    resolveGroupMentions(body).catch(() => []),
   ]);
 
   return {
-    mentionedUserIds: mentionedUsers.map((u) => u._id),
+    mentionedUserIds: mentionedUsers.map((user) => user._id),
+    mentionedGroups,
     mentionsEveryone: mentionsEveryone(body),
     threadRootAuthor: root?.author || null,
   };

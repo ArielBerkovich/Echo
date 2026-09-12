@@ -121,6 +121,15 @@ spec:
               value: {{ .Values.rhsso.usernameClaim | quote }}
             - name: RHSSO_DISPLAY_NAME_CLAIM
               value: {{ .Values.rhsso.displayNameClaim | quote }}
+            {{- if and .Values.rhsso.directoryClientId .Values.rhsso.directoryClientSecret }}
+            - name: RHSSO_DIRECTORY_CLIENT_ID
+              value: {{ .Values.rhsso.directoryClientId | quote }}
+            - name: RHSSO_DIRECTORY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "echo.secretName" . }}
+                  key: rhsso-directory-client-secret
+            {{- end }}
             {{- if .Values.rhsso.redirectUri }}
             - name: RHSSO_REDIRECT_URI
               value: {{ .Values.rhsso.redirectUri | quote }}

@@ -23,6 +23,7 @@ export default function WorkspaceNavigation({
   onSelectChannel,
   onPrefetchChannel,
   onCreateChannel,
+  onOpenGroups,
   onBrowseChannels,
   onStartConversation,
   onOpenDm,
@@ -71,6 +72,7 @@ export default function WorkspaceNavigation({
             onSelect={onSelectChannel}
             onPrefetchChannel={onPrefetchChannel}
             onNewChannel={onCreateChannel}
+            onOpenGroups={onOpenGroups}
             onBrowseChannels={onBrowseChannels}
             browsingChannels={view === "browse"}
             publicChannelCount={publicChannelCount}
