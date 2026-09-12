@@ -41,7 +41,7 @@ test.describe("workspace branding", () => {
     try {
       await page.goto("/settings");
       await expect(page.getByTestId("settings-page")).toBeVisible();
-      await page.getByRole("button", { name: "Workspace" }).click();
+      await page.getByTestId("settings-page").getByRole("button", { name: "Workspace" }).click();
 
       const nameInput = page.getByLabel("Organization name");
       await nameInput.fill(nextName);
