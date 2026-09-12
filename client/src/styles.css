@@ -3333,6 +3333,14 @@ html[data-mode="dark"] .sidebar {
   background: var(--surface);
   box-shadow: none;
 }
+.app.groups-open .chat-pane { display: none; }
+.app.groups-open .groups-panel {
+  flex: 1;
+  width: auto;
+  max-width: none;
+  border-left: 0;
+}
+.app.groups-open .groups-panel-body { width: min(1120px, 100%); box-sizing: border-box; margin: 0 auto; }
 .pane-search {
   flex: none;
   padding: 10px 12px;
@@ -3894,6 +3902,7 @@ html[data-mode="dark"] .sidebar {
 @media (max-width: 1200px) {
   .app { position: relative; }
   .groups-panel { position: absolute; top: 0; right: 0; bottom: 0; z-index: 18; width: min(440px, 94%); max-width: 94%; box-shadow: var(--shadow-lg); }
+  .app.groups-open .groups-panel { position: relative; inset: auto; width: auto; max-width: none; box-shadow: none; }
 }
 @media (max-width: 600px) { .groups-panel-layout { grid-template-columns: 1fr; height: auto; } .groups-panel-list { max-height: 180px; } }
 .thread-header {

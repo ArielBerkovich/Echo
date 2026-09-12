@@ -1450,7 +1450,7 @@ export default function App() {
         </div>
       )}
       <div
-        className={`app ${navOpen ? "nav-open" : ""}`}
+        className={`app ${navOpen ? "nav-open" : ""} ${showGroups ? "groups-open" : ""}`}
         data-testid="app-root"
         data-nav-open={navOpen ? "true" : "false"}
         data-mobile-nav={isMobileViewport() && !activeChannel && !searchQuery && view !== "browse" ? "true" : "false"}
