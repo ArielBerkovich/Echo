@@ -24,7 +24,6 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
   const [converting, setConverting] = useState(false);
   const [listScrollTop, setListScrollTop] = useState(0);
   const [activeIndex, setActiveIndex] = useState(0);
-  const addPeopleRef = useRef(null);
   const searchRef = useRef(null);
   const listRef = useRef(null);
 
@@ -125,7 +124,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
   }
 
   useEffect(() => {
-    (addPeopleRef.current || searchRef.current)?.focus();
+    searchRef.current?.focus();
   }, [canAddPeople]);
 
   async function confirmRemove() {
@@ -212,7 +211,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
           </section>
         )}
         {canAddPeople && (
-          <Button ref={addPeopleRef} variant="subtle" className="channel-add-people members-panel-add" onClick={onAddPeople}>
+          <Button variant="subtle" className="channel-add-people members-panel-add" onClick={onAddPeople}>
             + Add people
           </Button>
         )}

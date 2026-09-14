@@ -30,11 +30,13 @@ export default function ChannelBrowser({
   const [filter, setFilter] = useState("all");
   const [page, setPage] = useState({ cursor: "", number: 1, history: [] });
   const [joiningId, setJoiningId] = useState(null);
+  const [activeIndex, setActiveIndex] = useState(0);
   const [membershipEpoch, setMembershipEpoch] = useState(0);
   const [actionError, setActionError] = useState("");
   const queryClient = useQueryClient();
   const resultsId = useId();
   const contentRef = useRef(null);
+  const channelRowRefs = useRef([]);
   const joinedIdsRef = useRef(joinedIds);
   const searchInputRef = useRef(null);
 
@@ -45,6 +47,11 @@ export default function ChannelBrowser({
     }, SEARCH_DELAY_MS);
     return () => clearTimeout(timer);
   }, [query]);
+
+  useEffect(() => {
+    setActiveIndex(0);
+    channelRowRefs.current = [];
+  }, [query, filter]);
 
   useEffect(() => {
     const previous = joinedIdsRef.current;
@@ -85,12 +92,32 @@ export default function ChannelBrowser({
     searchInputRef.current?.focus();
   }, []);
 
+  useEffect(() => {
+    channelRowRefs.current[activeIndex]?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex, channels.length]);
+
   const totalForFilter = counts[filter] || 0;
   const firstResult = channels.length > 0 ? (page.number - 1) * PAGE_SIZE + 1 : 0;
   const lastResult = firstResult ? firstResult + channels.length - 1 : 0;
   const resultSummary = totalForFilter > PAGE_SIZE
     ? `${firstResult}–${lastResult} of ${totalForFilter} channels`
     : `${totalForFilter} public ${totalForFilter === 1 ? "channel" : "channels"}`;
+
+  function onSearchKeyDown(event) {
+    if (event.key === "Enter") {
+      const selected = channels[activeIndex];
+      if (!selected || joiningId) return;
+      event.preventDefault();
+      if (selected.joined || joinedIds.has(selected.id)) onOpen(selected);
+      else void join(selected);
+      return;
+    }
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    if (!channels.length) return;
+    event.preventDefault();
+    const delta = event.key === "ArrowDown" ? 1 : -1;
+    setActiveIndex((index) => (index + delta + channels.length) % channels.length);
+  }
 
   function getEmptyCopy() {
     if ((counts.all || 0) === 0 && !searchTerm) {
@@ -187,6 +214,7 @@ export default function ChannelBrowser({
                   setQuery(event.target.value);
                   setActionError("");
                 }}
+                onKeyDown={onSearchKeyDown}
                 placeholder="Search by name, topic, or description"
                 autoComplete="off"
                 enterKeyHint="search"
@@ -249,14 +277,15 @@ export default function ChannelBrowser({
                 <p>{emptyCopy.detail}</p>
               </div>
             ) : (
-              channels.map((channel) => {
+              channels.map((channel, index) => {
                 const joined = channel.joined || joinedIds.has(channel.id);
                 const hidden = joined && hiddenIds.has(channel.id);
                 return (
                   <article
                     key={channel.id}
-                    className="channel-browser-row"
+                    className={`channel-browser-row${index === activeIndex ? " active" : ""}`}
                     data-testid={`browse-channel-${channel.name}`}
+                    ref={(element) => { channelRowRefs.current[index] = element; }}
                     aria-busy={joiningId === channel.id}
                     role="listitem"
                   >

@@ -26,6 +26,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
   const [activeTab, setActiveTab] = useState("details");
   const [activeMemberIndex, setActiveMemberIndex] = useState(0);
   const memberRowRefs = useRef([]);
+  const memberSearchRef = useRef(null);
 
   const byId = new Map(users.map((u) => [u.id, u]));
   const creator = byId.get(channel.createdBy);
@@ -58,6 +59,14 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
   useEffect(() => {
     memberRowRefs.current[activeMemberIndex]?.scrollIntoView({ block: "nearest" });
   }, [activeMemberIndex, shownMembers.length]);
+
+  useEffect(() => {
+    if (activeTab !== "members") return;
+    const focusFrame = window.requestAnimationFrame(() => {
+      memberSearchRef.current?.focus();
+    });
+    return () => window.cancelAnimationFrame(focusFrame);
+  }, [activeTab]);
 
   function onMemberSearchKeyDown(event) {
     if (event.key === "Enter") {
@@ -267,6 +276,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
             <InputShell className="channel-details-search channel-details-member-filter">
               <SearchIcon size={16} strokeWidth={1.8} aria-hidden="true" />
               <Input
+                ref={memberSearchRef}
                 value={memberQuery}
                 onChange={(event) => {
                   setMemberQuery(event.target.value);
