@@ -107,7 +107,7 @@ async function createMessage({ channel, authorId, body, parentId, attachments, i
     parentId: parentId || null,
     attachments,
     automation,
-    ...(await buildMessageActivityMetadata({ body, parentId })),
+    ...(await buildMessageActivityMetadata({ body, parentId, authorId })),
   };
   const idem = cleanKey(idempotencyKey, 128);
   const ext = cleanKey(externalKey);
@@ -181,7 +181,7 @@ export async function postAutomationMessage({
         body: rootBody,
         externalKey: threadKey,
         automation: { ...automation, title: payload.threadTitle || payload.title || `Thread ${threadKey}`, threadKey },
-        ...(await buildMessageActivityMetadata({ body: rootBody, parentId: null })),
+        ...(await buildMessageActivityMetadata({ body: rootBody, parentId: null, authorId })),
       });
       await root.populate("author");
       emitToChannel(channel._id.toString(), "message:new", root.toPublicJSON());
@@ -218,7 +218,7 @@ async function updateExistingMessage(message, { body, files, automation, idempot
   message.body = body;
   message.attachments = files;
   message.automation = automation;
-  Object.assign(message, await buildMessageActivityMetadata({ body, parentId: message.parentId }));
+  Object.assign(message, await buildMessageActivityMetadata({ body, parentId: message.parentId, authorId: message.author }));
   if (idempotencyKey) message.idempotencyKey = idempotencyKey;
   message.editedAt = new Date();
   await message.save();

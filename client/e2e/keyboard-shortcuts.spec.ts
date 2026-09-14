@@ -334,7 +334,7 @@ test.describe("documented keyboard shortcuts", () => {
     await expect(page.locator(".mention-popup")).toBeVisible();
     await editor.press("ArrowDown");
     await editor.press("Tab");
-    await expect(editor).toContainText(`@${fixture.bob.username.slice(0, 5)}`);
+    await expect(editor).toContainText(`@${fixture.bob.displayName}`);
 
     await editor.fill(`@${fixture.bob.username}`);
     await expect(page.locator(".mention-popup")).toBeVisible();
