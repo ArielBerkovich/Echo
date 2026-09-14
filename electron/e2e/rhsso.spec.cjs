@@ -40,8 +40,13 @@ test("signs in through RHSSO, sends messages, and signs out from the Electron sh
     }
 
     await expect(mainWindow.getByTestId("rail-logout")).toBeVisible();
+    // The walkthrough is scheduled shortly after the authenticated workspace
+    // mounts, so it may not exist at the first render. Let that timer settle
+    // before continuing, otherwise it can appear over the sign-out dialog.
     const skipTour = mainWindow.getByRole("button", { name: "Skip tour" });
+    await skipTour.waitFor({ state: "visible", timeout: 2_000 }).catch(() => {});
     if (await skipTour.isVisible().catch(() => false)) await skipTour.click();
+    await expect(mainWindow.locator(".wt-overlay")).toHaveCount(0);
 
     const composer = mainWindow.getByTestId("composer-editor");
     await expect(composer).toBeVisible();

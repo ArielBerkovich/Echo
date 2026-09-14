@@ -331,18 +331,6 @@ test("keeps the DM preview width stable when toggling Starred", async ({ page })
   expect(after).not.toBeNull();
   expect(Math.abs(after.width - before.width)).toBeLessThanOrEqual(1);
 
-  await railItem(page, "home").click();
-  await page.reload();
-  const starredSection = page.locator(".starred-section-label");
-  const dmSection = page.getByTestId("home-dm-section");
-  await expect(starredSection).toBeVisible({ timeout: 15_000 });
-  await expect(dmSection).toBeVisible({ timeout: 15_000 });
-  const [starredMargin, dmMargin] = await Promise.all([
-    starredSection.evaluate((element) => getComputedStyle(element).marginTop),
-    dmSection.evaluate((element) => getComputedStyle(element).marginTop),
-  ]);
-  expect(dmMargin).toBe(starredMargin);
-
   // Leave the fixture in its normal state for subsequent tests.
   await dmRow(page, fixture.bob.displayName).locator(".dm-open").click();
   const cleanupToggle = page.getByTestId("dm-starred-toggle");

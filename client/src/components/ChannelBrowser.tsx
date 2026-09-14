@@ -105,11 +105,15 @@ export default function ChannelBrowser({
 
   function onSearchKeyDown(event) {
     if (event.key === "Enter") {
-      const selected = channels[activeIndex];
+      // Read the row that is visibly active as well as the state value. This
+      // avoids selecting the previous result when a debounced search finishes
+      // between the Arrow and Enter key events.
+      const activeRowIndex = channelRowRefs.current.findIndex((row) => row?.classList.contains("active"));
+      const selected = channels[activeRowIndex >= 0 ? activeRowIndex : activeIndex];
       if (!selected || joiningId) return;
       event.preventDefault();
       if (selected.joined || joinedIds.has(selected.id)) onOpen(selected);
-      else void join(selected);
+      else void join(selected).then(() => onOpen(selected));
       return;
     }
     if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;

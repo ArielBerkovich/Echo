@@ -179,6 +179,7 @@ test("configures one personal mention webhook from Settings", async ({ page }) =
   await seedToken(page, fixture.alice.token);
   await page.goto("/");
   await page.getByTestId("rail-settings").click();
+  await expect(page.getByTestId("settings-page")).toBeVisible();
   await expect(page.locator('[aria-label="Settings categories"] button')).toHaveText([
     "Account", "Appearance", "Preferences", "Desktop", "Keyboard shortcuts", "API", "Webhooks",
   ]);
