@@ -52,6 +52,11 @@ describe("mention autocomplete query", () => {
     assert.deepEqual(match?.slice(1), ["@", "carol.smith"]);
   });
 
+  it("closes after whitespace immediately following the trigger", () => {
+    assert.equal("hello @ ".match(MENTION_QUERY_RE), null);
+    assert.equal("hello @ Bob".match(MENTION_QUERY_RE), null);
+  });
+
   it("keeps matching while a full display name with spaces is typed", () => {
     const match = "hello @Bob Builder".match(MENTION_QUERY_RE);
     assert.deepEqual(match?.slice(1), ["@", "Bob Builder"]);

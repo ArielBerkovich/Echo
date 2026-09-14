@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { Node } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
@@ -169,6 +169,8 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   const customEmojiUrls = useAuthUrls(customEmojis.map((emoji) => emoji.url));
   const isThread = !!parentId; // a thread reply composer (hides channel-level scheduling)
   const [mention, setMention] = useState(null); // { trigger, query, from, to } or null
+  const composerRef = useRef(null);
+  const [mentionPopupPosition, setMentionPopupPosition] = useState(null);
   const [rhssoGroups, setRhssoGroups] = useState([]);
   const [catalogChannels, setCatalogChannels] = useState([]);
   const [activeIdx, setActiveIdx] = useState(0);
@@ -187,6 +189,14 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     }).catch(() => {}), 180);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [mention, onFindChannels]);
+  useEffect(() => {
+    if (!mention) return undefined;
+    const dismissOutside = (event) => {
+      if (!composerRef.current?.contains(event.target)) setMention(null);
+    };
+    document.addEventListener("pointerdown", dismissOutside, true);
+    return () => document.removeEventListener("pointerdown", dismissOutside, true);
+  }, [mention]);
   const [sendMenuOpen, setSendMenuOpen] = useState(false); // "Send options" popover
   const [scheduleAt, setScheduleAt] = useState(null); // datetime-local string while the schedule dialog is open
   const [scheduleError, setScheduleError] = useState(null); // validation/API error for the custom schedule dialog
@@ -419,6 +429,28 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     const people = peopleSearchSuggestions(users, q);
     return [...specials, ...groups, ...people];
   }, [mention, users, channels, catalogChannels, isDm, rhssoGroups]);
+
+  useLayoutEffect(() => {
+    if (!mention || !editor) {
+      setMentionPopupPosition(null);
+      return undefined;
+    }
+    const updatePosition = () => {
+      const caret = editor.view.coordsAtPos(mention.to);
+      const popupWidth = Math.min(320, window.innerWidth - 16);
+      const popupHeight = 330;
+      const left = Math.max(8, Math.min(caret.left, window.innerWidth - popupWidth - 8));
+      const aboveTop = caret.top - popupHeight - 8;
+      setMentionPopupPosition({ left, top: aboveTop >= 8 ? aboveTop : caret.bottom + 8 });
+    };
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [editor, mention, suggestions.length]);
 
   useEffect(() => {
     activeMentionItemRef.current?.scrollIntoView({ block: "nearest" });
@@ -915,6 +947,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
 
   return (
     <form
+      ref={composerRef}
       className={`composer${draggingFiles ? " dragging-files" : ""}${disabled ? " is-disabled" : ""}`}
       data-testid="composer"
       onSubmit={handleSend}
@@ -1267,8 +1300,8 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
 
       {mentionModal}
 
-      {mention && suggestions.length > 0 && (
-        <div className="mention-popup">
+      {mention && suggestions.length > 0 && mentionPopupPosition && (
+        <div className="mention-popup" style={mentionPopupPosition}>
           <div className="mention-popup-head">{mention.trigger === "#" ? "Public channels" : "People and groups"}</div>
           <div className="mention-popup-results">
             {suggestions.map((u, idx) => (

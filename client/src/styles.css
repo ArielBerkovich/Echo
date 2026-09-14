@@ -9450,19 +9450,21 @@ html[data-mode="dark"] .new-messages-button:hover {
 
 /* @mention autocomplete popup */
 .mention-popup {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 8px;
+  position: fixed;
   width: 320px;
-  max-width: 100%;
+  max-width: calc(100vw - 16px);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow: var(--shadow-md);
   overflow: hidden;
   padding: 6px;
-  animation: fadeInUp 0.16s ease both;
+  animation: mention-popup-in 0.16s ease both;
   z-index: 5;
+}
+@keyframes mention-popup-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 .mention-popup-head {
   font-size: 11px;
