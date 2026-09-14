@@ -8753,15 +8753,15 @@ html[data-mode="dark"] .day-divider-label {
   height: 64px;
   flex: none;
   padding: 14px 24px;
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  border-bottom: 0;
   background: var(--surface);
-  box-shadow: none;
-  backdrop-filter: none;
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: saturate(1.1);
   z-index: 1;
   min-width: 0;
 }
 html[data-mode="dark"] .channel-header {
-  background: var(--surface);
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
   border-bottom-color: rgba(255, 255, 255, 0.06);
 }
 .channel-header[data-testid="activity-header"],
@@ -8999,7 +8999,7 @@ html[data-mode="dark"] .channel-header {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  background: var(--surface);
+  background: linear-gradient(180deg, var(--bg), var(--surface) 120px);
 }
 .messages-inner {
   width: calc(100% + (2 * var(--messages-gutter)));
