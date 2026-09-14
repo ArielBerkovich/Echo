@@ -3835,7 +3835,9 @@ html[data-mode="dark"] .sidebar {
 .members-panel-body {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   padding: 14px 16px 20px;
 }
 .group-dm-management {
@@ -3929,12 +3931,25 @@ html[data-mode="dark"] .sidebar {
   transform: translateY(1px);
 }
 .members-panel-list {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow: auto;
+}
+.members-panel-virtual-content {
+  position: relative;
+  flex: none;
+}
+.members-panel-virtual-content .members-panel-person {
+  position: absolute;
+  inset: 0 0 auto;
+  box-sizing: border-box;
+  height: 56px;
 }
 .members-panel-person {
   display: flex;
@@ -3946,6 +3961,9 @@ html[data-mode="dark"] .sidebar {
 }
 .members-panel-person:hover {
   background: var(--surface-2);
+}
+.members-panel-person.active {
+  background: var(--active-soft);
 }
 .members-panel-person-copy {
   display: flex;
@@ -6535,6 +6553,9 @@ html[data-mode="dark"] .day-divider-label {
 }
 .channel-details-person:hover {
   background: var(--surface-2);
+}
+.channel-details-person.active {
+  background: var(--active-soft);
 }
 .channel-details-person-copy {
   display: flex;
@@ -10268,6 +10289,9 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
   align-items: center;
   gap: 12px;
   padding: 8px 4px;
+}
+.person-row.active {
+  background: var(--active-soft);
 }
 .person-info {
   flex: 1;

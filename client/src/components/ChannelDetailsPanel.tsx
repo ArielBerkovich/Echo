@@ -1,5 +1,5 @@
 import * as Dialog from "@radix-ui/react-dialog";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../api.js";
 import { formatDate } from "../lib/time.js";
 import Avatar from "./Avatar.js";
@@ -24,6 +24,8 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
   const [memberQuery, setMemberQuery] = useState("");
   const [promotingId, setPromotingId] = useState(null);
   const [activeTab, setActiveTab] = useState("details");
+  const [activeMemberIndex, setActiveMemberIndex] = useState(0);
+  const memberRowRefs = useRef([]);
 
   const byId = new Map(users.map((u) => [u.id, u]));
   const creator = byId.get(channel.createdBy);
@@ -52,6 +54,25 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
         (m) => m.displayName.toLowerCase().includes(q) || m.username.toLowerCase().includes(q)
       )
     : members;
+
+  useEffect(() => {
+    memberRowRefs.current[activeMemberIndex]?.scrollIntoView({ block: "nearest" });
+  }, [activeMemberIndex, shownMembers.length]);
+
+  function onMemberSearchKeyDown(event) {
+    if (event.key === "Enter") {
+      const selected = shownMembers[activeMemberIndex];
+      if (!selected) return;
+      event.preventDefault();
+      onOpenProfile?.(selected.id);
+      return;
+    }
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    if (!shownMembers.length) return;
+    event.preventDefault();
+    const delta = event.key === "ArrowDown" ? 1 : -1;
+    setActiveMemberIndex((index) => (index + delta + shownMembers.length) % shownMembers.length);
+  }
 
   async function removeMember(member) {
     setError(null);
@@ -247,7 +268,11 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
               <SearchIcon size={16} strokeWidth={1.8} aria-hidden="true" />
               <Input
                 value={memberQuery}
-                onChange={(event) => setMemberQuery(event.target.value)}
+                onChange={(event) => {
+                  setMemberQuery(event.target.value);
+                  setActiveMemberIndex(0);
+                }}
+                onKeyDown={onMemberSearchKeyDown}
                 placeholder="Search members"
                 aria-label="Search members"
               />
@@ -277,8 +302,13 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
               ) : shownMembers.length === 0 ? (
                 <div className="channel-details-empty">No members match “{memberQuery.trim()}”.</div>
               ) : (
-                shownMembers.map((member) => (
-                  <div className="channel-details-person" data-testid={`channel-details-person-${member.id}`} key={member.id}>
+                shownMembers.map((member, index) => (
+                  <div
+                    className={`channel-details-person${index === activeMemberIndex ? " active" : ""}`}
+                    data-testid={`channel-details-person-${member.id}`}
+                    key={member.id}
+                    ref={(element) => { memberRowRefs.current[index] = element; }}
+                  >
                     <Avatar name={member.displayName} src={member.avatarUrl} size={34} />
                     <div className="channel-details-person-copy">
                       <button

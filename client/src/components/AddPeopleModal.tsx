@@ -12,6 +12,7 @@ export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState("");
   const [listScrollTop, setListScrollTop] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(0);
   const searchRef = useRef(null);
   const listRef = useRef(null);
 
@@ -45,6 +46,31 @@ export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
   );
   const visibleUsers = available.slice(firstVisible, lastVisible);
 
+  function onSearchKeyDown(event) {
+    if (event.key === "Enter") {
+      const selected = available[activeIndex];
+      if (!selected || adding) return;
+      event.preventDefault();
+      add(selected);
+      return;
+    }
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    if (!available.length) return;
+    event.preventDefault();
+    const delta = event.key === "ArrowDown" ? 1 : -1;
+    const nextIndex = (activeIndex + delta + available.length) % available.length;
+    setActiveIndex(nextIndex);
+    const list = listRef.current;
+    if (!list) return;
+    const nextTop = nextIndex * PEOPLE_ROW_HEIGHT;
+    const nextBottom = nextTop + PEOPLE_ROW_HEIGHT;
+    if (nextTop < list.scrollTop) {
+      list.scrollTo({ top: nextTop });
+    } else if (nextBottom > list.scrollTop + list.clientHeight) {
+      list.scrollTo({ top: nextBottom - list.clientHeight });
+    }
+  }
+
   async function add(u) {
     setAdding(u.id);
     setError(null);
@@ -70,9 +96,11 @@ export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
           value={filter}
           onChange={(e) => {
             setFilter(e.target.value);
+            setActiveIndex(0);
             setListScrollTop(0);
             listRef.current?.scrollTo({ top: 0 });
           }}
+          onKeyDown={onSearchKeyDown}
           placeholder="Search people"
           autoFocus
         />
@@ -87,7 +115,7 @@ export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
           ) : (
             <div className="people-virtual-content" style={{ height: available.length * PEOPLE_ROW_HEIGHT }}>
               {visibleUsers.map((u, index) => (
-                <div className="person-row" key={u.id} style={{ transform: `translateY(${(firstVisible + index) * PEOPLE_ROW_HEIGHT}px)` }}>
+                <div className={`person-row${firstVisible + index === activeIndex ? " active" : ""}`} key={u.id} style={{ transform: `translateY(${(firstVisible + index) * PEOPLE_ROW_HEIGHT}px)` }}>
                   <Avatar name={u.displayName} src={u.avatarUrl} size={32} />
                   <div className="person-info">
                     <div className="person-name">{u.displayName}</div>
