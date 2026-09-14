@@ -524,7 +524,18 @@ const SearchBox = forwardRef(function SearchBox(
   }
 
   return (
-    <div className="search-box" ref={wrapRef} data-testid="search-box">
+    <div
+      className="search-box"
+      ref={wrapRef}
+      data-testid="search-box"
+      onMouseDown={(event) => {
+        if (!event.target.closest(".search-box-field, .search-dropdown")) {
+          setOpen(false);
+          setConversationPickerOpen(false);
+          setQuickSwitcherOpen(false);
+        }
+      }}
+    >
       <div className="input-shell search-box-field" data-testid="search-box-field">
         <span className="search-icon-badge" aria-hidden="true">
           <SearchIcon size={15} strokeWidth={2.1} />
