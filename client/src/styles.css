@@ -4040,7 +4040,8 @@ html[data-mode="dark"] .sidebar {
 .groups-panel-body { box-sizing: border-box; flex: 1; min-height: 0; overflow: hidden; padding: 16px; display: flex; flex-direction: column; }
 .groups-panel-layout {
   display: grid;
-  grid-template-columns: minmax(260px, 360px) minmax(360px, 1fr);
+  grid-template-columns: minmax(260px, 360px) minmax(360px, 560px);
+  justify-content: start;
   gap: 0;
   width: 100%;
   max-width: none;
@@ -4049,14 +4050,13 @@ html[data-mode="dark"] .sidebar {
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
-.groups-panel-list, .groups-panel-members { overflow: auto; min-width: 0; background: var(--surface); }
+.groups-panel-list, .groups-panel-members { overflow: auto; min-width: 0; background: transparent; }
 .groups-panel-list { border-right: 1px solid var(--border); }
-.groups-panel-list-head { position: sticky; top: 0; z-index: 1; padding: 12px; border-bottom: 0; background: color-mix(in srgb, var(--surface) 94%, var(--surface-2)); }
+.groups-panel-list-head { position: sticky; top: 0; z-index: 1; padding: 12px; border-bottom: 1px solid var(--border); background: transparent; }
 .groups-panel-search { display: flex; align-items: center; gap: 8px; min-height: 36px; box-sizing: border-box; padding: 0 11px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); color: var(--muted); box-shadow: var(--shadow-sm); }
 .groups-panel-filter { width: 100%; box-sizing: border-box; padding: 8px 0; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; font-size: 12px; }
 .groups-panel-search:focus-within { border-color: var(--accent); outline: 2px solid color-mix(in srgb, var(--accent) 24%, transparent); outline-offset: 1px; }
@@ -4101,6 +4101,9 @@ html[data-mode="dark"] .sidebar {
 .groups-panel-member:hover .groups-panel-member-arrow, .groups-panel-member:focus-visible .groups-panel-member-arrow { opacity: 1; transform: translateX(2px); }
 @media (max-width: 1200px) {
   .app { position: relative; }
+}
+@media (max-width: 1100px) and (min-width: 701px) {
+  .groups-panel-layout { grid-template-columns: minmax(220px, 280px) minmax(320px, 1fr); }
 }
 @media (max-width: 700px) {
   .groups-panel-body { overflow-y: auto; }
