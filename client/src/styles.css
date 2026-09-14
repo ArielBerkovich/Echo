@@ -258,6 +258,88 @@ html[data-theme="nord"][data-mode="dark"] {
   --code-border: #465064;
 }
 
+/* Stillwater — quiet slate surfaces with a restrained blue-green rail. */
+html[data-theme="calm"] {
+  --accent: #78a9c4;
+  --active-bg: #456b83;
+  --on-navy: #e5ebf0;
+  --on-navy-muted: #9aa8b5;
+  --sidebar-bg: #1f252b;
+  --rail-bg: linear-gradient(180deg, #263640 0%, #2b3b45 100%);
+  --calm-divider: color-mix(in srgb, var(--on-navy) 12%, transparent);
+}
+html[data-theme="calm"][data-mode="light"] {
+  --bg: #e3ecef;
+  --surface: #edf3f5;
+  --surface-2: #e0e9ed;
+  --border: #c5d4db;
+  --text: #23313b;
+  --muted: #667783;
+  --code-bg: #e0e9ed;
+  --code-text: #23313b;
+  --code-border: #c5d4db;
+}
+html[data-theme="calm"][data-mode="light"] .workspace-search .search-box-field {
+  background: color-mix(in srgb, var(--rail-bg) 68%, transparent);
+  border-color: color-mix(in srgb, var(--on-navy) 16%, transparent);
+}
+html[data-theme="calm"][data-mode="light"] .workspace-search .search-box-field input.search-input {
+  color: var(--on-navy);
+}
+html[data-theme="calm"][data-mode="light"] .messages {
+  background: var(--bg);
+}
+html[data-theme="calm"][data-mode="light"] .chat-pane,
+html[data-theme="calm"][data-mode="light"] .channel-view {
+  background: var(--bg);
+}
+html[data-theme="calm"][data-mode="light"] .channel-header {
+  background: var(--bg);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  box-shadow: none;
+}
+html[data-theme="calm"][data-mode="light"] .composer {
+  background: #ffffff;
+}
+html[data-theme="calm"] .workspace-sidebar,
+html[data-theme="calm"] .workspace-sidebar .sidebar {
+  background: #1f252b;
+}
+html[data-theme="calm"] .workspace-search,
+html[data-theme="calm"] .workspace-sidebar {
+  border-color: var(--calm-divider);
+}
+html[data-theme="calm"] .workspace-rail .rail {
+  border-right-color: transparent;
+}
+html[data-theme="calm"][data-mode="dark"] {
+  --bg: #1f252b;
+  --surface: #252c33;
+  --surface-2: #2c333b;
+  --border: #3a424b;
+  --text: #e5ebf0;
+  --muted: #9aa8b5;
+  --sidebar-bg: #1f252b;
+  --rail-bg: linear-gradient(180deg, #263640 0%, #2b3b45 100%);
+  --code-bg: #1f252b;
+  --code-text: #e5ebf0;
+  --code-border: #3a424b;
+}
+html[data-theme="calm"][data-mode="dark"] .messages {
+  background: var(--bg);
+}
+html[data-theme="calm"][data-mode="dark"] .chat-pane {
+  background: var(--bg);
+}
+html[data-theme="calm"][data-mode="dark"] .channel-view {
+  background: var(--bg);
+}
+html[data-theme="calm"][data-mode="dark"] .channel-header {
+  background: #1f252b;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  box-shadow: none;
+}
+
 /* Dracula — purple / pink; signature surfaces in dark mode. */
 html[data-theme="dracula"] {
   --accent: #bd93f9;
@@ -382,7 +464,7 @@ html[data-mode="dark"] .search-result .body {
 }
 html[data-mode="dark"] .chat-pane {
   border-color: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: none;
 }
 
 /* Send box (composer) in dark mode — dark surfaces with clearly legible text. */
@@ -13592,4 +13674,21 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   .settings-page-body {
     font-size: 17px;
   }
+}
+
+/* Calm Harbor keeps navigation and conversation on one neutral charcoal
+   surface; the rail remains the only colored navigation treatment. */
+html[data-theme="calm"][data-mode="dark"] .workspace-sidebar,
+html[data-theme="calm"][data-mode="dark"] .workspace-sidebar .sidebar,
+html[data-theme="calm"][data-mode="dark"] .channel-view,
+html[data-theme="calm"][data-mode="dark"] .chat-pane,
+html[data-theme="calm"][data-mode="dark"] .messages {
+  background: #1f252b !important;
+  background-image: none !important;
+}
+html[data-theme="calm"] .channel-list {
+  scrollbar-color: var(--muted) #1f252b;
+}
+html[data-theme="calm"] .channel-list::-webkit-scrollbar-track {
+  background: #1f252b;
 }
