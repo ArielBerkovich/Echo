@@ -35,6 +35,16 @@ td.addRule("customEmoji", {
   replacement: (_content, node) => node.getAttribute("alt") || "",
 });
 
+td.addRule("userMention", {
+  filter: (node) => node.nodeName === "SPAN" && node.getAttribute("data-user-mention") !== null,
+  replacement: (_content, node) => `@${node.getAttribute("data-user-mention") || ""}`,
+});
+
+td.addRule("channelMention", {
+  filter: (node) => node.nodeName === "SPAN" && node.getAttribute("data-channel-mention") !== null,
+  replacement: (_content, node) => `#${node.getAttribute("data-channel-mention") || ""}`,
+});
+
 export function htmlToMarkdown(html) {
   // Strip zero-width spaces (used as caret anchors inside empty code spans).
   return td.turndown(normalizeCodeBlockBreaks(html)).replace(/​/g, "").trim();

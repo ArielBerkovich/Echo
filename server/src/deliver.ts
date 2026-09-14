@@ -165,7 +165,7 @@ export async function deliverMessage({ channel, authorId, body, parentId, attach
   const io = getIO();
   const cid = channel._id.toString();
 
-  const activityMetadata = await buildMessageActivityMetadata({ body, parentId });
+  const activityMetadata = await buildMessageActivityMetadata({ body, parentId, authorId });
   // A group ping never grants access. For private channels retain only group
   // members who are already channel members; public channels are visible to
   // every Echo account. Explicit @user mentions preserve their existing flow.

@@ -132,6 +132,22 @@ const GroupMention = Node.create({
   },
 });
 
+const UserMention = Node.create({
+  name: "userMention", inline: true, group: "inline", atom: true, selectable: false,
+  addAttributes() { return { username: { default: "" }, label: { default: "" } }; },
+  parseHTML() { return [{ tag: "span[data-user-mention]" }]; },
+  renderHTML({ node }) { return ["span", { class: "composer-user-mention", "data-user-mention": node.attrs.username, contenteditable: "false" }, `@${node.attrs.label || node.attrs.username}`]; },
+  renderText({ node }) { return `@${node.attrs.username}`; },
+});
+
+const ChannelMention = Node.create({
+  name: "channelMention", inline: true, group: "inline", atom: true, selectable: false,
+  addAttributes() { return { channelId: { default: "" }, name: { default: "" } }; },
+  parseHTML() { return [{ tag: "span[data-channel-mention]" }]; },
+  renderHTML({ node }) { return ["span", { class: "composer-channel-mention", "data-channel-mention": node.attrs.name, "data-channel-id": node.attrs.channelId, contenteditable: "false" }, `#${node.attrs.name}`]; },
+  renderText({ node }) { return `#${node.attrs.name}`; },
+});
+
 function deliveryMarkdown(currentEditor) {
   const html = currentEditor.getHTML();
   if (typeof document === "undefined") return htmlToMarkdown(html);
@@ -146,7 +162,7 @@ function deliveryMarkdown(currentEditor) {
 // Rich-text message composer: @mention autocomplete, a formatting toolbar,
 // emoji, and file attachments. Owns all of its own editor state — mount it with
 // a `key={channel.id}` so switching channels yields a fresh, empty composer.
-const Composer = forwardRef(function Composer({ channel, sendChannel = null, parentId = null, users = [], channels = [], customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, onSend, initialContent = null, sendDisabled = false, allowEmptySend = false, sendAriaLabel, sendTitle, sendTestId, onDraftChange, onEditSave, onEditCancel, editing = null, placeholder: customPlaceholder, mode = "light", captureScreenDrops = false, showSchedule = true, showSend = true, showAttachments = true, submitOnEnter = false, disabled = false }, ref) {
+const Composer = forwardRef(function Composer({ channel, sendChannel = null, parentId = null, users = [], channels = [], onFindChannels, customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, onSend, initialContent = null, sendDisabled = false, allowEmptySend = false, sendAriaLabel, sendTitle, sendTestId, onDraftChange, onEditSave, onEditCancel, editing = null, placeholder: customPlaceholder, mode = "light", captureScreenDrops = false, showSchedule = true, showSend = true, showAttachments = true, submitOnEnter = false, disabled = false }, ref) {
   // Keep custom-emoji blob URLs alive for the full composer lifetime. The
   // picker unmounts immediately after a selection, so its URLs cannot safely
   // be used by an emoji node inserted into this editor.
@@ -154,6 +170,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   const isThread = !!parentId; // a thread reply composer (hides channel-level scheduling)
   const [mention, setMention] = useState(null); // { trigger, query, from, to } or null
   const [rhssoGroups, setRhssoGroups] = useState([]);
+  const [catalogChannels, setCatalogChannels] = useState([]);
   const [activeIdx, setActiveIdx] = useState(0);
   const activeMentionItemRef = useRef(null);
   const [emojiOpen, setEmojiOpen] = useState(false);
@@ -162,6 +179,14 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   // Guards sends that @-mention non-members of a private channel.
   const { gate, mentionModal } = useMentionGate({ channel, users, onChannelUpdated });
   const [moreActionsOpen, setMoreActionsOpen] = useState(false);
+  useEffect(() => {
+    if (!mention || mention.trigger !== "#" || !onFindChannels) return undefined;
+    let cancelled = false;
+    const timer = setTimeout(() => onFindChannels(mention.query).then((found) => {
+      if (!cancelled) setCatalogChannels(found || []);
+    }).catch(() => {}), 180);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [mention, onFindChannels]);
   const [sendMenuOpen, setSendMenuOpen] = useState(false); // "Send options" popover
   const [scheduleAt, setScheduleAt] = useState(null); // datetime-local string while the schedule dialog is open
   const [scheduleError, setScheduleError] = useState(null); // validation/API error for the custom schedule dialog
@@ -264,6 +289,8 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       StarterKit.configure({ heading: { levels: [1, 2, 3] }, trailingNode: false }),
       CustomEmoji,
       GroupMention,
+      UserMention,
+      ChannelMention,
       Placeholder.configure({ placeholder }),
     ],
     editorProps: {
@@ -372,7 +399,8 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     if (!mention) return [];
     const q = mention.query.toLowerCase();
     if (mention.trigger === "#") {
-      return channels
+      const available = [...new Map([...channels, ...catalogChannels].map((item) => [item.id, item])).values()];
+      return available
         .filter((item) => item.type === "public")
         .filter((item) => item.name.toLowerCase().includes(q))
         .slice(0, 8)
@@ -390,7 +418,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       .map((group) => ({ ...group, username: `group.${group.provider}.${group.id}`, displayName: group.name, groupMention: true })) : [];
     const people = peopleSearchSuggestions(users, q);
     return [...specials, ...groups, ...people];
-  }, [mention, users, channels, isDm, rhssoGroups]);
+  }, [mention, users, channels, catalogChannels, isDm, rhssoGroups]);
 
   useEffect(() => {
     activeMentionItemRef.current?.scrollIntoView({ block: "nearest" });
@@ -513,6 +541,16 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
         { type: "groupMention", attrs: { token: `@${picked.username}`, label: picked.displayName } },
         { type: "text", text: " " },
       ]).run();
+      setMention(null);
+      return;
+    }
+    if (mention.trigger === "@") {
+      editor.chain().focus().insertContentAt({ from: mention.from, to: mention.to }, [{ type: "userMention", attrs: { username: picked.username, label: picked.displayName } }, { type: "text", text: " " }]).run();
+      setMention(null);
+      return;
+    }
+    if (mention.trigger === "#") {
+      editor.chain().focus().insertContentAt({ from: mention.from, to: mention.to }, [{ type: "channelMention", attrs: { channelId: picked.id, name: picked.name } }, { type: "text", text: " " }]).run();
       setMention(null);
       return;
     }

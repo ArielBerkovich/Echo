@@ -134,9 +134,10 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
                 time={formatDateTime(it.createdAt)}
                 body={it.body}
                 renderMarkdown={(body) => decorateGroupMentions(
-                  renderMarkdown(displayGroupMentions(body, it.mentionedGroups)),
+                  renderMarkdown(displayGroupMentions(body, it.mentionedGroups), { mentionedChannels: it.mentionedChannels }),
                   it.mentionedGroups,
                 )}
+                mentionedChannels={it.mentionedChannels}
               />
             </div>
             <button

@@ -450,6 +450,14 @@ html[data-mode="dark"] .mention--broadcast {
   background: rgba(139, 92, 246, 0.26);
   color: #c4b5fd;
 }
+html[data-mode="dark"] .channel-tag {
+  background: rgba(59, 130, 246, 0.22);
+  color: #93c5fd;
+}
+html[data-mode="dark"] .channel-tag:hover {
+  background: rgba(59, 130, 246, 0.3);
+  text-decoration: none;
+}
 
 * {
   box-sizing: border-box;
@@ -1915,17 +1923,16 @@ html[data-mode="dark"] .backend-connection-error {
   flex: none;
 }
 .channel-tag {
-  display: inline-block;
-  padding: 0 3px;
-  border-radius: 4px;
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  font-weight: 650;
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--blue-500);
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 5px;
   cursor: pointer;
 }
 .channel-tag:hover {
-  background: color-mix(in srgb, var(--accent) 20%, transparent);
-  text-decoration: underline;
+  background: rgba(37, 99, 235, 0.18);
+  text-decoration: none;
 }
 
 /* Profile card (click a name/avatar/@mention) */

@@ -157,6 +157,7 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
   const publicChannels = new Set(
     channels.filter((channel) => channel.type === "public").map((channel) => channel.name.toLowerCase())
   );
+  let activeResolvedChannels = new Map();
   const marked = new Marked({
     breaks: true, // single newline => <br>
     gfm: true,
@@ -189,18 +190,18 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
           return i < 0 ? undefined : i;
         },
         tokenizer(src) {
-          const m = /^@([a-z0-9_.-]+)/i.exec(src);
+          const m = /^@([a-z0-9_.-]+(?:\\_[a-z0-9_.-]+)*)/i.exec(src);
           if (!m) return undefined;
           return { type: "mention", raw: m[0], handle: m[1] };
         },
         renderer(token) {
-          const handle = token.handle.toLowerCase();
+          const handle = token.handle.replace(/\\_/g, "_").toLowerCase();
           // @everyone broadcasts to everyone in the channel (not a personal
           // mention) — flag it with a megaphone so it reads as an announcement.
           if (handle === "everyone") {
             return `<span class="mention mention--broadcast">📣 @${token.handle}</span>`;
           }
-          if (!knownUsernames.has(handle)) return token.raw; // not a real user
+          if (!knownUsernames.has(handle)) return token.raw.replace(/\\_/g, "_"); // not a real user
           const mentionUser = knownUsernames instanceof Map ? knownUsernames.get(handle) : null;
           const canonical = typeof mentionUser === "string" ? mentionUser : mentionUser?.username || handle;
           const displayName = typeof mentionUser === "object"
@@ -219,11 +220,15 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
         },
         tokenizer(src) {
           const m = /^#([a-z0-9_-]+)/i.exec(src);
-          if (!m || !publicChannels.has(m[1].toLowerCase())) return undefined;
-          return { type: "channelTag", raw: m[0], name: m[1].toLowerCase() };
+          if (!m) return undefined;
+          const name = m[1].toLowerCase();
+          if (!activeResolvedChannels.has(name) && !publicChannels.has(name)) return undefined;
+          return { type: "channelTag", raw: m[0], name };
         },
         renderer(token) {
-          return `<span class="channel-tag" data-channel-tag="${token.name}">#${token.name}</span>`;
+          const mention = activeResolvedChannels.get(token.name);
+          const channelId = mention?.channelId ? ` data-channel-id="${escapeHtml(mention.channelId)}"` : "";
+          return `<span class="channel-tag"${channelId} data-channel-tag="${escapeHtml(token.name)}">#${escapeHtml(token.name)}</span>`;
         },
       },
       {
@@ -274,10 +279,13 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
     ],
   });
 
-  return (text) => {
+  return (text, options = {}) => {
     const source = text ?? "";
-    const cached = renderedCache.get(source);
+    const resolvedChannels = new Map((options.mentionedChannels || []).map((mention) => [String(mention.name).toLowerCase(), mention]));
+    const cacheKey = resolvedChannels.size ? `${source}\u0000${JSON.stringify([...resolvedChannels])}` : source;
+    const cached = renderedCache.get(cacheKey);
     if (cached !== undefined) return cached;
+    activeResolvedChannels = resolvedChannels;
 
     const html = marked.parse(preserveMarkdownBlankLines(source));
     // Sanitize: allow only the safe subset markdown produces. `class` is kept so
@@ -287,7 +295,7 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
         "p", "br", "strong", "em", "del", "code", "pre", "blockquote",
         "ul", "ol", "li", "a", "span", "time", "h1", "h2", "h3", "hr", "img",
       ],
-    ALLOWED_ATTR: ["class", "datetime", "href", "title", "target", "rel", "src", "alt", "data-channel-tag", "data-mention"],
+    ALLOWED_ATTR: ["class", "datetime", "href", "title", "target", "rel", "src", "alt", "data-channel-tag", "data-channel-id", "data-mention"],
       // Authenticated custom emoji are rendered through local blob URLs before
       // this HTML is inserted into the chat. Keep those URLs while retaining
       // a narrow allowlist for markdown links and image sources.
@@ -312,7 +320,7 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
     if (renderedCache.size >= RENDER_CACHE_LIMIT) {
       renderedCache.delete(renderedCache.keys().next().value);
     }
-    renderedCache.set(source, rendered);
+    renderedCache.set(cacheKey, rendered);
     return rendered;
   };
 }

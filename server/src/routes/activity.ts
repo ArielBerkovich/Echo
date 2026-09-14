@@ -167,6 +167,10 @@ async function getActivityItems(me) {
         memberCount: group.memberCount,
         echoMemberIds: (group.echoMemberIds || []).map((id) => id.toString()),
       })),
+      mentionedChannels: (m.mentionedChannels || []).map((mention) => ({
+        channelId: mention.channelId.toString(),
+        name: mention.name,
+      })),
       createdAt: m.createdAt,
       kind: isReply ? "reply" : isBroadcast ? "broadcast" : "mention",
       unread,

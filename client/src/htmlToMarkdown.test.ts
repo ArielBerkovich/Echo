@@ -34,4 +34,11 @@ describe("htmlToMarkdown", () => {
   it("strips zero-width caret anchors", () => {
     assert.equal(htmlToMarkdown("<p>he\u200bllo</p>"), "hello");
   });
+
+  it("serializes structured mentions using canonical handles", () => {
+    assert.equal(
+      htmlToMarkdown('<p><span data-user-mention="dev_5">@Dev 5</span> <span data-user-mention="dev.name-5">@Dev Name</span> <span data-channel-mention="public-project">#public-project</span></p>'),
+      "@dev_5 @dev.name-5 #public-project"
+    );
+  });
 });

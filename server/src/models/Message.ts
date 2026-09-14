@@ -94,6 +94,11 @@ const messageSchema = new mongoose.Schema(
       memberCount: { type: Number, required: true },
       echoMemberIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     }],
+    mentionedChannels: [{
+      _id: false,
+      channelId: { type: mongoose.Schema.Types.ObjectId, ref: "Channel", required: true },
+      name: { type: String, required: true },
+    }],
     mentionsEveryone: { type: Boolean, default: false, index: true },
     threadRootAuthor: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null, index: true },
     // External automation metadata. `idempotencyKey` prevents duplicate posts
@@ -209,6 +214,10 @@ messageSchema.methods.toPublicJSON = function () {
     mentionedGroups: (this.mentionedGroups || []).map((group) => ({
       provider: group.provider || "rhsso", id: group.id, name: group.name, path: group.path, memberCount: group.memberCount,
       echoMemberIds: (group.echoMemberIds || []).map((id) => id.toString()),
+    })),
+    mentionedChannels: (this.mentionedChannels || []).map((mention) => ({
+      channelId: mention.channelId.toString(),
+      name: mention.name,
     })),
     mentionsEveryone: !!this.mentionsEveryone,
     externalKey: this.externalKey || null,
