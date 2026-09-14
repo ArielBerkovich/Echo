@@ -13172,7 +13172,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 }
 
 /* Retrospective boards */
-.retro-message-card { width: min(560px, 100%); display: flex; align-items: center; gap: 12px; margin: 12px 0 5px; padding: 14px 16px; border: 1px solid color-mix(in srgb, var(--accent) 27%, var(--border)); border-radius: 14px; color: var(--text); background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, var(--surface)), var(--surface)); text-align: left; cursor: pointer; box-shadow: 0 5px 16px color-mix(in srgb, var(--accent) 8%, transparent); transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+.retro-message-card { width: min(560px, 100%); display: flex; align-items: center; gap: 12px; margin: 12px 0 5px; padding: 14px 16px; border: 1px solid color-mix(in srgb, var(--accent) 27%, var(--border)); border-radius: 14px; color: var(--text); background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, var(--surface)), var(--surface)); text-align: left; cursor: pointer; box-shadow: none; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
 .retro-message-card:hover { transform: translateY(-2px); border-color: var(--accent); box-shadow: none; }
 .retro-message-icon, .retro-create-mark { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; flex: 0 0 auto; border-radius: 11px; color: var(--active-fg); background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #8b5cf6)); }
 .retro-message-copy { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 3px; }.retro-message-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.retro-message-copy small { color: var(--muted); font-size: 12px; }
@@ -13212,7 +13212,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   min-width: 36px;
   padding-inline: 0;
 }
-.modal.retro-create-modal { width: min(560px, calc(100vw - 32px)); padding: 30px; border-radius: 20px; background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 8%, var(--surface)), var(--surface) 58%); border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border)); box-shadow: 0 24px 70px color-mix(in srgb, var(--text) 24%, transparent); }
+.modal.retro-create-modal { width: min(560px, calc(100vw - 32px)); padding: 30px; border-radius: 20px; background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 8%, var(--surface)), var(--surface) 58%); border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border)); box-shadow: none; }
 .retro-create-modal .modal-header { margin-bottom: 10px; }
 .retro-create-modal .modal-header h2 { display: inline-flex; align-items: center; gap: 10px; font-size: 24px; letter-spacing: -.035em; }
 .retro-create-title-icon { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 10px; color: var(--active-fg); background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #8b5cf6)); box-shadow: 0 6px 14px color-mix(in srgb, var(--accent) 20%, transparent); }
