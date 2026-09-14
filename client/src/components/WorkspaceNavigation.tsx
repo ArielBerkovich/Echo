@@ -1,5 +1,6 @@
 import LeftRail from "./LeftRail.js";
 import Sidebar from "./Sidebar.js";
+import SearchBox from "./SearchBox.js";
 
 export default function WorkspaceNavigation({
   view,
@@ -35,6 +36,7 @@ export default function WorkspaceNavigation({
   onOpenSettings,
   onOpenApiDocs,
   onToggleMode,
+  search,
 }) {
   const badges = {
     home: channels.reduce((sum, channel) => sum + (channel.unread || 0), 0),
@@ -45,7 +47,8 @@ export default function WorkspaceNavigation({
 
   return (
     <div className="app-nav">
-      <LeftRail
+      <div className="workspace-rail">
+        <LeftRail
         view={view}
         onSelect={onSelectView}
         onBrowseChannels={onBrowseChannels}
@@ -58,8 +61,26 @@ export default function WorkspaceNavigation({
         badges={badges}
         customEmojis={customEmojis}
         latestActivity={activityItems[0]}
-      />
+        />
+      </div>
+      <div className="workspace-search" data-testid="workspace-search">
+        <SearchBox
+          ref={search.inputRef}
+          channels={search.channels}
+          myChannelIds={search.myChannelIds}
+          users={search.users}
+          recents={search.recents}
+          currentChannelActions={search.currentChannelActions}
+          onPickChannel={search.onPickChannel}
+          onFindChannels={search.onFindChannels}
+          onPickUser={search.onPickUser}
+          onPickDm={search.onPickDm}
+          onQuickAction={search.onQuickAction}
+          onSearchMessages={search.onSearchMessages}
+        />
+      </div>
       {showSidebar ? (
+        <div className="workspace-sidebar">
           <Sidebar
             user={user}
             channels={channels}
@@ -90,6 +111,7 @@ export default function WorkspaceNavigation({
             themeMode={mode}
             onToggleTheme={onToggleMode}
           />
+        </div>
       ) : null}
     </div>
   );

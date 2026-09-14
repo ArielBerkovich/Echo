@@ -2112,6 +2112,113 @@ html[data-mode="dark"] .backend-connection-error {
   background: var(--rail-bg);
 }
 
+/* Desktop navigation frame: the rail spans both rows, while search sits above
+   the sidebar and the existing conversation surface. */
+@media (min-width: 761px) {
+  .workspace-frame {
+    display: grid;
+    grid-template-columns: 88px 260px minmax(0, 1fr);
+    grid-template-rows: 52px minmax(0, 1fr);
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    background:
+      radial-gradient(circle at 48px 10%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 30%),
+      var(--rail-bg);
+  }
+
+  .workspace-frame:has(.app-nav.no-sidebar) {
+    grid-template-columns: 88px minmax(0, 1fr);
+  }
+
+  .workspace-frame > .app-nav {
+    display: contents;
+  }
+
+  .workspace-rail {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    min-height: 0;
+  }
+
+  .workspace-rail .rail {
+    height: 100%;
+    box-sizing: border-box;
+    background: transparent;
+    border-right-color: transparent;
+  }
+
+  .workspace-search {
+    grid-column: 2 / -1;
+    grid-row: 1;
+    min-width: 0;
+    height: 52px;
+    background: transparent;
+    border-bottom: 1px solid color-mix(in srgb, var(--on-navy) 10%, transparent);
+  }
+
+  .workspace-search .search-box {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 clamp(14px, 2vw, 28px);
+  }
+
+  .workspace-search .search-box-field {
+    height: 42px;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .workspace-search .search-box-field:hover:not(:focus-within),
+  .workspace-search .search-box-field:focus-within {
+    border-color: transparent;
+    background: transparent;
+    transform: none;
+  }
+
+  .workspace-search .search-placeholder,
+  .workspace-search .search-box-field input.search-input {
+    color: var(--on-navy-muted);
+  }
+
+  .workspace-search .search-box-field input.search-input {
+    caret-color: var(--on-navy);
+  }
+
+  .workspace-search .search-icon-badge {
+    background: transparent;
+    color: var(--accent);
+  }
+
+  .workspace-sidebar {
+    grid-column: 2;
+    grid-row: 2;
+    min-width: 0;
+    min-height: 0;
+    background: var(--sidebar-bg);
+    border-left: 1px solid color-mix(in srgb, var(--on-navy) 10%, transparent);
+  }
+
+  .workspace-sidebar .sidebar {
+    width: 100%;
+    height: 100%;
+  }
+
+  .workspace-frame > .chat-pane {
+    grid-column: 3;
+    grid-row: 2;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .workspace-frame:has(.app-nav.no-sidebar) > .chat-pane {
+    grid-column: 2;
+  }
+}
+
 /* Top bar with centered search */
 .topbar {
   flex: none;
@@ -10704,6 +10811,39 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 /* Narrow screens: rail + sidebar become an off-canvas drawer; the chat pane
    takes the full width. A menu button reveals the drawer; a backdrop dismisses it. */
 @media (max-width: 760px) {
+  .workspace-frame {
+    position: relative;
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .workspace-search {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 65;
+    height: calc(63px + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
+    background: var(--rail-bg);
+  }
+
+  .workspace-search .search-box {
+    height: 63px;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+  }
+
+  .workspace-sidebar {
+    display: contents;
+  }
+
+  .workspace-frame > .chat-pane {
+    flex: 1;
+    min-width: 0;
+  }
+
   .pane-search {
     display: flex;
     align-items: center;
