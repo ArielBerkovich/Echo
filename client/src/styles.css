@@ -8950,6 +8950,7 @@ html[data-mode="dark"] .channel-header {
   border-radius: 9px;
 }
 .file-row:hover { background: var(--surface-2); }
+.file-row.active { background: var(--active-soft); }
 .file-type {
   flex: none;
   display: grid;
