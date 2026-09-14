@@ -43,7 +43,12 @@ export default function WorkspaceNavigation({
     dms: dms.reduce((sum, conversation) => sum + (conversation.unread || 0), 0),
     activity: activityBadge,
   };
-  const showSidebar = forceSidebar || (view !== "activity" && view !== "saved" && view !== "settings");
+  const showSidebar = forceSidebar || (
+    view !== "activity" &&
+    view !== "saved" &&
+    view !== "settings" &&
+    view !== "browse"
+  );
 
   return (
     <div className={`app-nav${showSidebar ? "" : " no-sidebar"}`}>

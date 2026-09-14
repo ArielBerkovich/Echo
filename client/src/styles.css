@@ -4035,7 +4035,7 @@ html[data-mode="dark"] .sidebar {
   min-height: 64px;
   box-sizing: border-box;
   padding: 13px 16px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -8764,6 +8764,11 @@ html[data-mode="dark"] .day-divider-label {
 html[data-mode="dark"] .channel-header {
   background: var(--surface);
   border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+.channel-header[data-testid="activity-header"],
+.channel-header[data-testid="saved-header"],
+.channel-header.channel-browser-header {
+  border-bottom: 0;
 }
 .channel-header .ch-name {
   font-weight: 800;
