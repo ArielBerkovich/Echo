@@ -88,6 +88,69 @@ test("opens the workspace search pane with Ctrl+F", async ({ page }) => {
   await expect(page.getByTestId("search-hint")).toBeVisible();
 });
 
+test("navigates the channel browser results with arrow keys and Enter", async ({ page }) => {
+  const channelName = `keyboard-browser-${fixture.suffix}`;
+  const created = await requestAsToken(page, fixture.alice.token, "/channels", {
+    method: "POST",
+    body: { name: channelName, type: "public" },
+  });
+
+  try {
+    await page.goto("/");
+    await page.getByTestId("sidebar-more").click();
+    await page.getByTestId("more-browse-channels").click();
+
+    const search = page.getByTestId("channel-browser-search");
+    await expect(search).toBeFocused();
+    await search.fill(channelName);
+    const row = page.getByTestId(`browse-channel-${channelName}`);
+    await expect(row).toBeVisible();
+    await expect(row).toHaveClass(/active/);
+
+    await search.press("ArrowDown");
+    await expect(row).toHaveClass(/active/);
+    await search.press("Enter");
+    await expect(page.getByTestId("channel-browser")).toBeHidden();
+    await expect(page.getByTestId("channel-title")).toContainText(channelName);
+
+    await page.getByTestId("sidebar-more").click();
+    await page.getByTestId("more-browse-channels").click();
+    await expect(page.getByTestId("channel-browser-search")).toBeFocused();
+    await page.getByTestId("channel-browser-search").fill(fixture.projectChannel.name);
+    const joinedRow = page.getByTestId(`browse-channel-${fixture.projectChannel.name}`);
+    await expect(joinedRow).toBeVisible();
+    await page.getByTestId("channel-browser-search").press("Enter");
+    await expect(page.getByTestId("channel-browser")).toBeHidden();
+    await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
+  } finally {
+    await requestAsToken(page, fixture.alice.token, `/channels/${created.channel.id}`, { method: "DELETE" });
+  }
+});
+
+test("opens the highlighted channel-detail member with Enter", async ({ page }) => {
+  await requestAsToken(page, fixture.alice.token, `/channels/${fixture.projectChannel.id}/members`, {
+    method: "POST",
+    body: { userId: fixture.bob.id },
+  });
+  try {
+    await page.goto(`/channels/${fixture.projectChannel.id}`);
+    await page.getByTestId("channel-title").click();
+
+    const details = page.getByTestId("channel-details-dialog");
+    await details.getByRole("tab", { name: "Members" }).click();
+    const search = details.getByRole("textbox", { name: "Search members" });
+    await expect(search).toBeFocused();
+    await search.fill(fixture.bob.username);
+    const member = details.getByTestId(`channel-details-person-${fixture.bob.id}`);
+    await expect(member).toBeVisible();
+    await expect(member).toHaveClass(/active/);
+    await search.press("Enter");
+    await expect(page.getByTestId("profile-modal")).toContainText(fixture.bob.displayName);
+  } finally {
+    await requestAsToken(page, fixture.alice.token, `/channels/${fixture.projectChannel.id}/members/${fixture.bob.id}`, { method: "DELETE" });
+  }
+});
+
 test("finds joined private channels in the main search", async ({ page }) => {
   const channelName = `private-search-${fixture.suffix}`;
   const created = await requestAsToken(page, fixture.alice.token, "/channels", {

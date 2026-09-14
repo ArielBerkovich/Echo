@@ -18,6 +18,7 @@ test("creates and manages a retrospective board", async ({ page }) => {
   await page.getByTestId("composer-more-actions").click();
   await page.getByTestId("composer-retro").click();
   const createModal = page.locator(".retro-create-modal");
+  await expect(createModal).toHaveCSS("box-shadow", "none");
   await createModal.locator("input.settings-input").fill(title);
   await createModal
     .getByRole("button", { name: "Create retrospective" })
@@ -28,6 +29,7 @@ test("creates and manages a retrospective board", async ({ page }) => {
     .filter({ hasText: title })
     .last();
   await expect(message).toBeVisible();
+  await expect(message).toHaveCSS("box-shadow", "none");
   await expect(message).toHaveCSS("margin-top", "12px");
   await message.click();
   const board = page.locator(".retro-modal");
@@ -35,7 +37,7 @@ test("creates and manages a retrospective board", async ({ page }) => {
   await expect(board.locator(".retro-column")).toHaveCount(4);
 
   const wentWell = board.locator(".retro-column.sun");
-  await wentWell.getByRole("button", { name: "Add idea" }).click();
+  await board.locator(".retro-column-header.sun").getByRole("button", { name: "Add idea" }).click();
   const ideaModal = page.locator(".retro-idea-modal");
   const editor = ideaModal.getByTestId("composer-editor");
   await expect(editor).toBeFocused();
@@ -88,7 +90,7 @@ test("shows optional linked work URL for backlog ideas", async ({ page }) => {
 
   const board = page.locator(".retro-modal");
   await board
-    .locator(".retro-column.violet")
+    .locator(".retro-column-header.violet")
     .getByRole("button", { name: "Add idea" })
     .click();
   const ideaModal = page.locator(".retro-idea-modal");
