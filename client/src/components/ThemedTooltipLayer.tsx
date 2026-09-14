@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 
 type TooltipState = {
   target: HTMLElement;
@@ -6,6 +6,7 @@ type TooltipState = {
   left: number;
   top: number;
   placement: "above" | "below" | "left" | "right";
+  arrowOffset?: number;
 };
 
 const TOOLTIP_DELAY = 550;
@@ -50,6 +51,16 @@ function tooltipBox(position: ReturnType<typeof tooltipPosition>, placement: Too
   if (placement === "below") return { left: position.left - width / 2, top: position.top, right: position.left + width / 2, bottom: position.top + height };
   if (placement === "left") return { left: position.left - width, top: position.top - height / 2, right: position.left, bottom: position.top + height / 2 };
   return { left: position.left, top: position.top - height / 2, right: position.left + width, bottom: position.top + height / 2 };
+}
+
+function tooltipArrowOffset(target: HTMLElement, position: ReturnType<typeof tooltipPosition>, placement: TooltipState["placement"], width: number, height: number) {
+  const targetRect = target.getBoundingClientRect();
+  if (placement === "above" || placement === "below") {
+    const boxLeft = position.left - width / 2;
+    return Math.max(10, Math.min(width - 10, targetRect.left + targetRect.width / 2 - boxLeft));
+  }
+  const boxTop = position.top - height / 2;
+  return Math.max(10, Math.min(height - 10, targetRect.top + targetRect.height / 2 - boxTop));
 }
 
 function overlapsControl(box: ReturnType<typeof tooltipBox>, target: HTMLElement) {
@@ -172,20 +183,24 @@ export default function ThemedTooltipLayer() {
       return fitsViewport && (candidate === "above" || railPlacement || !overlapsControl(box, tooltip.target));
     }) || tooltip.placement;
     const position = tooltipPosition(tooltip.target, placement, width, height);
-    if (position.left !== tooltip.left || position.top !== tooltip.top || placement !== tooltip.placement) {
-      setTooltip((current) => current && current.target === tooltip.target ? { ...current, ...position } : current);
+    const arrowOffset = tooltipArrowOffset(tooltip.target, position, placement, width, height);
+    if (position.left !== tooltip.left || position.top !== tooltip.top || placement !== tooltip.placement || arrowOffset !== tooltip.arrowOffset) {
+      setTooltip((current) => current && current.target === tooltip.target ? { ...current, ...position, arrowOffset } : current);
     }
   }, [tooltip]);
 
   if (!tooltip) return null;
-  const rightAnchored = tooltip.target.matches("[data-testid='composer-send-options'], .timeline-jump-button, .message-more-action, .header-action.leave");
   return (
     <div
       ref={tooltipNodeRef}
-      className={`echo-tooltip echo-tooltip-${tooltip.placement}${rightAnchored ? " echo-tooltip-right-anchor" : ""}`}
+      className={`echo-tooltip echo-tooltip-${tooltip.placement}`}
       role="tooltip"
       aria-hidden="true"
-      style={{ left: tooltip.left, top: tooltip.top }}
+      style={{
+        left: tooltip.left,
+        top: tooltip.top,
+        ...(tooltip.arrowOffset == null ? {} : { "--tooltip-arrow-offset": `${tooltip.arrowOffset}px` }),
+      } as CSSProperties}
     >
       {tooltip.text}
     </div>

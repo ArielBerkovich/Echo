@@ -125,7 +125,7 @@ html[data-mode="dark"] {
 .echo-tooltip::after {
   content: "";
   position: absolute;
-  left: 50%;
+  left: var(--tooltip-arrow-offset, 50%);
   bottom: -5px;
   width: 8px;
   height: 8px;
@@ -152,18 +152,15 @@ html[data-mode="dark"] {
 .echo-tooltip-left::after {
   right: -5px;
   left: auto;
+  top: var(--tooltip-arrow-offset, 50%);
   border-top: 1px solid var(--tooltip-border);
   border-right: 1px solid var(--tooltip-border);
 }
 .echo-tooltip-right::after {
   left: -5px;
+  top: var(--tooltip-arrow-offset, 50%);
   border-left: 1px solid var(--tooltip-border);
   border-bottom: 1px solid var(--tooltip-border);
-}
-.echo-tooltip-right-anchor::after {
-  left: auto;
-  right: 10px;
-  transform: rotate(45deg);
 }
 @keyframes echo-tooltip-in {
   from { opacity: 0; }
