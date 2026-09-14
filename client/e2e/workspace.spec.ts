@@ -119,6 +119,7 @@ test("navigates the channel browser results with arrow keys and Enter", async ({
     await page.getByTestId("channel-browser-search").fill(fixture.projectChannel.name);
     const joinedRow = page.getByTestId(`browse-channel-${fixture.projectChannel.name}`);
     await expect(joinedRow).toBeVisible();
+    await expect(joinedRow).toHaveClass(/active/);
     await page.getByTestId("channel-browser-search").press("Enter");
     await expect(page.getByTestId("channel-browser")).toBeHidden();
     await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
