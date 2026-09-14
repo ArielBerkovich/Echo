@@ -83,6 +83,7 @@ const ChannelView = forwardRef(function ChannelView({
   onOpenProfile,
   onOpenGroup,
   onOpenChannel,
+  onFindChannels,
   onSearchInChannel,
   onOpenForwardedDm,
   isStarred = false,
@@ -1388,6 +1389,7 @@ const ChannelView = forwardRef(function ChannelView({
           channel={channel}
           users={users}
           channels={channels}
+          onFindChannels={onFindChannels}
           customEmojis={customEmojis}
           mode={mode}
           onAddCustomEmoji={onAddCustomEmoji}
@@ -1430,6 +1432,7 @@ const ChannelView = forwardRef(function ChannelView({
             onOpenProfile={onOpenProfile}
             onOpenGroup={onOpenGroup}
             onOpenChannel={onOpenChannel}
+            onFindChannels={onFindChannels}
             onAddCustomEmoji={onAddCustomEmoji}
             onClose={() => { setThread(null); setThreadJumpTargetId(null); setThreadLightbox(null); }}
             onThreadRead={onThreadRead}
@@ -1591,7 +1594,7 @@ function PinnedPanel({ messages, renderMarkdown, emojiMap, onUnpin, onClose }) {
               </div>
               <div
                 className="pinned-item-body markdown"
-                dangerouslySetInnerHTML={{ __html: renderMarkdown(m.body || "") }}
+                dangerouslySetInnerHTML={{ __html: renderMarkdown(m.body || "", { mentionedChannels: m.mentionedChannels }) }}
               />
               <button className="pinned-unpin" data-testid={`pinned-${m.id}-unpin`} onClick={() => onUnpin(m)}>
                 Unpin

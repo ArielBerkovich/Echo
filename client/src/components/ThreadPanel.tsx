@@ -32,6 +32,7 @@ export default function ThreadPanel({
   onOpenProfile,
   onOpenGroup,
   onOpenChannel,
+  onFindChannels,
   onAddCustomEmoji,
   onClose,
   onThreadRead,
@@ -460,6 +461,7 @@ export default function ThreadPanel({
         parentId={root.id}
         users={users}
         channels={channels}
+        onFindChannels={onFindChannels}
         customEmojis={customEmojis}
         onAddCustomEmoji={onAddCustomEmoji}
         onError={setError}

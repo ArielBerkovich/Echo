@@ -198,7 +198,7 @@ function Message({
       onContextMenu={onBodyContextMenu}
     >
       {cardMarkup?.before && <div dangerouslySetInnerHTML={{ __html: renderMarkdown(cardMarkup.before) }} />}
-      {!cardMarkup && m.body && <div dangerouslySetInnerHTML={{ __html: decorateGroupMentions(renderMarkdown(displayGroupMentions(m.body, m.mentionedGroups)), m.mentionedGroups) }} />}
+      {!cardMarkup && m.body && <div dangerouslySetInnerHTML={{ __html: decorateGroupMentions(renderMarkdown(displayGroupMentions(m.body, m.mentionedGroups), { mentionedChannels: m.mentionedChannels }), m.mentionedGroups) }} />}
       {m.editedAt && <span className="edited-label"> (edited)</span>}
       {messageCard && <Card card={messageCard} usersById={usersById} />}
     </div>
@@ -291,7 +291,7 @@ function Message({
     const channelTag = e.target.closest?.(".channel-tag[data-channel-tag]");
     if (channelTag) {
       e.preventDefault();
-      onOpenChannel?.(channelTag.dataset.channelTag);
+      onOpenChannel?.(channelTag.dataset.channelId || channelTag.dataset.channelTag);
       return;
     }
     const pill = e.target.closest?.(".mention[data-mention]");

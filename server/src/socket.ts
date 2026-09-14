@@ -317,6 +317,7 @@ export function attachSocket(httpServer) {
 
         message.body = text;
         message.attachments = files;
+        Object.assign(message, await buildMessageActivityMetadata({ body: text, parentId: message.parentId, authorId: socket.user._id }));
         message.editedAt = new Date();
         await message.save();
 
@@ -327,6 +328,8 @@ export function attachSocket(httpServer) {
           body: message.body,
           attachments: message.toPublicJSON().attachments,
           editedAt: message.editedAt,
+          mentionedUserIds: message.mentionedUserIds.map((id) => id.toString()),
+          mentionedChannels: message.mentionedChannels.map((mention) => ({ channelId: mention.channelId.toString(), name: mention.name })),
         });
         ack?.({ ok: true });
       } catch (err) {
@@ -450,7 +453,7 @@ export function attachSocket(httpServer) {
           ...(source.retro ? { retro: source.retro } : {}),
           ...(source.card ? { card: source.card } : {}),
           attachments: sourceAttachments,
-          ...(await buildMessageActivityMetadata({ body: source.body, parentId: null })),
+          ...(await buildMessageActivityMetadata({ body: source.body, parentId: null, authorId: socket.user._id })),
           forwardNote: String(note || "").trim(),
           forwardedFrom: {
             authorName: author?.displayName || "unknown",

@@ -1076,12 +1076,13 @@ export default function App() {
   }
 
   async function handleOpenChannelTag(name) {
-    let picked = visibleChannels.find((channel) => channel.type === "public" && channel.name === name);
+    let picked = visibleChannels.find((channel) => channel.type === "public" && (channel.id === name || channel.name === name));
     if (!picked) {
-      picked = await api.getChannelByName(name).then(({ channel }) => channel).catch(() => null);
+      picked = await (name.match?.(/^[a-f0-9]{24}$/i) ? api.getChannel(name) : api.getChannelByName(name)).then(({ channel }) => channel).catch(() => null);
       if (picked?.type === "public") cacheCatalogChannels([picked]);
     }
     if (picked) handlePickChannel(picked);
+    else setToast("That channel is no longer available.");
   }
 
   async function handleJoinChannel(channel) {
@@ -1609,6 +1610,7 @@ export default function App() {
             onOpenProfile: openProfile,
             onOpenGroup: handleOpenGroups,
             onOpenChannel: handleOpenChannelTag,
+            onFindChannels: findPublicChannels,
             onSearchInChannel: (channelName) => searchRef.current?.searchInChannel(channelName),
             onOpenForwardedDm: (target, channel) => handleOpenDm(target, false, "dms", channel),
             onToast: setToast,
