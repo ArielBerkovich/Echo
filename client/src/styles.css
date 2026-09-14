@@ -13144,15 +13144,73 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   overflow: auto !important;
 }
 .retro-modal .retro-columns {
-  align-items: start;
+  align-items: stretch;
 }
 .retro-modal .retro-column {
-  align-self: start;
+  align-self: stretch;
   border: 0;
 }
 .retro-modal .retro-column > header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  isolation: isolate;
+  background-color: var(--surface) !important;
+  background-image: none !important;
   border-top: 4px solid var(--retro-tone);
   border-radius: 14px 14px 0 0;
+}
+.retro-modal .retro-item {
+  position: relative;
+  z-index: 0;
+  will-change: auto;
+}
+
+/* Keep one opaque header row above all of the independently sized card columns. */
+.retro-modal .retro-column-headers {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(200px, 1fr));
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding-top: 4px;
+  background: var(--surface);
+}
+.retro-modal .retro-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  padding: 8px 6px 10px;
+  border-top: 4px solid var(--retro-tone);
+  border-bottom: 2px solid color-mix(in srgb, var(--retro-tone) 26%, var(--border));
+  border-radius: 14px 14px 0 0;
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 800;
+}
+.retro-column-header.sun { --retro-tone: #4f9275; }
+.retro-column-header.coral { --retro-tone: #ba6f6f; }
+.retro-column-header.violet { --retro-tone: #76599a; }
+.retro-column-header.mint { --retro-tone: #c36c4f; }
+.retro-modal .retro-column-header .retro-column-submit {
+  width: auto;
+  margin: 0;
+  padding: 5px 8px;
+  border: 1px solid var(--retro-tone);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--retro-tone) 12%, var(--surface));
+}
+.retro-modal .retro-column-header .retro-column-submit:hover:not(:disabled) {
+  background: var(--retro-tone);
+  color: #fff;
+}
+@media (max-width: 720px) {
+  .retro-modal .retro-column-headers {
+    grid-template-columns: repeat(4, minmax(220px, 1fr));
+  }
 }
 .retro-item, .retro-item:hover, .retro-item:focus-within { border-color: var(--retro-tone); }
 .retro-column-submit, .retro-column-submit:hover:not(:disabled) { color: #fff; }

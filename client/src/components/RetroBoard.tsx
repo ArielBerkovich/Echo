@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpRight,
   GripVertical,
@@ -89,11 +89,13 @@ function RetroItem({
   onEdit,
   onDelete,
   onDragStart,
+  onDragEnd,
 }) {
   return (
     <article
       draggable
       onDragStart={(event) => onDragStart(event, item)}
+      onDragEnd={onDragEnd}
       className="retro-item"
     >
       <div className="retro-item-top">
@@ -158,16 +160,17 @@ function RetroColumn({
   usersById,
   currentUserId,
   creatorId,
-  onAdd,
   onEdit,
   onDelete,
   onDragStart,
+  onDragEnd,
   onDrop,
 }) {
   const [isOver, setIsOver] = useState(false);
   return (
     <section
       className={`retro-column ${column.tone}${isOver ? " is-drop-target" : ""}`}
+      data-retro-column={column.id}
       onDragEnter={(event) => {
         event.preventDefault();
         setIsOver(true);
@@ -178,26 +181,13 @@ function RetroColumn({
         setIsOver(true);
       }}
       onDragLeave={(event) => {
-        if (event.currentTarget === event.target) setIsOver(false);
+        if (!event.currentTarget.contains(event.relatedTarget)) setIsOver(false);
       }}
       onDrop={(event) => {
         setIsOver(false);
         onDrop(event, column.id);
       }}
     >
-      <header>
-        <div className="retro-column-heading">
-          <span>{column.label}</span>
-          <b>{items.length}</b>
-        </div>
-        <button
-          type="button"
-          className="retro-column-submit"
-          onClick={() => onAdd(column.id)}
-        >
-          <Plus size={14} /> Add idea
-        </button>
-      </header>
       <div className="retro-cards">
         {items.map((item) => (
           <RetroItem
@@ -209,11 +199,30 @@ function RetroColumn({
             onEdit={onEdit}
             onDelete={onDelete}
             onDragStart={onDragStart}
+            onDragEnd={onDragEnd}
           />
         ))}
       </div>
       {!items.length && <div className="retro-empty">No ideas yet</div>}
     </section>
+  );
+}
+
+function RetroColumnHeader({ column, itemCount, onAdd }) {
+  return (
+    <header className={`retro-column-header ${column.tone}`}>
+      <div className="retro-column-heading">
+        <span>{column.label}</span>
+        <b>{itemCount}</b>
+      </div>
+      <button
+        type="button"
+        className="retro-column-submit"
+        onClick={() => onAdd(column.id)}
+      >
+        <Plus size={14} /> Add idea
+      </button>
+    </header>
   );
 }
 
@@ -228,6 +237,8 @@ export default function RetroBoard({
     [ideaDraft, setIdeaDraft] = useState(null),
     [deleteItem, setDeleteItem] = useState(null),
     [error, setError] = useState("");
+  const boardScrollRef = useRef(null);
+  const pendingScrollRef = useRef(null);
   const grouped = useMemo(
     () =>
       COLUMNS.reduce(
@@ -242,11 +253,58 @@ export default function RetroBoard({
   const update = (change, done) => {
     setError("");
     getSocket().emit("retro:update", { messageId, change }, (result) => {
-      if (result?.error) setError(result.error);
+      if (result?.error) {
+        pendingScrollRef.current = null;
+        setError(result.error);
+      }
       else done?.();
     });
   };
-  const saveIdea = (idea) =>
+  useEffect(() => {
+    const pending = pendingScrollRef.current;
+    if (!pending) return;
+    const items = grouped[pending.column] || [];
+    if (items.length <= pending.itemCount) return;
+
+    const frame = requestAnimationFrame(() => {
+      const board = boardScrollRef.current;
+      const column = boardScrollRef.current?.querySelector(
+        `[data-retro-column="${pending.column}"]`,
+      );
+      const newItem = column?.querySelector(
+        ".retro-cards > .retro-item:last-child",
+      );
+      if (board && newItem) {
+        const boardRect = board.getBoundingClientRect();
+        const headerRect = board
+          .querySelector(".retro-column-headers")
+          ?.getBoundingClientRect();
+        const itemRect = newItem.getBoundingClientRect();
+        const visibleTop = Math.max(
+          boardRect.top,
+          headerRect?.bottom || boardRect.top,
+        );
+        const visibleBottom = boardRect.bottom;
+        const margin = 8;
+        let delta = 0;
+        if (itemRect.top < visibleTop + margin) {
+          delta = itemRect.top - visibleTop - margin;
+        } else if (itemRect.bottom > visibleBottom - margin) {
+          delta = itemRect.bottom - visibleBottom + margin;
+        }
+        if (delta) board.scrollBy({ top: delta, behavior: "smooth" });
+      }
+      pendingScrollRef.current = null;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [grouped]);
+  const saveIdea = (idea) => {
+    if (!idea.id) {
+      pendingScrollRef.current = {
+        column: idea.column,
+        itemCount: grouped[idea.column]?.length || 0,
+      };
+    }
     update(
       idea.id
         ? { action: "edit", itemId: idea.id, text: idea.text, link: idea.link }
@@ -258,6 +316,7 @@ export default function RetroBoard({
           },
       () => setIdeaDraft(null),
     );
+  };
   return (
     <>
       <button
@@ -297,8 +356,20 @@ export default function RetroBoard({
               {error}
             </p>
           )}
-          <div className="retro-board-scroll">
+          <div className="retro-board-scroll" ref={boardScrollRef}>
             <div className="retro-columns">
+              <div className="retro-column-headers">
+                {COLUMNS.map((column) => (
+                  <RetroColumnHeader
+                    key={column.id}
+                    column={column}
+                    itemCount={grouped[column.id].length}
+                    onAdd={(id) =>
+                      setIdeaDraft({ column: id, text: "", link: "" })
+                    }
+                  />
+                ))}
+              </div>
               {COLUMNS.map((column) => (
                 <RetroColumn
                   key={column.id}
@@ -307,15 +378,13 @@ export default function RetroBoard({
                   usersById={usersById}
                   currentUserId={currentUserId}
                   creatorId={creatorId}
-                  onAdd={(id) =>
-                    setIdeaDraft({ column: id, text: "", link: "" })
-                  }
                   onEdit={setIdeaDraft}
                   onDelete={setDeleteItem}
                   onDragStart={(event, item) => {
                     event.dataTransfer.effectAllowed = "move";
                     event.dataTransfer.setData("text/plain", item.id);
                   }}
+                  onDragEnd={() => setIsOver(false)}
                   onDrop={(event, columnId) => {
                     event.preventDefault();
                     const itemId = event.dataTransfer.getData("text/plain");
