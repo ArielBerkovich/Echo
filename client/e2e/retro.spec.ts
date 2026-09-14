@@ -15,6 +15,7 @@ test.beforeEach(async ({ page }) => {
 
 test("creates and manages a retrospective board", async ({ page }) => {
   const title = `Retro ${uniqueSuffix("board")}`;
+  await page.getByTestId("composer-more-actions").click();
   await page.getByTestId("composer-retro").click();
   const createModal = page.locator(".retro-create-modal");
   await createModal.locator("input.settings-input").fill(title);
@@ -72,6 +73,7 @@ test("creates and manages a retrospective board", async ({ page }) => {
 
 test("shows optional linked work URL for backlog ideas", async ({ page }) => {
   const title = `Retro ${uniqueSuffix("links")}`;
+  await page.getByTestId("composer-more-actions").click();
   await page.getByTestId("composer-retro").click();
   const createModal = page.locator(".retro-create-modal");
   await createModal.locator("input.settings-input").fill(title);

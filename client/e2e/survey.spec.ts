@@ -14,6 +14,7 @@ function surveyModal(page) {
 }
 
 async function fillSurvey(page, { question, options, multiple = false }) {
+  await page.getByTestId("composer-more-actions").click();
   await page.getByTestId("composer-survey").click();
   const modal = surveyModal(page);
   const inputs = modal.locator("input.settings-input");

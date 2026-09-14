@@ -90,6 +90,7 @@ test.describe("post-login forms are keyboard operable", () => {
 
   test("fills and sends a survey using only keyboard navigation", async ({ page }) => {
     await page.goto(`/channels/${encodeURIComponent(fixture.generalChannel.name)}`);
+    await pressEnter(page.getByTestId("composer-more-actions"));
     await pressEnter(page.getByTestId("composer-survey"));
     const modal = page.getByTestId("survey-modal");
     const question = modal.getByPlaceholder("What should we do?");

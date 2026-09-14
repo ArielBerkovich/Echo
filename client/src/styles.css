@@ -9602,10 +9602,65 @@ html[data-mode="dark"] .new-messages-button:hover {
 .icon-btn.plus {
   background: #f4f4f4;
   border-radius: 50%;
-  width: 36px;
   cursor: pointer;
 }
 .icon-btn.plus:hover { background: #e6e6e6; }
+
+.composer-more-actions {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 36px;
+  height: 34px;
+  flex: none;
+}
+.composer-more-actions > .plus {
+  flex: 0 0 36px;
+}
+.composer-more-popover {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  z-index: 31;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 190px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+  animation: composer-actions-in 120ms ease-out both;
+}
+.composer-more-popover-head {
+  padding: 6px 10px 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.composer-more-popover .composer-more-action {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 9px;
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+}
+.composer-more-popover .composer-more-action:hover,
+.composer-more-popover .composer-more-action:focus-visible {
+  background: var(--surface-2);
+}
+@keyframes composer-actions-in {
+  from { opacity: 0; transform: translateX(-4px); }
+  to { opacity: 1; transform: translateX(0); }
+}
 
 .tb-sep {
   width: 1px;
@@ -13124,7 +13179,12 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 .retro-column > header > .retro-column-submit:hover:not(:disabled) { background: var(--retro-tone); color: #fff; }
 .forward-selection-indicator { line-height: 0; }
 .composer-actions .left { justify-content: flex-start; gap: 4px; }
-.composer-actions .left .icon-btn { flex: 0 0 auto; width: auto; }
+.composer-actions .left > .icon-btn {
+  flex: 0 0 36px;
+  width: 36px;
+  min-width: 36px;
+  padding-inline: 0;
+}
 .modal.retro-create-modal { width: min(560px, calc(100vw - 32px)); padding: 30px; border-radius: 20px; background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 8%, var(--surface)), var(--surface) 58%); border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border)); box-shadow: 0 24px 70px color-mix(in srgb, var(--text) 24%, transparent); }
 .retro-create-modal .modal-header { margin-bottom: 10px; }
 .retro-create-modal .modal-header h2 { display: inline-flex; align-items: center; gap: 10px; font-size: 24px; letter-spacing: -.035em; }

@@ -52,7 +52,8 @@ test("keeps the workspace full-screen and usable on a phone", async ({ page }) =
     scroll: element.scrollWidth,
   }));
   expect(toolbarWidth.scroll).toBeLessThanOrEqual(toolbarWidth.client + 1);
-  await page.getByTitle("Attach files").click();
+  await page.getByTestId("composer-more-actions").click();
+  await page.getByRole("menuitem", { name: "Attach files" }).click();
   await page.getByTestId("composer-attachments").setInputFiles({
     name: "mobile-attachment.txt",
     mimeType: "text/plain",

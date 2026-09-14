@@ -27,7 +27,8 @@ test("shows thread message actions after a real phone tap", async ({ page }) => 
   await page.getByTestId(`channel-row-${fixture.projectChannel.name}`).tap();
 
   const fileChooserPromise = page.waitForEvent("filechooser");
-  await page.getByTitle("Attach files").tap();
+  await page.getByTestId("composer-more-actions").tap();
+  await page.getByRole("menuitem", { name: "Attach files" }).tap();
   const fileChooser = await fileChooserPromise;
   await fileChooser.setFiles({
     name: "mobile-touch.png",

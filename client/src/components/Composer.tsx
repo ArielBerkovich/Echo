@@ -161,6 +161,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   const [linkDraft, setLinkDraft] = useState(null); // { text, url } for the link dialog
   // Guards sends that @-mention non-members of a private channel.
   const { gate, mentionModal } = useMentionGate({ channel, users, onChannelUpdated });
+  const [moreActionsOpen, setMoreActionsOpen] = useState(false);
   const [sendMenuOpen, setSendMenuOpen] = useState(false); // "Send options" popover
   const [scheduleAt, setScheduleAt] = useState(null); // datetime-local string while the schedule dialog is open
   const [scheduleError, setScheduleError] = useState(null); // validation/API error for the custom schedule dialog
@@ -648,12 +649,21 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     }
     if (doSend(question, [], { question, options: options.map((label) => ({ label })), allowMultiple: surveyDraft.allowMultiple })) {
       setSurveyDraft(null);
+      restoreComposerFocus();
     }
   }
   function sendRetro() {
     const title = retroDraft?.title.trim();
     if (!title) return setRetroDraft((draft) => ({ ...draft, error: "Give your retrospective a title." }));
-    if (doSend(title, [], null, { title })) setRetroDraft(null);
+    if (doSend(title, [], null, { title })) {
+      setRetroDraft(null);
+      restoreComposerFocus();
+    }
+  }
+  function restoreComposerFocus() {
+    window.requestAnimationFrame(() => {
+      if (!editor?.isDestroyed) editor?.commands.focus();
+    });
   }
 
   function resetComposer() {
@@ -1014,7 +1024,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       )}
 
       {!editing && surveyDraft && (
-        <Modal title="Send a survey" className="survey-modal" testId="survey-modal" onClose={() => setSurveyDraft(null)}>
+        <Modal title="Send a survey" className="survey-modal" testId="survey-modal" onClose={() => { setSurveyDraft(null); restoreComposerFocus(); }}>
           <label className="schedule-custom-field survey-question-field">
             <span>Question</span>
             <input className="settings-input" autoFocus value={surveyDraft.question} placeholder="What should we do?" onChange={(e) => setSurveyDraft((d) => ({ ...d, question: e.target.value, error: null }))} />
@@ -1059,17 +1069,17 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
           </label>
           {surveyDraft.error && <div className="error" role="alert">{surveyDraft.error}</div>}
           <ModalActions>
-            <button type="button" className="btn-secondary" onClick={() => setSurveyDraft(null)}>Cancel</button>
+            <button type="button" className="btn-secondary" onClick={() => { setSurveyDraft(null); restoreComposerFocus(); }}>Cancel</button>
             <button type="button" className="btn-primary" onClick={sendSurvey}>Send survey</button>
           </ModalActions>
         </Modal>
       )}
       {!editing && retroDraft && (
-        <Modal title={<><span className="retro-create-title-icon"><LayoutPanelTop size={20} /></span><span>Start a retrospective</span></>} className="survey-modal retro-create-modal" onClose={() => setRetroDraft(null)}>
+        <Modal title={<><span className="retro-create-title-icon"><LayoutPanelTop size={20} /></span><span>Start a retrospective</span></>} className="survey-modal retro-create-modal" onClose={() => { setRetroDraft(null); restoreComposerFocus(); }}>
           <p className="settings-hint">A shared board for capturing wins, improvements, and next steps.</p>
           <label className="schedule-custom-field survey-question-field"><span>Board title</span><input className="settings-input" autoFocus value={retroDraft.title} maxLength={500} placeholder="Sprint retrospective" onChange={(event) => setRetroDraft((draft) => ({ ...draft, title: event.target.value, error: null }))} onKeyDown={(event) => { if (event.key === "Enter") sendRetro(); }} /></label>
           {retroDraft.error && <div className="error" role="alert">{retroDraft.error}</div>}
-          <ModalActions><button type="button" className="btn-secondary" onClick={() => setRetroDraft(null)}>Cancel</button><button type="button" className="btn-primary" disabled={!retroDraft.title.trim()} onClick={sendRetro}>Create retrospective</button></ModalActions>
+          <ModalActions><button type="button" className="btn-secondary" onClick={() => { setRetroDraft(null); restoreComposerFocus(); }}>Cancel</button><button type="button" className="btn-primary" disabled={!retroDraft.title.trim()} onClick={sendRetro}>Create retrospective</button></ModalActions>
         </Modal>
       )}
 
@@ -1334,11 +1344,81 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       <div className="composer-actions">
         <div className="left">
           {showAttachments && <input ref={fileInputRef} type="file" multiple hidden data-testid="composer-attachments" onChange={onPickFiles} />}
-          {showAttachments && <button type="button" className="icon-btn plus" title="Attach files" onMouseDown={keepFocus} onClick={() => fileInputRef.current?.click()}>
-            <PlusIcon />
-          </button>}
-          {!editing && !isThread && <button type="button" className="icon-btn survey-compose-btn" data-testid="composer-survey" title="Create survey" aria-label="Create survey" onMouseDown={keepFocus} onClick={() => setSurveyDraft({ question: "", options: ["", ""], allowMultiple: false, error: null })}><ChartNoAxesColumnIncreasing size={18} strokeWidth={1.8} /></button>}
-          {!editing && !isThread && <button type="button" className="icon-btn survey-compose-btn" data-testid="composer-retro" title="Create retrospective" aria-label="Create retrospective" onMouseDown={keepFocus} onClick={() => setRetroDraft({ title: "", error: null })}><LayoutPanelTop size={18} strokeWidth={1.8} /></button>}
+          {(showAttachments || (!editing && !isThread)) && (
+            <div className="composer-more-actions">
+              <button
+                type="button"
+                className={`icon-btn plus${moreActionsOpen ? " active" : ""}`}
+                data-testid="composer-more-actions"
+                title="More message actions"
+                aria-label="More message actions"
+                aria-haspopup="menu"
+                aria-expanded={moreActionsOpen}
+                onMouseDown={keepFocus}
+                onClick={() => setMoreActionsOpen((open) => !open)}
+              >
+                <PlusIcon />
+              </button>
+              {moreActionsOpen && (
+                <>
+                  <div className="menu-overlay" onClick={() => setMoreActionsOpen(false)} />
+                  <div className="composer-more-popover" role="menu" aria-label="More message actions">
+                    <div className="composer-more-popover-head">Add to message</div>
+                  {showAttachments && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="icon-btn composer-more-action"
+                      aria-label="Attach files"
+                      onMouseDown={keepFocus}
+                      onClick={() => {
+                        setMoreActionsOpen(false);
+                        fileInputRef.current?.click();
+                      }}
+                    >
+                      <Paperclip size={17} strokeWidth={1.8} aria-hidden="true" />
+                      <span>Attach files</span>
+                    </button>
+                  )}
+                  {!editing && !isThread && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="icon-btn composer-more-action"
+                      data-testid="composer-survey"
+                      aria-label="Create survey"
+                      onMouseDown={keepFocus}
+                      onClick={() => {
+                        setMoreActionsOpen(false);
+                        setSurveyDraft({ question: "", options: ["", ""], allowMultiple: false, error: null });
+                      }}
+                    >
+                      <ChartNoAxesColumnIncreasing size={18} strokeWidth={1.8} aria-hidden="true" />
+                      <span>Create survey</span>
+                    </button>
+                  )}
+                  {!editing && !isThread && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="icon-btn composer-more-action"
+                      data-testid="composer-retro"
+                      aria-label="Create retrospective"
+                      onMouseDown={keepFocus}
+                      onClick={() => {
+                        setMoreActionsOpen(false);
+                        setRetroDraft({ title: "", error: null });
+                      }}
+                    >
+                      <LayoutPanelTop size={18} strokeWidth={1.8} aria-hidden="true" />
+                      <span>Create retrospective</span>
+                    </button>
+                  )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
           <button
             type="button"
             className={`icon-btn aa ${showFormatting ? "active" : ""}`}
@@ -1376,7 +1456,6 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
           >
             <SendIcon />
           </button>}
-          {!editing && !isThread && showSchedule && showSend && <span className="tb-sep" />}
           {!editing && !isThread && showSchedule && showSend && (
             <button
               type="button"
