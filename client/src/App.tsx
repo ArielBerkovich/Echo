@@ -371,6 +371,7 @@ export default function App() {
       case "dms":
       case "activity":
       case "saved":
+      case "groups":
         return handleViewSelect(actionId);
       case "settings":
         return openSettings();
