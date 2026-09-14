@@ -23,6 +23,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
   const [convertOpen, setConvertOpen] = useState(false);
   const [converting, setConverting] = useState(false);
   const [listScrollTop, setListScrollTop] = useState(0);
+  const [listHeight, setListHeight] = useState(MEMBER_LIST_HEIGHT);
   const [activeIndex, setActiveIndex] = useState(0);
   const searchRef = useRef(null);
   const listRef = useRef(null);
@@ -59,7 +60,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
   const firstVisible = Math.max(0, Math.floor(listScrollTop / MEMBER_ROW_HEIGHT) - 2);
   const lastVisible = Math.min(
     shownMembers.length,
-    firstVisible + Math.ceil(MEMBER_LIST_HEIGHT / MEMBER_ROW_HEIGHT) + 4,
+    firstVisible + Math.ceil(listHeight / MEMBER_ROW_HEIGHT) + 4,
   );
   const visibleMembers = shownMembers.slice(firstVisible, lastVisible);
   const isMember = memberIdSet.has(channel.currentUserId);
@@ -126,6 +127,17 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
   useEffect(() => {
     searchRef.current?.focus();
   }, [canAddPeople]);
+
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return undefined;
+
+    const updateHeight = () => setListHeight(list.clientHeight || MEMBER_LIST_HEIGHT);
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(list);
+    return () => observer.disconnect();
+  }, []);
 
   async function confirmRemove() {
     if (!removeTarget) return;

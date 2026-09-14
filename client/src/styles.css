@@ -2157,7 +2157,7 @@ html[data-mode="dark"] .backend-connection-error {
 
   .workspace-search .search-box {
     height: 100%;
-    width: min(50%, 560px);
+    width: min(58%, 760px);
     margin: 0 auto;
     box-sizing: border-box;
     display: flex;
@@ -2234,6 +2234,29 @@ html[data-mode="dark"] .backend-connection-error {
   .workspace-frame:has(.app-nav.no-sidebar) > .chat-pane {
     grid-column: 2;
     border-left: 1px solid color-mix(in srgb, var(--on-navy) 10%, transparent);
+  }
+}
+
+@media (min-width: 1440px) {
+  .workspace-frame {
+    grid-template-columns: 88px clamp(280px, 18vw, 340px) minmax(0, 1fr);
+  }
+
+  .members-panel {
+    width: min(640px, 40vw);
+  }
+
+  .workspace-frame:has(.app-nav.no-sidebar) {
+    grid-template-columns: 88px minmax(0, 1fr);
+  }
+}
+
+/* Some desktop browsers report a CSS viewport below 1440px even on a
+   physically large display. Keep the member list spacious once the panel is
+   no longer using the mobile/overlay layout. */
+@media (min-width: 1201px) and (max-width: 1439px) {
+  .members-panel {
+    width: min(560px, 40vw);
   }
 }
 
@@ -12299,8 +12322,8 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   display: flex;
   align-items: center;
   gap: 14px;
-  max-width: 820px;
-  margin: 0 auto 20px;
+  max-width: 960px;
+  margin: 0 0 20px;
 }
 .channel-browser-search {
   display: flex;
@@ -12396,20 +12419,20 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   color: var(--accent);
 }
 .channel-browser-error {
-  max-width: 820px;
-  margin: 0 auto 14px;
+  max-width: 960px;
+  margin: 0 0 14px;
 }
 .channel-browser-results-summary {
-  max-width: 820px;
-  margin: -6px auto 10px;
+  max-width: 960px;
+  margin: -6px 0 10px;
   color: var(--muted);
   font-size: 12px;
 }
 .channel-browser-list {
   display: grid;
   gap: 10px;
-  max-width: 820px;
-  margin: 0 auto;
+  max-width: 960px;
+  margin: 0;
 }
 .channel-browser-row {
   display: flex;
@@ -12547,8 +12570,8 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  max-width: 820px;
-  margin: 18px auto 0;
+  max-width: 960px;
+  margin: 18px 0 0;
   color: var(--muted);
   font-size: 12px;
 }
