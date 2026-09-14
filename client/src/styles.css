@@ -2160,7 +2160,8 @@ html[data-mode="dark"] .backend-connection-error {
 
   .workspace-search .search-box {
     height: 100%;
-    width: 100%;
+    width: min(50%, 560px);
+    margin: 0 auto;
     box-sizing: border-box;
     display: flex;
     align-items: center;
@@ -2169,7 +2170,7 @@ html[data-mode="dark"] .backend-connection-error {
   }
 
   .workspace-search .search-box-field {
-    width: 50%;
+    width: 100%;
     height: 34px;
     border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
     background: transparent;
@@ -2177,9 +2178,7 @@ html[data-mode="dark"] .backend-connection-error {
   }
 
   .workspace-search .search-dropdown {
-    left: 25%;
-    right: auto;
-    width: 50%;
+    width: 100%;
     box-sizing: border-box;
   }
 
