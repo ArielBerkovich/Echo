@@ -2265,7 +2265,7 @@ html[data-mode="dark"] .backend-connection-error {
   .workspace-search-navigation {
     position: absolute;
     top: 50%;
-    left: 130px;
+    left: calc(50% - 300px);
     transform: translate(-50%, -50%);
     display: flex;
     align-items: center;
