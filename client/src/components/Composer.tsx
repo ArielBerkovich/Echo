@@ -1363,7 +1363,6 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                 <>
                   <div className="menu-overlay" onClick={() => setMoreActionsOpen(false)} />
                   <div className="composer-more-popover" role="menu" aria-label="More message actions">
-                    <div className="composer-more-popover-head">Add to message</div>
                   {showAttachments && (
                     <button
                       type="button"

@@ -9633,14 +9633,6 @@ html[data-mode="dark"] .new-messages-button:hover {
   box-shadow: var(--shadow-md);
   animation: composer-actions-in 120ms ease-out both;
 }
-.composer-more-popover-head {
-  padding: 6px 10px 4px;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
 .composer-more-popover .composer-more-action {
   display: flex;
   align-items: center;
