@@ -3233,17 +3233,18 @@ html[data-mode="dark"] .sidebar {
   z-index: 1001;
   min-width: 220px;
   padding: 6px;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--on-navy) 14%, transparent);
   border-radius: 10px;
-  background: var(--surface);
-  box-shadow: var(--shadow-lg);
+  background: var(--rail-bg);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(10px);
 }
-.rail-more-menu button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border: 0; border-radius: 7px; background: transparent; color: var(--text); text-align: left; cursor: pointer; }
-.rail-more-menu button:hover, .rail-more-menu button:focus-visible { background: var(--surface-hover, rgba(80, 100, 140, .1)); outline: 0; }
-.rail-more-menu button svg { color: var(--on-navy-muted); flex: none; }
+.rail-more-menu button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border: 0; border-radius: 7px; background: transparent; color: var(--on-navy-muted); text-align: left; cursor: pointer; }
+.rail-more-menu button:hover, .rail-more-menu button:focus-visible { background: color-mix(in srgb, var(--on-navy) 7%, transparent); color: #fff; outline: 0; }
+.rail-more-menu button svg { color: inherit; flex: none; }
 .rail-more-menu button span { display: grid; gap: 2px; }
 .rail-more-menu button strong { font-size: 13px; }
-.rail-more-menu button small { color: var(--muted); font-size: 11px; }
+.rail-more-menu button small { color: color-mix(in srgb, var(--on-navy-muted) 82%, transparent); font-size: 11px; }
 .dm-rich {
   display: flex;
   align-items: stretch;
