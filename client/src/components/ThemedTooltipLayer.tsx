@@ -22,6 +22,7 @@ function tooltipTarget(node: EventTarget | null) {
 
 function tooltipPlacementOrder(target: HTMLElement) {
   if (target.closest(".sidebar-actions")) return ["above", "below", "left", "right"] as const;
+  if (target.closest(".workspace-search-navigation, .workspace-search-actions, .workspace-search-help")) return ["below", "above", "left", "right"] as const;
   if (target.closest(".rail")) return ["right", "above", "below", "left"] as const;
   if (target.closest(".text-viewer-actions, .lightbox-toolbar-actions")) return ["below", "left", "right", "above"] as const;
   // Above is the stable Echo convention. The measured collision pass below

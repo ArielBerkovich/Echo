@@ -1428,9 +1428,19 @@ export default function App() {
   // render so the tour can spotlight real elements.
   useEffect(() => {
     if (loading || !user || user.onboarded) return;
-    const t = setTimeout(() => setShowTour(true), 700);
+    const t = setTimeout(openWalkthrough, 700);
     return () => clearTimeout(t);
   }, [loading, user]);
+
+  function openWalkthrough() {
+    const general = channels.find((channel) => channel.name.toLowerCase() === "general");
+    if (!general || activeChannel?.id === general.id) {
+      setShowTour(true);
+      return;
+    }
+    handleSidebarSelect(general);
+    window.setTimeout(() => setShowTour(true), 0);
+  }
 
   function finishTour() {
     setShowTour(false);
@@ -1560,6 +1570,9 @@ export default function App() {
           onUpdated={(updated) => setUser((previous) => ({ ...previous, ...updated }))}
           onOpenSettings={openSettings}
           onOpenApiDocs={openApiDocs}
+          onOpenWalkthrough={openWalkthrough}
+          onNavigateBack={() => navigate(-1)}
+          onNavigateForward={() => navigate(1)}
           onToggleMode={toggleMode}
             search={{
               inputRef: searchRef,

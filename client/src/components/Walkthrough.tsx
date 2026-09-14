@@ -11,7 +11,7 @@ const STEPS = [
   },
   {
     title: "Get around",
-    body: "Switch between Home, Direct Messages, and Activity from this rail.",
+    body: "Use the rail to move between Home, Direct Messages, Activity, and Saved. Open More for channels, user groups, and other workspace options.",
     target: ".rail-top",
     placement: "right",
   },
@@ -22,40 +22,82 @@ const STEPS = [
     placement: "right",
   },
   {
-    title: "See all channels",
-    body: "Select this compass button beside Channels to browse every public channel in your workspace.",
-    target: '[data-testid="browse-channels"]',
+    title: "More workspace options",
+    body: "Open More in the rail to browse public channels or user groups, then return to the rail whenever you need those workspace views.",
+    target: '[data-testid="sidebar-more"]',
     placement: "right",
   },
   {
     title: "Create a channel",
-    body: "Select this + button beside Channels to create a new public or private channel.",
+    body: "Use the create button at the top of the sidebar to make a new public or private channel.",
     target: '[data-testid="create-channel"]',
     placement: "right",
   },
   {
     title: "Start a DM",
-    body: "Select this + button beside Direct Messages to find someone and start a new conversation.",
+    body: "Use the compose button at the top of the sidebar to find someone and start a new direct message.",
     target: '[data-testid="start-dm"]',
     placement: "right",
   },
   {
     title: "Search everything",
     body: "Find messages, people, and channels. Power-filter with in:channel, from:@user, and has:file — then press Enter.",
-    target: ".pane-search",
+    target: '[data-testid="search-input"]',
+    placement: "bottom",
+  },
+  {
+    title: "Open quick actions",
+    body: "Use the sparkles button to open common actions, or press Ctrl K to open the action switcher from your keyboard.",
+    target: ".workspace-search-actions",
+    placement: "below",
+  },
+  {
+    title: "Conversation tools",
+    body: "Use the conversation header to find files, search within the conversation, view members, and manage pinned messages.",
+    target: ".channel-header",
     placement: "bottom",
   },
   {
     title: "Send a message",
-    body: "Write here and format with the toolbar. Press Enter to send, Shift+Enter for a new line.",
+    body: "Write here and press Enter to send. Use Shift+Enter for a new line, or open the formatting controls for richer messages.",
     target: ".composer",
     placement: "top",
   },
   {
-    title: "Your account & password",
-    body: "Open Settings here to edit your profile or change your password. Forget your password and can't sign in? Your workspace admin can issue you a one-time password to set a new one.",
-    target: ".sidebar-footer",
+    title: "Format your message",
+    body: "Add links, lists, quotes, inline code, code blocks, and other formatting without leaving the composer.",
+    target: '[data-testid="composer-formatting"]',
     placement: "top",
+  },
+  {
+    title: "Mention people and channels",
+    body: "Type @ to find people or groups, and # to find public channels. Suggestions follow your cursor as you type.",
+    target: ".composer",
+    placement: "top",
+  },
+  {
+    title: "More message tools",
+    body: "Open the plus menu to attach files, create a survey, or start a retrospective board.",
+    target: '[data-testid="composer-more-actions"]',
+    placement: "top",
+  },
+  {
+    title: "Schedule a message",
+    body: "Use the clock beside Send to schedule a message and manage messages that are waiting to be sent.",
+    target: '[data-testid="composer-send-options"]',
+    placement: "top",
+  },
+  {
+    title: "Keep conversations organized",
+    body: "React, reply in a thread, forward, save, or open message actions from the conversation.",
+    target: ".messages-shell",
+    placement: "left",
+  },
+  {
+    title: "Your account & settings",
+    body: "Use your account controls to update your profile, open Settings, switch themes, or sign out. Settings also includes your password and keyboard shortcuts.",
+    target: ".rail-account",
+    placement: "right",
   },
   {
     title: "You're all set! 🎉",
@@ -127,6 +169,9 @@ export default function Walkthrough({ onClose }) {
     function measure() {
       const el = step.target && document.querySelector(step.target);
       if (!el) return setRect(null);
+      if (el instanceof HTMLElement && el.matches("button, input, textarea, select, [contenteditable='true']")) {
+        el.focus();
+      }
       const r = el.getBoundingClientRect();
       setRect(
         onScreen(r) ? { top: r.top, left: r.left, width: r.width, height: r.height } : null

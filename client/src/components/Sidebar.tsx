@@ -219,28 +219,31 @@ export default function Sidebar({
         </div>
       )}
       {!dmsOnly && (
-        <div className="sidebar-actions" role="group" aria-label="Sidebar actions">
-          <button
-            type="button"
-            className={`add-channel filter-button ${filterOpen ? "active" : ""}`}
-            data-testid="sidebar-filter-toggle"
-            onClick={() => {
-              setFilterOpen((open) => !open);
-              if (filterOpen) setFilter("");
-            }}
-            title={filterOpen ? "Close filter" : "Filter"}
-            aria-label={filterOpen ? "Close filter" : "Filter channels and direct messages"}
-            aria-pressed={filterOpen}
-          >
-            <ListFilterIcon size={14} strokeWidth={1.9} aria-hidden="true" />
-          </button>
-          <button type="button" className="add-channel" data-testid="create-channel" onClick={onNewChannel} title={shortcutTitle("Create channel", "create-channel")} aria-label="Create channel">
-            <span className="add-channel-mark" aria-hidden="true">
-              <span />
-              <span />
-            </span>
-          </button>
-          <StartConversationButton onClick={onStartConversation} />
+        <div className="sidebar-header home-sidebar-header" data-testid="home-header">
+          <span className="brand-sm">Home</span>
+          <div className="sidebar-actions" role="group" aria-label="Sidebar actions">
+            <button
+              type="button"
+              className={`add-channel filter-button ${filterOpen ? "active" : ""}`}
+              data-testid="sidebar-filter-toggle"
+              onClick={() => {
+                setFilterOpen((open) => !open);
+                if (filterOpen) setFilter("");
+              }}
+              title={filterOpen ? "Close filter" : "Filter"}
+              aria-label={filterOpen ? "Close filter" : "Filter channels and direct messages"}
+              aria-pressed={filterOpen}
+            >
+              <ListFilterIcon size={14} strokeWidth={1.9} aria-hidden="true" />
+            </button>
+            <button type="button" className="add-channel" data-testid="create-channel" onClick={onNewChannel} title={shortcutTitle("Create channel", "create-channel")} aria-label="Create channel">
+              <span className="add-channel-mark" aria-hidden="true">
+                <span />
+                <span />
+              </span>
+            </button>
+            <StartConversationButton onClick={onStartConversation} />
+          </div>
         </div>
       )}
       {(dmsOnly || filterOpen) && (

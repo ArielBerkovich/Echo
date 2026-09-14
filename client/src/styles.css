@@ -1343,7 +1343,7 @@ input:focus {
   .auth-card {
     min-width: 0;
     padding: 14px 16px 15px;
-    gap: 6px;
+    gap: 1px;
     height: auto;
     max-height: none;
     overflow: visible;
@@ -2123,7 +2123,7 @@ html[data-mode="dark"] .backend-connection-error {
   .workspace-frame {
     display: grid;
     grid-template-columns: 88px 260px minmax(0, 1fr);
-    grid-template-rows: 46px minmax(0, 1fr);
+    grid-template-rows: 38px minmax(0, 1fr);
     flex: 1;
     min-width: 0;
     min-height: 0;
@@ -2157,14 +2157,112 @@ html[data-mode="dark"] .backend-connection-error {
     grid-column: 2 / -1;
     grid-row: 1;
     min-width: 0;
-    height: 46px;
+    height: 38px;
     background: transparent;
     border-bottom: 1px solid color-mix(in srgb, var(--on-navy) 10%, transparent);
   }
 
+  .workspace-search-inner {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 520px) minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    height: 100%;
+    margin: 0 auto;
+    padding: 0 16px;
+    box-sizing: border-box;
+  }
+
+  .workspace-search-inner > .search-box {
+    grid-column: 2;
+    width: 100%;
+  }
+
+  .workspace-search-navigation {
+    position: absolute;
+    top: 50%;
+    left: 130px;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .workspace-search-navigation button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--on-navy-muted);
+  }
+
+  .workspace-search-navigation button:hover,
+  .workspace-search-navigation button:focus-visible {
+    color: var(--on-navy);
+  }
+
+  .workspace-search-tools {
+    grid-column: 3;
+    justify-self: end;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .workspace-search-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    appearance: none;
+    color: var(--on-navy-muted);
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .workspace-search-actions:hover,
+  .workspace-search-actions:focus-visible {
+    color: var(--on-navy);
+  }
+
+  .workspace-search-help {
+    justify-self: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--on-navy-muted);
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .workspace-search-help:hover,
+  .workspace-search-help:focus-visible {
+    color: var(--on-navy);
+  }
+
   .workspace-search .search-box {
     height: 100%;
-    width: min(58%, 760px);
+    width: 100%;
     margin: 0 auto;
     box-sizing: border-box;
     display: flex;
@@ -2175,7 +2273,7 @@ html[data-mode="dark"] .backend-connection-error {
 
   .workspace-search .search-box-field {
     width: 100%;
-    height: 34px;
+    height: 28px;
     border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
     background: var(--surface-2);
     box-shadow: none;
@@ -2213,8 +2311,16 @@ html[data-mode="dark"] .backend-connection-error {
   }
 
   .workspace-search .search-icon-badge {
+    width: auto;
+    height: auto;
+    border-radius: 0;
     background: transparent;
     color: var(--accent);
+  }
+
+  .workspace-search .search-box-field:focus-within .search-icon-badge {
+    background: transparent;
+    transform: none;
   }
 
   .workspace-sidebar {
@@ -2896,6 +3002,30 @@ html[data-mode="dark"] .sidebar {
   padding-inline: 12px;
   border-bottom: none;
 }
+.home-sidebar-header {
+  justify-content: space-between;
+  height: 59px;
+  min-height: 59px;
+  box-sizing: border-box;
+  padding: 18px 12px;
+  border-bottom: none;
+}
+.home-sidebar-header .sidebar-actions {
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  gap: 4px;
+}
+.home-sidebar-header .sidebar-actions .add-channel {
+  width: 28px;
+  height: 28px;
+}
+.home-sidebar-header + .channel-list {
+  padding-top: 10px;
+}
+.home-sidebar-header + .channel-list .starred-section-label {
+  margin-top: 0;
+}
 .sidebar-header .brand-sm {
   font-weight: 700;
   font-size: 18px;
@@ -3190,7 +3320,7 @@ html[data-mode="dark"] .sidebar {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.14);
   color: #fff;
-  padding: 9px 12px;
+  padding: 7px 12px;
   border-radius: 9px;
   line-height: 1.4;
 }
@@ -3380,7 +3510,7 @@ html[data-mode="dark"] .sidebar {
 }
 .search-input {
   font-size: 16px;
-  padding: 12px 14px;
+  padding: 9px 12px;
 }
 .search-section {
   font-size: 11px;
@@ -3398,7 +3528,7 @@ html[data-mode="dark"] .sidebar {
   text-align: left;
   background: none;
   color: var(--text);
-  padding: 9px 8px;
+  padding: 5px 8px;
   border-radius: 9px;
   font-size: 14.5px;
 }
@@ -3578,7 +3708,7 @@ html[data-mode="dark"] .sidebar {
   height: 38px;
   padding: 0 12px;
   border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
-  border-radius: 12px;
+  border-radius: 8px;
   background: var(--surface-2);
   color: var(--muted);
   box-shadow: 0 1px 2px color-mix(in srgb, var(--text) 5%, transparent);
@@ -4474,9 +4604,13 @@ html[data-mode="dark"] .day-divider-label {
   top: 2px;
   right: 18px;
   z-index: 20;
-  display: flex;
-  align-items: center;
-  gap: 1px;
+    display: flex;
+    align-items: center;
+    gap: 1px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
   padding: 2px;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -10960,6 +11094,18 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     padding: 0 10px;
   }
 
+  .workspace-search-inner {
+    display: block;
+    width: 100%;
+    padding: 0 10px;
+  }
+
+  .workspace-search-navigation,
+  .workspace-search-tools,
+  .workspace-search-help {
+    display: none;
+  }
+
   .workspace-sidebar {
     display: contents;
   }
@@ -11025,10 +11171,12 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   inset: 0;
   z-index: 1000;
   animation: fadeIn 0.2s ease both;
+  pointer-events: none;
 }
 /* Centered steps dim the whole screen; spotlight steps dim via the cut-out. */
 .wt-overlay.wt-dim {
   background: rgba(8, 12, 22, 0.72);
+  pointer-events: auto;
 }
 .wt-spotlight {
   position: fixed;
@@ -11051,6 +11199,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  pointer-events: auto;
 }
 .wt-step {
   font-size: 11px;

@@ -1,6 +1,8 @@
 import LeftRail from "./LeftRail.js";
 import Sidebar from "./Sidebar.js";
 import SearchBox from "./SearchBox.js";
+import { ArrowLeftIcon, ArrowRightIcon, SparklesIcon } from "lucide-react";
+import { shortcutTitle } from "../lib/keyboardShortcuts.js";
 
 export default function WorkspaceNavigation({
   view,
@@ -35,6 +37,9 @@ export default function WorkspaceNavigation({
   onUpdated,
   onOpenSettings,
   onOpenApiDocs,
+  onOpenWalkthrough,
+  onNavigateBack,
+  onNavigateForward,
   onToggleMode,
   search,
 }) {
@@ -70,20 +75,50 @@ export default function WorkspaceNavigation({
         />
       </div>
       <div className="workspace-search" data-testid="workspace-search">
-        <SearchBox
-          ref={search.inputRef}
-          channels={search.channels}
-          myChannelIds={search.myChannelIds}
-          users={search.users}
-          recents={search.recents}
-          currentChannelActions={search.currentChannelActions}
-          onPickChannel={search.onPickChannel}
-          onFindChannels={search.onFindChannels}
-          onPickUser={search.onPickUser}
-          onPickDm={search.onPickDm}
-          onQuickAction={search.onQuickAction}
-          onSearchMessages={search.onSearchMessages}
-        />
+        <div className="workspace-search-inner">
+          <div className="workspace-search-navigation">
+            <button type="button" onClick={onNavigateBack} title="Go back" aria-label="Go back">
+              <ArrowLeftIcon size={14} strokeWidth={2} aria-hidden="true" />
+            </button>
+            <button type="button" onClick={onNavigateForward} title="Go forward" aria-label="Go forward">
+              <ArrowRightIcon size={14} strokeWidth={2} aria-hidden="true" />
+            </button>
+          </div>
+          <SearchBox
+            ref={search.inputRef}
+            channels={search.channels}
+            myChannelIds={search.myChannelIds}
+            users={search.users}
+            recents={search.recents}
+            currentChannelActions={search.currentChannelActions}
+            onPickChannel={search.onPickChannel}
+            onFindChannels={search.onFindChannels}
+            onPickUser={search.onPickUser}
+            onPickDm={search.onPickDm}
+            onQuickAction={search.onQuickAction}
+            onSearchMessages={search.onSearchMessages}
+          />
+          <div className="workspace-search-tools">
+            <button
+              type="button"
+              className="workspace-search-actions"
+              onClick={() => search.inputRef.current?.openSwitcher()}
+              title={shortcutTitle("Open actions", "open-switcher")}
+              aria-label="Open actions"
+            >
+              <SparklesIcon size={14} strokeWidth={2} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className="workspace-search-help"
+              onClick={onOpenWalkthrough}
+              title="Open walkthrough"
+              aria-label="Open walkthrough"
+            >
+              <span aria-hidden="true">?</span>
+            </button>
+          </div>
+        </div>
       </div>
       {showSidebar ? (
         <div className="workspace-sidebar">
