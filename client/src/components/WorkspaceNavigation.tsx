@@ -47,7 +47,8 @@ export default function WorkspaceNavigation({
     view !== "activity" &&
     view !== "saved" &&
     view !== "settings" &&
-    view !== "browse"
+    view !== "browse" &&
+    view !== "groups"
   );
 
   return (
