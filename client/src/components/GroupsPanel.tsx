@@ -86,7 +86,7 @@ export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
           <span className="groups-panel-count">{groups.length} {groups.length === 1 ? "group" : "groups"}</span>
         </div>
       </header>
-      <div className="groups-panel-body">
+      <div className="messages groups-panel-body">
         {error ? <div className="error" role="alert">{error}</div> : null}
         <div className="groups-panel-layout">
           <div className="groups-panel-list" aria-label="Available groups">

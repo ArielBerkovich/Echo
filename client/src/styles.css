@@ -4027,7 +4027,7 @@ html[data-mode="dark"] .sidebar {
   flex-direction: column;
   min-height: 0;
   border-left: 0;
-  background: linear-gradient(180deg, var(--bg), var(--surface) 120px);
+  background: var(--surface);
 }
 .groups-panel-header {
   gap: 12px;
@@ -13062,7 +13062,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 
 /* Retrospective boards */
 .retro-message-card { width: min(560px, 100%); display: flex; align-items: center; gap: 12px; margin: 12px 0 5px; padding: 14px 16px; border: 1px solid color-mix(in srgb, var(--accent) 27%, var(--border)); border-radius: 14px; color: var(--text); background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, var(--surface)), var(--surface)); text-align: left; cursor: pointer; box-shadow: 0 5px 16px color-mix(in srgb, var(--accent) 8%, transparent); transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
-.retro-message-card:hover { transform: translateY(-2px); border-color: var(--accent); box-shadow: 0 9px 22px color-mix(in srgb, var(--accent) 17%, transparent); }
+.retro-message-card:hover { transform: translateY(-2px); border-color: var(--accent); box-shadow: none; }
 .retro-message-icon, .retro-create-mark { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; flex: 0 0 auto; border-radius: 11px; color: var(--active-fg); background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #8b5cf6)); }
 .retro-message-copy { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 3px; }.retro-message-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.retro-message-copy small { color: var(--muted); font-size: 12px; }
 .retro-message-open { display: inline-flex; align-items: center; gap: 4px; color: var(--accent); font-size: 12px; font-weight: 700; }
@@ -13086,7 +13086,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 .retro-item, .retro-item:hover, .retro-item:focus-within { border-color: var(--retro-tone); }
 .retro-column-submit, .retro-column-submit:hover:not(:disabled) { color: #fff; }
 .retro-modal .modal-header { border-bottom: 0 !important; }
-.retro-column > header { top: 0; background: var(--surface) !important; border-bottom: 1px solid color-mix(in srgb, var(--retro-tone) 26%, var(--border)); box-shadow: 0 5px 10px color-mix(in srgb, var(--text) 8%, transparent); isolation: isolate; }
+.retro-column > header { position: sticky; top: 0; z-index: 4; background: var(--surface) !important; border-bottom: 2px solid color-mix(in srgb, var(--retro-tone) 26%, var(--border)); box-shadow: none; isolation: isolate; }
 .retro-item { transition: box-shadow .16s ease, opacity .16s ease, border-color .16s ease !important; will-change: transform; }
 .retro-item.is-dragging { opacity: 0; box-shadow: none; transition: opacity .12s ease !important; }
 .retro-column-heading { display: inline-flex; align-items: center; gap: 7px; min-width: 0; }
@@ -13127,6 +13127,33 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 .retro-modal .modal-header { border-bottom: 0; }
 .retro-modal { background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 3%, var(--surface)), var(--surface)); }.retro-modal .modal-header { padding-bottom: 14px; border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }.retro-modal .modal-header h2 { letter-spacing: -.025em; }.retro-intro { display: flex; align-items: center; justify-content: space-between; }.retro-columns { padding: 4px 3px 14px; }.retro-column { border: 1px solid color-mix(in srgb, var(--border) 75%, transparent); border-top: 4px solid var(--retro-tone); box-shadow: 0 3px 12px #0000000a; }.retro-column > header { letter-spacing: -.01em; }.retro-column-submit { margin-top: 12px; border: 1px dashed color-mix(in srgb, var(--accent) 38%, var(--border)); background: color-mix(in srgb, var(--surface) 70%, var(--accent)); }.retro-item { border-color: color-mix(in srgb, var(--border) 68%, transparent); transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease; }.retro-item:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--accent) 32%, var(--border)); box-shadow: 0 5px 14px #00000012; }.retro-idea-modal .composer { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }.retro-idea-modal .composer .composer-editor { min-height: 92px; }.retro-idea-modal .modal-actions { margin-top: 14px; }.retro-idea-modal .modal-actions .btn-primary:disabled { opacity: .45; cursor: not-allowed; }
 .retro-column > header > span { color: var(--retro-tone); }
+
+/* Keep the board as the only scrolling surface so category headers can stay pinned. */
+.modal.retro-modal {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.retro-modal .modal-header {
+  flex: 0 0 auto;
+}
+.retro-modal .retro-board-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none !important;
+  overflow: auto !important;
+}
+.retro-modal .retro-columns {
+  align-items: start;
+}
+.retro-modal .retro-column {
+  align-self: start;
+  border: 0;
+}
+.retro-modal .retro-column > header {
+  border-top: 4px solid var(--retro-tone);
+  border-radius: 14px 14px 0 0;
+}
 .retro-item, .retro-item:hover, .retro-item:focus-within { border-color: var(--retro-tone); }
 .retro-column-submit, .retro-column-submit:hover:not(:disabled) { color: #fff; }
 /* Linked status cards keep dense metadata readable without stretching the timeline. */
@@ -13170,4 +13197,67 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 @media (max-width: 520px) {
   .markdown a.message-card { padding: 12px 14px; }
   .message-card-attributes { gap: 8px 14px; }
+}
+
+/* Extra-comfortable density for very large desktop workspaces. Keep the
+   layout scale stable while enlarging the surfaces people read and click. */
+@media (min-width: 1920px) {
+  .rail-item {
+    min-height: 76px;
+    font-size: 13px;
+  }
+
+  .sidebar-search {
+    min-height: 48px;
+    font-size: 17px;
+  }
+  .section-label {
+    font-size: 13px;
+  }
+  .channel-item {
+    padding-block: 14px;
+    font-size: 18px;
+  }
+  .dm-rich .dm-name {
+    font-size: 18px;
+  }
+  .dm-rich .dm-preview {
+    font-size: 16px;
+  }
+
+  .message .author,
+  .activity-item .author,
+  .search-result .author {
+    font-size: 17px;
+  }
+  .message .time,
+  .activity-item .time,
+  .search-result .time {
+    font-size: 14px;
+  }
+  .message .body,
+  .activity-item .body,
+  .search-result .body {
+    font-size: clamp(18px, 0.2vw + 17px, 20px);
+  }
+
+  .search-box-field input.search-input,
+  .search-highlight {
+    font-size: 17px;
+  }
+  .composer-editor {
+    font-size: 19px;
+  }
+  .composer-input {
+    padding-block: 13px;
+  }
+  .header-action,
+  .channel-browser-create {
+    min-height: 42px;
+    font-size: 16px;
+  }
+  .settings-input,
+  .settings-page-body {
+    font-size: 17px;
+  }
 }
