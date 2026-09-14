@@ -17,6 +17,7 @@ import { normalizeChannelName } from "../automation.js";
 import { ActivityEvent } from "../models/ActivityEvent.js";
 import { isValidChannelName } from "../lib/channelName.js";
 import { CustomEmoji } from "../models/CustomEmoji.js";
+import { applyReaction, reactionSummary } from "../lib/reactions.js";
 
 // Whitelist attachment fields (keys produced by /api/uploads). Mirrors the
 // socket sender so the REST and realtime paths behave identically.
@@ -939,6 +940,9 @@ channelsRouter.post(["/:id/messages/:messageId/reactions", "/:id/messages/:messa
   const emoji = typeof req.body?.emoji === "string" ? req.body.emoji.trim() : "";
   if (!emoji) return res.status(400).json({ error: "emoji is required" });
   if (emoji.length > 64) return res.status(400).json({ error: "emoji must be 64 characters or fewer" });
+  if (Object.prototype.hasOwnProperty.call(req.body || {}, "present") && typeof req.body.present !== "boolean") {
+    return res.status(400).json({ error: "present must be a boolean" });
+  }
 
   // Native Unicode emoji are self-contained. A shortcode, however, must
   // resolve to a workspace custom emoji (or one of Echo's built-in Git
@@ -966,41 +970,27 @@ channelsRouter.post(["/:id/messages/:messageId/reactions", "/:id/messages/:messa
   }
 
   const userId = req.user._id;
-  let added = false;
-  let entry = message.reactions.find((reaction) => reaction.emoji === emoji);
-  if (!entry) {
-    message.reactions.push({ emoji, users: [userId] });
-    added = true;
-  } else {
-    const index = entry.users.findIndex((id) => id.equals(userId));
-    if (index >= 0) {
-      entry.users.splice(index, 1);
-    } else {
-      entry.users.push(userId);
-      added = true;
-    }
-    if (entry.users.length === 0) {
-      message.reactions = message.reactions.filter((reaction) => reaction.emoji !== emoji);
-    }
-  }
-  await message.save();
+  const { message: updatedMessage, changed, added } = await applyReaction({
+    messageId: message._id,
+    userId,
+    emoji,
+    present: Object.prototype.hasOwnProperty.call(req.body || {}, "present") ? req.body.present : undefined,
+  });
 
-  if (added && message.kind !== "system" && !message.author.equals(userId)) {
+  if (added && updatedMessage.kind !== "system" && !updatedMessage.author.equals(userId)) {
     await ActivityEvent.updateOne(
-      { recipient: message.author, actor: userId, message: message._id, emoji },
-      { $set: { channel: message.channel, createdAt: new Date() } },
+      { recipient: updatedMessage.author, actor: userId, message: updatedMessage._id, emoji },
+      { $set: { channel: updatedMessage.channel, createdAt: new Date() } },
       { upsert: true }
     ).catch(() => {});
-    emitToUser(message.author.toString(), "activity:bump");
+    emitToUser(updatedMessage.author.toString(), "activity:bump");
   }
 
-  const reactions = message.reactions.map((reaction) => ({
-    emoji: reaction.emoji,
-    users: reaction.users.map((id) => id.toString()),
-  }));
+  const reactions = reactionSummary(updatedMessage);
   emitToChannel(channel._id.toString(), "message:reaction", {
     messageId: message._id.toString(),
     reactions,
   });
-  res.json({ messageId: message._id.toString(), reactions, added });
+  const present = reactions.some((reaction) => reaction.emoji === emoji && reaction.users.includes(userId.toString()));
+  res.json({ messageId: updatedMessage._id.toString(), reactions, added, present, changed });
 });

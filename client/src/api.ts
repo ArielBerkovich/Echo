@@ -289,10 +289,10 @@ export const api = {
       method: "POST",
       body: { optionIds },
     }),
-  toggleReaction: (channelId, messageId, emoji) =>
+  toggleReaction: (channelId, messageId, emoji, present) =>
     request(`/channels/${channelId}/messages/${messageId}/reactions`, {
       method: "POST",
-      body: { emoji },
+      body: { emoji, ...(typeof present === "boolean" ? { present } : {}) },
     }),
   getPinned: (channelId) => request(`/channels/${channelId}/pinned`),
   getFiles: (channelId, { before = "", limit = 50 } = {}) => {
