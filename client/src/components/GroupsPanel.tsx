@@ -77,10 +77,10 @@ export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
 
   return (
     <main className="groups-panel" data-testid="groups-panel" aria-label="User groups">
-      <header className="groups-panel-header">
+      <header className="channel-header groups-panel-header">
         <span className="groups-panel-title">
           <ContactRoundIcon size={20} strokeWidth={1.8} aria-hidden="true" />
-          <span>User groups</span>
+          <span className="ch-name">User groups</span>
         </span>
         <div className="groups-panel-header-actions">
           <span className="groups-panel-count">{groups.length} {groups.length === 1 ? "group" : "groups"}</span>

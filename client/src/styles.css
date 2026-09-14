@@ -4028,19 +4028,12 @@ html[data-mode="dark"] .sidebar {
   flex-direction: column;
   min-height: 0;
   border-left: 0;
-  background: var(--surface);
+  background: linear-gradient(180deg, var(--bg), var(--surface) 120px);
 }
 .groups-panel-header {
-  min-height: 64px;
-  box-sizing: border-box;
-  padding: 13px 16px;
-  border-bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   gap: 12px;
 }
-.groups-panel-title { display: inline-flex; align-items: center; gap: 9px; min-width: 0; color: var(--text); font-size: 18px; font-weight: 800; }
+.groups-panel-title { display: inline-flex; align-items: center; gap: 9px; min-width: 0; color: var(--text); }
 .groups-panel-title svg { color: var(--muted); }
 .groups-panel-header-actions { display: flex; align-items: center; gap: 14px; }
 .groups-panel-count { color: var(--muted); font-size: 12px; font-weight: 650; white-space: nowrap; }
@@ -12227,6 +12220,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   min-height: 0;
   overflow-y: auto;
   padding: 24px clamp(18px, 4vw, 52px) 36px;
+  background: linear-gradient(180deg, var(--bg), var(--surface) 120px);
 }
 .channel-browser-tools {
   display: flex;
