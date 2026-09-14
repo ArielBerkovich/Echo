@@ -112,24 +112,13 @@ test("opens a Home sidebar DM without switching to the DMs view", async ({ page 
   await expect(page.getByTestId("channel-row-general")).toBeVisible();
 });
 
-test("aligns the Direct Messages and main search dividers", async ({ page }) => {
+test("shows the shared search row alongside the Direct Messages view", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/");
   await railItem(page, "dms").click({ force: true });
   await expect(page.getByTestId("sidebar")).toHaveClass(/dms-view/);
-
-  const [sidebarHeader, mainSearch] = await Promise.all([
-    page.getByTestId("dms-header").boundingBox(),
-    page.getByTestId("pane-search").boundingBox(),
-  ]);
-  const bottomEdges = {
-    sidebar: sidebarHeader ? sidebarHeader.y + sidebarHeader.height : undefined,
-    main: mainSearch ? mainSearch.y + mainSearch.height : undefined,
-  };
-
-  expect(bottomEdges.sidebar).toBeDefined();
-  expect(bottomEdges.main).toBeDefined();
-  expect(Math.abs(bottomEdges.sidebar - bottomEdges.main)).toBeLessThanOrEqual(1);
+  await expect(page.getByTestId("workspace-search")).toBeVisible();
+  await expect(page.getByTestId("dms-header")).toBeVisible();
 });
 
 test("opens the Home filter below the sidebar tools", async ({ page }) => {

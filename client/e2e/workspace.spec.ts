@@ -304,8 +304,11 @@ test("browses, filters, and joins public channels while private channels stay in
   await page.getByTestId("more-browse-channels").click();
 
   await expect(page.getByTestId("channel-browser")).toBeVisible();
-  await expect(page.getByTestId("channel-row-general")).not.toHaveClass(/active/);
-  await page.getByTestId(`channel-row-${fixture.projectChannel.name}`).click();
+  const initialBrowserSearch = page.getByTestId("channel-browser-search");
+  await initialBrowserSearch.fill(fixture.projectChannel.name);
+  const initialProjectRow = page.getByTestId(`browse-channel-${fixture.projectChannel.name}`);
+  await expect(initialProjectRow).toBeVisible();
+  await initialProjectRow.locator(".channel-browser-open").click();
   await expect(page.getByTestId("channel-browser")).toBeHidden();
   await expect(page.getByText(`#${fixture.projectChannel.name}`, { exact: true }).first()).toBeVisible();
 
@@ -327,10 +330,10 @@ test("browses, filters, and joins public channels while private channels stay in
 
   await row.getByRole("button", { name: `Join #${publicName}` }).click();
   await expect(row.getByRole("button", { name: `Open #${publicName}`, exact: true })).toBeVisible();
-  await expect(page.getByTestId(`channel-row-${publicName}`)).toBeVisible();
 
   await row.getByRole("button", { name: `Open #${publicName}`, exact: true }).click();
   await expect(page.getByTestId("channel-browser")).toBeHidden();
+  await expect(page.getByTestId(`channel-row-${publicName}`)).toBeVisible();
   await expect(page.getByText(`#${publicName}`, { exact: true }).first()).toBeVisible();
 });
 

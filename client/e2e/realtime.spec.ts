@@ -269,6 +269,7 @@ test("uses distinct system messages for self-joins and added members", async ({ 
       body: { userId: alice.id },
     });
 
+    await alicePage.page.getByTestId("rail-home").click();
     await expect(alicePage.page.getByTestId(`channel-row-${addedMemberName}`)).toBeVisible();
     await expect(channelRow(bobPage.page, addedMemberName)).not.toHaveClass(/unread/);
     await alicePage.page.getByTestId(`channel-row-${addedMemberName}`).click();

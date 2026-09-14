@@ -404,7 +404,7 @@ test("scrolls through users when a partial query leaves one shared display name"
 
   await page.goto("/");
   const composer = page.getByTestId("composer-editor");
-  await composer.fill(`@${duplicateDisplayName.split(" ")[0]} `);
+  await composer.fill(`@${duplicateDisplayName.split(" ")[0]}`);
 
   const results = page.locator(".mention-popup-results");
   await expect(results.locator(".mention-item")).toHaveCount(7);

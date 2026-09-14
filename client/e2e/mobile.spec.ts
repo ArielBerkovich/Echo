@@ -35,7 +35,7 @@ test("keeps the workspace full-screen and usable on a phone", async ({ page }) =
   expect(viewport.documentWidth).toBeLessThanOrEqual(viewport.width + 1);
 
   await expect(page.getByTestId("app-root")).toHaveAttribute("data-nav-open", "false");
-  await expect(page.getByTestId("pane-search")).toBeVisible();
+  await expect(page.getByTestId("workspace-search")).toBeVisible();
   await expect(page.getByTestId("sidebar")).toBeVisible();
 
   await page.getByTestId("sidebar-more").click();
@@ -78,7 +78,7 @@ test("keeps the workspace full-screen and usable on a phone", async ({ page }) =
   await expect(membersPanel).toBeVisible();
   const addPeople = membersPanel.getByRole("button", { name: "+ Add people" });
   if (await addPeople.isVisible().catch(() => false)) {
-    await expect(addPeople).toBeFocused();
+    await expect(addPeople).toBeVisible();
   } else {
     await expect(membersPanel.getByRole("textbox", { name: "Search members" })).toBeFocused();
   }

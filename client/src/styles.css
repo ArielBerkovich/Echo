@@ -11195,6 +11195,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   .workspace-frame > .chat-pane {
     flex: 1;
     min-width: 0;
+    padding-top: calc(63px + env(safe-area-inset-top));
   }
 
   .pane-search {
