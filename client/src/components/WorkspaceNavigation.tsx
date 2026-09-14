@@ -46,7 +46,7 @@ export default function WorkspaceNavigation({
   const showSidebar = forceSidebar || (view !== "activity" && view !== "saved" && view !== "settings");
 
   return (
-    <div className="app-nav">
+    <div className={`app-nav${showSidebar ? "" : " no-sidebar"}`}>
       <div className="workspace-rail">
         <LeftRail
         view={view}

@@ -2159,24 +2159,41 @@ html[data-mode="dark"] .backend-connection-error {
 
   .workspace-search .search-box {
     height: 100%;
+    width: 100%;
+    box-sizing: border-box;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0 clamp(14px, 2vw, 28px);
+    padding: 0;
   }
 
   .workspace-search .search-box-field {
+    width: 50%;
     height: 42px;
-    border: 0;
+    border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
     background: transparent;
     box-shadow: none;
   }
 
+  .workspace-search .search-dropdown {
+    left: 25%;
+    right: auto;
+    width: 50%;
+    box-sizing: border-box;
+  }
+
   .workspace-search .search-box-field:hover:not(:focus-within),
   .workspace-search .search-box-field:focus-within {
-    border-color: transparent;
     background: transparent;
     transform: none;
+  }
+
+  .workspace-search .search-box-field:hover:not(:focus-within) {
+    border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
+  }
+
+  .workspace-search .search-box-field:focus-within {
+    border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
   }
 
   .workspace-search .search-placeholder,
@@ -2216,6 +2233,7 @@ html[data-mode="dark"] .backend-connection-error {
 
   .workspace-frame:has(.app-nav.no-sidebar) > .chat-pane {
     grid-column: 2;
+    border-left: 1px solid color-mix(in srgb, var(--on-navy) 10%, transparent);
   }
 }
 
@@ -8733,13 +8751,13 @@ html[data-mode="dark"] .day-divider-label {
   padding: 14px 24px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
-  backdrop-filter: saturate(1.1);
+  box-shadow: none;
+  backdrop-filter: none;
   z-index: 1;
   min-width: 0;
 }
 html[data-mode="dark"] .channel-header {
-  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  background: var(--surface);
   border-bottom-color: rgba(255, 255, 255, 0.06);
 }
 .channel-header .ch-name {
@@ -8972,7 +8990,7 @@ html[data-mode="dark"] .channel-header {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  background: linear-gradient(180deg, var(--bg), var(--surface) 120px);
+  background: var(--surface);
 }
 .messages-inner {
   width: calc(100% + (2 * var(--messages-gutter)));
