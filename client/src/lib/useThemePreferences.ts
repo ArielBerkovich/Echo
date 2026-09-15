@@ -8,11 +8,12 @@ export const THEMES = [
   { id: "midnight", label: "Midnight", swatch: ["#1a1640", "#15132e", "#8b5cf6"] },
   { id: "dracula", label: "Dracula", swatch: ["#343746", "#282a36", "#bd93f9"] },
   { id: "sand", label: "Sand", swatch: ["#5a4632", "#fffdf8", "#c2682a"] },
+  { id: "calm", label: "Stillwater", swatch: ["#1d2936", "#202a35", "#78a9c4"] },
 ];
 
 const DEFAULT_THEME = "nord";
 const THEME_IDS = new Set(THEMES.map(({ id }) => id));
-const LEGACY_DARK_THEMES = new Set(["azure", "midnight", "nord", "dracula"]);
+const LEGACY_DARK_THEMES = new Set(["azure", "midnight", "nord", "dracula", "calm"]);
 
 function readPreferences() {
   const storedMode = readString("echo.mode");

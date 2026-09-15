@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronRightIcon, ContactRoundIcon, SearchIcon } from "lucide-react";
 import { api } from "../api.js";
 import Avatar from "./Avatar.js";
-import { CloseButton } from "./Button.js";
 
 function groupHandle(name) {
   return String(name || "group")
@@ -14,7 +13,7 @@ function groupHandle(name) {
 
 // Directory groups are read-only in Echo. Only identities that have joined
 // Echo are surfaced as members or recipients.
-export default function GroupsPanel({ onClose, onOpenProfile, openGroup = null }) {
+export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
   const [groups, setGroups] = useState([]);
   const [selected, setSelected] = useState(null);
   const [members, setMembers] = useState([]);
@@ -78,21 +77,20 @@ export default function GroupsPanel({ onClose, onOpenProfile, openGroup = null }
 
   return (
     <main className="groups-panel" data-testid="groups-panel" aria-label="User groups">
-      <header className="groups-panel-header">
+      <header className="channel-header groups-panel-header">
         <span className="groups-panel-title">
           <ContactRoundIcon size={20} strokeWidth={1.8} aria-hidden="true" />
-          <span>User groups</span>
+          <span className="ch-name">User groups</span>
         </span>
         <div className="groups-panel-header-actions">
           <span className="groups-panel-count">{groups.length} {groups.length === 1 ? "group" : "groups"}</span>
-          <CloseButton size="sm" onClick={onClose} label="Close groups" />
         </div>
       </header>
-      <div className="groups-panel-body">
+      <div className="messages groups-panel-body">
         {error ? <div className="error" role="alert">{error}</div> : null}
         <div className="groups-panel-layout">
           <div className="groups-panel-list" aria-label="Available groups">
-            <div className="groups-panel-list-head"><label className="sr-only" htmlFor="group-search">Search user groups</label><div className="groups-panel-search"><SearchIcon size={15} aria-hidden="true" /><input id="group-search" className="groups-panel-filter" value={groupQuery} onChange={(event) => setGroupQuery(event.target.value)} placeholder="Search user groups" /></div></div>
+            {groups.length > 0 ? <div className="groups-panel-list-head"><label className="sr-only" htmlFor="group-search">Search user groups</label><div className="groups-panel-search"><SearchIcon size={15} aria-hidden="true" /><input id="group-search" className="groups-panel-filter" value={groupQuery} onChange={(event) => setGroupQuery(event.target.value)} placeholder="Search user groups" /></div></div> : null}
             {groupsLoading ? <div className="people-empty">Loading groups…</div> : null}
             {!groupsLoading && groups.length === 0 ? <div className="groups-empty-state" data-testid="groups-empty-state">
               <span className="groups-empty-state-icon"><ContactRoundIcon size={25} aria-hidden="true" /></span>

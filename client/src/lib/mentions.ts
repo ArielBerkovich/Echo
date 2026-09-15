@@ -5,7 +5,11 @@
 // `\w` is ASCII-only in JavaScript, so it cannot detect a mention query while
 // the user is typing a non-Latin display name. Usernames remain ASCII handles;
 // this pattern is specifically for the composer's autocomplete query.
-export const MENTION_QUERY_RE = /(?:^|\s)([@#])([\p{L}\p{N}\p{M}_. -]*)$/u;
+const MENTION_QUERY_TOKEN = `[\\p{L}\\p{N}\\p{M}_.-]+`;
+export const MENTION_QUERY_RE = new RegExp(
+  `(?:^|\\s)([@#])((?:${MENTION_QUERY_TOKEN}(?:[ \\u00a0]${MENTION_QUERY_TOKEN})*)?)$`,
+  "u"
+);
 
 export function peopleSearchSuggestions(users, query, limit = 6) {
   const normalizedQuery = String(query || "").toLowerCase();

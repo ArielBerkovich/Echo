@@ -7,6 +7,9 @@ import { CloseButton } from "./Button.js";
 import { Button } from "./Button.js";
 import { Input, InputShell } from "./Input.js";
 
+const MEMBER_ROW_HEIGHT = 58;
+const MEMBER_LIST_HEIGHT = 340;
+
 export default function MembersPanel({ channel, users = [], onOpenProfile, onAddPeople, onRemoveMember, onPromoteManager, onUpdated, onClose }) {
   const [query, setQuery] = useState("");
   const [removeTarget, setRemoveTarget] = useState(null);
@@ -19,8 +22,11 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
   const [savingName, setSavingName] = useState(false);
   const [convertOpen, setConvertOpen] = useState(false);
   const [converting, setConverting] = useState(false);
-  const addPeopleRef = useRef(null);
+  const [listScrollTop, setListScrollTop] = useState(0);
+  const [listHeight, setListHeight] = useState(MEMBER_LIST_HEIGHT);
+  const [activeIndex, setActiveIndex] = useState(0);
   const searchRef = useRef(null);
+  const listRef = useRef(null);
 
   useEffect(() => {
     function onKeyDown(event) {
@@ -33,6 +39,8 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
   const memberIds = channel.members?.length
     ? channel.members
     : (channel.participants || []).map((member) => member.id);
+  const memberIdSet = useMemo(() => new Set(memberIds), [memberIds]);
+  const managerIdSet = useMemo(() => new Set(channel.managers || []), [channel.managers]);
   const members = useMemo(() => {
     const byId = new Map(users.map((user) => [user.id, user]));
     const participantById = new Map((channel.participants || []).map((user) => [user.id, user]));
@@ -42,15 +50,21 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
       .sort((a, b) => a.displayName.localeCompare(b.displayName));
   }, [channel.participants, memberIds, users]);
   const normalizedQuery = query.trim().toLowerCase();
-  const shownMembers = normalizedQuery
+  const shownMembers = useMemo(() => normalizedQuery
     ? members.filter(
-        (member) =>
-          member.displayName.toLowerCase().includes(normalizedQuery) ||
-          member.username.toLowerCase().includes(normalizedQuery)
-      )
-    : members;
-  const isMember = memberIds.includes(channel.currentUserId);
-  const isManager = (channel.managers || []).includes(channel.currentUserId);
+      (member) =>
+        member.displayName.toLowerCase().includes(normalizedQuery) ||
+        member.username.toLowerCase().includes(normalizedQuery)
+    )
+    : members, [members, normalizedQuery]);
+  const firstVisible = Math.max(0, Math.floor(listScrollTop / MEMBER_ROW_HEIGHT) - 2);
+  const lastVisible = Math.min(
+    shownMembers.length,
+    firstVisible + Math.ceil(listHeight / MEMBER_ROW_HEIGHT) + 4,
+  );
+  const visibleMembers = shownMembers.slice(firstVisible, lastVisible);
+  const isMember = memberIdSet.has(channel.currentUserId);
+  const isManager = managerIdSet.has(channel.currentUserId);
   const isGroupDm = channel.type === "dm" && memberIds.length > 2;
   const canManageGroupDm = isGroupDm && channel.createdBy === channel.currentUserId;
   const canRemoveMembers =
@@ -63,6 +77,24 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
     isMember &&
     channel.name?.toLowerCase() !== "general" &&
     (!isGroupDm || memberIds.length < 10);
+
+  function onSearchKeyDown(event) {
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    if (!shownMembers.length) return;
+    event.preventDefault();
+    const delta = event.key === "ArrowDown" ? 1 : -1;
+    const nextIndex = (activeIndex + delta + shownMembers.length) % shownMembers.length;
+    setActiveIndex(nextIndex);
+    const list = listRef.current;
+    if (!list) return;
+    const nextTop = nextIndex * MEMBER_ROW_HEIGHT;
+    const nextBottom = nextTop + MEMBER_ROW_HEIGHT;
+    if (nextTop < list.scrollTop) {
+      list.scrollTo({ top: nextTop });
+    } else if (nextBottom > list.scrollTop + list.clientHeight) {
+      list.scrollTo({ top: nextBottom - list.clientHeight });
+    }
+  }
 
   async function renameGroupDm() {
     setSavingName(true);
@@ -93,8 +125,19 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
   }
 
   useEffect(() => {
-    (addPeopleRef.current || searchRef.current)?.focus();
+    searchRef.current?.focus();
   }, [canAddPeople]);
+
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return undefined;
+
+    const updateHeight = () => setListHeight(list.clientHeight || MEMBER_LIST_HEIGHT);
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(list);
+    return () => observer.disconnect();
+  }, []);
 
   async function confirmRemove() {
     if (!removeTarget) return;
@@ -180,7 +223,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
           </section>
         )}
         {canAddPeople && (
-          <Button ref={addPeopleRef} variant="subtle" className="channel-add-people members-panel-add" onClick={onAddPeople}>
+          <Button variant="subtle" className="channel-add-people members-panel-add" onClick={onAddPeople}>
             + Add people
           </Button>
         )}
@@ -190,7 +233,13 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
           <Input
             ref={searchRef}
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setActiveIndex(0);
+              setListScrollTop(0);
+              listRef.current?.scrollTo({ top: 0 });
+            }}
+            onKeyDown={onSearchKeyDown}
             placeholder="Search members"
             aria-label="Search members"
           />
@@ -198,55 +247,65 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
 
         {memberError && <div className="error members-panel-error" role="alert">{memberError}</div>}
 
-        <div className="members-panel-list">
+        <div
+          className="members-panel-list"
+          ref={listRef}
+          onScroll={(event) => setListScrollTop(event.currentTarget.scrollTop)}
+        >
           {members.length === 0 ? (
             <div className="channel-details-empty">No members yet.</div>
           ) : shownMembers.length === 0 ? (
             <div className="channel-details-empty">No members match “{query.trim()}”.</div>
           ) : (
-            shownMembers.map((member) => (
-              <div className="members-panel-person" key={member.id}>
-                <Avatar name={member.displayName} src={member.avatarUrl} size={38} />
-                <div className="members-panel-person-copy">
-                  <button
-                    type="button"
-                    className="channel-details-person-name channel-details-profile-link interactive-name"
-                    onClick={() => onOpenProfile?.(member.id)}
-                  >
-                    {member.displayName}
-                    {member.id === channel.createdBy && <span className="channel-details-creator">Creator</span>}
-                    {member.id !== channel.createdBy && (channel.managers || []).includes(member.id) && (
-                      <span className="channel-details-creator">Manager</span>
-                    )}
-                  </button>
-                  <span className="channel-details-person-handle">@{member.username}</span>
-                </div>
-                {canRemoveMembers && member.id !== channel.currentUserId && (
-                  <div className="members-panel-actions">
-                    {onPromoteManager &&
-                      member.id !== channel.createdBy &&
-                      !(channel.managers || []).includes(member.id) && (
-                        <button
-                          type="button"
-                          className="members-panel-promote"
-                          onClick={() => promoteManager(member)}
-                          disabled={promotingId === member.id}
-                        >
-                          {promotingId === member.id ? "Saving…" : "Make manager"}
-                        </button>
-                      )}
+            <div className="members-panel-virtual-content" style={{ height: shownMembers.length * MEMBER_ROW_HEIGHT }}>
+              {visibleMembers.map((member, index) => (
+                <div
+                  className={`members-panel-person${firstVisible + index === activeIndex ? " active" : ""}`}
+                  key={member.id}
+                  style={{ transform: `translateY(${(firstVisible + index) * MEMBER_ROW_HEIGHT}px)` }}
+                >
+                  <Avatar name={member.displayName} src={member.avatarUrl} size={38} />
+                  <div className="members-panel-person-copy">
                     <button
                       type="button"
-                      className="members-panel-remove"
-                      onClick={() => setRemoveTarget(member)}
-                      aria-label={`Remove ${member.displayName}`}
+                      className="channel-details-person-name channel-details-profile-link interactive-name"
+                      onClick={() => onOpenProfile?.(member.id)}
                     >
-                      Remove
+                      {member.displayName}
+                      {member.id === channel.createdBy && <span className="channel-details-creator">Creator</span>}
+                      {member.id !== channel.createdBy && managerIdSet.has(member.id) && (
+                        <span className="channel-details-creator">Manager</span>
+                      )}
                     </button>
+                    <span className="channel-details-person-handle">@{member.username}</span>
                   </div>
-                )}
-              </div>
-            ))
+                  {canRemoveMembers && member.id !== channel.currentUserId && (
+                    <div className="members-panel-actions">
+                      {onPromoteManager &&
+                        member.id !== channel.createdBy &&
+                        !managerIdSet.has(member.id) && (
+                          <button
+                            type="button"
+                            className="members-panel-promote"
+                            onClick={() => promoteManager(member)}
+                            disabled={promotingId === member.id}
+                          >
+                            {promotingId === member.id ? "Saving…" : "Make manager"}
+                          </button>
+                        )}
+                      <button
+                        type="button"
+                        className="members-panel-remove"
+                        onClick={() => setRemoveTarget(member)}
+                        aria-label={`Remove ${member.displayName}`}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>

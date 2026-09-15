@@ -1619,11 +1619,56 @@ function FilesPanel({ files, loading, error, conversationLabel, onRetry, onClose
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All");
   const [unavailable, setUnavailable] = useState(new Set());
+  const searchInputRef = useRef(null);
+  const fileRowRefs = useRef([]);
+  useEffect(() => {
+    const focusFrame = window.requestAnimationFrame(() => {
+      searchInputRef.current?.focus();
+    });
+    return () => window.cancelAnimationFrame(focusFrame);
+  }, []);
   const normalizedQuery = query.trim().toLowerCase();
-  const visibleFiles = useMemo(() => files.filter((file) => {
-    const matchesFilter = filter === "All" || fileCategory(file) === filter;
-    return matchesFilter && (!normalizedQuery || `${file.name} ${file.contentType}`.toLowerCase().includes(normalizedQuery));
-  }), [files, filter, normalizedQuery]);
+  const visibleFiles = useMemo(() => {
+    const matchingFiles = files.filter((file) => {
+      const matchesFilter = filter === "All" || fileCategory(file) === filter;
+      return matchesFilter && (!normalizedQuery || file.name.toLowerCase().includes(normalizedQuery));
+    });
+    if (!normalizedQuery) return matchingFiles;
+    return matchingFiles.sort((a, b) => {
+      const aName = a.name.toLowerCase();
+      const bName = b.name.toLowerCase();
+      const aStarts = aName.startsWith(normalizedQuery);
+      const bStarts = bName.startsWith(normalizedQuery);
+      if (aStarts !== bStarts) return aStarts ? -1 : 1;
+      return aName.localeCompare(bName, undefined, { numeric: true, sensitivity: "base" });
+    });
+  }, [files, filter, normalizedQuery]);
+
+  useEffect(() => {
+    setActiveIndex(0);
+    fileRowRefs.current = [];
+  }, [query, filter]);
+
+  const [activeIndex, setActiveIndex] = useState(0);
+  useEffect(() => {
+    fileRowRefs.current[activeIndex]?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex, visibleFiles.length]);
+
+  function onSearchKeyDown(event) {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      if (!visibleFiles.length) return;
+      event.preventDefault();
+      const delta = event.key === "ArrowDown" ? 1 : -1;
+      setActiveIndex((index) =>
+        (index + delta + visibleFiles.length) % visibleFiles.length,
+      );
+      return;
+    }
+    if (event.key === "Enter" && visibleFiles[activeIndex]) {
+      event.preventDefault();
+      onJump(visibleFiles[activeIndex]);
+    }
+  }
 
   const downloadFile = useCallback(async (file) => {
     try {
@@ -1653,7 +1698,7 @@ function FilesPanel({ files, loading, error, conversationLabel, onRetry, onClose
       <div className="files-panel-controls">
         <InputShell className="files-search">
           <SearchIcon size={16} aria-hidden="true" />
-          <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search files…" aria-label="Search files" />
+          <Input ref={searchInputRef} value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={onSearchKeyDown} placeholder="Search files…" aria-label="Search files" />
         </InputShell>
         <div className="files-filters" role="group" aria-label="Filter files">
           {["All", "Images", "Documents", "Audio & video", "Other"].map((label) => (
@@ -1666,8 +1711,12 @@ function FilesPanel({ files, loading, error, conversationLabel, onRetry, onClose
           : error ? <div className="files-empty"><strong>Couldn’t load files</strong><button type="button" onClick={onRetry}>Try again</button></div>
           : files.length === 0 ? <div className="files-empty"><PaperclipIcon size={28} aria-hidden="true" /><strong>No files shared here yet</strong><span>Files sent in this conversation will appear here.</span></div>
           : visibleFiles.length === 0 ? <div className="files-empty"><strong>No matching files</strong><button type="button" onClick={() => { setQuery(""); setFilter("All"); }}>Clear filters</button></div>
-          : visibleFiles.map((file) => (
-            <div className={`file-row${unavailable.has(file.id) ? " unavailable" : ""}`} key={file.id}>
+          : visibleFiles.map((file, index) => (
+            <div
+              className={`file-row${unavailable.has(file.id) ? " unavailable" : ""}${index === activeIndex ? " active" : ""}`}
+              key={file.id}
+              ref={(element) => { fileRowRefs.current[index] = element; }}
+            >
               <div className="file-type" aria-hidden="true">{fileCategory(file) === "Images" ? "IMG" : (file.name || "FILE").split(".").pop()?.slice(0, 4).toUpperCase()}</div>
               <div className="file-info">
                 <strong>{file.name}</strong>

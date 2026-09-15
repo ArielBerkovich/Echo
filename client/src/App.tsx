@@ -137,6 +137,7 @@ export default function App() {
   const [toast, setToast] = useState(null); // transient notice (e.g. no access)
   const [connectionBannerVisible, setConnectionBannerVisible] = useState(false);
   const searchRef = useRef(null);
+  const channelViewRef = useRef(null);
 
   useEffect(() => installMessageSoundUnlock(), []);
 
@@ -346,6 +347,19 @@ export default function App() {
   }
 
   function handleQuickAction(actionId) {
+    if (actionId === "add-people") return setShowAddPeople(true);
+    if (actionId === "search-channel") return searchRef.current?.searchInChannel(activeChannel?.name);
+    if (actionId === "view-channel-details") return channelViewRef.current?.openDetailsPanel();
+    if (actionId === "view-members") return channelViewRef.current?.openMembersPanel();
+    if (actionId === "view-files") return channelViewRef.current?.openFilesPanel();
+    if (actionId === "view-pinned") return channelViewRef.current?.openPinnedPanel();
+    if (actionId === "toggle-channel-starred") return activeChannel && handleToggleChannelStarred(activeChannel.id);
+    if (actionId === "view-profile") return activeChannel?.dmUserId && setProfileUser(activeChannel.dmUserId);
+    if (actionId === "toggle-dm-starred") {
+      return isGroupDmChannel(activeChannel)
+        ? activeChannel && handleToggleChannelStarred(activeChannel.id)
+        : activeChannel?.dmUserId && handleToggleStarred(activeChannel.dmUserId);
+    }
     switch (actionId) {
       case "new-message":
         return handleStartConversation();
@@ -357,6 +371,7 @@ export default function App() {
       case "dms":
       case "activity":
       case "saved":
+      case "groups":
         return handleViewSelect(actionId);
       case "settings":
         return openSettings();
@@ -376,6 +391,43 @@ export default function App() {
     [channels, allChannels]
   );
   const myChannelIds = useMemo(() => channels.map((c) => c.id), [channels]);
+  const searchChannel = activeChannel;
+  const isSearchGroupDm = isGroupDmChannel(searchChannel);
+  const searchIsMember = !!searchChannel && (searchChannel.members || []).includes(user?.id);
+  const searchCanAddPeople = searchChannel
+    && searchChannel.type !== "dm"
+    && searchChannel.name?.toLowerCase() !== "general"
+    && searchIsMember;
+  const currentChannelActions = view === "home"
+    || (view === "dms" && searchChannel?.type === "dm")
+    ? searchChannel?.type === "dm"
+      ? [
+        { id: "view-files", label: "View files", keywords: ["files"], group: "Current conversation" },
+        ...(isSearchGroupDm
+          ? [{ id: "view-members", label: "View members", keywords: ["members", "people", "participants"], group: "Current conversation" }]
+          : [{ id: "view-profile", label: "View profile", keywords: ["profile", "person", "user"], group: "Current conversation" }]),
+        ...(isSearchGroupDm || searchChannel.dmUserId ? [{
+          id: "toggle-dm-starred",
+          label: (isSearchGroupDm ? starredChannelIds.has(searchChannel.id) : starredIds.has(searchChannel.dmUserId)) ? "Unstar conversation" : "Star conversation",
+          keywords: ["star", "starred", "favorite", "favourite"],
+          group: "Current conversation",
+        }] : []),
+      ]
+      : [
+        ...(searchCanAddPeople ? [{ id: "add-people", label: "Add people", keywords: ["add", "people", "members", "invite"], group: "Current channel" }] : []),
+        { id: "search-channel", label: "Search this channel", keywords: ["search", "channel", "messages"], group: "Current channel" },
+        { id: "view-channel-details", label: "View channel details", keywords: ["details", "topic", "description"], group: "Current channel" },
+        { id: "view-members", label: "View members", keywords: ["members", "people", "participants"], group: "Current channel" },
+        { id: "view-files", label: "View files", keywords: ["files"], group: "Current channel" },
+        { id: "view-pinned", label: "View pinned messages", keywords: ["pinned", "pins", "messages"], group: "Current channel" },
+        ...(searchIsMember ? [{
+          id: "toggle-channel-starred",
+          label: starredChannelIds.has(searchChannel.id) ? "Unstar channel" : "Star channel",
+          keywords: ["star", "starred", "favorite", "favourite"],
+          group: "Current channel",
+        }] : []),
+      ]
+    : [];
   const myPublicChannelIdSet = useMemo(
     () => new Set(channels.filter((channel) => channel.type === "public").map((channel) => channel.id)),
     [channels]
@@ -1376,9 +1428,19 @@ export default function App() {
   // render so the tour can spotlight real elements.
   useEffect(() => {
     if (loading || !user || user.onboarded) return;
-    const t = setTimeout(() => setShowTour(true), 700);
+    const t = setTimeout(openWalkthrough, 700);
     return () => clearTimeout(t);
   }, [loading, user]);
+
+  function openWalkthrough() {
+    const general = channels.find((channel) => channel.name.toLowerCase() === "general");
+    if (!general || activeChannel?.id === general.id) {
+      setShowTour(true);
+      return;
+    }
+    handleSidebarSelect(general);
+    window.setTimeout(() => setShowTour(true), 0);
+  }
 
   function finishTour() {
     setShowTour(false);
@@ -1474,7 +1536,8 @@ export default function App() {
         data-nav-open={navOpen ? "true" : "false"}
         data-mobile-nav={isMobileViewport() && !activeChannel && !searchQuery && view !== "browse" && view !== "groups" ? "true" : "false"}
       >
-        <WorkspaceNavigation
+        <div className="workspace-frame">
+          <WorkspaceNavigation
           view={view}
           user={user}
           workspace={workspace}
@@ -1507,13 +1570,30 @@ export default function App() {
           onUpdated={(updated) => setUser((previous) => ({ ...previous, ...updated }))}
           onOpenSettings={openSettings}
           onOpenApiDocs={openApiDocs}
+          onOpenWalkthrough={openWalkthrough}
+          onNavigateBack={() => navigate(-1)}
+          onNavigateForward={() => navigate(1)}
           onToggleMode={toggleMode}
-        />
+            search={{
+              inputRef: searchRef,
+              channels: visibleChannels,
+              myChannelIds,
+              users,
+              recents,
+              currentChannelActions,
+              onPickChannel: handlePickChannel,
+              onFindChannels: findPublicChannels,
+              onPickUser: handlePickUser,
+              onPickDm: handlePickDm,
+              onQuickAction: handleQuickAction,
+              onSearchMessages: handleSearchMessages,
+            }}
+          />
 
-        {/* Backdrop closes the nav drawer on narrow screens. */}
-        <div className="nav-backdrop" data-testid="nav-backdrop" onClick={() => setNavOpen(false)} />
+          {/* Backdrop closes the nav drawer on narrow screens. */}
+          <div className="nav-backdrop" data-testid="nav-backdrop" onClick={() => setNavOpen(false)} />
 
-        <WorkspaceContent
+          <WorkspaceContent
           view={view}
           groups={view === "groups" ? {
             openGroup: groupToOpen,
@@ -1639,7 +1719,9 @@ export default function App() {
             openThreadJumpMessageId: activeChannel && openThreadReq?.channelId === activeChannel.id ? openThreadReq.messageId : null,
             onThreadOpened: () => setOpenThreadReq(null),
           }}
-        />
+            channelViewRef={channelViewRef}
+          />
+        </div>
       </div>
       <WorkspaceOverlays
         user={user}

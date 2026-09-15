@@ -30,6 +30,7 @@ const QUICK_ACTIONS = [
   { id: "dms", label: "Go to Direct messages", keywords: ["dm", "dms", "direct", "messages"], shortcut: "⌘/Ctrl+⇧D", Icon: MessageSquareTextIcon },
   { id: "activity", label: "Go to Activity", keywords: ["activity", "notifications"], shortcut: "⌘/Ctrl+⇧A", Icon: ActivityIcon },
   { id: "saved", label: "Go to Saved", keywords: ["saved", "bookmarks"], shortcut: "⌘/Ctrl+⇧S", Icon: BookmarkIcon },
+  { id: "groups", label: "Go to User Groups", keywords: ["groups", "user groups", "directory"], Icon: UsersRoundIcon },
   { id: "settings", label: "Open Settings", keywords: ["settings", "preferences"], shortcut: "⌘/Ctrl+,", Icon: SettingsIcon },
 ];
 
@@ -524,7 +525,18 @@ const SearchBox = forwardRef(function SearchBox(
   }
 
   return (
-    <div className="search-box" ref={wrapRef} data-testid="search-box">
+    <div
+      className="search-box"
+      ref={wrapRef}
+      data-testid="search-box"
+      onMouseDown={(event) => {
+        if (!event.target.closest(".search-box-field, .search-dropdown")) {
+          setOpen(false);
+          setConversationPickerOpen(false);
+          setQuickSwitcherOpen(false);
+        }
+      }}
+    >
       <div className="input-shell search-box-field" data-testid="search-box-field">
         <span className="search-icon-badge" aria-hidden="true">
           <SearchIcon size={15} strokeWidth={2.1} />

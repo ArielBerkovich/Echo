@@ -327,7 +327,11 @@ test.describe("RHSSO login flows (Real integration, runs only when Keycloak is u
     expect(oldLogin.status()).toBe(401);
 
     const skipTour = page.getByRole("button", { name: "Skip tour" });
-    if (await skipTour.isVisible().catch(() => false)) await skipTour.click();
+    await skipTour.waitFor({ state: "visible", timeout: 2_000 }).catch(() => {});
+    if (await skipTour.isVisible().catch(() => false)) {
+      await skipTour.click();
+      await expect(page.locator(".wt-overlay")).toHaveCount(0);
+    }
     await page.getByTestId("rail-logout").click();
     await page.getByRole("button", { name: "Sign out", exact: true }).click();
     await expect(page.getByRole("button", { name: "Sign in with RHSSO" })).toBeVisible();

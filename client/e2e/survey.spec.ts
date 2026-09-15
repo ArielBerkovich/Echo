@@ -14,6 +14,7 @@ function surveyModal(page) {
 }
 
 async function fillSurvey(page, { question, options, multiple = false }) {
+  await page.getByTestId("composer-more-actions").click();
   await page.getByTestId("composer-survey").click();
   const modal = surveyModal(page);
   const inputs = modal.locator("input.settings-input");
@@ -81,4 +82,27 @@ test("warns about duplicate options and blocks sending", async ({ page }) => {
   await expect(modal).toBeVisible();
   await expect(modal).toContainText("Each survey option must be unique.");
   await expect(page.locator(".survey-card").filter({ hasText: question })).toHaveCount(0);
+});
+
+test("opens and dismisses the composer action menu while restoring editor focus", async ({ page }) => {
+  const moreActions = page.getByTestId("composer-more-actions");
+  const editor = page.getByTestId("composer-editor");
+
+  await moreActions.click();
+  await expect(moreActions).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByRole("menu", { name: "More message actions" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Attach files" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Create survey" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Create retrospective" })).toBeVisible();
+
+  await page.locator(".menu-overlay").click({ position: { x: 2, y: 2 } });
+  await expect(page.getByRole("menu", { name: "More message actions" })).toBeHidden();
+  await expect(moreActions).toHaveAttribute("aria-expanded", "false");
+
+  await moreActions.click();
+  await page.getByRole("menuitem", { name: "Create survey" }).click();
+  await expect(page.getByTestId("survey-modal")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("survey-modal")).toBeHidden();
+  await expect(editor).toBeFocused();
 });

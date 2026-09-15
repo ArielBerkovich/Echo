@@ -36,7 +36,8 @@ test("opens the groups workspace and shows Echo members", async ({ page }) => {
 
   const panel = page.getByTestId("groups-panel");
   await expect(panel).toBeVisible();
-  await expect(page.getByTestId("pane-search")).toBeVisible();
+  await expect(page.getByTestId("workspace-search")).toBeVisible();
+  await expect(page.getByTestId("search-input")).toBeVisible();
   await expect(panel).toContainText("1 group");
   await panel.getByRole("button", { name: /Design/ }).click();
   await expect(panel).toContainText("Alice Directory");

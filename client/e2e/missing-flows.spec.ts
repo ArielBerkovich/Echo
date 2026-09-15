@@ -179,6 +179,7 @@ test("configures one personal mention webhook from Settings", async ({ page }) =
   await seedToken(page, fixture.alice.token);
   await page.goto("/");
   await page.getByTestId("rail-settings").click();
+  await expect(page.getByTestId("settings-page")).toBeVisible();
   await expect(page.locator('[aria-label="Settings categories"] button')).toHaveText([
     "Account", "Appearance", "Preferences", "Desktop", "Keyboard shortcuts", "API", "Webhooks",
   ]);
@@ -439,7 +440,8 @@ test("supports a core messaging, attachment, search, and settings flow on mobile
   await page.getByTestId("channel-row-general").click();
   const body = `Mobile flow ${uniqueSuffix("mobile")}`;
   await page.getByTestId("composer-editor").fill(body);
-  await page.getByTitle("Attach files").click();
+  await page.getByTestId("composer-more-actions").click();
+  await page.getByRole("menuitem", { name: "Attach files" }).click();
   await page.getByTestId("composer-attachments").setInputFiles({
     name: "mobile.png",
     mimeType: "image/png",

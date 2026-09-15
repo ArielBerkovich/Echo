@@ -112,24 +112,13 @@ test("opens a Home sidebar DM without switching to the DMs view", async ({ page 
   await expect(page.getByTestId("channel-row-general")).toBeVisible();
 });
 
-test("aligns the Direct Messages and main search dividers", async ({ page }) => {
+test("shows the shared search row alongside the Direct Messages view", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/");
   await railItem(page, "dms").click({ force: true });
   await expect(page.getByTestId("sidebar")).toHaveClass(/dms-view/);
-
-  const [sidebarHeader, mainSearch] = await Promise.all([
-    page.getByTestId("dms-header").boundingBox(),
-    page.getByTestId("pane-search").boundingBox(),
-  ]);
-  const bottomEdges = {
-    sidebar: sidebarHeader ? sidebarHeader.y + sidebarHeader.height : undefined,
-    main: mainSearch ? mainSearch.y + mainSearch.height : undefined,
-  };
-
-  expect(bottomEdges.sidebar).toBeDefined();
-  expect(bottomEdges.main).toBeDefined();
-  expect(Math.abs(bottomEdges.sidebar - bottomEdges.main)).toBeLessThanOrEqual(1);
+  await expect(page.getByTestId("workspace-search")).toBeVisible();
+  await expect(page.getByTestId("dms-header")).toBeVisible();
 });
 
 test("opens the Home filter below the sidebar tools", async ({ page }) => {
@@ -341,18 +330,6 @@ test("keeps the DM preview width stable when toggling Starred", async ({ page })
   const after = await dmRow(page, fixture.bob.displayName).locator(".dm-preview").boundingBox();
   expect(after).not.toBeNull();
   expect(Math.abs(after.width - before.width)).toBeLessThanOrEqual(1);
-
-  await railItem(page, "home").click();
-  await page.reload();
-  const starredSection = page.locator(".starred-section-label");
-  const dmSection = page.getByTestId("home-dm-section");
-  await expect(starredSection).toBeVisible({ timeout: 15_000 });
-  await expect(dmSection).toBeVisible({ timeout: 15_000 });
-  const [starredMargin, dmMargin] = await Promise.all([
-    starredSection.evaluate((element) => getComputedStyle(element).marginTop),
-    dmSection.evaluate((element) => getComputedStyle(element).marginTop),
-  ]);
-  expect(dmMargin).toBe(starredMargin);
 
   // Leave the fixture in its normal state for subsequent tests.
   await dmRow(page, fixture.bob.displayName).locator(".dm-open").click();

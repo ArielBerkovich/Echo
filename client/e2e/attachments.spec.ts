@@ -174,3 +174,51 @@ test("keeps Files available and jumps duplicate filenames to their own messages"
   await expect(page).toHaveURL(new RegExp(`message=${second.message.id}`));
   await expect(messageById(page, second.message.id)).toBeVisible();
 });
+
+test("focuses and navigates the files panel search with the keyboard", async ({ page }) => {
+  const testSuffix = uniqueSuffix("files-keyboard");
+  const prefixName = `${testSuffix}-report.txt`;
+  const embeddedName = `notes-${testSuffix}.txt`;
+  const [prefixAttachment, embeddedAttachment] = await Promise.all([
+    uploadAsToken(page, fixture.alice.token, {
+      name: prefixName,
+      mimeType: "text/plain",
+      buffer: Buffer.from("prefix file", "utf8"),
+    }),
+    uploadAsToken(page, fixture.alice.token, {
+      name: embeddedName,
+      mimeType: "text/plain",
+      buffer: Buffer.from("embedded file", "utf8"),
+    }),
+  ]).then((uploads) => uploads.map((upload) => upload.attachments[0]));
+
+  const [prefixMessage, embeddedMessage] = await Promise.all([
+    requestAsToken(page, fixture.alice.token, "/messages/upsert", {
+      method: "POST",
+      body: { channelId: fixture.generalChannel.id, body: "Prefix file message", attachments: [prefixAttachment] },
+    }),
+    requestAsToken(page, fixture.alice.token, "/messages/upsert", {
+      method: "POST",
+      body: { channelId: fixture.generalChannel.id, body: "Embedded file message", attachments: [embeddedAttachment] },
+    }),
+  ]);
+
+  await page.goto(`/channels/${fixture.generalChannel.id}`);
+  await page.getByTestId("channel-files").click();
+  const panel = page.getByTestId("files-panel");
+  const search = panel.getByRole("textbox", { name: "Search files" });
+  await expect(search).toBeFocused();
+  await search.fill(testSuffix);
+
+  const rows = panel.locator(".file-row");
+  const matchingRows = rows.filter({ hasText: testSuffix });
+  await expect(matchingRows).toHaveCount(2);
+  await expect(matchingRows.nth(0).locator("strong")).toHaveText(prefixName);
+  await expect(matchingRows.nth(0)).toHaveClass(/active/);
+  await search.press("ArrowDown");
+  await expect(matchingRows.nth(1)).toHaveClass(/active/);
+  await search.press("Enter");
+  await expect(page).toHaveURL(new RegExp(`message=${embeddedMessage.message.id}`));
+  await expect(messageById(page, embeddedMessage.message.id)).toBeVisible();
+  expect(prefixMessage.message.id).not.toBe(embeddedMessage.message.id);
+});
