@@ -67,3 +67,53 @@ test("REST reactions reject unknown custom emoji shortcodes", async ({ page }) =
   expect(response.status()).toBe(404);
   await expect(response.json()).resolves.toEqual({ error: "custom emoji :does-not-exist: not found" });
 });
+
+test("REST reactions support idempotent explicit set and unset", async ({ page }) => {
+  const fixture = await seedWorkspaceFixture(page);
+  const message = await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
+    method: "POST",
+    body: { channelId: fixture.generalChannel.id, body: `Explicit reaction ${uniqueSuffix()}` },
+  });
+  const path = `/channels/${fixture.generalChannel.id}/messages/${message.message.id}/reactions`;
+  const set = await requestAsToken(page, fixture.bob.token, path, { method: "POST", body: { emoji: "✅", present: true } });
+  expect(set).toMatchObject({ added: true, changed: true, present: true });
+  const setAgain = await requestAsToken(page, fixture.bob.token, path, { method: "POST", body: { emoji: "✅", present: true } });
+  expect(setAgain).toMatchObject({ added: false, changed: false, present: true });
+  const unset = await requestAsToken(page, fixture.bob.token, path, { method: "POST", body: { emoji: "✅", present: false } });
+  expect(unset).toMatchObject({ added: false, changed: true, present: false });
+  const unsetAgain = await requestAsToken(page, fixture.bob.token, path, { method: "POST", body: { emoji: "✅", present: false } });
+  expect(unsetAgain).toMatchObject({ added: false, changed: false, present: false });
+});
+
+test("REST reactions reject non-boolean present values", async ({ page }) => {
+  const fixture = await seedWorkspaceFixture(page);
+  const message = await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
+    method: "POST",
+    body: { channelId: fixture.generalChannel.id, body: `Invalid reaction ${uniqueSuffix()}` },
+  });
+  const response = await page.request.post(`/api/channels/${fixture.generalChannel.id}/messages/${message.message.id}/reactions`, {
+    headers: { Authorization: `Bearer ${fixture.bob.token}` },
+    data: { emoji: "✅", present: "true" },
+  });
+  expect(response.status()).toBe(400);
+});
+
+test("concurrent reaction updates preserve users and different emojis", async ({ page }) => {
+  const fixture = await seedWorkspaceFixture(page);
+  const message = await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
+    method: "POST",
+    body: { channelId: fixture.generalChannel.id, body: `Concurrent reaction ${uniqueSuffix()}` },
+  });
+  const path = `/channels/${fixture.generalChannel.id}/messages/${message.message.id}/reactions`;
+  await Promise.all([
+    requestAsToken(page, fixture.alice.token, path, { method: "POST", body: { emoji: "🧪", present: true } }),
+    requestAsToken(page, fixture.bob.token, path, { method: "POST", body: { emoji: "🧪", present: true } }),
+    requestAsToken(page, fixture.bob.token, path, { method: "POST", body: { emoji: "🚀", present: true } }),
+  ]);
+  const result = await requestAsToken(page, fixture.alice.token, path, { method: "POST", body: { emoji: "🧪", present: true } });
+  expect(result.reactions).toEqual(expect.arrayContaining([
+    { emoji: "🧪", users: expect.arrayContaining([fixture.alice.id, fixture.bob.id]) },
+    { emoji: "🚀", users: [fixture.bob.id] },
+  ]));
+  expect(result.reactions.find((reaction) => reaction.emoji === "🧪").users).toHaveLength(2);
+});

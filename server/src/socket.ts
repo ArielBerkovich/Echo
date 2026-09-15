@@ -13,6 +13,7 @@ import { cardError, sanitizeCard } from "./lib/messageCard.js";
 import { buildMessageActivityMetadata } from "./lib/messageActivity.js";
 import { roomFor, userRoom } from "./lib/rooms.js";
 import { activeConnections, recordSocketError } from "./metrics.js";
+import { applyReaction, reactionSummary } from "./lib/reactions.js";
 
 // Wire up the real-time messaging layer on top of the HTTP server.
 export function attachSocket(httpServer) {
@@ -162,9 +163,15 @@ export function attachSocket(httpServer) {
     });
 
     // Toggle the current user's emoji reaction on a message.
-    socket.on("reaction:toggle", async ({ messageId, emoji } = {}, ack) => {
+    socket.on("reaction:toggle", async (payload = {}, ack) => {
       try {
+        const { messageId, present } = payload;
+        const emoji = typeof payload.emoji === "string" ? payload.emoji.trim() : "";
         if (!messageId || !emoji) return ackError(ack, "reaction", "messageId and emoji required");
+        if (emoji.length > 64) return ackError(ack, "reaction", "invalid emoji");
+        if (Object.prototype.hasOwnProperty.call(payload, "present") && typeof present !== "boolean") {
+          return ackError(ack, "reaction", "present must be a boolean");
+        }
         const message = await Message.findById(messageId);
         if (!message) return ackError(ack, "reaction", "message not found");
         const channel = await Channel.findById(message.channel);
@@ -176,42 +183,25 @@ export function attachSocket(httpServer) {
         }
 
         const uid = socket.user._id;
-        let added = false;
-        let entry = message.reactions.find((r) => r.emoji === emoji);
-        if (!entry) {
-          message.reactions.push({ emoji, users: [uid] });
-          added = true;
-        } else {
-          const i = entry.users.findIndex((u) => u.equals(uid));
-          if (i >= 0) entry.users.splice(i, 1);
-          else {
-            entry.users.push(uid);
-            added = true;
-          }
-          if (entry.users.length === 0) {
-            message.reactions = message.reactions.filter((r) => r.emoji !== emoji);
-          }
-        }
-        await message.save();
+        const result = await applyReaction({ messageId, userId: uid, emoji, present });
+        const updatedMessage = result.message;
 
         // Reacting to someone else's message is activity for its author.
-        if (added && message.kind !== "system" && !message.author.equals(uid)) {
+        if (result.added && updatedMessage.kind !== "system" && !updatedMessage.author.equals(uid)) {
           await ActivityEvent.updateOne(
-            { recipient: message.author, actor: uid, message: message._id, emoji },
-            { $set: { channel: message.channel, createdAt: new Date() } },
+            { recipient: updatedMessage.author, actor: uid, message: updatedMessage._id, emoji },
+            { $set: { channel: updatedMessage.channel, createdAt: new Date() } },
             { upsert: true }
           ).catch(() => {});
-          io.to(userRoom(message.author.toString())).emit("activity:bump");
+          io.to(userRoom(updatedMessage.author.toString())).emit("activity:bump");
         }
 
-        io.to(roomFor(message.channel.toString())).emit("message:reaction", {
-          messageId: message._id.toString(),
-          reactions: message.reactions.map((r) => ({
-            emoji: r.emoji,
-            users: r.users.map((u) => u.toString()),
-          })),
+        const reactions = reactionSummary(updatedMessage);
+        io.to(roomFor(updatedMessage.channel.toString())).emit("message:reaction", {
+          messageId: updatedMessage._id.toString(),
+          reactions,
         });
-        ack?.({ ok: true });
+        ack?.({ ok: true, reactions, added: result.added, changed: result.changed, present: reactions.some((r) => r.emoji === emoji && r.users.includes(uid.toString())) });
       } catch (err) {
         ackError(ack, "reaction", err.message || "could not react");
       }

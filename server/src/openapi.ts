@@ -189,7 +189,7 @@ export function openApiDocument() {
       },
       "/api/channels/{channelId}/messages/{messageId}/reactions": {
         post: {
-          summary: "Toggle an emoji reaction on a message",
+          summary: "Toggle or explicitly set an emoji reaction on a message",
           parameters: [
             { name: "channelId", in: "path", required: true, schema: { type: "string" } },
             { name: "messageId", in: "path", required: true, schema: { type: "string" } },
@@ -201,13 +201,16 @@ export function openApiDocument() {
                 schema: {
                   type: "object",
                   required: ["emoji"],
-                  properties: { emoji: { type: "string", maxLength: 64, example: "👍" } },
+                  properties: {
+                    emoji: { type: "string", maxLength: 64, example: "👍" },
+                    present: { type: "boolean", description: "Set true/false for an idempotent add/remove; omit to toggle." },
+                  },
                 },
               },
             },
           },
           responses: {
-            200: { description: "Updated reaction summary" },
+            200: { description: "Updated reaction summary with the caller's resulting present state and whether it changed" },
             400: { description: "Invalid emoji" },
             403: { description: "Access denied" },
             404: { description: "Message not found" },
