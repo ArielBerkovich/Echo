@@ -71,6 +71,7 @@ function Message({
   onOpenLightbox, // (src, name) => open image in a side panel (when in thread)
   onTogglePin,
   onIssuePasswordHelp,
+  onToast,
   canPin = true,
   canQuote = false,
 }) {
@@ -79,7 +80,6 @@ function Message({
   // delete their copy, but must not be able to alter the forwarded content.
   const canEdit = isMine && !m.forwardedFrom;
   const actionsVisible = showActions;
-  const [copied, setCopied] = useState(false);
   const [issuingPassword, setIssuingPassword] = useState(false);
   const [passwordActionError, setPasswordActionError] = useState("");
   const [surveyState, setSurveyState] = useState(m.survey || null);
@@ -338,10 +338,7 @@ function Message({
   }
 
   function copyMessage() {
-    copyText(String(m.body || ""), () => {
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1400);
-    });
+    copyText(String(m.body || ""), () => onToast?.("Message copied"));
   }
 
   function copyMessageLink() {
@@ -353,10 +350,7 @@ function Message({
       threadId: threadRootId,
     });
     const url = new URL(path, window.location.origin);
-    copyText(url.toString(), () => {
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1400);
-    });
+    copyText(url.toString(), () => onToast?.("Message link copied"));
   }
 
   async function issuePasswordAndReply() {
@@ -694,10 +688,7 @@ function Message({
               role="menuitem"
               data-testid={`message-${mid}-copy-link`}
               onClick={() => {
-                copyText(linkAction.href, () => {
-                  setCopied(true);
-                  window.setTimeout(() => setCopied(false), 1400);
-                });
+                copyText(linkAction.href, () => onToast?.("Link copied"));
                 setLinkAction(null);
               }}
             >
@@ -731,17 +722,21 @@ function Message({
             onMouseDown={(e) => e.stopPropagation()}
           >
             <button type="button" role="menuitem" data-testid={`message-${mid}-copy`} onClick={() => { copyMessage(); onCloseMenu(); }}>
-              <CopyIcon /> {copied ? "Copied" : "Copy message"}
+              <CopyIcon /> Copy message
             </button>
             <button type="button" role="menuitem" data-testid={`message-${mid}-copy-message-link`} onClick={() => { copyMessageLink(); onCloseMenu(); }}>
-              <CopyIcon /> {copied ? "Copied" : "Copy message link"}
+              <CopyIcon /> Copy message link
             </button>
             <button
               type="button"
               role="menuitem"
               data-testid={`message-${mid}-save`}
               className={saved ? "active" : ""}
-                onClick={() => { onToggleSave(); onCloseMenu(); }}
+                onClick={() => {
+                  onToggleSave();
+                  onToast?.(saved ? "Removed from saved" : "Saved for later");
+                  onCloseMenu();
+                }}
             >
               <BookmarkIcon /> {saved ? "Remove from saved" : "Save for later"}
             </button>

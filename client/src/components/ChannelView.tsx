@@ -501,6 +501,7 @@ const ChannelView = forwardRef(function ChannelView({
   function togglePin(m) {
     getSocket().emit("message:pin", { messageId: m.id }, (res) => {
       if (res?.error) setError(res.error);
+      else onToast?.(m.pinnedAt ? "Message unpinned" : "Message pinned");
     });
   }
 
@@ -1315,6 +1316,7 @@ const ChannelView = forwardRef(function ChannelView({
                     onEditCancel={() => setEditing(null)}
                     onTogglePin={() => togglePin(m)}
                     onIssuePasswordHelp={() => issuePasswordHelp(m.id)}
+                    onToast={onToast}
                     canPin={!isDm}
                     canQuote={isDm}
                   />
@@ -1439,6 +1441,7 @@ const ChannelView = forwardRef(function ChannelView({
             onChannelUpdated={onChannelUpdated}
             canPost={canPost}
             onOpenLightbox={(src, name, sender) => setThreadLightbox({ src, name, sender })}
+            onToast={onToast}
             openThreadJumpMessageId={threadJumpTargetId || openThreadJumpMessageId}
             composerFocusRequest={composerFocusRequest}
           />
