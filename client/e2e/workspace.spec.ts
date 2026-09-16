@@ -443,6 +443,7 @@ test("copies the raw markdown body from a message", async ({ page }) => {
   await page.getByRole("menuitem", { name: "Copy message", exact: true }).click();
 
   await expect.poll(() => page.evaluate(() => window.__copiedText)).toBe(fixture.messages.formatted.body);
+  await expect(page.getByRole("status")).toHaveText("Message copied");
 });
 
 test("copies a message permalink and reopens the same message", async ({ page }) => {
@@ -457,6 +458,7 @@ test("copies a message permalink and reopens the same message", async ({ page })
   await page.getByRole("menuitem", { name: "Copy message link" }).click();
 
   const copied = await page.evaluate(() => window.__copiedText);
+  await expect(page.getByRole("status")).toHaveText("Message link copied");
   expect(copied).toContain(`/channels/${fixture.generalChannel.id}?message=${id}`);
   await page.goto(copied);
   await expect(messageById(page, id)).toBeInViewport();

@@ -1315,6 +1315,7 @@ const ChannelView = forwardRef(function ChannelView({
                     onEditCancel={() => setEditing(null)}
                     onTogglePin={() => togglePin(m)}
                     onIssuePasswordHelp={() => issuePasswordHelp(m.id)}
+                    onToast={onToast}
                     canPin={!isDm}
                     canQuote={isDm}
                   />
@@ -1439,6 +1440,7 @@ const ChannelView = forwardRef(function ChannelView({
             onChannelUpdated={onChannelUpdated}
             canPost={canPost}
             onOpenLightbox={(src, name, sender) => setThreadLightbox({ src, name, sender })}
+            onToast={onToast}
             openThreadJumpMessageId={threadJumpTargetId || openThreadJumpMessageId}
             composerFocusRequest={composerFocusRequest}
           />

@@ -39,6 +39,7 @@ export default function ThreadPanel({
   canPost = true,
   onChannelUpdated,
   onOpenLightbox,
+  onToast,
   openThreadJumpMessageId = null,
   composerFocusRequest = 0,
 }) {
@@ -395,6 +396,7 @@ export default function ThreadPanel({
                 onEditCancel={() => setEditing(null)}
                 onOpenLightbox={onOpenLightbox}
                 onTogglePin={() => onTogglePin?.(m)}
+                onToast={onToast}
                 canPin={canPin}
                 canQuote={channel.type === "dm"}
               />
