@@ -21,10 +21,9 @@ function tooltipTarget(node: EventTarget | null) {
 }
 
 function tooltipPlacementOrder(target: HTMLElement) {
-  // The Home actions sit together in the sidebar header and intentionally use
-  // the same placement. Do not let the generic collision fallback split one
-  // of them to the side while the neighboring actions remain above.
-  if (target.closest(".sidebar-actions")) return ["above"] as const;
+  // The sidebar and channel-header action groups share the same vertical
+  // rhythm, so keep their tooltips consistently above the controls.
+  if (target.closest(".sidebar-actions, .header-actions")) return ["above"] as const;
   if (target.closest(".workspace-search-navigation, .workspace-search-actions, .workspace-search-help")) return ["below", "above", "left", "right"] as const;
   if (target.closest(".rail")) return ["right", "above", "below", "left"] as const;
   if (target.closest(".text-viewer-actions, .lightbox-toolbar-actions")) return ["below", "left", "right", "above"] as const;

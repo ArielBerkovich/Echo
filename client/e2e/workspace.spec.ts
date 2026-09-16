@@ -362,6 +362,7 @@ test("keeps channel header actions inside the header when pinned panel is open",
   const filesButtonBox = await page.getByTestId("channel-files").boundingBox();
   const filesTooltipBox = await filesTooltip.boundingBox();
   expect(filesTooltipBox.x + filesTooltipBox.width / 2).toBeCloseTo(filesButtonBox.x + filesButtonBox.width / 2, 0);
+  expect(filesTooltipBox.y + filesTooltipBox.height).toBeLessThanOrEqual(filesButtonBox.y);
   await page.mouse.move(0, 0);
 
   await page.getByRole("button", { name: "Pinned messages" }).click();
