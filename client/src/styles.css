@@ -7719,12 +7719,14 @@ html[data-mode="dark"] .day-divider-label {
   z-index: 300;
   max-width: 90vw;
   padding: 12px 18px;
-  background: var(--navy-900, #0f2748);
-  color: #fff;
+  border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--border));
+  border-left: 3px solid var(--accent);
+  background: var(--active-soft);
+  color: var(--text);
   font-size: 14px;
   font-weight: 500;
   border-radius: 12px;
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--text) 16%, transparent);
   cursor: pointer;
   animation: toastIn 0.25s ease both;
 }
