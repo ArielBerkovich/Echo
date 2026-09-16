@@ -501,6 +501,7 @@ const ChannelView = forwardRef(function ChannelView({
   function togglePin(m) {
     getSocket().emit("message:pin", { messageId: m.id }, (res) => {
       if (res?.error) setError(res.error);
+      else onToast?.(m.pinnedAt ? "Message unpinned" : "Message pinned");
     });
   }
 

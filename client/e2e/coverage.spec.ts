@@ -277,6 +277,7 @@ test("toggles reactions and pins messages", async ({ page }) => {
 
   await page.getByTestId(/-actions$/).getByTitle("More message actions").click();
   await page.getByRole("menuitem", { name: "Pin message" }).click();
+  await expect(page.getByRole("status")).toHaveText("Message pinned");
   await page.getByRole("button", { name: "Pinned messages" }).click();
   const pinned = page.locator(".pinned-item").filter({ hasText: `API formatting test ${fixture.suffix}` });
   await expect(pinned).toBeVisible();

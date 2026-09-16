@@ -732,7 +732,11 @@ function Message({
               role="menuitem"
               data-testid={`message-${mid}-save`}
               className={saved ? "active" : ""}
-                onClick={() => { onToggleSave(); onCloseMenu(); }}
+                onClick={() => {
+                  onToggleSave();
+                  onToast?.(saved ? "Removed from saved" : "Saved for later");
+                  onCloseMenu();
+                }}
             >
               <BookmarkIcon /> {saved ? "Remove from saved" : "Save for later"}
             </button>
