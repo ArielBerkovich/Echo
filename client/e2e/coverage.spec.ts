@@ -281,7 +281,11 @@ test("toggles reactions and pins messages", async ({ page }) => {
   await page.getByRole("button", { name: "Pinned messages" }).click();
   const pinned = page.locator(".pinned-item").filter({ hasText: `API formatting test ${fixture.suffix}` });
   await expect(pinned).toBeVisible();
-  await pinned.getByTestId(`pinned-${formattedId}-unpin`).click();
+  await page.getByRole("button", { name: "Pinned messages" }).click();
+  await message.hover();
+  await page.getByTestId(/-actions$/).getByTitle("More message actions").click();
+  await page.getByRole("menuitem", { name: "Unpin message" }).click();
+  await expect(page.getByRole("status")).toHaveText("Message unpinned");
   await expect(pinned).toHaveCount(0);
 });
 

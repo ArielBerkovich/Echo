@@ -444,6 +444,8 @@ test("copies the raw markdown body from a message", async ({ page }) => {
 
   await expect.poll(() => page.evaluate(() => window.__copiedText)).toBe(fixture.messages.formatted.body);
   await expect(page.getByRole("status")).toHaveText("Message copied");
+  await page.waitForTimeout(2100);
+  await expect(page.locator(".toast")).toHaveCount(0);
 });
 
 test("copies a message permalink and reopens the same message", async ({ page }) => {
@@ -487,6 +489,22 @@ test("copies a thread reply permalink and reopens the reply in its thread", asyn
   await page.goto(copied);
   await expect(page.getByTestId("thread-panel")).toBeVisible();
   await expect(messageById(page, fixture.messages.threadReply.id)).toHaveClass(/flash/);
+});
+
+test("confirms copying a link from the inline link menu", async ({ page }) => {
+  const { id, message } = await openFreshGeneralMessage(
+    page,
+    "copy-inline-link",
+    `[Copyable inline link](https://example.com/echo-${fixture.suffix})`
+  );
+
+  await message.locator(".body a").click({ button: "right" });
+  const linkMenu = page.getByTestId(`message-${id}-link-menu`);
+  await expect(linkMenu).toBeVisible();
+  await linkMenu.getByRole("menuitem", { name: "Copy link" }).click();
+
+  await expect.poll(() => page.evaluate(() => window.__copiedText)).toBe(`https://example.com/echo-${fixture.suffix}`);
+  await expect(page.getByRole("status")).toHaveText("Link copied");
 });
 
 test("quotes a message into the composer", async ({ page }) => {
