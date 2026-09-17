@@ -236,7 +236,6 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       ? RTL_TEXT_RE.test(mention.query)
       : mention.baseDirection === "rtl"
   );
-  const mentionAtParagraphStart = !!mention && !mention.inline;
   const duplicateSurveyOptionCount = surveyDraft
     ? surveyDraft.options.filter((option, index, options) => {
       const normalized = option.trim().toLowerCase();
@@ -985,7 +984,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   return (
     <form
       ref={composerRef}
-      className={`composer${draggingFiles ? " dragging-files" : ""}${disabled ? " is-disabled" : ""}${mention ? " has-mention" : ""}${mentionAtParagraphStart ? " has-mention-start" : ""}${mentionQueryIsRtl ? " has-mention-rtl" : ""}`}
+      className={`composer${draggingFiles ? " dragging-files" : ""}${disabled ? " is-disabled" : ""}${mention ? " has-mention" : ""}${mentionQueryIsRtl ? " has-mention-rtl" : ""}`}
       data-testid="composer"
       onSubmit={handleSend}
     >

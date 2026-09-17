@@ -200,7 +200,7 @@ test("supports a forced RTL message layout preference", async ({ page }) => {
   await composer.fill("שלום @");
   await expect.poll(() => composer.evaluate((element) => getComputedStyle(element).textAlign)).toBe("start");
   await composer.fill("@a");
-  await expect.poll(() => composer.evaluate((element) => getComputedStyle(element).textAlign)).toBe("left");
+  await expect.poll(() => composer.evaluate((element) => getComputedStyle(element).direction)).toBe("ltr");
 });
 
 test("starts a conversation from the Home Direct Messages button", async ({ page }) => {
