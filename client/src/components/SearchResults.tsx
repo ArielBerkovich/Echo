@@ -5,8 +5,25 @@ import Avatar from "./Avatar.js";
 import { formatDateTime } from "../lib/time.js";
 import { parseSearchQuery, filterChipLabel } from "../lib/searchQuery.js";
 import { queryKeys } from "../lib/queryClient.js";
+import { HashIcon, PaperclipIcon, UserRoundIcon } from "lucide-react";
 
 const SNIPPET_MAX = 240;
+
+const FILTER_ICONS = {
+  in: HashIcon,
+  from: UserRoundIcon,
+  has: PaperclipIcon,
+};
+
+function SearchFilterChip({ filter }) {
+  const Icon = FILTER_ICONS[filter.type];
+  return (
+    <span className={`search-chip search-chip-${filter.type}`}>
+      <Icon className="search-chip-icon" size={13} strokeWidth={2} aria-hidden="true" />
+      {filterChipLabel(filter)}
+    </span>
+  );
+}
 
 function escapeHtml(s) {
   return s
@@ -133,9 +150,7 @@ export default function SearchResults({ query, onJump, onClose }) {
           <span className="ch-name">Search</span>
           <div className="search-chips">
             {parsed.filters.map((f) => (
-              <span key={f.type} className={`search-chip search-chip-${f.type}`}>
-                {filterChipLabel(f)}
-              </span>
+              <SearchFilterChip key={f.type} filter={f} />
             ))}
             {parsed.text && <span className="search-chip-text">“{parsed.text}”</span>}
           </div>
