@@ -463,18 +463,15 @@ function TextAttachment({ a }) {
             <span className="att-file-meta">{languageLabel} · {formatSize(a.size)}</span>
           </span>
         </button>
-        <a
+        <button
+          type="button"
           className="att-text-action att-text-download"
-          href="#"
-          onClick={(event) => {
-            event.preventDefault();
-            download();
-          }}
+          onClick={download}
           title="Download file"
           aria-label="Download file"
         >
           <DownloadIcon size={17} strokeWidth={2} />
-        </a>
+        </button>
         <button
           type="button"
           className="att-text-action att-text-open att-text-header-open"
@@ -508,19 +505,16 @@ function TextAttachment({ a }) {
             <div className="text-viewer-head">
               <strong>{a.name}</strong>
               <div className="text-viewer-actions">
-                <a
+                <button
+                  type="button"
                   className="text-viewer-download"
                   data-testid="text-viewer-download"
-                  href="#"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    download();
-                  }}
+                  onClick={download}
                   title="Download file"
                   aria-label="Download file"
                 >
                   <DownloadIcon size={18} strokeWidth={2} aria-hidden="true" />
-                </a>
+                </button>
                 <button className="text-viewer-close" type="button" onClick={() => setOpen(false)} aria-label="Close preview" title="Close preview">
                   <XIcon size={18} strokeWidth={2} aria-hidden="true" />
                 </button>
