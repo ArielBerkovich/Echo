@@ -4,7 +4,25 @@ import Avatar, { GroupAvatar } from "./Avatar.js";
 import { relativeTime } from "../lib/time.js";
 import { useAuthUrls } from "../lib/useAuthUrl.js";
 import { shortcutTitle } from "../lib/keyboardShortcuts.js";
-import { tokenizeEmojiShortcodes } from "../markdown.js";
+
+// Sidebar previews only need workspace custom emoji. Native shortcode
+// expansion belongs to the full Markdown renderer, which is loaded with a
+// conversation/feed instead of adding the complete emoji dataset to startup.
+function tokenizePreviewEmojiShortcodes(text, customEmojis) {
+  const customByName = new Map(customEmojis.map((emoji) => [emoji.name.toLowerCase(), emoji.url]));
+  const shortcode = /:([a-z0-9_+.-]+):/gi;
+  const tokens = [];
+  let last = 0;
+  let match;
+  while ((match = shortcode.exec(text))) {
+    if (match.index > last) tokens.push({ type: "text", value: text.slice(last, match.index) });
+    const url = customByName.get(match[1].toLowerCase());
+    tokens.push(url ? { type: "custom", value: url, alt: match[0] } : { type: "text", value: match[0] });
+    last = match.index + match[0].length;
+  }
+  if (last < text.length) tokens.push({ type: "text", value: text.slice(last) });
+  return tokens;
+}
 
 function StartConversationButton({ onClick }) {
   return (
@@ -25,7 +43,7 @@ function StartConversationButton({ onClick }) {
 function Preview({ body, customEmojis }) {
   if (!body) return "No messages yet";
   const normalized = body.replace(/\s+/g, " ").trim();
-  const tokens = tokenizeEmojiShortcodes(normalized, customEmojis);
+  const tokens = tokenizePreviewEmojiShortcodes(normalized, customEmojis);
   const output = [];
   let length = 0;
   for (const token of tokens) {

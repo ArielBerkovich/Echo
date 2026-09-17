@@ -154,6 +154,17 @@ async function requestMultipart(path, form, errorLabel) {
   }
 }
 
+// Fetch an authenticated attachment without first materializing it as a blob
+// URL. Consumers that only need a bounded preview can supply a Range header.
+export function fetchFile(path, { headers = {}, signal } = {}) {
+  return fetch(`${getBackendUrl()}${path}`, {
+    method: "GET",
+    credentials: "include",
+    headers: authHeaders(headers),
+    signal,
+  });
+}
+
 async function download(path, errorLabel) {
   const requestUrl = apiUrl(path);
   try {

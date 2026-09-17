@@ -66,7 +66,7 @@ test("keeps code attachments compact until expanded and highlights them full-scr
   expect(headerChildren).toEqual(["att-text-toggle", "att-text-action att-text-download", "att-text-action att-text-open att-text-header-open"]);
   await expect(card.locator(".att-text-toggle")).toHaveAttribute("aria-expanded", "false");
   await expect(card.locator(".att-text-preview")).toHaveCount(0);
-  await expect(card.getByRole("link", { name: "Download file" })).toBeVisible();
+  await expect(card.getByRole("button", { name: "Download file" })).toBeVisible();
   await expect(card.getByRole("button", { name: "Open full-screen preview of preview.ts" })).toBeVisible();
 
   await card.locator(".att-text-toggle").click();
@@ -79,10 +79,10 @@ test("keeps code attachments compact until expanded and highlights them full-scr
   await expect(dialog).toBeVisible();
   await expect(dialog.locator(".text-viewer-content")).toContainText("const greeting");
   await expect(dialog.locator(".text-viewer-content .hljs-keyword").first()).toBeVisible();
-  await expect(dialog.getByRole("link", { name: "Download file" })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Download file" })).toBeVisible();
 
   for (const control of [
-    dialog.getByRole("link", { name: "Download file" }),
+    dialog.getByRole("button", { name: "Download file" }),
     dialog.getByRole("button", { name: "Close preview" }),
   ]) {
     await control.hover();

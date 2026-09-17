@@ -98,17 +98,23 @@ filesRouter.get("/:key", requireAuth, async (req, res) => {
       if (!canAccess) return res.status(403).json({ error: "access denied" });
     }
 
-    const obj = await getObject(key);
+    const range = typeof req.headers.range === "string" && /^bytes=\d*-\d*$/.test(req.headers.range)
+      ? req.headers.range
+      : undefined;
+    const obj = await getObject(key, range);
     if (!obj) return res.status(404).json({ error: "not found" });
 
     if (obj.ContentType) res.setHeader("Content-Type", obj.ContentType);
     if (obj.ContentLength != null) res.setHeader("Content-Length", obj.ContentLength);
+    if (obj.ContentRange) res.setHeader("Content-Range", obj.ContentRange);
+    if (obj.AcceptRanges) res.setHeader("Accept-Ranges", obj.AcceptRanges);
     res.setHeader("Cache-Control", "private, max-age=31536000, immutable");
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader(
       "Content-Disposition",
       req.query.download ? "attachment" : "inline"
     );
+    if (range && obj.ContentRange) res.status(206);
     obj.Body.pipe(res);
   } catch (err) {
     console.error("file stream failed:", err);
