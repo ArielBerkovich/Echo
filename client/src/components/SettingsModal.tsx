@@ -23,6 +23,7 @@ import {
 } from "../lib/notify.js";
 import MessageSoundControls from "./MessageSoundControls.js";
 import { CloseButton } from "./Button.js";
+import { autocorrectEnabled, setAutocorrectEnabled } from "../lib/autocorrectPreference.js";
 
 const SETTINGS_TABS = [
   { id: "account", label: "Account", Icon: UserRoundIcon },
@@ -603,6 +604,9 @@ export default function SettingsModal({
               </div>
               <MessageSoundControls />
             </div>
+            <div className="preferences-card preference-compact-card">
+              <AutocorrectControls />
+            </div>
           </section>}
 
           {activeTab === "webhooks" && <section className="settings-section mention-webhook-settings" data-testid="mention-webhook-settings">
@@ -980,6 +984,30 @@ function NotificationToggle() {
       </button>
       {on && <span className="notify-on">On ✓</span>}
     </div>
+  );
+}
+
+function AutocorrectControls() {
+  const [on, setOn] = useState(() => autocorrectEnabled());
+  return (
+    <label className="preference-toggle-row" data-testid="autocorrect-toggle">
+      <span className="preference-toggle-copy">
+        <strong>Autocorrect</strong>
+      </span>
+      <span className={`integration-switch${on ? " is-on" : ""}`}>
+        <input
+          type="checkbox"
+          checked={on}
+          aria-label="Enable autocorrect"
+          onChange={(event) => {
+            const next = event.target.checked;
+            setAutocorrectEnabled(next);
+            setOn(next);
+          }}
+        />
+        <span className="integration-switch-track"><span /></span>
+      </span>
+    </label>
   );
 }
 

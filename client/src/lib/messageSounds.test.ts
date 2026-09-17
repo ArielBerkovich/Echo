@@ -24,10 +24,10 @@ function withStorage(fn) {
   try { fn(values); } finally { globalThis.localStorage = previousStorage; }
 }
 
-test("message sounds default on with the soft chime selected", () => withStorage(() => {
+test("message sounds default on with bright pop selected", () => withStorage(() => {
   assert.equal(messageSoundsEnabled(), true);
-  assert.equal(selectedMessageSound(), "soft-chime");
-  assert.deepEqual(MESSAGE_SOUNDS.map((sound) => sound.id), [NONE_SOUND_ID, "bright-pop", "short-alert", "clear-ding", "soft-chime", "warm-bell"]);
+  assert.equal(selectedMessageSound(), "bright-pop");
+  assert.deepEqual(MESSAGE_SOUNDS.map((sound) => sound.id), [NONE_SOUND_ID, "bright-pop", "short-alert", "warm-bell"]);
   assert.equal(MESSAGE_SOUNDS[0].url, null);
   assert.ok(MESSAGE_SOUNDS.slice(1).every((sound) => sound.url.endsWith(".wav")));
 }));

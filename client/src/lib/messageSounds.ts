@@ -2,7 +2,7 @@ import { readString, writeString } from "./storage.js";
 
 const ENABLED_KEY = "echo.messageSounds.enabled";
 const SOUND_KEY = "echo.messageSounds.sound";
-const DEFAULT_SOUND_ID = "soft-chime";
+const DEFAULT_SOUND_ID = "bright-pop";
 export const NONE_SOUND_ID = "none";
 const COOLDOWN_MS = 1000;
 
@@ -24,18 +24,6 @@ export const MESSAGE_SOUNDS = [
     label: "Short alert",
     description: "A concise, attention-grabbing alert.",
     url: new URL("../assets/sounds/short-alert.wav", import.meta.url).href,
-  },
-  {
-    id: "clear-ding",
-    label: "Clear ding",
-    description: "A light, simple notification ding.",
-    url: new URL("../assets/sounds/clear-ding.wav", import.meta.url).href,
-  },
-  {
-    id: "soft-chime",
-    label: "Soft chime",
-    description: "A subtle, clear notification chime.",
-    url: new URL("../assets/sounds/soft-chime.wav", import.meta.url).href,
   },
   {
     id: "warm-bell",

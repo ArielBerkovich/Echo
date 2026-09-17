@@ -4956,10 +4956,16 @@ html[data-mode="dark"] .day-divider-label {
   align-items: center;
   gap: 12px;
 }
+.preference-toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); cursor: pointer; }
+.preference-toggle-row:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.preference-toggle-copy { display: grid; gap: 3px; min-width: 0; }
+.preference-toggle-copy strong { color: var(--text); font-size: 13px; }
+.preference-toggle-copy small { color: var(--muted); font-size: 12px; }
+.preference-compact-card .preference-toggle-row { display: inline-flex; justify-content: flex-start; gap: 10px; padding: 0; border: 0; background: transparent; }
 
 .message-sound-settings { display: grid; gap: 18px; }
-.message-sound-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.message-sound-option { position: relative; display: flex; flex-direction: column; align-items: stretch; gap: 16px; min-height: 166px; padding: 15px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-raised); transition: border-color .16s ease, background .16s ease, box-shadow .16s ease, transform .16s ease; }
+.message-sound-options { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.message-sound-option { position: relative; display: flex; flex-direction: column; align-items: stretch; gap: 8px; min-width: 0; padding: 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-raised); transition: border-color .16s ease, background .16s ease, box-shadow .16s ease, transform .16s ease; }
 .message-sound-option:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); }
 .message-sound-option:hover:not(.disabled) { transform: translateY(-1px); }
 .message-sound-option.active { border-color: color-mix(in srgb, var(--accent) 65%, var(--border)); background: color-mix(in srgb, var(--accent) 8%, var(--surface-raised)); box-shadow: none; }
@@ -4974,21 +4980,22 @@ html[data-mode="dark"] .day-divider-label {
 .message-sound-option input[type="radio"]:checked { border-color: var(--accent); background: radial-gradient(circle, var(--accent) 0 4px, transparent 4.5px); }
 .message-sound-option input[type="radio"]:focus-visible { position: static; inset: auto; outline: 2px solid color-mix(in srgb, var(--accent) 72%, transparent); outline-offset: 3px; border: 2px solid var(--accent); box-shadow: none; }
 .message-sound-option input:disabled { cursor: not-allowed; }
-.message-sound-preview { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 auto; min-width: 0; width: 100%; }
-.message-sound-preview-placeholder { display: inline-flex; align-items: center; justify-content: center; min-height: 36px; color: var(--muted); font-size: 12px; }
+.message-sound-preview { display: inline-flex; align-self: flex-start; align-items: center; justify-content: center; gap: 6px; flex: 0 0 auto; min-width: 0; width: auto; padding: 5px 7px; }
+.message-sound-preview-placeholder { display: inline-flex; align-items: center; justify-content: center; min-height: 28px; color: var(--muted); font-size: 12px; }
 .preferences-page { width: min(760px, 100%); display: grid; gap: 22px; }
 .preferences-hero { display: flex; align-items: center; gap: 13px; padding-bottom: 2px; }
 .preferences-hero-icon { display: grid; place-items: center; width: 42px; height: 42px; flex: 0 0 auto; border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border)); border-radius: 12px; background: color-mix(in srgb, var(--accent) 13%, var(--surface)); color: var(--accent); }
 .preferences-hero h2 { margin: 0; color: var(--text); font-size: 21px; }
 .preferences-hero p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
 .preferences-card { padding: 22px; border: 1px solid var(--border); border-radius: 14px; background: color-mix(in srgb, var(--surface-raised) 92%, var(--surface)); box-shadow: var(--shadow-sm); }
+.preferences-card.preference-compact-card { width: fit-content; max-width: 100%; padding: 12px 16px; border: 1px solid var(--border); border-radius: 14px; background: color-mix(in srgb, var(--surface-raised) 92%, var(--surface)); box-shadow: var(--shadow-sm); }
 .preferences-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
 .preferences-card-heading h3 { margin: 0; color: var(--text); font-size: 16px; }
 .preferences-card-heading p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
 
 @media (max-width: 520px) {
-  .message-sound-options { grid-template-columns: 1fr; }
-  .message-sound-option { min-height: 0; gap: 12px; }
+  .message-sound-options { grid-template-columns: repeat(4, minmax(145px, 1fr)); overflow-x: auto; padding-bottom: 4px; }
+  .message-sound-option { gap: 8px; }
   .message-sound-preview { align-self: flex-start; }
   .preferences-card { padding: 16px; }
 }
@@ -7647,6 +7654,41 @@ html[data-mode="dark"] .day-divider-label {
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 6px;
+}
+.composer-autocorrect {
+  position: fixed;
+  z-index: 29;
+  transform: translateY(-100%);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 9px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+  color: var(--muted);
+  font-size: 12px;
+}
+.composer-autocorrect button {
+  border: 0;
+  border-radius: 6px;
+  padding: 4px 7px;
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  color: var(--accent);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.composer-autocorrect .composer-autocorrect-dismiss {
+  padding: 4px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 500;
+}
+.composer-autocorrect button:focus-visible,
+.composer-autocorrect button:hover {
+  background: color-mix(in srgb, var(--accent) 20%, var(--surface));
 }
 .composer-paste-actions button {
   padding: 6px 10px;
