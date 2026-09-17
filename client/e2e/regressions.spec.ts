@@ -148,6 +148,19 @@ test("opens regular search with the current channel scope", async ({ page }) => 
   await expect(page.getByTestId("search-input")).toBeFocused();
 });
 
+test("clears an unsubmitted channel search when navigating away", async ({ page }) => {
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
+
+  await page.getByTestId("channel-search").click();
+  await page.getByTestId("search-input").pressSequentially("incident");
+  await expect(page.getByTestId("search-input")).toHaveValue(`in:${fixture.projectChannel.name} incident`);
+
+  await page.getByTestId(`channel-row-${fixture.generalChannel.name}`).click();
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.generalChannel.name);
+  await expect(page.getByTestId("search-input")).toHaveValue("");
+});
+
 test("starts a conversation from the Home Direct Messages button", async ({ page }) => {
   await page.goto("/");
 

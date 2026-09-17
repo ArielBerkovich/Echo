@@ -1591,6 +1591,8 @@ export default function App() {
               onPickDm: handlePickDm,
               onQuickAction: handleQuickAction,
               onSearchMessages: handleSearchMessages,
+              activeConversationId: activeChannel?.id || null,
+              hasMessageSearch: Boolean(searchQuery),
             }}
           />
 

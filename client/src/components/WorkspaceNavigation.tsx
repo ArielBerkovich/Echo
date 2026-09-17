@@ -97,6 +97,8 @@ export default function WorkspaceNavigation({
             onPickDm={search.onPickDm}
             onQuickAction={search.onQuickAction}
             onSearchMessages={search.onSearchMessages}
+            activeConversationId={search.activeConversationId}
+            hasMessageSearch={search.hasMessageSearch}
           />
           <div className="workspace-search-tools">
             <button

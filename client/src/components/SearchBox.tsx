@@ -113,6 +113,8 @@ const SearchBox = forwardRef(function SearchBox(
     onPickDm,
     onQuickAction,
     onSearchMessages,
+    activeConversationId = null,
+    hasMessageSearch = false,
     variant = "default",
   },
   ref
@@ -128,6 +130,7 @@ const SearchBox = forwardRef(function SearchBox(
   const inputRef = useRef(null);
   const highlightRef = useRef(null);
   const navItemRefs = useRef([]);
+  const previousConversationIdRef = useRef(activeConversationId);
 
   const memberOf = useMemo(
     () => (myChannelIds instanceof Set ? myChannelIds : new Set(myChannelIds || [])),
@@ -141,6 +144,19 @@ const SearchBox = forwardRef(function SearchBox(
     }
   }
   useEffect(syncScroll, [query]);
+
+  // The channel search action creates an unsubmitted `in:` draft. It is only
+  // meaningful while the user is still in that conversation, so do not carry
+  // the unsubmitted draft into a newly selected channel.
+  useEffect(() => {
+    if (previousConversationIdRef.current === activeConversationId) return;
+    previousConversationIdRef.current = activeConversationId;
+    if (hasMessageSearch || !/(?:^|\s)in:\s*#?\S+/i.test(query)) return;
+    setQuery("");
+    setCaret(0);
+    setActiveIdx(0);
+    setOpen(false);
+  }, [activeConversationId, hasMessageSearch, query]);
 
   useImperativeHandle(ref, () => ({
     focus() {
