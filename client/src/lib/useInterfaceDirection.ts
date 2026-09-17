@@ -14,11 +14,13 @@ function readPreference(): InterfaceDirectionPreference {
 
 export function useInterfaceDirection() {
   const [preference, setPreference] = useState<InterfaceDirectionPreference>(readPreference);
-  const direction = preference;
+  const direction: InterfaceDirection = preference === "rtl" ? "rtl" : "ltr";
 
   useEffect(() => {
     document.documentElement.dataset.interfaceDirection = direction;
-    writeString(STORAGE_KEY, preference);
+    // Normalize sessions created before Auto was removed.
+    if (preference !== direction) setPreference(direction);
+    writeString(STORAGE_KEY, direction);
   }, [direction, preference]);
 
   return { preference, direction, setPreference };
