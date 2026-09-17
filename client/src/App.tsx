@@ -525,8 +525,10 @@ export default function App() {
       } catch (error) {
         if (cancelled) return;
         if (error?.status === 401) {
-          // Keep the session visible until the user acknowledges the expiry.
-          setSessionExpired(true);
+          // An expired token cannot be associated with an authenticated user
+          // during startup, so return directly to the login screen.
+          setToken(null);
+          setSessionExpired(false);
           setStartupUnavailable(false);
           setLoading(false);
           return;
@@ -819,6 +821,8 @@ export default function App() {
     setScrollToBottomTarget(null);
     navigate("/", { replace: true });
   }
+
+  const showSessionExpiredDialog = sessionExpired && !!user;
 
   function rememberRecent(item) {
     setRecents((prev) => {
@@ -1484,7 +1488,7 @@ export default function App() {
         <div className="centered" role="status">
           {startupUnavailable ? "Echo is restarting… reconnecting automatically." : "Loading…"}
         </div>
-        {sessionExpired ? <SessionExpiredDialog onSignOut={handleLogout} /> : null}
+        {showSessionExpiredDialog ? <SessionExpiredDialog onSignOut={handleLogout} /> : null}
       </>
     );
   }
@@ -1492,7 +1496,7 @@ export default function App() {
     return (
       <>
         <Login onAuthed={handleAuthed} initialError={rhssoError} />
-        {sessionExpired ? <SessionExpiredDialog onSignOut={handleLogout} /> : null}
+        {showSessionExpiredDialog ? <SessionExpiredDialog onSignOut={handleLogout} /> : null}
       </>
     );
   }
@@ -1505,7 +1509,7 @@ export default function App() {
           onDone={(updated) => setUser((prev) => ({ ...prev, ...updated }))}
           onCancel={handleLogout}
         />
-        {sessionExpired ? <SessionExpiredDialog onSignOut={handleLogout} /> : null}
+        {showSessionExpiredDialog ? <SessionExpiredDialog onSignOut={handleLogout} /> : null}
       </>
     );
   }
@@ -1768,7 +1772,7 @@ export default function App() {
           toast: () => setToast(null),
         }}
       />
-      {sessionExpired ? <SessionExpiredDialog onSignOut={handleLogout} /> : null}
+      {showSessionExpiredDialog ? <SessionExpiredDialog onSignOut={handleLogout} /> : null}
     </div>
   );
 }
