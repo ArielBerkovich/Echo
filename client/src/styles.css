@@ -9872,6 +9872,21 @@ html[data-mode="dark"] .new-messages-button:hover {
   animation: mention-popup-in 0.16s ease both;
   z-index: 5;
 }
+.mention-popup-ltr {
+  direction: ltr;
+}
+.mention-popup-ltr .mention-item {
+  text-align: left;
+}
+.mention-popup-ltr .mention-item-copy {
+  align-items: flex-start;
+  text-align: left;
+}
+.mention-popup-ltr .mi-handle[dir="auto"] {
+  direction: ltr;
+  text-align: left;
+  unicode-bidi: isolate;
+}
 @keyframes mention-popup-in {
   from { opacity: 0; }
   to { opacity: 1; }

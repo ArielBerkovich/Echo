@@ -1316,7 +1316,10 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       {mentionModal}
 
       {mention && suggestions.length > 0 && mentionPopupPosition && (
-        <div className="mention-popup" style={mentionPopupPosition}>
+        <div
+          className={`mention-popup ${mentionQueryIsRtl ? "mention-popup-rtl" : "mention-popup-ltr"}`}
+          style={mentionPopupPosition}
+        >
           <div className="mention-popup-head">{mention.trigger === "#" ? "Public channels" : "People and groups"}</div>
           <div className="mention-popup-results">
             {suggestions.map((u, idx) => (
