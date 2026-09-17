@@ -4576,6 +4576,10 @@ html[data-interface-direction="rtl"] .msg-menu .message-link-open {
 html[data-interface-direction="rtl"] .composer {
   direction: rtl;
 }
+.composer.has-mention-empty.has-mention-rtl .composer-editor {
+  direction: rtl;
+  text-align: right;
+}
 .message-engagement {
   display: flex;
   flex-direction: column;
