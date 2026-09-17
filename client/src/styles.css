@@ -4576,6 +4576,14 @@ html[data-interface-direction="rtl"] .msg-menu .message-link-open {
 html[data-interface-direction="rtl"] .composer {
   direction: rtl;
 }
+/* Keep the autocomplete trigger in logical order while it is being typed.
+   An RTL paragraph otherwise treats @ as a neutral character and paints it
+   after the Hebrew/Arabic query (א@). The editor remains right-aligned so the
+   composer does not jump when the token is opened. */
+html[data-interface-direction="rtl"] .composer.has-mention .composer-editor {
+  direction: ltr;
+  text-align: right;
+}
 .message-engagement {
   display: flex;
   flex-direction: column;
