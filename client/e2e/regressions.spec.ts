@@ -191,6 +191,10 @@ test("supports a forced RTL message layout preference", async ({ page }) => {
   await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
   await expect.poll(() => page.getByTestId("composer").evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
   await expect.poll(() => page.locator(".message").first().evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
+
+  const composer = page.getByTestId("composer-editor");
+  await composer.fill("@a");
+  await expect.poll(() => composer.evaluate((element) => getComputedStyle(element).textAlign)).toBe("left");
 });
 
 test("starts a conversation from the Home Direct Messages button", async ({ page }) => {

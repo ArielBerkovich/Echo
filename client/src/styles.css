@@ -4582,6 +4582,9 @@ html[data-interface-direction="rtl"] .composer {
    composer does not jump when the token is opened. */
 html[data-interface-direction="rtl"] .composer.has-mention .composer-editor {
   direction: ltr;
+  text-align: left;
+}
+html[data-interface-direction="rtl"] .composer.has-mention.has-mention-rtl .composer-editor {
   text-align: right;
 }
 .message-engagement {
