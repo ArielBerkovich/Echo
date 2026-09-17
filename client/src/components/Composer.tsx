@@ -440,7 +440,8 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       const caret = editor.view.coordsAtPos(mention.to);
       const composer = composerRef.current?.getBoundingClientRect();
       const popupWidth = Math.min(320, window.innerWidth - 16);
-      const isRtl = document.documentElement.dataset.interfaceDirection === "rtl";
+      const isRtl = mentionQueryIsRtl
+        || (!mention.query && document.documentElement.dataset.interfaceDirection === "rtl");
       // Anchor to the composer edges rather than the caret. Bidi reordering can
       // make ProseMirror's caret x-coordinate jump across the line, while the
       // composer edges remain stable and mirror cleanly between directions.
