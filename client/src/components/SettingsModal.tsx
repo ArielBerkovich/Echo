@@ -703,7 +703,7 @@ export default function SettingsModal({
               </button>)}
             </div>
             <div className="settings-direction-control">
-              <h4>Interface direction</h4>
+              <h3>Interface direction</h3>
               <p className="settings-hint">Choose your chat layout direction. Left to right is the default.</p>
               <div className="mode-toggle" role="group" aria-label="Interface direction">
                 {[['ltr', 'Left to right'], ['rtl', 'Right to left']].map(([value, label]) => (

@@ -5076,11 +5076,6 @@ html[data-interface-direction="rtl"] .message .msg-menu {
 .settings-direction-control {
   margin-top: 16px;
 }
-.settings-direction-control h4 {
-  margin: 0 0 5px;
-  color: var(--text);
-  font-size: 13px;
-}
 .theme-card {
   display: flex;
   flex-direction: column;
