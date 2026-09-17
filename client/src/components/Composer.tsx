@@ -232,10 +232,9 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     codeBlock: false,
   });
   const mentionQueryIsRtl = !!mention && (
-    mention.query
-      ? RTL_TEXT_RE.test(mention.query)
-      : mention.baseDirection === "rtl"
+    mention.baseDirection === "rtl"
   );
+  const mentionAtEmptyParagraphStart = !!mention && !mention.inline && !mention.query;
   const duplicateSurveyOptionCount = surveyDraft
     ? surveyDraft.options.filter((option, index, options) => {
       const normalized = option.trim().toLowerCase();
@@ -453,13 +452,16 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     const updatePosition = () => {
       try {
         const caret = editor.view.coordsAtPos(mention.to);
+        const composer = composerRef.current?.getBoundingClientRect();
         const popupWidth = Math.min(320, window.innerWidth - 16);
         const isRtl = mentionQueryIsRtl;
         // Keep the popup next to the active text. The paragraph direction
         // decides which edge follows the caret; clamp it to the viewport.
         const caretLeft = Number.isFinite(caret.left) ? caret.left : 8;
         const caretRight = Number.isFinite(caret.right) ? caret.right : caretLeft;
-        const caretAnchor = isRtl ? caretRight - popupWidth : caretLeft;
+        const caretAnchor = mentionAtEmptyParagraphStart && composer
+          ? (isRtl ? composer.right - popupWidth : composer.left)
+          : (isRtl ? caretRight - popupWidth : caretLeft);
         const left = Math.max(8, Math.min(caretAnchor, window.innerWidth - popupWidth - 8));
         const anchorTop = composerRef.current?.getBoundingClientRect().top ?? caret.top;
         setMentionPopupPosition({ left, bottom: Math.max(8, window.innerHeight - anchorTop + 8) });
@@ -481,7 +483,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [editor, mention, mentionQueryIsRtl, suggestions.length]);
+  }, [editor, mention, mentionAtEmptyParagraphStart, mentionQueryIsRtl, suggestions.length]);
 
   useEffect(() => {
     activeMentionItemRef.current?.scrollIntoView({ block: "nearest" });
@@ -491,6 +493,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
 
   function syncEditorState(currentEditor) {
     setEditorState(readEditorState(currentEditor));
+    syncParagraphDirections(currentEditor);
     const hasText = currentEditor.getText().trim().length > 0;
     hasText ? signalTyping() : stopTyping();
     syncMentionContext(currentEditor);
@@ -498,6 +501,17 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     onDraftChange?.(draft);
     const key = draftStorageKey(channel.id, isThread);
     if (draftReadyRef.current && !editing && key) writeString(key, draft.trim() ? draft : null);
+  }
+
+  // Make each paragraph's base direction explicit. Relying on `dir="auto"`
+  // for the whole editor lets neutral characters such as @ and punctuation
+  // re-run bidi estimation as the user types, which can flip mixed text.
+  function syncParagraphDirections(currentEditor) {
+    const fallback = document.documentElement.dataset.interfaceDirection === "rtl" ? "rtl" : "ltr";
+    currentEditor.view.dom.querySelectorAll("p").forEach((paragraph) => {
+      const direction = firstStrongDirection(paragraph.textContent || "", fallback);
+      if (paragraph.getAttribute("dir") !== direction) paragraph.setAttribute("dir", direction);
+    });
   }
 
   function readEditorState(currentEditor) {
@@ -537,13 +551,12 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     const before = $from.parent.textBetween(0, $from.parentOffset, "\n", "\n");
     const match = before.match(MENTION_QUERY_RE);
     if (!match) return setMention(null);
-    const prefix = before.slice(0, match.index ?? 0);
     setMention({
       trigger: match[1],
       query: match[2],
       inline: Boolean((match.index ?? 0) > 0 && before.slice(0, match.index).trim()),
       baseDirection: firstStrongDirection(
-        prefix,
+        before,
         document.documentElement.dataset.interfaceDirection === "rtl" ? "rtl" : "ltr"
       ),
       from: from - match[2].length - 1,
@@ -985,7 +998,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   return (
     <form
       ref={composerRef}
-      className={`composer${draggingFiles ? " dragging-files" : ""}${disabled ? " is-disabled" : ""}${mention ? " has-mention" : ""}${mentionQueryIsRtl ? " has-mention-rtl" : ""}`}
+      className={`composer${draggingFiles ? " dragging-files" : ""}${disabled ? " is-disabled" : ""}${mention ? " has-mention" : ""}${mentionAtEmptyParagraphStart ? " has-mention-empty" : ""}${mentionQueryIsRtl ? " has-mention-rtl" : ""}`}
       data-testid="composer"
       onSubmit={handleSend}
     >
