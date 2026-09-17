@@ -62,6 +62,15 @@ test("restores an authenticated session into the default channel", async ({ page
   }
 });
 
+test("enables native autocorrect in the message composer", async ({ page }) => {
+  await page.goto("/");
+  const editor = page.getByTestId("composer-editor");
+
+  await expect(editor).toHaveAttribute("spellcheck", "true");
+  await expect(editor).toHaveAttribute("autocorrect", "on");
+  await expect(editor).toHaveAttribute("autocapitalize", "sentences");
+});
+
 test("does not allow Echo images to start native drags", async ({ page }) => {
   await page.goto("/");
   const logo = page.getByTestId("rail-brand").locator("img");

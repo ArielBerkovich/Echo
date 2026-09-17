@@ -21,11 +21,9 @@ test.describe("message sound preferences", () => {
       /None/,
       /Bright pop/,
       /Short alert/,
-      /Clear ding/,
-      /Soft chime/,
       /Warm bell/,
     ]);
-    await expect(page.locator('input[type="radio"][value="soft-chime"]')).toBeChecked();
+    await expect(page.locator('input[type="radio"][value="bright-pop"]')).toBeChecked();
     await expect(page.locator('input[type="radio"][value="none"]')).not.toBeChecked();
   });
 

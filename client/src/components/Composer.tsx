@@ -25,6 +25,7 @@ import EmojiPicker from "./EmojiPicker.js";
 import Modal, { ModalActions } from "./Modal.js";
 import { useMentionGate } from "../lib/useMentionGate.js";
 import { MENTION_QUERY_RE, peopleSearchSuggestions } from "../lib/mentions.js";
+import { autocorrectEnabled, onAutocorrectPreferenceChange } from "../lib/autocorrectPreference.js";
 import { CalendarClock, ChartNoAxesColumnIncreasing, ChevronRight, FileIcon, LayoutPanelTop, Paperclip, X } from "lucide-react";
 import {
   LinkIcon, OrderedListIcon, BulletListIcon, QuoteIcon, CodeIcon, CodeBlockIcon,
@@ -210,6 +211,8 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   const emojiToggleRef = useRef(null);
   const [pastePrompt, setPastePrompt] = useState(null); // { text, byteLength, tooLong, tooLarge }
   const [pasteBlockedNotice, setPasteBlockedNotice] = useState(null);
+  const [autocorrectOn, setAutocorrectOn] = useState(autocorrectEnabled);
+  useEffect(() => onAutocorrectPreferenceChange(() => setAutocorrectOn(autocorrectEnabled())), []);
   const [editorState, setEditorState] = useState({
     canSend: false,
     bold: false,
@@ -310,6 +313,11 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
         "data-placeholder": placeholder,
         role: "textbox",
         "aria-multiline": "true",
+        // Delegate spelling corrections to the platform so native clients can
+        // use their installed dictionaries without altering rich-text nodes.
+        spellcheck: autocorrectEnabled() ? "true" : "false",
+        autocorrect: autocorrectEnabled() ? "on" : "off",
+        autocapitalize: "sentences",
         dir: "auto",
       },
       handleKeyDown: (_view, event) => {
@@ -329,6 +337,11 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       setEditorState(readEditorState(currentEditor));
     },
   }, [channel.id, parentId, placeholder]);
+  useEffect(() => {
+    if (!editor) return;
+    editor.view.dom.spellcheck = autocorrectOn;
+    editor.view.dom.setAttribute("autocorrect", autocorrectOn ? "on" : "off");
+  }, [autocorrectOn, editor]);
   useImperativeHandle(ref, () => ({
     focus() {
       editor?.commands.focus();
