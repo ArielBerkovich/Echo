@@ -12558,6 +12558,26 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   font-weight: 700;
 }
 
+.update-confirmation-modal section + section {
+  margin-top: 1.1rem;
+}
+
+.update-confirmation-modal h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.update-confirmation-modal h3 span {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.update-confirmation-modal ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
 /* Public channel discovery */
 .sr-only {
   position: absolute;

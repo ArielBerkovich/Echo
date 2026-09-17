@@ -9,6 +9,7 @@ declare global {
     echoDesktopConfig?: {
       backendUrl?: string;
       appVersion?: string;
+      previousVersion?: string;
       wasUpdated?: boolean;
       saveBackendUrl(value: string): Promise<{ ok: boolean; error?: string }>;
       changeBackendUrl(value: string): Promise<{ ok: boolean; error?: string }>;

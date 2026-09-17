@@ -14,7 +14,7 @@ let updateFeedUrl;
 let updateCheckTimer;
 let updateCheckInFlight = false;
 let updateDownloaded = false;
-let launchedAfterUpdate = process.argv.includes("--updated");
+let updateInfo = null;
 
 function appIconPath() {
   return app.isPackaged
@@ -67,7 +67,10 @@ function clearAuthToken() {
 function markPendingUpdate(version) {
   try {
     fs.mkdirSync(path.dirname(pendingUpdatePath()), { recursive: true });
-    fs.writeFileSync(pendingUpdatePath(), JSON.stringify({ version }));
+    fs.writeFileSync(pendingUpdatePath(), JSON.stringify({
+      fromVersion: app.getVersion(),
+      toVersion: version,
+    }));
   } catch (error) {
     console.warn("Could not save the pending Echo update:", error?.message || error);
   }
@@ -77,12 +80,13 @@ function consumePendingUpdate() {
   try {
     const marker = JSON.parse(fs.readFileSync(pendingUpdatePath(), "utf8"));
     fs.unlinkSync(pendingUpdatePath());
-    return marker.version === app.getVersion();
+    if (marker.toVersion !== app.getVersion() || !marker.fromVersion) return null;
+    return { fromVersion: marker.fromVersion, toVersion: marker.toVersion };
   } catch (error) {
     if (error?.code !== "ENOENT") {
       console.warn("Could not read the pending Echo update:", error?.message || error);
     }
-    return false;
+    return null;
   }
 }
 
@@ -278,7 +282,8 @@ function createWindow(url, uiUrl = null) {
       additionalArguments: [
         `--echo-backend-url=${url}`,
         `--echo-app-version=${app.getVersion()}`,
-        `--echo-was-updated=${launchedAfterUpdate}`,
+        `--echo-previous-version=${updateInfo?.fromVersion || ""}`,
+        `--echo-was-updated=${!!updateInfo}`,
       ],
     },
   });
@@ -420,7 +425,7 @@ ipcMain.on("echo:show-notification", (event, { id, title, body, tag } = {}) => {
 app.whenReady().then(() => {
   app.setName("Echo");
   Menu.setApplicationMenu(null);
-  launchedAfterUpdate = consumePendingUpdate() || launchedAfterUpdate;
+  updateInfo = consumePendingUpdate();
   initializeDesktopUpdates();
   const url = backendUrl() || (process.env.ELECTRON_START_URL ? "http://localhost:4000" : null);
   if (url) createWindow(url, process.env.ELECTRON_START_URL || null);
