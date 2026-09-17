@@ -1,5 +1,5 @@
 import * as Dialog from "@radix-ui/react-dialog";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api.js";
 import { formatDate } from "../lib/time.js";
 import Avatar from "./Avatar.js";
@@ -17,6 +17,9 @@ import {
   Globe2Icon,
 } from "lucide-react";
 
+const MEMBER_ROW_HEIGHT = 58;
+const MEMBER_LIST_HEIGHT = 340;
+
 // Centered channel information dialog. Members can edit the channel metadata,
 // add people, and manage existing members without leaving the conversation.
 export default function ChannelDetailsPanel({ channel, users = [], user, onUpdated, onOpenProfile, onAddPeople, onPromoteManager, onChangeVisibility, onLeave, onClose }) {
@@ -25,8 +28,10 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
   const [promotingId, setPromotingId] = useState(null);
   const [activeTab, setActiveTab] = useState("details");
   const [activeMemberIndex, setActiveMemberIndex] = useState(0);
-  const memberRowRefs = useRef([]);
   const memberSearchRef = useRef(null);
+  const memberListRef = useRef(null);
+  const [memberListScrollTop, setMemberListScrollTop] = useState(0);
+  const [memberListHeight, setMemberListHeight] = useState(MEMBER_LIST_HEIGHT);
 
   const byId = new Map(users.map((u) => [u.id, u]));
   const creator = byId.get(channel.createdBy);
@@ -50,15 +55,36 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
     ...(!isGeneralChannel ? [["actions", "Actions"]] : []),
   ];
   const q = memberQuery.trim().toLowerCase();
-  const shownMembers = q
+  const shownMembers = useMemo(() => q
     ? members.filter(
         (m) => m.displayName.toLowerCase().includes(q) || m.username.toLowerCase().includes(q)
       )
-    : members;
+    : members, [members, q]);
+  const firstVisibleMember = Math.max(0, Math.floor(memberListScrollTop / MEMBER_ROW_HEIGHT) - 2);
+  const lastVisibleMember = Math.min(
+    shownMembers.length,
+    firstVisibleMember + Math.ceil(memberListHeight / MEMBER_ROW_HEIGHT) + 4,
+  );
+  const visibleMembers = shownMembers.slice(firstVisibleMember, lastVisibleMember);
 
   useEffect(() => {
-    memberRowRefs.current[activeMemberIndex]?.scrollIntoView({ block: "nearest" });
-  }, [activeMemberIndex, shownMembers.length]);
+    const list = memberListRef.current;
+    if (!list) return;
+    const top = activeMemberIndex * MEMBER_ROW_HEIGHT;
+    const bottom = top + MEMBER_ROW_HEIGHT;
+    if (top < list.scrollTop) list.scrollTo({ top });
+    else if (bottom > list.scrollTop + list.clientHeight) list.scrollTo({ top: bottom - list.clientHeight });
+  }, [activeMemberIndex]);
+
+  useEffect(() => {
+    const list = memberListRef.current;
+    if (!list || activeTab !== "members") return undefined;
+    const updateHeight = () => setMemberListHeight(list.clientHeight || MEMBER_LIST_HEIGHT);
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(list);
+    return () => observer.disconnect();
+  }, [activeTab]);
 
   useEffect(() => {
     if (activeTab !== "members") return;
@@ -281,6 +307,8 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
                 onChange={(event) => {
                   setMemberQuery(event.target.value);
                   setActiveMemberIndex(0);
+                  setMemberListScrollTop(0);
+                  memberListRef.current?.scrollTo({ top: 0 });
                 }}
                 onKeyDown={onMemberSearchKeyDown}
                 placeholder="Search members"
@@ -306,18 +334,23 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
               )}
             </div>
 
-            <div className="channel-details-member-list">
+            <div
+              className="channel-details-member-list channel-details-member-list--virtual"
+              ref={memberListRef}
+              onScroll={(event) => setMemberListScrollTop(event.currentTarget.scrollTop)}
+            >
               {members.length === 0 ? (
                 <div className="channel-details-empty">No members yet.</div>
               ) : shownMembers.length === 0 ? (
                 <div className="channel-details-empty">No members match “{memberQuery.trim()}”.</div>
               ) : (
-                shownMembers.map((member, index) => (
+                <div className="channel-details-member-virtual-content" style={{ height: shownMembers.length * MEMBER_ROW_HEIGHT }}>
+                {visibleMembers.map((member, index) => (
                   <div
-                    className={`channel-details-person${index === activeMemberIndex ? " active" : ""}`}
+                    className={`channel-details-person${firstVisibleMember + index === activeMemberIndex ? " active" : ""}`}
                     data-testid={`channel-details-person-${member.id}`}
                     key={member.id}
-                    ref={(element) => { memberRowRefs.current[index] = element; }}
+                    style={{ transform: `translateY(${(firstVisibleMember + index) * MEMBER_ROW_HEIGHT}px)` }}
                   >
                     <Avatar name={member.displayName} src={member.avatarUrl} size={34} />
                     <div className="channel-details-person-copy">
@@ -361,7 +394,8 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
                       </div>
                     )}
                   </div>
-                ))
+                ))}
+                </div>
               )}
             </div>
           </section>}
