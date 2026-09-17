@@ -4554,14 +4554,14 @@ html[data-mode="dark"] .search-highlight .kw-has .kw-label { color: #fcd34d; }
 /* The interface direction controls the stable message-row layout. Individual
    message bodies still use dir="auto" so mixed-language conversations remain
    readable without moving avatars per message. */
-html[data-interface-direction="rtl"] .message {
+.conversation-surface[data-interface-direction="rtl"] .message {
   direction: rtl;
 }
-html[data-interface-direction="rtl"] .message .msg-actions {
+.conversation-surface[data-interface-direction="rtl"] .message .msg-actions {
   right: auto;
   left: 18px;
 }
-html[data-interface-direction="rtl"] .message .msg-menu {
+.conversation-surface[data-interface-direction="rtl"] .message .msg-menu {
   right: auto;
   left: 18px;
   direction: rtl;
@@ -4573,14 +4573,14 @@ html[data-interface-direction="rtl"] .msg-menu button,
 html[data-interface-direction="rtl"] .msg-menu .message-link-open {
   text-align: right;
 }
-html[data-interface-direction="rtl"] .composer {
+.conversation-surface[data-interface-direction="rtl"] .composer {
   direction: rtl;
 }
 /* Keep the autocomplete trigger in logical order while it is being typed.
    An RTL paragraph otherwise treats @ as a neutral character and paints it
    after the Hebrew/Arabic query (א@). The editor remains right-aligned so the
    composer does not jump when the token is opened. */
-html[data-interface-direction="rtl"] .composer.has-mention .composer-editor {
+.conversation-surface[data-interface-direction="rtl"] .composer.has-mention .composer-editor {
   direction: ltr;
   text-align: right;
 }

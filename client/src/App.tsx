@@ -1680,6 +1680,7 @@ export default function App() {
           }}
           conversation={{
             channel: activeChannel,
+            interfaceDirection,
             composerFocusRequest,
             recoveryEpoch,
             cachedMessages: activeChannel ? getCachedMessages(activeChannel.id) : null,

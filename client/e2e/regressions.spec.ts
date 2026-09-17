@@ -185,7 +185,6 @@ test("supports a forced RTL message layout preference", async ({ page }) => {
   await page.getByRole("button", { name: "Appearance", exact: true }).click();
   await page.getByTestId("settings-direction-rtl").click();
   await expect(page.locator("html")).toHaveAttribute("data-interface-direction", "rtl");
-  await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
 
   await page.getByTestId("rail-home").click();
   await page.getByTestId(`channel-row-${slug(fixture.projectChannel.name)}`).click();

@@ -64,6 +64,7 @@ function MessagesSkeleton() {
 
 const ChannelView = forwardRef(function ChannelView({
   channel,
+  interfaceDirection = "ltr",
   composerFocusRequest = 0,
   recoveryEpoch = 0,
   cachedMessages = null,
@@ -1204,6 +1205,12 @@ const ChannelView = forwardRef(function ChannelView({
         )}
       </header>
 
+      <div
+        className="conversation-surface"
+        data-interface-direction={interfaceDirection}
+        dir={interfaceDirection}
+      >
+
       <div className="messages-shell">
         <div
           className="messages"
@@ -1412,6 +1419,7 @@ const ChannelView = forwardRef(function ChannelView({
           <span>This channel is read-only. Only the channel creator and managers can post.</span>
         </div>
       )}
+      </div>
       </div>
 
       {thread ? (

@@ -23,10 +23,6 @@ export function useInterfaceDirection() {
 
   useEffect(() => {
     document.documentElement.dataset.interfaceDirection = direction;
-    // Keep the document's semantic bidi direction in sync with the visual
-    // preference. This lets native HTML direction inheritance, `:dir()` and
-    // `dir="auto"` work consistently without component-specific overrides.
-    document.documentElement.setAttribute("dir", direction);
     writeString(STORAGE_KEY, preference);
   }, [direction, preference]);
 
