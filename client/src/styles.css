@@ -7097,8 +7097,8 @@ html[data-mode="dark"] .day-divider-label {
 }
 .att-image {
   display: block;
-  max-width: 360px;
-  max-height: 320px;
+  max-width: 300px;
+  max-height: 260px;
   min-width: 0;
   border-radius: 10px;
   overflow: hidden;
@@ -7338,7 +7338,7 @@ html[data-mode="dark"] .day-divider-label {
   font-size: 12px;
 }
 .att-text {
-  width: min(560px, 100%);
+  width: min(460px, 100%);
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -7389,7 +7389,7 @@ html[data-mode="dark"] .day-divider-label {
 .att-text-download { margin-left: auto; }
 .att-text-download + .att-text-open { margin-left: -4px; }
 .att-text-preview {
-  max-height: 150px;
+  max-height: 125px;
   margin: 0;
   padding: 12px;
   overflow: auto;
@@ -7417,6 +7417,97 @@ html[data-mode="dark"] .day-divider-label {
 .att-text.is-pasted .att-file-icon { color: var(--blue-500); }
 .att-text.is-pasted .att-file-name { color: var(--text); }
 .att-text.is-pasted .att-text-toggle:hover .att-file-name { color: var(--blue-500); }
+
+.presentation-attachment {
+  width: min(460px, 100%);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.presentation-head,
+.presentation-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+}
+.presentation-head { border-bottom: 1px solid var(--border); }
+.presentation-head .att-file-info { min-width: 0; }
+.presentation-head .att-text-action:first-of-type { margin-left: auto; }
+.presentation-preview {
+  display: grid;
+  min-height: 145px;
+  place-items: center;
+  padding: 8px;
+  background: #eef1f5;
+  color: var(--muted);
+  text-align: center;
+}
+.presentation-slide {
+  width: 100%;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  box-shadow: 0 2px 8px rgba(15, 39, 72, 0.16);
+  background: #fff;
+}
+.presentation-slide svg { display: block; width: 100%; height: 100%; }
+.presentation-footer {
+  justify-content: center;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.presentation-nav,
+.presentation-viewer-actions button,
+.presentation-viewer-nav {
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+.presentation-nav:disabled,
+.presentation-viewer-nav:disabled { cursor: default; opacity: 0.35; }
+.presentation-viewer-backdrop {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(8, 17, 31, 0.82);
+}
+.presentation-viewer {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface);
+}
+.presentation-viewer-head,
+.presentation-viewer-actions,
+.presentation-viewer-body { display: flex; align-items: center; }
+.presentation-viewer-head { justify-content: space-between; gap: 16px; padding: 12px 16px; }
+.presentation-viewer-actions { gap: 14px; color: var(--muted); font-size: 0.85rem; }
+.presentation-viewer-actions button { font-size: 1rem; }
+.presentation-viewer-body { justify-content: space-between; gap: 24px; min-height: 0; padding: 24px; background: #eef1f5; }
+.presentation-viewer-body .presentation-slide { max-height: calc(100vh - 130px); max-width: calc(100vw - 180px); width: min(1200px, calc(100vw - 180px)); height: auto; }
+.presentation-viewer-nav {
+  display: grid;
+  width: 52px;
+  height: 76px;
+  flex: 0 0 52px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 4px 14px rgba(15, 39, 72, 0.18);
+  font-size: 2.5rem;
+}
+.presentation-viewer-nav:not(:disabled):hover,
+.presentation-viewer-nav:not(:disabled):focus-visible { background: var(--active-soft); }
 
 .text-viewer-backdrop {
   position: fixed;

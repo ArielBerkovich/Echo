@@ -24,6 +24,7 @@
     "@tiptap/pm": "^3.29.2",
     "@tiptap/react": "^3.29.2",
     "@tiptap/starter-kit": "^3.29.2",
+    "@web-ppt/core": "^0.4.5",
     "clsx": "^2.1.1",
     "dompurify": "^3.1.6",
     "emoji-mart": "^5.6.0",
