@@ -313,6 +313,19 @@ html[data-theme="calm"][data-mode="light"] .channel-header {
   border-bottom: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
   box-shadow: none;
 }
+html[data-theme="calm"][data-mode="light"] .message:hover,
+html[data-theme="calm"][data-mode="light"] .message.menu-open,
+html[data-theme="calm"][data-mode="light"] .message.actions-hovered,
+html[data-theme="calm"][data-mode="light"] .message.reaction-open {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  box-shadow: inset 3px 0 color-mix(in srgb, var(--accent) 65%, var(--border));
+}
+html[data-theme="calm"][data-mode="light"][data-interface-direction="rtl"] .message:hover,
+html[data-theme="calm"][data-mode="light"][data-interface-direction="rtl"] .message.menu-open,
+html[data-theme="calm"][data-mode="light"][data-interface-direction="rtl"] .message.actions-hovered,
+html[data-theme="calm"][data-mode="light"][data-interface-direction="rtl"] .message.reaction-open {
+  box-shadow: inset -3px 0 color-mix(in srgb, var(--accent) 65%, var(--border));
+}
 html[data-theme="calm"][data-mode="light"] .composer {
   background: #ffffff;
 }
