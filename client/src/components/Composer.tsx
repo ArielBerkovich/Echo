@@ -440,7 +440,8 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       const caret = editor.view.coordsAtPos(mention.to);
       const composer = composerRef.current?.getBoundingClientRect();
       const popupWidth = Math.min(320, window.innerWidth - 16);
-      const isRtl = document.documentElement.dataset.interfaceDirection === "rtl";
+      const isRtl = mentionQueryIsRtl
+        || (!mention.query && document.documentElement.dataset.interfaceDirection === "rtl");
       // Mirror the LTR anchor: LTR aligns the popup's left edge to the caret,
       // while RTL aligns its right edge to the caret.
       const caretAnchor = isRtl ? caret.right - popupWidth : caret.left;
@@ -462,7 +463,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [editor, mention, suggestions.length]);
+  }, [editor, mention, mentionQueryIsRtl, suggestions.length]);
 
   useEffect(() => {
     activeMentionItemRef.current?.scrollIntoView({ block: "nearest" });
