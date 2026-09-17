@@ -9,6 +9,7 @@ import {
   slug,
   uniqueSuffix,
   uploadAsToken,
+  messageByText,
 } from "./helpers.js";
 
 const ONE_BY_ONE_PNG = Buffer.from(
@@ -159,6 +160,22 @@ test("clears an unsubmitted channel search when navigating away", async ({ page 
   await page.getByTestId(`channel-row-${fixture.generalChannel.name}`).click();
   await expect(page.getByTestId("channel-title")).toContainText(fixture.generalChannel.name);
   await expect(page.getByTestId("search-input")).toHaveValue("");
+});
+
+test("aligns Hebrew in the composer and sent message", async ({ page }) => {
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  const hebrew = `שלום עולם ${fixture.suffix}`;
+  const composer = page.getByTestId("composer-editor");
+
+  await composer.fill(hebrew);
+  await expect.poll(() => composer.evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
+  await expect.poll(() => composer.evaluate((element) => getComputedStyle(element).textAlign)).toBe("start");
+
+  await page.getByTestId("composer-send").click();
+  const message = messageByText(page, hebrew);
+  await expect(message).toBeVisible();
+  await expect.poll(() => message.getByTestId("message-body").evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
+  await expect.poll(() => message.getByTestId("message-body").evaluate((element) => getComputedStyle(element).textAlign)).toBe("start");
 });
 
 test("starts a conversation from the Home Direct Messages button", async ({ page }) => {

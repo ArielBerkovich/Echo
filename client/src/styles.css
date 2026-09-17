@@ -9745,10 +9745,8 @@ html[data-mode="dark"] .new-messages-button:hover {
   line-height: 1.5;
   color: #1e293b;
   word-break: break-word;
-  /* Keep messages left-aligned and starting under the author, even for RTL
-     (Hebrew/Arabic) content. dir="auto" still orders the characters correctly;
-     this just stops short RTL text from jumping to the far right of the column. */
-  text-align: left;
+  /* Follow the direction selected by dir="auto" on the message body. */
+  text-align: start;
 }
 /* Give emoji-only messages a little breathing room below the author row. */
 .message .body:has(.emoji--jumbo) {
@@ -10074,9 +10072,9 @@ html[data-mode="dark"] .new-messages-button:hover {
   overflow-y: auto;
   white-space: pre-wrap;
   word-break: break-word;
-  /* Keep RTL character ordering from dir="auto", while anchoring the text
-     block to the left side of the composer. */
-  text-align: left;
+  /* Follow the direction selected by the first strong character in
+     dir="auto" (Hebrew/Arabic right, Latin left). */
+  text-align: start;
 }
 .composer-editor p {
   margin: 0 0 4px;
