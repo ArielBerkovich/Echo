@@ -4577,9 +4577,9 @@ html[data-interface-direction="rtl"] .msg-menu .message-link-open {
   text-align: right;
 }
 /* Menu labels are English action text even when the conversation is RTL. */
-.msg-menu[dir="ltr"],
-.msg-menu[dir="ltr"] button,
-.msg-menu[dir="ltr"] .message-link-open {
+html[data-interface-direction="rtl"] .msg-menu[dir="ltr"],
+html[data-interface-direction="rtl"] .msg-menu[dir="ltr"] button,
+html[data-interface-direction="rtl"] .msg-menu[dir="ltr"] .message-link-open {
   direction: ltr;
   text-align: left;
 }

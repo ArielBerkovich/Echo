@@ -193,7 +193,10 @@ test("supports a forced RTL message layout preference", async ({ page }) => {
   await expect.poll(() => page.locator(".message").first().evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
   await page.locator(".message").first().hover();
   await page.locator(".message-more-action").first().click();
-  await expect(page.locator(".msg-menu").last()).toHaveAttribute("dir", "ltr");
+  const rtlMessageMenu = page.locator(".msg-menu").last();
+  await expect(rtlMessageMenu).toHaveAttribute("dir", "ltr");
+  await expect.poll(() => rtlMessageMenu.evaluate((element) => getComputedStyle(element).direction)).toBe("ltr");
+  await expect.poll(() => rtlMessageMenu.getByRole("menuitem").first().evaluate((element) => getComputedStyle(element).textAlign)).toBe("left");
 
   const composer = page.getByTestId("composer-editor");
   await composer.fill("");
