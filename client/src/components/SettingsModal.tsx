@@ -73,7 +73,7 @@ export default function SettingsModal({
   onSelectTheme,
   mode = "dark",
   onSelectMode,
-  interfaceDirection = "auto",
+  interfaceDirection = "ltr",
   onSelectInterfaceDirection,
   onUpdated,
   onIntegrationsChanged,
@@ -704,9 +704,9 @@ export default function SettingsModal({
             </div>
             <div className="settings-direction-control">
               <h4>Interface direction</h4>
-              <p className="settings-hint">Choose your chat layout direction. Auto follows your device language.</p>
+              <p className="settings-hint">Choose your chat layout direction. Left to right is the default.</p>
               <div className="mode-toggle" role="group" aria-label="Interface direction">
-                {[['auto', 'Auto'], ['ltr', 'Left to right'], ['rtl', 'Right to left']].map(([value, label]) => (
+                {[['ltr', 'Left to right'], ['rtl', 'Right to left']].map(([value, label]) => (
                   <button key={value} type="button" className={`mode-option${interfaceDirection === value ? " active" : ""}`} data-testid={`settings-direction-${value}`} onClick={() => onSelectInterfaceDirection?.(value)} aria-pressed={interfaceDirection === value}>{label}</button>
                 ))}
               </div>
