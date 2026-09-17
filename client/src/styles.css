@@ -317,7 +317,7 @@ html[data-theme="calm"][data-mode="light"] .message:hover,
 html[data-theme="calm"][data-mode="light"] .message.menu-open,
 html[data-theme="calm"][data-mode="light"] .message.actions-hovered,
 html[data-theme="calm"][data-mode="light"] .message.reaction-open {
-  background: color-mix(in srgb, var(--surface-2) 82%, var(--surface)) !important;
+  background: var(--surface-2) !important;
   box-shadow: none;
 }
 html[data-theme="calm"][data-mode="light"][data-interface-direction="rtl"] .message:hover,
