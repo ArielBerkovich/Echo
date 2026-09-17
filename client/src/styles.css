@@ -9922,6 +9922,11 @@ html[data-mode="dark"] .new-messages-button:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.mention-item .mi-handle[dir="ltr"] {
+  direction: ltr;
+  text-align: left;
+  unicode-bidi: isolate;
+}
 
 /* Composer: a single bordered box */
 .composer {

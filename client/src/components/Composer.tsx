@@ -1325,7 +1325,12 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                 )}
                 <span className="mention-item-copy">
                   <span className={`mi-name${u.channelTag ? " mi-name-channel" : ""}`} dir={u.channelTag ? "ltr" : "auto"}>{u.channelTag ? `#${u.name}` : u.broadcast ? `@${u.username}` : u.displayName}</span>
-                  <span className="mi-handle">{u.channelTag ? "Public channel" : u.broadcast ? u.displayName : u.groupMention ? u.path : `@${u.username}`}</span>
+                  <span
+                    className="mi-handle"
+                    dir={u.channelTag || (!u.broadcast && !u.groupMention) ? "ltr" : "auto"}
+                  >
+                    {u.channelTag ? "Public channel" : u.broadcast ? u.displayName : u.groupMention ? u.path : `@${u.username}`}
+                  </span>
                 </span>
               </button>
             ))}
