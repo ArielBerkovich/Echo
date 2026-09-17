@@ -4564,6 +4564,14 @@ html[data-interface-direction="rtl"] .message .msg-actions {
 html[data-interface-direction="rtl"] .message .msg-menu {
   right: auto;
   left: 18px;
+  direction: rtl;
+}
+html[data-interface-direction="rtl"] .msg-menu {
+  direction: rtl;
+}
+html[data-interface-direction="rtl"] .msg-menu button,
+html[data-interface-direction="rtl"] .msg-menu .message-link-open {
+  text-align: right;
 }
 html[data-interface-direction="rtl"] .composer {
   direction: rtl;
@@ -4861,7 +4869,7 @@ html[data-mode="dark"] .day-divider-label {
     right: 8px;
     min-width: 190px;
   }
-  html[data-interface-direction="rtl"] .message .msg-menu {
+html[data-interface-direction="rtl"] .message .msg-menu {
     right: auto;
     left: 8px;
   }

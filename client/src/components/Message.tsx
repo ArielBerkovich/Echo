@@ -221,12 +221,15 @@ function Message({
         || message.closest(".thread-panel")?.querySelector(".thread-header");
       const topBoundary = header ? header.getBoundingClientRect().bottom + 6 : 8;
       const toolbarHeight = 38;
+      const isRtl = document.documentElement.dataset.interfaceDirection === "rtl";
       setActionsPosition({
         top: Math.min(
           Math.max(rect.top + 2, topBoundary),
           Math.max(topBoundary, window.innerHeight - toolbarHeight - 8)
         ),
-        right: window.innerWidth - rect.right + 18,
+        ...(isRtl
+          ? { left: rect.left - 18, right: "auto" }
+          : { right: window.innerWidth - rect.right + 18, left: "auto" }),
       });
     };
     const frame = requestAnimationFrame(measure);
@@ -253,10 +256,13 @@ function Message({
       const menuRect = menu.getBoundingClientRect();
       const padding = 8;
       const gap = 6;
-      const left = Math.min(
-        Math.max(padding, triggerRect.right - menuRect.width),
-        window.innerWidth - menuRect.width - padding
-      );
+      const isRtl = document.documentElement.dataset.interfaceDirection === "rtl";
+      const left = isRtl
+        ? Math.min(Math.max(padding, triggerRect.left), window.innerWidth - menuRect.width - padding)
+        : Math.min(
+          Math.max(padding, triggerRect.right - menuRect.width),
+          window.innerWidth - menuRect.width - padding
+        );
       setMenuPosition({ top: triggerRect.bottom + gap, left });
     };
     const frame = requestAnimationFrame(measure);
@@ -612,6 +618,7 @@ function Message({
           style={actionsPosition ? {
             position: "fixed",
             top: actionsPosition.top,
+            left: actionsPosition.left,
             right: actionsPosition.right,
           } : { visibility: "hidden" }}
           onMouseEnter={activateMessage}
