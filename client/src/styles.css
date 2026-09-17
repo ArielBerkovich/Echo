@@ -9519,6 +9519,12 @@ html[data-mode="dark"] .channel-header {
   transform: none;
   animation: timelineJumpButtonIn 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+/* This is a vertical-scroll affordance, not an inline-direction control.
+   Keep it with the physical scrollbar on the right in both layouts. */
+html[data-interface-direction="rtl"] .new-messages-button.timeline-jump-button {
+  left: auto;
+  right: 10px;
+}
 .new-messages-count {
   position: absolute;
   top: -6px;
