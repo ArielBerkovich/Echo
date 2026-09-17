@@ -41,8 +41,12 @@ const HAS_OPTIONS = [
   { key: "link", label: "Has a link" },
 ];
 
-// Render the query with in:/from:/has: filter tokens wrapped in colored,
-// bold spans. Used by the mirror layer behind the (transparent-text) input.
+const FILTER_META = {
+  in: { label: "Channels", emptyLabel: "channels", Icon: HashIcon },
+  from: { label: "People", emptyLabel: "people", Icon: UserRoundIcon },
+  has: { label: "Attachments", emptyLabel: "options", Icon: PaperclipIcon },
+};
+
 function renderHighlighted(q) {
   const nodes = [];
   // Colour the keyword plus any value after it, allowing an optional space
@@ -58,7 +62,8 @@ function renderHighlighted(q) {
     const op = m[1].slice(0, -1).toLowerCase(); // in | from | has
     nodes.push(
       <span key={idx} className={`kw kw-${op}`}>
-        {m[0]}
+        <span className="kw-label">{m[1]}</span>
+        {m[0].slice(m[1].length)}
       </span>
     );
     last = idx + m[0].length;
@@ -524,6 +529,9 @@ const SearchBox = forwardRef(function SearchBox(
     );
   }
 
+  const activeFilterMeta = filter ? FILTER_META[filter.type] : null;
+  const ActiveFilterIcon = activeFilterMeta?.Icon;
+
   return (
     <div
       className="search-box"
@@ -590,12 +598,13 @@ const SearchBox = forwardRef(function SearchBox(
           {/* Filter autocomplete (in:/from:/has:) — takes over the dropdown */}
           {filter ? (
             <>
-              <div className="search-section">
-                {filter.type === "in" ? "Channels" : filter.type === "has" ? "Has" : "People"}
+              <div className={`search-section search-section-${filter.type}`}>
+                <ActiveFilterIcon size={13} strokeWidth={2} aria-hidden="true" />
+                <span>{activeFilterMeta.label}</span>
               </div>
               {filterSuggestions.length === 0 && (
                 <div className="people-empty">
-                  No {filter.type === "in" ? "channels" : filter.type === "has" ? "options" : "people"} match.
+                  No {activeFilterMeta.emptyLabel} match.
                 </div>
               )}
               {filterSuggestions.map((item, idx) =>
@@ -611,7 +620,7 @@ const SearchBox = forwardRef(function SearchBox(
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => applyFilter(item)}
                   >
-                    <span className="search-hash">📎</span>
+                    <span className="search-filter-icon search-filter-has"><PaperclipIcon size={15} strokeWidth={1.9} aria-hidden="true" /></span>
                     <span className="search-name">{item.label}</span>
                     <span className="search-kind">has:{item.key}</span>
                   </button>
