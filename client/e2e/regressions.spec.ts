@@ -191,6 +191,9 @@ test("supports a forced RTL message layout preference", async ({ page }) => {
   await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
   await expect.poll(() => page.getByTestId("composer").evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
   await expect.poll(() => page.locator(".message").first().evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
+  await page.locator(".message").first().hover();
+  await page.locator(".message-more-action").first().click();
+  await expect(page.locator(".msg-menu").last()).toHaveAttribute("dir", "rtl");
 
   const composer = page.getByTestId("composer-editor");
   await composer.fill("");
