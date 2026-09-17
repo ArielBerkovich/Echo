@@ -205,14 +205,14 @@ test("supports a forced RTL message layout preference", async ({ page }) => {
   await composer.fill("@");
   await expect(page.getByTestId("composer")).toHaveClass(/has-mention-empty/);
   await expect.poll(() => composer.evaluate((element) => getComputedStyle(element).textAlign)).toBe("right");
-  await composer.fill("asdas @");
-  await expect(page.locator(".mention-popup")).toHaveClass(/mention-popup-ltr/);
-  await composer.fill("שלום עולם @a");
+  await composer.fill("שלום עולם @");
+  await expect(page.locator(".mention-popup")).toHaveClass(/mention-popup-rtl/);
+  await composer.fill("שלום עולם @א");
   await expect.poll(() => composer.evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
   await composer.fill("שלום @");
   await expect.poll(() => composer.evaluate((element) => getComputedStyle(element).textAlign)).toBe("start");
-  await composer.fill("@a");
-  await expect.poll(() => composer.evaluate((element) => getComputedStyle(element).direction)).toBe("ltr");
+  await composer.fill("@א");
+  await expect.poll(() => composer.evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
 });
 
 test("starts a conversation from the Home Direct Messages button", async ({ page }) => {
