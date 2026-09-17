@@ -226,6 +226,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       ? /[\u0590-\u08ff]/.test(mention.query)
       : document.documentElement.dataset.interfaceDirection === "rtl"
   );
+  const mentionAtParagraphStart = !!mention && !mention.inline;
   const duplicateSurveyOptionCount = surveyDraft
     ? surveyDraft.options.filter((option, index, options) => {
       const normalized = option.trim().toLowerCase();
@@ -529,6 +530,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     setMention({
       trigger: match[1],
       query: match[2],
+      inline: Boolean((match.index ?? 0) > 0 && before.slice(0, match.index).trim()),
       from: from - match[2].length - 1,
       to: from,
     });
@@ -968,7 +970,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   return (
     <form
       ref={composerRef}
-      className={`composer${draggingFiles ? " dragging-files" : ""}${disabled ? " is-disabled" : ""}${mention ? " has-mention" : ""}${mentionQueryIsRtl ? " has-mention-rtl" : ""}`}
+      className={`composer${draggingFiles ? " dragging-files" : ""}${disabled ? " is-disabled" : ""}${mention ? " has-mention" : ""}${mentionAtParagraphStart ? " has-mention-start" : ""}${mentionQueryIsRtl ? " has-mention-rtl" : ""}`}
       data-testid="composer"
       onSubmit={handleSend}
     >

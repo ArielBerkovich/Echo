@@ -4580,11 +4580,11 @@ html[data-interface-direction="rtl"] .composer {
    An RTL paragraph otherwise treats @ as a neutral character and paints it
    after the Hebrew/Arabic query (א@). The editor remains right-aligned so the
    composer does not jump when the token is opened. */
-html[data-interface-direction="rtl"] .composer.has-mention .composer-editor {
+html[data-interface-direction="rtl"] .composer.has-mention-start .composer-editor {
   direction: ltr;
   text-align: left;
 }
-html[data-interface-direction="rtl"] .composer.has-mention.has-mention-rtl .composer-editor {
+html[data-interface-direction="rtl"] .composer.has-mention-start.has-mention-rtl .composer-editor {
   text-align: right;
 }
 .message-engagement {
