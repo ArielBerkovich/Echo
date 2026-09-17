@@ -38,6 +38,16 @@ const SCHEDULE_PRESETS = [
 ];
 
 const MAX_SURVEY_OPTION_CHARACTERS = 80;
+const RTL_TEXT_RE = /[\u0590-\u08ff]/;
+const LTR_TEXT_RE = /[A-Za-z\u00c0-\u02af]/;
+
+function firstStrongDirection(text, fallback = "ltr") {
+  for (const character of text || "") {
+    if (RTL_TEXT_RE.test(character)) return "rtl";
+    if (LTR_TEXT_RE.test(character)) return "ltr";
+  }
+  return fallback;
+}
 
 function tomorrow9am() {
   const d = new Date();
@@ -223,8 +233,8 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   });
   const mentionQueryIsRtl = !!mention && (
     mention.query
-      ? /[\u0590-\u08ff]/.test(mention.query)
-      : document.documentElement.dataset.interfaceDirection === "rtl"
+      ? RTL_TEXT_RE.test(mention.query)
+      : mention.baseDirection === "rtl"
   );
   const mentionAtParagraphStart = !!mention && !mention.inline;
   const duplicateSurveyOptionCount = surveyDraft
@@ -527,10 +537,15 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     const before = $from.parent.textBetween(0, $from.parentOffset, "\n", "\n");
     const match = before.match(MENTION_QUERY_RE);
     if (!match) return setMention(null);
+    const prefix = before.slice(0, match.index ?? 0);
     setMention({
       trigger: match[1],
       query: match[2],
       inline: Boolean((match.index ?? 0) > 0 && before.slice(0, match.index).trim()),
+      baseDirection: firstStrongDirection(
+        prefix,
+        document.documentElement.dataset.interfaceDirection === "rtl" ? "rtl" : "ltr"
+      ),
       from: from - match[2].length - 1,
       to: from,
     });

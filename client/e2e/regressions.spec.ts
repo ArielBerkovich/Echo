@@ -193,6 +193,8 @@ test("supports a forced RTL message layout preference", async ({ page }) => {
   await expect.poll(() => page.locator(".message").first().evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
 
   const composer = page.getByTestId("composer-editor");
+  await composer.fill("asdas @");
+  await expect(page.locator(".mention-popup")).toHaveClass(/mention-popup-ltr/);
   await composer.fill("שלום עולם @a");
   await expect.poll(() => composer.evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
   await composer.fill("שלום @");
