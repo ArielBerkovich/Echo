@@ -228,7 +228,7 @@ function Message({
           Math.max(topBoundary, window.innerHeight - toolbarHeight - 8)
         ),
         ...(isRtl
-          ? { left: rect.left - 18, right: "auto" }
+          ? { left: rect.left + 18, right: "auto" }
           : { right: window.innerWidth - rect.right + 18, left: "auto" }),
       });
     };
