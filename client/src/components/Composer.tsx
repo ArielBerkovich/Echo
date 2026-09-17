@@ -221,7 +221,11 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     code: false,
     codeBlock: false,
   });
-  const mentionQueryIsRtl = !!mention?.query && /[\u0590-\u08ff]/.test(mention.query);
+  const mentionQueryIsRtl = !!mention && (
+    mention.query
+      ? /[\u0590-\u08ff]/.test(mention.query)
+      : document.documentElement.dataset.interfaceDirection === "rtl"
+  );
   const duplicateSurveyOptionCount = surveyDraft
     ? surveyDraft.options.filter((option, index, options) => {
       const normalized = option.trim().toLowerCase();
