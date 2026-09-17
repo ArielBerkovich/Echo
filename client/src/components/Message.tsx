@@ -600,7 +600,7 @@ function Message({
                     );
                   })}
                 </span>
-                <span className="thread-reply-link">
+                <span className="thread-reply-link" dir="ltr">
                   {m.replyCount} {m.replyCount === 1 ? "reply" : "replies"}
                 </span>
               </button>

@@ -4624,7 +4624,13 @@ html[data-interface-direction="rtl"] .composer {
 .thread-participant-avatar .avatar > svg {
   display: block;
 }
-.thread-reply-link { color: var(--link-color); font-weight: 700; }
+.thread-reply-link {
+  direction: ltr;
+  unicode-bidi: isolate;
+  white-space: nowrap;
+  color: var(--link-color);
+  font-weight: 700;
+}
 .thread-indicator:hover { background: color-mix(in srgb, var(--link-color) 9%, transparent); }
 .thread-indicator:hover .thread-reply-link { color: color-mix(in srgb, var(--link-color) 82%, var(--text)); }
 .thread-indicator:focus-visible {
