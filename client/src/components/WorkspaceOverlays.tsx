@@ -22,6 +22,7 @@ export default function WorkspaceOverlays({
   theme,
   themes,
   mode,
+  interfaceDirection,
   showCreate,
   showNewMessage,
   showAddPeople,
@@ -38,6 +39,7 @@ export default function WorkspaceOverlays({
   onEmojiCreated,
   onSelectTheme,
   onSelectMode,
+  onSelectInterfaceDirection,
   onUserUpdated,
   onToggleStarred,
   onOpenDm,
@@ -84,6 +86,8 @@ export default function WorkspaceOverlays({
           onSelectTheme={onSelectTheme}
           mode={mode}
           onSelectMode={onSelectMode}
+          interfaceDirection={interfaceDirection}
+          onSelectInterfaceDirection={onSelectInterfaceDirection}
           onUpdated={onUserUpdated}
           onClose={onClose.settings}
           onOpenApiDocs={onOpenApiDocs}

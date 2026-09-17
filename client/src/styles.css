@@ -4551,6 +4551,19 @@ html[data-mode="dark"] .search-highlight .kw-has .kw-label { color: #fcd34d; }
 .message {
   position: relative;
 }
+/* The interface direction controls the stable message-row layout. Individual
+   message bodies still use dir="auto" so mixed-language conversations remain
+   readable without moving avatars per message. */
+html[data-interface-direction="rtl"] .message {
+  direction: rtl;
+}
+html[data-interface-direction="rtl"] .message .msg-actions {
+  right: auto;
+  left: 18px;
+}
+html[data-interface-direction="rtl"] .composer {
+  direction: rtl;
+}
 .message-engagement {
   display: flex;
   flex-direction: column;
