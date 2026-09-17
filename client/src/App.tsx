@@ -820,6 +820,8 @@ export default function App() {
     navigate("/", { replace: true });
   }
 
+  const showSessionExpiredDialog = sessionExpired && !!user;
+
   function rememberRecent(item) {
     setRecents((prev) => {
       const next = addRecentConversation(prev, item);
@@ -1484,7 +1486,7 @@ export default function App() {
         <div className="centered" role="status">
           {startupUnavailable ? "Echo is restarting… reconnecting automatically." : "Loading…"}
         </div>
-        {sessionExpired ? <SessionExpiredDialog onSignOut={handleLogout} /> : null}
+        {showSessionExpiredDialog ? <SessionExpiredDialog onSignOut={handleLogout} /> : null}
       </>
     );
   }
@@ -1492,7 +1494,7 @@ export default function App() {
     return (
       <>
         <Login onAuthed={handleAuthed} initialError={rhssoError} />
-        {sessionExpired ? <SessionExpiredDialog onSignOut={handleLogout} /> : null}
+        {showSessionExpiredDialog ? <SessionExpiredDialog onSignOut={handleLogout} /> : null}
       </>
     );
   }
@@ -1505,7 +1507,7 @@ export default function App() {
           onDone={(updated) => setUser((prev) => ({ ...prev, ...updated }))}
           onCancel={handleLogout}
         />
-        {sessionExpired ? <SessionExpiredDialog onSignOut={handleLogout} /> : null}
+        {showSessionExpiredDialog ? <SessionExpiredDialog onSignOut={handleLogout} /> : null}
       </>
     );
   }
@@ -1768,7 +1770,7 @@ export default function App() {
           toast: () => setToast(null),
         }}
       />
-      {sessionExpired ? <SessionExpiredDialog onSignOut={handleLogout} /> : null}
+      {showSessionExpiredDialog ? <SessionExpiredDialog onSignOut={handleLogout} /> : null}
     </div>
   );
 }
