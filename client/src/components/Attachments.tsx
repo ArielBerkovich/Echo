@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { DownloadIcon, ExpandIcon, FileIcon, XIcon, ZoomInIcon, ZoomOutIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, DownloadIcon, ExpandIcon, FileIcon, XIcon, ZoomInIcon, ZoomOutIcon } from "lucide-react";
 import { formatSize } from "../lib/format.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
 import { highlightFile, languageForFilename } from "../lib/syntaxHighlight.js";
@@ -18,6 +18,8 @@ export default function Attachments({ attachments = [], onOpenLightbox, sender }
           ? <ImageAttachment key={a.key} a={a} onOpenLightbox={onOpenLightbox} sender={sender} />
           : isTextAttachment(a)
             ? <TextAttachment key={a.key} a={a} />
+          : isPresentationAttachment(a)
+            ? <PresentationAttachment key={a.key} a={a} />
           : <FileAttachment key={a.key} a={a} />
       )}
     </div>
@@ -29,6 +31,14 @@ const TEXT_EXTENSIONS = /\.(txt|csv|tsv|log|md|markdown|json|xml|yaml|yml|toml|i
 function isTextAttachment(a) {
   const type = String(a.contentType || "").toLowerCase();
   return type.startsWith("text/") || ["application/json", "application/xml"].includes(type) || TEXT_EXTENSIONS.test(a.name || "");
+}
+
+function isPresentationAttachment(a) {
+  const type = String(a.contentType || "").toLowerCase();
+  return [
+    "application/vnd.ms-powerpoint",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  ].includes(type) || /\.(pptx?)$/i.test(a.name || "");
 }
 
 const MIN_SCALE = 1;
@@ -260,6 +270,111 @@ function FileAttachment({ a }) {
         <span className="att-file-meta">{formatSize(a.size)}</span>
       </span>
     </a>
+  );
+}
+
+function PresentationAttachment({ a }) {
+  const src = useAuthUrl(a.url);
+  const [presentation, setPresentation] = useState(null);
+  const [slideIndex, setSlideIndex] = useState(0);
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setPresentation(null);
+    setSlideIndex(0);
+    setError(false);
+    if (!src) return undefined;
+
+    Promise.all([import("@web-ppt/core"), fetch(src)])
+      .then(async ([{ parse, renderSlideToSvg }, response]) => {
+        if (!response.ok) throw new Error("presentation preview failed");
+        const parsed = await parse(await response.blob());
+        if (cancelled) {
+          parsed.dispose?.();
+          return;
+        }
+        setPresentation({ parsed, renderSlideToSvg });
+      })
+      .catch(() => {
+        if (!cancelled) setError(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [src]);
+
+  useEffect(() => () => presentation?.parsed.dispose?.(), [presentation]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") setOpen(false);
+      else if (event.key === "ArrowLeft") changeSlide(-1);
+      else if (event.key === "ArrowRight") changeSlide(1);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, presentation]);
+
+  const slide = presentation?.parsed.slides[slideIndex];
+  const svg = slide && presentation.renderSlideToSvg(presentation.parsed, slide);
+  const download = () => {
+    if (!src) return;
+    const link = document.createElement("a");
+    link.href = src;
+    link.download = a.name;
+    link.click();
+  };
+  const changeSlide = (delta) => setSlideIndex((current) => Math.min(
+    Math.max(current + delta, 0),
+    Math.max((presentation?.parsed.slides.length || 1) - 1, 0)
+  ));
+
+  const slideView = svg ? <div className="presentation-slide" dangerouslySetInnerHTML={{ __html: svg }} /> : null;
+  return (
+    <>
+      <div className="presentation-attachment" data-testid={`presentation-attachment-${a.key}`}>
+        <div className="presentation-head">
+          <span className="att-file-icon"><FileIcon size={20} strokeWidth={1.5} /></span>
+          <span className="att-file-info">
+            <span className="att-file-name">{a.name}</span>
+            <span className="att-file-meta">PowerPoint · {formatSize(a.size)}</span>
+          </span>
+          <button type="button" className="att-text-action" onClick={download} disabled={!src} title="Download presentation" aria-label="Download presentation">
+            <DownloadIcon size={17} strokeWidth={2} />
+          </button>
+          <button type="button" className="att-text-action" onClick={() => setOpen(true)} disabled={!presentation} title="Open presentation" aria-label={`Open presentation ${a.name}`}>
+            <ExpandIcon size={16} strokeWidth={2} />
+          </button>
+        </div>
+        <div className="presentation-preview">
+          {error ? <span>Preview unavailable. Download the presentation to open it.</span> : svg ? slideView : <span>Preparing presentation preview…</span>}
+        </div>
+      </div>
+      {open && createPortal(
+        <div className="presentation-viewer-backdrop" role="dialog" aria-modal="true" aria-label={`Preview ${a.name}`} onClick={() => setOpen(false)}>
+          <div className="presentation-viewer" onClick={(event) => event.stopPropagation()}>
+            <div className="presentation-viewer-head">
+              <strong>{a.name}</strong>
+              <div className="presentation-viewer-actions">
+                <span aria-live="polite">Slide {slideIndex + 1} of {presentation?.parsed.slides.length || 0}</span>
+                <button type="button" onClick={download} title="Download presentation" aria-label="Download presentation"><DownloadIcon size={18} /></button>
+                <button type="button" onClick={() => setOpen(false)} title="Close presentation" aria-label="Close presentation"><XIcon size={18} /></button>
+              </div>
+            </div>
+            <div className="presentation-viewer-body">
+              <button type="button" className="presentation-viewer-nav" onClick={() => changeSlide(-1)} disabled={slideIndex === 0} title="Previous slide" aria-label="Previous slide"><ChevronLeft size={32} strokeWidth={2.25} /></button>
+              {slideView}
+              <button type="button" className="presentation-viewer-nav" onClick={() => changeSlide(1)} disabled={!presentation || slideIndex >= presentation.parsed.slides.length - 1} title="Next slide" aria-label="Next slide"><ChevronRight size={32} strokeWidth={2.25} /></button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
   );
 }
 
