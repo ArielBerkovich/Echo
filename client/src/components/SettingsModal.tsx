@@ -704,12 +704,19 @@ export default function SettingsModal({
             </div>
             <div className="settings-direction-control">
               <h4>Interface direction</h4>
-              <p className="settings-hint">Choose the message layout direction. Message text still follows its own language automatically.</p>
+              <p className="settings-hint">Controls the chat messages and composer for you. Auto follows your device language; the manual options override it. Message text still follows its own language.</p>
               <div className="mode-toggle" role="group" aria-label="Interface direction">
                 {[['auto', 'Auto'], ['ltr', 'Left to right'], ['rtl', 'Right to left']].map(([value, label]) => (
                   <button key={value} type="button" className={`mode-option${interfaceDirection === value ? " active" : ""}`} data-testid={`settings-direction-${value}`} onClick={() => onSelectInterfaceDirection?.(value)} aria-pressed={interfaceDirection === value}>{label}</button>
                 ))}
               </div>
+              <p className="settings-hint settings-direction-current">
+                {interfaceDirection === "auto"
+                  ? "Auto: uses your browser or device language to choose the layout."
+                  : interfaceDirection === "rtl"
+                    ? "Right to left: places the conversation layout on the RTL side, while English action labels remain readable."
+                    : "Left to right: uses the standard English-style conversation layout."}
+              </p>
             </div>
           </section>}
 
