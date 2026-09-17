@@ -113,9 +113,9 @@ export async function setFileCategory(key, category) {
 
 // Fetch an object for streaming back to the client. Returns the AWS response
 // (Body is a Node Readable stream) or null if the key doesn't exist.
-export async function getObject(key) {
+export async function getObject(key, range) {
   try {
-    return await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
+    return await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: key, ...(range ? { Range: range } : {}) }));
   } catch (err) {
     if (err?.$metadata?.httpStatusCode === 404 || err?.name === "NoSuchKey") return null;
     throw err;

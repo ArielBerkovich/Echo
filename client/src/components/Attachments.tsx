@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, DownloadIcon, ExpandIcon, FileIcon, XIcon, ZoomInIcon, ZoomOutIcon } from "lucide-react";
 import { formatSize } from "../lib/format.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
+import { fetchFile } from "../api.js";
 import { highlightFile, languageForFilename } from "../lib/syntaxHighlight.js";
 import Avatar from "./Avatar.js";
 
@@ -381,26 +382,40 @@ function PresentationAttachment({ a }) {
 function TextAttachment({ a }) {
   const [expanded, setExpanded] = useState(false);
   const [open, setOpen] = useState(false);
-  const src = useAuthUrl(a.url);
   const [text, setText] = useState(null);
+  const [textComplete, setTextComplete] = useState(false);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    if (!src) return undefined;
-    fetch(src)
+    // A collapsed attachment should consume no bandwidth or decoded-text
+    // memory. The inline preview is capped server-side with Range; opening the
+    // dedicated viewer intentionally requests the complete file.
+    if (!expanded && !open) return undefined;
+    const controller = new AbortController();
+    const previewOnly = !open;
+    setFailed(false);
+    fetchFile(a.url, {
+      headers: previewOnly ? { Range: "bytes=0-119999" } : {},
+      signal: controller.signal,
+    })
       .then((response) => {
         if (!response.ok) throw new Error("preview failed");
         return response.text();
       })
       .then((value) => {
-        if (!cancelled) setText(value.slice(0, 120_000));
+        if (cancelled) return;
+        setText(value);
+        setTextComplete(!previewOnly);
       })
       .catch(() => {
-        if (!cancelled) setFailed(true);
+        if (!cancelled && !controller.signal.aborted) setFailed(true);
       });
-    return () => { cancelled = true; };
-  }, [src]);
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [a.url, expanded, open]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -412,12 +427,26 @@ function TextAttachment({ a }) {
   }, [open]);
 
   const preview = text?.slice(0, 1_600);
-  const truncated = text != null && text.length > 1_600;
+  const truncated = text != null && (!textComplete || text.length > 1_600);
   const language = languageForFilename(a.name);
   const languageLabel = language === "plaintext" ? "Text" : language[0].toUpperCase() + language.slice(1);
   // Syntax highlighting is intentionally deferred until the full-screen
   // viewer is opened; attachment cards should stay cheap in long timelines.
   const highlightedText = open && text != null ? highlightFile(text, a.name) : null;
+  const download = async () => {
+    try {
+      const response = await fetchFile(a.url);
+      if (!response.ok) throw new Error("download failed");
+      const href = URL.createObjectURL(await response.blob());
+      const link = document.createElement("a");
+      link.href = href;
+      link.download = a.name;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(href), 0);
+    } catch {
+      setFailed(true);
+    }
+  };
   return (
     <>
       <div className={`att-text${a.name?.startsWith("pasted.") ? " is-pasted" : ""}`} data-testid={`text-attachment-${a.key}`}>
@@ -434,15 +463,15 @@ function TextAttachment({ a }) {
             <span className="att-file-meta">{languageLabel} · {formatSize(a.size)}</span>
           </span>
         </button>
-        <a
+        <button
+          type="button"
           className="att-text-action att-text-download"
-          href={src || undefined}
-          download={a.name}
+          onClick={download}
           title="Download file"
           aria-label="Download file"
         >
           <DownloadIcon size={17} strokeWidth={2} />
-        </a>
+        </button>
         <button
           type="button"
           className="att-text-action att-text-open att-text-header-open"
@@ -476,16 +505,16 @@ function TextAttachment({ a }) {
             <div className="text-viewer-head">
               <strong>{a.name}</strong>
               <div className="text-viewer-actions">
-                <a
+                <button
+                  type="button"
                   className="text-viewer-download"
                   data-testid="text-viewer-download"
-                  href={src || undefined}
-                  download={a.name}
+                  onClick={download}
                   title="Download file"
                   aria-label="Download file"
                 >
                   <DownloadIcon size={18} strokeWidth={2} aria-hidden="true" />
-                </a>
+                </button>
                 <button className="text-viewer-close" type="button" onClick={() => setOpen(false)} aria-label="Close preview" title="Close preview">
                   <XIcon size={18} strokeWidth={2} aria-hidden="true" />
                 </button>

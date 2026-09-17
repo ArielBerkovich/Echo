@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 
-import { api, getToken, setToken } from "./api.js";
+import { api, fetchFile, getToken, setToken } from "./api.js";
 
 function createStorage() {
   const store = new Map();
@@ -179,5 +179,20 @@ describe("api request helpers", () => {
     assert.equal(call[1].headers.Authorization, "Bearer secret");
     assert.equal(call[1].headers["Content-Type"], undefined);
     assert.ok(call[1].body instanceof FormData);
+  });
+
+  it("fetches attachment previews with authentication and caller-provided range headers", async () => {
+    setToken("secret");
+    let call;
+    globalThis.fetch = async (...args) => {
+      call = args;
+      return { ok: true };
+    };
+
+    await fetchFile("/api/files/example.txt", { headers: { Range: "bytes=0-119999" } });
+    assert.equal(call[0], "/api/files/example.txt");
+    assert.equal(call[1].headers.Authorization, "Bearer secret");
+    assert.equal(call[1].headers.Range, "bytes=0-119999");
+    assert.equal(call[1].credentials, "include");
   });
 });
