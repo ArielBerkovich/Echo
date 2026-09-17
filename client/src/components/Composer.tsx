@@ -451,26 +451,28 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       return undefined;
     }
     const updatePosition = () => {
-      const caret = editor.view.coordsAtPos(mention.to);
-      const composer = composerRef.current?.getBoundingClientRect();
-      const popupWidth = Math.min(320, window.innerWidth - 16);
-      const isRtl = mentionQueryIsRtl;
-      // Anchor to the composer edges rather than the caret. Bidi reordering can
-      // make ProseMirror's caret x-coordinate jump across the line, while the
-      // composer edges remain stable and mirror cleanly between directions.
-      const edgeAnchor = composer
-        ? (isRtl ? composer.right - popupWidth : composer.left)
-        : (isRtl ? window.innerWidth - popupWidth - 8 : caret.left);
-      const left = Math.max(8, Math.min(edgeAnchor, window.innerWidth - popupWidth - 8));
-      // Anchor the popup to the composer, not to the editor caret's vertical
-      // coordinates. ProseMirror coordinates can refer to a scrolled editing
-      // surface, which otherwise makes the fixed popup float in the middle of
-      // the chat instead of sitting directly above the composer.
-      const anchorTop = composer?.top ?? caret.top;
-      setMentionPopupPosition({
-        left,
-        bottom: Math.max(8, window.innerHeight - anchorTop + 8),
-      });
+      try {
+        const caret = editor.view.coordsAtPos(mention.to);
+        const popupWidth = Math.min(320, window.innerWidth - 16);
+        const isRtl = mentionQueryIsRtl;
+        // Keep the popup next to the active text. The paragraph direction
+        // decides which edge follows the caret; clamp it to the viewport.
+        const caretLeft = Number.isFinite(caret.left) ? caret.left : 8;
+        const caretRight = Number.isFinite(caret.right) ? caret.right : caretLeft;
+        const caretAnchor = isRtl ? caretRight - popupWidth : caretLeft;
+        const left = Math.max(8, Math.min(caretAnchor, window.innerWidth - popupWidth - 8));
+        const anchorTop = composerRef.current?.getBoundingClientRect().top ?? caret.top;
+        setMentionPopupPosition({ left, bottom: Math.max(8, window.innerHeight - anchorTop + 8) });
+      } catch {
+        const composer = composerRef.current?.getBoundingClientRect();
+        if (!composer) return;
+        const popupWidth = Math.min(320, window.innerWidth - 16);
+        const left = mentionQueryIsRtl ? composer.right - popupWidth : composer.left;
+        setMentionPopupPosition({
+          left: Math.max(8, Math.min(left, window.innerWidth - popupWidth - 8)),
+          bottom: Math.max(8, window.innerHeight - composer.top + 8),
+        });
+      }
     };
     updatePosition();
     window.addEventListener("resize", updatePosition);
