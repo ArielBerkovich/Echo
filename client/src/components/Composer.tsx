@@ -437,11 +437,18 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     }
     const updatePosition = () => {
       const caret = editor.view.coordsAtPos(mention.to);
+      const composer = composerRef.current?.getBoundingClientRect();
       const popupWidth = Math.min(320, window.innerWidth - 16);
-      const popupHeight = 330;
       const left = Math.max(8, Math.min(caret.left, window.innerWidth - popupWidth - 8));
-      const aboveTop = caret.top - popupHeight - 8;
-      setMentionPopupPosition({ left, top: aboveTop >= 8 ? aboveTop : caret.bottom + 8 });
+      // Anchor the popup to the composer, not to the editor caret's vertical
+      // coordinates. ProseMirror coordinates can refer to a scrolled editing
+      // surface, which otherwise makes the fixed popup float in the middle of
+      // the chat instead of sitting directly above the composer.
+      const anchorTop = composer?.top ?? caret.top;
+      setMentionPopupPosition({
+        left,
+        bottom: Math.max(8, window.innerHeight - anchorTop + 8),
+      });
     };
     updatePosition();
     window.addEventListener("resize", updatePosition);
