@@ -439,7 +439,11 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       const caret = editor.view.coordsAtPos(mention.to);
       const composer = composerRef.current?.getBoundingClientRect();
       const popupWidth = Math.min(320, window.innerWidth - 16);
-      const left = Math.max(8, Math.min(caret.left, window.innerWidth - popupWidth - 8));
+      const isRtl = document.documentElement.dataset.interfaceDirection === "rtl";
+      // Mirror the LTR anchor: LTR aligns the popup's left edge to the caret,
+      // while RTL aligns its right edge to the caret.
+      const caretAnchor = isRtl ? caret.right - popupWidth : caret.left;
+      const left = Math.max(8, Math.min(caretAnchor, window.innerWidth - popupWidth - 8));
       // Anchor the popup to the composer, not to the editor caret's vertical
       // coordinates. ProseMirror coordinates can refer to a scrolled editing
       // surface, which otherwise makes the fixed popup float in the middle of
