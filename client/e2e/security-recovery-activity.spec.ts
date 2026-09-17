@@ -63,7 +63,7 @@ test("revokes private-channel attachment access when membership is removed", asy
   expect((await rawApi(page, fixture.alice.token, `/files/${attachment.key}`)).ok()).toBeTruthy();
 });
 
-test("shows the expired-session dialog and returns to login without stale workspace content", async ({ browser, page }) => {
+test("returns to login without showing an expired-session dialog or stale workspace content", async ({ browser, page }) => {
   const suffix = uniqueSuffix("expired").replace(/[^a-z0-9]/gi, "").slice(-12);
   const username = `session.user${suffix}`;
   const auth = await registerUser(page, { username, displayName: "Session User" });
@@ -84,9 +84,8 @@ test("shows the expired-session dialog and returns to login without stale worksp
     expect((await rawApi(page, auth.token, "/auth/me")).status()).toBe(401);
 
     await sessionPage.reload();
-    await expect(sessionPage.getByTestId("session-expired-dialog")).toBeVisible();
+    await expect(sessionPage.getByTestId("session-expired-dialog")).toHaveCount(0);
     await expect(sessionPage.getByTestId("composer-editor")).toHaveCount(0);
-    await sessionPage.getByTestId("session-expired-signout").click();
     await openLocalAuth(sessionPage);
     await expect(sessionPage.getByRole("button", { name: "Sign in", exact: true })).toBeVisible({ timeout: 10_000 });
     await expect.poll(() => sessionPage.evaluate(() => localStorage.getItem("echo.token"))).toBeNull();

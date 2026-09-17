@@ -525,8 +525,10 @@ export default function App() {
       } catch (error) {
         if (cancelled) return;
         if (error?.status === 401) {
-          // Keep the session visible until the user acknowledges the expiry.
-          setSessionExpired(true);
+          // An expired token cannot be associated with an authenticated user
+          // during startup, so return directly to the login screen.
+          setToken(null);
+          setSessionExpired(false);
           setStartupUnavailable(false);
           setLoading(false);
           return;
