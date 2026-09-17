@@ -317,8 +317,10 @@ html[data-theme="calm"][data-mode="light"] .message:hover,
 html[data-theme="calm"][data-mode="light"] .message.menu-open,
 html[data-theme="calm"][data-mode="light"] .message.actions-hovered,
 html[data-theme="calm"][data-mode="light"] .message.reaction-open {
-  background: color-mix(in srgb, var(--surface-2) 82%, var(--surface));
+  background: color-mix(in srgb, var(--surface-2) 82%, var(--surface)) !important;
   box-shadow: inset 3px 0 color-mix(in srgb, var(--accent) 78%, var(--border));
+  outline: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  outline-offset: -1px;
 }
 html[data-theme="calm"][data-mode="light"][data-interface-direction="rtl"] .message:hover,
 html[data-theme="calm"][data-mode="light"][data-interface-direction="rtl"] .message.menu-open,
