@@ -697,19 +697,19 @@ export default function SettingsModal({
               <button type="button" className={`mode-option${mode === "light" ? " active" : ""}`} data-testid="settings-mode-light" onClick={() => onSelectMode?.("light")} aria-pressed={mode === "light"}>☀ Light</button>
               <button type="button" className={`mode-option${mode === "dark" ? " active" : ""}`} data-testid="settings-mode-dark" onClick={() => onSelectMode?.("dark")} aria-pressed={mode === "dark"}>☾ Dark</button>
             </div>
-            <div className="settings-direction-control">
-              <h4>Interface direction</h4>
-              <p className="settings-hint">Choose the message layout direction. Message text still follows its own language automatically.</p>
-              <div className="mode-toggle" role="group" aria-label="Interface direction">
-                {[["auto", "Auto"], ["ltr", "Left to right"], ["rtl", "Right to left"]].map(([value, label]) => (
-                  <button key={value} type="button" className={`mode-option${interfaceDirection === value ? " active" : ""}`} data-testid={`settings-direction-${value}`} onClick={() => onSelectInterfaceDirection?.(value)} aria-pressed={interfaceDirection === value}>{label}</button>
-                ))}
-              </div>
-            </div>
             <div className="theme-grid">
               {themes.map((t) => <button key={t.id} type="button" className={`theme-card${theme === t.id ? " active" : ""}`} data-testid={`settings-theme-${t.id}`} onClick={() => onSelectTheme?.(t.id)} aria-pressed={theme === t.id}>
                 <span className="theme-swatch">{t.swatch.map((c, i) => <span key={i} style={{ background: c }} />)}</span><span className="theme-name">{t.label}</span>
               </button>)}
+            </div>
+            <div className="settings-direction-control">
+              <h4>Interface direction</h4>
+              <p className="settings-hint">Choose the message layout direction. Message text still follows its own language automatically.</p>
+              <div className="mode-toggle" role="group" aria-label="Interface direction">
+                {[['auto', 'Auto'], ['ltr', 'Left to right'], ['rtl', 'Right to left']].map(([value, label]) => (
+                  <button key={value} type="button" className={`mode-option${interfaceDirection === value ? " active" : ""}`} data-testid={`settings-direction-${value}`} onClick={() => onSelectInterfaceDirection?.(value)} aria-pressed={interfaceDirection === value}>{label}</button>
+                ))}
+              </div>
             </div>
           </section>}
 

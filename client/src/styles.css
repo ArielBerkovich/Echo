@@ -4561,6 +4561,10 @@ html[data-interface-direction="rtl"] .message .msg-actions {
   right: auto;
   left: 18px;
 }
+html[data-interface-direction="rtl"] .message .msg-menu {
+  right: auto;
+  left: 18px;
+}
 html[data-interface-direction="rtl"] .composer {
   direction: rtl;
 }
@@ -4857,6 +4861,10 @@ html[data-mode="dark"] .day-divider-label {
     right: 8px;
     min-width: 190px;
   }
+  html[data-interface-direction="rtl"] .message .msg-menu {
+    right: auto;
+    left: 8px;
+  }
 }
 
 /* "(edited)" marker after a message body */
@@ -5014,6 +5022,14 @@ html[data-mode="dark"] .day-divider-label {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
+}
+.settings-direction-control {
+  margin-top: 16px;
+}
+.settings-direction-control h4 {
+  margin: 0 0 5px;
+  color: var(--text);
+  font-size: 13px;
 }
 .theme-card {
   display: flex;
