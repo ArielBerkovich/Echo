@@ -710,13 +710,6 @@ export default function SettingsModal({
                   <button key={value} type="button" className={`mode-option${interfaceDirection === value ? " active" : ""}`} data-testid={`settings-direction-${value}`} onClick={() => onSelectInterfaceDirection?.(value)} aria-pressed={interfaceDirection === value}>{label}</button>
                 ))}
               </div>
-              <p className="settings-hint settings-direction-current">
-                {interfaceDirection === "auto"
-                  ? "Uses your device language."
-                  : interfaceDirection === "rtl"
-                    ? "Hebrew/Arabic-style layout."
-                    : "English-style layout."}
-              </p>
             </div>
           </section>}
 
