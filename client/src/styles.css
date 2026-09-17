@@ -7655,41 +7655,6 @@ html[data-mode="dark"] .day-divider-label {
   justify-content: flex-end;
   gap: 6px;
 }
-.composer-autocorrect {
-  position: fixed;
-  z-index: 29;
-  transform: translateY(-100%);
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 7px 9px;
-  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
-  border-radius: 10px;
-  background: var(--surface);
-  box-shadow: var(--shadow-md);
-  color: var(--muted);
-  font-size: 12px;
-}
-.composer-autocorrect button {
-  border: 0;
-  border-radius: 6px;
-  padding: 4px 7px;
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
-  color: var(--accent);
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-}
-.composer-autocorrect .composer-autocorrect-dismiss {
-  padding: 4px;
-  background: transparent;
-  color: var(--muted);
-  font-weight: 500;
-}
-.composer-autocorrect button:focus-visible,
-.composer-autocorrect button:hover {
-  background: color-mix(in srgb, var(--accent) 20%, var(--surface));
-}
 .composer-paste-actions button {
   padding: 6px 10px;
   border-radius: 7px;

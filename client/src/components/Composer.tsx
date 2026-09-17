@@ -25,7 +25,6 @@ import EmojiPicker from "./EmojiPicker.js";
 import Modal, { ModalActions } from "./Modal.js";
 import { useMentionGate } from "../lib/useMentionGate.js";
 import { MENTION_QUERY_RE, peopleSearchSuggestions } from "../lib/mentions.js";
-import { suggestCorrection } from "../lib/autocorrect.js";
 import { autocorrectEnabled, onAutocorrectPreferenceChange } from "../lib/autocorrectPreference.js";
 import { CalendarClock, ChartNoAxesColumnIncreasing, ChevronRight, FileIcon, LayoutPanelTop, Paperclip, X } from "lucide-react";
 import {
@@ -212,18 +211,8 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   const emojiToggleRef = useRef(null);
   const [pastePrompt, setPastePrompt] = useState(null); // { text, byteLength, tooLong, tooLarge }
   const [pasteBlockedNotice, setPasteBlockedNotice] = useState(null);
-  const [autocorrect, setAutocorrect] = useState(null); // { original, suggestion, from, to }
   const [autocorrectOn, setAutocorrectOn] = useState(autocorrectEnabled);
-  const [autocorrectPosition, setAutocorrectPosition] = useState(null);
-  const autocorrectRef = useRef(null);
-  const autocorrectRequestRef = useRef(0);
-  const hoveredAutocorrectWordRef = useRef(null);
-  const autocorrectLeaveTimerRef = useRef(null);
-  const caretAutocorrectRangeRef = useRef(null);
   useEffect(() => onAutocorrectPreferenceChange(() => setAutocorrectOn(autocorrectEnabled())), []);
-  useEffect(() => {
-    if (!autocorrectOn) clearAutocorrect();
-  }, [autocorrectOn]);
   const [editorState, setEditorState] = useState({
     canSend: false,
     bold: false,
@@ -326,8 +315,8 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
         "aria-multiline": "true",
         // Delegate spelling corrections to the platform so native clients can
         // use their installed dictionaries without altering rich-text nodes.
-        spellcheck: "true",
-        autocorrect: "on",
+        spellcheck: autocorrectEnabled() ? "true" : "false",
+        autocorrect: autocorrectEnabled() ? "on" : "off",
         autocapitalize: "sentences",
         dir: "auto",
       },
@@ -346,9 +335,13 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     onSelectionUpdate: ({ editor: currentEditor }) => {
       syncMentionContext(currentEditor);
       setEditorState(readEditorState(currentEditor));
-      checkAutocorrectAtCursor(currentEditor);
     },
   }, [channel.id, parentId, placeholder]);
+  useEffect(() => {
+    if (!editor) return;
+    editor.view.dom.spellcheck = autocorrectOn;
+    editor.view.dom.setAttribute("autocorrect", autocorrectOn ? "on" : "off");
+  }, [autocorrectOn, editor]);
   useImperativeHandle(ref, () => ({
     focus() {
       editor?.commands.focus();
@@ -362,18 +355,6 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   useEffect(() => {
     editor?.setEditable(!disabled);
   }, [disabled, editor]);
-  useLayoutEffect(() => {
-    if (!autocorrect || !editor || typeof window === "undefined") {
-      setAutocorrectPosition(null);
-      return;
-    }
-    const caret = editor.view.coordsAtPos(autocorrect.from);
-    const width = autocorrectRef.current?.offsetWidth || 220;
-    setAutocorrectPosition({
-      left: Math.max(8, Math.min(caret.left, window.innerWidth - width - 8)),
-      top: Math.max(8, caret.top - 8),
-    });
-  }, [autocorrect, editor]);
   useEffect(() => {
     if (!editor) return;
     if (!editing) {
@@ -499,133 +480,6 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     onDraftChange?.(draft);
     const key = draftStorageKey(channel.id, isThread);
     if (draftReadyRef.current && !editing && key) writeString(key, draft.trim() ? draft : null);
-    checkAutocorrect(currentEditor);
-  }
-
-  function checkAutocorrect(currentEditor) {
-    if (!autocorrectOn) return clearAutocorrect();
-    if (!currentEditor || currentEditor.isActive("code") || currentEditor.isActive("codeBlock")) {
-      setAutocorrect(null);
-      return;
-    }
-    const { selection } = currentEditor.state;
-    if (!selection.empty) return setAutocorrect(null);
-    const { $from, from } = selection;
-    const before = $from.parent.textBetween(0, $from.parentOffset, "\n", "\n");
-    const match = before.match(/(?:^|\s)([A-Za-z][A-Za-z'-]{2,})\s$/);
-    if (!match) return setAutocorrect(null);
-    const original = match[1];
-    const requestId = ++autocorrectRequestRef.current;
-    const wordFrom = from - original.length - 1;
-    suggestCorrection(original).then((suggestion) => {
-      if (!suggestion || requestId !== autocorrectRequestRef.current || currentEditor.isDestroyed) return;
-      if (currentEditor.state.doc.textBetween(wordFrom, from - 1) !== original) return;
-      setAutocorrect({ original, suggestion, from: wordFrom, to: from - 1 });
-    }).catch(() => {});
-  }
-
-  function checkAutocorrectAtCursor(currentEditor) {
-    if (!autocorrectOn) return clearAutocorrect();
-    if (!currentEditor || currentEditor.isActive("code") || currentEditor.isActive("codeBlock")) {
-      caretAutocorrectRangeRef.current = null;
-      clearAutocorrect();
-      return;
-    }
-    const { selection } = currentEditor.state;
-    if (!selection.empty) {
-      caretAutocorrectRangeRef.current = null;
-      return clearAutocorrect();
-    }
-    const { $from, from } = selection;
-    const text = $from.parent.textBetween(0, $from.parent.content.size, "\n", "\n");
-    let offset = $from.parentOffset;
-    if (!/[A-Za-z'-]/.test(text[offset] || "") && offset > 0) offset -= 1;
-    if (!/[A-Za-z'-]/.test(text[offset] || "")) {
-      caretAutocorrectRangeRef.current = null;
-      return clearAutocorrect();
-    }
-    let start = offset;
-    while (start > 0 && /[A-Za-z'-]/.test(text[start - 1])) start -= 1;
-    let end = offset;
-    while (end < text.length && /[A-Za-z'-]/.test(text[end])) end += 1;
-    const word = text.slice(start, end);
-    if (!/^[A-Za-z][A-Za-z'-]{2,}$/.test(word)) {
-      caretAutocorrectRangeRef.current = null;
-      return clearAutocorrect();
-    }
-    const wordFrom = from - ($from.parentOffset - start);
-    caretAutocorrectRangeRef.current = { from: wordFrom, to: wordFrom + word.length };
-    const requestId = ++autocorrectRequestRef.current;
-    suggestCorrection(word).then((suggestion) => {
-      if (!suggestion || requestId !== autocorrectRequestRef.current || currentEditor.isDestroyed) return;
-      if (currentEditor.state.doc.textBetween(wordFrom, wordFrom + word.length) !== word) return;
-      setAutocorrect({ original: word, suggestion, from: wordFrom, to: wordFrom + word.length });
-    }).catch(() => {});
-  }
-
-  function clearAutocorrect() {
-    hoveredAutocorrectWordRef.current = null;
-    autocorrectRequestRef.current += 1;
-    setAutocorrect(null);
-  }
-
-  function caretIsInAutocorrectWord(currentEditor) {
-    const range = caretAutocorrectRangeRef.current;
-    const position = currentEditor?.state?.selection;
-    return !!range && !!position && position.empty && position.from >= range.from && position.from <= range.to;
-  }
-
-  function handleEditorMouseMove(event) {
-    if (!autocorrectOn) return;
-    if (!editor || editor.isActive("code") || editor.isActive("codeBlock")) return;
-    const dom = editor.view.dom;
-    let range = document.caretRangeFromPoint?.(event.clientX, event.clientY);
-    if (!range && document.caretPositionFromPoint) {
-      const caret = document.caretPositionFromPoint(event.clientX, event.clientY);
-      if (caret) {
-        range = document.createRange();
-        range.setStart(caret.offsetNode, caret.offset);
-      }
-    }
-    const textNode = range?.startContainer;
-    // `Node` is imported from Tiptap in this module, so use the numeric DOM
-    // node type instead of the browser's Node.TEXT_NODE constant.
-    if (!textNode || textNode.nodeType !== 3 || !dom.contains(textNode)) return;
-    const text = textNode.textContent || "";
-    const offset = Math.min(range.startOffset, text.length);
-    let start = offset;
-    while (start > 0 && /[A-Za-z'-]/.test(text[start - 1])) start -= 1;
-    let end = offset;
-    while (end < text.length && /[A-Za-z'-]/.test(text[end])) end += 1;
-    const word = text.slice(start, end);
-    if (!/^[A-Za-z][A-Za-z'-]{2,}$/.test(word)) {
-      if (caretIsInAutocorrectWord(editor)) return;
-      return clearAutocorrect();
-    }
-    const wordFrom = editor.view.posAtDOM(textNode, start);
-    const wordTo = editor.view.posAtDOM(textNode, end);
-    const key = `${wordFrom}:${wordTo}:${word}`;
-    if (hoveredAutocorrectWordRef.current === key) return;
-    hoveredAutocorrectWordRef.current = key;
-    const requestId = ++autocorrectRequestRef.current;
-    suggestCorrection(word).then((suggestion) => {
-      if (!suggestion || requestId !== autocorrectRequestRef.current || editor.isDestroyed) return;
-      if (editor.state.doc.textBetween(wordFrom, wordTo) !== word) return;
-      setAutocorrect({ original: word, suggestion, from: wordFrom, to: wordTo });
-    }).catch(() => {});
-  }
-
-  function handleEditorMouseLeave() {
-    clearTimeout(autocorrectLeaveTimerRef.current);
-    autocorrectLeaveTimerRef.current = setTimeout(() => {
-      if (!autocorrectRef.current?.matches(":hover") && !caretIsInAutocorrectWord(editor)) clearAutocorrect();
-    }, 180);
-  }
-
-  function applyAutocorrect() {
-    if (!autocorrect || !editor) return;
-    editor.chain().focus().insertContentAt({ from: autocorrect.from, to: autocorrect.to }, autocorrect.suggestion).run();
-    setAutocorrect(null);
   }
 
   function readEditorState(currentEditor) {
@@ -899,8 +753,6 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     editor?.commands.clearContent(true);
     clearAttachments();
     setMention(null);
-    setAutocorrect(null);
-    autocorrectRequestRef.current += 1;
     setEmojiOpen(false);
     const key = draftStorageKey(channel.id, isThread);
     if (key) writeString(key, null);
@@ -1184,25 +1036,6 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
               {pastePrompt.tooLarge ? "Dismiss" : "Cancel"}
             </button>
           </div>
-        </div>
-      )}
-
-      {autocorrect && (
-        <div
-          ref={autocorrectRef}
-          className="composer-autocorrect"
-          role="status"
-          data-testid="composer-autocorrect"
-          onMouseEnter={() => clearTimeout(autocorrectLeaveTimerRef.current)}
-          style={autocorrectPosition ? { left: autocorrectPosition.left, top: autocorrectPosition.top } : undefined}
-        >
-          <span>Did you mean</span>
-          <button type="button" onMouseDown={(event) => { event.preventDefault(); applyAutocorrect(); }}>
-            {autocorrect.suggestion}
-          </button>
-          <button type="button" className="composer-autocorrect-dismiss" aria-label="Dismiss spelling suggestion" onMouseDown={(event) => { event.preventDefault(); clearAutocorrect(); }}>
-            Dismiss
-          </button>
         </div>
       )}
 
@@ -1582,7 +1415,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
         </div>
       )}
 
-      <div className="composer-input" onMouseMove={handleEditorMouseMove} onMouseLeave={handleEditorMouseLeave}>
+      <div className="composer-input">
         <EditorContent editor={editor} />
       </div>
 

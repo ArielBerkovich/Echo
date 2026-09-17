@@ -69,64 +69,6 @@ test("enables native autocorrect in the message composer", async ({ page }) => {
   await expect(editor).toHaveAttribute("spellcheck", "true");
   await expect(editor).toHaveAttribute("autocorrect", "on");
   await expect(editor).toHaveAttribute("autocapitalize", "sentences");
-  await editor.fill("Please check this mispeling ");
-  const suggestion = page.getByTestId("composer-autocorrect");
-  await expect(suggestion).toContainText("misspelling");
-  const suggestionBox = await suggestion.boundingBox();
-  const editorBox = await editor.boundingBox();
-  expect(suggestionBox).toBeTruthy();
-  expect(editorBox).toBeTruthy();
-  expect(suggestionBox.y + suggestionBox.height).toBeLessThanOrEqual(editorBox.y);
-  await suggestion.getByRole("button", { name: "misspelling" }).click();
-  await expect(editor).toHaveText("Please check this misspelling ");
-});
-
-test("shows autocorrect when hovering a misspelled word", async ({ page }) => {
-  await page.goto("/");
-  const editor = page.getByTestId("composer-editor");
-  await editor.fill("Please check this mispeling");
-  await editor.press("ControlOrMeta+Home");
-  const point = await editor.evaluate((element) => {
-    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
-    let node;
-    while ((node = walker.nextNode())) {
-      const start = node.textContent.indexOf("mispeling");
-      if (start < 0) continue;
-      const range = document.createRange();
-      range.setStart(node, start + 3);
-      range.setEnd(node, start + 3);
-      const rect = range.getBoundingClientRect();
-      return { x: rect.left, y: rect.top + rect.height / 2 };
-    }
-    return null;
-  });
-  expect(point).toBeTruthy();
-  await page.mouse.move(point.x, point.y);
-  const suggestion = page.getByTestId("composer-autocorrect");
-  await expect(suggestion).toContainText("misspelling");
-  await page.waitForTimeout(1000);
-  await expect(suggestion).toContainText("misspelling");
-  await page.mouse.move(8, 8);
-  await expect(suggestion).toContainText("misspelling");
-  await page.mouse.move(point.x, point.y);
-  await expect(suggestion).toContainText("misspelling");
-  const suggestionBox = await suggestion.boundingBox();
-  const wordPoint = point;
-  expect(suggestionBox).toBeTruthy();
-  expect(suggestionBox.y + suggestionBox.height).toBeLessThanOrEqual(wordPoint.y);
-  await suggestion.getByRole("button", { name: "misspelling" }).click();
-  await expect(editor).toHaveText("Please check this misspelling");
-});
-
-test("shows autocorrect when the text caret is inside a misspelled word", async ({ page }) => {
-  await page.goto("/");
-  const editor = page.getByTestId("composer-editor");
-  await editor.fill("Please check this mispeling");
-  await editor.press("ArrowLeft");
-  const suggestion = page.getByTestId("composer-autocorrect");
-  await expect(suggestion).toContainText("misspelling");
-  await page.mouse.move(8, 8);
-  await expect(suggestion).toContainText("misspelling");
 });
 
 test("does not allow Echo images to start native drags", async ({ page }) => {
