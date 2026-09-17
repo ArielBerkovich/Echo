@@ -26,7 +26,9 @@ function tooltipPlacementOrder(target: HTMLElement) {
   if (target.closest(".sidebar-actions, .header-actions")) return ["above"] as const;
   if (target.closest(".workspace-search-navigation, .workspace-search-actions, .workspace-search-help")) return ["below", "above", "left", "right"] as const;
   if (target.closest(".rail")) return ["right", "above", "below", "left"] as const;
-  if (target.closest(".text-viewer-actions, .lightbox-toolbar-actions")) return ["below", "left", "right", "above"] as const;
+  // Keep file-preview toolbar hints vertical. A side placement can make the
+  // download hint appear to belong to the neighboring toolbar control.
+  if (target.closest(".text-viewer-actions, .lightbox-toolbar-actions")) return ["below", "above"] as const;
   // Above is the stable Echo convention. The measured collision pass below
   // changes this only when the actual rendered tooltip cannot fit there.
   return ["above", "below", "left", "right"] as const;
