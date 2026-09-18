@@ -358,8 +358,11 @@ test("handles mention autocomplete, @everyone, and attachments", async ({ page }
   await page.goto("/");
 
   const composer = page.getByTestId("composer-editor");
-  await composer.fill(`Hello @${fixture.bob.displayName}`);
+  await composer.fill(`Hello @${fixture.bob.displayName.split(" ")[0]}`);
+  await composer.press("Space");
   const mentionPopup = page.locator(".mention-popup");
+  await expect(mentionPopup).toBeVisible();
+  await composer.type(fixture.bob.displayName.split(" ").slice(1).join(" "));
   await expect(mentionPopup).toBeVisible();
   const popupBox = await mentionPopup.boundingBox();
   const composerBox = await page.getByTestId("composer").boundingBox();

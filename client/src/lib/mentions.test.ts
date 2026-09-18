@@ -62,6 +62,13 @@ describe("mention autocomplete query", () => {
     assert.deepEqual(match?.slice(1), ["@", "Bob Builder"]);
   });
 
+  it("keeps the popup query alive after the space in a display name", () => {
+    const english = "hello @Bob ".match(MENTION_QUERY_RE);
+    const hebrew = "שלום @אלמוג ".match(MENTION_QUERY_RE);
+    assert.deepEqual(english?.slice(1), ["@", "Bob "]);
+    assert.deepEqual(hebrew?.slice(1), ["@", "אלמוג "]);
+  });
+
   it("does not carry a mention query across a line break", () => {
     assert.equal("hello @Bob\nBuilder".match(MENTION_QUERY_RE), null);
   });

@@ -7,12 +7,12 @@
 // this pattern is specifically for the composer's autocomplete query.
 const MENTION_QUERY_TOKEN = `[\\p{L}\\p{N}\\p{M}_.-]+`;
 export const MENTION_QUERY_RE = new RegExp(
-  `(?:^|\\s)([@#])((?:${MENTION_QUERY_TOKEN}(?:[ \\u00a0]${MENTION_QUERY_TOKEN})*)?)$`,
+  `(?:^|\\s)([@#])((?:${MENTION_QUERY_TOKEN}(?:[ \\u00a0]+${MENTION_QUERY_TOKEN})*[ \\u00a0]*)?)$`,
   "u"
 );
 
 export function peopleSearchSuggestions(users, query, limit = 6) {
-  const normalizedQuery = String(query || "").toLowerCase();
+  const normalizedQuery = String(query || "").trim().toLowerCase();
   const matches = users.filter((user) => (
     String(user.username || "").toLowerCase().includes(normalizedQuery)
     || String(user.displayName || "").toLowerCase().includes(normalizedQuery)

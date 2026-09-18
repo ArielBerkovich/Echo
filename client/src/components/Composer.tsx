@@ -425,7 +425,9 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
 
   const suggestions = useMemo(() => {
     if (!mention) return [];
-    const q = mention.query.toLowerCase();
+    // Keep trailing spaces in the parsed range so replacing a selected
+    // suggestion removes the complete query, but ignore them for matching.
+    const q = mention.query.trim().toLowerCase();
     if (mention.trigger === "#") {
       const available = [...new Map([...channels, ...catalogChannels].map((item) => [item.id, item])).values()];
       return available
