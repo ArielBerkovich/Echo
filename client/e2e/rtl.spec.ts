@@ -89,6 +89,10 @@ test("anchors empty RTL quote and list structures on the right", async ({ page }
     borderRight: getComputedStyle(element).borderRightWidth,
     borderLeft: getComputedStyle(element).borderLeftWidth,
   }))).toEqual({ direction: "rtl", borderRight: "3px", borderLeft: "0px" });
+  await expect.poll(() => composer.locator("blockquote > p").evaluate((element) => ({
+    direction: getComputedStyle(element).direction,
+    textAlign: getComputedStyle(element).textAlign,
+  }))).toEqual({ direction: "rtl", textAlign: "right" });
 
   await composer.fill("");
   await page.getByTitle("Bulleted list").click();

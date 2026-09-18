@@ -10278,6 +10278,10 @@ html[data-interface-direction="rtl"] .composer-editor ul,
 html[data-interface-direction="rtl"] .composer-editor ol {
   direction: rtl;
 }
+html[data-interface-direction="rtl"] .composer-editor p:has(> br.ProseMirror-trailingBreak) {
+  direction: rtl;
+  text-align: right;
+}
 
 .composer-actions {
   display: flex;
