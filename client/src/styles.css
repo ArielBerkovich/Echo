@@ -10207,6 +10207,7 @@ html[data-mode="dark"] .new-messages-button:hover {
 }
 .composer-editor p {
   margin: 0 0 4px;
+  text-align: start;
   /* Determine bidi ordering from each paragraph's own text. This prevents a
      quoted RTL message from making newly typed LTR text reorder punctuation. */
   unicode-bidi: plaintext;

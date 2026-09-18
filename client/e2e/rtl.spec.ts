@@ -24,7 +24,7 @@ async function openProjectChannel(page) {
 test("persists the RTL preference without changing the page chrome direction", async ({ page }) => {
   await page.goto(`/channels/${fixture.projectChannel.name}`);
   await selectRtl(page);
-  await openProjectChannel(page);
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
   await expect(page.getByTestId("channel-title")).toBeVisible();
 
   const chromeDirections = await page.evaluate(() => ({
@@ -105,6 +105,19 @@ test("anchors an empty Hebrew composer and mention popup to the RTL side", async
   await openProjectChannel(page);
 
   const composer = page.getByTestId("composer-editor");
+  await composer.fill("123 !?");
+  await expect.poll(() => composer.locator("p").evaluate((element) => ({
+    direction: getComputedStyle(element).direction,
+    textAlign: getComputedStyle(element).textAlign,
+  }))).toEqual({ direction: "rtl", textAlign: "start" });
+
+  await composer.fill("");
+  await page.getByTitle("Bulleted list").click();
+  await composer.type("טקסט עברי");
+  await expect.poll(() => composer.locator("li p").evaluate((element) => ({
+    direction: getComputedStyle(element).direction,
+    textAlign: getComputedStyle(element).textAlign,
+  }))).toEqual({ direction: "rtl", textAlign: "start" });
   await composer.fill("");
   await expect.poll(() => composer.locator("p").evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
   await expect.poll(() => composer.locator("p").evaluate((element) => getComputedStyle(element).textAlign)).toBe("right");

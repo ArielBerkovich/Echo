@@ -343,6 +343,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     onUpdate: ({ editor: currentEditor }) => syncEditorState(currentEditor),
     onBlur: () => setMention(null),
     onSelectionUpdate: ({ editor: currentEditor }) => {
+      syncParagraphDirections(currentEditor);
       syncMentionContext(currentEditor);
       setEditorState(readEditorState(currentEditor));
     },
@@ -543,12 +544,33 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   function syncParagraphDirections(currentEditor) {
     // ProseMirror owns the DOM during IME composition. Waiting for the
     // composition update avoids fighting its temporary text nodes.
-    if (currentEditor.view.composing) return;
-    const fallback = document.documentElement.dataset.interfaceDirection === "rtl" ? "rtl" : "ltr";
-    currentEditor.view.dom.querySelectorAll("p").forEach((paragraph) => {
-      const direction = firstStrongDirection(paragraph.textContent || "", fallback);
-      if (paragraph.getAttribute("dir") !== direction) paragraph.setAttribute("dir", direction);
-    });
+    if (currentEditor.view.composing) {
+      // Playwright fills and some IMEs can leave the update in a composing
+      // transaction. Defer the direction pass until ProseMirror releases the
+      // composition DOM instead of losing the neutral-character fallback.
+      setTimeout(() => {
+        if (!currentEditor.isDestroyed && !currentEditor.view.composing) syncParagraphDirections(currentEditor);
+      }, 0);
+      return;
+    }
+    const applyDirections = () => {
+      if (currentEditor.isDestroyed || currentEditor.view.composing) return;
+      const fallback = document.documentElement.dataset.interfaceDirection === "rtl" ? "rtl" : "ltr";
+      // A paragraph containing only numbers/punctuation has no strong
+      // character for `dir="auto"` to resolve. Give the editor the interface
+      // fallback in that neutral-only state so it starts on the expected side.
+      const editorText = currentEditor.getText();
+      const hasStrongCharacter = RTL_TEXT_RE.test(editorText) || LTR_TEXT_RE.test(editorText);
+      currentEditor.view.dom.setAttribute("dir", hasStrongCharacter ? "auto" : fallback);
+      currentEditor.view.dom.querySelectorAll("p").forEach((paragraph) => {
+        const direction = firstStrongDirection(paragraph.textContent || "", fallback);
+        if (paragraph.getAttribute("dir") !== direction) paragraph.setAttribute("dir", direction);
+      });
+    };
+    applyDirections();
+    // Tiptap may finish replacing the paragraph DOM after onUpdate returns;
+    // repeat once on the next frame so the direction survives that render.
+    requestAnimationFrame(applyDirections);
   }
 
   function readEditorState(currentEditor) {
