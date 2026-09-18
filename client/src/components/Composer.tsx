@@ -1,4 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { Node } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
@@ -463,17 +464,43 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
           ? (isRtl ? composer.right - popupWidth : composer.left)
           : (isRtl ? caretRight - popupWidth : caretLeft);
         const left = Math.max(8, Math.min(caretAnchor, window.innerWidth - popupWidth - 8));
-        const anchorTop = composerRef.current?.getBoundingClientRect().top ?? caret.top;
-        setMentionPopupPosition({ left, bottom: Math.max(8, window.innerHeight - anchorTop + 8) });
+        const modal = composerRef.current?.closest(".modal");
+        if (modal && composer) {
+          // A modal has its own transformed stacking context. The popup is
+          // portaled to body, so anchor it below the composer when possible;
+          // placing it above can overlap the modal's recipient controls.
+          const popupHeight = 180;
+          const belowTop = composer.bottom + 8;
+          const top = belowTop + popupHeight <= window.innerHeight - 8
+            ? belowTop
+            : Math.max(8, composer.top - popupHeight - 8);
+          setMentionPopupPosition({ left, top });
+        } else {
+          const anchorTop = composerRef.current?.getBoundingClientRect().top ?? caret.top;
+          setMentionPopupPosition({ left, bottom: Math.max(8, window.innerHeight - anchorTop + 8) });
+        }
       } catch {
         const composer = composerRef.current?.getBoundingClientRect();
         if (!composer) return;
         const popupWidth = Math.min(320, window.innerWidth - 16);
         const left = mentionQueryIsRtl ? composer.right - popupWidth : composer.left;
-        setMentionPopupPosition({
-          left: Math.max(8, Math.min(left, window.innerWidth - popupWidth - 8)),
-          bottom: Math.max(8, window.innerHeight - composer.top + 8),
-        });
+        const modal = composerRef.current?.closest(".modal");
+        if (modal) {
+          const popupHeight = 180;
+          const belowTop = composer.bottom + 8;
+          const top = belowTop + popupHeight <= window.innerHeight - 8
+            ? belowTop
+            : Math.max(8, composer.top - popupHeight - 8);
+          setMentionPopupPosition({
+            left: Math.max(8, Math.min(left, window.innerWidth - popupWidth - 8)),
+            top,
+          });
+        } else {
+          setMentionPopupPosition({
+            left: Math.max(8, Math.min(left, window.innerWidth - popupWidth - 8)),
+            bottom: Math.max(8, window.innerHeight - composer.top + 8),
+          });
+        }
       }
     };
     updatePosition();
@@ -1350,11 +1377,12 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
 
       {mentionModal}
 
-      {mention && suggestions.length > 0 && mentionPopupPosition && (
-        <div
+      {mention && suggestions.length > 0 && mentionPopupPosition && (() => {
+        const popup = (
+          <div
           className={`mention-popup ${mentionQueryIsRtl ? "mention-popup-rtl" : "mention-popup-ltr"}`}
           style={mentionPopupPosition}
-        >
+          >
           <div className="mention-popup-head">{mention.trigger === "#" ? "Public channels" : "People and groups"}</div>
           <div className="mention-popup-results">
             {suggestions.map((u, idx) => (
@@ -1364,6 +1392,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                 key={u.id}
                 className={`mention-item ${idx === activeIdx ? "active" : ""}`}
                 onMouseEnter={() => setActiveIdx(idx)}
+                onPointerDown={keepFocus}
                 onMouseDown={keepFocus}
                 onClick={() => applyMention(u)}
               >
@@ -1388,8 +1417,13 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
               </button>
             ))}
           </div>
-        </div>
-      )}
+          </div>
+        );
+        if (typeof document !== "undefined" && composerRef.current?.closest(".modal")) {
+          return createPortal(popup, document.body);
+        }
+        return popup;
+      })()}
 
       {emojiOpen && (
         <EmojiPicker

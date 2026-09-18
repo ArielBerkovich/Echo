@@ -9902,7 +9902,11 @@ html[data-mode="dark"] .new-messages-button:hover {
   overflow: hidden;
   padding: 6px;
   animation: mention-popup-in 0.16s ease both;
-  z-index: 5;
+  /* Composer suggestions must sit above modal overlays as well as the chat
+     surface. The popup is position: fixed, so a low local z-index lets a
+     modal backdrop intercept clicks even while the list is visible. */
+  z-index: 1100;
+  pointer-events: auto;
 }
 .mention-popup-ltr {
   direction: ltr;

@@ -290,8 +290,9 @@ test.describe("forwarding", () => {
     const note = `שלום @${fixture.bob.username}`;
     const noteEditor = modal.getByTestId("composer-editor");
     await noteEditor.fill(note);
-    await expect(modal.locator(".mention-popup")).toBeVisible();
-    await modal.locator(".mention-item").filter({ hasText: fixture.bob.displayName }).click();
+    const mentionPopup = page.locator(".mention-popup");
+    await expect(mentionPopup).toBeVisible();
+    await mentionPopup.locator(".mention-item").filter({ hasText: fixture.bob.displayName }).click();
 
     const expectedNote = `שלום @${fixture.bob.username}`;
     await modal.getByTestId("forward-search").fill(fixture.projectChannel.name);
