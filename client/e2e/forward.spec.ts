@@ -142,7 +142,16 @@ test.describe("forwarding", () => {
     await expect(page.getByRole("dialog")).toHaveAccessibleName("Forward to");
     await expect(modal.locator(".forward-source-card")).toContainText(fixture.messages.searchHit.body);
     await expect(modal.locator(".forward-result-group-label")).toHaveCount(0);
-    await expect(modal.getByTestId("composer-editor")).toHaveAttribute("data-placeholder", "Add context for the recipient…");
+    const noteEditor = modal.getByTestId("composer-editor");
+    await expect(noteEditor).toHaveAttribute("data-placeholder", "Add context for the recipient…");
+    await page.evaluate(() => {
+      document.documentElement.dataset.interfaceDirection = "rtl";
+    });
+    await expect.poll(() => noteEditor.evaluate((editor) => {
+      const paragraph = editor.querySelector("p.is-editor-empty:first-child");
+      const hint = paragraph ? getComputedStyle(paragraph, "::before") : null;
+      return hint && `${paragraph?.dir || ""}|${getComputedStyle(paragraph).direction}|${hint.direction}|${hint.textAlign}|${hint.float}`;
+    })).toBe("|ltr|ltr|left|left");
     await expect(modal.locator(".composer")).toBeVisible();
     await expect(modal.getByTestId("forward-send-selected")).toBeDisabled();
 
