@@ -10422,17 +10422,20 @@ html[data-interface-direction="rtl"] .composer-editor p:has(> br.ProseMirror-tra
 /* The mobile/sidebar navigation layer can overlap the generic modal level;
    keep the schedule dialog visible when it is opened from an RTL composer. */
 .modal-backdrop:has(.schedule-modal) {
-  z-index: 200;
+  /* Keep scheduling above navigation drawers and other app-level panels. */
+  z-index: 1100;
 }
 @media (max-width: 760px) {
-  /* The mobile drawer remains on the physical left even in RTL. Move this
-     dialog into the conversation area instead of centering it underneath the
-     drawer. */
-  html[data-interface-direction="rtl"] .modal-backdrop:has(.schedule-modal) .schedule-modal {
-    width: min(480px, calc(100vw - 180px));
-    max-width: calc(100vw - 180px);
+  /* The mobile drawer remains on the physical left even in RTL. Reserve its
+     width so the dialog never opens underneath it. */
+  .modal-backdrop:has(.schedule-modal) {
+    --mobile-drawer-width: min(300px, calc(100vw - 88px));
+  }
+  .modal-backdrop:has(.schedule-modal) .schedule-modal {
+    width: min(480px, calc(100vw - var(--mobile-drawer-width) - 24px));
+    max-width: calc(100vw - var(--mobile-drawer-width) - 24px);
     animation: none;
-    transform: translateX(clamp(60px, 10vw, 90px));
+    transform: translateX(calc(var(--mobile-drawer-width) / 2));
   }
 }
 .schedule-presets button {

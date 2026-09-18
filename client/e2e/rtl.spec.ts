@@ -155,10 +155,13 @@ test("places the RTL schedule dialog to the right of the mobile drawer", async (
   await expect(dialog).toBeVisible();
   const [box, viewport] = await Promise.all([
     dialog.boundingBox(),
-    page.evaluate(() => ({ width: window.innerWidth })),
+    page.evaluate(() => ({
+      width: window.innerWidth,
+      drawerWidth: Math.min(300, window.innerWidth - 88),
+    })),
   ]);
   expect(box).not.toBeNull();
-  expect(box.x).toBeGreaterThanOrEqual(Math.min(120, viewport.width * 0.2));
+  expect(box.x).toBeGreaterThanOrEqual(viewport.drawerWidth);
   expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1);
 });
 
