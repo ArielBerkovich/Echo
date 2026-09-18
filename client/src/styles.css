@@ -10278,12 +10278,6 @@ html[data-interface-direction="rtl"] .composer-editor ul,
 html[data-interface-direction="rtl"] .composer-editor ol {
   direction: rtl;
 }
-/* A list follows the first strong direction in the current composer content,
-   so an English list inside an RTL block does not put its marker on the right. */
-html[data-interface-direction="rtl"] .composer-editor[data-content-direction="ltr"] ul,
-html[data-interface-direction="rtl"] .composer-editor[data-content-direction="ltr"] ol {
-  direction: ltr !important;
-}
 html[data-interface-direction="rtl"] .composer-editor p:has(> br.ProseMirror-trailingBreak) {
   direction: rtl;
   text-align: right;

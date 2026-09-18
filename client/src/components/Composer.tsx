@@ -551,17 +551,14 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       const editorText = currentEditor.getText();
       const hasStrongCharacter = RTL_TEXT_RE.test(editorText) || LTR_TEXT_RE.test(editorText);
       currentEditor.view.dom.setAttribute("dir", hasStrongCharacter ? "auto" : fallback);
-      currentEditor.view.dom.setAttribute("data-content-direction", firstStrongDirection(editorText, fallback));
       currentEditor.view.dom.querySelectorAll("p").forEach((paragraph) => {
         const direction = firstStrongDirection(paragraph.textContent || "", fallback);
         if (paragraph.getAttribute("dir") !== direction) paragraph.setAttribute("dir", direction);
       });
-      // List markers belong to the list's own direction, not just the
-      // paragraph direction. Follow the first item so English lists keep
-      // their marker on the left while Hebrew lists keep it on the right.
+      // List markers follow the interface direction so the marker and text
+      // stay together on the expected side, regardless of item language.
       currentEditor.view.dom.querySelectorAll("ul, ol").forEach((list) => {
-        const firstItem = list.querySelector("li > p, li");
-        const direction = firstStrongDirection(firstItem?.textContent || "", fallback);
+        const direction = fallback;
         if (list.getAttribute("dir") !== direction) list.setAttribute("dir", direction);
         if (list.style.direction !== direction) list.style.direction = direction;
       });

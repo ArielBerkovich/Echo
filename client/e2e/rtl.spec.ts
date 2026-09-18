@@ -77,7 +77,7 @@ test("places Hebrew quote markers on the RTL side", async ({ page }) => {
   }))).toEqual({ borderRight: "3px", borderLeft: "0px", paddingRight: "12px" });
 });
 
-test("anchors empty RTL quote and list structures on the right", async ({ page }) => {
+test("anchors RTL quote and list structures on the right", async ({ page }) => {
   await page.goto(`/channels/${fixture.projectChannel.name}`);
   await selectRtl(page);
   await openProjectChannel(page);
@@ -107,7 +107,7 @@ test("anchors empty RTL quote and list structures on the right", async ({ page }
   await expect.poll(() => composer.locator("ol").evaluate((element) => ({
     direction: getComputedStyle(element).direction,
     textAlign: getComputedStyle(element).textAlign,
-  }))).toEqual({ direction: "ltr", textAlign: "start" });
+  }))).toEqual({ direction: "rtl", textAlign: "start" });
 });
 
 test("anchors an empty Hebrew composer and mention popup to the RTL side", async ({ page }) => {
