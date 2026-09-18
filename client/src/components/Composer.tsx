@@ -39,6 +39,8 @@ const SCHEDULE_PRESETS = [
 ];
 
 const MAX_SURVEY_OPTION_CHARACTERS = 80;
+const MENTION_POPUP_WIDTH = 320;
+const MODAL_MENTION_POPUP_HEIGHT = 180;
 const RTL_TEXT_RE = /[\u0590-\u08ff]/;
 const LTR_TEXT_RE = /[A-Za-z\u00c0-\u02af]/;
 
@@ -451,11 +453,29 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       return undefined;
     }
     const updatePosition = () => {
+      const composer = composerRef.current?.getBoundingClientRect();
+      const popupWidth = Math.min(MENTION_POPUP_WIDTH, window.innerWidth - 16);
+      const isRtl = mentionQueryIsRtl;
+      const modal = composerRef.current?.closest(".modal");
+      const placePopup = (anchorLeft, fallbackTop) => {
+        const left = Math.max(8, Math.min(anchorLeft, window.innerWidth - popupWidth - 8));
+        if (modal && composer) {
+          // A modal has its own transformed stacking context. The popup is
+          // portaled to body, so anchor it below the composer when possible;
+          // placing it above can overlap the modal's recipient controls.
+          const belowTop = composer.bottom + 8;
+          const top = belowTop + MODAL_MENTION_POPUP_HEIGHT <= window.innerHeight - 8
+            ? belowTop
+            : Math.max(8, composer.top - MODAL_MENTION_POPUP_HEIGHT - 8);
+          setMentionPopupPosition({ left, top });
+          return;
+        }
+        const anchorTop = composer?.top ?? fallbackTop;
+        setMentionPopupPosition({ left, bottom: Math.max(8, window.innerHeight - anchorTop + 8) });
+      };
+
       try {
         const caret = editor.view.coordsAtPos(mention.to);
-        const composer = composerRef.current?.getBoundingClientRect();
-        const popupWidth = Math.min(320, window.innerWidth - 16);
-        const isRtl = mentionQueryIsRtl;
         // Keep the popup next to the active text. The paragraph direction
         // decides which edge follows the caret; clamp it to the viewport.
         const caretLeft = Number.isFinite(caret.left) ? caret.left : 8;
@@ -463,44 +483,11 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
         const caretAnchor = mentionAtEmptyParagraphStart && composer
           ? (isRtl ? composer.right - popupWidth : composer.left)
           : (isRtl ? caretRight - popupWidth : caretLeft);
-        const left = Math.max(8, Math.min(caretAnchor, window.innerWidth - popupWidth - 8));
-        const modal = composerRef.current?.closest(".modal");
-        if (modal && composer) {
-          // A modal has its own transformed stacking context. The popup is
-          // portaled to body, so anchor it below the composer when possible;
-          // placing it above can overlap the modal's recipient controls.
-          const popupHeight = 180;
-          const belowTop = composer.bottom + 8;
-          const top = belowTop + popupHeight <= window.innerHeight - 8
-            ? belowTop
-            : Math.max(8, composer.top - popupHeight - 8);
-          setMentionPopupPosition({ left, top });
-        } else {
-          const anchorTop = composerRef.current?.getBoundingClientRect().top ?? caret.top;
-          setMentionPopupPosition({ left, bottom: Math.max(8, window.innerHeight - anchorTop + 8) });
-        }
+        placePopup(caretAnchor, caret.top);
       } catch {
-        const composer = composerRef.current?.getBoundingClientRect();
         if (!composer) return;
-        const popupWidth = Math.min(320, window.innerWidth - 16);
         const left = mentionQueryIsRtl ? composer.right - popupWidth : composer.left;
-        const modal = composerRef.current?.closest(".modal");
-        if (modal) {
-          const popupHeight = 180;
-          const belowTop = composer.bottom + 8;
-          const top = belowTop + popupHeight <= window.innerHeight - 8
-            ? belowTop
-            : Math.max(8, composer.top - popupHeight - 8);
-          setMentionPopupPosition({
-            left: Math.max(8, Math.min(left, window.innerWidth - popupWidth - 8)),
-            top,
-          });
-        } else {
-          setMentionPopupPosition({
-            left: Math.max(8, Math.min(left, window.innerWidth - popupWidth - 8)),
-            bottom: Math.max(8, window.innerHeight - composer.top + 8),
-          });
-        }
+        placePopup(left, composer.top);
       }
     };
     updatePosition();
