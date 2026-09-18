@@ -94,4 +94,12 @@ describe("mention people suggestions", () => {
   it("returns every result as soon as all remaining users share a display name", () => {
     assert.deepEqual(peopleSearchSuggestions(duplicateUsers, "Same "), duplicateUsers);
   });
+
+  it("does not fall back to completed names after a trailing space", () => {
+    const matches = peopleSearchSuggestions([
+      { id: "short", username: "a.b", displayName: "A B" },
+      { id: "long", username: "a.b.cohen", displayName: "A B Cohen" },
+    ], "A B ");
+    assert.deepEqual(matches.map((user) => user.id), ["long"]);
+  });
 });

@@ -12,7 +12,9 @@ export const MENTION_QUERY_RE = new RegExp(
 );
 
 export function peopleSearchSuggestions(users, query, limit = 6) {
-  const normalizedQuery = String(query || "").trim().toLowerCase();
+  // Preserve one trailing space: `A ` should match the next word in a
+  // display name, while `A B ` should not fall back to exact `A B` results.
+  const normalizedQuery = String(query || "").toLowerCase();
   const matches = users.filter((user) => (
     String(user.username || "").toLowerCase().includes(normalizedQuery)
     || String(user.displayName || "").toLowerCase().includes(normalizedQuery)
