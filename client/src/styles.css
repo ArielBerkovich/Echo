@@ -10269,6 +10269,14 @@ html[data-mode="dark"] .new-messages-button:hover {
   border-inline-start: 3px solid var(--blue-400);
   color: #475569;
 }
+/* An empty structural block has no strong character for ProseMirror's
+   direction detector. Anchor it to the selected interface direction until
+   the user enters text. */
+html[data-interface-direction="rtl"] .composer-editor blockquote,
+html[data-interface-direction="rtl"] .composer-editor ul,
+html[data-interface-direction="rtl"] .composer-editor ol {
+  direction: rtl;
+}
 
 .composer-actions {
   display: flex;

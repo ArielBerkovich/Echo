@@ -77,6 +77,28 @@ test("places Hebrew quote markers on the RTL side", async ({ page }) => {
   }))).toEqual({ borderRight: "3px", borderLeft: "0px", paddingRight: "12px" });
 });
 
+test("anchors empty RTL quote and list structures on the right", async ({ page }) => {
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await selectRtl(page);
+  await openProjectChannel(page);
+
+  const composer = page.getByTestId("composer-editor");
+  await page.getByTitle("Blockquote").click();
+  await expect.poll(() => composer.locator("blockquote").evaluate((element) => ({
+    direction: getComputedStyle(element).direction,
+    borderRight: getComputedStyle(element).borderRightWidth,
+    borderLeft: getComputedStyle(element).borderLeftWidth,
+  }))).toEqual({ direction: "rtl", borderRight: "3px", borderLeft: "0px" });
+
+  await composer.fill("");
+  await page.getByTitle("Bulleted list").click();
+  await expect.poll(() => composer.locator("ul").evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
+
+  await composer.fill("");
+  await page.getByTitle("Ordered list").click();
+  await expect.poll(() => composer.locator("ol").evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
+});
+
 test("anchors an empty Hebrew composer and mention popup to the RTL side", async ({ page }) => {
   await page.goto(`/channels/${fixture.projectChannel.name}`);
   await selectRtl(page);
