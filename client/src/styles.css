@@ -10424,6 +10424,17 @@ html[data-interface-direction="rtl"] .composer-editor p:has(> br.ProseMirror-tra
 .modal-backdrop:has(.schedule-modal) {
   z-index: 200;
 }
+@media (max-width: 760px) {
+  /* The mobile drawer remains on the physical left even in RTL. Move this
+     dialog into the conversation area instead of centering it underneath the
+     drawer. */
+  html[data-interface-direction="rtl"] .modal-backdrop:has(.schedule-modal) .schedule-modal {
+    width: min(480px, calc(100vw - 180px));
+    max-width: calc(100vw - 180px);
+    animation: none;
+    transform: translateX(clamp(60px, 10vw, 90px));
+  }
+}
 .schedule-presets button {
   background: var(--surface-2);
   border: 1px solid var(--border);

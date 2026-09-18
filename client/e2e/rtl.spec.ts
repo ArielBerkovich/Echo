@@ -142,6 +142,26 @@ test("anchors an empty Hebrew composer and mention popup to the RTL side", async
   expect(Math.abs(popupBox.y + popupBox.height - composerBox.y)).toBeLessThan(20);
 });
 
+test("places the RTL schedule dialog to the right of the mobile drawer", async ({ page }) => {
+  await page.setViewportSize({ width: 742, height: 900 });
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await selectRtl(page);
+  await openProjectChannel(page);
+
+  await page.getByTestId("composer-editor").fill("הודעה לתזמון");
+  await page.getByTestId("composer-send-options").press("Enter");
+  await page.getByRole("button", { name: "Custom time…" }).press("Enter");
+  const dialog = page.getByRole("dialog", { name: "Schedule message" });
+  await expect(dialog).toBeVisible();
+  const [box, viewport] = await Promise.all([
+    dialog.boundingBox(),
+    page.evaluate(() => ({ width: window.innerWidth })),
+  ]);
+  expect(box).not.toBeNull();
+  expect(box.x).toBeGreaterThanOrEqual(Math.min(120, viewport.width * 0.2));
+  expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1);
+});
+
 test("keeps message actions LTR while a Hebrew message surface is RTL", async ({ page }) => {
   const hebrewBody = `הודעה עברית ${fixture.suffix}`;
   await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
