@@ -183,6 +183,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   const isThread = !!parentId; // a thread reply composer (hides channel-level scheduling)
   const [mention, setMention] = useState(null); // { trigger, query, from, to } or null
   const composerRef = useRef(null);
+  const mentionPopupRef = useRef(null);
   const [mentionPopupPosition, setMentionPopupPosition] = useState(null);
   const [rhssoGroups, setRhssoGroups] = useState([]);
   const [catalogChannels, setCatalogChannels] = useState([]);
@@ -499,6 +500,23 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     };
   }, [editor, mention, mentionAtEmptyParagraphStart, mentionQueryIsRtl, suggestions.length]);
 
+  // The initial modal position uses a conservative estimate so the popup can
+  // render before its size is known. Correct it from the actual rendered
+  // height, which matters when many people/channels are suggested.
+  useLayoutEffect(() => {
+    if (!mention || !mentionPopupPosition?.top || !mentionPopupRef.current) return;
+    const composer = composerRef.current?.getBoundingClientRect();
+    if (!composer || !composerRef.current?.closest(".modal")) return;
+    const popupHeight = mentionPopupRef.current.getBoundingClientRect().height;
+    const belowTop = composer.bottom + 8;
+    const top = belowTop + popupHeight <= window.innerHeight - 8
+      ? belowTop
+      : Math.max(8, composer.top - popupHeight - 8);
+    if (Math.abs(mentionPopupPosition.top - top) > 1) {
+      setMentionPopupPosition((current) => current ? { ...current, top } : current);
+    }
+  }, [mention, mentionPopupPosition, suggestions.length]);
+
   useEffect(() => {
     activeMentionItemRef.current?.scrollIntoView({ block: "nearest" });
   }, [activeIdx, suggestions.length]);
@@ -521,6 +539,9 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   // for the whole editor lets neutral characters such as @ and punctuation
   // re-run bidi estimation as the user types, which can flip mixed text.
   function syncParagraphDirections(currentEditor) {
+    // ProseMirror owns the DOM during IME composition. Waiting for the
+    // composition update avoids fighting its temporary text nodes.
+    if (currentEditor.view.composing) return;
     const fallback = document.documentElement.dataset.interfaceDirection === "rtl" ? "rtl" : "ltr";
     currentEditor.view.dom.querySelectorAll("p").forEach((paragraph) => {
       const direction = firstStrongDirection(paragraph.textContent || "", fallback);
@@ -1367,11 +1388,12 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       {mention && suggestions.length > 0 && mentionPopupPosition && (() => {
         const popup = (
           <div
-          className={`mention-popup ${mentionQueryIsRtl ? "mention-popup-rtl" : "mention-popup-ltr"}`}
-          style={mentionPopupPosition}
+            ref={mentionPopupRef}
+            className={`mention-popup ${mentionQueryIsRtl ? "mention-popup-rtl" : "mention-popup-ltr"}`}
+            style={mentionPopupPosition}
           >
-          <div className="mention-popup-head">{mention.trigger === "#" ? "Public channels" : "People and groups"}</div>
-          <div className="mention-popup-results">
+            <div className="mention-popup-head">{mention.trigger === "#" ? "Public channels" : "People and groups"}</div>
+            <div className="mention-popup-results">
             {suggestions.map((u, idx) => (
               <button
                 ref={idx === activeIdx ? activeMentionItemRef : null}
@@ -1403,7 +1425,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                 </span>
               </button>
             ))}
-          </div>
+            </div>
           </div>
         );
         if (typeof document !== "undefined" && composerRef.current?.closest(".modal")) {
