@@ -10419,6 +10419,11 @@ html[data-interface-direction="rtl"] .composer-editor p:has(> br.ProseMirror-tra
   flex-wrap: wrap;
   margin: 14px 0 10px;
 }
+/* The mobile/sidebar navigation layer can overlap the generic modal level;
+   keep the schedule dialog visible when it is opened from an RTL composer. */
+.modal-backdrop:has(.schedule-modal) {
+  z-index: 200;
+}
 .schedule-presets button {
   background: var(--surface-2);
   border: 1px solid var(--border);
