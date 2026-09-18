@@ -165,6 +165,23 @@ test("places the RTL schedule dialog to the right of the mobile drawer", async (
   expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1);
 });
 
+test("keeps the RTL send-options menu above navigation", async ({ page }) => {
+  await page.setViewportSize({ width: 742, height: 900 });
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await selectRtl(page);
+  await openProjectChannel(page);
+
+  await page.getByTestId("composer-editor").fill("הודעה לתזמון");
+  await page.getByTestId("composer-send-options").press("Enter");
+  const menu = page.locator(".send-menu");
+  await expect(menu).toBeVisible();
+  const box = await menu.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(742);
+  await expect.poll(() => menu.evaluate((element) => getComputedStyle(element).zIndex)).toBe("1000");
+});
+
 test("keeps the RTL schedule dialog out of the desktop navigation column", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(`/channels/${fixture.projectChannel.name}`);

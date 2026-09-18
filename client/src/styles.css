@@ -10314,7 +10314,9 @@ html[data-interface-direction="rtl"] .composer-editor p:has(> br.ProseMirror-tra
   border-radius: 10px;
   box-shadow: var(--shadow-md);
   padding: 6px;
-  z-index: 30;
+  /* The mobile navigation drawer is z-index 60; scheduling options must sit
+     above it while remaining below full-screen modal overlays. */
+  z-index: 1000;
 }
 .send-menu-head {
   font-size: 11px;
@@ -10350,6 +10352,12 @@ html[data-interface-direction="rtl"] .composer-editor p:has(> br.ProseMirror-tra
   color: var(--muted);
   opacity: 0.55;
   cursor: not-allowed;
+}
+html[data-interface-direction="rtl"] .send-menu {
+  /* In RTL the send controls sit on the physical left. Anchor the menu from
+     that side so its 210px panel does not extend off-screen. */
+  right: auto;
+  left: 0;
 }
 
 /* Pending-scheduled banner above the composer */
