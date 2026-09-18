@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ActivityIcon, BookmarkIcon, CompassIcon, ContactRoundIcon, HomeIcon, MessageSquareTextIcon, SettingsIcon } from "lucide-react";
 import Avatar from "./Avatar.js";
-import { LeaveIcon } from "./Icons.js";
 import Logo from "./Logo.js";
+import { LeaveIcon, MoreIcon } from "./Icons.js";
 import ProfilePictureDialog from "./ProfilePictureDialog.js";
 import DisplayNameDialog from "./DisplayNameDialog.js";
 import ConfirmDialog from "./ConfirmDialog.js";
@@ -10,7 +10,6 @@ import { api } from "../api.js";
 import { uploadSizeError } from "../lib/uploads.js";
 import { useAuthUrl, useAuthUrls } from "../lib/useAuthUrl.js";
 import { shortcutTitle } from "../lib/keyboardShortcuts.js";
-import { MoreIcon } from "./Icons.js";
 
 const icon = (Icon) => () => <Icon size={22} strokeWidth={2} />;
 const ITEMS = [
@@ -84,8 +83,8 @@ export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroup
         {workspaceLoading || (workspace?.logoUrl && !workspaceLogoSrc)
           ? <span className={`rail-brand-slot${workspace?.logoUrl ? " is-workspace-logo" : ""}`} aria-hidden="true" />
           : workspaceLogoSrc
-          ? <img src={workspaceLogoSrc} width={54} height={54} className="echo-logo workspace-logo-mark" alt="" />
-          : <Logo size={54} />}
+          ? <img src={workspaceLogoSrc} width={38} height={38} className="echo-logo workspace-logo-mark" alt="" />
+          : <Logo size={38} />}
         {!workspaceLoading && workspace?.name && workspace.name !== "Echo" && <span className="rail-brand-name">{workspace.name}</span>}
       </div>
       <div className="rail-top">
