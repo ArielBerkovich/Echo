@@ -4604,9 +4604,9 @@ html[data-interface-direction="rtl"] .composer-editor p.is-editor-empty:first-ch
   text-align: right;
 }
 html[data-interface-direction="rtl"] .composer-editor p.is-editor-empty:first-child::before {
-  float: right;
-  direction: rtl;
-  text-align: right;
+  float: left;
+  direction: ltr;
+  text-align: left;
 }
 .composer.has-mention-empty.has-mention-rtl .composer-editor {
   direction: rtl;
@@ -8789,17 +8789,6 @@ html[data-interface-direction="rtl"] .message .msg-menu {
   min-height: 46px;
   max-height: 130px;
   font-size: 13px;
-}
-/* The empty forward-note hint is English UI copy. Keep its punctuation in
-   LTR order even when the surrounding composer is in RTL mode. */
-html[data-interface-direction="rtl"] .forward-note-field .composer-editor p.is-editor-empty:first-child {
-  direction: ltr;
-  text-align: left;
-}
-html[data-interface-direction="rtl"] .forward-note-field .composer-editor p.is-editor-empty:first-child::before {
-  float: left;
-  direction: ltr;
-  text-align: left;
 }
 .forward-note-field .composer-actions {
   min-height: 35px;
