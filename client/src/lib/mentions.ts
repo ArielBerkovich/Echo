@@ -7,7 +7,7 @@
 // this pattern is specifically for the composer's autocomplete query.
 const MENTION_QUERY_TOKEN = `[\\p{L}\\p{N}\\p{M}_.-]+`;
 export const MENTION_QUERY_RE = new RegExp(
-  `(?:^|\\s)([@#])((?:${MENTION_QUERY_TOKEN}(?:[ \\u00a0]+${MENTION_QUERY_TOKEN})*[ \\u00a0]*)?)$`,
+  `(?:^|\\s)([@#])((?:${MENTION_QUERY_TOKEN}(?:[ \\u00a0]+${MENTION_QUERY_TOKEN})*[ \\u00a0]?)?)$`,
   "u"
 );
 

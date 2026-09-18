@@ -67,6 +67,7 @@ describe("mention autocomplete query", () => {
     const hebrew = "שלום @אלמוג ".match(MENTION_QUERY_RE);
     assert.deepEqual(english?.slice(1), ["@", "Bob "]);
     assert.deepEqual(hebrew?.slice(1), ["@", "אלמוג "]);
+    assert.equal("שלום @אלמוג  ".match(MENTION_QUERY_RE), null);
   });
 
   it("does not carry a mention query across a line break", () => {
