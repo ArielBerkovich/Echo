@@ -807,7 +807,7 @@ input:focus {
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  gap: 0;
+  gap: 6px;
   padding: 24px;
   color: #eaf1ff;
   background:
@@ -1014,7 +1014,7 @@ input:focus {
   position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  padding: 4px;
+  padding: 5px;
   background: var(--surface-2);
   border-radius: 14px;
   box-shadow: inset 0 0 0 1px rgba(15, 39, 72, 0.04);
@@ -1023,7 +1023,7 @@ input:focus {
   position: relative;
   z-index: 1;
   padding: 10px 10px 11px;
-  background: none;
+  background: var(--rail-bg);
   font-size: 13.5px;
   font-weight: 600;
   color: var(--muted);
@@ -1478,7 +1478,7 @@ input:focus {
     padding-bottom: 8px;
   }
   .auth-username-options {
-    gap: 2px;
+    gap: 6px;
     margin-top: -7px;
     padding-block: 4px;
   }
@@ -1727,7 +1727,7 @@ html[data-mode="dark"] .backend-connection-error {
 }
 .manager-select-field {
   display: grid;
-  gap: 7px;
+  gap: 4px;
 }
 .manager-select-field > span {
   color: var(--text);
@@ -2235,7 +2235,7 @@ html[data-mode="dark"] .backend-connection-error {
 @media (min-width: 761px) {
   .workspace-frame {
     display: grid;
-    grid-template-columns: 88px 260px minmax(0, 1fr);
+    grid-template-columns: 68px 260px minmax(0, 1fr);
     grid-template-rows: 38px minmax(0, 1fr);
     flex: 1;
     min-width: 0;
@@ -2246,7 +2246,7 @@ html[data-mode="dark"] .backend-connection-error {
   }
 
   .workspace-frame:has(.app-nav.no-sidebar) {
-    grid-template-columns: 88px minmax(0, 1fr);
+    grid-template-columns: 68px minmax(0, 1fr);
   }
 
   .workspace-frame > .app-nav {
@@ -2260,10 +2260,18 @@ html[data-mode="dark"] .backend-connection-error {
   }
 
   .workspace-rail .rail {
+    width: 68px;
     height: 100%;
     box-sizing: border-box;
     background: transparent;
     border-right-color: transparent;
+    padding: 14px 7px 18px;
+  }
+
+  .workspace-rail .rail-brand .echo-logo,
+  .workspace-rail .rail-brand .rail-brand-slot {
+    width: 38px;
+    height: 38px;
   }
 
   .workspace-search {
@@ -2272,7 +2280,17 @@ html[data-mode="dark"] .backend-connection-error {
     min-width: 0;
     height: 38px;
     background: transparent;
+    position: relative;
+  }
+
+  .workspace-search::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
     border-bottom: 1px solid color-mix(in srgb, var(--on-navy) 10%, transparent);
+    pointer-events: none;
   }
 
   .workspace-search-inner {
@@ -2572,10 +2590,13 @@ html[data-mode="dark"] .backend-connection-error {
   z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  row-gap: 6px;
   align-items: center;
-  width: 100%;
-  padding: 5px;
+  width: 54px;
+  box-sizing: border-box;
+  align-self: center;
+  margin-inline: auto;
+  padding: 5px 4px;
   border: 1px solid color-mix(in srgb, var(--on-navy) 10%, transparent);
   border-radius: 23px;
   background: color-mix(in srgb, var(--on-navy) 6%, transparent);
@@ -2717,8 +2738,9 @@ html[data-mode="dark"] .backend-connection-error {
 }
 .rail-item {
   position: relative;
-  width: 60px;
-  min-height: 58px;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2726,9 +2748,9 @@ html[data-mode="dark"] .backend-connection-error {
   gap: 4px;
   background: none;
   color: var(--on-navy-muted);
-  padding: 8px 0 7px;
+  padding: 0;
   border: 1px solid transparent;
-  border-radius: 18px;
+  border-radius: 14px;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -11499,6 +11521,10 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     pointer-events: auto;
   }
 
+  .workspace-search::after {
+    left: 0;
+  }
+
   .workspace-search .search-box {
     height: 63px;
     display: flex;
@@ -11507,6 +11533,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   }
 
   .workspace-search-inner {
+    position: relative;
     display: block;
     width: 100%;
     padding: 0 10px;
@@ -12480,16 +12507,20 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     font-size: 11px;
   }
   .rail-top {
-    gap: 9px;
-    padding: 6px;
+    width: 54px;
+    flex: none;
+    max-width: none;
+    row-gap: 6px;
+    padding: 5px 4px;
     border-radius: 27px;
   }
   .rail-item {
-    width: 72px;
-    min-height: 70px;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
     gap: 5px;
-    padding-block: 10px;
-    border-radius: 21px;
+    padding-block: 0;
+    border-radius: 17px;
     font-size: 12px;
   }
   .rail-active-indicator {
@@ -13384,9 +13415,9 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   }
 
   .rail-top {
-    width: auto;
-    flex: 1;
-    max-width: 360px;
+    width: 68px;
+    flex: none;
+    max-width: none;
     flex-direction: row;
     justify-content: center;
     gap: 2px;
