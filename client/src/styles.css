@@ -2219,7 +2219,7 @@ html[data-mode="dark"] .backend-connection-error {
 @media (min-width: 761px) {
   .workspace-frame {
     display: grid;
-    grid-template-columns: 72px 260px minmax(0, 1fr);
+    grid-template-columns: 68px 260px minmax(0, 1fr);
     grid-template-rows: 38px minmax(0, 1fr);
     flex: 1;
     min-width: 0;
@@ -2230,7 +2230,7 @@ html[data-mode="dark"] .backend-connection-error {
   }
 
   .workspace-frame:has(.app-nav.no-sidebar) {
-    grid-template-columns: 72px minmax(0, 1fr);
+    grid-template-columns: 68px minmax(0, 1fr);
   }
 
   .workspace-frame > .app-nav {
@@ -2244,12 +2244,12 @@ html[data-mode="dark"] .backend-connection-error {
   }
 
   .workspace-rail .rail {
-    width: 72px;
+    width: 68px;
     height: 100%;
     box-sizing: border-box;
     background: transparent;
     border-right-color: transparent;
-    padding-top: 14px;
+    padding: 14px 7px 18px;
   }
 
   .workspace-rail .rail-brand .echo-logo,
