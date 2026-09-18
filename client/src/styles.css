@@ -8555,9 +8555,8 @@ html[data-interface-direction="rtl"] .message .msg-menu {
   color: var(--text);
   font-size: 13.5px;
   line-height: 1.45;
-  /* Match regular message bodies: preserve RTL character ordering while
-     keeping the note anchored to the left edge of the message column. */
-  text-align: left;
+  /* Follow the note's dir="auto" direction while keeping LTR notes unchanged. */
+  text-align: start;
 }
 
 /* Recipient-first forward dialog. Keep context compact and let the recipient

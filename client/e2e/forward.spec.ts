@@ -294,6 +294,9 @@ test.describe("forwarding", () => {
 
   test("preserves Hebrew notes when forwarding", async ({ page }) => {
     await openForwardDialog(page);
+    await page.evaluate(() => {
+      document.documentElement.dataset.interfaceDirection = "rtl";
+    });
 
     const modal = forwardModal(page);
     const note = `שלום @${fixture.bob.username}`;
@@ -315,7 +318,7 @@ test.describe("forwarding", () => {
       `@${fixture.bob.displayName}`
     );
     await expect(forwardedNote).toHaveAttribute("dir", "auto");
-    await expect(forwardedNote).toHaveCSS("text-align", "left");
+    await expect(forwardedNote).toHaveCSS("text-align", "start");
     await expectForwardedWithNote(page, fixture.projectChannel.id, expectedNote);
   });
 
