@@ -165,6 +165,22 @@ test("places the RTL schedule dialog to the right of the mobile drawer", async (
   expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1);
 });
 
+test("keeps the RTL schedule dialog out of the desktop navigation column", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await selectRtl(page);
+  await openProjectChannel(page);
+
+  await page.getByTestId("composer-editor").fill("הודעה לתזמון בשולחן העבודה");
+  await page.getByTestId("composer-send-options").press("Enter");
+  await page.getByRole("button", { name: "Custom time…" }).press("Enter");
+  const dialog = page.getByRole("dialog", { name: "Schedule message" });
+  await expect(dialog).toBeVisible();
+  const box = await dialog.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box.x).toBeGreaterThanOrEqual(360);
+});
+
 test("keeps message actions LTR while a Hebrew message surface is RTL", async ({ page }) => {
   const hebrewBody = `הודעה עברית ${fixture.suffix}`;
   await requestAsToken(page, fixture.alice.token, "/messages/upsert", {

@@ -1139,6 +1139,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
         <Modal
           title="Schedule message"
           className="schedule-modal"
+          backdropClassName="schedule-modal-backdrop"
           onClose={() => {
             setScheduleAt(null);
             setScheduleError(null);
