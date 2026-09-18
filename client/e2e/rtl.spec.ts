@@ -101,6 +101,13 @@ test("anchors empty RTL quote and list structures on the right", async ({ page }
   await composer.fill("");
   await page.getByTitle("Ordered list").click();
   await expect.poll(() => composer.locator("ol").evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
+
+  await composer.fill("");
+  await composer.type("English list item");
+  await expect.poll(() => composer.locator("ol").evaluate((element) => ({
+    direction: getComputedStyle(element).direction,
+    textAlign: getComputedStyle(element).textAlign,
+  }))).toEqual({ direction: "ltr", textAlign: "start" });
 });
 
 test("anchors an empty Hebrew composer and mention popup to the RTL side", async ({ page }) => {

@@ -542,19 +542,8 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   // for the whole editor lets neutral characters such as @ and punctuation
   // re-run bidi estimation as the user types, which can flip mixed text.
   function syncParagraphDirections(currentEditor) {
-    // ProseMirror owns the DOM during IME composition. Waiting for the
-    // composition update avoids fighting its temporary text nodes.
-    if (currentEditor.view.composing) {
-      // Playwright fills and some IMEs can leave the update in a composing
-      // transaction. Defer the direction pass until ProseMirror releases the
-      // composition DOM instead of losing the neutral-character fallback.
-      setTimeout(() => {
-        if (!currentEditor.isDestroyed && !currentEditor.view.composing) syncParagraphDirections(currentEditor);
-      }, 0);
-      return;
-    }
     const applyDirections = () => {
-      if (currentEditor.isDestroyed || currentEditor.view.composing) return;
+      if (currentEditor.isDestroyed) return;
       const fallback = document.documentElement.dataset.interfaceDirection === "rtl" ? "rtl" : "ltr";
       // A paragraph containing only numbers/punctuation has no strong
       // character for `dir="auto"` to resolve. Give the editor the interface
@@ -562,9 +551,19 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       const editorText = currentEditor.getText();
       const hasStrongCharacter = RTL_TEXT_RE.test(editorText) || LTR_TEXT_RE.test(editorText);
       currentEditor.view.dom.setAttribute("dir", hasStrongCharacter ? "auto" : fallback);
+      currentEditor.view.dom.setAttribute("data-content-direction", firstStrongDirection(editorText, fallback));
       currentEditor.view.dom.querySelectorAll("p").forEach((paragraph) => {
         const direction = firstStrongDirection(paragraph.textContent || "", fallback);
         if (paragraph.getAttribute("dir") !== direction) paragraph.setAttribute("dir", direction);
+      });
+      // List markers belong to the list's own direction, not just the
+      // paragraph direction. Follow the first item so English lists keep
+      // their marker on the left while Hebrew lists keep it on the right.
+      currentEditor.view.dom.querySelectorAll("ul, ol").forEach((list) => {
+        const firstItem = list.querySelector("li > p, li");
+        const direction = firstStrongDirection(firstItem?.textContent || "", fallback);
+        if (list.getAttribute("dir") !== direction) list.setAttribute("dir", direction);
+        if (list.style.direction !== direction) list.style.direction = direction;
       });
     };
     applyDirections();
