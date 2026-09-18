@@ -52,6 +52,31 @@ test("keeps Hebrew paragraphs RTL, including after a line break", async ({ page 
   }
 });
 
+test("places Hebrew quote markers on the RTL side", async ({ page }) => {
+  const quoteBody = `> ציטוט עברי ${fixture.suffix}`;
+  await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.projectChannel.id,
+      body: quoteBody,
+      externalKey: `rtl-quote-${fixture.suffix}`,
+    },
+  });
+
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await selectRtl(page);
+  await openProjectChannel(page);
+
+  const message = page.locator(".message").filter({ hasText: `ציטוט עברי ${fixture.suffix}` }).last();
+  const quote = message.locator("blockquote");
+  await expect(quote).toBeVisible();
+  await expect.poll(() => quote.evaluate((element) => ({
+    borderRight: getComputedStyle(element).borderRightWidth,
+    borderLeft: getComputedStyle(element).borderLeftWidth,
+    paddingRight: getComputedStyle(element).paddingRight,
+  }))).toEqual({ borderRight: "3px", borderLeft: "0px", paddingRight: "12px" });
+});
+
 test("anchors an empty Hebrew composer and mention popup to the RTL side", async ({ page }) => {
   await page.goto(`/channels/${fixture.projectChannel.name}`);
   await selectRtl(page);
