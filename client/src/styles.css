@@ -10345,7 +10345,11 @@ html[data-interface-direction="ltr"] .composer-user-mention {
 html[data-interface-direction="rtl"] .composer-editor blockquote,
 html[data-interface-direction="rtl"] .composer-editor ul,
 html[data-interface-direction="rtl"] .composer-editor ol {
-  direction: rtl;
+  direction: rtl !important;
+}
+html[data-interface-direction="ltr"] .composer-editor ul,
+html[data-interface-direction="ltr"] .composer-editor ol {
+  direction: ltr !important;
 }
 html[data-interface-direction="rtl"] .composer-editor p:has(> br.ProseMirror-trailingBreak) {
   direction: rtl;

@@ -165,26 +165,29 @@ test("keeps LTR list text beside the marker", async ({ page }) => {
   }))).toEqual({ direction: "ltr", textAlign: "left" });
 });
 
-for (const listCase of [
-  { name: "English list in RTL", interfaceDirection: "rtl", text: "English list item", itemDirection: "ltr", itemAlign: "left" },
+for (const listType of [
+  { name: "bullet", title: "Bulleted list", selector: "ul" },
+  { name: "numbered", title: "Ordered list", selector: "ol" },
+]) for (const listCase of [
+  { name: "English list in RTL", interfaceDirection: "rtl", text: "English list item", itemDirection: "rtl", itemAlign: "right" },
   { name: "Hebrew list in RTL", interfaceDirection: "rtl", text: "טקסט עברי", itemDirection: "rtl", itemAlign: "right" },
   { name: "English list in LTR", interfaceDirection: "ltr", text: "English list item", itemDirection: "ltr", itemAlign: "left" },
-  { name: "Hebrew list in LTR", interfaceDirection: "ltr", text: "טקסט עברי", itemDirection: "rtl", itemAlign: "right" },
+  { name: "Hebrew list in LTR", interfaceDirection: "ltr", text: "טקסט עברי", itemDirection: "ltr", itemAlign: "left" },
 ]) {
-  test(`keeps ${listCase.name} beside its list marker`, async ({ page }) => {
+  test(`keeps ${listCase.name} in a ${listType.name} list beside its marker`, async ({ page }) => {
     await page.goto(`/channels/${fixture.projectChannel.name}`);
     await selectInterfaceDirection(page, listCase.interfaceDirection);
     await openProjectChannel(page);
 
     const composer = page.getByTestId("composer-editor");
-    await page.getByTitle("Bulleted list").click();
+    await page.getByTitle(listType.title).click();
     await composer.type(listCase.text);
 
-    await expect.poll(() => composer.locator("ul").evaluate((element) => ({
+    await expect.poll(() => composer.locator(listType.selector).evaluate((element) => ({
       direction: getComputedStyle(element).direction,
       textAlign: getComputedStyle(element).textAlign,
     }))).toEqual({ direction: listCase.interfaceDirection, textAlign: "start" });
-    await expect.poll(() => composer.locator("ul li > p").evaluate((element) => ({
+    await expect.poll(() => composer.locator(`${listType.selector} li > p`).evaluate((element) => ({
       direction: getComputedStyle(element).direction,
       textAlign: getComputedStyle(element).textAlign,
     }))).toEqual({ direction: listCase.itemDirection, textAlign: listCase.itemAlign });

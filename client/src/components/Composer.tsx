@@ -625,6 +625,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       requestAnimationFrame(applyDirections);
     });
     window.setTimeout(applyDirections, 0);
+    window.setTimeout(applyDirections, 50);
   }
 
   function readEditorState(currentEditor) {
