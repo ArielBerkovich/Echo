@@ -108,6 +108,24 @@ test("anchors RTL quote and list structures on the right", async ({ page }) => {
     direction: getComputedStyle(element).direction,
     textAlign: getComputedStyle(element).textAlign,
   }))).toEqual({ direction: "rtl", textAlign: "start" });
+  await expect.poll(() => composer.locator("ol li > p").evaluate((element) => ({
+    direction: getComputedStyle(element).direction,
+    textAlign: getComputedStyle(element).textAlign,
+  }))).toEqual({ direction: "rtl", textAlign: "right" });
+});
+
+test("keeps LTR list text beside the marker", async ({ page }) => {
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await openProjectChannel(page);
+
+  const composer = page.getByTestId("composer-editor");
+  await page.getByTitle("Bulleted list").click();
+  await composer.type("English list item");
+  await expect.poll(() => composer.locator("ul").evaluate((element) => getComputedStyle(element).direction)).toBe("ltr");
+  await expect.poll(() => composer.locator("ul li > p").evaluate((element) => ({
+    direction: getComputedStyle(element).direction,
+    textAlign: getComputedStyle(element).textAlign,
+  }))).toEqual({ direction: "ltr", textAlign: "left" });
 });
 
 test("anchors an empty Hebrew composer and mention popup to the RTL side", async ({ page }) => {

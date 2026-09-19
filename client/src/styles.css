@@ -10284,7 +10284,12 @@ html[data-mode="dark"] .new-messages-button:hover {
   padding-inline-start: 22px;
 }
 .composer-editor li { margin: 1px 0; }
-.composer-editor li > p { margin: 0; }
+.composer-editor li > p {
+  margin: 0;
+  /* Keep the paragraph's own bidi direction; direction-specific alignment
+     below keeps the text block beside the list marker. */
+  text-align: left;
+}
 .composer-editor blockquote {
   margin: 4px 0;
   padding: 2px 0;
@@ -10302,6 +10307,9 @@ html[data-interface-direction="rtl"] .composer-editor ol {
 }
 html[data-interface-direction="rtl"] .composer-editor p:has(> br.ProseMirror-trailingBreak) {
   direction: rtl;
+  text-align: right;
+}
+html[data-interface-direction="rtl"] .composer-editor li > p {
   text-align: right;
 }
 
