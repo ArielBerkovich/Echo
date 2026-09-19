@@ -146,7 +146,7 @@ test("anchors an empty Hebrew composer and mention popup to the RTL side", async
   await expect.poll(() => composer.locator("li p").evaluate((element) => ({
     direction: getComputedStyle(element).direction,
     textAlign: getComputedStyle(element).textAlign,
-  }))).toEqual({ direction: "rtl", textAlign: "start" });
+  }))).toEqual({ direction: "rtl", textAlign: "right" });
   await composer.fill("");
   await expect.poll(() => composer.locator("p").evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
   await expect.poll(() => composer.locator("p").evaluate((element) => getComputedStyle(element).textAlign)).toBe("right");
