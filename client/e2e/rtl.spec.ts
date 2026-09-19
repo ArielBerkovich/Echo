@@ -376,10 +376,85 @@ test("keeps the RTL mention trigger and selected token on the same text edge", a
   const postMentionGeometry = await page.evaluate(() => {
     const selection = window.getSelection();
     const caret = selection?.rangeCount ? selection.getRangeAt(0).getBoundingClientRect() : null;
-    const mention = document.querySelector('[data-testid="composer-editor"] [data-user-mention]')?.getBoundingClientRect();
-    return { caretLeft: caret?.left ?? 0, mentionLeft: mention?.left ?? 0 };
+    const paragraph = document.querySelector('[data-testid="composer-editor"] p');
+    const textNode = [...(paragraph?.childNodes || [])].findLast((node) => node.nodeType === Node.TEXT_NODE);
+    const suffixRange = textNode ? document.createRange() : null;
+    if (suffixRange) suffixRange.selectNodeContents(textNode);
+    const suffix = suffixRange?.getBoundingClientRect() || null;
+    return { caretLeft: caret?.left ?? 0, suffixLeft: suffix?.left ?? 0, suffixRight: suffix?.right ?? 0 };
   });
-  expect(postMentionGeometry.caretLeft).toBeLessThan(postMentionGeometry.mentionLeft);
+  expect(Math.abs(postMentionGeometry.caretLeft - postMentionGeometry.suffixLeft)).toBeLessThan(2);
+});
+
+test("keeps the LTR caret on the right after typing following a mention", async ({ page }) => {
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await openProjectChannel(page);
+
+  const editor = page.getByTestId("composer-editor");
+  await editor.fill("@");
+  await expect(page.locator(".mention-popup")).toBeVisible();
+  await editor.type("b");
+  await page.locator(".mention-item").filter({ hasText: fixture.bob.displayName }).click();
+  await editor.type(" testing");
+
+  const geometry = await page.evaluate(() => {
+    const selection = window.getSelection();
+    const caret = selection?.rangeCount ? selection.getRangeAt(0).getBoundingClientRect() : null;
+    const paragraph = document.querySelector('[data-testid="composer-editor"] p');
+    const textNode = [...(paragraph?.childNodes || [])].findLast((node) => node.nodeType === Node.TEXT_NODE);
+    const suffixRange = textNode ? document.createRange() : null;
+    if (suffixRange) suffixRange.selectNodeContents(textNode);
+    const suffix = suffixRange?.getBoundingClientRect() || null;
+    return { caretRight: caret?.right ?? 0, suffixRight: suffix?.right ?? 0 };
+  });
+  expect(Math.abs(geometry.caretRight - geometry.suffixRight)).toBeLessThan(2);
+});
+
+test("keeps the visible caret left of a Hebrew mention suffix in RTL", async ({ page }) => {
+  test.setTimeout(60_000);
+  const originalDisplayName = fixture.bob.displayName;
+  const hebrewDisplayName = "משתמש קיים";
+  await requestAsToken(page, fixture.bob.token, "/users/me", {
+    method: "PATCH",
+    body: { displayName: hebrewDisplayName },
+  });
+  fixture.bob.displayName = hebrewDisplayName;
+  try {
+    const users = await requestAsToken(page, fixture.alice.token, "/users");
+    expect(users.users.find((user) => user.username === fixture.bob.username)?.displayName).toBe(hebrewDisplayName);
+
+    await page.goto(`/channels/${fixture.projectChannel.name}`);
+    await page.reload();
+    await selectRtl(page);
+    await openProjectChannel(page);
+
+    const editor = page.getByTestId("composer-editor");
+    await editor.fill("@");
+    await expect(page.locator(".mention-popup")).toBeVisible();
+    await editor.type(fixture.bob.username);
+    const option = page.locator(".mention-item").filter({ hasText: hebrewDisplayName });
+    await expect(option).toBeVisible();
+    await option.click();
+
+    const geometry = await page.evaluate(() => {
+      const selection = window.getSelection();
+      const caret = selection?.rangeCount ? selection.getRangeAt(0).getBoundingClientRect() : null;
+      const mention = document.querySelector('[data-testid="composer-editor"] [data-user-mention]');
+      return {
+        caretLeft: caret?.left ?? 0,
+        mentionLeft: mention?.getBoundingClientRect().left ?? 0,
+        mentionText: mention?.textContent || "",
+      };
+    });
+    expect(geometry.mentionText).toBe(`@${hebrewDisplayName}`);
+    expect(geometry.caretLeft).toBeLessThan(geometry.mentionLeft);
+  } finally {
+    await requestAsToken(page, fixture.bob.token, "/users/me", {
+      method: "PATCH",
+      body: { displayName: originalDisplayName },
+    });
+    fixture.bob.displayName = originalDisplayName;
+  }
 });
 
 test("keeps mixed RTL message mentions visually attached", async ({ page }) => {

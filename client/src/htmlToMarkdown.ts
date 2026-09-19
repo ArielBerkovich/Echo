@@ -47,5 +47,5 @@ td.addRule("channelMention", {
 
 export function htmlToMarkdown(html) {
   // Strip zero-width spaces (used as caret anchors inside empty code spans).
-  return td.turndown(normalizeCodeBlockBreaks(html)).replace(/​/g, "").trim();
+  return td.turndown(normalizeCodeBlockBreaks(html)).replace(/[​\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, "").trim();
 }

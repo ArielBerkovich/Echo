@@ -682,23 +682,24 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
 
   function applyMention(picked) {
     if (!mention || !editor) return;
+    const trailingMentionSpace = document.documentElement.dataset.interfaceDirection === "rtl" ? " \u200F" : " ";
     if (picked.groupMention) {
       editor.chain().focus().insertContentAt({ from: mention.from, to: mention.to }, [
         { type: "groupMention", attrs: { token: `@${picked.username}`, label: picked.displayName } },
-        { type: "text", text: " " },
+        { type: "text", text: trailingMentionSpace },
       ]).run();
       syncParagraphDirections(editor);
       setMention(null);
       return;
     }
     if (mention.trigger === "@") {
-      editor.chain().focus().insertContentAt({ from: mention.from, to: mention.to }, [{ type: "userMention", attrs: { username: picked.username, label: picked.displayName } }, { type: "text", text: " " }]).run();
+      editor.chain().focus().insertContentAt({ from: mention.from, to: mention.to }, [{ type: "userMention", attrs: { username: picked.username, label: picked.displayName } }, { type: "text", text: trailingMentionSpace }]).run();
       syncParagraphDirections(editor);
       setMention(null);
       return;
     }
     if (mention.trigger === "#") {
-      editor.chain().focus().insertContentAt({ from: mention.from, to: mention.to }, [{ type: "channelMention", attrs: { channelId: picked.id, name: picked.name } }, { type: "text", text: " " }]).run();
+      editor.chain().focus().insertContentAt({ from: mention.from, to: mention.to }, [{ type: "channelMention", attrs: { channelId: picked.id, name: picked.name } }, { type: "text", text: trailingMentionSpace }]).run();
       syncParagraphDirections(editor);
       setMention(null);
       return;

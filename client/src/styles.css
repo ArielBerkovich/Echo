@@ -9943,6 +9943,10 @@ html[data-interface-direction="rtl"] .composer-editor p:has(> .composer-user-men
   direction: rtl;
   text-align: right;
 }
+html[data-interface-direction="ltr"] .composer-editor p:has(> .composer-user-mention, > .composer-group-mention, > .composer-channel-mention) {
+  direction: ltr;
+  text-align: left;
+}
 .composer-channel-mention {
   direction: ltr;
 }
