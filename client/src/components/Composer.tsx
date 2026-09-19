@@ -744,7 +744,11 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
 
   function applyMention(picked) {
     if (!mention || !editor) return;
-    const trailingMentionSpace = document.documentElement.dataset.interfaceDirection === "rtl" ? " \u200F" : " ";
+    // Anchor the boundary after a mention to the interface direction. The
+    // marker is removed by htmlToMarkdown before delivery, but prevents a
+    // following RTL run from visually pulling the neutral space/mention out
+    // of order while editing in an LTR composer.
+    const trailingMentionSpace = document.documentElement.dataset.interfaceDirection === "rtl" ? " \u200F" : " \u200E";
     if (picked.groupMention) {
       editor.chain().focus().insertContentAt({ from: mention.from, to: mention.to }, [
         { type: "groupMention", attrs: { token: `@${picked.username}`, label: picked.displayName } },
