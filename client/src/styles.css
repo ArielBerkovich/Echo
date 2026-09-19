@@ -9939,14 +9939,6 @@ html[data-interface-direction="rtl"] .composer-user-mention {
 html[data-interface-direction="ltr"] .composer-user-mention {
   direction: ltr;
 }
-html[data-interface-direction="rtl"] .composer-editor p:has(> .composer-user-mention, > .composer-group-mention, > .composer-channel-mention) {
-  direction: rtl;
-  text-align: right;
-}
-html[data-interface-direction="ltr"] .composer-editor p:has(> .composer-user-mention, > .composer-group-mention, > .composer-channel-mention) {
-  direction: ltr;
-  text-align: left;
-}
 .composer-channel-mention {
   direction: ltr;
 }
@@ -10267,9 +10259,17 @@ html[data-interface-direction="ltr"] .composer-editor p:has(> .composer-user-men
 .composer-editor p {
   margin: 0 0 4px;
   text-align: start;
-  /* Determine bidi ordering from each paragraph's own text. This prevents a
-     quoted RTL message from making newly typed LTR text reorder punctuation. */
-  unicode-bidi: plaintext;
+  /* Composer.tsx sets the paragraph direction from its first non-mention
+     character. Keep the CSS bidi mode normal so an explicit dir attribute is
+     not re-evaluated from an atomic mention's label. */
+  unicode-bidi: normal;
+}
+.composer-editor > p:not(.is-editor-empty) {
+  text-align: start !important;
+}
+.composer-editor[data-composer-direction="ltr"] > p:last-child {
+  direction: ltr !important;
+  text-align: left !important;
 }
 .composer-editor p:last-child {
   margin-bottom: 0;

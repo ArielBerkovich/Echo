@@ -60,6 +60,19 @@ function directionText(element) {
   return clone.textContent || "";
 }
 
+function editorDirection(currentEditor) {
+  let text = "";
+  currentEditor.state.selection.$from.parent.descendants((node) => {
+    if (["userMention", "groupMention", "channelMention", "customEmoji"].includes(node.type.name)) return false;
+    if (node.isText) text += node.text;
+    return true;
+  });
+  return firstStrongDirection(
+    text,
+    document.documentElement.dataset.interfaceDirection === "rtl" ? "rtl" : "ltr"
+  );
+}
+
 function tomorrow9am() {
   const d = new Date();
   d.setDate(d.getDate() + 1);
@@ -371,6 +384,15 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     editor?.setEditable(!disabled);
   }, [disabled, editor]);
   useEffect(() => {
+    if (!editor) return undefined;
+    const handleInput = () => syncParagraphDirections(editor);
+    editor.view.dom.addEventListener("input", handleInput);
+    return () => editor.view.dom.removeEventListener("input", handleInput);
+  }, [editor]);
+  useLayoutEffect(() => {
+    if (editor) syncParagraphDirections(editor);
+  }, [editor, editorState]);
+  useEffect(() => {
     if (!editor) return;
     if (!editing) {
       const key = draftStorageKey(channel.id, isThread);
@@ -537,6 +559,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
 
   function syncEditorState(currentEditor) {
     setEditorState(readEditorState(currentEditor));
+    currentEditor.view.dom.dataset.composerDirection = editorDirection(currentEditor);
     syncParagraphDirections(currentEditor);
     const hasText = currentEditor.getText().trim().length > 0;
     hasText ? signalTyping() : stopTyping();
@@ -563,6 +586,11 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       currentEditor.view.dom.querySelectorAll("p").forEach((paragraph) => {
         const direction = firstStrongDirection(directionText(paragraph), fallback);
         if (paragraph.getAttribute("dir") !== direction) paragraph.setAttribute("dir", direction);
+        if (direction === "ltr") {
+          if (paragraph.style.textAlign !== "left") paragraph.style.textAlign = "left";
+        } else if (paragraph.style.textAlign) {
+          paragraph.style.removeProperty("text-align");
+        }
       });
       // List markers follow the interface direction so the marker and text
       // stay together on the expected side, regardless of item language.
@@ -574,8 +602,13 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     };
     applyDirections();
     // Tiptap may finish replacing the paragraph DOM after onUpdate returns;
-    // repeat once on the next frame so the direction survives that render.
-    requestAnimationFrame(applyDirections);
+    // Repeat on successive frames because Tiptap can replace the paragraph
+    // after the update callback, especially after an atomic mention insertion.
+    requestAnimationFrame(() => {
+      applyDirections();
+      requestAnimationFrame(applyDirections);
+    });
+    window.setTimeout(applyDirections, 0);
   }
 
   function readEditorState(currentEditor) {

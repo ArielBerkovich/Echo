@@ -386,7 +386,7 @@ test("keeps the RTL mention trigger and selected token on the same text edge", a
   expect(Math.abs(postMentionGeometry.caretLeft - postMentionGeometry.suffixLeft)).toBeLessThan(2);
 });
 
-test("keeps the LTR caret on the right after typing following a mention", async ({ page }) => {
+test("keeps the LTR composer aligned after typing following a mention", async ({ page }) => {
   await page.goto(`/channels/${fixture.projectChannel.name}`);
   await openProjectChannel(page);
 
@@ -397,17 +397,59 @@ test("keeps the LTR caret on the right after typing following a mention", async 
   await page.locator(".mention-item").filter({ hasText: fixture.bob.displayName }).click();
   await editor.type(" testing");
 
+  const paragraph = editor.locator("p").first();
+  await expect(paragraph).toHaveCSS("direction", "ltr");
+  await expect(paragraph).toHaveCSS("text-align", "left");
+
   const geometry = await page.evaluate(() => {
     const selection = window.getSelection();
     const caret = selection?.rangeCount ? selection.getRangeAt(0).getBoundingClientRect() : null;
     const paragraph = document.querySelector('[data-testid="composer-editor"] p');
+    const mention = paragraph?.querySelector("[data-user-mention]");
     const textNode = [...(paragraph?.childNodes || [])].findLast((node) => node.nodeType === Node.TEXT_NODE);
     const suffixRange = textNode ? document.createRange() : null;
     if (suffixRange) suffixRange.selectNodeContents(textNode);
     const suffix = suffixRange?.getBoundingClientRect() || null;
-    return { caretRight: caret?.right ?? 0, suffixRight: suffix?.right ?? 0 };
+    return {
+      caretRight: caret?.right ?? 0,
+      mentionLeft: mention?.getBoundingClientRect().left ?? 0,
+      suffixLeft: suffix?.left ?? 0,
+      suffixRight: suffix?.right ?? 0,
+    };
   });
+  expect(geometry.mentionLeft).toBeLessThan(geometry.suffixLeft);
   expect(Math.abs(geometry.caretRight - geometry.suffixRight)).toBeLessThan(2);
+});
+
+test("switches an RTL composer to LTR after an English mention suffix", async ({ page }) => {
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await selectRtl(page);
+  await openProjectChannel(page);
+
+  const editor = page.getByTestId("composer-editor");
+  await editor.fill("@");
+  await expect(page.locator(".mention-popup")).toBeVisible();
+  await editor.type(fixture.bob.username);
+  await page.locator(".mention-item").filter({ hasText: fixture.bob.displayName }).click();
+  await editor.type(" hello world");
+
+  const paragraph = editor.locator("p").first();
+  await expect(paragraph).toHaveCSS("direction", "ltr");
+  await expect(paragraph).toHaveCSS("text-align", "left");
+  const geometry = await page.evaluate(() => {
+    const paragraph = document.querySelector('[data-testid="composer-editor"] p');
+    const mention = paragraph?.querySelector("[data-user-mention]");
+    const suffixNode = [...(paragraph?.childNodes || [])].find((node) => node.nodeType === Node.TEXT_NODE && node.textContent?.includes("hello"));
+    const suffixRange = suffixNode ? document.createRange() : null;
+    if (suffixRange) suffixRange.selectNodeContents(suffixNode);
+    return {
+      mentionLeft: mention?.getBoundingClientRect().left ?? 0,
+      suffixLeft: suffixRange?.getBoundingClientRect().left ?? 0,
+      text: paragraph?.textContent || "",
+    };
+  });
+  expect(geometry.text).toContain("hello world");
+  expect(geometry.mentionLeft).toBeLessThan(geometry.suffixLeft);
 });
 
 test("keeps the visible caret left of a Hebrew mention suffix in RTL", async ({ page }) => {
@@ -424,7 +466,6 @@ test("keeps the visible caret left of a Hebrew mention suffix in RTL", async ({ 
     expect(users.users.find((user) => user.username === fixture.bob.username)?.displayName).toBe(hebrewDisplayName);
 
     await page.goto(`/channels/${fixture.projectChannel.name}`);
-    await page.reload();
     await selectRtl(page);
     await openProjectChannel(page);
 
@@ -448,6 +489,10 @@ test("keeps the visible caret left of a Hebrew mention suffix in RTL", async ({ 
     });
     expect(geometry.mentionText).toBe(`@${hebrewDisplayName}`);
     expect(geometry.caretLeft).toBeLessThan(geometry.mentionLeft);
+
+    await editor.type(" hello");
+    await expect(editor.locator("p").first()).toHaveCSS("direction", "ltr");
+    await expect(editor.locator("p").first()).toHaveCSS("text-align", "left");
   } finally {
     await requestAsToken(page, fixture.bob.token, "/users/me", {
       method: "PATCH",
