@@ -15,6 +15,14 @@ async function selectRtl(page) {
   await expect(page.locator("html")).toHaveAttribute("data-interface-direction", "rtl");
 }
 
+async function selectInterfaceDirection(page, direction) {
+  await page.getByTestId("rail-settings").click();
+  await expect(page.getByTestId("settings-page")).toBeVisible();
+  await page.getByRole("button", { name: "Appearance", exact: true }).click();
+  await page.getByTestId(`settings-direction-${direction}`).click();
+  await expect(page.locator("html")).toHaveAttribute("data-interface-direction", direction);
+}
+
 async function openProjectChannel(page) {
   await page.getByTestId("rail-home").click();
   await page.getByTestId(`channel-row-${slug(fixture.projectChannel.name)}`).click();
@@ -156,6 +164,32 @@ test("keeps LTR list text beside the marker", async ({ page }) => {
     textAlign: getComputedStyle(element).textAlign,
   }))).toEqual({ direction: "ltr", textAlign: "left" });
 });
+
+for (const listCase of [
+  { name: "English list in RTL", interfaceDirection: "rtl", text: "English list item", itemDirection: "ltr", itemAlign: "left" },
+  { name: "Hebrew list in RTL", interfaceDirection: "rtl", text: "טקסט עברי", itemDirection: "rtl", itemAlign: "right" },
+  { name: "English list in LTR", interfaceDirection: "ltr", text: "English list item", itemDirection: "ltr", itemAlign: "left" },
+  { name: "Hebrew list in LTR", interfaceDirection: "ltr", text: "טקסט עברי", itemDirection: "rtl", itemAlign: "right" },
+]) {
+  test(`keeps ${listCase.name} beside its list marker`, async ({ page }) => {
+    await page.goto(`/channels/${fixture.projectChannel.name}`);
+    await selectInterfaceDirection(page, listCase.interfaceDirection);
+    await openProjectChannel(page);
+
+    const composer = page.getByTestId("composer-editor");
+    await page.getByTitle("Bulleted list").click();
+    await composer.type(listCase.text);
+
+    await expect.poll(() => composer.locator("ul").evaluate((element) => ({
+      direction: getComputedStyle(element).direction,
+      textAlign: getComputedStyle(element).textAlign,
+    }))).toEqual({ direction: listCase.interfaceDirection, textAlign: "start" });
+    await expect.poll(() => composer.locator("ul li > p").evaluate((element) => ({
+      direction: getComputedStyle(element).direction,
+      textAlign: getComputedStyle(element).textAlign,
+    }))).toEqual({ direction: listCase.itemDirection, textAlign: listCase.itemAlign });
+  });
+}
 
 test("anchors an empty Hebrew composer and mention popup to the RTL side", async ({ page }) => {
   await page.goto(`/channels/${fixture.projectChannel.name}`);
