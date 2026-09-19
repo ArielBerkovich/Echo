@@ -9905,6 +9905,8 @@ html[data-mode="dark"] .new-messages-button:hover {
 }
 .composer-group-mention {
   display: inline-block;
+  direction: ltr;
+  unicode-bidi: isolate;
   padding: 1px 5px;
   border-radius: 5px;
   background: color-mix(in srgb, var(--accent) 15%, transparent);
@@ -9912,7 +9914,15 @@ html[data-mode="dark"] .new-messages-button:hover {
   font-weight: 650;
   white-space: nowrap;
 }
-
+.composer-user-mention,
+.composer-channel-mention {
+  display: inline-block;
+  unicode-bidi: isolate;
+  white-space: nowrap;
+}
+.composer-channel-mention {
+  direction: ltr;
+}
 /* @mention autocomplete popup */
 .mention-popup {
   position: fixed;
@@ -10236,6 +10246,11 @@ html[data-mode="dark"] .new-messages-button:hover {
 }
 .composer-editor p:last-child {
   margin-bottom: 0;
+}
+.composer-editor .composer-user-mention,
+.composer-editor .composer-channel-mention,
+.composer-editor .composer-group-mention {
+  white-space: nowrap !important;
 }
 .composer-editor p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);

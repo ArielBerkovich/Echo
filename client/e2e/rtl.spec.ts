@@ -308,6 +308,27 @@ test("keeps Hebrew reply metadata isolated from the RTL message body", async ({ 
   await expect.poll(() => replyLink.evaluate((element) => getComputedStyle(element).unicodeBidi)).toBe("isolate");
 });
 
+test("isolates selected mentions in the RTL composer", async ({ page }) => {
+  await page.goto("/channels/general");
+  await selectRtl(page);
+  await page.getByTestId("rail-home").click();
+  await page.getByTestId("channel-row-general").click();
+
+  const editor = page.getByTestId("composer-editor");
+  await editor.fill("ערעהכגה גד @b");
+  await expect(page.locator(".mention-popup")).toBeVisible();
+  await page.locator(".mention-item").filter({ hasText: fixture.bob.displayName }).click();
+  await editor.type(" sdfvsdfsdfsdfsdfsdfsdfsd");
+
+  const mention = editor.locator("[data-user-mention]");
+  await expect(mention).toHaveAttribute("dir", "auto");
+  await expect(mention).toHaveCSS("display", "inline-block");
+  await expect(mention).toHaveCSS("direction", "ltr");
+  await expect(mention).toHaveCSS("unicode-bidi", "isolate");
+  await expect(mention).toHaveCSS("white-space", "nowrap");
+  await expect(mention).toHaveText(`@${fixture.bob.displayName}`);
+});
+
 test("supports a Hebrew RTL thread panel, composer, actions, and jump control", async ({ page }) => {
   const rootBody = `שורש דיון עברי ${fixture.suffix}`;
   const root = await requestAsToken(page, fixture.alice.token, "/messages/upsert", {

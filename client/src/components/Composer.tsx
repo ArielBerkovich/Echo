@@ -137,6 +137,7 @@ const GroupMention = Node.create({
       class: "composer-group-mention",
       "data-group-mention": node.attrs.token,
       "data-group-label": node.attrs.label,
+      dir: "ltr",
       contenteditable: "false",
     }, `@${node.attrs.label}`];
   },
@@ -149,7 +150,7 @@ const UserMention = Node.create({
   name: "userMention", inline: true, group: "inline", atom: true, selectable: false,
   addAttributes() { return { username: { default: "" }, label: { default: "" } }; },
   parseHTML() { return [{ tag: "span[data-user-mention]" }]; },
-  renderHTML({ node }) { return ["span", { class: "composer-user-mention", "data-user-mention": node.attrs.username, contenteditable: "false" }, `@${node.attrs.label || node.attrs.username}`]; },
+  renderHTML({ node }) { return ["span", { class: "composer-user-mention", "data-user-mention": node.attrs.username, dir: "auto", contenteditable: "false" }, `@${node.attrs.label || node.attrs.username}`]; },
   renderText({ node }) { return `@${node.attrs.username}`; },
 });
 
@@ -157,7 +158,7 @@ const ChannelMention = Node.create({
   name: "channelMention", inline: true, group: "inline", atom: true, selectable: false,
   addAttributes() { return { channelId: { default: "" }, name: { default: "" } }; },
   parseHTML() { return [{ tag: "span[data-channel-mention]" }]; },
-  renderHTML({ node }) { return ["span", { class: "composer-channel-mention", "data-channel-mention": node.attrs.name, "data-channel-id": node.attrs.channelId, contenteditable: "false" }, `#${node.attrs.name}`]; },
+  renderHTML({ node }) { return ["span", { class: "composer-channel-mention", "data-channel-mention": node.attrs.name, "data-channel-id": node.attrs.channelId, dir: "ltr", contenteditable: "false" }, `#${node.attrs.name}`]; },
   renderText({ node }) { return `#${node.attrs.name}`; },
 });
 
