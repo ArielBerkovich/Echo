@@ -38,6 +38,13 @@ test("persists the RTL preference without changing the page chrome direction", a
   await expect(page.locator("html")).toHaveAttribute("data-interface-direction", "rtl");
 });
 
+test("migrates the legacy automatic direction preference to LTR", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("echo.interfaceDirection", "auto"));
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await expect(page.locator("html")).toHaveAttribute("data-interface-direction", "ltr");
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("echo.interfaceDirection"))).toBe("ltr");
+});
+
 test("keeps Hebrew paragraphs RTL, including after a line break", async ({ page }) => {
   await page.goto(`/channels/${fixture.projectChannel.name}`);
   await selectRtl(page);
@@ -75,6 +82,28 @@ test("places Hebrew quote markers on the RTL side", async ({ page }) => {
     borderLeft: getComputedStyle(element).borderLeftWidth,
     paddingRight: getComputedStyle(element).paddingRight,
   }))).toEqual({ borderRight: "3px", borderLeft: "0px", paddingRight: "12px" });
+});
+
+test("keeps channel tags isolated in an RTL message", async ({ page }) => {
+  const body = `שלום #${fixture.projectChannel.name} asdas ${fixture.suffix}`;
+  await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.projectChannel.id,
+      body,
+      externalKey: `rtl-channel-tag-${fixture.suffix}`,
+    },
+  });
+
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await selectRtl(page);
+  await openProjectChannel(page);
+
+  const tag = page.locator(".message").filter({ hasText: body }).last().locator(".channel-tag");
+  await expect.poll(() => tag.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return { display: style.display, direction: style.direction, unicodeBidi: style.unicodeBidi };
+  })).toEqual({ display: "inline-block", direction: "ltr", unicodeBidi: "isolate" });
 });
 
 test("anchors RTL quote and list structures on the right", async ({ page }) => {
