@@ -9814,8 +9814,8 @@ html[data-mode="dark"] .new-messages-button:hover {
   z-index: 80;
 }
 .message.grouped {
-  padding-top: 2px;
-  padding-bottom: 2px;
+  padding-top: 4px;
+  padding-bottom: 4px;
 }
 /* The first message still has a header, but its bottom edge should join a
    same-minute run as tightly as the grouped messages that follow it. */

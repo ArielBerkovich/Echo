@@ -226,11 +226,10 @@ function Message({
         ? Math.max(8, header.getBoundingClientRect().bottom - 18)
         : 8;
       const toolbarHeight = 38;
-      const toolbarOffset = grouped ? 34 : 26;
       const isRtl = document.documentElement.dataset.interfaceDirection === "rtl";
       setActionsPosition({
         top: Math.min(
-          Math.max(rect.top - toolbarOffset, topBoundary),
+          Math.max(rect.top - 26, topBoundary),
           Math.max(topBoundary, window.innerHeight - toolbarHeight - 8)
         ),
         ...(isRtl
