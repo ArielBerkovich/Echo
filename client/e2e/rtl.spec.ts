@@ -139,16 +139,19 @@ test("anchors RTL quote and list structures on the right", async ({ page }) => {
   await page.getByTitle("Ordered list").click();
   await expect.poll(() => composer.locator("ol").evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
 
-  await composer.fill("");
-  await composer.type("English list item");
-  await expect.poll(() => composer.locator("ol").evaluate((element) => ({
+  await page.reload();
+  await openProjectChannel(page);
+  const englishListComposer = page.getByTestId("composer-editor");
+  await page.getByTitle("Ordered list").click();
+  await englishListComposer.type("English list item");
+  await expect.poll(() => englishListComposer.locator("ol").evaluate((element) => ({
     direction: getComputedStyle(element).direction,
     textAlign: getComputedStyle(element).textAlign,
-  }))).toEqual({ direction: "rtl", textAlign: "start" });
-  await expect.poll(() => composer.locator("ol li > p").evaluate((element) => ({
+  }))).toEqual({ direction: "ltr", textAlign: "start" });
+  await expect.poll(() => englishListComposer.locator("ol li > p").evaluate((element) => ({
     direction: getComputedStyle(element).direction,
     textAlign: getComputedStyle(element).textAlign,
-  }))).toEqual({ direction: "rtl", textAlign: "right" });
+  }))).toEqual({ direction: "ltr", textAlign: "left" });
 });
 
 test("keeps LTR list text beside the marker", async ({ page }) => {
@@ -169,10 +172,10 @@ for (const listType of [
   { name: "bullet", title: "Bulleted list", selector: "ul" },
   { name: "numbered", title: "Ordered list", selector: "ol" },
 ]) for (const listCase of [
-  { name: "English list in RTL", interfaceDirection: "rtl", text: "English list item", itemDirection: "rtl", itemAlign: "right" },
-  { name: "Hebrew list in RTL", interfaceDirection: "rtl", text: "טקסט עברי", itemDirection: "rtl", itemAlign: "right" },
-  { name: "English list in LTR", interfaceDirection: "ltr", text: "English list item", itemDirection: "ltr", itemAlign: "left" },
-  { name: "Hebrew list in LTR", interfaceDirection: "ltr", text: "טקסט עברי", itemDirection: "ltr", itemAlign: "left" },
+  { name: "English list in RTL", interfaceDirection: "rtl", listDirection: "ltr", text: "English list item", itemDirection: "ltr", itemAlign: "left" },
+  { name: "Hebrew list in RTL", interfaceDirection: "rtl", listDirection: "rtl", text: "טקסט עברי", itemDirection: "rtl", itemAlign: "right" },
+  { name: "English list in LTR", interfaceDirection: "ltr", listDirection: "ltr", text: "English list item", itemDirection: "ltr", itemAlign: "left" },
+  { name: "Hebrew list in LTR", interfaceDirection: "ltr", listDirection: "rtl", text: "טקסט עברי", itemDirection: "rtl", itemAlign: "right" },
 ]) {
   test(`keeps ${listCase.name} in a ${listType.name} list beside its marker`, async ({ page }) => {
     await page.goto(`/channels/${fixture.projectChannel.name}`);
@@ -186,7 +189,7 @@ for (const listType of [
     await expect.poll(() => composer.locator(listType.selector).evaluate((element) => ({
       direction: getComputedStyle(element).direction,
       textAlign: getComputedStyle(element).textAlign,
-    }))).toEqual({ direction: listCase.interfaceDirection, textAlign: "start" });
+    }))).toEqual({ direction: listCase.listDirection, textAlign: "start" });
     await expect.poll(() => composer.locator(`${listType.selector} li > p`).evaluate((element) => ({
       direction: getComputedStyle(element).direction,
       textAlign: getComputedStyle(element).textAlign,

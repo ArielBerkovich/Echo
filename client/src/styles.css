@@ -10332,6 +10332,16 @@ html[data-interface-direction="ltr"] .composer-user-mention {
      below keeps the text block beside the list marker. */
   text-align: left;
 }
+.composer-editor ul[dir="ltr"] > li > p,
+.composer-editor ol[dir="ltr"] > li > p {
+  direction: ltr !important;
+  text-align: left !important;
+}
+.composer-editor ul[dir="rtl"] > li > p,
+.composer-editor ol[dir="rtl"] > li > p {
+  direction: rtl !important;
+  text-align: right !important;
+}
 .composer-editor blockquote {
   margin: 4px 0;
   padding: 2px 0;
@@ -10342,14 +10352,12 @@ html[data-interface-direction="ltr"] .composer-user-mention {
 /* An empty structural block has no strong character for ProseMirror's
    direction detector. Anchor it to the selected interface direction until
    the user enters text. */
-html[data-interface-direction="rtl"] .composer-editor blockquote,
-html[data-interface-direction="rtl"] .composer-editor ul,
-html[data-interface-direction="rtl"] .composer-editor ol {
-  direction: rtl !important;
+html[data-interface-direction="rtl"] .composer-editor blockquote {
+  direction: rtl;
 }
-html[data-interface-direction="ltr"] .composer-editor ul,
-html[data-interface-direction="ltr"] .composer-editor ol {
-  direction: ltr !important;
+html[data-interface-direction="rtl"] .composer-editor ul:has(> li > p.is-editor-empty),
+html[data-interface-direction="rtl"] .composer-editor ol:has(> li > p.is-editor-empty) {
+  direction: rtl !important;
 }
 html[data-interface-direction="rtl"] .composer-editor p:has(> br.ProseMirror-trailingBreak) {
   direction: rtl;
@@ -10357,6 +10365,18 @@ html[data-interface-direction="rtl"] .composer-editor p:has(> br.ProseMirror-tra
 }
 html[data-interface-direction="rtl"] .composer-editor li > p {
   text-align: right;
+}
+
+/* List paragraphs follow the resolved direction of their own list. This is
+   important for a Hebrew list inside the LTR interface and an English list
+   inside the RTL interface: the marker and text must share the same side. */
+.composer-editor ul > li > p:dir(ltr),
+.composer-editor ol > li > p:dir(ltr) {
+  text-align: left !important;
+}
+.composer-editor ul > li > p:dir(rtl),
+.composer-editor ol > li > p:dir(rtl) {
+  text-align: right !important;
 }
 
 .composer-actions {

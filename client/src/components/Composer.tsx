@@ -338,7 +338,10 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   const editor = useEditor({
     editable: !disabled,
     extensions: [
-      StarterKit.configure({ heading: { levels: [1, 2, 3] }, trailingNode: false }),
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3] },
+        trailingNode: false,
+      }),
       CustomEmoji,
       GroupMention,
       UserMention,
@@ -609,11 +612,20 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
         }
       });
       // List markers follow the interface direction so the marker and text
-      // stay together on the expected side, regardless of item language.
+      // stay together on the side selected by the first strong list character.
       currentEditor.view.dom.querySelectorAll("ul, ol").forEach((list) => {
-        const direction = fallback;
-        if (list.getAttribute("dir") !== direction) list.setAttribute("dir", direction);
-        if (list.style.direction !== direction) list.style.direction = direction;
+        const listText = directionText(list);
+        const hasStrongCharacter = RTL_TEXT_RE.test(listText) || LTR_TEXT_RE.test(listText);
+        if (hasStrongCharacter) {
+          if (list.getAttribute("dir") !== "auto") list.setAttribute("dir", "auto");
+          list.style.removeProperty("direction");
+        } else {
+          if (list.getAttribute("dir") !== fallback) list.setAttribute("dir", fallback);
+          if (list.style.getPropertyValue("direction") !== fallback
+            || list.style.getPropertyPriority("direction") !== "important") {
+            list.style.setProperty("direction", fallback, "important");
+          }
+        }
       });
     };
     applyDirections();
