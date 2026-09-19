@@ -194,6 +194,25 @@ test("anchors an empty Hebrew composer and mention popup to the RTL side", async
   expect(popupBox.x).toBeGreaterThanOrEqual(0);
   expect(popupBox.x + popupBox.width).toBeLessThanOrEqual(viewport.width);
   expect(Math.abs(popupBox.y + popupBox.height - composerBox.y)).toBeLessThan(20);
+  await composer.fill("");
+  await composer.type("@");
+  await expect(page.locator(".mention-popup")).toBeVisible();
+  const triggerGeometry = await page.evaluate(() => {
+    const selection = window.getSelection();
+    const range = selection?.rangeCount ? selection.getRangeAt(0).getBoundingClientRect() : null;
+    const editor = document.querySelector('[data-testid="composer-editor"]');
+    return { caretLeft: range?.left ?? 0, editorRight: editor?.getBoundingClientRect().right ?? 0 };
+  });
+  expect(triggerGeometry.caretLeft).toBeGreaterThan(triggerGeometry.editorRight - 120);
+  await composer.type("b");
+  await page.locator(".mention-item").filter({ hasText: fixture.bob.displayName }).click();
+  const selectedMention = composer.locator("[data-user-mention]");
+  await expect(selectedMention).toBeVisible();
+  const selectedGeometry = await selectedMention.boundingBox();
+  const selectedEditor = await composer.boundingBox();
+  expect(selectedGeometry).not.toBeNull();
+  expect(selectedEditor).not.toBeNull();
+  expect(selectedGeometry.x + selectedGeometry.width).toBeGreaterThan(selectedEditor.x + selectedEditor.width - 140);
 });
 
 test("places the RTL schedule dialog to the right of the mobile drawer", async ({ page }) => {
@@ -328,6 +347,30 @@ test("isolates selected mentions in the RTL composer", async ({ page }) => {
   await expect(mention.locator("bdi")).toHaveCSS("direction", "ltr");
   await expect(mention.locator("bdi")).toHaveCSS("unicode-bidi", "isolate");
   await expect(mention).toHaveText(`@${fixture.bob.displayName}`);
+});
+
+test("keeps the RTL mention trigger and selected token on the same text edge", async ({ page }) => {
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await selectRtl(page);
+  await openProjectChannel(page);
+
+  const editor = page.getByTestId("composer-editor");
+  await editor.fill("שלום ");
+  await editor.type("@");
+  await expect(page.locator(".mention-popup")).toBeVisible();
+  await expect.poll(() => editor.locator("p").first().evaluate((element) => ({
+    direction: getComputedStyle(element).direction,
+    text: element.textContent,
+  }))).toEqual({ direction: "rtl", text: "שלום @" });
+
+  await editor.type("b");
+  await page.locator(".mention-item").filter({ hasText: fixture.bob.displayName }).click();
+  const paragraph = editor.locator("p").first();
+  const mention = editor.locator("[data-user-mention]");
+  await expect(paragraph).toHaveCSS("direction", "rtl");
+  await expect(mention).toHaveText(`@${fixture.bob.displayName}`);
+  await expect(mention.locator("bdi")).toHaveCSS("direction", "ltr");
+  await expect.poll(() => mention.evaluate((element) => element.getClientRects().length)).toBe(1);
 });
 
 test("keeps mixed RTL message mentions visually attached", async ({ page }) => {

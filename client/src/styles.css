@@ -4634,6 +4634,11 @@ html[data-interface-direction="rtl"] .composer-editor p.is-editor-empty:first-ch
   direction: rtl;
   text-align: right;
 }
+.composer.has-mention-empty.has-mention-rtl .composer-editor p {
+  direction: rtl;
+  text-align: right;
+  unicode-bidi: isolate;
+}
 .message-engagement {
   display: flex;
   flex-direction: column;
@@ -9927,6 +9932,16 @@ html[data-mode="dark"] .new-messages-button:hover {
   display: inline-block;
   unicode-bidi: isolate;
   white-space: nowrap;
+}
+html[data-interface-direction="rtl"] .composer-user-mention {
+  direction: rtl;
+}
+html[data-interface-direction="ltr"] .composer-user-mention {
+  direction: ltr;
+}
+html[data-interface-direction="rtl"] .composer-editor p:has(> .composer-user-mention, > .composer-group-mention, > .composer-channel-mention) {
+  direction: rtl;
+  text-align: right;
 }
 .composer-channel-mention {
   direction: ltr;

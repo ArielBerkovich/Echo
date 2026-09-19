@@ -52,6 +52,14 @@ function firstStrongDirection(text, fallback = "ltr") {
   return fallback;
 }
 
+function directionText(element) {
+  if (!element) return "";
+  const clone = element.cloneNode(true);
+  clone.querySelectorAll("[data-user-mention], [data-group-mention], [data-channel-mention], [data-custom-emoji]")
+    .forEach((token) => token.remove());
+  return clone.textContent || "";
+}
+
 function tomorrow9am() {
   const d = new Date();
   d.setDate(d.getDate() + 1);
@@ -549,11 +557,11 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       // A paragraph containing only numbers/punctuation has no strong
       // character for `dir="auto"` to resolve. Give the editor the interface
       // fallback in that neutral-only state so it starts on the expected side.
-      const editorText = currentEditor.getText();
+      const editorText = directionText(currentEditor.view.dom);
       const hasStrongCharacter = RTL_TEXT_RE.test(editorText) || LTR_TEXT_RE.test(editorText);
       currentEditor.view.dom.setAttribute("dir", hasStrongCharacter ? "auto" : fallback);
       currentEditor.view.dom.querySelectorAll("p").forEach((paragraph) => {
-        const direction = firstStrongDirection(paragraph.textContent || "", fallback);
+        const direction = firstStrongDirection(directionText(paragraph), fallback);
         if (paragraph.getAttribute("dir") !== direction) paragraph.setAttribute("dir", direction);
       });
       // List markers follow the interface direction so the marker and text
@@ -679,21 +687,25 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
         { type: "groupMention", attrs: { token: `@${picked.username}`, label: picked.displayName } },
         { type: "text", text: " " },
       ]).run();
+      syncParagraphDirections(editor);
       setMention(null);
       return;
     }
     if (mention.trigger === "@") {
       editor.chain().focus().insertContentAt({ from: mention.from, to: mention.to }, [{ type: "userMention", attrs: { username: picked.username, label: picked.displayName } }, { type: "text", text: " " }]).run();
+      syncParagraphDirections(editor);
       setMention(null);
       return;
     }
     if (mention.trigger === "#") {
       editor.chain().focus().insertContentAt({ from: mention.from, to: mention.to }, [{ type: "channelMention", attrs: { channelId: picked.id, name: picked.name } }, { type: "text", text: " " }]).run();
+      syncParagraphDirections(editor);
       setMention(null);
       return;
     }
     const value = mention.trigger === "#" ? `#${picked.name}` : `@${picked.username}`;
     editor.chain().focus().insertContentAt({ from: mention.from, to: mention.to }, `${value} `).run();
+    syncParagraphDirections(editor);
     setMention(null);
   }
 
