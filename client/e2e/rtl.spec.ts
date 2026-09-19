@@ -321,12 +321,42 @@ test("isolates selected mentions in the RTL composer", async ({ page }) => {
   await editor.type(" sdfvsdfsdfsdfsdfsdfsdfsd");
 
   const mention = editor.locator("[data-user-mention]");
-  await expect(mention).toHaveAttribute("dir", "auto");
   await expect(mention).toHaveCSS("display", "inline-block");
-  await expect(mention).toHaveCSS("direction", "ltr");
   await expect(mention).toHaveCSS("unicode-bidi", "isolate");
   await expect(mention).toHaveCSS("white-space", "nowrap");
+  await expect(mention.locator("bdi")).toHaveCount(1);
+  await expect(mention.locator("bdi")).toHaveCSS("direction", "ltr");
+  await expect(mention.locator("bdi")).toHaveCSS("unicode-bidi", "isolate");
   await expect(mention).toHaveText(`@${fixture.bob.displayName}`);
+});
+
+test("keeps mixed RTL message mentions visually attached", async ({ page }) => {
+  const body = `ערעהכגה גד @${fixture.alice.username} @${fixture.bob.username} sdfvsdfsdfsdfsdfsdfsdfsd ${fixture.suffix}`;
+  await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.projectChannel.id,
+      body,
+      externalKey: `rtl-mixed-mentions-${fixture.suffix}`,
+    },
+  });
+
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await selectRtl(page);
+  await openProjectChannel(page);
+
+  const message = page.locator(".message").filter({ hasText: fixture.suffix }).last();
+  const mentions = message.locator(".mention[data-mention]");
+  await expect(mentions).toHaveCount(2);
+  for (const mention of await mentions.all()) {
+    await expect(mention).toHaveCSS("display", "inline-block");
+    await expect(mention).toHaveCSS("white-space", "nowrap");
+    await expect(mention.locator("bdi")).toHaveCount(1);
+    await expect(mention.locator("bdi")).toHaveCSS("unicode-bidi", "isolate");
+    await expect.poll(() => mention.evaluate((element) => element.getClientRects().length)).toBe(1);
+  }
+  await expect(mentions.nth(0)).toHaveText(`@${fixture.alice.displayName}`);
+  await expect(mentions.nth(1)).toHaveText(`@${fixture.bob.displayName}`);
 });
 
 test("supports a Hebrew RTL thread panel, composer, actions, and jump control", async ({ page }) => {

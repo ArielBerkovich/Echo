@@ -150,7 +150,7 @@ const UserMention = Node.create({
   name: "userMention", inline: true, group: "inline", atom: true, selectable: false,
   addAttributes() { return { username: { default: "" }, label: { default: "" } }; },
   parseHTML() { return [{ tag: "span[data-user-mention]" }]; },
-  renderHTML({ node }) { return ["span", { class: "composer-user-mention", "data-user-mention": node.attrs.username, dir: "auto", contenteditable: "false" }, `@${node.attrs.label || node.attrs.username}`]; },
+  renderHTML({ node }) { return ["span", { class: "composer-user-mention", "data-user-mention": node.attrs.username, contenteditable: "false" }, ["bdi", {}, `@${node.attrs.label || node.attrs.username}`]]; },
   renderText({ node }) { return `@${node.attrs.username}`; },
 });
 

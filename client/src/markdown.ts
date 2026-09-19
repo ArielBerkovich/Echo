@@ -199,7 +199,7 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
           // @everyone broadcasts to everyone in the channel (not a personal
           // mention) — flag it with a megaphone so it reads as an announcement.
           if (handle === "everyone") {
-            return `<span class="mention mention--broadcast">📣 @${token.handle}</span>`;
+            return `<span class="mention mention--broadcast" dir="ltr"><bdi>📣 @${token.handle}</bdi></span>`;
           }
           if (!knownUsernames.has(handle)) return token.raw.replace(/\\_/g, "_"); // not a real user
           const mentionUser = knownUsernames instanceof Map ? knownUsernames.get(handle) : null;
@@ -208,7 +208,7 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
             ? mentionUser.displayName || canonical
             : canonical;
           const mine = canonical === String(me).toLowerCase() ? " mention--me" : "";
-          return `<span class="mention${mine}" data-mention="${escapeHtml(canonical)}">@${escapeHtml(displayName)}</span>`;
+          return `<span class="mention${mine}" data-mention="${escapeHtml(canonical)}"><bdi>@${escapeHtml(displayName)}</bdi></span>`;
         },
       },
       {
@@ -293,7 +293,7 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
     const safe = DOMPurify.sanitize(html, {
       ALLOWED_TAGS: [
         "p", "br", "strong", "em", "del", "code", "pre", "blockquote",
-        "ul", "ol", "li", "a", "span", "time", "h1", "h2", "h3", "hr", "img",
+        "ul", "ol", "li", "a", "span", "bdi", "time", "h1", "h2", "h3", "hr", "img",
       ],
     ALLOWED_ATTR: ["class", "dir", "datetime", "href", "title", "target", "rel", "src", "alt", "data-channel-tag", "data-channel-id", "data-mention"],
       // Authenticated custom emoji are rendered through local blob URLs before
