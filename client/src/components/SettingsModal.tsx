@@ -73,6 +73,8 @@ export default function SettingsModal({
   onSelectTheme,
   mode = "dark",
   onSelectMode,
+  interfaceDirection = "ltr",
+  onSelectInterfaceDirection,
   onUpdated,
   onIntegrationsChanged,
   settingsTab = "account",
@@ -699,6 +701,15 @@ export default function SettingsModal({
               {themes.map((t) => <button key={t.id} type="button" className={`theme-card${theme === t.id ? " active" : ""}`} data-testid={`settings-theme-${t.id}`} onClick={() => onSelectTheme?.(t.id)} aria-pressed={theme === t.id}>
                 <span className="theme-swatch">{t.swatch.map((c, i) => <span key={i} style={{ background: c }} />)}</span><span className="theme-name">{t.label}</span>
               </button>)}
+            </div>
+            <div className="settings-direction-control">
+              <h3>Interface direction</h3>
+              <p className="settings-hint">Choose your chat layout direction. Left to right is the default.</p>
+              <div className="mode-toggle" role="group" aria-label="Interface direction">
+                {[['ltr', 'Left to right'], ['rtl', 'Right to left']].map(([value, label]) => (
+                  <button key={value} type="button" className={`mode-option${interfaceDirection === value ? " active" : ""}`} data-testid={`settings-direction-${value}`} onClick={() => onSelectInterfaceDirection?.(value)} aria-pressed={interfaceDirection === value}>{label}</button>
+                ))}
+              </div>
             </div>
           </section>}
 

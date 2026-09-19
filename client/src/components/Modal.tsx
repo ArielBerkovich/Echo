@@ -50,7 +50,7 @@ export default function Modal({
               // Composer emoji pickers are portaled to the document so they
               // can escape a modal's overflow clipping. Treat that portal as
               // part of the dialog instead of dismissing/blocking its click.
-              if (target instanceof Element && target.closest(".emoji-popup-wrap")) {
+              if (target instanceof Element && target.closest(".emoji-popup-wrap, .mention-popup")) {
                 event.preventDefault();
                 return;
               }
