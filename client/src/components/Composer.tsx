@@ -67,6 +67,8 @@ function editorDirection(currentEditor) {
     if (node.isText) text += node.text;
     return true;
   });
+  const meaningfulText = text.replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, "").trim();
+  if (!meaningfulText) return null;
   return firstStrongDirection(
     text,
     document.documentElement.dataset.interfaceDirection === "rtl" ? "rtl" : "ltr"
@@ -386,8 +388,14 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   useEffect(() => {
     if (!editor) return undefined;
     const handleInput = () => syncParagraphDirections(editor);
-    editor.view.dom.addEventListener("input", handleInput);
-    return () => editor.view.dom.removeEventListener("input", handleInput);
+    let dom;
+    try {
+      dom = editor.view.dom;
+    } catch {
+      return undefined;
+    }
+    dom.addEventListener("input", handleInput);
+    return () => dom.removeEventListener("input", handleInput);
   }, [editor]);
   useLayoutEffect(() => {
     if (editor) syncParagraphDirections(editor);
@@ -559,7 +567,9 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
 
   function syncEditorState(currentEditor) {
     setEditorState(readEditorState(currentEditor));
-    currentEditor.view.dom.dataset.composerDirection = editorDirection(currentEditor);
+    const direction = editorDirection(currentEditor);
+    if (direction) currentEditor.view.dom.dataset.composerDirection = direction;
+    else delete currentEditor.view.dom.dataset.composerDirection;
     syncParagraphDirections(currentEditor);
     const hasText = currentEditor.getText().trim().length > 0;
     hasText ? signalTyping() : stopTyping();
@@ -584,7 +594,13 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       const hasStrongCharacter = RTL_TEXT_RE.test(editorText) || LTR_TEXT_RE.test(editorText);
       currentEditor.view.dom.setAttribute("dir", hasStrongCharacter ? "auto" : fallback);
       currentEditor.view.dom.querySelectorAll("p").forEach((paragraph) => {
-        const direction = firstStrongDirection(directionText(paragraph), fallback);
+        const paragraphText = directionText(paragraph);
+        if (!paragraphText.replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, "").trim()) {
+          paragraph.removeAttribute("dir");
+          paragraph.style.removeProperty("text-align");
+          return;
+        }
+        const direction = firstStrongDirection(paragraphText, fallback);
         if (paragraph.getAttribute("dir") !== direction) paragraph.setAttribute("dir", direction);
         if (direction === "ltr") {
           if (paragraph.style.textAlign !== "left") paragraph.style.textAlign = "left";
