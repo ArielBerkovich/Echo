@@ -229,7 +229,7 @@ function Message({
       const isRtl = document.documentElement.dataset.interfaceDirection === "rtl";
       setActionsPosition({
         top: Math.min(
-          Math.max(rect.top - 34, topBoundary),
+          Math.max(rect.top - 26, topBoundary),
           Math.max(topBoundary, window.innerHeight - toolbarHeight - 8)
         ),
         ...(isRtl
