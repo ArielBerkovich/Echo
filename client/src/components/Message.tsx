@@ -219,7 +219,12 @@ function Message({
       const rect = message.getBoundingClientRect();
       const header = message.closest(".channel-view")?.querySelector(".channel-header")
         || message.closest(".thread-panel")?.querySelector(".thread-header");
-      const topBoundary = header ? header.getBoundingClientRect().bottom + 6 : 8;
+      // Keep the toolbar attached to a message at the top of the viewport.
+      // Allow a small overlap with the header so the toolbar does not get
+      // pushed down over the message body when the message is partially cut.
+      const topBoundary = header
+        ? Math.max(8, header.getBoundingClientRect().bottom - 18)
+        : 8;
       const toolbarHeight = 38;
       const isRtl = document.documentElement.dataset.interfaceDirection === "rtl";
       setActionsPosition({
