@@ -371,6 +371,15 @@ test("keeps the RTL mention trigger and selected token on the same text edge", a
   await expect(mention).toHaveText(`@${fixture.bob.displayName}`);
   await expect(mention.locator("bdi")).toHaveCSS("direction", "ltr");
   await expect.poll(() => mention.evaluate((element) => element.getClientRects().length)).toBe(1);
+
+  await editor.type("שלום");
+  const postMentionGeometry = await page.evaluate(() => {
+    const selection = window.getSelection();
+    const caret = selection?.rangeCount ? selection.getRangeAt(0).getBoundingClientRect() : null;
+    const mention = document.querySelector('[data-testid="composer-editor"] [data-user-mention]')?.getBoundingClientRect();
+    return { caretLeft: caret?.left ?? 0, mentionLeft: mention?.left ?? 0 };
+  });
+  expect(postMentionGeometry.caretLeft).toBeLessThan(postMentionGeometry.mentionLeft);
 });
 
 test("keeps mixed RTL message mentions visually attached", async ({ page }) => {
