@@ -20,14 +20,20 @@ test("group owners can manage members, ownership, and channel associations", asy
     await expect(panel).toContainText(created.group.name);
     await panel.getByRole("button", { name: new RegExp(created.group.name) }).click();
     await expect(panel.locator(".groups-panel-member").getByText(fixture.bob.displayName)).toBeVisible();
-    await expect(panel.getByLabel("Add member to group")).toBeVisible();
-    await expect(panel.getByLabel("Assign channel to group")).toBeVisible();
-    await expect(panel.getByLabel("Transfer group ownership")).toBeVisible();
-    await expect(panel.getByLabel("Replacement owner before leaving group")).toBeVisible();
+    await panel.getByRole("button", { name: "Add people" }).click();
+    await expect(page.getByLabel("Search people to add")).toBeVisible();
+    await page.getByRole("button", { name: "Done" }).click();
 
-    await panel.getByLabel("Assign channel to group").selectOption(fixture.generalChannel.id);
-    await panel.getByRole("button", { name: `Assign channel` }).click();
-    await expect(panel.getByText(`#${fixture.generalChannel.name}`)).toBeVisible();
+    await panel.getByRole("button", { name: "Manage" }).click();
+    await expect(page.getByLabel("Transfer group ownership")).toBeVisible();
+    await expect(page.getByLabel("Replacement owner before leaving group")).toBeVisible();
+    await page.keyboard.press("Escape");
+
+    await panel.getByRole("button", { name: "Assign" }).click();
+    const channelRow = page.locator(".groups-channel-picker-row").filter({ hasText: fixture.generalChannel.name });
+    await channelRow.getByRole("button", { name: "Assign" }).click();
+    await page.getByRole("button", { name: "Done" }).click();
+    await expect(panel.getByText(fixture.generalChannel.name, { exact: true })).toBeVisible();
     await expect(panel.getByRole("button", { name: `Remove #${fixture.generalChannel.name} from group` })).toBeVisible();
   } finally {
     await requestAsToken(page, fixture.alice.token, `/groups/${groupId}`, { method: "DELETE" }).catch(() => {});
