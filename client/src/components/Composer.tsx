@@ -209,7 +209,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   const composerRef = useRef(null);
   const mentionPopupRef = useRef(null);
   const [mentionPopupPosition, setMentionPopupPosition] = useState(null);
-  const [rhssoGroups, setRhssoGroups] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [catalogChannels, setCatalogChannels] = useState([]);
   const [activeIdx, setActiveIdx] = useState(0);
   const activeMentionItemRef = useRef(null);
@@ -324,14 +324,13 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       : `Message #${channel.name}`);
 
   // Groups are loaded only for the mention picker and only once per composer
-  // lifetime. RHSSO directory access is optional, so a 404 simply means no
-  // group suggestions rather than an error in the compose flow.
+  // lifetime. The server returns only active Echo-owned groups.
   useEffect(() => {
     let cancelled = false;
     api.listGroups().then(({ groups }) => {
-      if (!cancelled) setRhssoGroups(Array.isArray(groups) ? groups : []);
+      if (!cancelled) setGroups(Array.isArray(groups) ? groups : []);
     }).catch(() => {
-      if (!cancelled) setRhssoGroups([]);
+      if (!cancelled) setGroups([]);
     });
     return () => { cancelled = true; };
   }, []);
@@ -485,13 +484,13 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
           { id: "__everyone", username: "everyone", displayName: "Notify everyone in this channel", broadcast: true },
         ].filter((s) => q === "" || s.username.startsWith(q))
       : [];
-    const groups = !isDm ? rhssoGroups
-      .filter((group) => group.name.toLowerCase().includes(q) || group.path.toLowerCase().includes(q))
+    const groupSuggestions = !isDm ? groups
+      .filter((group) => group.name.toLowerCase().includes(q) || group.handle.toLowerCase().includes(q))
       .slice(0, 8)
       .map((group) => ({ ...group, username: `group.${group.provider}.${group.id}`, displayName: group.name, groupMention: true })) : [];
     const people = peopleSearchSuggestions(users, q);
-    return [...specials, ...groups, ...people];
-  }, [mention, users, channels, catalogChannels, isDm, rhssoGroups]);
+    return [...specials, ...groupSuggestions, ...people];
+  }, [mention, users, channels, catalogChannels, isDm, groups]);
 
   useLayoutEffect(() => {
     if (!mention || !editor) {

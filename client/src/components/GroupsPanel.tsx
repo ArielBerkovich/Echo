@@ -1,123 +1,24 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRightIcon, ContactRoundIcon, SearchIcon } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ChevronRightIcon, ContactRoundIcon, PlusIcon, SearchIcon, XIcon } from "lucide-react";
 import { api } from "../api.js";
 import Avatar from "./Avatar.js";
 
-function groupHandle(name) {
-  return String(name || "group")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "") || "group";
-}
-
-// Directory groups are read-only in Echo. Only identities that have joined
-// Echo are surfaced as members or recipients.
 export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
-  const [groups, setGroups] = useState([]);
-  const [selected, setSelected] = useState(null);
-  const [members, setMembers] = useState([]);
-  const [groupsLoading, setGroupsLoading] = useState(true);
-  const [membersLoading, setMembersLoading] = useState(false);
-  const [groupQuery, setGroupQuery] = useState("");
-  const [memberQuery, setMemberQuery] = useState("");
-  const [error, setError] = useState("");
-  const memberRequest = useRef(0);
-
-  const filteredGroups = useMemo(() => {
-    const query = groupQuery.trim().toLocaleLowerCase();
-    return query ? groups.filter((group) => `${group.name} ${group.path}`.toLocaleLowerCase().includes(query)) : groups;
-  }, [groupQuery, groups]);
-  const echoMembers = useMemo(() => members.filter((member) => member.echoUser), [members]);
-  const filteredMembers = useMemo(() => {
-    const query = memberQuery.trim().toLocaleLowerCase();
-    return query ? echoMembers.filter((member) => `${member.displayName} ${member.username}`.toLocaleLowerCase().includes(query)) : echoMembers;
-  }, [echoMembers, memberQuery]);
-
-  useEffect(() => {
-    let cancelled = false;
-    api.listGroups().then(({ groups: result }) => {
-      if (!cancelled) setGroups(result || []);
-    }).catch((requestError) => {
-      if (!cancelled) setError(requestError.message || "Could not load groups.");
-    }).finally(() => { if (!cancelled) setGroupsLoading(false); });
-    return () => { cancelled = true; };
-  }, []);
-
-  useEffect(() => () => { memberRequest.current += 1; }, []);
-
-  const selectGroup = useCallback(async (group) => {
-    setSelected(group);
-    setMembers([]);
-    setMemberQuery("");
-    setError("");
-    setMembersLoading(true);
-    const requestId = memberRequest.current + 1;
-    memberRequest.current = requestId;
-    try {
-      const result = await api.getGroup(group.provider, group.id);
-      if (requestId !== memberRequest.current) return;
-      setSelected(result.group);
-      setMembers(result.members || []);
-    } catch (requestError) {
-      if (requestId === memberRequest.current) setError(requestError.message || "Could not load group members.");
-    } finally { if (requestId === memberRequest.current) setMembersLoading(false); }
-  }, []);
-
-  useEffect(() => {
-    if (!openGroup || groupsLoading) return;
-    const group = groups.find((item) => item.provider === openGroup.provider && item.id === openGroup.id);
-    if (group && (selected?.provider !== group.provider || selected?.id !== group.id)) selectGroup(group);
-  }, [groups, groupsLoading, openGroup, selected?.id, selected?.provider, selectGroup]);
-
-  useEffect(() => {
-    if (groupsLoading || openGroup || selected || groups.length === 0) return;
-    selectGroup(groups[0]);
-  }, [groups, groupsLoading, openGroup, selected, selectGroup]);
-
-  return (
-    <main className="groups-panel" data-testid="groups-panel" aria-label="User groups">
-      <header className="channel-header groups-panel-header">
-        <span className="groups-panel-title">
-          <ContactRoundIcon size={20} strokeWidth={1.8} aria-hidden="true" />
-          <span className="ch-name">User groups</span>
-        </span>
-        <div className="groups-panel-header-actions">
-          <span className="groups-panel-count">{groups.length} {groups.length === 1 ? "group" : "groups"}</span>
-        </div>
-      </header>
-      <div className="messages groups-panel-body">
-        {error ? <div className="error" role="alert">{error}</div> : null}
-        <div className="groups-panel-layout">
-          <div className="groups-panel-list" aria-label="Available groups">
-            {groups.length > 0 ? <div className="groups-panel-list-head"><label className="sr-only" htmlFor="group-search">Search user groups</label><div className="groups-panel-search"><SearchIcon size={15} aria-hidden="true" /><input id="group-search" className="groups-panel-filter" value={groupQuery} onChange={(event) => setGroupQuery(event.target.value)} placeholder="Search user groups" /></div></div> : null}
-            {groupsLoading ? <div className="people-empty">Loading groups…</div> : null}
-            {!groupsLoading && groups.length === 0 ? <div className="groups-empty-state" data-testid="groups-empty-state">
-              <span className="groups-empty-state-icon"><ContactRoundIcon size={25} aria-hidden="true" /></span>
-              <strong>No user groups yet</strong>
-              <p>Groups appear here when they have at least one member in Echo.</p>
-            </div> : null}
-            {!groupsLoading && groups.length > 0 && filteredGroups.length === 0 ? <div className="people-empty">No groups match that search.</div> : null}
-            {filteredGroups.map((group) => <button type="button" key={`${group.provider}:${group.id}`} className={`groups-panel-group${selected?.id === group.id && selected?.provider === group.provider ? " active" : ""}`} onClick={() => selectGroup(group)}>
-              <span className="groups-panel-group-icon"><ContactRoundIcon size={17} aria-hidden="true" /></span>
-              <span className="groups-panel-group-copy"><strong>{group.name}</strong><small>@{groupHandle(group.name)} · {group.provider}</small></span>
-              <ChevronRightIcon className="groups-panel-group-arrow" size={15} aria-hidden="true" />
-            </button>)}
-          </div>
-          <div className="groups-panel-members" aria-live="polite">
-            {!selected ? <div className="people-empty">Choose a group to view its members.</div> : <>
-              <div className="groups-panel-members-head"><div className="groups-panel-detail-title"><span className="groups-panel-detail-icon"><ContactRoundIcon size={20} aria-hidden="true" /></span><div><h3>{selected.name}</h3><p className="groups-panel-handle">@{groupHandle(selected.name)}</p></div></div><span className="groups-panel-provider">{selected.provider}</span></div>
-              <p className="groups-panel-detail-meta">{membersLoading ? "Loading members…" : `${echoMembers.length} Echo member${echoMembers.length === 1 ? "" : "s"}`} · Directory-managed</p>
-              {!membersLoading ? <><label className="sr-only" htmlFor="member-search">Search members</label><input id="member-search" className="groups-panel-filter" value={memberQuery} onChange={(event) => setMemberQuery(event.target.value)} placeholder="Search members" /></> : null}
-              {membersLoading ? <div className="people-empty">Loading members…</div> : filteredMembers.length === 0 ? <div className="people-empty">{echoMembers.length === 0 ? "No Echo members are in this group." : "No members match that search."}</div> : filteredMembers.map((member) => <button type="button" className="person-row groups-panel-member" key={member.id} onClick={() => onOpenProfile(member.echoUser)} aria-label={`View profile for ${member.displayName}`}>
-                <Avatar name={member.displayName} src={member.echoUser?.avatarUrl} size={30} />
-                <div className="person-info"><div className="person-name">{member.displayName}</div><div className="person-handle">@{member.username}</div></div>
-                <ChevronRightIcon className="groups-panel-member-arrow" size={16} aria-hidden="true" />
-              </button>)}
-            </>}
-          </div>
-        </div>
+  const [groups, setGroups] = useState([]); const [selected, setSelected] = useState(null); const [query, setQuery] = useState(""); const [error, setError] = useState(""); const [creating, setCreating] = useState(false); const [form, setForm] = useState({ name: "", handle: "", description: "" });
+  const refresh = useCallback(async (selectId = null) => { try { const result = await api.listGroups(); setGroups(result.groups || []); setSelected((result.groups || []).find((group) => group.id === (selectId || selected?.id)) || (result.groups || [])[0] || null); } catch (requestError) { setError(requestError.message || "Could not load groups."); } }, [selected?.id]);
+  useEffect(() => { refresh(openGroup?.id); }, [openGroup?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const filtered = useMemo(() => { const text = query.trim().toLowerCase(); return text ? groups.filter((group) => `${group.name} ${group.handle} ${group.description}`.toLowerCase().includes(text)) : groups; }, [groups, query]);
+  async function createGroup(event) { event.preventDefault(); try { const result = await api.createGroup(form); setForm({ name: "", handle: "", description: "" }); setCreating(false); setError(""); await refresh(result.group.id); } catch (requestError) { setError(requestError.message || "Could not create group."); } }
+  async function removeMember(userId) { if (!selected || !window.confirm("Remove this member from the group?")) return; try { await api.removeGroupMember(selected.id, userId); await refresh(selected.id); } catch (requestError) { setError(requestError.message || "Could not remove member."); } }
+  async function leaveGroup() { if (!selected || !window.confirm("Leave this group? If you are the last member, it will be archived.")) return; try { await api.leaveGroup(selected.id); await refresh(); } catch (requestError) { setError(requestError.message || "Could not leave group."); } }
+  async function deleteGroup() { if (!selected || !window.confirm("Delete this group? Historical mentions will remain readable.")) return; try { await api.deleteGroup(selected.id); await refresh(); } catch (requestError) { setError(requestError.message || "Could not delete group."); } }
+  return <main className="groups-panel" data-testid="groups-panel" aria-label="Groups">
+    <header className="channel-header groups-panel-header"><span className="groups-panel-title"><ContactRoundIcon size={20} strokeWidth={1.8} aria-hidden="true" /><span className="ch-name">Groups</span></span><div className="groups-panel-header-actions"><span className="groups-panel-count">{groups.length} {groups.length === 1 ? "group" : "groups"}</span><button type="button" className="header-action" onClick={() => setCreating(true)} aria-label="Create group"><PlusIcon size={17} aria-hidden="true" /></button></div></header>
+    <div className="messages groups-panel-body">{error ? <div className="error" role="alert">{error}</div> : null}
+      {creating ? <form className="groups-create-form" onSubmit={createGroup}><strong>Create group</strong><input required maxLength={80} placeholder="Group name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /><input required pattern="[a-z0-9][a-z0-9-]{0,30}[a-z0-9]" maxLength={32} placeholder="handle, e.g. frontend" value={form.handle} onChange={(event) => setForm({ ...form, handle: event.target.value.toLowerCase() })} /><textarea maxLength={280} placeholder="Description (optional)" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /><div className="modal-actions"><button type="submit" className="btn-primary">Create</button><button type="button" className="btn-secondary" onClick={() => setCreating(false)}>Cancel</button></div></form> : null}
+      <div className="groups-panel-layout"><div className="groups-panel-list" aria-label="Available groups"><div className="groups-panel-list-head"><label className="sr-only" htmlFor="group-search">Search groups</label><div className="groups-panel-search"><SearchIcon size={15} aria-hidden="true" /><input id="group-search" className="groups-panel-filter" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search groups" /></div></div>{filtered.length ? filtered.map((group) => <button type="button" key={group.id} className={`groups-panel-group${selected?.id === group.id ? " active" : ""}`} onClick={() => setSelected(group)}><span className="groups-panel-group-icon"><ContactRoundIcon size={17} aria-hidden="true" /></span><span className="groups-panel-group-copy"><strong>{group.name}</strong><small>@{group.handle} · {group.memberCount} members · {group.channelCount} channels</small></span><ChevronRightIcon className="groups-panel-group-arrow" size={15} aria-hidden="true" /></button>) : <div className="groups-empty-state"><strong>No groups yet</strong><p>Create a Group to organize people and channels.</p></div>}</div>
+        <div className="groups-panel-members" aria-live="polite">{!selected ? <div className="people-empty">Choose a group to view its members and channels.</div> : <><div className="groups-panel-members-head"><div className="groups-panel-detail-title"><span className="groups-panel-detail-icon"><ContactRoundIcon size={20} aria-hidden="true" /></span><div><h3>{selected.name}</h3><p className="groups-panel-handle">@{selected.handle}</p></div></div><span className="groups-panel-provider">{selected.currentUserRole || "discoverable"}</span></div>{selected.description ? <p className="groups-panel-description">{selected.description}</p> : null}<p className="groups-panel-detail-meta">{selected.memberCount} {selected.memberCount === 1 ? "member" : "members"} · {selected.channelCount} {selected.channelCount === 1 ? "channel" : "channels"}</p><h4 className="groups-section-title">Members</h4><div className="groups-detail-list">{selected.members.map((member) => <div className="person-row groups-panel-member" key={member.id}><button type="button" className="groups-member-profile" onClick={() => onOpenProfile(member)}><Avatar name={member.displayName} src={member.avatarUrl} size={30} /><div className="person-info"><div className="person-name">{member.displayName}{member.role === "owner" ? " · owner" : ""}</div><div className="person-handle">@{member.username}</div></div></button>{selected.currentUserRole ? <button type="button" className="icon-button" onClick={() => removeMember(member.id)} aria-label={`Remove ${member.displayName}`}><XIcon size={15} aria-hidden="true" /></button> : null}</div>)}</div><h4 className="groups-section-title">Assigned channels</h4><div className="groups-channel-list">{selected.channels.length ? selected.channels.map((channel) => <span className="groups-channel-pill" key={channel.id}>#{channel.name}{channel.type === "private" ? " · private" : ""}</span>) : <span className="people-empty">No channels assigned.</span>}</div><div className="groups-detail-actions">{selected.isMember ? <button type="button" className="btn-secondary" onClick={leaveGroup}>Leave group</button> : null}{selected.canDelete ? <button type="button" className="btn-danger" onClick={deleteGroup}>Delete group</button> : null}</div></>}</div>
       </div>
-    </main>
-  );
+    </div>
+  </main>;
 }
