@@ -4488,6 +4488,12 @@ html[data-mode="dark"] .search-highlight .kw-has .kw-label { color: #fcd34d; }
 .groups-channel-list { display: flex; flex-wrap: wrap; gap: 6px; }
 .groups-channel-pill { padding: 5px 8px; border: 1px solid var(--border); border-radius: 999px; color: var(--text); font-size: 11px; }
 .groups-detail-actions { display: flex; gap: 8px; margin-top: 20px; }
+.groups-inline-form { display: grid; grid-template-columns: minmax(120px, 1fr) minmax(150px, 1.6fr) auto; align-items: center; gap: 7px; margin: 8px 0 12px; }
+.groups-inline-form label { color: var(--muted); font-size: 11px; }
+.groups-inline-form select { min-width: 0; padding: 7px 8px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface-2); color: var(--text); font: inherit; font-size: 12px; }
+.groups-channel-remove { display: inline-flex; align-items: center; margin-left: 4px; padding: 0; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+.groups-channel-remove:hover { color: var(--danger); }
+@media (max-width: 700px) { .groups-inline-form { grid-template-columns: 1fr; } }
 .groups-panel-member:focus-visible { outline: 2px solid var(--active-ring); outline-offset: 1px; }
 .groups-panel-member-arrow { flex: none; color: var(--muted); opacity: 0; transition: opacity 120ms ease, transform 120ms ease; }
 .groups-panel-member:hover .groups-panel-member-arrow, .groups-panel-member:focus-visible .groups-panel-member-arrow { opacity: 1; transform: translateX(2px); }
