@@ -1,33 +1,10 @@
 import { useState } from "react";
-
-const MIN_CHROMIUM_MAJOR = 111;
-
-function chromiumBrowser() {
-  const userAgent = navigator.userAgent;
-  // iOS browsers expose Chromium-like product tokens but all use WebKit.
-  if (/CriOS|FxiOS|EdgiOS|OPiOS/i.test(userAgent)) return null;
-
-  const match = userAgent.match(/(Edg|OPR|Vivaldi|SamsungBrowser|Chromium|HeadlessChrome|Chrome)\/(\d+)/i);
-  if (!match) return null;
-
-  const token = match[1].toLowerCase();
-  const name = token === "edg"
-    ? "Microsoft Edge"
-    : token === "opr"
-      ? "Opera"
-      : token === "chromium"
-        ? "Chromium"
-        : token === "vivaldi"
-          ? "Vivaldi"
-          : token === "samsungbrowser"
-            ? "Samsung Internet"
-            : "Chrome";
-  return { name, major: Number(match[2]) };
-}
+import { detectChromiumBrowser, MIN_CHROMIUM_MAJOR } from "../lib/browserCompatibility.js";
 
 export default function BrowserCompatibilityNotice() {
   const [dismissed, setDismissed] = useState(false);
-  const browser = chromiumBrowser();
+  const userAgentData = (navigator as Navigator & { userAgentData?: { brands?: Array<{ brand: string; version: string }> } }).userAgentData;
+  const browser = detectChromiumBrowser(navigator.userAgent, userAgentData);
 
   if (dismissed || !browser || browser.major >= MIN_CHROMIUM_MAJOR) return null;
 
