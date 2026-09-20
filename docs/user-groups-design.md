@@ -207,6 +207,78 @@ before delivering a Group notification.
 - Rate-limit Group creation and bulk membership changes.
 - Remove or anonymize memberships when a user is deleted.
 
+## Edge cases and invariants
+
+### Membership races
+
+- Enforce one membership row per `{ group, user }` with a database unique
+  index; concurrent add requests should produce one member, not duplicates.
+- Perform owner departure, replacement-owner assignment, and last-member
+  archive in one transaction or with an optimistic version check. A stale
+  browser must not be able to restore an owner who has already left.
+- If a member removes the current owner, the same operation must assign a new
+  owner (the remover by default, or an explicitly selected remaining member);
+  no successful mutation may leave an active Group ownerless.
+- Removing the last member through an admin action follows the same automatic
+  archive path as a self-leave.
+- A member who is removed while viewing the Group should lose management
+  controls immediately and receive a clear “You are no longer a member” state.
+- Adding an already active member is idempotent; adding a deleted, suspended,
+  or otherwise ineligible account returns a clear validation error.
+
+### Archived and deleted Groups
+
+- Archived Groups are excluded from active list results, autocomplete, and new
+  message mention resolution, but their old messages retain a non-clickable
+  historical label.
+- Restoring an archived Group requires a workspace admin to select or create
+  an owner and at least one member. Restore must fail safely if the old owner
+  no longer exists.
+- Restoring must revalidate the handle and channel references; a handle may
+  have been reused and a channel may have been deleted or become inaccessible.
+- Archive and delete operations are idempotent. Repeating either operation
+  must not duplicate audit records or fail because the Group is already in the
+  target state.
+- Permanent deletion should be a separate, explicit admin action and should
+  remove active membership/assignment data without rewriting message history.
+
+### Channels and privacy
+
+- A user may assign only channels they can already access. Assigning a private
+  channel must never make it visible to other Group members automatically.
+- If an assigned channel is deleted, archived, or made inaccessible, retain a
+  tombstone or remove the association and show a non-clickable “Channel
+  unavailable” entry to authorized Group viewers.
+- Detaching a channel must not delete the channel or change its membership.
+- A message mentioning a Group must notify only members who can receive the
+  message in that channel; membership alone must not bypass channel privacy.
+- If a Group is mentioned multiple times, or alongside a direct mention, each
+  recipient receives one notification and one Activity item for that message.
+
+### Identity and discovery
+
+- Group IDs, not handles, identify mentions and historical records. Renaming a
+  Group changes suggestions and display text without breaking old messages.
+- Handle uniqueness must be case-insensitive and reserved during an active
+  rename transaction. Decide whether archived handles remain reserved before
+  implementing restore.
+- Group list and search results must paginate members and channels; never load
+  an unbounded workspace-wide member list into one response.
+- Member and channel summaries must be filtered per requester so a Group view
+  cannot disclose private channel names or user data they could not otherwise
+  access.
+
+### Administration and audit
+
+- Admin deletion must be authorized server-side even when the admin is not a
+  Group member, and the UI must clearly label it as an administrative action.
+- Record actor, target Group, previous owner, affected members/channels, and
+  reason/source for create, membership changes, ownership transfer, archive,
+  restore, and permanent delete.
+- Bulk member changes should have bounded request sizes, rate limits, and
+  predictable partial-failure behavior; prefer all-or-nothing batches for the
+  initial implementation.
+
 ## Implementation sequence
 
 1. Add `Group`, `GroupMembership`, and `GroupChannel` models with indexes and
