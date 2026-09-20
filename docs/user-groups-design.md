@@ -19,9 +19,10 @@ The creator is the initial member and owner for lifecycle actions such as
 editing the group identity or deleting it. Ownership can be transferred.
 Workspace admins can delete any Group.
 
-An active Group must always have at least one member and exactly one owner.
-The last member cannot leave or be removed; the Group must be deleted or have
-ownership transferred first.
+An active Group must have at least one member and exactly one owner. Any user
+can leave a Group. If the departing user is the owner and other members
+remain, leaving must transfer ownership to a selected remaining member. If the
+departing user is the last member, the Group is archived automatically.
 
 ### Channel access assumption
 
@@ -35,8 +36,7 @@ iteration can add an explicit “add all Group members” or auto-join setting.
 - Any authenticated user can create a Group.
 - A Group has a display name, stable handle, optional description, members,
   and assigned channels.
-- Group members can add or remove Echo users, including themselves unless they
-  are the last member.
+- Group members can add or remove Echo users, and any member can leave.
 - The owner can edit the name, handle, description, and channel assignments,
   transfer ownership, or delete the Group. Workspace admins can delete any
   Group.
@@ -44,8 +44,8 @@ iteration can add an explicit “add all Group members” or auto-join setting.
 - A member can mention the Group anywhere they can post a message.
 - A Group mention notifies current members once per message and appears in
   their Activity feed.
-- A deleted Group leaves historical mention metadata readable but no longer
-  resolves as an active mention target.
+- An archived or deleted Group leaves historical mention metadata readable but
+  no longer resolves as an active mention target.
 
 The MVP excludes nested Groups, email invitations, approval workflows, group
 DMs, external-directory synchronization, and automatic channel membership.
@@ -80,6 +80,8 @@ owner            User reference
 createdBy        User reference
 createdAt        timestamp
 updatedAt        timestamp
+archivedAt       nullable timestamp
+archivedBy       nullable User reference
 deletedAt        nullable timestamp for safe historical references
 ```
 
@@ -128,6 +130,7 @@ GET    /api/groups/:id/members             member
 POST   /api/groups/:id/members             member
 DELETE /api/groups/:id/members/:userId     member, or self-leave
 POST   /api/groups/:id/transfer            owner
+POST   /api/groups/:id/leave               current member
 
 GET    /api/groups/:id/channels            member
 POST   /api/groups/:id/channels            owner
@@ -153,7 +156,9 @@ directory-only copy with collaborative controls:
    ownership, and delete the Group.
 6. Add channel search to the channel-assignment flow; show private channels
    only when the current user already has access to them.
-7. Label the entity `Group` and remove the RHSSO/provider label from the user
+7. When an owner leaves, require a replacement owner if other members remain;
+   archive automatically when the last member leaves.
+8. Label the entity `Group` and remove the RHSSO/provider label from the user
    experience.
 
 The Groups view should show a summary card or row for every discoverable Group,
@@ -190,12 +195,15 @@ before delivering a Group notification.
   ownership transfer.
 - Workspace admins can delete any Group, including one they do not belong to.
 - Every member can add or remove members, as requested.
-- The owner cannot leave without transferring ownership or deleting the Group.
-- The last member cannot leave or be removed; the Group must be deleted or
-  ownership must be transferred first.
+- Any member can leave. An owner leaving with other members must transfer
+  ownership as part of the same operation.
+- When the last member leaves, archive the Group automatically rather than
+  deleting it. Archived Groups are hidden from active lists and cannot be
+  mentioned or modified by ordinary users.
+- Workspace admins can restore or permanently delete archived Groups.
 - Removing a user from a Group does not remove them from assigned channels.
-- Deleting a Group removes active memberships and assignments but preserves
-  historical mention metadata.
+- Archiving or deleting a Group removes active memberships and assignments but
+  preserves historical mention metadata.
 - Rate-limit Group creation and bulk membership changes.
 - Remove or anonymize memberships when a user is deleted.
 
