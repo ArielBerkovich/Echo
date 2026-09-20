@@ -9,6 +9,7 @@ import {
   slug,
   uniqueSuffix,
   uploadAsToken,
+  messageByText,
 } from "./helpers.js";
 
 const ONE_BY_ONE_PNG = Buffer.from(
@@ -159,6 +160,59 @@ test("clears an unsubmitted channel search when navigating away", async ({ page 
   await page.getByTestId(`channel-row-${fixture.generalChannel.name}`).click();
   await expect(page.getByTestId("channel-title")).toContainText(fixture.generalChannel.name);
   await expect(page.getByTestId("search-input")).toHaveValue("");
+});
+
+test("aligns Hebrew in the composer and sent message", async ({ page }) => {
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  const hebrew = `שלום עולם ${fixture.suffix}`;
+  const composer = page.getByTestId("composer-editor");
+
+  await composer.fill(hebrew);
+  await expect.poll(() => composer.evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
+  await expect.poll(() => composer.evaluate((element) => getComputedStyle(element).textAlign)).toBe("start");
+
+  await page.getByTestId("composer-send").click();
+  const message = messageByText(page, hebrew);
+  await expect(message).toBeVisible();
+  await expect.poll(() => message.getByTestId("message-body").evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
+  await expect.poll(() => message.getByTestId("message-body").evaluate((element) => getComputedStyle(element).textAlign)).toBe("start");
+});
+
+test("supports a forced RTL message layout preference", async ({ page }) => {
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await page.getByTestId("rail-settings").click();
+  await expect(page.getByTestId("settings-page")).toBeVisible();
+  await page.getByRole("button", { name: "Appearance", exact: true }).click();
+  await page.getByTestId("settings-direction-rtl").click();
+  await expect(page.locator("html")).toHaveAttribute("data-interface-direction", "rtl");
+
+  await page.getByTestId("rail-home").click();
+  await page.getByTestId(`channel-row-${slug(fixture.projectChannel.name)}`).click();
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
+  await expect.poll(() => page.getByTestId("composer").evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
+  await expect.poll(() => page.locator(".message").first().evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
+  await page.locator(".message").first().hover();
+  await page.locator(".message-more-action").first().click();
+  const rtlMessageMenu = page.locator(".msg-menu").last();
+  await expect(rtlMessageMenu).toHaveAttribute("dir", "ltr");
+  await expect.poll(() => rtlMessageMenu.evaluate((element) => getComputedStyle(element).direction)).toBe("ltr");
+  await expect.poll(() => rtlMessageMenu.getByRole("menuitem").first().evaluate((element) => getComputedStyle(element).textAlign)).toBe("left");
+
+  const composer = page.getByTestId("composer-editor");
+  await composer.fill("");
+  await expect.poll(() => composer.locator("p").evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
+  await expect.poll(() => composer.locator("p").evaluate((element) => getComputedStyle(element).textAlign)).toBe("right");
+  await composer.fill("@");
+  await expect(page.getByTestId("composer")).toHaveClass(/has-mention-empty/);
+  await expect.poll(() => composer.evaluate((element) => getComputedStyle(element).textAlign)).toBe("right");
+  await composer.fill("שלום עולם @");
+  await expect(page.locator(".mention-popup")).toHaveClass(/mention-popup-rtl/);
+  await composer.fill("שלום עולם @א");
+  await expect.poll(() => composer.evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
+  await composer.fill("שלום @");
+  await expect.poll(() => composer.evaluate((element) => getComputedStyle(element).textAlign)).toBe("start");
+  await composer.fill("@א");
+  await expect.poll(() => composer.evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
 });
 
 test("starts a conversation from the Home Direct Messages button", async ({ page }) => {

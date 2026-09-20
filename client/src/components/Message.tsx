@@ -219,14 +219,22 @@ function Message({
       const rect = message.getBoundingClientRect();
       const header = message.closest(".channel-view")?.querySelector(".channel-header")
         || message.closest(".thread-panel")?.querySelector(".thread-header");
-      const topBoundary = header ? header.getBoundingClientRect().bottom + 6 : 8;
+      // Keep the toolbar attached to a message at the top of the viewport.
+      // Allow a small overlap with the header so the toolbar does not get
+      // pushed down over the message body when the message is partially cut.
+      const topBoundary = header
+        ? Math.max(8, header.getBoundingClientRect().bottom - 18)
+        : 8;
       const toolbarHeight = 38;
+      const isRtl = document.documentElement.dataset.interfaceDirection === "rtl";
       setActionsPosition({
         top: Math.min(
-          Math.max(rect.top + 2, topBoundary),
+          Math.max(rect.top - 20, topBoundary),
           Math.max(topBoundary, window.innerHeight - toolbarHeight - 8)
         ),
-        right: window.innerWidth - rect.right + 18,
+        ...(isRtl
+          ? { left: rect.left + 18, right: "auto" }
+          : { right: window.innerWidth - rect.right + 18, left: "auto" }),
       });
     };
     const frame = requestAnimationFrame(measure);
@@ -253,10 +261,13 @@ function Message({
       const menuRect = menu.getBoundingClientRect();
       const padding = 8;
       const gap = 6;
-      const left = Math.min(
-        Math.max(padding, triggerRect.right - menuRect.width),
-        window.innerWidth - menuRect.width - padding
-      );
+      const isRtl = document.documentElement.dataset.interfaceDirection === "rtl";
+      const left = isRtl
+        ? Math.min(Math.max(padding, triggerRect.left), window.innerWidth - menuRect.width - padding)
+        : Math.min(
+          Math.max(padding, triggerRect.right - menuRect.width),
+          window.innerWidth - menuRect.width - padding
+        );
       setMenuPosition({ top: triggerRect.bottom + gap, left });
     };
     const frame = requestAnimationFrame(measure);
@@ -594,7 +605,7 @@ function Message({
                     );
                   })}
                 </span>
-                <span className="thread-reply-link">
+                <span className="thread-reply-link" dir="ltr">
                   {m.replyCount} {m.replyCount === 1 ? "reply" : "replies"}
                 </span>
               </button>
@@ -612,6 +623,7 @@ function Message({
           style={actionsPosition ? {
             position: "fixed",
             top: actionsPosition.top,
+            left: actionsPosition.left,
             right: actionsPosition.right,
           } : { visibility: "hidden" }}
           onMouseEnter={activateMessage}
@@ -672,6 +684,7 @@ function Message({
           <div className="menu-overlay" onMouseDown={() => setLinkAction(null)} />
           <div
             className="msg-menu menu-fixed"
+            dir="ltr"
             data-testid={`message-${mid}-link-menu`}
             role="menu"
             aria-label="Link actions"
@@ -715,6 +728,7 @@ function Message({
           <div
             ref={menuRef}
             className="msg-menu menu-fixed"
+            dir="ltr"
             style={menuPosition || { visibility: "hidden" }}
             role="menu"
             aria-label="Message actions"

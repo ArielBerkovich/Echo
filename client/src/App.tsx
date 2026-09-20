@@ -15,6 +15,7 @@ import { readJson, readString, writeJson, writeString } from "./lib/storage.js";
 import { notifyPermission, notifySupported, requestNotifyPermission, setNotifyPref } from "./lib/notify.js";
 import { BUILT_IN_GIT_EMOJIS } from "./lib/gitEmojis.js";
 import { THEMES, useThemePreferences } from "./lib/useThemePreferences.js";
+import { useInterfaceDirection } from "./lib/useInterfaceDirection.js";
 import { useConversationCache } from "./lib/useConversationCache.js";
 import { useWorkspaceQueries, workspaceKeys } from "./lib/useWorkspaceQueries.js";
 import { queryKeys } from "./lib/queryClient.js";
@@ -122,6 +123,7 @@ export default function App() {
     return () => window.removeEventListener("beforeunload", disconnectSocket);
   }, []);
   const { theme, setTheme, mode, setMode, toggleMode } = useThemePreferences();
+  const { preference: interfaceDirection, setPreference: setInterfaceDirection } = useInterfaceDirection();
   const {
     scrollStates,
     cacheMessages,
@@ -1666,6 +1668,8 @@ export default function App() {
               onSelectTheme: setTheme,
               mode,
               onSelectMode: setMode,
+              interfaceDirection,
+              onSelectInterfaceDirection: setInterfaceDirection,
               onUpdated: (updated) => setUser((previous) => ({ ...previous, ...updated })),
               onIntegrationsChanged: () => queryClient.invalidateQueries({ queryKey: workspaceKeys.channels }),
               onClose: closeSettings,
@@ -1739,6 +1743,7 @@ export default function App() {
         theme={theme}
         themes={THEMES}
         mode={mode}
+        interfaceDirection={interfaceDirection}
         showCreate={showCreate}
         showNewMessage={showNewMessage}
         showAddPeople={showAddPeople}

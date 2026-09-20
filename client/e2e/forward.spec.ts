@@ -142,7 +142,16 @@ test.describe("forwarding", () => {
     await expect(page.getByRole("dialog")).toHaveAccessibleName("Forward to");
     await expect(modal.locator(".forward-source-card")).toContainText(fixture.messages.searchHit.body);
     await expect(modal.locator(".forward-result-group-label")).toHaveCount(0);
-    await expect(modal.getByTestId("composer-editor")).toHaveAttribute("data-placeholder", "Add context for the recipient…");
+    const noteEditor = modal.getByTestId("composer-editor");
+    await expect(noteEditor).toHaveAttribute("data-placeholder", "Add context for the recipient…");
+    await page.evaluate(() => {
+      document.documentElement.dataset.interfaceDirection = "rtl";
+    });
+    await expect.poll(() => noteEditor.evaluate((editor) => {
+      const paragraph = editor.querySelector("p.is-editor-empty:first-child");
+      const hint = paragraph ? getComputedStyle(paragraph, "::before") : null;
+      return hint && `${paragraph?.dir || ""}|${getComputedStyle(paragraph).direction}|${hint.direction}|${hint.textAlign}|${hint.float}`;
+    })).toBe("|rtl|ltr|left|left");
     await expect(modal.locator(".composer")).toBeVisible();
     await expect(modal.getByTestId("forward-send-selected")).toBeDisabled();
 
@@ -285,13 +294,17 @@ test.describe("forwarding", () => {
 
   test("preserves Hebrew notes when forwarding", async ({ page }) => {
     await openForwardDialog(page);
+    await page.evaluate(() => {
+      document.documentElement.dataset.interfaceDirection = "rtl";
+    });
 
     const modal = forwardModal(page);
     const note = `שלום @${fixture.bob.username}`;
     const noteEditor = modal.getByTestId("composer-editor");
     await noteEditor.fill(note);
-    await expect(modal.locator(".mention-popup")).toBeVisible();
-    await modal.locator(".mention-item").filter({ hasText: fixture.bob.displayName }).click();
+    const mentionPopup = page.locator(".mention-popup");
+    await expect(mentionPopup).toBeVisible();
+    await mentionPopup.locator(".mention-item").filter({ hasText: fixture.bob.displayName }).click();
 
     const expectedNote = `שלום @${fixture.bob.username}`;
     await modal.getByTestId("forward-search").fill(fixture.projectChannel.name);
@@ -305,7 +318,7 @@ test.describe("forwarding", () => {
       `@${fixture.bob.displayName}`
     );
     await expect(forwardedNote).toHaveAttribute("dir", "auto");
-    await expect(forwardedNote).toHaveCSS("text-align", "left");
+    await expect(forwardedNote).toHaveCSS("text-align", "start");
     await expectForwardedWithNote(page, fixture.projectChannel.id, expectedNote);
   });
 
