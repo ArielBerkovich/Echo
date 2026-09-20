@@ -17,6 +17,7 @@ A Group is a collaborative collection of Echo users that can:
 Every group member can add another Echo user to the group or remove a member.
 The creator is the initial member and owner for lifecycle actions such as
 editing the group identity or deleting it. Ownership can be transferred.
+Workspace admins can delete any Group.
 
 ### Channel access assumption
 
@@ -33,7 +34,8 @@ iteration can add an explicit “add all Group members” or auto-join setting.
 - Group members can add or remove Echo users, including themselves unless they
   are the last member.
 - The owner can edit the name, handle, description, and channel assignments,
-  transfer ownership, or delete the Group.
+  transfer ownership, or delete the Group. Workspace admins can delete any
+  Group.
 - Group members can browse the Group and its assigned channels.
 - A member can mention the Group anywhere they can post a message.
 - A Group mention notifies current members once per message and appears in
@@ -101,9 +103,10 @@ index on `{ user, group }`, and a unique index on `handle`. Keep memberships
 and channel assignments separate from the Group document so they remain
 manageable and independently auditable.
 
-Public Group responses should include `id`, `name`, `handle`, `description`,
-`memberCount`, `channelCount`, and the current user's membership/role. Do not
-return member identities or private channel details from the list endpoint.
+Group list responses should include `id`, `name`, `handle`, `description`,
+`memberCount`, `channelCount`, a compact member summary (display name, avatar,
+and ID), public channel summaries, and the current user's membership/role.
+Private channel details must still be filtered per requesting user.
 
 ## API shape
 
@@ -113,9 +116,9 @@ owner checks; hiding a button in the client is not authorization.
 ```text
 GET    /api/groups
 POST   /api/groups                         any authenticated user
-GET    /api/groups/:id                     member or safe public summary
+GET    /api/groups/:id                     discoverable Group summary
 PATCH  /api/groups/:id                     owner
-DELETE /api/groups/:id                     owner
+DELETE /api/groups/:id                     owner or workspace admin
 
 GET    /api/groups/:id/members             member
 POST   /api/groups/:id/members             member
@@ -149,9 +152,17 @@ directory-only copy with collaborative controls:
 7. Label the entity `Group` and remove the RHSSO/provider label from the user
    experience.
 
-The Groups list should show only Groups the user can discover under the chosen
-product policy. The initial policy should be: all Groups are discoverable by
-name, but member lists and assigned private channels require membership.
+The Groups view should show a summary card or row for every discoverable Group,
+including its member list or avatars and assigned channels. Group membership
+and channel associations should be visible without opening a separate detail
+screen. The view should support searching Groups and expanding a Group for the
+full member/channel lists.
+
+The initial discovery policy is workspace-visible Groups. Public channel
+associations can be shown to everyone; private channel names and links are
+shown only to users who can already access those channels. A Group's member
+list is visible in the Groups view, while member management controls remain
+available only to Group members.
 
 ## Mentions and delivery
 
@@ -173,6 +184,7 @@ before delivering a Group notification.
 - Group creation is available to every authenticated user.
 - The owner controls Group metadata, channel assignments, deletion, and
   ownership transfer.
+- Workspace admins can delete any Group, including one they do not belong to.
 - Every member can add or remove members, as requested.
 - The owner cannot leave without transferring ownership or deleting the Group.
 - The last member cannot leave; the Group must be deleted instead.
