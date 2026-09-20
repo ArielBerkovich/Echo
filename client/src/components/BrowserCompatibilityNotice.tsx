@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { detectChromiumBrowser, MIN_CHROMIUM_MAJOR } from "../lib/browserCompatibility.js";
+import {
+  detectCurrentChromiumBrowser,
+  MIN_CHROMIUM_MAJOR,
+} from "../lib/browserCompatibility.js";
 
 export default function BrowserCompatibilityNotice() {
   const [dismissed, setDismissed] = useState(false);
-  const userAgentData = (navigator as Navigator & { userAgentData?: { brands?: Array<{ brand: string; version: string }> } }).userAgentData;
-  const browser = detectChromiumBrowser(navigator.userAgent, userAgentData);
+  const browser = detectCurrentChromiumBrowser();
 
   if (dismissed || !browser || browser.major >= MIN_CHROMIUM_MAJOR) return null;
 

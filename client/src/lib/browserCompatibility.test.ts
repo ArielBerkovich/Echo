@@ -18,9 +18,18 @@ describe("Chromium browser detection", () => {
   });
 
   it("recognizes other Chromium browsers", () => {
-    assert.deepEqual(detectChromiumBrowser("Mozilla/5.0 Chrome/108.0.0.0 OPR/94.0.0.0"), { name: "Opera", major: 108 });
-    assert.deepEqual(detectChromiumBrowser("Mozilla/5.0 Chrome/109.0.0.0 SamsungBrowser/20.0"), { name: "Samsung Internet for Android", major: 109 });
-    assert.deepEqual(detectChromiumBrowser("Mozilla/5.0 Chrome/110.0.0.0 Vivaldi/5.6"), { name: "Vivaldi", major: 110 });
+    assert.deepEqual(
+      detectChromiumBrowser("Mozilla/5.0 Chrome/108.0.0.0 OPR/94.0.0.0"),
+      { name: "Opera", major: 108 },
+    );
+    assert.deepEqual(
+      detectChromiumBrowser("Mozilla/5.0 Chrome/109.0.0.0 SamsungBrowser/20.0"),
+      { name: "Samsung Internet for Android", major: 109 },
+    );
+    assert.deepEqual(
+      detectChromiumBrowser("Mozilla/5.0 Chrome/110.0.0.0 Vivaldi/5.6"),
+      { name: "Vivaldi", major: 110 },
+    );
   });
 
   it("does not classify Firefox or iOS Chrome as Chromium", () => {

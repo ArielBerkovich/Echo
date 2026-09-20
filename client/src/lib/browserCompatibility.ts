@@ -3,7 +3,7 @@ import Bowser from "bowser";
 export const MIN_CHROMIUM_MAJOR = 111;
 
 const CHROMIUM_ENGINE_PATTERN = /(?:Chromium|HeadlessChrome|Chrome)\/(\d+)/i;
-const CHROMIUM_BROWSER_NAMES = new Set([
+const CHROMIUM_BROWSERS = new Set([
   "Chrome",
   "Chromium",
   "Microsoft Edge",
@@ -14,21 +14,29 @@ const CHROMIUM_BROWSER_NAMES = new Set([
   "Yandex",
 ]);
 
-type ClientHints = {
-  brands?: Array<{ brand: string; version: string }>;
-};
+type NavigatorWithClientHints = Navigator & { userAgentData?: Bowser.ClientHints };
 
-export function detectChromiumBrowser(userAgent: string, clientHints?: ClientHints) {
+export type ChromiumBrowser = { name: string; major: number };
+
+export function detectChromiumBrowser(
+  userAgent: string,
+  clientHints?: Bowser.ClientHints,
+): ChromiumBrowser | null {
   // iOS browsers expose Chromium-like product tokens but all use WebKit.
   if (/CriOS|FxiOS|EdgiOS|OPiOS/i.test(userAgent)) return null;
 
   const parser = Bowser.getParser(userAgent, clientHints);
-  const browser = parser.getBrowser();
-  if (!CHROMIUM_BROWSER_NAMES.has(browser.name)) return null;
+  const { name, version } = parser.getBrowser();
+  if (!CHROMIUM_BROWSERS.has(name)) return null;
 
-  const engineVersion = parser.getBrandVersion("Chromium")
-    || userAgent.match(CHROMIUM_ENGINE_PATTERN)?.[1]
-    || browser.version?.split(".")[0];
-  const major = Number.parseInt(engineVersion || "", 10);
-  return Number.isFinite(major) ? { name: browser.name, major } : null;
+  const versionString = parser.getBrandVersion("Chromium")
+    ?? userAgent.match(CHROMIUM_ENGINE_PATTERN)?.[1]
+    ?? version?.split(".")[0];
+  const major = Number.parseInt(versionString ?? "", 10);
+  return Number.isFinite(major) ? { name, major } : null;
+}
+
+export function detectCurrentChromiumBrowser() {
+  const { userAgent, userAgentData } = navigator as NavigatorWithClientHints;
+  return detectChromiumBrowser(userAgent, userAgentData);
 }
