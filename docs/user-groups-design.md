@@ -19,6 +19,10 @@ The creator is the initial member and owner for lifecycle actions such as
 editing the group identity or deleting it. Ownership can be transferred.
 Workspace admins can delete any Group.
 
+An active Group must always have at least one member and exactly one owner.
+The last member cannot leave or be removed; the Group must be deleted or have
+ownership transferred first.
+
 ### Channel access assumption
 
 Assigning a channel to a Group organizes the channel under that Group but does
@@ -187,7 +191,8 @@ before delivering a Group notification.
 - Workspace admins can delete any Group, including one they do not belong to.
 - Every member can add or remove members, as requested.
 - The owner cannot leave without transferring ownership or deleting the Group.
-- The last member cannot leave; the Group must be deleted instead.
+- The last member cannot leave or be removed; the Group must be deleted or
+  ownership must be transferred first.
 - Removing a user from a Group does not remove them from assigned channels.
 - Deleting a Group removes active memberships and assignments but preserves
   historical mention metadata.
