@@ -12,6 +12,16 @@ const handlePattern = /^[a-z0-9][a-z0-9-]{0,30}[a-z0-9]$/;
 const activeGroup = (groupId) => validId(groupId) ? Group.findOne({ _id: groupId, archivedAt: null, deletedAt: null }) : null;
 const membership = (groupId, userId) => GroupMembership.findOne({ group: groupId, user: userId });
 
+async function handleForName(name) {
+  const base = name.toLowerCase().normalize("NFKD").replace(/[^a-z0-9\s-]/g, "").replace(/[\s-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 32) || "group";
+  const normalized = base.length > 1 ? base : `${base}-group`;
+  for (let suffix = 0; suffix < 100; suffix += 1) {
+    const candidate = suffix === 0 ? normalized : `${normalized.slice(0, 32 - String(suffix + 1).length - 1)}-${suffix + 1}`;
+    if (!await Group.exists({ handle: candidate })) return candidate;
+  }
+  throw new Error("could not generate a unique group handle");
+}
+
 async function requireMember(req, res) {
   const group = await activeGroup(req.params.groupId);
   if (!group) { res.status(404).json({ error: "group not found" }); return null; }
@@ -23,11 +33,18 @@ groupsRouter.get("/", async (req, res) => res.json({ groups: await listGroups(re
 
 groupsRouter.post("/", async (req, res) => {
   const name = String(req.body?.name || "").trim();
-  const handle = String(req.body?.handle || "").trim().toLowerCase();
-  if (name.length < 1 || name.length > 80 || !handlePattern.test(handle)) return res.status(400).json({ error: "name and a valid 2-32 character handle are required" });
+  const description = String(req.body?.description || "").trim();
+  const memberIds = [...new Set(Array.isArray(req.body?.memberIds) ? req.body.memberIds.map(String) : [])];
+  if (name.length < 1 || name.length > 80 || description.length > 160 || memberIds.some((id) => !validId(id))) return res.status(400).json({ error: "invalid group name, description, or member list" });
   try {
-    const group = await Group.create({ name, handle, description: String(req.body?.description || "").trim(), owner: req.user._id, createdBy: req.user._id });
-    await GroupMembership.create({ group: group._id, user: req.user._id, role: "owner" });
+    const invitedUsers = memberIds.length ? await groupUsers(memberIds) : [];
+    if (invitedUsers.length !== memberIds.length) return res.status(404).json({ error: "one or more selected users could not be found" });
+    const handle = await handleForName(name);
+    const group = await Group.create({ name, handle, description, owner: req.user._id, createdBy: req.user._id });
+    await GroupMembership.insertMany([
+      { group: group._id, user: req.user._id, role: "owner" },
+      ...memberIds.filter((id) => String(id) !== String(req.user._id)).map((id) => ({ group: group._id, user: objectId(id), role: "member" })),
+    ]);
     res.status(201).json({ group: await groupSummary(group, req.user._id) });
   } catch (error) {
     if (error?.code === 11000) return res.status(409).json({ error: "that group handle is already in use" });

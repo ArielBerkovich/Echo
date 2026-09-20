@@ -5,18 +5,16 @@ test("group owners can manage members, ownership, and channel associations", asy
   const fixture = await seedWorkspaceFixture(page);
   const created = await requestAsToken(page, fixture.alice.token, "/groups", {
     method: "POST",
-    body: { name: `Product ${fixture.suffix}`, handle: `product-${fixture.suffix.slice(-12)}` },
+    body: { name: `Product ${fixture.suffix}`, memberIds: [fixture.bob.id] },
   });
   const groupId = created.group.id;
-  await requestAsToken(page, fixture.alice.token, `/groups/${groupId}/members`, {
-    method: "POST", body: { userId: fixture.bob.id },
-  });
 
   try {
     await page.goto("/groups");
     const panel = page.getByTestId("groups-panel");
     await expect(panel).toContainText(created.group.name);
     await panel.getByRole("button", { name: new RegExp(created.group.name) }).click();
+    await expect(panel.locator(".groups-panel-member").getByText(fixture.bob.displayName)).toBeVisible();
     await expect(panel.getByLabel("Add member to group")).toBeVisible();
     await expect(panel.getByLabel("Assign channel to group")).toBeVisible();
     await expect(panel.getByLabel("Transfer group ownership")).toBeVisible();

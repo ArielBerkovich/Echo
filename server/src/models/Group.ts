@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const groupSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true, minlength: 1, maxlength: 80 },
   handle: { type: String, required: true, lowercase: true, trim: true, minlength: 2, maxlength: 32, match: /^[a-z0-9][a-z0-9-]*[a-z0-9]$/ },
-  description: { type: String, default: "", trim: true, maxlength: 280 },
+  description: { type: String, default: "", trim: true, maxlength: 160 },
   owner: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   archivedAt: { type: Date, default: null },
