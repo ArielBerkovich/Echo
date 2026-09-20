@@ -1,115 +1,69 @@
-# Echo-owned user groups
+# Echo Groups
 
-## Goal
+## Product decision
 
-Allow people to create and manage user groups from inside Echo. A group is a
-workspace-level collection of Echo users that can be browsed, mentioned in
-messages, and used as a recipient for group notifications. Existing RHSSO
-groups remain visible and mentionable, but stay directory-managed and
-read-only in Echo.
+Echo will have application-owned **Groups**. The existing RHSSO directory
+groups will no longer power the Groups view, group browser, or group mentions.
+RHSSO can remain available for authentication, but its external groups are out
+of scope for this feature.
 
-## Proposed MVP
+A Group is a collaborative collection of Echo users that can:
 
-- Any authenticated user can create a group.
-- The creator becomes the owner and the first member.
-- A group has a display name, a stable handle, an optional description, and a
-  member list.
-- Owners can add and remove Echo users, edit group details, and delete the
-  group.
-- Members can browse the group and mention it in channels where they can
-  already post.
-- A group mention notifies current Echo members once per message and appears
-  in their Activity feed.
-- A user can leave a group. The owner must transfer ownership or delete the
-  group before leaving.
-- Membership is private to the group: non-members can see the group name only
-  where product surfaces already expose it, not its member list.
+- be created by any authenticated user;
+- contain Echo users as members;
+- have Echo channels assigned to it for organization and discovery; and
+- be mentioned in messages with `@group`-style suggestions and notifications.
 
-The MVP intentionally excludes invitations by email, nested groups, group
-DMs, approval workflows, and automatic synchronization with RHSSO.
+Every group member can add another Echo user to the group or remove a member.
+The creator is the initial member and owner for lifecycle actions such as
+editing the group identity or deleting it. Ownership can be transferred.
 
-## Rocket.Chat comparison
+### Channel access assumption
 
-Rocket.Chat **Teams** are not only user lists. They are containers for related
-channels, with public/private visibility, team membership, optional auto-join
-channels, and permissions for creating or managing team channels. Existing
-channels can be added to a team, and a channel can be converted into a team;
-team members do not automatically gain access to every channel unless that
-channel is configured accordingly. See the official [Teams overview][rc-teams],
-[team-channel management][rc-team-channels], and [team management][rc-manage-teams]
-guides.
+Assigning a channel to a Group organizes the channel under that Group but does
+not silently change the channel's existing membership or privacy in the first
+iteration. This avoids unexpectedly exposing private conversations. A later
+iteration can add an explicit “add all Group members” or auto-join setting.
 
-That differs from the initial MVP in this document, which is closer to a
-mentionable user group. Before implementation, choose the product meaning:
+## MVP behavior
 
-### Option A: Echo user groups
+- Any authenticated user can create a Group.
+- A Group has a display name, stable handle, optional description, members,
+  and assigned channels.
+- Group members can add or remove Echo users, including themselves unless they
+  are the last member.
+- The owner can edit the name, handle, description, and channel assignments,
+  transfer ownership, or delete the Group.
+- Group members can browse the Group and its assigned channels.
+- A member can mention the Group anywhere they can post a message.
+- A Group mention notifies current members once per message and appears in
+  their Activity feed.
+- A deleted Group leaves historical mention metadata readable but no longer
+  resolves as an active mention target.
 
-Keep the current design. Groups are membership lists used for discovery,
-mentions, and notifications; channels remain independent. This is the smaller
-feature and fits the existing RHSSO group directory abstraction.
+The MVP excludes nested Groups, email invitations, approval workflows, group
+DMs, external-directory synchronization, and automatic channel membership.
 
-### Option B: Echo teams
+## Existing code to reuse or remove
 
-Model a team as a workspace container around channels:
+The current implementation has an external-directory abstraction:
 
-```text
-Team
-  owner / members / visibility
-  channels
-    public or private
-    optional auto-join
-```
+- `server/src/groupDirectory.ts` and `server/src/routes/groups.ts` expose
+  RHSSO groups;
+- `client/src/components/GroupsPanel.tsx` renders read-only directory groups;
+- `Composer.tsx`, message rendering, delivery, and activity already support
+  group mentions;
+- `rhssoDirectory.ts` fetches groups and members from Keycloak/RHSSO.
 
-This is the closer Rocket.Chat equivalent and likely the better choice if the
-goal is organizing project or department conversations. It requires channel
-membership inheritance, team-scoped channel creation, adding existing channels,
-and careful access checks. Team mentions could be layered on later, but should
-not be the only reason the entity exists.
-
-### Recommendation
-
-Do not call Option A “Teams”; it will create the expectation that channels are
-organized underneath it. If Echo needs Rocket.Chat-like behavior, implement
-Option B as a separate `Team` concept and retain `User groups` for directory
-and notification groups. If the immediate need is only `@design`-style
-mentions, implement Option A and keep the current “User groups” name.
-
-[rc-teams]: https://docs.rocket.chat/docs/teams
-[rc-team-channels]: https://docs.rocket.chat/docs/manage-team-channels
-[rc-manage-teams]: https://docs.rocket.chat/docs/manage-teams
-
-## Reuse the existing group boundary
-
-The current code already models external groups with a provider-qualified
-identity such as `rhsso:<id>`:
-
-- `server/src/groupDirectory.ts` provides the provider-neutral list/detail/member contract.
-- `server/src/routes/groups.ts` exposes authenticated group browsing.
-- `client/src/components/GroupsPanel.tsx` renders the list and member detail view.
-- Composer mention suggestions and message rendering already understand group mentions.
-- Server delivery and activity code already resolves group members at send time.
-
-Add an Echo provider rather than creating a separate feature path:
-
-```text
-provider: "echo"
-id: <Group ObjectId>
-```
-
-The provider can return the same public shape as RHSSO groups. The existing
-mention wire format can then remain provider-qualified:
-
-```text
-@group.echo.<group-id>
-```
-
-Keep the legacy RHSSO format working during migration.
+Keep the mention and delivery concepts, but replace the RHSSO provider path
+with application-owned Group queries. Remove the requirement that a group must
+have an RHSSO provider or an external ID. The public API can temporarily keep
+`provider: "echo"` for message compatibility, but new endpoints should make
+the ownership clear and should not expose RHSSO groups.
 
 ## Data model
 
-Add two application-owned models.
-
-### `UserGroup`
+### `Group`
 
 ```text
 _id
@@ -120,114 +74,133 @@ owner            User reference
 createdBy        User reference
 createdAt        timestamp
 updatedAt        timestamp
+deletedAt        nullable timestamp for safe historical references
 ```
 
-### `UserGroupMembership`
+### `GroupMembership`
 
 ```text
-group            UserGroup reference
+group            Group reference
 user             User reference
 role             "owner" | "member"
 createdAt        timestamp
 updatedAt        timestamp
 ```
 
-Add a unique compound index on `{ group, user }`, an index on `{ user, group }`,
-and a unique index on `handle`. Keep membership separate from `User` so group
-membership changes do not make the user document grow without bound and so
-future roles/audit records have a natural home.
+### `GroupChannel`
 
-Public group responses should include `id`, `provider`, `name`, `handle`,
-`description`, `memberCount`, and the current user's membership/role. Do not
-return the full member list from the list endpoint.
+```text
+group            Group reference
+channel          Channel reference
+createdAt        timestamp
+createdBy        User reference
+```
+
+Add unique compound indexes on `{ group, user }` and `{ group, channel }`, an
+index on `{ user, group }`, and a unique index on `handle`. Keep memberships
+and channel assignments separate from the Group document so they remain
+manageable and independently auditable.
+
+Public Group responses should include `id`, `name`, `handle`, `description`,
+`memberCount`, `channelCount`, and the current user's membership/role. Do not
+return member identities or private channel details from the list endpoint.
 
 ## API shape
 
-All endpoints require authentication. Authorization is enforced on the server,
-not only by hiding controls in the client.
+All endpoints require authentication. The server must enforce membership and
+owner checks; hiding a button in the client is not authorization.
 
 ```text
 GET    /api/groups
-POST   /api/groups
-GET    /api/groups/echo/:id
-PATCH  /api/groups/echo/:id              owner
-DELETE /api/groups/echo/:id              owner
-GET    /api/groups/echo/:id/members      member
-POST   /api/groups/echo/:id/members      owner
-DELETE /api/groups/echo/:id/members/:uid owner, or self-leave
-POST   /api/groups/echo/:id/transfer     owner
+POST   /api/groups                         any authenticated user
+GET    /api/groups/:id                     member or safe public summary
+PATCH  /api/groups/:id                     owner
+DELETE /api/groups/:id                     owner
+
+GET    /api/groups/:id/members             member
+POST   /api/groups/:id/members             member
+DELETE /api/groups/:id/members/:userId     member, or self-leave
+POST   /api/groups/:id/transfer            owner
+
+GET    /api/groups/:id/channels            member
+POST   /api/groups/:id/channels            owner
+DELETE /api/groups/:id/channels/:channelId owner
 ```
 
-Use the existing `groupsRouter` and API client. Validate handles and names on
-both sides, normalize handles before uniqueness checks, and return consistent
-`400`, `403`, and `404` errors. Member-add should be idempotent; duplicate
-membership should not create a second record.
+Adding an existing member should be idempotent. Validate that users and
+channels exist, normalize handles before uniqueness checks, and return
+consistent `400`, `403`, and `404` errors. A member removal should not delete
+the user's messages or alter the channel's own membership.
 
 ## UI flow
 
-Keep **User groups** in the existing More menu and Groups workspace. Add:
+Keep **Groups** in the existing More menu and Groups workspace, but replace the
+directory-only copy with collaborative controls:
 
-1. A `Create group` action in the Groups header and empty state.
-2. A modal with name, handle preview/edit, and description.
-3. An owner-only group menu for edit, manage members, transfer ownership, and
-   delete.
-4. A member picker based on existing Echo users, with search and selected
-   members.
-5. Member actions for remove and leave, with explicit confirmation for
-   destructive operations.
-6. Clear badges for `Owner` and `Member`; show `Echo group` instead of the
-   RHSSO provider label for application-owned groups.
+1. Add `Create group` to the Groups header and empty state.
+2. Create a modal for name, handle, and description.
+3. Show each Group's members and assigned channels in its detail panel.
+4. Let any member open an Add members flow and remove members with explicit
+   confirmation.
+5. Let the owner edit group details, attach/detach channels, transfer
+   ownership, and delete the Group.
+6. Add channel search to the channel-assignment flow; show private channels
+   only when the current user already has access to them.
+7. Label the entity `Group` and remove the RHSSO/provider label from the user
+   experience.
 
-The group detail screen should continue to show the member list only to group
-members. Non-members can see a limited group summary if a mention or search
-result links them there, but should not receive member identities.
+The Groups list should show only Groups the user can discover under the chosen
+product policy. The initial policy should be: all Groups are discoverable by
+name, but member lists and assigned private channels require membership.
 
 ## Mentions and delivery
 
-At send time, resolve `echo` group mentions to a snapshot of current member
-IDs, excluding the sender and users who cannot receive the message. Store the
-resolved group metadata on the message/activity record just as existing RHSSO
-mentions do. This keeps old messages readable if a group is later renamed or
-deleted and prevents membership changes from rewriting history.
+Use a stable Group ID in mention metadata rather than relying on the mutable
+handle. The composer should suggest Groups the sender can mention. At send
+time, resolve the Group to the current member IDs, excluding the sender and
+users who cannot receive the message.
 
-Do not send duplicate notifications when one message mentions both a user and
-a group containing that user. Preserve the existing DM/channel permission
-checks before delivering a group notification.
+Store the resolved Group identity and member snapshot on the message/activity
+record, as existing external group mentions do. This keeps old messages
+readable after a rename, membership change, or deletion.
 
-## Permissions and safety
+Do not send duplicate notifications when a message mentions both a user and a
+Group containing that user. Preserve the existing channel/DM permission checks
+before delivering a Group notification.
 
-- Group management is independent of workspace-admin status.
-- Owners can manage only groups they own.
-- A deleted user is removed from memberships by cleanup or treated as an
-  inactive member when queried.
-- Deleting a group removes its active membership records but does not erase
-  historical message mention metadata.
-- Rate-limit group creation and member additions like other user-generated
-  resources.
-- Audit create, update, membership changes, ownership transfer, and delete in
-  the existing server logging/audit pattern if one is available; otherwise add
-  a small group-audit model before exposing admin investigations.
+## Permissions and lifecycle
+
+- Group creation is available to every authenticated user.
+- The owner controls Group metadata, channel assignments, deletion, and
+  ownership transfer.
+- Every member can add or remove members, as requested.
+- The owner cannot leave without transferring ownership or deleting the Group.
+- The last member cannot leave; the Group must be deleted instead.
+- Removing a user from a Group does not remove them from assigned channels.
+- Deleting a Group removes active memberships and assignments but preserves
+  historical mention metadata.
+- Rate-limit Group creation and bulk membership changes.
+- Remove or anonymize memberships when a user is deleted.
 
 ## Implementation sequence
 
-1. Add `UserGroup` and `UserGroupMembership` models with model tests and
-   indexes.
-2. Add the Echo provider implementation and read-only list/detail endpoints;
-   verify it renders alongside RHSSO groups.
-3. Add create/update/delete/membership endpoints with authorization tests.
-4. Extend the Groups panel and add the create/manage member UI.
-5. Extend mention suggestions, resolution, delivery deduplication, and
-   activity tests.
-6. Add browser coverage for create, manage, mention, leave, and delete flows.
-7. Verify migration behavior, full server/client checks, and both full-stack
-   and host-Vite browser workflows.
+1. Add `Group`, `GroupMembership`, and `GroupChannel` models with indexes and
+   tests.
+2. Add authenticated list/detail/create/update/delete and membership routes.
+3. Add channel assignment routes with channel visibility checks.
+4. Replace the RHSSO-backed Groups panel with the Echo Groups UI.
+5. Update composer suggestions and mention resolution to use Echo Groups only.
+6. Update delivery/activity deduplication and historical rendering.
+7. Add browser coverage for create, collaborative membership, channel
+   assignment, mention delivery, ownership transfer, leave, and delete.
+8. Remove RHSSO group-directory code and stale tests once no other feature
+   depends on it.
 
-## Open decisions before implementation
+## Decisions still needed
 
-- Should all authenticated users be allowed to create groups, or should a
-  workspace setting restrict creation to admins?
-- Should group handles be permanently reserved after deletion?
-- Should non-members be able to discover groups through global search?
-- Should an owner be able to make multiple owners, or only transfer the one
-  owner role?
-- Should group mentions be allowed in DMs, or only channels?
+- Should all Groups be discoverable by name, or should private Groups be
+  invite-only?
+- Should a Group member be allowed to assign/detach channels, or owner-only as
+  proposed here?
+- Should adding a channel optionally add all Group members to that channel?
+- Should a Group support multiple owners instead of one transferable owner?
