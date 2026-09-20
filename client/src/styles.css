@@ -313,6 +313,19 @@ html[data-theme="calm"][data-mode="light"] .channel-header {
   border-bottom: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
   box-shadow: none;
 }
+html[data-theme="calm"][data-mode="light"] .message:hover,
+html[data-theme="calm"][data-mode="light"] .message.menu-open,
+html[data-theme="calm"][data-mode="light"] .message.actions-hovered,
+html[data-theme="calm"][data-mode="light"] .message.reaction-open {
+  background: color-mix(in srgb, var(--border) 50%, var(--surface-2)) !important;
+  box-shadow: none;
+}
+html[data-theme="calm"][data-mode="light"][data-interface-direction="rtl"] .message:hover,
+html[data-theme="calm"][data-mode="light"][data-interface-direction="rtl"] .message.menu-open,
+html[data-theme="calm"][data-mode="light"][data-interface-direction="rtl"] .message.actions-hovered,
+html[data-theme="calm"][data-mode="light"][data-interface-direction="rtl"] .message.reaction-open {
+  box-shadow: none;
+}
 html[data-theme="calm"][data-mode="light"] .composer {
   background: #ffffff;
 }
@@ -2063,6 +2076,9 @@ html[data-mode="dark"] .backend-connection-error {
   flex: none;
 }
 .channel-tag {
+  display: inline-block;
+  direction: ltr;
+  unicode-bidi: isolate;
   background: rgba(37, 99, 235, 0.12);
   color: var(--blue-500);
   font-weight: 600;
@@ -4616,6 +4632,56 @@ html[data-mode="dark"] .search-highlight .kw-has .kw-label { color: #fcd34d; }
 .message {
   position: relative;
 }
+/* The interface direction controls the stable message-row layout. Individual
+   message bodies still use dir="auto" so mixed-language conversations remain
+   readable without moving avatars per message. */
+html[data-interface-direction="rtl"] .message {
+  direction: rtl;
+}
+html[data-interface-direction="rtl"] .message .msg-actions {
+  right: auto;
+  left: 18px;
+}
+html[data-interface-direction="rtl"] .message .msg-menu {
+  right: auto;
+  left: 18px;
+  direction: rtl;
+}
+html[data-interface-direction="rtl"] .msg-menu {
+  direction: rtl;
+}
+html[data-interface-direction="rtl"] .msg-menu button,
+html[data-interface-direction="rtl"] .msg-menu .message-link-open {
+  text-align: right;
+}
+/* Menu labels are English action text even when the conversation is RTL. */
+html[data-interface-direction="rtl"] .msg-menu[dir="ltr"],
+html[data-interface-direction="rtl"] .msg-menu[dir="ltr"] button,
+html[data-interface-direction="rtl"] .msg-menu[dir="ltr"] .message-link-open {
+  direction: ltr;
+  text-align: left;
+}
+html[data-interface-direction="rtl"] .composer {
+  direction: rtl;
+}
+html[data-interface-direction="rtl"] .composer-editor p.is-editor-empty:first-child {
+  direction: rtl;
+  text-align: right;
+}
+html[data-interface-direction="rtl"] .composer-editor p.is-editor-empty:first-child::before {
+  float: left;
+  direction: ltr;
+  text-align: left;
+}
+.composer.has-mention-empty.has-mention-rtl .composer-editor {
+  direction: rtl;
+  text-align: right;
+}
+.composer.has-mention-empty.has-mention-rtl .composer-editor p {
+  direction: rtl;
+  text-align: right;
+  unicode-bidi: isolate;
+}
 .message-engagement {
   display: flex;
   flex-direction: column;
@@ -4660,7 +4726,13 @@ html[data-mode="dark"] .search-highlight .kw-has .kw-label { color: #fcd34d; }
 .thread-participant-avatar .avatar > svg {
   display: block;
 }
-.thread-reply-link { color: var(--link-color); font-weight: 700; }
+.thread-reply-link {
+  direction: ltr;
+  unicode-bidi: isolate;
+  white-space: nowrap;
+  color: var(--link-color);
+  font-weight: 700;
+}
 .thread-indicator:hover { background: color-mix(in srgb, var(--link-color) 9%, transparent); }
 .thread-indicator:hover .thread-reply-link { color: color-mix(in srgb, var(--link-color) 82%, var(--text)); }
 .thread-indicator:focus-visible {
@@ -4909,6 +4981,10 @@ html[data-mode="dark"] .day-divider-label {
     right: 8px;
     min-width: 190px;
   }
+html[data-interface-direction="rtl"] .message .msg-menu {
+    right: auto;
+    left: 8px;
+  }
 }
 
 /* "(edited)" marker after a message body */
@@ -5066,6 +5142,9 @@ html[data-mode="dark"] .day-divider-label {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
+}
+.settings-direction-control {
+  margin-top: 16px;
 }
 .theme-card {
   display: flex;
@@ -6169,8 +6248,10 @@ html[data-mode="dark"] .day-divider-label {
 .mention-webhook-examples .mention-webhook-thread-note {
   margin: 0;
   padding: 9px 11px;
-  border-left: 3px solid var(--accent);
-  border-radius: 0 7px 7px 0;
+  border-inline-start: 3px solid var(--accent);
+  border-radius: 0;
+  border-start-end-radius: 7px;
+  border-end-end-radius: 7px;
   color: var(--text);
   background: color-mix(in srgb, var(--active-bg) 12%, var(--surface));
 }
@@ -8546,9 +8627,8 @@ html[data-mode="dark"] .day-divider-label {
   color: var(--text);
   font-size: 13.5px;
   line-height: 1.45;
-  /* Match regular message bodies: preserve RTL character ordering while
-     keeping the note anchored to the left edge of the message column. */
-  text-align: left;
+  /* Follow the note's dir="auto" direction while keeping LTR notes unchanged. */
+  text-align: start;
 }
 
 /* Recipient-first forward dialog. Keep context compact and let the recipient
@@ -9543,6 +9623,12 @@ html[data-mode="dark"] .channel-header {
   transform: none;
   animation: timelineJumpButtonIn 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+/* Mirror the floating conversation control with the RTL message flow. The
+   browser scrollbar itself remains on the physical right. */
+html[data-interface-direction="rtl"] .new-messages-button.timeline-jump-button {
+  left: 10px;
+  right: auto;
+}
 .new-messages-count {
   position: absolute;
   top: -6px;
@@ -9771,8 +9857,8 @@ html[data-mode="dark"] .new-messages-button:hover {
   z-index: 80;
 }
 .message.grouped {
-  padding-top: 2px;
-  padding-bottom: 2px;
+  padding-top: 4px;
+  padding-bottom: 4px;
 }
 /* The first message still has a header, but its bottom edge should join a
    same-minute run as tightly as the grouped messages that follow it. */
@@ -9810,10 +9896,8 @@ html[data-mode="dark"] .new-messages-button:hover {
   line-height: 1.5;
   color: #1e293b;
   word-break: break-word;
-  /* Keep messages left-aligned and starting under the author, even for RTL
-     (Hebrew/Arabic) content. dir="auto" still orders the characters correctly;
-     this just stops short RTL text from jumping to the far right of the column. */
-  text-align: left;
+  /* Follow the direction selected by dir="auto" on the message body. */
+  text-align: start;
 }
 /* Give emoji-only messages a little breathing room below the author row. */
 .message .body:has(.emoji--jumbo) {
@@ -9850,11 +9934,19 @@ html[data-mode="dark"] .new-messages-button:hover {
 
 /* Mentions */
 .mention {
+  display: inline-block;
+  unicode-bidi: isolate;
+  white-space: nowrap;
   background: rgba(37, 99, 235, 0.12);
   color: var(--blue-500);
   font-weight: 600;
   padding: 1px 5px;
   border-radius: 5px;
+}
+.mention > bdi,
+.composer-user-mention > bdi {
+  unicode-bidi: isolate;
+  white-space: nowrap;
 }
 .mention--me {
   background: rgba(251, 191, 36, 0.22);
@@ -9869,6 +9961,8 @@ html[data-mode="dark"] .new-messages-button:hover {
 }
 .composer-group-mention {
   display: inline-block;
+  direction: ltr;
+  unicode-bidi: isolate;
   padding: 1px 5px;
   border-radius: 5px;
   background: color-mix(in srgb, var(--accent) 15%, transparent);
@@ -9876,7 +9970,21 @@ html[data-mode="dark"] .new-messages-button:hover {
   font-weight: 650;
   white-space: nowrap;
 }
-
+.composer-user-mention,
+.composer-channel-mention {
+  display: inline-block;
+  unicode-bidi: isolate;
+  white-space: nowrap;
+}
+html[data-interface-direction="rtl"] .composer-user-mention {
+  direction: rtl;
+}
+html[data-interface-direction="ltr"] .composer-user-mention {
+  direction: ltr;
+}
+.composer-channel-mention {
+  direction: ltr;
+}
 /* @mention autocomplete popup */
 .mention-popup {
   position: fixed;
@@ -9889,7 +9997,28 @@ html[data-mode="dark"] .new-messages-button:hover {
   overflow: hidden;
   padding: 6px;
   animation: mention-popup-in 0.16s ease both;
-  z-index: 5;
+  /* Composer suggestions must sit above modal overlays as well as the chat
+     surface. The popup is position: fixed, so a low local z-index lets a
+     modal backdrop intercept clicks even while the list is visible. */
+  /* Above regular dialogs (z-index: 100/101), below application-level
+     overlays such as auth and walkthrough screens. */
+  z-index: 200;
+  pointer-events: auto;
+}
+.mention-popup-ltr {
+  direction: ltr;
+}
+.mention-popup-ltr .mention-item {
+  text-align: left;
+}
+.mention-popup-ltr .mention-item-copy {
+  align-items: flex-start;
+  text-align: left;
+}
+.mention-popup-ltr .mi-handle[dir="auto"] {
+  direction: ltr;
+  text-align: left;
+  unicode-bidi: isolate;
 }
 @keyframes mention-popup-in {
   from { opacity: 0; }
@@ -9922,13 +10051,40 @@ html[data-mode="dark"] .new-messages-button:hover {
 .mention-item.active {
   background: var(--surface-2);
 }
+.mention-item-copy {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  text-align: start;
+}
 .mention-item .mi-name {
   font-weight: 600;
   font-size: 14px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mention-item .mi-name-channel {
+  direction: ltr;
+  text-align: left;
+  unicode-bidi: isolate;
 }
 .mention-item .mi-handle {
   color: var(--muted);
   font-size: 13px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mention-item .mi-handle[dir="ltr"] {
+  direction: ltr;
+  text-align: left;
+  unicode-bidi: isolate;
 }
 
 /* Composer: a single bordered box */
@@ -10139,18 +10295,32 @@ html[data-mode="dark"] .new-messages-button:hover {
   overflow-y: auto;
   white-space: pre-wrap;
   word-break: break-word;
-  /* Keep RTL character ordering from dir="auto", while anchoring the text
-     block to the left side of the composer. */
-  text-align: left;
+  /* Follow the direction selected by the first strong character in
+     dir="auto" (Hebrew/Arabic right, Latin left). */
+  text-align: start;
 }
 .composer-editor p {
   margin: 0 0 4px;
-  /* Determine bidi ordering from each paragraph's own text. This prevents a
-     quoted RTL message from making newly typed LTR text reorder punctuation. */
-  unicode-bidi: plaintext;
+  text-align: start;
+  /* Composer.tsx sets the paragraph direction from its first non-mention
+     character. Keep the CSS bidi mode normal so an explicit dir attribute is
+     not re-evaluated from an atomic mention's label. */
+  unicode-bidi: normal;
+}
+.composer-editor > p:not(.is-editor-empty) {
+  text-align: start !important;
+}
+.composer-editor[data-composer-direction="ltr"] > p:last-child {
+  direction: ltr !important;
+  text-align: left !important;
 }
 .composer-editor p:last-child {
   margin-bottom: 0;
+}
+.composer-editor .composer-user-mention,
+.composer-editor .composer-channel-mention,
+.composer-editor .composer-group-mention {
+  white-space: nowrap !important;
 }
 .composer-editor p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
@@ -10194,17 +10364,62 @@ html[data-mode="dark"] .new-messages-button:hover {
 .composer-editor ol {
   margin: 2px 0;
   /* Keep the marker beside the paragraph text rendered by Tiptap. */
-  text-align: left;
+  text-align: start;
   list-style-position: outside;
   padding-inline-start: 22px;
 }
 .composer-editor li { margin: 1px 0; }
-.composer-editor li > p { margin: 0; }
+.composer-editor li > p {
+  margin: 0;
+  /* Keep the paragraph's own bidi direction; direction-specific alignment
+     below keeps the text block beside the list marker. */
+  text-align: left;
+}
+.composer-editor ul[dir="ltr"] > li > p,
+.composer-editor ol[dir="ltr"] > li > p {
+  direction: ltr !important;
+  text-align: left !important;
+}
+.composer-editor ul[dir="rtl"] > li > p,
+.composer-editor ol[dir="rtl"] > li > p {
+  direction: rtl !important;
+  text-align: right !important;
+}
 .composer-editor blockquote {
   margin: 4px 0;
-  padding: 2px 0 2px 12px;
-  border-left: 3px solid var(--blue-400);
+  padding: 2px 0;
+  padding-inline-start: 12px;
+  border-inline-start: 3px solid var(--blue-400);
   color: #475569;
+}
+/* An empty structural block has no strong character for ProseMirror's
+   direction detector. Anchor it to the selected interface direction until
+   the user enters text. */
+html[data-interface-direction="rtl"] .composer-editor blockquote {
+  direction: rtl;
+}
+html[data-interface-direction="rtl"] .composer-editor ul:has(> li > p.is-editor-empty),
+html[data-interface-direction="rtl"] .composer-editor ol:has(> li > p.is-editor-empty) {
+  direction: rtl !important;
+}
+html[data-interface-direction="rtl"] .composer-editor p:has(> br.ProseMirror-trailingBreak) {
+  direction: rtl;
+  text-align: right;
+}
+html[data-interface-direction="rtl"] .composer-editor li > p {
+  text-align: right;
+}
+
+/* List paragraphs follow the resolved direction of their own list. This is
+   important for a Hebrew list inside the LTR interface and an English list
+   inside the RTL interface: the marker and text must share the same side. */
+.composer-editor ul > li > p:dir(ltr),
+.composer-editor ol > li > p:dir(ltr) {
+  text-align: left !important;
+}
+.composer-editor ul > li > p:dir(rtl),
+.composer-editor ol > li > p:dir(rtl) {
+  text-align: right !important;
 }
 
 .composer-actions {
@@ -10238,7 +10453,9 @@ html[data-mode="dark"] .new-messages-button:hover {
   border-radius: 10px;
   box-shadow: var(--shadow-md);
   padding: 6px;
-  z-index: 30;
+  /* The mobile navigation drawer is z-index 60; scheduling options must sit
+     above it while remaining below full-screen modal overlays. */
+  z-index: 1000;
 }
 .send-menu-head {
   font-size: 11px;
@@ -10274,6 +10491,12 @@ html[data-mode="dark"] .new-messages-button:hover {
   color: var(--muted);
   opacity: 0.55;
   cursor: not-allowed;
+}
+html[data-interface-direction="rtl"] .send-menu {
+  /* In RTL the send controls sit on the physical left. Anchor the menu from
+     that side so its 210px panel does not extend off-screen. */
+  right: auto;
+  left: 0;
 }
 
 /* Pending-scheduled banner above the composer */
@@ -10342,6 +10565,38 @@ html[data-mode="dark"] .new-messages-button:hover {
   gap: 8px;
   flex-wrap: wrap;
   margin: 14px 0 10px;
+}
+/* The mobile/sidebar navigation layer can overlap the generic modal level;
+   keep the schedule dialog visible when it is opened from an RTL composer. */
+.modal-backdrop.schedule-modal-backdrop,
+.modal-backdrop:has(.schedule-modal) {
+  /* Keep scheduling above navigation drawers and other app-level panels. */
+  z-index: 1100 !important;
+  box-sizing: border-box;
+  justify-content: flex-start;
+  padding-left: calc(88px + 260px + 12px);
+  padding-right: 12px;
+}
+.modal-backdrop.schedule-modal-backdrop .schedule-modal,
+.modal-backdrop:has(.schedule-modal) .schedule-modal {
+  width: min(480px, calc(100vw - 88px - 260px - 24px));
+  max-width: calc(100vw - 88px - 260px - 24px);
+}
+@media (max-width: 760px) {
+  /* The mobile drawer remains on the physical left even in RTL. Reserve its
+     width so the dialog never opens underneath it. */
+  .modal-backdrop.schedule-modal-backdrop,
+  .modal-backdrop:has(.schedule-modal) {
+    --mobile-drawer-width: min(300px, calc(100vw - 88px));
+    padding-left: calc(var(--mobile-drawer-width) + 12px);
+  }
+  .modal-backdrop.schedule-modal-backdrop .schedule-modal,
+  .modal-backdrop:has(.schedule-modal) .schedule-modal {
+    width: min(480px, calc(100vw - var(--mobile-drawer-width) - 24px));
+    max-width: calc(100vw - var(--mobile-drawer-width) - 24px);
+    animation: none;
+    transform: none;
+  }
 }
 .schedule-presets button {
   background: var(--surface-2);
@@ -11196,8 +11451,9 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 }
 .markdown blockquote {
   margin: 6px 0;
-  padding: 2px 0 2px 12px;
-  border-left: 3px solid var(--blue-400);
+  padding: 2px 0;
+  padding-inline-start: 12px;
+  border-inline-start: 3px solid var(--blue-400);
   color: var(--muted);
 }
 .markdown a {

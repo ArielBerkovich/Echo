@@ -62,6 +62,14 @@ describe("mention autocomplete query", () => {
     assert.deepEqual(match?.slice(1), ["@", "Bob Builder"]);
   });
 
+  it("keeps the popup query alive after the space in a display name", () => {
+    const english = "hello @Bob ".match(MENTION_QUERY_RE);
+    const hebrew = "שלום @אלמוג ".match(MENTION_QUERY_RE);
+    assert.deepEqual(english?.slice(1), ["@", "Bob "]);
+    assert.deepEqual(hebrew?.slice(1), ["@", "אלמוג "]);
+    assert.equal("שלום @אלמוג  ".match(MENTION_QUERY_RE), null);
+  });
+
   it("does not carry a mention query across a line break", () => {
     assert.equal("hello @Bob\nBuilder".match(MENTION_QUERY_RE), null);
   });
@@ -85,5 +93,13 @@ describe("mention people suggestions", () => {
 
   it("returns every result as soon as all remaining users share a display name", () => {
     assert.deepEqual(peopleSearchSuggestions(duplicateUsers, "Same "), duplicateUsers);
+  });
+
+  it("does not fall back to completed names after a trailing space", () => {
+    const matches = peopleSearchSuggestions([
+      { id: "short", username: "a.b", displayName: "A B" },
+      { id: "long", username: "a.b.cohen", displayName: "A B Cohen" },
+    ], "A B ");
+    assert.deepEqual(matches.map((user) => user.id), ["long"]);
   });
 });

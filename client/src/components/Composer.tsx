@@ -1,4 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { Node } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
@@ -38,6 +39,41 @@ const SCHEDULE_PRESETS = [
 ];
 
 const MAX_SURVEY_OPTION_CHARACTERS = 80;
+const MENTION_POPUP_WIDTH = 320;
+const MODAL_MENTION_POPUP_HEIGHT = 180;
+const RTL_TEXT_RE = /[\u0590-\u08ff]/;
+const LTR_TEXT_RE = /[A-Za-z\u00c0-\u02af]/;
+
+function firstStrongDirection(text, fallback = "ltr") {
+  for (const character of text || "") {
+    if (RTL_TEXT_RE.test(character)) return "rtl";
+    if (LTR_TEXT_RE.test(character)) return "ltr";
+  }
+  return fallback;
+}
+
+function directionText(element) {
+  if (!element) return "";
+  const clone = element.cloneNode(true);
+  clone.querySelectorAll("[data-user-mention], [data-group-mention], [data-channel-mention], [data-custom-emoji]")
+    .forEach((token) => token.remove());
+  return clone.textContent || "";
+}
+
+function editorDirection(currentEditor) {
+  let text = "";
+  currentEditor.state.selection.$from.parent.descendants((node) => {
+    if (["userMention", "groupMention", "channelMention", "customEmoji"].includes(node.type.name)) return false;
+    if (node.isText) text += node.text;
+    return true;
+  });
+  const meaningfulText = text.replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, "").trim();
+  if (!meaningfulText) return null;
+  return firstStrongDirection(
+    text,
+    document.documentElement.dataset.interfaceDirection === "rtl" ? "rtl" : "ltr"
+  );
+}
 
 function tomorrow9am() {
   const d = new Date();
@@ -124,6 +160,7 @@ const GroupMention = Node.create({
       class: "composer-group-mention",
       "data-group-mention": node.attrs.token,
       "data-group-label": node.attrs.label,
+      dir: "ltr",
       contenteditable: "false",
     }, `@${node.attrs.label}`];
   },
@@ -136,7 +173,7 @@ const UserMention = Node.create({
   name: "userMention", inline: true, group: "inline", atom: true, selectable: false,
   addAttributes() { return { username: { default: "" }, label: { default: "" } }; },
   parseHTML() { return [{ tag: "span[data-user-mention]" }]; },
-  renderHTML({ node }) { return ["span", { class: "composer-user-mention", "data-user-mention": node.attrs.username, contenteditable: "false" }, `@${node.attrs.label || node.attrs.username}`]; },
+  renderHTML({ node }) { return ["span", { class: "composer-user-mention", "data-user-mention": node.attrs.username, contenteditable: "false" }, ["bdi", {}, `@${node.attrs.label || node.attrs.username}`]]; },
   renderText({ node }) { return `@${node.attrs.username}`; },
 });
 
@@ -144,7 +181,7 @@ const ChannelMention = Node.create({
   name: "channelMention", inline: true, group: "inline", atom: true, selectable: false,
   addAttributes() { return { channelId: { default: "" }, name: { default: "" } }; },
   parseHTML() { return [{ tag: "span[data-channel-mention]" }]; },
-  renderHTML({ node }) { return ["span", { class: "composer-channel-mention", "data-channel-mention": node.attrs.name, "data-channel-id": node.attrs.channelId, contenteditable: "false" }, `#${node.attrs.name}`]; },
+  renderHTML({ node }) { return ["span", { class: "composer-channel-mention", "data-channel-mention": node.attrs.name, "data-channel-id": node.attrs.channelId, dir: "ltr", contenteditable: "false" }, `#${node.attrs.name}`]; },
   renderText({ node }) { return `#${node.attrs.name}`; },
 });
 
@@ -170,6 +207,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   const isThread = !!parentId; // a thread reply composer (hides channel-level scheduling)
   const [mention, setMention] = useState(null); // { trigger, query, from, to } or null
   const composerRef = useRef(null);
+  const mentionPopupRef = useRef(null);
   const [mentionPopupPosition, setMentionPopupPosition] = useState(null);
   const [rhssoGroups, setRhssoGroups] = useState([]);
   const [catalogChannels, setCatalogChannels] = useState([]);
@@ -221,6 +259,10 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     code: false,
     codeBlock: false,
   });
+  const mentionQueryIsRtl = !!mention && (
+    mention.baseDirection === "rtl"
+  );
+  const mentionAtEmptyParagraphStart = !!mention && !mention.inline && !mention.query;
   const duplicateSurveyOptionCount = surveyDraft
     ? surveyDraft.options.filter((option, index, options) => {
       const normalized = option.trim().toLowerCase();
@@ -296,7 +338,10 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   const editor = useEditor({
     editable: !disabled,
     extensions: [
-      StarterKit.configure({ heading: { levels: [1, 2, 3] }, trailingNode: false }),
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3] },
+        trailingNode: false,
+      }),
       CustomEmoji,
       GroupMention,
       UserMention,
@@ -325,6 +370,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     onUpdate: ({ editor: currentEditor }) => syncEditorState(currentEditor),
     onBlur: () => setMention(null),
     onSelectionUpdate: ({ editor: currentEditor }) => {
+      syncParagraphDirections(currentEditor);
       syncMentionContext(currentEditor);
       setEditorState(readEditorState(currentEditor));
     },
@@ -342,6 +388,21 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   useEffect(() => {
     editor?.setEditable(!disabled);
   }, [disabled, editor]);
+  useEffect(() => {
+    if (!editor) return undefined;
+    const handleInput = () => syncParagraphDirections(editor);
+    let dom;
+    try {
+      dom = editor.view.dom;
+    } catch {
+      return undefined;
+    }
+    dom.addEventListener("input", handleInput);
+    return () => dom.removeEventListener("input", handleInput);
+  }, [editor]);
+  useLayoutEffect(() => {
+    if (editor) syncParagraphDirections(editor);
+  }, [editor, editorState]);
   useEffect(() => {
     if (!editor) return;
     if (!editing) {
@@ -407,6 +468,8 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
 
   const suggestions = useMemo(() => {
     if (!mention) return [];
+    // Keep the trailing space in the lookup: it separates words in a display
+    // name, and prevents `A B ` from falling back to exact `A B` results.
     const q = mention.query.toLowerCase();
     if (mention.trigger === "#") {
       const available = [...new Map([...channels, ...catalogChannels].map((item) => [item.id, item])).values()];
@@ -436,12 +499,42 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       return undefined;
     }
     const updatePosition = () => {
-      const caret = editor.view.coordsAtPos(mention.to);
-      const popupWidth = Math.min(320, window.innerWidth - 16);
-      const popupHeight = 330;
-      const left = Math.max(8, Math.min(caret.left, window.innerWidth - popupWidth - 8));
-      const aboveTop = caret.top - popupHeight - 8;
-      setMentionPopupPosition({ left, top: aboveTop >= 8 ? aboveTop : caret.bottom + 8 });
+      const composer = composerRef.current?.getBoundingClientRect();
+      const popupWidth = Math.min(MENTION_POPUP_WIDTH, window.innerWidth - 16);
+      const isRtl = mentionQueryIsRtl;
+      const modal = composerRef.current?.closest(".modal");
+      const placePopup = (anchorLeft, fallbackTop) => {
+        const left = Math.max(8, Math.min(anchorLeft, window.innerWidth - popupWidth - 8));
+        if (modal && composer) {
+          // A modal has its own transformed stacking context. The popup is
+          // portaled to body, so anchor it below the composer when possible;
+          // placing it above can overlap the modal's recipient controls.
+          const belowTop = composer.bottom + 8;
+          const top = belowTop + MODAL_MENTION_POPUP_HEIGHT <= window.innerHeight - 8
+            ? belowTop
+            : Math.max(8, composer.top - MODAL_MENTION_POPUP_HEIGHT - 8);
+          setMentionPopupPosition({ left, top });
+          return;
+        }
+        const anchorTop = composer?.top ?? fallbackTop;
+        setMentionPopupPosition({ left, bottom: Math.max(8, window.innerHeight - anchorTop + 8) });
+      };
+
+      try {
+        const caret = editor.view.coordsAtPos(mention.to);
+        // Keep the popup next to the active text. The paragraph direction
+        // decides which edge follows the caret; clamp it to the viewport.
+        const caretLeft = Number.isFinite(caret.left) ? caret.left : 8;
+        const caretRight = Number.isFinite(caret.right) ? caret.right : caretLeft;
+        const caretAnchor = mentionAtEmptyParagraphStart && composer
+          ? (isRtl ? composer.right - popupWidth : composer.left)
+          : (isRtl ? caretRight - popupWidth : caretLeft);
+        placePopup(caretAnchor, caret.top);
+      } catch {
+        if (!composer) return;
+        const left = mentionQueryIsRtl ? composer.right - popupWidth : composer.left;
+        placePopup(left, composer.top);
+      }
     };
     updatePosition();
     window.addEventListener("resize", updatePosition);
@@ -450,7 +543,24 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [editor, mention, suggestions.length]);
+  }, [editor, mention, mentionAtEmptyParagraphStart, mentionQueryIsRtl, suggestions.length]);
+
+  // The initial modal position uses a conservative estimate so the popup can
+  // render before its size is known. Correct it from the actual rendered
+  // height, which matters when many people/channels are suggested.
+  useLayoutEffect(() => {
+    if (!mention || !mentionPopupPosition?.top || !mentionPopupRef.current) return;
+    const composer = composerRef.current?.getBoundingClientRect();
+    if (!composer || !composerRef.current?.closest(".modal")) return;
+    const popupHeight = mentionPopupRef.current.getBoundingClientRect().height;
+    const belowTop = composer.bottom + 8;
+    const top = belowTop + popupHeight <= window.innerHeight - 8
+      ? belowTop
+      : Math.max(8, composer.top - popupHeight - 8);
+    if (Math.abs(mentionPopupPosition.top - top) > 1) {
+      setMentionPopupPosition((current) => current ? { ...current, top } : current);
+    }
+  }, [mention, mentionPopupPosition, suggestions.length]);
 
   useEffect(() => {
     activeMentionItemRef.current?.scrollIntoView({ block: "nearest" });
@@ -460,6 +570,10 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
 
   function syncEditorState(currentEditor) {
     setEditorState(readEditorState(currentEditor));
+    const direction = editorDirection(currentEditor);
+    if (direction) currentEditor.view.dom.dataset.composerDirection = direction;
+    else delete currentEditor.view.dom.dataset.composerDirection;
+    syncParagraphDirections(currentEditor);
     const hasText = currentEditor.getText().trim().length > 0;
     hasText ? signalTyping() : stopTyping();
     syncMentionContext(currentEditor);
@@ -467,6 +581,63 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     onDraftChange?.(draft);
     const key = draftStorageKey(channel.id, isThread);
     if (draftReadyRef.current && !editing && key) writeString(key, draft.trim() ? draft : null);
+  }
+
+  // Make each paragraph's base direction explicit. Relying on `dir="auto"`
+  // for the whole editor lets neutral characters such as @ and punctuation
+  // re-run bidi estimation as the user types, which can flip mixed text.
+  function syncParagraphDirections(currentEditor) {
+    const applyDirections = () => {
+      if (currentEditor.isDestroyed) return;
+      const fallback = document.documentElement.dataset.interfaceDirection === "rtl" ? "rtl" : "ltr";
+      // A paragraph containing only numbers/punctuation has no strong
+      // character for `dir="auto"` to resolve. Give the editor the interface
+      // fallback in that neutral-only state so it starts on the expected side.
+      const editorText = directionText(currentEditor.view.dom);
+      const hasStrongCharacter = RTL_TEXT_RE.test(editorText) || LTR_TEXT_RE.test(editorText);
+      currentEditor.view.dom.setAttribute("dir", hasStrongCharacter ? "auto" : fallback);
+      currentEditor.view.dom.querySelectorAll("p").forEach((paragraph) => {
+        const paragraphText = directionText(paragraph);
+        if (!paragraphText.replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, "").trim()) {
+          paragraph.removeAttribute("dir");
+          paragraph.style.removeProperty("text-align");
+          return;
+        }
+        const direction = firstStrongDirection(paragraphText, fallback);
+        if (paragraph.getAttribute("dir") !== direction) paragraph.setAttribute("dir", direction);
+        if (direction === "ltr") {
+          if (paragraph.style.textAlign !== "left") paragraph.style.textAlign = "left";
+        } else if (paragraph.style.textAlign) {
+          paragraph.style.removeProperty("text-align");
+        }
+      });
+      // List markers follow the interface direction so the marker and text
+      // stay together on the side selected by the first strong list character.
+      currentEditor.view.dom.querySelectorAll("ul, ol").forEach((list) => {
+        const listText = directionText(list);
+        const hasStrongCharacter = RTL_TEXT_RE.test(listText) || LTR_TEXT_RE.test(listText);
+        if (hasStrongCharacter) {
+          if (list.getAttribute("dir") !== "auto") list.setAttribute("dir", "auto");
+          list.style.removeProperty("direction");
+        } else {
+          if (list.getAttribute("dir") !== fallback) list.setAttribute("dir", fallback);
+          if (list.style.getPropertyValue("direction") !== fallback
+            || list.style.getPropertyPriority("direction") !== "important") {
+            list.style.setProperty("direction", fallback, "important");
+          }
+        }
+      });
+    };
+    applyDirections();
+    // Tiptap may finish replacing the paragraph DOM after onUpdate returns;
+    // Repeat on successive frames because Tiptap can replace the paragraph
+    // after the update callback, especially after an atomic mention insertion.
+    requestAnimationFrame(() => {
+      applyDirections();
+      requestAnimationFrame(applyDirections);
+    });
+    window.setTimeout(applyDirections, 0);
+    window.setTimeout(applyDirections, 50);
   }
 
   function readEditorState(currentEditor) {
@@ -509,6 +680,11 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     setMention({
       trigger: match[1],
       query: match[2],
+      inline: Boolean((match.index ?? 0) > 0 && before.slice(0, match.index).trim()),
+      baseDirection: firstStrongDirection(
+        before,
+        document.documentElement.dataset.interfaceDirection === "rtl" ? "rtl" : "ltr"
+      ),
       from: from - match[2].length - 1,
       to: from,
     });
@@ -568,26 +744,35 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
 
   function applyMention(picked) {
     if (!mention || !editor) return;
+    // Anchor the boundary after a mention to the interface direction. The
+    // marker is removed by htmlToMarkdown before delivery, but prevents a
+    // following RTL run from visually pulling the neutral space/mention out
+    // of order while editing in an LTR composer.
+    const trailingMentionSpace = document.documentElement.dataset.interfaceDirection === "rtl" ? " \u200F" : " \u200E";
     if (picked.groupMention) {
       editor.chain().focus().insertContentAt({ from: mention.from, to: mention.to }, [
         { type: "groupMention", attrs: { token: `@${picked.username}`, label: picked.displayName } },
-        { type: "text", text: " " },
+        { type: "text", text: trailingMentionSpace },
       ]).run();
+      syncParagraphDirections(editor);
       setMention(null);
       return;
     }
     if (mention.trigger === "@") {
-      editor.chain().focus().insertContentAt({ from: mention.from, to: mention.to }, [{ type: "userMention", attrs: { username: picked.username, label: picked.displayName } }, { type: "text", text: " " }]).run();
+      editor.chain().focus().insertContentAt({ from: mention.from, to: mention.to }, [{ type: "userMention", attrs: { username: picked.username, label: picked.displayName } }, { type: "text", text: trailingMentionSpace }]).run();
+      syncParagraphDirections(editor);
       setMention(null);
       return;
     }
     if (mention.trigger === "#") {
-      editor.chain().focus().insertContentAt({ from: mention.from, to: mention.to }, [{ type: "channelMention", attrs: { channelId: picked.id, name: picked.name } }, { type: "text", text: " " }]).run();
+      editor.chain().focus().insertContentAt({ from: mention.from, to: mention.to }, [{ type: "channelMention", attrs: { channelId: picked.id, name: picked.name } }, { type: "text", text: trailingMentionSpace }]).run();
+      syncParagraphDirections(editor);
       setMention(null);
       return;
     }
     const value = mention.trigger === "#" ? `#${picked.name}` : `@${picked.username}`;
     editor.chain().focus().insertContentAt({ from: mention.from, to: mention.to }, `${value} `).run();
+    syncParagraphDirections(editor);
     setMention(null);
   }
 
@@ -948,7 +1133,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   return (
     <form
       ref={composerRef}
-      className={`composer${draggingFiles ? " dragging-files" : ""}${disabled ? " is-disabled" : ""}`}
+      className={`composer${draggingFiles ? " dragging-files" : ""}${disabled ? " is-disabled" : ""}${mention ? " has-mention" : ""}${mentionAtEmptyParagraphStart ? " has-mention-empty" : ""}${mentionQueryIsRtl ? " has-mention-rtl" : ""}`}
       data-testid="composer"
       onSubmit={handleSend}
     >
@@ -1030,6 +1215,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
         <Modal
           title="Schedule message"
           className="schedule-modal"
+          backdropClassName="schedule-modal-backdrop"
           onClose={() => {
             setScheduleAt(null);
             setScheduleError(null);
@@ -1300,10 +1486,15 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
 
       {mentionModal}
 
-      {mention && suggestions.length > 0 && mentionPopupPosition && (
-        <div className="mention-popup" style={mentionPopupPosition}>
-          <div className="mention-popup-head">{mention.trigger === "#" ? "Public channels" : "People and groups"}</div>
-          <div className="mention-popup-results">
+      {mention && suggestions.length > 0 && mentionPopupPosition && (() => {
+        const popup = (
+          <div
+            ref={mentionPopupRef}
+            className={`mention-popup ${mentionQueryIsRtl ? "mention-popup-rtl" : "mention-popup-ltr"}`}
+            style={mentionPopupPosition}
+          >
+            <div className="mention-popup-head">{mention.trigger === "#" ? "Public channels" : "People and groups"}</div>
+            <div className="mention-popup-results">
             {suggestions.map((u, idx) => (
               <button
                 ref={idx === activeIdx ? activeMentionItemRef : null}
@@ -1311,6 +1502,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                 key={u.id}
                 className={`mention-item ${idx === activeIdx ? "active" : ""}`}
                 onMouseEnter={() => setActiveIdx(idx)}
+                onPointerDown={keepFocus}
                 onMouseDown={keepFocus}
                 onClick={() => applyMention(u)}
               >
@@ -1323,13 +1515,25 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                 ) : (
                   <Avatar name={u.displayName} src={u.avatarUrl} size={26} />
                 )}
-                <span className="mi-name">{u.channelTag ? `#${u.name}` : u.broadcast ? `@${u.username}` : u.displayName}</span>
-                <span className="mi-handle">{u.channelTag ? "Public channel" : u.broadcast ? u.displayName : u.groupMention ? u.path : `@${u.username}`}</span>
+                <span className="mention-item-copy">
+                  <span className={`mi-name${u.channelTag ? " mi-name-channel" : ""}`} dir={u.channelTag ? "ltr" : "auto"}>{u.channelTag ? `#${u.name}` : u.broadcast ? `@${u.username}` : u.displayName}</span>
+                  <span
+                    className="mi-handle"
+                    dir={u.channelTag || (!u.broadcast && !u.groupMention) ? "ltr" : "auto"}
+                  >
+                    {u.channelTag ? "Public channel" : u.broadcast ? u.displayName : u.groupMention ? u.path : `@${u.username}`}
+                  </span>
+                </span>
               </button>
             ))}
+            </div>
           </div>
-        </div>
-      )}
+        );
+        if (typeof document !== "undefined" && composerRef.current?.closest(".modal")) {
+          return createPortal(popup, document.body);
+        }
+        return popup;
+      })()}
 
       {emojiOpen && (
         <EmojiPicker
