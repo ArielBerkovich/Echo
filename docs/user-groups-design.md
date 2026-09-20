@@ -28,6 +28,56 @@ read-only in Echo.
 The MVP intentionally excludes invitations by email, nested groups, group
 DMs, approval workflows, and automatic synchronization with RHSSO.
 
+## Rocket.Chat comparison
+
+Rocket.Chat **Teams** are not only user lists. They are containers for related
+channels, with public/private visibility, team membership, optional auto-join
+channels, and permissions for creating or managing team channels. Existing
+channels can be added to a team, and a channel can be converted into a team;
+team members do not automatically gain access to every channel unless that
+channel is configured accordingly. See the official [Teams overview][rc-teams],
+[team-channel management][rc-team-channels], and [team management][rc-manage-teams]
+guides.
+
+That differs from the initial MVP in this document, which is closer to a
+mentionable user group. Before implementation, choose the product meaning:
+
+### Option A: Echo user groups
+
+Keep the current design. Groups are membership lists used for discovery,
+mentions, and notifications; channels remain independent. This is the smaller
+feature and fits the existing RHSSO group directory abstraction.
+
+### Option B: Echo teams
+
+Model a team as a workspace container around channels:
+
+```text
+Team
+  owner / members / visibility
+  channels
+    public or private
+    optional auto-join
+```
+
+This is the closer Rocket.Chat equivalent and likely the better choice if the
+goal is organizing project or department conversations. It requires channel
+membership inheritance, team-scoped channel creation, adding existing channels,
+and careful access checks. Team mentions could be layered on later, but should
+not be the only reason the entity exists.
+
+### Recommendation
+
+Do not call Option A “Teams”; it will create the expectation that channels are
+organized underneath it. If Echo needs Rocket.Chat-like behavior, implement
+Option B as a separate `Team` concept and retain `User groups` for directory
+and notification groups. If the immediate need is only `@design`-style
+mentions, implement Option A and keep the current “User groups” name.
+
+[rc-teams]: https://docs.rocket.chat/docs/teams
+[rc-team-channels]: https://docs.rocket.chat/docs/manage-team-channels
+[rc-manage-teams]: https://docs.rocket.chat/docs/manage-teams
+
 ## Reuse the existing group boundary
 
 The current code already models external groups with a provider-qualified
