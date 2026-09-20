@@ -1,21 +1,7 @@
-import {
-  listRhssoGroups,
-  rhssoDirectoryEnabled,
-  rhssoGroup,
-  rhssoGroupMembers,
-} from "./rhssoDirectory.js";
-
-// Provider-neutral contract for a group source. Future local, LDAP, SCIM, or
-// application-owned groups only need to implement this boundary; routes,
-// mentions, message history, and the client API stay unchanged.
-const providers = new Map([
-  ["rhsso", {
-    enabled: rhssoDirectoryEnabled,
-    listGroups: listRhssoGroups,
-    getGroup: rhssoGroup,
-    getMembers: rhssoGroupMembers,
-  }],
-]);
+// Provider-neutral contract for a group source. The Echo-owned Groups
+// implementation will register here; the former RHSSO directory provider was
+// removed because RHSSO is now used only for authentication.
+const providers = new Map();
 
 function providerFor(id: string) {
   return providers.get(String(id || ""));
