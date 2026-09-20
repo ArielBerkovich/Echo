@@ -1053,7 +1053,7 @@ input:focus {
   position: relative;
   z-index: 1;
   padding: 10px 10px 11px;
-  background: var(--rail-bg);
+  background: transparent;
   font-size: 13.5px;
   font-weight: 600;
   color: var(--muted);
