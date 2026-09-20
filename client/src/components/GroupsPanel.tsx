@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronRightIcon, ContactRoundIcon, PlusIcon, SearchIcon, XIcon } from "lucide-react";
 import { api } from "../api.js";
 import Avatar from "./Avatar.js";
+import Modal from "./Modal.js";
+import useRecipientPickerKeyboard from "./useRecipientPickerKeyboard.js";
 
 export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
   const [groups, setGroups] = useState([]);
@@ -12,6 +14,9 @@ export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ name: "", description: "", memberIds: [] });
+  const [memberQuery, setMemberQuery] = useState("");
+  const groupNameRef = useRef(null);
+  const memberSearchRef = useRef(null);
   const [memberToAdd, setMemberToAdd] = useState("");
   const [channelToAdd, setChannelToAdd] = useState("");
   const [replacementOwner, setReplacementOwner] = useState("");
@@ -39,6 +44,28 @@ export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
   const channelIds = new Set((selected?.channels || []).map((channel) => channel.id));
   const availableUsers = users.filter((user) => !memberIds.has(user.id));
   const availableChannels = channels.filter((channel) => !channelIds.has(channel.id) && (channel.type === "public" || channel.joined !== false));
+  const selectedMembers = useMemo(() => users.filter((user) => form.memberIds.includes(user.id)), [form.memberIds, users]);
+  const memberMatches = useMemo(() => {
+    const queryText = memberQuery.trim().toLowerCase();
+    return users.filter((user) => !form.memberIds.includes(user.id) && (!queryText || `${user.displayName} ${user.username}`.toLowerCase().includes(queryText))).slice(0, 20);
+  }, [form.memberIds, memberQuery, users]);
+  const { activeIndex, activeItem, activeOptionRef, handleKeyDown, setActiveIndex } = useRecipientPickerKeyboard({
+    items: memberMatches,
+    hasQuery: Boolean(memberQuery.trim()),
+    onSelect: addCreationMember,
+  });
+
+  function addCreationMember(user) {
+    setForm((current) => current.memberIds.includes(user.id) ? current : { ...current, memberIds: [...current.memberIds, user.id] });
+    setMemberQuery("");
+    setActiveIndex(0);
+    requestAnimationFrame(() => memberSearchRef.current?.focus());
+  }
+
+  function removeCreationMember(userId) {
+    setForm((current) => ({ ...current, memberIds: current.memberIds.filter((id) => id !== userId) }));
+    requestAnimationFrame(() => memberSearchRef.current?.focus());
+  }
 
   async function createGroup(event) {
     event.preventDefault();
@@ -59,7 +86,7 @@ export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
   return <main className="groups-panel" data-testid="groups-panel" aria-label="Groups">
     <header className="channel-header groups-panel-header"><span className="groups-panel-title"><ContactRoundIcon size={20} strokeWidth={1.8} aria-hidden="true" /><span className="ch-name">Groups</span></span><div className="groups-panel-header-actions"><span className="groups-panel-count">{groups.length} {groups.length === 1 ? "group" : "groups"}</span><button type="button" className="header-action" onClick={() => setCreating(true)} aria-label="Create group"><PlusIcon size={17} aria-hidden="true" /></button></div></header>
     <div className="messages groups-panel-body">{error ? <div className="error" role="alert">{error}</div> : null}
-      {creating ? <form className="groups-create-form" onSubmit={createGroup}><strong>Create group</strong><input required maxLength={80} aria-label="Group name" placeholder="Group name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /><textarea maxLength={160} aria-label="Group description" placeholder="Description (optional)" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /><label htmlFor="create-group-members">Add members</label><select id="create-group-members" multiple size={Math.min(5, Math.max(2, users.length))} aria-label="Add members to group" value={form.memberIds} onChange={(event) => setForm({ ...form, memberIds: Array.from(event.target.selectedOptions, (option) => option.value) })}>{users.map((user) => <option key={user.id} value={user.id}>{user.displayName} (@{user.username})</option>)}</select><small className="groups-form-hint">Optional. Hold Ctrl or Command to select multiple people.</small><div className="modal-actions"><button type="submit" className="btn-primary">Create</button><button type="button" className="btn-secondary" onClick={() => setCreating(false)}>Cancel</button></div></form> : null}
+      {creating ? <Modal title="Create group" className="groups-create-modal" onClose={() => setCreating(false)} onOpenAutoFocus={(event) => { event.preventDefault(); groupNameRef.current?.focus(); }}><form className="groups-create-form" onSubmit={createGroup}><input ref={groupNameRef} required maxLength={80} aria-label="Group name" placeholder="Group name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /><textarea maxLength={160} aria-label="Group description" placeholder="Description (optional)" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /><label htmlFor="create-group-member-search">Add members</label><div className={`groups-member-picker${selectedMembers.length ? " has-members" : ""}`}><div className="groups-member-chips" aria-label="Selected group members">{selectedMembers.map((user) => <span className="forward-chip" data-testid="group-creation-member" key={user.id}><span>{user.displayName}</span><button type="button" className="chip-remove" aria-label={`Remove ${user.displayName}`} onMouseDown={(event) => event.stopPropagation()} onClick={() => removeCreationMember(user.id)}><XIcon size={13} aria-hidden="true" /></button></span>)}<input id="create-group-member-search" ref={memberSearchRef} className="groups-member-search-input" type="search" value={memberQuery} onChange={(event) => { setMemberQuery(event.target.value); setActiveIndex(0); }} onKeyDown={handleKeyDown} placeholder={selectedMembers.length ? "Add another person" : "Search people"} role="combobox" aria-autocomplete="list" aria-controls="create-group-member-results" aria-expanded={Boolean(memberQuery.trim() && memberMatches.length)} aria-activedescendant={activeItem ? `create-group-member-${activeItem.id}` : undefined} /></div>{memberQuery.trim() ? <div id="create-group-member-results" className="groups-member-results" role="listbox" aria-label="People to add">{memberMatches.length ? memberMatches.map((user, index) => <button type="button" id={`create-group-member-${user.id}`} key={user.id} className={`new-message-person${activeIndex === index ? " keyboard-active" : ""}`} role="option" aria-selected="false" ref={(element) => { if (element && activeIndex === index) activeOptionRef.current = element; }} onMouseEnter={() => setActiveIndex(index)} onClick={() => addCreationMember(user)}><Avatar name={user.displayName} src={user.avatarUrl} size={30} /><span className="person-info"><span className="person-name">{user.displayName}</span><span className="person-handle">@{user.username}</span></span></button>) : <div className="people-empty">No people found.</div>}</div> : null}</div><small className="groups-form-hint">Optional. Search for people by name or username.</small><div className="modal-actions"><button type="submit" className="btn-primary">Create</button><button type="button" className="btn-secondary" onClick={() => setCreating(false)}>Cancel</button></div></form></Modal> : null}
       <div className="groups-panel-layout"><div className="groups-panel-list" aria-label="Available groups"><div className="groups-panel-list-head"><label className="sr-only" htmlFor="group-search">Search groups</label><div className="groups-panel-search"><SearchIcon size={15} aria-hidden="true" /><input id="group-search" className="groups-panel-filter" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search groups" /></div></div>{filtered.length ? filtered.map((group) => <button type="button" key={group.id} className={`groups-panel-group${selected?.id === group.id ? " active" : ""}`} onClick={() => setSelected(group)}><span className="groups-panel-group-icon"><ContactRoundIcon size={17} aria-hidden="true" /></span><span className="groups-panel-group-copy"><strong>{group.name}</strong><small>@{group.handle} · {group.memberCount} members · {group.channelCount} channels</small></span><ChevronRightIcon className="groups-panel-group-arrow" size={15} aria-hidden="true" /></button>) : <div className="groups-empty-state"><strong>No groups yet</strong><p>Create a Group to organize people and channels.</p></div>}</div>
         <div className="groups-panel-members" aria-live="polite">{!selected ? <div className="people-empty">Choose a group to view its members and channels.</div> : <>
           <div className="groups-panel-members-head"><div className="groups-panel-detail-title"><span className="groups-panel-detail-icon"><ContactRoundIcon size={20} aria-hidden="true" /></span><div><h3>{selected.name}</h3><p className="groups-panel-handle">@{selected.handle}</p></div></div><span className="groups-panel-provider">{selected.currentUserRole || "discoverable"}</span></div>

@@ -10,6 +10,11 @@ test("group owners can manage members, ownership, and channel associations", asy
   const groupId = created.group.id;
 
   try {
+    await expect(requestAsToken(page, fixture.alice.token, "/groups", {
+      method: "POST",
+      body: { name: created.group.name },
+    })).rejects.toThrow("a group with that name already exists");
+
     await page.goto("/groups");
     const panel = page.getByTestId("groups-panel");
     await expect(panel).toContainText(created.group.name);

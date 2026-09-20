@@ -11,6 +11,7 @@ const objectId = (value) => new mongoose.Types.ObjectId(value);
 const handlePattern = /^[a-z0-9][a-z0-9-]{0,30}[a-z0-9]$/;
 const activeGroup = (groupId) => validId(groupId) ? Group.findOne({ _id: groupId, archivedAt: null, deletedAt: null }) : null;
 const membership = (groupId, userId) => GroupMembership.findOne({ group: groupId, user: userId });
+const groupNameMatch = (name, excludedId = null) => ({ name: { $regex: `^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, $options: "i" }, ...(excludedId ? { _id: { $ne: excludedId } } : {}) });
 
 async function handleForName(name) {
   const base = name.toLowerCase().normalize("NFKD").replace(/[^a-z0-9\s-]/g, "").replace(/[\s-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 32) || "group";
@@ -37,6 +38,7 @@ groupsRouter.post("/", async (req, res) => {
   const memberIds = [...new Set(Array.isArray(req.body?.memberIds) ? req.body.memberIds.map(String) : [])];
   if (name.length < 1 || name.length > 80 || description.length > 160 || memberIds.some((id) => !validId(id))) return res.status(400).json({ error: "invalid group name, description, or member list" });
   try {
+    if (await Group.exists(groupNameMatch(name))) return res.status(409).json({ error: "a group with that name already exists" });
     const invitedUsers = memberIds.length ? await groupUsers(memberIds) : [];
     if (invitedUsers.length !== memberIds.length) return res.status(404).json({ error: "one or more selected users could not be found" });
     const handle = await handleForName(name);
@@ -47,7 +49,7 @@ groupsRouter.post("/", async (req, res) => {
     ]);
     res.status(201).json({ group: await groupSummary(group, req.user._id) });
   } catch (error) {
-    if (error?.code === 11000) return res.status(409).json({ error: "that group handle is already in use" });
+    if (error?.code === 11000) return res.status(409).json({ error: error.keyPattern?.name ? "a group with that name already exists" : "that group handle is already in use" });
     throw error;
   }
 });
@@ -66,7 +68,13 @@ groupsRouter.patch("/:groupId", async (req, res) => {
   if (req.body?.description !== undefined) group.description = String(req.body.description).trim();
   if (req.body?.handle !== undefined) group.handle = String(req.body.handle).trim().toLowerCase();
   if (!group.name || group.name.length > 80 || !handlePattern.test(group.handle)) return res.status(400).json({ error: "invalid group name or handle" });
-  try { await group.save(); } catch (error) { if (error?.code === 11000) return res.status(409).json({ error: "that group handle is already in use" }); throw error; }
+  try {
+    if (await Group.exists(groupNameMatch(group.name, group._id))) return res.status(409).json({ error: "a group with that name already exists" });
+    await group.save();
+  } catch (error) {
+    if (error?.code === 11000) return res.status(409).json({ error: error.keyPattern?.name ? "a group with that name already exists" : "that group handle is already in use" });
+    throw error;
+  }
   res.json({ group: await groupSummary(group, req.user._id) });
 });
 

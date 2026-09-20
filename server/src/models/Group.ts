@@ -11,6 +11,7 @@ const groupSchema = new mongoose.Schema({
   deletedAt: { type: Date, default: null },
 }, { timestamps: true });
 groupSchema.index({ handle: 1 }, { unique: true });
+groupSchema.index({ name: 1 }, { unique: true, collation: { locale: "en", strength: 2 } });
 groupSchema.index({ deletedAt: 1, archivedAt: 1, name: 1 });
 groupSchema.methods.toPublicJSON = function () {
   return { id: this._id.toString(), provider: "echo", name: this.name, handle: this.handle, description: this.description || "", ownerId: this.owner.toString(), createdBy: this.createdBy.toString(), archivedAt: this.archivedAt || null, deletedAt: this.deletedAt || null };
