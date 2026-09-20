@@ -664,6 +664,49 @@ input:focus {
   color: var(--muted);
 }
 
+.browser-warning {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: min(620px, calc(100vw - 28px));
+  padding: 12px 14px;
+  box-sizing: border-box;
+  transform: translateX(-50%);
+  border: 1px solid #d6a94a;
+  border-radius: 10px;
+  background: #fff7db;
+  color: #4a3510;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+}
+.browser-warning-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+  font-size: 13px;
+  line-height: 1.35;
+}
+.browser-warning-copy strong {
+  font-size: 14px;
+}
+.browser-warning button {
+  flex: none;
+  padding: 6px 10px;
+  border: 1px solid #b68a2d;
+  border-radius: 6px;
+  background: #fffdf3;
+  color: #4a3510;
+  cursor: pointer;
+  font: inherit;
+}
+.browser-warning button:hover {
+  background: #fff;
+}
+
 /* ============ Animations ============ */
 @keyframes fadeInUp {
   from {
