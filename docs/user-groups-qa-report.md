@@ -17,10 +17,10 @@ feature:
 - `server/src/groupDirectory.ts` now queries Echo-owned Groups and resolves
   ObjectId-based mentions, but this helper is not connected to a complete CRUD
   or membership API.
-- `server/src/routes/groups.ts` is deleted while `server/src/app.ts` still
-  imports it. The running container therefore continues serving the previous
-  built route, and a fresh source-based server cannot be considered a valid
-  Groups deployment.
+- `server/src/routes/groups.ts` now contains a partial CRUD/membership/channel
+  API, but it has no restore or permanent-delete API, no audit trail, and no
+  transaction/optimistic-version protection for owner transitions and
+  last-member archival.
 - `client/src/components/GroupsPanel.tsx` is read-only, labels the feature
   “User groups”/“Directory-managed”, and still calls the provider-shaped API.
   It has no create, member-management,
@@ -30,8 +30,9 @@ feature:
 
 Additional implementation risks found during inspection:
 
-- No route or service enforces owner/member/admin authorization, lifecycle
-  transitions, or atomic race handling.
+- The route enforces basic owner/member/admin checks, but lifecycle transitions
+  are multiple independent writes, so concurrent remove/leave/transfer cases
+  are not safe yet.
 - No restore/permanent-delete path or audit model exists.
 - No Group model tests verify schema constraints, indexes, or serialization.
 - Mention resolution currently returns all Group members and relies on later
@@ -39,6 +40,8 @@ Additional implementation risks found during inspection:
   test coverage.
 - The existing client composer, message click handling, and Groups panel still
   contain RHSSO/provider assumptions.
+- The client API now names several Group CRUD methods, but the Groups panel
+  does not call them and no browser tests cover those methods.
 
 The existing group E2E coverage is legacy RHSSO coverage using mocked
 `provider: "rhsso"` responses. It cannot validate the new contract.
