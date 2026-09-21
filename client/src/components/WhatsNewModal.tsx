@@ -87,7 +87,7 @@ export default function WhatsNewModal() {
                 }}
               >
                 <span>
-                  <strong>Echo {releaseItem.id}</strong>
+                  <strong>{releaseItem.id}</strong>
                   {index === 0 && <small>Latest</small>}
                 </span>
                 <span aria-hidden="true">{expanded ? "−" : "+"}</span>
