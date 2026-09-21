@@ -22,7 +22,7 @@ test("members govern membership and the last member leaving deletes the group", 
     await expect(panel.locator(".groups-panel-member").getByText(fixture.bob.displayName)).toBeVisible();
     await panel.getByRole("button", { name: "Add people" }).click();
     await expect(page.getByLabel("Search people to add")).toBeVisible();
-    await page.getByRole("button", { name: "Done" }).click();
+    await page.getByRole("button", { name: "Close" }).click();
 
     await expect(panel.getByRole("button", { name: "Manage" })).toHaveCount(0);
     await expect(panel.getByRole("button", { name: "Assign" })).toHaveCount(0);
