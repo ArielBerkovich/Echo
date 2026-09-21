@@ -58,12 +58,13 @@ test.describe("post-login forms are keyboard operable", () => {
 
     const details = page.getByTestId("channel-details-dialog");
     await expect(details).toBeVisible();
-    await details.getByRole("button", { name: "Edit", exact: true }).first().focus();
+    const topicField = details.locator(".channel-details-field").filter({ hasText: /^Topic/ });
+    await topicField.getByRole("button", { name: "Edit", exact: true }).focus();
     await page.keyboard.press("Space");
-    const topic = details.locator("input.settings-input").first();
+    const topic = topicField.locator("input.settings-input");
     await topic.press("ControlOrMeta+A");
     await topic.pressSequentially(`Keyboard topic ${fixture.suffix}`);
-    await pressEnter(details.getByRole("button", { name: "Save" }).first());
+    await pressEnter(topicField.getByRole("button", { name: "Save" }));
     await expect(details).toContainText(`Keyboard topic ${fixture.suffix}`);
 
     await details.getByRole("tab", { name: "Members" }).click();

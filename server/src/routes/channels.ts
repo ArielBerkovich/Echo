@@ -272,6 +272,25 @@ channelsRouter.post("/", async (req, res) => {
   }
 });
 
+// GET /api/channels/:id/name-availability — check a candidate name for a manager.
+channelsRouter.get("/:id/name-availability", async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(404).json({ error: "channel not found" });
+  }
+  const channel = await Channel.findById(req.params.id).select("name type isArchived createdBy managers");
+  if (!channel || channel.isArchived) return res.status(404).json({ error: "channel not found" });
+  if (channel.type === "dm") return res.status(400).json({ error: "direct messages do not have channel names" });
+  if (!isChannelManager(channel, req.user._id)) {
+    return res.status(403).json({ error: "only the channel creator or a manager can check channel names" });
+  }
+  const name = typeof req.query.name === "string" ? req.query.name.trim().toLowerCase() : "";
+  if (!isValidChannelName(name) || name === "general") {
+    return res.status(400).json({ error: "invalid channel name" });
+  }
+  const existing = await Channel.exists({ name, _id: { $ne: channel._id } });
+  res.json({ available: !existing });
+});
+
 // POST /api/channels/:id/star — toggle the current user's channel star.
 // This is a private navigation preference; it never changes channel access.
 channelsRouter.post("/:id/star", async (req, res) => {
@@ -604,17 +623,46 @@ channelsRouter.post("/:id/read", async (req, res) => {
 
 // PATCH /api/channels/:id — update channel settings.
 //   { type }                  → change visibility (creator only)
+//   { name }                  → rename the channel (creator/managers)
 //   { topic } / { description } → update info (any member)
 //   { readOnly }              → restrict posting to the creator/managers
 channelsRouter.patch("/:id", async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) {
     return res.status(404).json({ error: "channel not found" });
   }
-  const { type, topic, description, readOnly } = req.body || {};
+  const { name, type, topic, description, readOnly } = req.body || {};
   const channel = await Channel.findById(req.params.id);
   if (!channel) return res.status(404).json({ error: "channel not found" });
+  if (channel.isArchived) return res.status(404).json({ error: "channel not found" });
   if (channel.type === "dm") {
     return res.status(400).json({ error: "cannot change a direct message" });
+  }
+
+  const currentName = channel.name;
+  let renamed = false;
+  if (name !== undefined) {
+    if (!isChannelManager(channel, req.user._id)) {
+      return res.status(403).json({ error: "only the channel creator or a manager can rename this channel" });
+    }
+    if (currentName.toLowerCase() === "general") {
+      return res.status(400).json({ error: "the general channel cannot be renamed" });
+    }
+    if (typeof name !== "string") {
+      return res.status(400).json({ error: "channel name must be a string" });
+    }
+    const normalizedName = name.trim().toLowerCase();
+    if (!isValidChannelName(normalizedName)) {
+      return res.status(400).json({ error: "channel names must use lowercase letters, numbers, and single dashes" });
+    }
+    if (normalizedName === "general") {
+      return res.status(400).json({ error: "general is reserved for the default channel" });
+    }
+    if (normalizedName !== currentName) {
+      const existing = await Channel.findOne({ name: normalizedName, _id: { $ne: channel._id } }).select({ _id: 1 }).lean();
+      if (existing) return res.status(409).json({ error: "channel name already exists" });
+      channel.name = normalizedName;
+      renamed = true;
+    }
   }
 
   if (readOnly !== undefined) {
@@ -661,7 +709,17 @@ channelsRouter.patch("/:id", async (req, res) => {
     }
   }
 
-  await channel.save();
+  try {
+    await channel.save();
+  } catch (err) {
+    // The unique index is the final guard against two managers choosing the
+    // same name concurrently.
+    if (err?.code === 11000 && (err?.keyPattern?.name || err?.keyValue?.name)) {
+      return res.status(409).json({ error: "channel name already exists" });
+    }
+    throw err;
+  }
+  if (renamed) await logSystem(channel._id, req.user._id, `renamed this channel to #${channel.name}`);
   const updated = channel.toPublicJSON();
   emitToChannel(channel._id.toString(), "channel:update", { channel: updated });
   emitAll("channel:catalog", { channel: updated });

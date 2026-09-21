@@ -284,6 +284,8 @@ export const api = {
   leaveChannel: (id, managerId) =>
     request(`/channels/${id}/leave`, { method: "POST", body: managerId ? { managerId } : {} }),
   deleteChannel: (id) => request(`/channels/${id}`, { method: "DELETE" }),
+  checkChannelNameAvailability: (id, name) =>
+    request(`/channels/${id}/name-availability?name=${encodeURIComponent(name)}`),
   setChannelVisibility: (id, type) =>
     request(`/channels/${id}`, { method: "PATCH", body: { type } }),
   setChannelInfo: (id, patch) =>
