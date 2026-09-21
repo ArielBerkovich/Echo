@@ -19,14 +19,14 @@ openshift:
 server:
   image:
     repository: docker-local/echo/echo-server
-    tag: "0.39.0"
+    tag: "0.40.0"
     digest: ""
     pullPolicy: IfNotPresent
 
 client:
   image:
     repository: docker-local/echo/echo-client
-    tag: "0.39.0"
+    tag: "0.40.0"
     digest: ""
     pullPolicy: IfNotPresent
   ingress:

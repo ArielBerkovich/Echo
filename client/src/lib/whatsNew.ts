@@ -14,6 +14,23 @@ export type WhatsNewRelease = {
 // Keep release notes in the renderer so they work for air-gapped deployments
 // and always match the desktop binary that shipped them.
 const RELEASES: Record<string, WhatsNewRelease> = {
+  "0.40.0": {
+    id: "0.40.0",
+    title: "What's new in 0.40.0",
+    summary: "Share thread replies more naturally and keep Echo up to date with less interruption.",
+    items: [
+      {
+        title: "Also send to channel",
+        description: "Share a thread reply with the channel while keeping the full conversation in its thread. Use View thread to jump back to the original discussion.",
+        category: "New",
+      },
+      {
+        title: "Seamless Echo updates",
+        description: "After you confirm an update, Echo applies it silently on restart instead of opening the Windows installation wizard.",
+        category: "Improved",
+      },
+    ],
+  },
   "0.39.0": {
     id: "0.39.0",
     title: "What's new in 0.39.0",
@@ -45,7 +62,7 @@ const RELEASES: Record<string, WhatsNewRelease> = {
 
 // Preview content lets the release flow be reviewed in a regular browser
 // before the native desktop version is published.
-const PREVIEW_RELEASES: WhatsNewRelease[] = [RELEASES["0.39.0"]];
+const PREVIEW_RELEASES: WhatsNewRelease[] = [RELEASES["0.40.0"]];
 
 export function isNativeDesktop() {
   return typeof window !== "undefined" && Boolean(window.echoDesktopConfig?.appVersion);
