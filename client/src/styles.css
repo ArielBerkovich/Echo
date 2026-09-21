@@ -4956,9 +4956,6 @@ html[data-interface-direction="rtl"] .composer-editor p.is-editor-empty:first-ch
   font-size: 12px;
   cursor: pointer;
 }
-.also-send-to-channel:hover {
-  color: var(--text);
-}
 .also-send-to-channel:focus-within {
   color: var(--text);
 }
