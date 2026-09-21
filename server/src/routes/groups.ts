@@ -8,6 +8,7 @@ groupsRouter.use(requireAuth);
 const validId = (value) => mongoose.isValidObjectId(value);
 const objectId = (value) => new mongoose.Types.ObjectId(value);
 const handlePattern = /^[a-z0-9][a-z0-9-]{0,30}[a-z0-9]$/;
+const groupNamePattern = /^[A-Za-z0-9]+(?:[ -][A-Za-z0-9]+)*$/;
 const activeGroup = (groupId) => validId(groupId) ? Group.findOne({ _id: groupId, archivedAt: null, deletedAt: null }) : null;
 const membership = (groupId, userId) => GroupMembership.findOne({ group: groupId, user: userId });
 const groupNameMatch = (name, excludedId = null) => ({ name: { $regex: `^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, $options: "i" }, ...(excludedId ? { _id: { $ne: excludedId } } : {}) });
@@ -35,7 +36,7 @@ groupsRouter.post("/", async (req, res) => {
   const name = String(req.body?.name || "").trim();
   const description = String(req.body?.description || "").trim();
   const memberIds = [...new Set(Array.isArray(req.body?.memberIds) ? req.body.memberIds.map(String) : [])];
-  if (name.length < 1 || name.length > 80 || description.length > 160 || memberIds.some((id) => !validId(id))) return res.status(400).json({ error: "invalid group name, description, or member list" });
+  if (!groupNamePattern.test(name) || name.length > 80 || description.length > 160 || memberIds.some((id) => !validId(id))) return res.status(400).json({ error: "group names may contain English letters, numbers, spaces, and hyphens only" });
   try {
     if (await Group.exists(groupNameMatch(name))) return res.status(409).json({ error: "a group with that name already exists" });
     const invitedUsers = memberIds.length ? await groupUsers(memberIds) : [];
@@ -66,7 +67,7 @@ groupsRouter.patch("/:groupId", async (req, res) => {
   if (req.body?.name !== undefined) group.name = String(req.body.name).trim();
   if (req.body?.description !== undefined) group.description = String(req.body.description).trim();
   if (req.body?.handle !== undefined) group.handle = String(req.body.handle).trim().toLowerCase();
-  if (!group.name || group.name.length > 80 || !handlePattern.test(group.handle)) return res.status(400).json({ error: "invalid group name or handle" });
+  if (!groupNamePattern.test(group.name) || group.name.length > 80 || !handlePattern.test(group.handle)) return res.status(400).json({ error: "group names may contain English letters, numbers, spaces, and hyphens only" });
   try {
     if (await Group.exists(groupNameMatch(group.name, group._id))) return res.status(409).json({ error: "a group with that name already exists" });
     await group.save();

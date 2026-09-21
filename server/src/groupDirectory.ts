@@ -14,7 +14,11 @@ export async function groupSummary(group, userId) {
 
 export async function listGroups(userId) {
   const groups = await Group.find({ archivedAt: null, deletedAt: null }).sort({ name: 1 });
-  return Promise.all(groups.map((group) => groupSummary(group, userId)));
+  const summaries = await Promise.all(groups.map((group) => groupSummary(group, userId)));
+  return summaries.sort((left, right) => {
+    if (left.isMember !== right.isMember) return left.isMember ? -1 : 1;
+    return left.name.localeCompare(right.name);
+  });
 }
 
 export async function getGroup(id, userId) {
