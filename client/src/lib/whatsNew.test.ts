@@ -31,11 +31,12 @@ afterEach(() => {
 
 describe("What's new release content", () => {
   it("matches authored content to the desktop version", () => {
-    assert.equal(getWhatsNewRelease("0.38.0")?.id, "0.38.0");
+    assert.equal(getWhatsNewRelease("0.39.0")?.id, "0.39.0");
     assert.deepEqual(
       getWhatsNewRelease("0.39.0")?.items.map(({ title }) => title),
       ["Groups", "Channel renames", "Outdated browser warnings"],
     );
+    assert.equal(getWhatsNewRelease("0.38.0"), null);
     assert.equal(getWhatsNewRelease("9.9.9"), null);
   });
 

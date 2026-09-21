@@ -36,23 +36,6 @@ const RELEASES: Record<string, WhatsNewRelease> = {
       },
     ],
   },
-  "0.38.0": {
-    id: "0.38.0",
-    title: "A smoother Echo desktop experience",
-    summary: "Here are a few things worth knowing about the latest Echo update.",
-    items: [
-      {
-        title: "A better update welcome",
-        description: "Echo now highlights the useful changes after a desktop update, with the full summary available again from More workspace options.",
-        category: "New",
-      },
-      {
-        title: "Automatic desktop updates",
-        description: "Echo can download desktop updates in the background and finish installing them when you restart.",
-        category: "Improved",
-      },
-    ],
-  },
 };
 
 // Preview content lets the release flow be reviewed in a regular browser
