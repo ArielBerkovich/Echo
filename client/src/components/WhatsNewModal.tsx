@@ -116,9 +116,6 @@ export default function WhatsNewModal() {
           );
         })}
       </div>
-      <ModalActions>
-        <button type="button" className="btn-primary" onClick={close}>Done</button>
-      </ModalActions>
     </Modal>
   );
 }

@@ -13167,13 +13167,6 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   scrollbar-gutter: stable;
 }
 
-.whats-new-modal .modal-actions {
-  flex: 0 0 auto;
-  margin: 14px 0 0;
-  padding: 0;
-  background: var(--surface);
-}
-
 .whats-new-summary {
   margin: 0;
   color: var(--muted);
@@ -13288,10 +13281,6 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 @media (max-height: 820px) and (min-width: 761px) {
   .whats-new-modal {
     padding: 20px;
-  }
-
-  .whats-new-modal .modal-actions {
-    margin-top: 10px;
   }
 
   .whats-new-items {
