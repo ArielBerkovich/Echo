@@ -4578,7 +4578,7 @@ html[data-mode="dark"] .search-highlight .kw-has .kw-label { color: #fcd34d; }
 .groups-detail-empty { min-height: 100%; display: grid; align-content: center; justify-items: center; gap: 8px; color: var(--muted); text-align: center; }
 .groups-detail-empty strong { color: var(--text); font-size: 15px; }
 .groups-detail-empty p { margin: 0; font-size: 12px; }
-.groups-detail-hero { display: flex; align-items: flex-start; gap: 14px; padding-bottom: 22px; border-bottom: 1px solid var(--border); }
+.groups-detail-hero { display: flex; align-items: flex-start; gap: 14px; padding-bottom: 18px; }
 .groups-panel-detail-icon { width: 48px; height: 48px; border-radius: 14px; }
 .groups-detail-heading { min-width: 0; flex: 1; }
 .groups-detail-title-row { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; }
@@ -4590,13 +4590,13 @@ html[data-mode="dark"] .search-highlight .kw-has .kw-label { color: #fcd34d; }
 .groups-detail-stats { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; margin-top: 11px; color: var(--muted); font-size: 11px; }
 .groups-detail-stats span { display: inline-flex; align-items: center; gap: 5px; }
 .groups-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr); margin-top: 20px; }
-.groups-detail-section { min-width: 0; overflow: hidden; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
-.groups-detail-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 64px; padding: 13px 14px; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--surface-2) 58%, var(--surface)); }
+.groups-detail-section { min-width: 0; overflow: hidden; }
+.groups-detail-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 64px; padding: 13px 0; }
 .groups-detail-section-head h3 { margin: 0; color: var(--text); font-size: 13px; font-weight: 780; }
 .groups-detail-section-head p { margin: 3px 0 0; color: var(--muted); font-size: 11px; line-height: 1.35; }
 .groups-detail-section-head .btn-subtle { display: inline-flex; align-items: center; gap: 6px; flex: none; min-height: 32px; padding: 0 9px; }
 .groups-detail-section-actions { display: flex; align-items: center; gap: 6px; }
-.groups-detail-list { padding: 5px; }
+.groups-detail-list { padding: 0; }
 .groups-panel-member { min-height: 52px; box-sizing: border-box; padding: 7px 8px; border-radius: 9px; }
 .groups-member-profile { gap: 10px; }
 .groups-panel-member .person-name { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 720; }
