@@ -27,8 +27,9 @@ test("members govern membership and the last member leaving deletes the group", 
     await expect(panel.getByRole("button", { name: "Manage" })).toHaveCount(0);
     await expect(panel.getByRole("button", { name: "Assign" })).toHaveCount(0);
 
-    page.once("dialog", (dialog) => dialog.accept());
     await panel.getByRole("button", { name: "Leave group" }).click();
+    await expect(page.getByRole("heading", { name: "Leave this group?" })).toBeVisible();
+    await page.getByRole("button", { name: "Leave group", exact: true }).last().click();
     await expect(panel.getByRole("button", { name: "Add people" })).toHaveCount(0);
 
     await expect(requestAsToken(page, fixture.alice.token, `/groups/${groupId}/members`, {
@@ -50,8 +51,9 @@ test("members govern membership and the last member leaving deletes the group", 
     await seedToken(page, fixture.bob.token);
     await page.reload();
     await panel.getByRole("button", { name: new RegExp(created.group.name) }).click();
-    page.once("dialog", (dialog) => dialog.accept());
     await panel.getByRole("button", { name: "Leave group" }).click();
+    await expect(page.getByRole("heading", { name: "Delete this group?" })).toBeVisible();
+    await page.getByRole("button", { name: "Leave and delete group", exact: true }).click();
     await expect(panel).not.toContainText(created.group.name);
   } finally {
     await requestAsToken(page, fixture.bob.token, `/groups/${groupId}`, { method: "DELETE" }).catch(() => {});

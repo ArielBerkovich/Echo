@@ -3,10 +3,12 @@ import { ChevronRightIcon, ContactRoundIcon, LogOutIcon, PlusIcon, SearchIcon, U
 import { api } from "../api.js";
 import Avatar from "./Avatar.js";
 import { Button } from "./Button.js";
+import ConfirmDialog from "./ConfirmDialog.js";
 import Modal, { ModalActions } from "./Modal.js";
 import useRecipientPickerKeyboard from "./useRecipientPickerKeyboard.js";
 
 const EMPTY_FORM = { name: "", description: "", memberIds: [] };
+const PEOPLE_RESULT_LIMIT = 50;
 
 export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
   const [groups, setGroups] = useState([]);
@@ -24,6 +26,8 @@ export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
   const [showAddPeople, setShowAddPeople] = useState(false);
   const [peopleQuery, setPeopleQuery] = useState("");
   const [addingMemberId, setAddingMemberId] = useState("");
+  const [removeTarget, setRemoveTarget] = useState(null);
+  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const groupNameRef = useRef(null);
   const memberSearchRef = useRef(null);
 
@@ -64,7 +68,7 @@ export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
   }, [form.memberIds, memberQuery, users]);
   const peopleMatches = useMemo(() => {
     const text = peopleQuery.trim().toLowerCase();
-    return availableUsers.filter((user) => !text || `${user.displayName} ${user.username}`.toLowerCase().includes(text));
+    return availableUsers.filter((user) => !text || `${user.displayName} ${user.username}`.toLowerCase().includes(text)).slice(0, PEOPLE_RESULT_LIMIT);
   }, [availableUsers, peopleQuery]);
 
   const { activeIndex, activeItem, activeOptionRef, handleKeyDown, setActiveIndex } = useRecipientPickerKeyboard({
@@ -129,12 +133,25 @@ export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
   }
 
   async function removeMember(userId) {
-    if (!selected || !window.confirm("Remove this member from the group?")) return;
+    if (!selected || !userId) return;
+    setRemoveTarget(selected.members.find((member) => member.id === userId) || null);
+  }
+
+  async function confirmRemoveMember() {
+    if (!selected || !removeTarget) return;
+    const userId = removeTarget.id;
+    setRemoveTarget(null);
     await mutate(() => api.removeGroupMember(selected.id, userId));
   }
 
   async function leaveGroup() {
-    if (!selected || !window.confirm(selected.memberCount === 1 ? "Leave and delete this group?" : "Leave this group?")) return;
+    if (!selected) return;
+    setLeaveConfirmOpen(true);
+  }
+
+  async function confirmLeaveGroup() {
+    if (!selected) return;
+    setLeaveConfirmOpen(false);
     await mutate(() => api.leaveGroup(selected.id), null);
   }
 
@@ -166,6 +183,9 @@ export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
         </section>
       </div>
     </div>
+
+    {removeTarget ? <ConfirmDialog title={`Remove ${removeTarget.displayName}?`} message="They will no longer be able to mention or manage this group. You can add them again later." confirmLabel="Remove member" danger onConfirm={confirmRemoveMember} onCancel={() => setRemoveTarget(null)} /> : null}
+    {leaveConfirmOpen && selected ? <ConfirmDialog title={selected.memberCount === 1 ? "Delete this group?" : "Leave this group?"} message={selected.memberCount === 1 ? "You are the last member. Leaving will permanently delete this group." : "You will no longer receive group mentions. Another member will own the group."} confirmLabel={selected.memberCount === 1 ? "Leave and delete group" : "Leave group"} danger onConfirm={confirmLeaveGroup} onCancel={() => setLeaveConfirmOpen(false)} /> : null}
 
     {creating ? <Modal title="Create group" className="groups-create-modal" closeDisabled={creatingGroup} onClose={closeCreateDialog} onOpenAutoFocus={(event) => { event.preventDefault(); groupNameRef.current?.focus(); }}><form className="groups-create-form" onSubmit={createGroup}><label><span className="groups-field-label">Group name</span><input ref={groupNameRef} required maxLength={80} placeholder="For example, Product Design" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label><label><span className="groups-field-label">Description <em>Optional</em></span><textarea maxLength={160} placeholder="What is this group for?" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label><label htmlFor="create-group-member-search"><span className="groups-field-label">Add people <em>Optional</em></span></label><div className="groups-member-picker">{selectedCreationMembers.length ? <div className="forward-selected-chips" aria-label="Selected group members">{selectedCreationMembers.map((user) => <span className="forward-chip" data-testid="group-creation-member" key={user.id}><span>{user.displayName}</span><button type="button" className="chip-remove" aria-label={`Remove ${user.displayName}`} onClick={() => removeCreationMember(user.id)}><XIcon size={13} aria-hidden="true" /></button></span>)}</div> : null}<input id="create-group-member-search" ref={memberSearchRef} className="people-filter forward-destination-search" type="search" value={memberQuery} onChange={(event) => { setMemberQuery(event.target.value); setActiveIndex(0); }} onKeyDown={handleKeyDown} placeholder={loadingDirectory ? "Loading people…" : "Search people"} disabled={loadingDirectory} role="combobox" aria-autocomplete="list" aria-controls={memberQuery.trim() ? "create-group-member-results" : undefined} aria-expanded={Boolean(memberQuery.trim())} aria-activedescendant={activeItem ? `create-group-member-${activeItem.id}` : undefined} />{memberQuery.trim() ? <div id="create-group-member-results" className="forward-destination-list groups-member-results" role="listbox" aria-label="People to add">{creationMemberMatches.length ? creationMemberMatches.map((user, index) => <button type="button" id={`create-group-member-${user.id}`} key={user.id} className={`forward-destination-row${activeIndex === index ? " keyboard-active" : ""}`} role="option" aria-selected="false" ref={(element) => { if (element && activeIndex === index) activeOptionRef.current = element; }} onMouseEnter={() => setActiveIndex(index)} onClick={() => addCreationMember(user)}><Avatar name={user.displayName} src={user.avatarUrl} size={34} /><span className="forward-destination-copy"><strong>{user.displayName}</strong><small>@{user.username}</small></span><span className="forward-selection-indicator" aria-hidden="true"><PlusIcon size={14} /></span></button>) : <div className="people-empty" role="status">No people match “{memberQuery.trim()}”.</div>}</div> : null}</div>{createError ? <div className="error" role="alert">{createError}</div> : null}<ModalActions><Button variant="secondary" onClick={closeCreateDialog} disabled={creatingGroup}>Cancel</Button><Button variant="primary" type="submit" disabled={creatingGroup || !form.name.trim()}>{creatingGroup ? "Creating…" : "Create group"}</Button></ModalActions></form></Modal> : null}
 
