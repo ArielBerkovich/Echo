@@ -93,17 +93,16 @@ function GroupDetails({ group, onOpenProfile, onLeave, onAddPeople, onRemoveMemb
   }, [group.id]);
 
   return (
-    <section className="groups-detail-section" aria-labelledby="groups-members-heading">
+    <section className="groups-detail-section" aria-label="Group members">
       <header className="groups-detail-section-head">
-        <div className="groups-detail-section-copy"><h3 id="groups-members-heading">Members</h3></div>
+        <div className="groups-members-search">
+          <SearchIcon size={15} aria-hidden="true" />
+          <label className="sr-only" htmlFor="group-member-search">Search members</label>
+          <input id="group-member-search" type="search" value={memberQuery} onChange={(event) => setMemberQuery(event.target.value)} placeholder="Search members" />
+          {memberQuery ? <button type="button" aria-label="Clear member search" onClick={() => setMemberQuery("")}><XIcon size={14} aria-hidden="true" /></button> : null}
+        </div>
         {group.isMember ? <div className="groups-detail-section-actions"><Button variant="subtle" onClick={onLeave}><LogOutIcon size={15} aria-hidden="true" />Leave group</Button><Button variant="subtle" onClick={onAddPeople}><UserPlusIcon size={15} aria-hidden="true" />Add people</Button></div> : null}
       </header>
-      <div className="groups-members-search">
-        <SearchIcon size={15} aria-hidden="true" />
-        <label className="sr-only" htmlFor="group-member-search">Search members</label>
-        <input id="group-member-search" type="search" value={memberQuery} onChange={(event) => setMemberQuery(event.target.value)} placeholder="Search members" />
-        {memberQuery ? <button type="button" aria-label="Clear member search" onClick={() => setMemberQuery("")}><XIcon size={14} aria-hidden="true" /></button> : null}
-      </div>
       <div className="groups-detail-list">
         {visibleMembers.length ? visibleMembers.map((member) => <GroupMember key={member.id} member={member} removable={group.isMember && member.id !== group.currentUserId} onOpenProfile={onOpenProfile} onRemove={onRemoveMember} />) : <div className="groups-members-empty">No members match “{memberQuery.trim()}”.</div>}
       </div>
