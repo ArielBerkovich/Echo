@@ -14,18 +14,16 @@ async function openMessageSoundPreferences(page) {
 }
 
 test.describe("message sound preferences", () => {
-  test("shows None first and Bright pop before the other sounds", async ({ page }) => {
+  test("shows the remaining sound options in one row", async ({ page }) => {
     await openMessageSoundPreferences(page);
 
     await expect(page.locator(".message-sound-option")).toHaveText([
       /None/,
       /Bright pop/,
       /Short alert/,
-      /Clear ding/,
-      /Soft chime/,
       /Warm bell/,
     ]);
-    await expect(page.locator('input[type="radio"][value="soft-chime"]')).toBeChecked();
+    await expect(page.locator('input[type="radio"][value="bright-pop"]')).toBeChecked();
     await expect(page.locator('input[type="radio"][value="none"]')).not.toBeChecked();
   });
 
