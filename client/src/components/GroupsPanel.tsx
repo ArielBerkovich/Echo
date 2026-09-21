@@ -99,7 +99,6 @@ function GroupDetails({ group, onOpenProfile, onLeave, onAddPeople, onRemoveMemb
           <SearchIcon size={15} aria-hidden="true" />
           <label className="sr-only" htmlFor="group-member-search">Search members</label>
           <input id="group-member-search" type="search" value={memberQuery} onChange={(event) => setMemberQuery(event.target.value)} placeholder="Search members" />
-          {memberQuery ? <button type="button" aria-label="Clear member search" onClick={() => setMemberQuery("")}><XIcon size={14} aria-hidden="true" /></button> : null}
         </div>
         {group.isMember ? <div className="groups-detail-section-actions"><Button variant="subtle" onClick={onLeave}><LogOutIcon size={15} aria-hidden="true" />Leave group</Button><Button variant="subtle" onClick={onAddPeople}><UserPlusIcon size={15} aria-hidden="true" />Add people</Button></div> : null}
       </header>
