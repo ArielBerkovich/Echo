@@ -4959,9 +4959,19 @@ html[data-interface-direction="rtl"] .composer-editor p.is-editor-empty:first-ch
 .also-send-to-channel input {
   width: 13px;
   height: 13px;
+  box-sizing: border-box;
   margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   accent-color: var(--accent);
   cursor: pointer;
+}
+.also-send-to-channel input:focus {
+  border: 0;
+  box-shadow: none;
 }
 /* "User is typing…" indicator above the composer */
 .typing-indicator {
