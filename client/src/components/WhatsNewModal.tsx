@@ -112,7 +112,7 @@ export default function WhatsNewModal() {
                       >
                         <span className="whats-new-item-badge">{item.category}</span>
                         <h4>{item.title}</h4>
-                        <p>{item.description}</p>
+                        {item.description && <p>{item.description}</p>}
                       </article>
                     ))}
                   </div>

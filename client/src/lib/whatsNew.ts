@@ -1,6 +1,6 @@
 export type WhatsNewItem = {
   title: string;
-  description: string;
+  description?: string;
   category: "New" | "Improved" | "Fixed";
 };
 
@@ -14,6 +14,17 @@ export type WhatsNewRelease = {
 // Keep release notes in the renderer so they work for air-gapped deployments
 // and always match the desktop binary that shipped them.
 const RELEASES: Record<string, WhatsNewRelease> = {
+  "0.41.0": {
+    id: "0.41.0",
+    title: "What's new in 0.41.0",
+    summary: "UI improvements.",
+    items: [
+      {
+        title: "UI improvements",
+        category: "Improved",
+      },
+    ],
+  },
   "0.40.0": {
     id: "0.40.0",
     title: "What's new in 0.40.0",
