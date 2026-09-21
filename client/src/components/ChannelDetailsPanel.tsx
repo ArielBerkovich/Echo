@@ -1,5 +1,5 @@
 import * as Dialog from "@radix-ui/react-dialog";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api.js";
 import { formatDate } from "../lib/time.js";
 import Avatar from "./Avatar.js";
@@ -15,6 +15,7 @@ import {
   Trash2Icon,
   LogOutIcon,
   Globe2Icon,
+  PencilIcon,
 } from "lucide-react";
 
 const MEMBER_ROW_HEIGHT = 58;
@@ -24,6 +25,7 @@ const MEMBER_LIST_HEIGHT = 340;
 // add people, and manage existing members without leaving the conversation.
 export default function ChannelDetailsPanel({ channel, users = [], user, onUpdated, onOpenProfile, onAddPeople, onPromoteManager, onChangeVisibility, onLeave, onClose }) {
   const [error, setError] = useState(null);
+  const [errorField, setErrorField] = useState(null);
   const [memberQuery, setMemberQuery] = useState("");
   const [promotingId, setPromotingId] = useState(null);
   const [activeTab, setActiveTab] = useState("details");
@@ -49,6 +51,10 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
   const canManageMembers = isCreator || isManager;
   const isGeneralChannel = channel.name?.toLowerCase() === "general";
   const canAddPeople = isMember && channel.type !== "dm" && !isGeneralChannel;
+  const checkNameAvailability = useCallback(
+    (name) => api.checkChannelNameAvailability(channel.id, name),
+    [channel.id],
+  );
   const tabs = [
     ["details", "Details"],
     ["members", "Members"],
@@ -111,6 +117,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
 
   async function removeMember(member) {
     setError(null);
+    setErrorField(null);
     try {
       const { channel: updated } = await api.removeChannelMember(channel.id, member.id);
       onUpdated?.(updated);
@@ -122,6 +129,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
   async function promoteManager(member) {
     if (!onPromoteManager) return;
     setError(null);
+    setErrorField(null);
     setPromotingId(member.id);
     try {
       await onPromoteManager(member.id);
@@ -134,6 +142,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
 
   async function save(patch) {
     setError(null);
+    setErrorField(patch.name !== undefined ? "name" : null);
     try {
       const { channel: updated } = await api.setChannelInfo(channel.id, patch);
       onUpdated?.(updated);
@@ -194,6 +203,14 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
           {activeTab === "details" && <div className="channel-details-tabpanel" role="tabpanel" id="channel-details-panel-details" aria-labelledby="channel-details-tab-details">
             <div className="channel-details-overview-title">About this channel</div>
             <div className="channel-details-fields">
+              {canManageMembers && !isGeneralChannel && (
+                <EditableName
+                  value={channel.name}
+                  error={errorField === "name" ? error : null}
+                  onCheckAvailability={checkNameAvailability}
+                  onSave={(value) => save({ name: value })}
+                />
+              )}
               <EditableField
                 label="Topic"
                 icon={<FileTextIcon size={15} strokeWidth={1.9} />}
@@ -400,9 +417,129 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
             </div>
           </section>}
 
-          {error && <div className="error">{error}</div>}
+          {error && errorField !== "name" && <div className="error">{error}</div>}
         </div>
     </Modal>
+  );
+}
+
+function EditableName({ value, error, onCheckAvailability, onSave }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value || "");
+  const [saving, setSaving] = useState(false);
+  const [changed, setChanged] = useState(false);
+  const [availability, setAvailability] = useState("idle");
+  const normalized = draft.trim().toLowerCase();
+  const valid = /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(normalized) && normalized.length <= 64 && normalized !== "general";
+  const unchanged = normalized === String(value || "").toLowerCase();
+  const canSave = valid && (unchanged || availability === "available") && !saving;
+  const showFormatError = changed && !valid;
+  const showTakenError = changed && valid && availability === "taken";
+  const validationError = normalized.length === 0
+    ? "Channel name is required."
+    : normalized === "general"
+    ? "“general” is reserved for the default channel."
+    : "Use lowercase letters, numbers, and single dashes only.";
+
+  function start() {
+    setDraft(value || "");
+    setChanged(false);
+    setAvailability("idle");
+    setEditing(true);
+  }
+
+  useEffect(() => {
+    if (!editing || !changed || !valid || unchanged) {
+      setAvailability("idle");
+      return undefined;
+    }
+    setAvailability("checking");
+    let active = true;
+    const timer = window.setTimeout(() => {
+      onCheckAvailability(normalized)
+        .then(({ available }) => {
+          if (active) setAvailability(available ? "available" : "taken");
+        })
+        .catch(() => {
+          if (active) setAvailability("error");
+        });
+    }, 250);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [changed, editing, normalized, onCheckAvailability, unchanged, valid]);
+
+  async function commit() {
+    if (!valid || (!unchanged && availability !== "available")) return;
+    if (unchanged) {
+      setEditing(false);
+      return;
+    }
+    setSaving(true);
+    try {
+      await onSave(normalized);
+      setEditing(false);
+    } catch {
+      /* Error is surfaced by the dialog. */
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className="channel-details-section channel-details-field cd-section" data-testid="channel-rename-section">
+      <div className="channel-details-section-head compact">
+        <div className="channel-details-section-title">
+          <PencilIcon size={15} strokeWidth={1.9} />
+          <span>Channel name</span>
+        </div>
+        {!editing && (
+          <Button variant="subtle" className="channel-details-edit" onClick={start} data-testid="channel-rename-edit">
+            Edit
+          </Button>
+        )}
+      </div>
+      {editing ? (
+        <div className="channel-details-edit-box">
+          <Input
+            className="settings-input"
+            value={draft}
+            autoFocus
+            maxLength={64}
+            aria-label="Channel name"
+            aria-invalid={showFormatError || showTakenError}
+            aria-describedby={showFormatError || showTakenError ? "channel-rename-hint channel-rename-validation" : "channel-rename-hint"}
+            onChange={(event) => {
+              setChanged(true);
+              setDraft(event.target.value);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                void commit();
+              }
+            }}
+          />
+          <div className="channel-details-section-hint" id="channel-rename-hint">
+            Lowercase letters, numbers, and single dashes only.
+          </div>
+          {showFormatError && <div className="error" id="channel-rename-validation" role="alert">{validationError}</div>}
+          {changed && valid && availability === "checking" && <div className="channel-details-section-hint" role="status">Checking name availability…</div>}
+          {showTakenError && <div className="error" id="channel-rename-validation" role="alert">This channel name is already in use.</div>}
+          {changed && valid && availability === "error" && <div className="error" id="channel-rename-validation" role="alert">Couldn’t check this name. Try again.</div>}
+          {error && <div className="error" role="alert">{error}</div>}
+          <div className="channel-details-edit-actions">
+            <button type="button" className="btn-secondary" onClick={() => setEditing(false)}>Cancel</button>
+            <button type="button" className="btn-primary" disabled={!canSave} onClick={() => void commit()}>
+              {saving ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="channel-details-value" dir="ltr">#{value}</div>
+      )}
+    </section>
   );
 }
 
