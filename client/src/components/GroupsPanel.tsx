@@ -138,14 +138,14 @@ function CreateGroupDialog({ form, users, memberQuery, error, creating, loadingD
   );
 }
 
-function AddPeopleDialog({ groupName, users, memberIds, query, loading, addingId, onQueryChange, onAdd, onClose }) {
+function AddPeopleDialog({ users, memberIds, query, loading, addingId, onQueryChange, onAdd, onClose }) {
   const matches = useMemo(() => {
     const text = query.trim().toLowerCase();
     return users.filter((user) => !memberIds.has(user.id) && (!text || matchesQuery(`${user.displayName} ${user.username}`, text))).slice(0, PEOPLE_RESULT_LIMIT);
   }, [memberIds, query, users]);
 
   return (
-    <Modal title={`Add people to ${groupName}`} className="groups-picker-modal" onClose={onClose}>
+    <Modal title="Add people to group" className="groups-picker-modal" onClose={onClose}>
       <p className="groups-dialog-intro">Members can mention this group and manage its membership.</p>
       <input className="people-filter" type="search" value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="Search people" aria-label="Search people to add" autoFocus />
       <div className="people-list groups-picker-list">
@@ -298,7 +298,7 @@ export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
       {removeTarget ? <ConfirmDialog title={`Remove ${removeTarget.displayName}?`} message="They will no longer be able to mention or manage this group. You can add them again later." confirmLabel="Remove member" danger onConfirm={confirmRemoveMember} onCancel={() => setRemoveTarget(null)} /> : null}
       {leaveConfirmOpen && selected ? <ConfirmDialog title={selected.memberCount === 1 ? "Delete this group?" : "Leave this group?"} message={selected.memberCount === 1 ? "You are the last member. Leaving will permanently delete this group." : "You will no longer receive group mentions. Another member will own the group."} confirmLabel={selected.memberCount === 1 ? "Leave and delete group" : "Leave group"} danger onConfirm={confirmLeaveGroup} onCancel={() => setLeaveConfirmOpen(false)} /> : null}
       {creating ? <CreateGroupDialog form={form} users={users} memberQuery={memberQuery} error={createError} creating={creatingGroup} loadingDirectory={loadingDirectory} onFormChange={setForm} onMemberQueryChange={setMemberQuery} onAddMember={addCreationMember} onRemoveMember={removeCreationMember} onSubmit={createGroup} onClose={resetCreateDialog} groupNameRef={groupNameRef} /> : null}
-      {showAddPeople && selected ? <AddPeopleDialog groupName={selected.name} users={users} memberIds={selectedMemberIds} query={peopleQuery} loading={loadingDirectory} addingId={addingMemberId} onQueryChange={setPeopleQuery} onAdd={addMember} onClose={() => { setShowAddPeople(false); setPeopleQuery(""); }} /> : null}
+      {showAddPeople && selected ? <AddPeopleDialog users={users} memberIds={selectedMemberIds} query={peopleQuery} loading={loadingDirectory} addingId={addingMemberId} onQueryChange={setPeopleQuery} onAdd={addMember} onClose={() => { setShowAddPeople(false); setPeopleQuery(""); }} /> : null}
     </main>
   );
 }
