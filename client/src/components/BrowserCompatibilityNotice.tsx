@@ -4,6 +4,8 @@ import {
   MIN_CHROMIUM_MAJOR,
 } from "../lib/browserCompatibility.js";
 
+const NATIVE_APP_DOWNLOAD_URL = "https://github.com/ArielBerkovich/Echo/releases/latest";
+
 export default function BrowserCompatibilityNotice() {
   const [dismissed, setDismissed] = useState(false);
   const browser = detectCurrentChromiumBrowser();
@@ -13,12 +15,21 @@ export default function BrowserCompatibilityNotice() {
   return (
     <aside className="browser-warning" role="alert">
       <div className="browser-warning-copy">
-        <strong>Update {browser.name} for the best Echo experience</strong>
+        <strong>Browser update required</strong>
         <span>
-          This browser is version {browser.major}. Echo recommends Chromium {MIN_CHROMIUM_MAJOR} or newer;
-          some interface features may not render correctly.
+          {browser.name} {browser.major} is below Echo’s supported Chromium version ({MIN_CHROMIUM_MAJOR}+).
+          Some features may not work correctly until you update.
         </span>
       </div>
+      <a
+        className="browser-warning-download"
+        href={NATIVE_APP_DOWNLOAD_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <span>Prefer an app?</span>
+        <strong>Download Echo native app</strong>
+      </a>
       <button type="button" onClick={() => setDismissed(true)} aria-label="Dismiss browser compatibility warning">
         Dismiss
       </button>
