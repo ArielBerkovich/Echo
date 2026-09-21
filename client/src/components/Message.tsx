@@ -445,6 +445,23 @@ function Message({
           </div>
         )}
 
+        {m.broadcastToChannel && !inThread && (
+          <div className="broadcast-reply-label">
+            <span>Reply sent to the channel</span>
+            <button
+              type="button"
+              className="broadcast-reply-thread-link"
+              data-testid={`message-${mid}-view-thread`}
+              aria-label="View thread"
+              title="View thread"
+              onClick={() => onOpenThread?.()}
+            >
+              <span aria-hidden="true"><ReplyIcon /></span>
+              <span>View thread</span>
+            </button>
+          </div>
+        )}
+
         {m.forwardNote && (
           <div className="forward-note markdown" dir="auto">
             <div dangerouslySetInnerHTML={{ __html: renderMarkdown(m.forwardNote) }} />

@@ -53,6 +53,7 @@ export default function ThreadPanel({
   const [error, setError] = useState(null);
   const [highlightId, setHighlightId] = useState(null);
   const [newMessageCount, setNewMessageCount] = useState(0);
+  const [alsoSendToChannel, setAlsoSendToChannel] = useState(false);
   const bottomRef = useRef(null);
   const scrollerRef = useRef(null);
   const bodyInnerRef = useRef(null); // content wrapper used to track height changes
@@ -92,6 +93,7 @@ export default function ThreadPanel({
     jumpTargetRef.current = openThreadJumpMessageId || null;
     setHighlightId(null);
     setNewMessageCount(0);
+    setAlsoSendToChannel(false);
   }, [root.id]);
 
   useEffect(() => {
@@ -461,6 +463,9 @@ export default function ThreadPanel({
         key={`thread-${root.id}`}
         channel={channel}
         parentId={root.id}
+        alsoSendToChannel={alsoSendToChannel}
+        onAlsoSendToChannelChange={setAlsoSendToChannel}
+        onSent={() => setAlsoSendToChannel(false)}
         users={users}
         channels={channels}
         onFindChannels={onFindChannels}

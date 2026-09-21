@@ -80,6 +80,8 @@ const messageSchema = new mongoose.Schema(
     kind: { type: String, enum: ["user", "system"], default: "user" },
     // Set on thread replies — points at the root message of the thread.
     parentId: { type: mongoose.Schema.Types.ObjectId, ref: "Message", default: null, index: true },
+    // When true, a thread reply is also surfaced in the channel timeline.
+    broadcastToChannel: { type: Boolean, default: false, index: true },
     // Denormalized activity fields. These let /api/activity use indexed lookups
     // instead of scanning recent message bodies with regexes.
     mentionedUserIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "User", index: true }],
@@ -210,6 +212,7 @@ messageSchema.methods.toPublicJSON = function () {
     editedAt: this.editedAt || null,
     kind: this.kind || "user",
     parentId: this.parentId ? this.parentId.toString() : null,
+    broadcastToChannel: !!this.broadcastToChannel,
     mentionedUserIds: (this.mentionedUserIds || []).map((id) => id.toString()),
     mentionedGroups: (this.mentionedGroups || []).map((group) => ({
       provider: group.provider || "echo", id: group.id, name: group.name, path: group.path || "", memberCount: group.memberCount,

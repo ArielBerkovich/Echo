@@ -199,7 +199,7 @@ function deliveryMarkdown(currentEditor) {
 // Rich-text message composer: @mention autocomplete, a formatting toolbar,
 // emoji, and file attachments. Owns all of its own editor state — mount it with
 // a `key={channel.id}` so switching channels yields a fresh, empty composer.
-const Composer = forwardRef(function Composer({ channel, sendChannel = null, parentId = null, users = [], channels = [], onFindChannels, customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, onSend, initialContent = null, sendDisabled = false, allowEmptySend = false, sendAriaLabel, sendTitle, sendTestId, onDraftChange, onEditSave, onEditCancel, editing = null, placeholder: customPlaceholder, mode = "light", captureScreenDrops = false, showSchedule = true, showSend = true, showAttachments = true, submitOnEnter = false, disabled = false }, ref) {
+const Composer = forwardRef(function Composer({ channel, sendChannel = null, parentId = null, alsoSendToChannel = false, onAlsoSendToChannelChange, users = [], channels = [], onFindChannels, customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, onSend, initialContent = null, sendDisabled = false, allowEmptySend = false, sendAriaLabel, sendTitle, sendTestId, onDraftChange, onEditSave, onEditCancel, editing = null, placeholder: customPlaceholder, mode = "light", captureScreenDrops = false, showSchedule = true, showSend = true, showAttachments = true, submitOnEnter = false, disabled = false }, ref) {
   // Keep custom-emoji blob URLs alive for the full composer lifetime. The
   // picker unmounts immediately after a selection, so its URLs cannot safely
   // be used by an emoji node inserted into this editor.
@@ -881,7 +881,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       onError?.("Echo is reconnecting. Your draft is still here — send it when the connection returns.");
       return false;
     }
-    socket.emit("message:send", { channelId: targetChannelId, body, attachments, parentId, survey, retro }, (res) => {
+    socket.emit("message:send", { channelId: targetChannelId, body, attachments, parentId, broadcastToChannel: !!alsoSendToChannel, survey, retro }, (res) => {
       if (res?.error) onError?.(res.error);
       else onSent?.();
     });
@@ -1608,6 +1608,19 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       <div className="composer-input">
         <EditorContent editor={editor} />
       </div>
+
+      {isThread && !editing && onAlsoSendToChannelChange && (
+        <label className="also-send-to-channel">
+          <input
+            type="checkbox"
+            data-testid="also-send-to-channel"
+            aria-label={`Also send this reply to #${channel.name}`}
+            checked={alsoSendToChannel}
+            onChange={(event) => onAlsoSendToChannelChange(event.target.checked)}
+          />
+          <span>Also send to <bdi dir="ltr">#{channel.name}</bdi></span>
+        </label>
+      )}
 
       {pasteBlockedNotice && (
         <div className="composer-paste-notice" data-testid="composer-paste-error" role="alert">

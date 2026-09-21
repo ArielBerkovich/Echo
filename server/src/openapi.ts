@@ -122,6 +122,7 @@ export function openApiDocument() {
                   properties: {
                     body: { type: "string" },
                     parentId: { type: "string" },
+                    broadcastToChannel: { type: "boolean", description: "When replying in a thread, also surface the reply in the channel timeline." },
                     attachments: { type: "array" },
                     card: { $ref: "#/components/schemas/MessageCard" },
                     survey: {

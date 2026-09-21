@@ -208,7 +208,7 @@ export function attachSocket(httpServer) {
     });
 
     // Persist an incoming message and fan it out to everyone in the room.
-    socket.on("message:send", async ({ channelId, body, parentId, attachments, survey, retro, card } = {}, ack) => {
+    socket.on("message:send", async ({ channelId, body, parentId, broadcastToChannel, attachments, survey, retro, card } = {}, ack) => {
       try {
         const text = String(body || "").trim();
         const attachmentError = attachmentLimitError(attachments);
@@ -242,6 +242,7 @@ export function attachSocket(httpServer) {
           authorId: socket.user._id,
           body: text,
           parentId,
+          broadcastToChannel,
           attachments: files,
           survey: normalizedSurvey,
           retro: normalizedRetro,

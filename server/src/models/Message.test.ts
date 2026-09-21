@@ -72,6 +72,7 @@ describe("Message.toPublicJSON", () => {
       editedAt,
       kind: "user",
       parentId,
+      broadcastToChannel: true,
       attachments: [
         {
           key: "file.png",
@@ -117,6 +118,7 @@ describe("Message.toPublicJSON", () => {
     assert.equal(json.id, message._id.toString());
     assert.equal(json.channelId, channel.toString());
     assert.equal(json.parentId, parentId.toString());
+    assert.equal(json.broadcastToChannel, true);
     assert.deepEqual(json.author, { id: "author-1", username: "alice" });
     assert.deepEqual(json.attachments, [
       {

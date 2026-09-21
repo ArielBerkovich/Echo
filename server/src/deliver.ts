@@ -161,9 +161,16 @@ export function sanitizeAttachments(attachments) {
 // channel room, DM room joins so both participants receive it, and
 // `activity:bump` to anyone it's "activity" for. Shared by the live socket
 // sender and the scheduled-message dispatcher so both behave identically.
-export async function deliverMessage({ channel, authorId, body, parentId, attachments, survey, retro, card, idempotencyKey, passwordHelpRequest }) {
+export async function deliverMessage({ channel, authorId, body, parentId, broadcastToChannel = false, attachments, survey, retro, card, idempotencyKey, passwordHelpRequest }) {
   const io = getIO();
   const cid = channel._id.toString();
+  const requestedBroadcast = broadcastToChannel === true;
+  const shouldBroadcast = requestedBroadcast && !!parentId;
+  if (requestedBroadcast && !parentId) throw new Error("a channel reply must belong to a thread");
+  if (shouldBroadcast) {
+    const parent = await Message.findOne({ _id: parentId, channel: channel._id, parentId: null }, { _id: 1 }).lean();
+    if (!parent) throw new Error("thread not found");
+  }
 
   const activityMetadata = await buildMessageActivityMetadata({ body, parentId, authorId });
   // A group ping never grants access. For private channels retain only group
@@ -187,6 +194,7 @@ export async function deliverMessage({ channel, authorId, body, parentId, attach
     author: authorId,
     body: body || "",
     parentId: parentId || null,
+    broadcastToChannel: shouldBroadcast,
     attachments: attachments || [],
     survey: survey || null,
     retro: retro || null,

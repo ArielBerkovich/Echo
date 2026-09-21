@@ -267,6 +267,20 @@ const ChannelView = forwardRef(function ChannelView({
     // get un-subscribed when closed.
     const isPreview = channel.type !== "dm" && !(channel.members || []).includes(user.id);
 
+    const updateTimelineForIncomingMessage = (msg) => {
+      const scroller = scrollerRef.current;
+      const authoredByMe = msg.author?.id === user.id;
+      const atBottom = authoredByMe || (scroller
+        ? scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120
+        : stickToBottomRef.current);
+      if (atBottom) stickToBottomRef.current = true;
+      else {
+        stickToBottomRef.current = false;
+        setNewMessageCount((count) => count + 1);
+      }
+      setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
+    };
+
     const onNew = (msg) => {
       if (msg.channelId !== channel.id) return;
       if (msg.parentId) {
@@ -283,6 +297,9 @@ const ChannelView = forwardRef(function ChannelView({
               : m
           )
         );
+        if (msg.broadcastToChannel) {
+          updateTimelineForIncomingMessage(msg);
+        }
       } else {
         // The scroll event that updates stickToBottomRef can be delivered a
         // tick after a programmatic scroll (and after a layout change). Read
@@ -301,7 +318,7 @@ const ChannelView = forwardRef(function ChannelView({
           stickToBottomRef.current = false;
           setNewMessageCount((count) => count + 1);
         }
-        setMessages((prev) => [...prev, msg]);
+        updateTimelineForIncomingMessage(msg);
         if (msg.attachments?.length) {
           setFiles((prev) => [
             ...msg.attachments.map((attachment) => ({
@@ -320,7 +337,7 @@ const ChannelView = forwardRef(function ChannelView({
       // timeline, so channel replies remain separate Activity items. For DMs,
       // however, the conversation itself was being viewed and must not become
       // unread when we navigate away after a reply arrives.
-      if ((!msg.parentId || channel.type === "dm") && msg.author?.id !== user.id) {
+      if ((!msg.parentId || msg.broadcastToChannel || channel.type === "dm") && msg.author?.id !== user.id) {
         onRead?.(channel.id);
       }
     };
@@ -1298,7 +1315,11 @@ const ChannelView = forwardRef(function ChannelView({
                       setActionsFor(null);
                       setShowDetails(false);
                       setThreadJumpTargetId(null);
-                      setThread(m);
+                      if (m.parentId) {
+                        api.getThread(channel.id, m.parentId).then(({ parent }) => setThread(parent)).catch((err) => setError(err.message));
+                      } else {
+                        setThread(m);
+                      }
                     }}
                     onQuote={() => {
                       setActionsFor(null);
