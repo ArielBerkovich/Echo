@@ -107,10 +107,10 @@ export default function WhatsNewModal() {
                   )}
                   {releaseItem.items.map((item) => (
                     <article
-                      className={`whats-new-item${item.category === "New" ? " whats-new-item-new" : ""}`}
+                      className={`whats-new-item whats-new-item-${item.category.toLowerCase()}`}
                       key={`${releaseItem.id}-${item.title}`}
                     >
-                      {item.category === "New" && <span className="whats-new-item-badge">New</span>}
+                      <span className="whats-new-item-badge">{item.category}</span>
                       <h4>{item.title}</h4>
                       <p>{item.description}</p>
                     </article>

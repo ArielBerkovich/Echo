@@ -13321,6 +13321,14 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 18%, var(--surface)), var(--surface));
   box-shadow: inset 3px 0 0 var(--accent);
 }
+.whats-new-item-improved {
+  border-color: color-mix(in srgb, var(--green-500, #16a34a) 42%, var(--text) 10%);
+  background: color-mix(in srgb, var(--green-500, #16a34a) 7%, var(--surface));
+}
+.whats-new-item-fixed {
+  border-color: color-mix(in srgb, var(--orange-500, #f97316) 42%, var(--text) 10%);
+  background: color-mix(in srgb, var(--orange-500, #f97316) 7%, var(--surface));
+}
 
 .whats-new-item-badge {
   display: inline-flex;
