@@ -8258,6 +8258,11 @@ html[data-interface-direction="rtl"] .message .msg-menu {
   cursor: pointer;
   animation: toastIn 0.25s ease both;
 }
+.toast-error {
+  border-color: color-mix(in srgb, var(--danger) 48%, var(--border));
+  background: color-mix(in srgb, var(--danger) 14%, var(--surface));
+  color: var(--danger);
+}
 @keyframes toastIn {
   from { opacity: 0; transform: translate(-50%, 10px); }
   to { opacity: 1; transform: translate(-50%, 0); }
