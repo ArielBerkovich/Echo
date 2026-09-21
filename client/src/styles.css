@@ -4546,19 +4546,19 @@ html[data-mode="dark"] .search-highlight .kw-has .kw-label { color: #fcd34d; }
 
 /* Groups workspace: directory navigation and group details use the same
    quiet surfaces, section cards, and modal pickers as the rest of Echo. */
-.groups-panel-header { justify-content: flex-start; }
+.groups-panel-header { justify-content: space-between; }
 .groups-panel-title { flex-wrap: wrap; }
-.groups-create-button { display: inline-flex; align-items: center; gap: 7px; min-height: 32px; margin-left: 2px; padding: 0 10px; }
+.groups-create-button { display: inline-flex; align-items: center; gap: 7px; min-height: 32px; padding: 0 10px; }
 .groups-panel-body { padding: 18px; background: color-mix(in srgb, var(--surface-2) 35%, var(--surface)); }
 .groups-panel-error { width: min(1180px, 100%); margin: 0 auto 12px; box-sizing: border-box; }
 .groups-panel-layout {
   grid-template-columns: minmax(250px, 310px) minmax(0, 1fr);
   width: min(1180px, 100%);
   margin: 0 auto;
-  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
-  border-radius: 14px;
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 .groups-panel-list { display: flex; flex-direction: column; overflow: hidden; background: color-mix(in srgb, var(--surface-2) 45%, var(--surface)); }
 .groups-panel-list-head { flex: none; padding: 14px; background: transparent; }
