@@ -4908,6 +4908,59 @@ html[data-interface-direction="rtl"] .composer-editor p.is-editor-empty:first-ch
   outline: 2px solid var(--active-ring);
   outline-offset: 2px;
 }
+.broadcast-reply-label {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 2px 0 7px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.broadcast-reply-thread-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: var(--link-color);
+  background: transparent;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.broadcast-reply-thread-link:hover {
+  border-color: color-mix(in srgb, var(--link-color) 28%, transparent);
+  background: color-mix(in srgb, var(--link-color) 9%, transparent);
+}
+.broadcast-reply-thread-link:focus-visible {
+  outline: 2px solid var(--active-ring);
+  outline-offset: 1px;
+}
+.also-send-to-channel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 12px 8px;
+  padding: 0;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.also-send-to-channel:hover {
+  color: var(--text);
+}
+.also-send-to-channel:focus-within {
+  color: var(--text);
+}
+.also-send-to-channel input {
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
 /* "User is typing…" indicator above the composer */
 .typing-indicator {
   display: flex;

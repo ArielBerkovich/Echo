@@ -761,7 +761,10 @@ channelsRouter.get("/:id/messages", async (req, res) => {
     return res.status(403).json({ error: "access denied" });
   }
 
-  const base = { channel: channel._id, parentId: null }; // top-level only
+  const base = {
+    channel: channel._id,
+    $or: [{ parentId: null }, { parentId: { $ne: null }, broadcastToChannel: true }],
+  }; // top-level messages plus explicitly broadcast thread replies
   if (req.query.forwardNote) base.forwardNote = String(req.query.forwardNote);
 
   // `docs` is built newest-first here; the mapping below reverses it to
@@ -908,7 +911,7 @@ channelsRouter.get("/:id/files", async (req, res) => {
 });
 
 // POST /api/channels/:id/messages — send a message (REST equivalent of the
-// `message:send` socket event). Body: { body, parentId?, attachments? }.
+// `message:send` socket event). Body: { body, parentId?, broadcastToChannel?, attachments? }.
 channelsRouter.post("/:id/messages", async (req, res) => {
   const text = String(req.body?.body || "").trim();
   const survey = sanitizeSurvey(req.body?.survey);
@@ -953,6 +956,7 @@ channelsRouter.post("/:id/messages", async (req, res) => {
     authorId: req.user._id,
     body: text,
     parentId,
+    broadcastToChannel: req.body?.broadcastToChannel,
     attachments: files,
     survey,
     retro,

@@ -259,7 +259,10 @@ function initializeDesktopUpdates() {
       await dialog.showMessageBox(options);
     }
     markPendingUpdate(info.version);
-    autoUpdater.quitAndInstall(false, true);
+    // The confirmation dialog above is the user-facing consent. Run the
+    // downloaded NSIS installer silently so the update does not open the
+    // Windows installation wizard during the restart.
+    autoUpdater.quitAndInstall(true, true);
   });
 }
 

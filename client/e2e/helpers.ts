@@ -140,6 +140,7 @@ export async function requestAsToken(page, token, path, options = {}) {
       body: {
         body: options.body?.body,
         parentId: options.body?.parentId,
+        broadcastToChannel: options.body?.broadcastToChannel,
         attachments: options.body?.attachments,
       },
     };
