@@ -453,7 +453,6 @@ function Message({
               className="broadcast-reply-thread-link"
               data-testid={`message-${mid}-view-thread`}
               aria-label="View thread"
-              title="View thread"
               onClick={() => onOpenThread?.()}
             >
               <span aria-hidden="true"><ReplyIcon /></span>
