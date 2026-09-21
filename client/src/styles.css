@@ -2100,7 +2100,7 @@ html[data-mode="dark"] .backend-connection-error {
   height: 13px;
   flex: none;
   position: relative;
-  top: 1px;
+  top: 2px;
 }
 .channel-tag {
   display: inline-block;
