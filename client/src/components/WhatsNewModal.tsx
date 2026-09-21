@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { ChevronDownIcon } from "lucide-react";
 import Modal, { ModalActions } from "./Modal.js";
 import {
+  getWhatsNewRelease,
   getWhatsNewReleases,
   hasSeenWhatsNew,
   isNativeDesktop,
@@ -91,30 +93,29 @@ export default function WhatsNewModal() {
                   });
                 }}
               >
-                <span>
-                  <strong>{releaseItem.id}</strong>
-                  {index === 0 && <small>Latest</small>}
+                <span className="whats-new-release-heading">
+                  <span className="whats-new-release-version">
+                    <strong>Version {releaseItem.id}</strong>
+                    {index === 0 && <small>Latest</small>}
+                  </span>
+                  <span className="whats-new-release-summary">{releaseItem.summary}</span>
                 </span>
-                <span aria-hidden="true">{expanded ? "−" : "+"}</span>
+                <ChevronDownIcon className="whats-new-release-chevron" size={19} strokeWidth={2} aria-hidden="true" />
               </button>
               {expanded && (
                 <div className="whats-new-release-content">
-                  {releases.length > 1 && (
-                    <>
-                      <h3>{releaseItem.title}</h3>
-                      <p className="whats-new-summary">{releaseItem.summary}</p>
-                    </>
-                  )}
-                  {releaseItem.items.map((item) => (
-                    <article
-                      className={`whats-new-item whats-new-item-${item.category.toLowerCase()}`}
-                      key={`${releaseItem.id}-${item.title}`}
-                    >
-                      <span className="whats-new-item-badge">{item.category}</span>
-                      <h4>{item.title}</h4>
-                      <p>{item.description}</p>
-                    </article>
-                  ))}
+                  <div className="whats-new-feature-grid">
+                    {releaseItem.items.map((item) => (
+                      <article
+                        className={`whats-new-item whats-new-item-${item.category.toLowerCase()}`}
+                        key={`${releaseItem.id}-${item.title}`}
+                      >
+                        <span className="whats-new-item-badge">{item.category}</span>
+                        <h4>{item.title}</h4>
+                        <p>{item.description}</p>
+                      </article>
+                    ))}
+                  </div>
                 </div>
               )}
             </section>
