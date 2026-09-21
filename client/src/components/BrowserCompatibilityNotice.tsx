@@ -22,6 +22,7 @@ export default function BrowserCompatibilityNotice() {
       <a
         className="browser-warning-download"
         href="/settings/desktop"
+        onClick={() => setDismissed(true)}
       >
         <span>Prefer an app?</span>
         <strong>Download Echo native app</strong>
