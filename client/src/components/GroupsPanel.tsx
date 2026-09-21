@@ -268,6 +268,11 @@ export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
     if (selected) setLeaveConfirmOpen(true);
   }
 
+  function selectGroup(group) {
+    setSelected(group);
+    setError("");
+  }
+
   async function confirmLeaveGroup() {
     if (!selected) return;
     setLeaveConfirmOpen(false);
@@ -287,7 +292,7 @@ export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
       <div className="groups-panel-body">
         {error ? <div className="error groups-panel-error" role="alert">{error}</div> : null}
         <div className="groups-panel-layout">
-          <GroupDirectory groups={groups} selected={selected} query={query} loading={loadingGroups} onQueryChange={setQuery} onSelect={setSelected} />
+          <GroupDirectory groups={groups} selected={selected} query={query} loading={loadingGroups} onQueryChange={setQuery} onSelect={selectGroup} />
           <section className="groups-panel-detail" aria-live="polite">
             {!selected ? <div className="groups-detail-empty"><span className="groups-empty-state-icon"><ContactRoundIcon size={26} aria-hidden="true" /></span><strong>Select a group</strong><p>Choose a group to view its members.</p></div> : <>
               <header className="groups-detail-hero"><span className="groups-panel-detail-icon"><ContactRoundIcon size={22} aria-hidden="true" /></span><div className="groups-detail-heading"><div className="groups-detail-title-row"><h2>{selected.name}</h2><span className="groups-role-badge">{selected.currentUserRole || "Workspace group"}</span></div><p className="groups-panel-handle">@{selected.handle}</p>{selected.description ? <p className="groups-panel-description">{selected.description}</p> : null}<div className="groups-detail-stats"><span><UsersRoundIcon size={14} aria-hidden="true" />{selected.memberCount} {selected.memberCount === 1 ? "member" : "members"}</span></div></div></header>
