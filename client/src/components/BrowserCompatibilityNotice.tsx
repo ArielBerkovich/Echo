@@ -4,8 +4,6 @@ import {
   MIN_CHROMIUM_MAJOR,
 } from "../lib/browserCompatibility.js";
 
-const NATIVE_APP_DOWNLOAD_URL = "https://github.com/ArielBerkovich/Echo/releases/latest";
-
 export default function BrowserCompatibilityNotice() {
   const [dismissed, setDismissed] = useState(false);
   const browser = detectCurrentChromiumBrowser();
@@ -23,9 +21,7 @@ export default function BrowserCompatibilityNotice() {
       </div>
       <a
         className="browser-warning-download"
-        href={NATIVE_APP_DOWNLOAD_URL}
-        target="_blank"
-        rel="noopener noreferrer"
+        href="/settings/desktop"
       >
         <span>Prefer an app?</span>
         <strong>Download Echo native app</strong>
