@@ -17,7 +17,7 @@ const RELEASES: Record<string, WhatsNewRelease> = {
   "0.39.0": {
     id: "0.39.0",
     title: "What's new in 0.39.0",
-    summary: "Three focused updates for your everyday work in Echo.",
+    summary: "Four focused updates for your everyday work in Echo.",
     items: [
       {
         title: "Groups",
@@ -33,6 +33,11 @@ const RELEASES: Record<string, WhatsNewRelease> = {
         title: "Outdated browser warnings",
         description: "Echo now warns users about outdated Chromium browsers.",
         category: "New",
+      },
+      {
+        title: "Right-to-left chats",
+        description: "RTL conversations now align messages, composers, mentions, menus, and thread controls naturally for Hebrew and other right-to-left languages.",
+        category: "Improved",
       },
     ],
   },

@@ -34,7 +34,7 @@ describe("What's new release content", () => {
     assert.equal(getWhatsNewRelease("0.39.0")?.id, "0.39.0");
     assert.deepEqual(
       getWhatsNewRelease("0.39.0")?.items.map(({ title }) => title),
-      ["Groups", "Channel renames", "Outdated browser warnings"],
+      ["Groups", "Channel renames", "Outdated browser warnings", "Right-to-left chats"],
     );
     assert.equal(getWhatsNewRelease("0.38.0"), null);
     assert.equal(getWhatsNewRelease("9.9.9"), null);
