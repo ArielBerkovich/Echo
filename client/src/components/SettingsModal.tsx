@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Building2Icon, CheckIcon, Code2Icon, DownloadIcon, GitPullRequestIcon, KeyboardIcon, PaletteIcon, SlidersHorizontalIcon, UserRoundIcon, Volume2Icon, WebhookIcon } from "lucide-react";
+import { Building2Icon, CheckIcon, Code2Icon, DownloadIcon, GitPullRequestIcon, KeyboardIcon, PaletteIcon, SlidersHorizontalIcon, UserRoundIcon, WebhookIcon } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { api, getBackendUrl } from "../api.js";
@@ -589,22 +589,16 @@ export default function SettingsModal({
           </>}
 
           {activeTab === "preferences" && <section className="settings-section preferences-page" data-testid="preferences-page">
-            <div className="preferences-hero">
-              <div className="preferences-hero-icon" aria-hidden="true"><Volume2Icon size={20} strokeWidth={2} /></div>
-              <div>
-                <h2>Preferences</h2>
-                <p>Personalize how Echo keeps you informed while you work.</p>
-              </div>
-            </div>
-            <div className="preferences-card">
-              <div className="preferences-card-heading">
+            <h3>Preferences</h3>
+            <section className="preferences-message-sounds" aria-labelledby="message-sounds-heading">
+              <div className="preferences-message-sounds-heading">
                 <div>
-                  <h3>Message sounds</h3>
+                  <h3 id="message-sounds-heading">Message sounds</h3>
                   <p>Choose a sound for new messages.</p>
                 </div>
               </div>
               <MessageSoundControls />
-            </div>
+            </section>
           </section>}
 
           {activeTab === "webhooks" && <section className="settings-section mention-webhook-settings" data-testid="mention-webhook-settings">
