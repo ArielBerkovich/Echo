@@ -259,8 +259,12 @@ export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
   return (
     <main className="groups-panel" data-testid="groups-panel" aria-label="Groups">
       <header className="channel-header groups-panel-header">
-        <span className="groups-panel-title"><ContactRoundIcon size={20} strokeWidth={1.8} aria-hidden="true" /><span className="ch-name">Groups</span></span>
-        <div className="groups-panel-header-actions"><span className="groups-panel-count">{groups.length} {groups.length === 1 ? "group" : "groups"}</span><Button variant="primary" className="groups-create-button" onClick={() => setCreating(true)}><PlusIcon size={16} aria-hidden="true" />Create group</Button></div>
+        <div className="groups-panel-title">
+          <ContactRoundIcon size={20} strokeWidth={1.8} aria-hidden="true" />
+          <span className="ch-name">Groups</span>
+          <span className="groups-panel-count">{groups.length} {groups.length === 1 ? "group" : "groups"}</span>
+          <Button variant="primary" className="groups-create-button" onClick={() => setCreating(true)}><PlusIcon size={16} aria-hidden="true" />Create group</Button>
+        </div>
       </header>
       <div className="groups-panel-body">
         {error ? <div className="error groups-panel-error" role="alert">{error}</div> : null}
