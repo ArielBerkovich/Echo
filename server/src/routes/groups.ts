@@ -36,7 +36,7 @@ groupsRouter.post("/", async (req, res) => {
   const name = String(req.body?.name || "").trim();
   const description = String(req.body?.description || "").trim();
   const memberIds = [...new Set(Array.isArray(req.body?.memberIds) ? req.body.memberIds.map(String) : [])];
-  if (!groupNamePattern.test(name) || name.length > 80 || description.length > 160 || memberIds.some((id) => !validId(id))) return res.status(400).json({ error: "group names may contain English letters, numbers, spaces, and hyphens only" });
+  if (!groupNamePattern.test(name) || name.length > 40 || description.length > 160 || memberIds.some((id) => !validId(id))) return res.status(400).json({ error: "group names may contain English letters, numbers, spaces, and hyphens only" });
   try {
     if (await Group.exists(groupNameMatch(name))) return res.status(409).json({ error: "a group with that name already exists" });
     const invitedUsers = memberIds.length ? await groupUsers(memberIds) : [];
@@ -67,7 +67,7 @@ groupsRouter.patch("/:groupId", async (req, res) => {
   if (req.body?.name !== undefined) group.name = String(req.body.name).trim();
   if (req.body?.description !== undefined) group.description = String(req.body.description).trim();
   if (req.body?.handle !== undefined) group.handle = String(req.body.handle).trim().toLowerCase();
-  if (!groupNamePattern.test(group.name) || group.name.length > 80 || !handlePattern.test(group.handle)) return res.status(400).json({ error: "group names may contain English letters, numbers, spaces, and hyphens only" });
+  if (!groupNamePattern.test(group.name) || group.name.length > 40 || !handlePattern.test(group.handle)) return res.status(400).json({ error: "group names may contain English letters, numbers, spaces, and hyphens only" });
   try {
     if (await Group.exists(groupNameMatch(group.name, group._id))) return res.status(409).json({ error: "a group with that name already exists" });
     await group.save();
