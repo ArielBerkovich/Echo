@@ -1,13 +1,13 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import {
   detectCurrentChromiumBrowser,
   MIN_CHROMIUM_MAJOR,
 } from "../lib/browserCompatibility.js";
 
-const NATIVE_APP_DOWNLOAD_URL = "https://github.com/ArielBerkovich/Echo/releases/latest";
-
 export default function BrowserCompatibilityNotice() {
   const [dismissed, setDismissed] = useState(false);
+  const navigate = useNavigate();
   const browser = detectCurrentChromiumBrowser();
 
   if (dismissed || !browser || browser.major >= MIN_CHROMIUM_MAJOR) return null;
@@ -23,9 +23,12 @@ export default function BrowserCompatibilityNotice() {
       </div>
       <a
         className="browser-warning-download"
-        href={NATIVE_APP_DOWNLOAD_URL}
-        target="_blank"
-        rel="noopener noreferrer"
+        href="/settings/desktop"
+        onClick={(event) => {
+          event.preventDefault();
+          setDismissed(true);
+          navigate("/settings/desktop");
+        }}
       >
         <span>Prefer an app?</span>
         <strong>Download Echo native app</strong>

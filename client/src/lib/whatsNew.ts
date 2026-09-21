@@ -21,12 +21,12 @@ const RELEASES: Record<string, WhatsNewRelease> = {
     items: [
       {
         title: "Also send to channel",
-        description: "Share a thread reply with the channel while keeping the full conversation in its thread. Use View thread to jump back to the original discussion.",
+        description: "Share thread replies in the channel while keeping them linked to the original thread.",
         category: "New",
       },
       {
         title: "Seamless Echo updates",
-        description: "After you confirm an update, Echo applies it silently on restart instead of opening the Windows installation wizard.",
+        description: "After you confirm an update, Echo applies it silently.",
         category: "Improved",
       },
     ],
@@ -62,7 +62,8 @@ const RELEASES: Record<string, WhatsNewRelease> = {
 
 // Preview content lets the release flow be reviewed in a regular browser
 // before the native desktop version is published.
-const PREVIEW_RELEASES: WhatsNewRelease[] = [RELEASES["0.40.0"]];
+const ALL_RELEASES = Object.values(RELEASES);
+const PREVIEW_RELEASES: WhatsNewRelease[] = ALL_RELEASES;
 
 export function isNativeDesktop() {
   return typeof window !== "undefined" && Boolean(window.echoDesktopConfig?.appVersion);
@@ -79,8 +80,7 @@ export function getWhatsNewRelease(version = "") {
 
 export function getWhatsNewReleases(version = "", preview = false) {
   if (preview) return PREVIEW_RELEASES;
-  const release = getWhatsNewRelease(version);
-  return release ? [release] : [];
+  return getWhatsNewRelease(version) ? ALL_RELEASES : [];
 }
 
 export function whatsNewStorageKey(releaseId: string) {

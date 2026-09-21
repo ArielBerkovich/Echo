@@ -106,7 +106,7 @@ export default function WorkspaceOverlays({
         />
       ) : null}
       {showTour ? <Walkthrough onClose={onFinishTour} /> : null}
-      {toast ? <div className="toast" role="status" onClick={onClose.toast}>{toast}</div> : null}
+      {toast ? <div className={`toast${toast.tone === "error" ? " toast-error" : ""}`} role={toast.tone === "error" ? "alert" : "status"} onClick={onClose.toast}>{typeof toast === "string" ? toast : toast.message}</div> : null}
     </Suspense>
   );
 }

@@ -49,7 +49,11 @@ describe("What's new release content", () => {
     installBrowser();
     globalThis.window = { location: { search: "?whats-new-preview=1" } } as Window & typeof globalThis;
     assert.equal(isWhatsNewPreview(), true);
-    assert.deepEqual(getWhatsNewReleases("0.39.0", true).map(({ id }) => id), ["0.40.0"]);
+    assert.deepEqual(getWhatsNewReleases("0.39.0", true).map(({ id }) => id), ["0.40.0", "0.39.0"]);
+  });
+
+  it("returns all authored releases for a known desktop version", () => {
+    assert.deepEqual(getWhatsNewReleases("0.40.0").map(({ id }) => id), ["0.40.0", "0.39.0"]);
   });
 
   it("only treats the native renderer as a desktop app", () => {

@@ -81,13 +81,30 @@ function GroupMember({ member, removable, onOpenProfile, onRemove }) {
 }
 
 function GroupDetails({ group, onOpenProfile, onLeave, onAddPeople, onRemoveMember }) {
+  const [memberQuery, setMemberQuery] = useState("");
+  const visibleMembers = useMemo(() => {
+    const query = memberQuery.trim().toLowerCase();
+    if (!query) return group.members;
+    return group.members.filter((member) => matchesQuery(`${member.displayName} ${member.username}`, query));
+  }, [group.members, memberQuery]);
+
+  useEffect(() => {
+    setMemberQuery("");
+  }, [group.id]);
+
   return (
-    <section className="groups-detail-section" aria-labelledby="groups-members-heading">
+    <section className="groups-detail-section" aria-label="Group members">
       <header className="groups-detail-section-head">
-        <div><h3 id="groups-members-heading">Members</h3><p>People notified when this group is mentioned.</p></div>
+        <div className="groups-members-search">
+          <SearchIcon size={15} aria-hidden="true" />
+          <label className="sr-only" htmlFor="group-member-search">Search members</label>
+          <input id="group-member-search" type="search" value={memberQuery} onChange={(event) => setMemberQuery(event.target.value)} placeholder="Search members" />
+        </div>
         {group.isMember ? <div className="groups-detail-section-actions"><Button variant="subtle" onClick={onLeave}><LogOutIcon size={15} aria-hidden="true" />Leave group</Button><Button variant="subtle" onClick={onAddPeople}><UserPlusIcon size={15} aria-hidden="true" />Add people</Button></div> : null}
       </header>
-      <div className="groups-detail-list">{group.members.map((member) => <GroupMember key={member.id} member={member} removable={group.isMember && member.id !== group.currentUserId} onOpenProfile={onOpenProfile} onRemove={onRemoveMember} />)}</div>
+      <div className="groups-detail-list">
+        {visibleMembers.length ? visibleMembers.map((member) => <GroupMember key={member.id} member={member} removable={group.isMember && member.id !== group.currentUserId} onOpenProfile={onOpenProfile} onRemove={onRemoveMember} />) : <div className="groups-members-empty">No members match “{memberQuery.trim()}”.</div>}
+      </div>
     </section>
   );
 }
@@ -121,14 +138,14 @@ function CreateGroupDialog({ form, users, memberQuery, error, creating, loadingD
   );
 }
 
-function AddPeopleDialog({ groupName, users, memberIds, query, loading, addingId, onQueryChange, onAdd, onClose }) {
+function AddPeopleDialog({ users, memberIds, query, loading, addingId, onQueryChange, onAdd, onClose }) {
   const matches = useMemo(() => {
     const text = query.trim().toLowerCase();
     return users.filter((user) => !memberIds.has(user.id) && (!text || matchesQuery(`${user.displayName} ${user.username}`, text))).slice(0, PEOPLE_RESULT_LIMIT);
   }, [memberIds, query, users]);
 
   return (
-    <Modal title={`Add people to ${groupName}`} className="groups-picker-modal" onClose={onClose}>
+    <Modal title="Add people to group" className="groups-picker-modal" onClose={onClose}>
       <p className="groups-dialog-intro">Members can mention this group and manage its membership.</p>
       <input className="people-filter" type="search" value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="Search people" aria-label="Search people to add" autoFocus />
       <div className="people-list groups-picker-list">
@@ -164,9 +181,10 @@ export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
     try {
       const result = await api.listGroups();
       const nextGroups = result.groups || [];
+      const requestedGroupExists = !openGroup || nextGroups.some((group) => group.id === openGroup.id);
       setGroups(nextGroups);
       setSelected((current) => nextGroups.find((group) => group.id === (selectId || current?.id)) || nextGroups[0] || null);
-      setError("");
+      setError(requestedGroupExists ? "" : "This group is no longer available. It may have been deleted.");
     } catch (requestError) {
       setError(requestError.message || "Could not load groups.");
     } finally {
@@ -250,6 +268,11 @@ export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
     if (selected) setLeaveConfirmOpen(true);
   }
 
+  function selectGroup(group) {
+    setSelected(group);
+    setError("");
+  }
+
   async function confirmLeaveGroup() {
     if (!selected) return;
     setLeaveConfirmOpen(false);
@@ -259,13 +282,17 @@ export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
   return (
     <main className="groups-panel" data-testid="groups-panel" aria-label="Groups">
       <header className="channel-header groups-panel-header">
-        <span className="groups-panel-title"><ContactRoundIcon size={20} strokeWidth={1.8} aria-hidden="true" /><span className="ch-name">Groups</span></span>
-        <div className="groups-panel-header-actions"><span className="groups-panel-count">{groups.length} {groups.length === 1 ? "group" : "groups"}</span><Button variant="primary" className="groups-create-button" onClick={() => setCreating(true)}><PlusIcon size={16} aria-hidden="true" />Create group</Button></div>
+        <div className="groups-panel-title">
+          <ContactRoundIcon size={20} strokeWidth={1.8} aria-hidden="true" />
+          <span className="ch-name">Groups</span>
+          <span className="groups-panel-count">{groups.length} {groups.length === 1 ? "group" : "groups"}</span>
+        </div>
+        <Button variant="primary" className="groups-create-button" onClick={() => setCreating(true)}><PlusIcon size={16} aria-hidden="true" />Create group</Button>
       </header>
       <div className="groups-panel-body">
         {error ? <div className="error groups-panel-error" role="alert">{error}</div> : null}
         <div className="groups-panel-layout">
-          <GroupDirectory groups={groups} selected={selected} query={query} loading={loadingGroups} onQueryChange={setQuery} onSelect={setSelected} />
+          <GroupDirectory groups={groups} selected={selected} query={query} loading={loadingGroups} onQueryChange={setQuery} onSelect={selectGroup} />
           <section className="groups-panel-detail" aria-live="polite">
             {!selected ? <div className="groups-detail-empty"><span className="groups-empty-state-icon"><ContactRoundIcon size={26} aria-hidden="true" /></span><strong>Select a group</strong><p>Choose a group to view its members.</p></div> : <>
               <header className="groups-detail-hero"><span className="groups-panel-detail-icon"><ContactRoundIcon size={22} aria-hidden="true" /></span><div className="groups-detail-heading"><div className="groups-detail-title-row"><h2>{selected.name}</h2><span className="groups-role-badge">{selected.currentUserRole || "Workspace group"}</span></div><p className="groups-panel-handle">@{selected.handle}</p>{selected.description ? <p className="groups-panel-description">{selected.description}</p> : null}<div className="groups-detail-stats"><span><UsersRoundIcon size={14} aria-hidden="true" />{selected.memberCount} {selected.memberCount === 1 ? "member" : "members"}</span></div></div></header>
@@ -277,7 +304,7 @@ export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
       {removeTarget ? <ConfirmDialog title={`Remove ${removeTarget.displayName}?`} message="They will no longer be able to mention or manage this group. You can add them again later." confirmLabel="Remove member" danger onConfirm={confirmRemoveMember} onCancel={() => setRemoveTarget(null)} /> : null}
       {leaveConfirmOpen && selected ? <ConfirmDialog title={selected.memberCount === 1 ? "Delete this group?" : "Leave this group?"} message={selected.memberCount === 1 ? "You are the last member. Leaving will permanently delete this group." : "You will no longer receive group mentions. Another member will own the group."} confirmLabel={selected.memberCount === 1 ? "Leave and delete group" : "Leave group"} danger onConfirm={confirmLeaveGroup} onCancel={() => setLeaveConfirmOpen(false)} /> : null}
       {creating ? <CreateGroupDialog form={form} users={users} memberQuery={memberQuery} error={createError} creating={creatingGroup} loadingDirectory={loadingDirectory} onFormChange={setForm} onMemberQueryChange={setMemberQuery} onAddMember={addCreationMember} onRemoveMember={removeCreationMember} onSubmit={createGroup} onClose={resetCreateDialog} groupNameRef={groupNameRef} /> : null}
-      {showAddPeople && selected ? <AddPeopleDialog groupName={selected.name} users={users} memberIds={selectedMemberIds} query={peopleQuery} loading={loadingDirectory} addingId={addingMemberId} onQueryChange={setPeopleQuery} onAdd={addMember} onClose={() => { setShowAddPeople(false); setPeopleQuery(""); }} /> : null}
+      {showAddPeople && selected ? <AddPeopleDialog users={users} memberIds={selectedMemberIds} query={peopleQuery} loading={loadingDirectory} addingId={addingMemberId} onQueryChange={setPeopleQuery} onAdd={addMember} onClose={() => { setShowAddPeople(false); setPeopleQuery(""); }} /> : null}
     </main>
   );
 }

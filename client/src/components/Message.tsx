@@ -1,6 +1,7 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ArrowUpRight, ChartNoAxesColumnIncreasing, Check, LoaderCircle } from "lucide-react";
+import { api } from "../api.js";
 import RetroBoard from "./RetroBoard.js";
 import Avatar from "./Avatar.js";
 import Attachments from "./Attachments.js";
@@ -296,7 +297,15 @@ function Message({
     const groupPill = e.target.closest?.(".mention--group[data-group-id]");
     if (groupPill) {
       e.preventDefault();
-      onOpenGroup?.({ provider: groupPill.dataset.groupProvider || "rhsso", id: groupPill.dataset.groupId });
+      const groupRef = { provider: groupPill.dataset.groupProvider || "rhsso", id: groupPill.dataset.groupId };
+      api.listGroups().then(({ groups = [] }) => {
+        const exists = groups.some((group) => String(group.id) === String(groupRef.id));
+        if (!exists) {
+          onToast?.({ message: "This group is no longer available. It may have been deleted.", tone: "error" });
+          return;
+        }
+        onOpenGroup?.(groupRef);
+      }).catch(() => onOpenGroup?.(groupRef));
       return;
     }
     const channelTag = e.target.closest?.(".channel-tag[data-channel-tag]");
@@ -453,7 +462,6 @@ function Message({
               className="broadcast-reply-thread-link"
               data-testid={`message-${mid}-view-thread`}
               aria-label="View thread"
-              title="View thread"
               onClick={() => onOpenThread?.()}
             >
               <span aria-hidden="true"><ReplyIcon /></span>

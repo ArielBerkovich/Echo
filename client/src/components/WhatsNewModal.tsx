@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { ChevronDownIcon } from "lucide-react";
 import Modal, { ModalActions } from "./Modal.js";
 import {
+  getWhatsNewRelease,
   getWhatsNewReleases,
   hasSeenWhatsNew,
   isNativeDesktop,
@@ -23,7 +25,7 @@ export default function WhatsNewModal() {
   // replace the query string while restoring the active conversation.
   const [preview] = useState(() => isWhatsNewPreview());
   const releases = getWhatsNewReleases(appVersion, preview);
-  const release = releases[0] || null;
+  const release = preview ? releases[0] || null : getWhatsNewRelease(appVersion);
   const hasUpdateNotice = Boolean(
     nativeDesktop
     && appVersion
@@ -37,7 +39,7 @@ export default function WhatsNewModal() {
       && window.echoDesktopConfig?.wasUpdated
       && (release ? !hasSeenWhatsNew(release.id) : hasUpdateNotice))
   ));
-  const [expandedId, setExpandedId] = useState(release?.id || null);
+  const [expandedIds, setExpandedIds] = useState(() => new Set(releases.map(({ id }) => id)));
 
   if (!open) return null;
 
@@ -72,7 +74,7 @@ export default function WhatsNewModal() {
     <Modal title={preview ? "What's new in Echo" : `Welcome to Echo ${release.id}`} className="whats-new-modal" onClose={close} onPointerDownOutside={(event) => event.preventDefault()}>
       <div className="whats-new-items">
         {releases.map((releaseItem, index) => {
-          const expanded = expandedId === releaseItem.id;
+          const expanded = expandedIds.has(releaseItem.id);
           return (
             <section className={`whats-new-release${expanded ? " expanded" : ""}`} key={releaseItem.id}>
               <button
@@ -83,33 +85,37 @@ export default function WhatsNewModal() {
                 onPointerDown={(event) => event.stopPropagation()}
                 onClick={(event) => {
                   event.stopPropagation();
-                  setExpandedId((current) => current === releaseItem.id ? null : releaseItem.id);
+                  setExpandedIds((current) => {
+                    const next = new Set(current);
+                    if (next.has(releaseItem.id)) next.delete(releaseItem.id);
+                    else next.add(releaseItem.id);
+                    return next;
+                  });
                 }}
               >
-                <span>
-                  <strong>{releaseItem.id}</strong>
-                  {index === 0 && <small>Latest</small>}
+                <span className="whats-new-release-heading">
+                  <span className="whats-new-release-version">
+                    <strong>Version {releaseItem.id}</strong>
+                    {index === 0 && <small>Latest</small>}
+                  </span>
+                  <span className="whats-new-release-summary">{releaseItem.summary}</span>
                 </span>
-                <span aria-hidden="true">{expanded ? "−" : "+"}</span>
+                <ChevronDownIcon className="whats-new-release-chevron" size={19} strokeWidth={2} aria-hidden="true" />
               </button>
               {expanded && (
                 <div className="whats-new-release-content">
-                  {releases.length > 1 && (
-                    <>
-                      <h3>{releaseItem.title}</h3>
-                      <p className="whats-new-summary">{releaseItem.summary}</p>
-                    </>
-                  )}
-                  {releaseItem.items.map((item) => (
-                    <article
-                      className={`whats-new-item${item.category === "New" ? " whats-new-item-new" : ""}`}
-                      key={`${releaseItem.id}-${item.title}`}
-                    >
-                      {item.category === "New" && <span className="whats-new-item-badge">New</span>}
-                      <h4>{item.title}</h4>
-                      <p>{item.description}</p>
-                    </article>
-                  ))}
+                  <div className="whats-new-feature-grid">
+                    {releaseItem.items.map((item) => (
+                      <article
+                        className={`whats-new-item whats-new-item-${item.category.toLowerCase()}`}
+                        key={`${releaseItem.id}-${item.title}`}
+                      >
+                        <span className="whats-new-item-badge">{item.category}</span>
+                        <h4>{item.title}</h4>
+                        <p>{item.description}</p>
+                      </article>
+                    ))}
+                  </div>
                 </div>
               )}
             </section>

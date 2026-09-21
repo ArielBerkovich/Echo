@@ -20,6 +20,11 @@ test("members govern membership and the last member leaving deletes the group", 
     await expect(panel).toContainText(created.group.name);
     await panel.getByRole("button", { name: new RegExp(created.group.name) }).click();
     await expect(panel.locator(".groups-panel-member").getByText(fixture.bob.displayName)).toBeVisible();
+    const memberSearch = panel.getByRole("searchbox", { name: "Search members" });
+    await memberSearch.fill(fixture.bob.displayName);
+    await expect(panel.locator(".groups-panel-member").getByText(fixture.bob.displayName)).toBeVisible();
+    await expect(panel.locator(".groups-panel-member").getByText(fixture.alice.displayName)).toHaveCount(0);
+    await memberSearch.fill("");
     await panel.getByRole("button", { name: "Add people" }).click();
     await expect(page.getByLabel("Search people to add")).toBeVisible();
     await page.getByRole("button", { name: "Close" }).click();
