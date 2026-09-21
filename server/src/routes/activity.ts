@@ -160,7 +160,7 @@ async function getActivityItems(me) {
       author: m.author?.toPublicJSON?.() || null,
       body: m.body,
       mentionedGroups: (m.mentionedGroups || []).map((group) => ({
-        provider: group.provider || "rhsso",
+        provider: group.provider || "echo",
         id: group.id,
         name: group.name,
         path: group.path,

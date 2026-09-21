@@ -30,7 +30,7 @@ const QUICK_ACTIONS = [
   { id: "dms", label: "Go to Direct messages", keywords: ["dm", "dms", "direct", "messages"], shortcut: "⌘/Ctrl+⇧D", Icon: MessageSquareTextIcon },
   { id: "activity", label: "Go to Activity", keywords: ["activity", "notifications"], shortcut: "⌘/Ctrl+⇧A", Icon: ActivityIcon },
   { id: "saved", label: "Go to Saved", keywords: ["saved", "bookmarks"], shortcut: "⌘/Ctrl+⇧S", Icon: BookmarkIcon },
-  { id: "groups", label: "Go to User Groups", keywords: ["groups", "user groups", "directory"], Icon: UsersRoundIcon },
+  { id: "groups", label: "Go to Groups", keywords: ["groups", "user groups"], Icon: UsersRoundIcon },
   { id: "settings", label: "Open Settings", keywords: ["settings", "preferences"], shortcut: "⌘/Ctrl+,", Icon: SettingsIcon },
 ];
 

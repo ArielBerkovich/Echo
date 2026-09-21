@@ -111,8 +111,6 @@ rhsso:
   realm: example
   clientId: echo
   clientSecret: ""                 # empty for a public PKCE client
-  directoryClientId: ""            # optional, read-only group directory client
-  directoryClientSecret: ""        # requires RHSSO group/user view permissions
   usernameClaim: preferred_username
   displayNameClaim: name
 ```

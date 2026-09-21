@@ -31,8 +31,8 @@ export async function buildMessageActivityMetadata({ body, parentId, authorId })
     parentId && mongoose.isValidObjectId(parentId)
       ? Message.findById(parentId, { author: 1 }).lean()
       : Promise.resolve(null),
-    // A directory client is optional. Text that happens to look like a group
-    // handle remains ordinary text when RHSSO groups are unavailable.
+    // Group mentions are resolved to an ID snapshot; stale or archived IDs
+    // remain ordinary text for new messages.
     resolveGroupMentions(body).catch(() => []),
     findMentionedChannels(body, authorId),
   ]);

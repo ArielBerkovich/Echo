@@ -1,84 +1,44 @@
-import {
-  listRhssoGroups,
-  rhssoDirectoryEnabled,
-  rhssoGroup,
-  rhssoGroupMembers,
-} from "./rhssoDirectory.js";
+import mongoose from "mongoose";
+import { Group, GroupMembership } from "./models/Group.js";
+import { User } from "./models/User.js";
 
-// Provider-neutral contract for a group source. Future local, LDAP, SCIM, or
-// application-owned groups only need to implement this boundary; routes,
-// mentions, message history, and the client API stay unchanged.
-const providers = new Map([
-  ["rhsso", {
-    enabled: rhssoDirectoryEnabled,
-    listGroups: listRhssoGroups,
-    getGroup: rhssoGroup,
-    getMembers: rhssoGroupMembers,
-  }],
-]);
-
-function providerFor(id: string) {
-  return providers.get(String(id || ""));
+export const GROUP_PROVIDER = "echo";
+export async function groupSummary(group, userId) {
+  const [memberships, viewer] = await Promise.all([
+    GroupMembership.find({ group: group._id }).populate("user").sort({ createdAt: 1 }),
+    User.findById(userId, { isAdmin: 1 }).lean(),
+  ]);
+  const members = memberships.filter((item) => item.user).map((item) => ({ ...item.user.toPublicJSON(), role: item.role }));
+  return { ...group.toPublicJSON(), memberCount: members.length, members, currentUserId: String(userId), isMember: memberships.some((item) => String(item.user?._id) === String(userId)), currentUserRole: memberships.find((item) => String(item.user?._id) === String(userId))?.role || null, canDelete: !!viewer?.isAdmin || String(group.owner) === String(userId) };
 }
 
-function publicGroup(provider: string, group: any) {
-  return { ...group, provider };
+export async function listGroups(userId) {
+  const groups = await Group.find({ archivedAt: null, deletedAt: null }).sort({ name: 1 });
+  const summaries = await Promise.all(groups.map((group) => groupSummary(group, userId)));
+  return summaries.sort((left, right) => {
+    if (left.isMember !== right.isMember) return left.isMember ? -1 : 1;
+    return left.name.localeCompare(right.name);
+  });
 }
 
-export function groupDirectoryEnabled() {
-  return [...providers.values()].some((provider: any) => provider.enabled());
+export async function getGroup(id, userId) {
+  if (!mongoose.isValidObjectId(id)) return null;
+  const group = await Group.findOne({ _id: id, deletedAt: null, archivedAt: null });
+  return group ? groupSummary(group, userId) : null;
 }
 
-export async function listGroups() {
-  const available = [...providers.entries()].filter(([, provider]: any) => provider.enabled());
-  const groups = await Promise.all(available.map(async ([id, provider]: any) =>
-    (await provider.listGroups()).map((group: any) => publicGroup(id, group))
-  ));
-  const listedGroups = groups.flat();
-  // Keep directory-only groups out of every consumer of this endpoint. In
-  // particular, this prevents empty groups from appearing in the mention
-  // picker before a user has opened the group details.
-  const withEchoMembers = await Promise.all(listedGroups.map(async (group: any) => {
-    const members = await getGroupMembers(group.provider, group.id);
-    return members?.some((member: any) => member.echoUser) ? group : null;
+export async function resolveGroupMentions(body) {
+  const ids = [...new Set([...String(body || "").matchAll(/@group\.(?:(echo)\.)?([a-f\d]{24})\b/gi)].map((match) => match[2]))].filter((id) => mongoose.isValidObjectId(id));
+  if (!ids.length) return [];
+  const groups = await Group.find({ _id: { $in: ids }, archivedAt: null, deletedAt: null });
+  return Promise.all(groups.map(async (group) => {
+    const members = await GroupMembership.find({ group: group._id }, { user: 1 });
+    return { provider: GROUP_PROVIDER, id: group._id.toString(), name: group.name, path: `@${group.handle}`, memberCount: members.length, echoMemberIds: members.map((item) => item.user) };
   }));
-  return withEchoMembers.filter(Boolean);
 }
 
-export async function getGroup(providerId: string, groupId: string) {
-  const provider: any = providerFor(providerId);
-  if (!provider || !provider.enabled()) return null;
-  const group = await provider.getGroup(groupId);
-  return group ? publicGroup(providerId, group) : null;
+export async function groupUsers(ids) {
+  return User.find({ _id: { $in: ids }, username: { $ne: "system" } });
 }
 
-export async function getGroupMembers(providerId: string, groupId: string) {
-  const provider: any = providerFor(providerId);
-  if (!provider || !provider.enabled()) return null;
-  return provider.getMembers(groupId);
-}
-
-// Mention wire syntax is provider-qualified, e.g. @group.rhsso.<uuid>. The
-// provider id prevents collisions when Echo later supports local groups.
-export async function resolveGroupMentions(body: string) {
-  const text = String(body || "");
-  const qualified = [...text.matchAll(/@group\.([a-z0-9_-]{1,32})\.([a-zA-Z0-9-]{1,80})\b/g)]
-    .map((match) => ({ provider: match[1], id: match[2] }));
-  // Keep messages composed during the initial RHSSO-only rollout valid.
-  const legacy = [...text.matchAll(/@group\.([a-zA-Z0-9-]{1,80})\b/g)]
-    .filter((match) => !match[0].includes(".rhsso."))
-    .map((match) => ({ provider: "rhsso", id: match[1] }));
-  const references = [...new Map([...qualified, ...legacy].map((reference) => [`${reference.provider}:${reference.id}`, reference])).values()];
-  const resolved = await Promise.all(references.map(async ({ provider, id }) => {
-    const group = await getGroup(provider, id);
-    if (!group) return null;
-    const members = await getGroupMembers(provider, id);
-    if (!members) return null;
-    return {
-      ...group,
-      memberCount: members.length,
-      echoMemberIds: members.filter((member: any) => member.echoUser).map((member: any) => member.echoUser.id),
-    };
-  }));
-  return resolved.filter(Boolean);
-}
+export { Group, GroupMembership };
