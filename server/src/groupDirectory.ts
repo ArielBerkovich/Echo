@@ -9,7 +9,7 @@ export async function groupSummary(group, userId) {
     User.findById(userId, { isAdmin: 1 }).lean(),
   ]);
   const members = memberships.filter((item) => item.user).map((item) => ({ ...item.user.toPublicJSON(), role: item.role }));
-  return { ...group.toPublicJSON(), memberCount: members.length, members, isMember: memberships.some((item) => String(item.user?._id) === String(userId)), currentUserRole: memberships.find((item) => String(item.user?._id) === String(userId))?.role || null, canDelete: !!viewer?.isAdmin || String(group.owner) === String(userId) };
+  return { ...group.toPublicJSON(), memberCount: members.length, members, currentUserId: String(userId), isMember: memberships.some((item) => String(item.user?._id) === String(userId)), currentUserRole: memberships.find((item) => String(item.user?._id) === String(userId))?.role || null, canDelete: !!viewer?.isAdmin || String(group.owner) === String(userId) };
 }
 
 export async function listGroups(userId) {

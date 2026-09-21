@@ -109,15 +109,16 @@ async function removeMember(req, res, self) {
   if (!target) return res.status(404).json({ error: "member not found" });
   const count = await GroupMembership.countDocuments({ group: group._id });
   if (count === 1) {
-    group.archivedAt = new Date(); group.archivedBy = req.user._id; await group.save();
+    group.deletedAt = new Date(); group.archivedBy = req.user._id; await group.save();
     await GroupMembership.deleteMany({ group: group._id });
-    return res.json({ archived: true });
+    return res.json({ deleted: true });
   }
   if (target.role === "owner") {
-    const replacement = req.body?.replacementOwnerId || (!self ? req.user._id : null);
-    if (!validId(replacement) || String(replacement) === String(userId) || !await membership(group._id, replacement)) return res.status(400).json({ error: "choose a remaining member as the replacement owner" });
-    await GroupMembership.updateOne({ group: group._id, user: replacement }, { $set: { role: "owner" } });
-    group.owner = replacement; await group.save();
+    const replacement = self
+      ? await GroupMembership.findOne({ group: group._id, user: { $ne: userId } }).sort({ createdAt: 1 })
+      : await membership(group._id, req.user._id);
+    await GroupMembership.updateOne({ _id: replacement._id }, { $set: { role: "owner" } });
+    group.owner = replacement.user; await group.save();
   }
   await GroupMembership.deleteOne({ group: group._id, user: userId });
   res.json({ group: await groupSummary(group, req.user._id) });

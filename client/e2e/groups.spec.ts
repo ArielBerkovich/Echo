@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { requestAsToken, seedWorkspaceFixture } from "./helpers.js";
+import { requestAsToken, seedToken, seedWorkspaceFixture } from "./helpers.js";
 
-test("group members can add people", async ({ page }) => {
+test("members govern membership and the last member leaving deletes the group", async ({ page }) => {
   const fixture = await seedWorkspaceFixture(page);
   const created = await requestAsToken(page, fixture.alice.token, "/groups", {
     method: "POST",
@@ -26,7 +26,34 @@ test("group members can add people", async ({ page }) => {
 
     await expect(panel.getByRole("button", { name: "Manage" })).toHaveCount(0);
     await expect(panel.getByRole("button", { name: "Assign" })).toHaveCount(0);
+
+    page.once("dialog", (dialog) => dialog.accept());
+    await panel.getByRole("button", { name: "Leave group" }).click();
+    await expect(panel.getByRole("button", { name: "Add people" })).toHaveCount(0);
+
+    await expect(requestAsToken(page, fixture.alice.token, `/groups/${groupId}/members`, {
+      method: "POST",
+      body: { userId: fixture.alice.id },
+    })).rejects.toThrow("group member only");
+    await expect(requestAsToken(page, fixture.alice.token, `/groups/${groupId}/members/${fixture.bob.id}`, {
+      method: "DELETE",
+    })).rejects.toThrow("group member only");
+
+    await requestAsToken(page, fixture.bob.token, `/groups/${groupId}/members`, {
+      method: "POST",
+      body: { userId: fixture.alice.id },
+    });
+    await requestAsToken(page, fixture.bob.token, `/groups/${groupId}/members/${fixture.alice.id}`, {
+      method: "DELETE",
+    });
+
+    await seedToken(page, fixture.bob.token);
+    await page.reload();
+    await panel.getByRole("button", { name: new RegExp(created.group.name) }).click();
+    page.once("dialog", (dialog) => dialog.accept());
+    await panel.getByRole("button", { name: "Leave group" }).click();
+    await expect(panel).not.toContainText(created.group.name);
   } finally {
-    await requestAsToken(page, fixture.alice.token, `/groups/${groupId}`, { method: "DELETE" }).catch(() => {});
+    await requestAsToken(page, fixture.bob.token, `/groups/${groupId}`, { method: "DELETE" }).catch(() => {});
   }
 });

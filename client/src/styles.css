@@ -4568,6 +4568,7 @@ html[data-mode="dark"] .search-highlight .kw-has .kw-label { color: #fcd34d; }
 .groups-detail-section-head h3 { margin: 0; color: var(--text); font-size: 13px; font-weight: 780; }
 .groups-detail-section-head p { margin: 3px 0 0; color: var(--muted); font-size: 11px; line-height: 1.35; }
 .groups-detail-section-head .btn-subtle { display: inline-flex; align-items: center; gap: 6px; flex: none; min-height: 32px; padding: 0 9px; }
+.groups-detail-section-actions { display: flex; align-items: center; gap: 6px; }
 .groups-detail-list { padding: 5px; }
 .groups-panel-member { min-height: 52px; box-sizing: border-box; padding: 7px 8px; border-radius: 9px; }
 .groups-member-profile { gap: 10px; }
@@ -4603,6 +4604,9 @@ html[data-mode="dark"] .search-highlight .kw-has .kw-label { color: #fcd34d; }
   .groups-panel-list { max-height: 300px; border-bottom: 1px solid var(--border); }
   .groups-panel-detail { overflow: visible; padding: 20px 16px 28px; }
   .groups-detail-title-row h2 { font-size: 19px; }
+  .groups-detail-section-head { align-items: flex-start; flex-wrap: wrap; }
+  .groups-detail-section-actions { width: 100%; }
+  .groups-detail-section-actions > button { flex: 1; justify-content: center; }
 }
 .thread-header {
   display: flex;
