@@ -21,7 +21,7 @@ const RELEASES: Record<string, WhatsNewRelease> = {
     items: [
       {
         title: "Also send to channel",
-        description: "Share a thread reply with the channel while keeping the full conversation in its thread. Use View thread to jump back to the original discussion.",
+        description: "Share thread replies in the channel while keeping them linked to the original thread.",
         category: "New",
       },
       {
