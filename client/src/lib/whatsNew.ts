@@ -26,7 +26,7 @@ const RELEASES: Record<string, WhatsNewRelease> = {
       },
       {
         title: "Seamless Echo updates",
-        description: "After you confirm an update, Echo applies it silently on restart instead of opening the Windows installation wizard.",
+        description: "After you confirm an update, Echo applies it silently.",
         category: "Improved",
       },
     ],
