@@ -181,9 +181,10 @@ export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
     try {
       const result = await api.listGroups();
       const nextGroups = result.groups || [];
+      const requestedGroupExists = !openGroup || nextGroups.some((group) => group.id === openGroup.id);
       setGroups(nextGroups);
       setSelected((current) => nextGroups.find((group) => group.id === (selectId || current?.id)) || nextGroups[0] || null);
-      setError("");
+      setError(requestedGroupExists ? "" : "This group is no longer available. It may have been deleted.");
     } catch (requestError) {
       setError(requestError.message || "Could not load groups.");
     } finally {

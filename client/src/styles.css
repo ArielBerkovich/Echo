@@ -2099,6 +2099,8 @@ html[data-mode="dark"] .backend-connection-error {
   width: 13px;
   height: 13px;
   flex: none;
+  position: relative;
+  top: 1px;
 }
 .channel-tag {
   display: inline-block;
