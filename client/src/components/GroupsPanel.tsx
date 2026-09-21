@@ -81,13 +81,32 @@ function GroupMember({ member, removable, onOpenProfile, onRemove }) {
 }
 
 function GroupDetails({ group, onOpenProfile, onLeave, onAddPeople, onRemoveMember }) {
+  const [memberQuery, setMemberQuery] = useState("");
+  const visibleMembers = useMemo(() => {
+    const query = memberQuery.trim().toLowerCase();
+    if (!query) return group.members;
+    return group.members.filter((member) => matchesQuery(`${member.displayName} ${member.username}`, query));
+  }, [group.members, memberQuery]);
+
+  useEffect(() => {
+    setMemberQuery("");
+  }, [group.id]);
+
   return (
     <section className="groups-detail-section" aria-labelledby="groups-members-heading">
       <header className="groups-detail-section-head">
-        <div><h3 id="groups-members-heading">Members</h3><p>People notified when this group is mentioned.</p></div>
+        <div className="groups-detail-section-copy"><h3 id="groups-members-heading">Members</h3></div>
         {group.isMember ? <div className="groups-detail-section-actions"><Button variant="subtle" onClick={onLeave}><LogOutIcon size={15} aria-hidden="true" />Leave group</Button><Button variant="subtle" onClick={onAddPeople}><UserPlusIcon size={15} aria-hidden="true" />Add people</Button></div> : null}
       </header>
-      <div className="groups-detail-list">{group.members.map((member) => <GroupMember key={member.id} member={member} removable={group.isMember && member.id !== group.currentUserId} onOpenProfile={onOpenProfile} onRemove={onRemoveMember} />)}</div>
+      <div className="groups-members-search">
+        <SearchIcon size={15} aria-hidden="true" />
+        <label className="sr-only" htmlFor="group-member-search">Search members</label>
+        <input id="group-member-search" type="search" value={memberQuery} onChange={(event) => setMemberQuery(event.target.value)} placeholder="Search members" />
+        {memberQuery ? <button type="button" aria-label="Clear member search" onClick={() => setMemberQuery("")}><XIcon size={14} aria-hidden="true" /></button> : null}
+      </div>
+      <div className="groups-detail-list">
+        {visibleMembers.length ? visibleMembers.map((member) => <GroupMember key={member.id} member={member} removable={group.isMember && member.id !== group.currentUserId} onOpenProfile={onOpenProfile} onRemove={onRemoveMember} />) : <div className="groups-members-empty">No members match “{memberQuery.trim()}”.</div>}
+      </div>
     </section>
   );
 }

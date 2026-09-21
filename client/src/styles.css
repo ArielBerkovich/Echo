@@ -4592,11 +4592,18 @@ html[data-mode="dark"] .search-highlight .kw-has .kw-label { color: #fcd34d; }
 .groups-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr); margin-top: 20px; }
 .groups-detail-section { min-width: 0; overflow: hidden; }
 .groups-detail-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 64px; padding: 13px 0; }
+.groups-detail-section-copy { min-width: 0; }
 .groups-detail-section-head h3 { margin: 0; color: var(--text); font-size: 13px; font-weight: 780; }
 .groups-detail-section-head p { margin: 3px 0 0; color: var(--muted); font-size: 11px; line-height: 1.35; }
 .groups-detail-section-head .btn-subtle { display: inline-flex; align-items: center; gap: 6px; flex: none; min-height: 32px; padding: 0 9px; }
 .groups-detail-section-actions { display: flex; align-items: center; gap: 6px; }
+.groups-members-search { display: flex; align-items: center; gap: 8px; min-height: 34px; box-sizing: border-box; margin-bottom: 8px; padding: 0 10px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface-2); color: var(--muted); }
+.groups-members-search:focus-within { border-color: var(--accent); outline: 2px solid color-mix(in srgb, var(--accent) 24%, transparent); outline-offset: 1px; }
+.groups-members-search input { min-width: 0; width: 100%; padding: 7px 0; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; font-size: 12px; }
+.groups-members-search button { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--muted); }
+.groups-members-search button:hover { background: var(--hover); color: var(--text); }
 .groups-detail-list { padding: 0; }
+.groups-members-empty { padding: 18px 8px; color: var(--muted); font-size: 12px; text-align: center; }
 .groups-panel-member { min-height: 52px; box-sizing: border-box; padding: 7px 8px; border-radius: 9px; }
 .groups-member-profile { gap: 10px; }
 .groups-panel-member .person-name { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 720; }
