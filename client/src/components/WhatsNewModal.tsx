@@ -69,7 +69,7 @@ export default function WhatsNewModal() {
   }
 
   return (
-    <Modal title={preview ? "What's new in Echo" : "Echo was updated"} className="whats-new-modal" onClose={close} onPointerDownOutside={(event) => event.preventDefault()}>
+    <Modal title={preview ? "What's new in Echo" : `Welcome to Echo ${release.id}`} className="whats-new-modal" onClose={close} onPointerDownOutside={(event) => event.preventDefault()}>
       <div className="whats-new-items">
         {releases.map((releaseItem, index) => {
           const expanded = expandedId === releaseItem.id;
