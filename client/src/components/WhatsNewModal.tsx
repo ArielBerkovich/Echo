@@ -23,7 +23,7 @@ export default function WhatsNewModal() {
   // replace the query string while restoring the active conversation.
   const [preview] = useState(() => isWhatsNewPreview());
   const releases = getWhatsNewReleases(appVersion, preview);
-  const release = releases[0] || null;
+  const release = preview ? releases[0] || null : getWhatsNewRelease(appVersion);
   const hasUpdateNotice = Boolean(
     nativeDesktop
     && appVersion
@@ -37,7 +37,7 @@ export default function WhatsNewModal() {
       && window.echoDesktopConfig?.wasUpdated
       && (release ? !hasSeenWhatsNew(release.id) : hasUpdateNotice))
   ));
-  const [expandedId, setExpandedId] = useState(release?.id || null);
+  const [expandedIds, setExpandedIds] = useState(() => new Set(releases.map(({ id }) => id)));
 
   if (!open) return null;
 
@@ -72,7 +72,7 @@ export default function WhatsNewModal() {
     <Modal title={preview ? "What's new in Echo" : `Welcome to Echo ${release.id}`} className="whats-new-modal" onClose={close} onPointerDownOutside={(event) => event.preventDefault()}>
       <div className="whats-new-items">
         {releases.map((releaseItem, index) => {
-          const expanded = expandedId === releaseItem.id;
+          const expanded = expandedIds.has(releaseItem.id);
           return (
             <section className={`whats-new-release${expanded ? " expanded" : ""}`} key={releaseItem.id}>
               <button
@@ -83,7 +83,12 @@ export default function WhatsNewModal() {
                 onPointerDown={(event) => event.stopPropagation()}
                 onClick={(event) => {
                   event.stopPropagation();
-                  setExpandedId((current) => current === releaseItem.id ? null : releaseItem.id);
+                  setExpandedIds((current) => {
+                    const next = new Set(current);
+                    if (next.has(releaseItem.id)) next.delete(releaseItem.id);
+                    else next.add(releaseItem.id);
+                    return next;
+                  });
                 }}
               >
                 <span>

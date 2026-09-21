@@ -62,7 +62,8 @@ const RELEASES: Record<string, WhatsNewRelease> = {
 
 // Preview content lets the release flow be reviewed in a regular browser
 // before the native desktop version is published.
-const PREVIEW_RELEASES: WhatsNewRelease[] = [RELEASES["0.40.0"]];
+const ALL_RELEASES = Object.values(RELEASES);
+const PREVIEW_RELEASES: WhatsNewRelease[] = ALL_RELEASES;
 
 export function isNativeDesktop() {
   return typeof window !== "undefined" && Boolean(window.echoDesktopConfig?.appVersion);
@@ -79,8 +80,7 @@ export function getWhatsNewRelease(version = "") {
 
 export function getWhatsNewReleases(version = "", preview = false) {
   if (preview) return PREVIEW_RELEASES;
-  const release = getWhatsNewRelease(version);
-  return release ? [release] : [];
+  return getWhatsNewRelease(version) ? ALL_RELEASES : [];
 }
 
 export function whatsNewStorageKey(releaseId: string) {
