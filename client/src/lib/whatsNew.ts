@@ -36,7 +36,7 @@ const RELEASES: Record<string, WhatsNewRelease> = {
       },
       {
         title: "Right-to-left chats",
-        description: "RTL conversations now align messages, composers, mentions, menus, and thread controls naturally for Hebrew and other right-to-left languages.",
+        description: "RTL languages now render naturally, with optional RTL UI support available in Settings.",
         category: "Improved",
       },
     ],
