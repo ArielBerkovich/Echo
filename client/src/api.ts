@@ -253,8 +253,6 @@ export const api = {
   removeGroupMember: (groupId, userId) => request(`/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}`, { method: "DELETE" }),
   leaveGroup: (groupId, replacementOwnerId) => request(`/groups/${encodeURIComponent(groupId)}/leave`, { method: "POST", body: replacementOwnerId ? { replacementOwnerId } : {} }),
   transferGroup: (groupId, userId) => request(`/groups/${encodeURIComponent(groupId)}/transfer`, { method: "POST", body: { userId } }),
-  addGroupChannel: (groupId, channelId) => request(`/groups/${encodeURIComponent(groupId)}/channels`, { method: "POST", body: { channelId } }),
-  removeGroupChannel: (groupId, channelId) => request(`/groups/${encodeURIComponent(groupId)}/channels/${encodeURIComponent(channelId)}`, { method: "DELETE" }),
   getUser: (userId) => request(`/users/${encodeURIComponent(userId)}`),
   listChannels: () => request("/channels"),
   listAllChannels: () => request("/channels?scope=all"),

@@ -144,7 +144,7 @@ export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroup
               <div className="menu-overlay" onMouseDown={() => setMoreOpen(false)} />
               <div className="rail-more-menu" role="menu" aria-label="More workspace options">
                 {onBrowseChannels ? <button type="button" role="menuitem" data-testid="more-browse-channels" onClick={() => { setMoreOpen(false); onBrowseChannels(); }} aria-pressed={view === "browse"}><CompassIcon size={16} aria-hidden="true" /><span><strong>Browse channels</strong><small>Find public channels</small></span></button> : null}
-                <button type="button" role="menuitem" data-testid="open-groups" onClick={() => { setMoreOpen(false); onOpenGroups(); }}><ContactRoundIcon size={16} aria-hidden="true" /><span><strong>Groups</strong><small>Organize people and channels</small></span></button>
+                <button type="button" role="menuitem" data-testid="open-groups" onClick={() => { setMoreOpen(false); onOpenGroups(); }}><ContactRoundIcon size={16} aria-hidden="true" /><span><strong>Groups</strong><small>Organize people</small></span></button>
               </div>
             </> : null}
           </div>

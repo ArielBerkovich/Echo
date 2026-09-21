@@ -1,8 +1,7 @@
 import { Router } from "express";
 import mongoose from "mongoose";
 import { requireAuth } from "../middleware/requireAuth.js";
-import { Channel } from "../models/Channel.js";
-import { Group, GroupChannel, GroupMembership, getGroup, groupSummary, listGroups, groupUsers } from "../groupDirectory.js";
+import { Group, GroupMembership, getGroup, groupSummary, listGroups, groupUsers } from "../groupDirectory.js";
 
 export const groupsRouter = Router();
 groupsRouter.use(requireAuth);
@@ -83,7 +82,7 @@ groupsRouter.delete("/:groupId", async (req, res) => {
   if (!group) return res.status(404).json({ error: "group not found" });
   if (!group.owner.equals(req.user._id) && !req.user.isAdmin) return res.status(403).json({ error: "group owner or admin only" });
   group.deletedAt = new Date(); group.archivedBy = req.user._id; await group.save();
-  await Promise.all([GroupMembership.deleteMany({ group: group._id }), GroupChannel.deleteMany({ group: group._id })]);
+  await GroupMembership.deleteMany({ group: group._id });
   res.json({ ok: true });
 });
 
@@ -111,7 +110,7 @@ async function removeMember(req, res, self) {
   const count = await GroupMembership.countDocuments({ group: group._id });
   if (count === 1) {
     group.archivedAt = new Date(); group.archivedBy = req.user._id; await group.save();
-    await Promise.all([GroupMembership.deleteMany({ group: group._id }), GroupChannel.deleteMany({ group: group._id })]);
+    await GroupMembership.deleteMany({ group: group._id });
     return res.json({ archived: true });
   }
   if (target.role === "owner") {
@@ -134,25 +133,4 @@ groupsRouter.post("/:groupId/transfer", async (req, res) => {
   await GroupMembership.updateOne({ group: group._id, user: req.user._id }, { $set: { role: "member" } });
   await GroupMembership.updateOne({ group: group._id, user: target }, { $set: { role: "owner" } });
   group.owner = target; await group.save(); res.json({ group: await groupSummary(group, req.user._id) });
-});
-
-groupsRouter.get("/:groupId/channels", async (req, res) => {
-  if (!await requireMember(req, res)) return;
-  const group = await getGroup(req.params.groupId, req.user._id); res.json({ channels: group.channels });
-});
-
-groupsRouter.post("/:groupId/channels", async (req, res) => {
-  const group = await requireMember(req, res); if (!group) return;
-  if (!group.owner.equals(req.user._id)) return res.status(403).json({ error: "group owner only" });
-  const channel = await Channel.findOne({ _id: req.body?.channelId, isArchived: false, type: { $in: ["public", "private"] } });
-  if (!channel) return res.status(404).json({ error: "channel not found" });
-  if (channel.type === "private" && !channel.members.some((userId) => userId.equals(req.user._id))) return res.status(403).json({ error: "you cannot assign a private channel you cannot access" });
-  await GroupChannel.updateOne({ group: group._id, channel: channel._id }, { $setOnInsert: { createdBy: req.user._id } }, { upsert: true });
-  res.json({ group: await groupSummary(group, req.user._id) });
-});
-
-groupsRouter.delete("/:groupId/channels/:channelId", async (req, res) => {
-  const group = await requireMember(req, res); if (!group) return;
-  if (!group.owner.equals(req.user._id)) return res.status(403).json({ error: "group owner only" });
-  await GroupChannel.deleteOne({ group: group._id, channel: req.params.channelId }); res.json({ group: await groupSummary(group, req.user._id) });
 });

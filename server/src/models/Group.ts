@@ -25,13 +25,5 @@ const membershipSchema = new mongoose.Schema({
 membershipSchema.index({ group: 1, user: 1 }, { unique: true });
 membershipSchema.index({ user: 1, group: 1 });
 
-const channelSchema = new mongoose.Schema({
-  group: { type: mongoose.Schema.Types.ObjectId, ref: "Group", required: true },
-  channel: { type: mongoose.Schema.Types.ObjectId, ref: "Channel", required: true },
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-}, { timestamps: true });
-channelSchema.index({ group: 1, channel: 1 }, { unique: true });
-
 export const Group = mongoose.model("Group", groupSchema);
 export const GroupMembership = mongoose.model("GroupMembership", membershipSchema);
-export const GroupChannel = mongoose.model("GroupChannel", channelSchema);
