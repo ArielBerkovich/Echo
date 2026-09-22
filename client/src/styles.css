@@ -10688,7 +10688,7 @@ html[data-interface-direction="rtl"] .composer-editor li > p {
   min-width: 36px;
   height: 36px;
   padding: 0;
-  border-radius: 50%;
+  border-radius: 12px;
 }
 .send-btn {
   padding-inline: 10px;
