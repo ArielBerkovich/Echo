@@ -47,6 +47,19 @@ export function formatDayDivider(iso) {
   return d.toLocaleDateString([], { year: "numeric", month: "long", day: "numeric" });
 }
 
+// "Today", "Yesterday", or a recent weekday — used beside every thread message.
+export function formatThreadDate(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const today = new Date();
+  const dayNumber = (value) => Date.UTC(value.getFullYear(), value.getMonth(), value.getDate()) / 86400000;
+  const daysAgo = dayNumber(today) - dayNumber(d);
+  if (daysAgo === 0) return "Today";
+  if (daysAgo === 1) return "Yesterday";
+  if (daysAgo > 1 && daysAgo < 7) return d.toLocaleDateString([], { weekday: "long" });
+  return d.toLocaleDateString([], { year: "numeric", month: "long", day: "numeric" });
+}
+
 // True when two timestamps fall on different calendar days.
 export function isDifferentDay(a, b) {
   const da = new Date(a);

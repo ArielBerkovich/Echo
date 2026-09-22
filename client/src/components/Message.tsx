@@ -7,7 +7,7 @@ import Avatar from "./Avatar.js";
 import Attachments from "./Attachments.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
 import { getSocket } from "../socket.js";
-import { formatTime } from "../lib/time.js";
+import { formatThreadDate, formatTime } from "../lib/time.js";
 import { replyParticipantNames, visibleReplyParticipants } from "../lib/replyParticipants.js";
 import { isEchoMessageLink, workspacePath } from "../lib/workspaceRoutes.js";
 import { parseCardMarkup } from "../lib/cards.js";
@@ -450,7 +450,7 @@ function Message({
             >
               {author?.displayName || "unknown"}
             </button>
-            <span className="time">{formatTime(m.createdAt)}</span>
+            <span className="time">{inThread ? `${formatThreadDate(m.createdAt)} at ` : ""}{formatTime(m.createdAt)}</span>
           </div>
         )}
 
