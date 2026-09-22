@@ -1141,7 +1141,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   return (
     <form
       ref={composerRef}
-      className={`composer${draggingFiles ? " dragging-files" : ""}${disabled ? " is-disabled" : ""}${mention ? " has-mention" : ""}${mentionAtEmptyParagraphStart ? " has-mention-empty" : ""}${mentionQueryIsRtl ? " has-mention-rtl" : ""}`}
+      className={`composer${editing ? " is-editing" : ""}${draggingFiles ? " dragging-files" : ""}${disabled ? " is-disabled" : ""}${mention ? " has-mention" : ""}${mentionAtEmptyParagraphStart ? " has-mention-empty" : ""}${mentionQueryIsRtl ? " has-mention-rtl" : ""}`}
       data-testid="composer"
       onSubmit={handleSend}
     >

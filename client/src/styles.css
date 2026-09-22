@@ -10697,6 +10697,9 @@ html[data-interface-direction="rtl"] .composer-editor li > p {
 .composer-actions .right {
   position: relative;
 }
+.composer.is-editing .composer-actions .icon-btn {
+  border-radius: 10px;
+}
 .send-btn {
   padding-inline: 10px;
 }
