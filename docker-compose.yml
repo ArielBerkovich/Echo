@@ -66,7 +66,7 @@ services:
       - rhsso-keycloak-data:/opt/keycloak/data
 
   server:
-    image: arielber/echo-server:0.41.0
+    image: arielber/echo-server:0.42.0
     # Keep this service scalable with `docker-compose up --scale server=3`.
     # A fixed container_name would prevent Compose from creating replicas.
     restart: unless-stopped
@@ -101,7 +101,7 @@ services:
         condition: service_started
 
   client:
-    image: arielber/echo-client:0.41.0
+    image: arielber/echo-client:0.42.0
     container_name: echo-client
     restart: unless-stopped
     ports:
