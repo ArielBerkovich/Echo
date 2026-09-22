@@ -2556,10 +2556,6 @@ html[data-mode="dark"] .backend-connection-error {
     grid-template-columns: 88px clamp(280px, 18vw, 340px) minmax(0, 1fr);
   }
 
-  .thread-panel {
-    width: clamp(460px, 24vw, 680px);
-  }
-
   .members-panel {
     width: min(640px, 40vw);
   }
@@ -4179,6 +4175,11 @@ html[data-mode="dark"] .search-highlight .kw-has .kw-label { color: #fcd34d; }
   min-height: 0;
   background: var(--surface);
 }
+.thread-panel {
+  width: clamp(580px, 36vw, 900px);
+  max-width: min(68vw, 900px);
+}
+
 .details-body {
   flex: 1;
   min-height: 0;
