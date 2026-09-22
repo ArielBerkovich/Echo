@@ -2569,6 +2569,16 @@ html[data-mode="dark"] .backend-connection-error {
   }
 }
 
+@media (min-width: 1200px) and (max-width: 1439px) {
+  .workspace-frame {
+    grid-template-columns: 88px 260px minmax(0, 1fr);
+  }
+
+  .workspace-rail .rail {
+    width: 88px;
+  }
+}
+
 /* Some desktop browsers report a CSS viewport below 1440px even on a
    physically large display. Keep the member list spacious once the panel is
    no longer using the mobile/overlay layout. */
