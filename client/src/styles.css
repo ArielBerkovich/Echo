@@ -4175,9 +4175,16 @@ html[data-mode="dark"] .search-highlight .kw-has .kw-label { color: #fcd34d; }
   min-height: 0;
   background: var(--surface);
 }
-.thread-panel {
-  width: clamp(580px, 36vw, 900px);
-  max-width: min(68vw, 900px);
+/* Keep the large-screen side panels consistent with the expanded thread
+   surface. Channel details is a modal and keeps its own sizing. */
+@media (min-width: 1440px) {
+  .thread-panel,
+  .details-panel:not(.channel-details-dialog),
+  .pinned-panel,
+  .files-panel {
+    width: clamp(580px, 36vw, 900px);
+    max-width: min(68vw, 900px);
+  }
 }
 
 .details-body {
