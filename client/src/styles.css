@@ -2556,26 +2556,12 @@ html[data-mode="dark"] .backend-connection-error {
     grid-template-columns: 88px clamp(280px, 18vw, 340px) minmax(0, 1fr);
   }
 
-  .workspace-rail .rail {
-    width: 88px;
-  }
-
   .members-panel {
     width: min(640px, 40vw);
   }
 
   .workspace-frame:has(.app-nav.no-sidebar) {
     grid-template-columns: 88px minmax(0, 1fr);
-  }
-}
-
-@media (min-width: 1200px) and (max-width: 1439px) {
-  .workspace-frame {
-    grid-template-columns: 88px 260px minmax(0, 1fr);
-  }
-
-  .workspace-rail .rail {
-    width: 88px;
   }
 }
 
