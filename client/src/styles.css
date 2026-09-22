@@ -2556,6 +2556,10 @@ html[data-mode="dark"] .backend-connection-error {
     grid-template-columns: 88px clamp(280px, 18vw, 340px) minmax(0, 1fr);
   }
 
+  .workspace-rail .rail {
+    width: 88px;
+  }
+
   .members-panel {
     width: min(640px, 40vw);
   }
