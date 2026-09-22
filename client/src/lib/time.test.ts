@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { formatDate, formatDateTime, formatDayDivider, formatTime, isDifferentDay, isSameMinute, relativeTime } from "./time.js";
+import { formatDate, formatDateTime, formatDayDivider, formatThreadDate, formatTime, isDifferentDay, isSameMinute, relativeTime } from "./time.js";
 
 describe("time formatting helpers", () => {
   it("return empty strings for invalid dates where helpers explicitly guard", () => {
@@ -34,6 +34,21 @@ describe("time formatting helpers", () => {
 
     assert.equal(formatDayDivider(today.toISOString()), "Today");
     assert.equal(formatDayDivider(yesterday.toISOString()), "Yesterday");
+  });
+
+  it("labels thread messages with today, yesterday, recent weekdays, or dates", () => {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const recent = new Date(today);
+    recent.setDate(today.getDate() - 3);
+    const older = new Date(today);
+    older.setDate(today.getDate() - 10);
+
+    assert.equal(formatThreadDate(today.toISOString()), "Today");
+    assert.equal(formatThreadDate(yesterday.toISOString()), "Yesterday");
+    assert.equal(formatThreadDate(recent.toISOString()), recent.toLocaleDateString([], { weekday: "long" }));
+    assert.equal(formatThreadDate(older.toISOString()), older.toLocaleDateString([], { year: "numeric", month: "long", day: "numeric" }));
   });
 
   it("produces recency-aware relative labels", () => {

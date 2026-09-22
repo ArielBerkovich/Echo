@@ -238,6 +238,10 @@ const SearchBox = forwardRef(function SearchBox(
     [users]
   );
   const q = query.trim().toLowerCase();
+  // Channel names are stored without their visible # prefix. Keep the prefix
+  // in the input, but omit it when matching local and remote channel results.
+  const channelQuery = q.replace(/^#/, "");
+  const peopleQuery = q.replace(/^@/, "");
   const hasFilterTokens = /(?:^|\s)(in:|from:|has:)/i.test(query);
   const peoplePicker = variant === "people-picker" || conversationPickerOpen;
   const matchingQuickActions = useMemo(
@@ -261,7 +265,7 @@ const SearchBox = forwardRef(function SearchBox(
   const filter = activeFilterAt(query, caret);
   const shouldFindChannels =
     filter?.type === "in" || (!!q && !hasFilterTokens && !peoplePicker && !quickSwitcherOpen);
-  const channelLookup = filter?.type === "in" ? filter.query : q;
+  const channelLookup = filter?.type === "in" ? filter.query : channelQuery;
 
   useEffect(() => {
     if (!shouldFindChannels || !onFindChannels) {
@@ -311,11 +315,11 @@ const SearchBox = forwardRef(function SearchBox(
   // Quick-nav results (only when not building a filtered query).
   const channelHits =
     q && !hasFilterTokens && !quickSwitcherOpen
-      ? channelCandidates.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 6)
+      ? channelCandidates.filter((c) => c.name.toLowerCase().includes(channelQuery)).slice(0, 6)
       : [];
   const peopleHits =
     (q || peoplePicker) && !hasFilterTokens && !quickSwitcherOpen
-      ? peopleSearchSuggestions(searchableUsers, q, 8)
+      ? peopleSearchSuggestions(searchableUsers, peopleQuery, 8)
       : [];
 
   // A single flat list of everything the arrow keys can move through, in the
