@@ -61,6 +61,18 @@ test.describe("custom emoji pickers", () => {
     await expectGitEmojiInComposer(editor);
   });
 
+  test("sends a message containing only a custom emoji", async ({ page }) => {
+    await page.goto("/");
+    const editor = page.getByTestId("composer-editor");
+    await page.getByTestId("composer-emoji-toggle").click();
+    await selectGitEmoji(emojiPicker(page));
+    await expectGitEmojiInComposer(editor);
+
+    await page.getByTestId("composer-send").click();
+    await expect(editor.locator(`img.custom-emoji[alt=":${GIT_PULL_REQUEST}:"]`)).toHaveCount(0);
+    await expect(page.locator(`img.custom-emoji[alt=":${GIT_PULL_REQUEST}:"]`).last()).toBeVisible();
+  });
+
   test("inserts a Git emoji into a new direct-message draft", async ({ page }) => {
     await page.goto("/");
     await page.getByTestId("start-dm").click();

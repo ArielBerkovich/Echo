@@ -353,7 +353,7 @@ test("opens, zooms, and downloads authenticated attachments", async ({ page }) =
   const imageDownload = page.waitForEvent("download");
   await lightbox.getByTestId("lightbox-download").click();
   await expect((await imageDownload).suggestedFilename()).toBe("lightbox.png");
-  await page.keyboard.press("Escape");
+  await lightbox.locator(".lightbox-img-wrap").click({ position: { x: 8, y: 8 } });
   await expect(lightbox).not.toBeVisible();
 
   const fileDownload = page.waitForEvent("download");

@@ -2553,7 +2553,7 @@ html[data-mode="dark"] .backend-connection-error {
 
 @media (min-width: 1440px) {
   .workspace-frame {
-    grid-template-columns: 88px clamp(280px, 18vw, 340px) minmax(0, 1fr);
+    grid-template-columns: 68px clamp(280px, 18vw, 340px) minmax(0, 1fr);
   }
 
   .members-panel {
@@ -2561,7 +2561,7 @@ html[data-mode="dark"] .backend-connection-error {
   }
 
   .workspace-frame:has(.app-nav.no-sidebar) {
-    grid-template-columns: 88px minmax(0, 1fr);
+    grid-template-columns: 68px minmax(0, 1fr);
   }
 }
 
@@ -4175,6 +4175,18 @@ html[data-mode="dark"] .search-highlight .kw-has .kw-label { color: #fcd34d; }
   min-height: 0;
   background: var(--surface);
 }
+/* Keep the large-screen side panels consistent with the expanded thread
+   surface. Channel details is a modal and keeps its own sizing. */
+@media (min-width: 1440px) {
+  .thread-panel,
+  .details-panel:not(.channel-details-dialog),
+  .pinned-panel,
+  .files-panel {
+    width: clamp(580px, 36vw, 900px);
+    max-width: min(68vw, 900px);
+  }
+}
+
 .details-body {
   flex: 1;
   min-height: 0;
@@ -10380,6 +10392,11 @@ html[data-interface-direction="ltr"] .composer-user-mention {
   color: var(--text);
   font-size: 13px;
 }
+.composer.is-editing .composer-editing {
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: 11px 11px 0 0;
+}
 .composer-editing > div {
   display: flex;
   align-items: baseline;
@@ -10417,6 +10434,9 @@ html[data-interface-direction="ltr"] .composer-user-mention {
   background: #f8f8f8;
   border-bottom: 1px solid #ececec;
   border-radius: 11px 11px 0 0;
+}
+.composer.is-editing .composer-toolbar {
+  border-radius: 0;
 }
 
 /* Shared icon button used across both toolbars */
@@ -10677,6 +10697,13 @@ html[data-interface-direction="rtl"] .composer-editor li > p {
 }
 .composer-actions .right {
   position: relative;
+}
+.composer.is-editing .composer-actions .icon-btn {
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 12px;
 }
 .send-btn {
   padding-inline: 10px;
@@ -12854,6 +12881,25 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 /* Wider navigation for large desktop monitors. Keep the main conversation
    flexible so the added navigation space does not create horizontal overflow. */
 @media (min-width: 1600px) {
+  .workspace-frame {
+    grid-template-columns: 88px clamp(280px, 18vw, 340px) minmax(0, 1fr);
+  }
+
+  .workspace-frame:has(.app-nav.no-sidebar) {
+    grid-template-columns: 88px minmax(0, 1fr);
+  }
+
+  .workspace-rail .rail {
+    width: 88px;
+    padding: 18px 10px 22px;
+  }
+
+  .workspace-rail .rail-brand .echo-logo,
+  .workspace-rail .rail-brand .rail-brand-slot {
+    width: 54px;
+    height: 54px;
+  }
+
   .rail {
     padding: 18px 10px 22px;
   }
@@ -12865,20 +12911,18 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     font-size: 11px;
   }
   .rail-top {
-    width: 54px;
-    flex: none;
-    max-width: none;
-    row-gap: 6px;
-    padding: 5px 4px;
+    width: 100%;
+    flex: 0 1 auto;
+    gap: 9px;
+    padding: 6px;
     border-radius: 27px;
   }
   .rail-item {
-    width: 44px;
-    height: 44px;
-    min-height: 44px;
+    width: 72px;
+    min-height: 70px;
     gap: 5px;
-    padding-block: 0;
-    border-radius: 17px;
+    padding-block: 10px;
+    border-radius: 21px;
     font-size: 12px;
   }
   .rail-active-indicator {

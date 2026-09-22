@@ -110,8 +110,7 @@ function Lightbox({ src, name, sender, onClose, inline = false }) {
   const onMouseUp = () => { dragging.current = false; };
 
   const handleBackdropClick = () => {
-    if (scale > 1) { setScale(1); setOffset({ x: 0, y: 0 }); }
-    else onClose();
+    onClose();
   };
 
   const handleDownload = () => {
@@ -138,8 +137,18 @@ function Lightbox({ src, name, sender, onClose, inline = false }) {
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
     >
-      <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
-        <div className="lightbox-img-wrap">
+      <div
+        className="lightbox-content"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) handleBackdropClick();
+        }}
+      >
+        <div
+          className="lightbox-img-wrap"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) handleBackdropClick();
+          }}
+        >
           <img
             ref={imageRef}
             src={activeSrc}

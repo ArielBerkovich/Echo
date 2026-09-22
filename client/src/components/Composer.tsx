@@ -196,6 +196,16 @@ function deliveryMarkdown(currentEditor) {
   return htmlToMarkdown(template.innerHTML);
 }
 
+function hasSendableContent(currentEditor) {
+  if (!currentEditor) return false;
+  if (currentEditor.getText().trim().length > 0) return true;
+  let hasCustomEmoji = false;
+  currentEditor.state.doc.descendants((node) => {
+    if (node.type.name === "customEmoji") hasCustomEmoji = true;
+  });
+  return hasCustomEmoji;
+}
+
 // Rich-text message composer: @mention autocomplete, a formatting toolbar,
 // emoji, and file attachments. Owns all of its own editor state — mount it with
 // a `key={channel.id}` so switching channels yields a fresh, empty composer.
@@ -410,7 +420,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       editor.commands.setContent(initialContent !== null ? composerContent(initialContent) : draft ? composerContent(draft) : "<p></p>", false);
       setEditorState((current) => ({
         ...current,
-        canSend: editor.getText().trim().length > 0,
+        canSend: hasSendableContent(editor),
       }));
       replacePending([]);
       draftReadyRef.current = true;
@@ -573,8 +583,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     if (direction) currentEditor.view.dom.dataset.composerDirection = direction;
     else delete currentEditor.view.dom.dataset.composerDirection;
     syncParagraphDirections(currentEditor);
-    const hasText = currentEditor.getText().trim().length > 0;
-    hasText ? signalTyping() : stopTyping();
+    hasSendableContent(currentEditor) ? signalTyping() : stopTyping();
     syncMentionContext(currentEditor);
     const draft = htmlToMarkdown(currentEditor.getHTML());
     onDraftChange?.(draft);
@@ -654,7 +663,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       };
     }
     return {
-      canSend: currentEditor.getText().trim().length > 0,
+      canSend: hasSendableContent(currentEditor),
       bold: currentEditor.isActive("bold"),
       italic: currentEditor.isActive("italic"),
       strikethrough: currentEditor.isActive("strike"),
@@ -947,12 +956,12 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       reportError("Pick a time in the future.");
       return;
     }
-    const hasText = !!editor && editor.getText().trim() !== "";
-    if (!hasText && pending.length === 0) {
+    const hasContent = hasSendableContent(editor);
+    if (!hasContent && pending.length === 0) {
       reportError("Write a message before scheduling it.");
       return;
     }
-    const body = hasText ? deliveryMarkdown(editor) : "";
+    const body = hasContent ? deliveryMarkdown(editor) : "";
     try {
       if (inScheduleModal) setScheduleError(null);
       else onError?.(null);
@@ -975,8 +984,8 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     onError?.(null);
     setScheduleError(null);
     setSendMenuOpen(false);
-    const hasText = !!editor && editor.getText().trim() !== "";
-    if (!hasText && pending.length === 0) {
+    const hasContent = hasSendableContent(editor);
+    if (!hasContent && pending.length === 0) {
       onError?.("Write a message before scheduling it.");
       return;
     }
@@ -1068,10 +1077,10 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       setPasteBlockedNotice("Choose an option above before sending this message.");
       return;
     }
-    const hasText = !!editor && editor.getText().trim() !== "";
-    if (!hasText && pending.length === 0) return; // nothing to send
+    const hasContent = hasSendableContent(editor);
+    if (!hasContent && pending.length === 0) return; // nothing to send
     if (uploading) return; // wait for in-flight uploads
-    const body = hasText ? deliveryMarkdown(editor) : "";
+    const body = hasContent ? deliveryMarkdown(editor) : "";
     if (editing) {
       if (!body.trim() && pending.length === 0) return;
       onError?.(null);
@@ -1132,7 +1141,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   return (
     <form
       ref={composerRef}
-      className={`composer${draggingFiles ? " dragging-files" : ""}${disabled ? " is-disabled" : ""}${mention ? " has-mention" : ""}${mentionAtEmptyParagraphStart ? " has-mention-empty" : ""}${mentionQueryIsRtl ? " has-mention-rtl" : ""}`}
+      className={`composer${editing ? " is-editing" : ""}${draggingFiles ? " dragging-files" : ""}${disabled ? " is-disabled" : ""}${mention ? " has-mention" : ""}${mentionAtEmptyParagraphStart ? " has-mention-empty" : ""}${mentionQueryIsRtl ? " has-mention-rtl" : ""}`}
       data-testid="composer"
       onSubmit={handleSend}
     >
