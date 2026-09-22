@@ -10386,8 +10386,8 @@ html[data-interface-direction="ltr"] .composer-user-mention {
   font-size: 13px;
 }
 .composer.is-editing .composer-editing {
-  margin: -1px -1px 0;
-  padding: 9px 13px;
+  margin: 0;
+  padding: 9px 12px;
   border-radius: 11px 11px 0 0;
 }
 .composer-editing > div {
