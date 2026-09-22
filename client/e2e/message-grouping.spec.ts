@@ -46,7 +46,7 @@ test("shows sender details only on the first quick message in a channel", async 
   await expect(secondMessage.getByTestId(`message-${second.message.id}-author`)).toHaveCount(0);
 });
 
-test("keeps sender details on the first reply after a thread root", async ({ page }) => {
+test("shows complete date metadata on every thread message", async ({ page }) => {
   const suffix = `grouped-thread-${Date.now()}`;
   const root = await createMessage(page, `${suffix} root`);
   const firstReply = await createMessage(page, `${suffix} first reply`, root.message.id);
@@ -62,7 +62,9 @@ test("keeps sender details on the first reply after a thread root", async ({ pag
   await expect(firstReplyMessage).not.toHaveClass(/grouped/);
   await expect(firstReplyMessage.getByTestId(`message-${firstReply.message.id}-avatar`)).toBeVisible();
   await expect(firstReplyMessage.getByTestId(`message-${firstReply.message.id}-author`)).toBeVisible();
-  await expect(secondReplyMessage).toHaveClass(/grouped/);
-  await expect(secondReplyMessage.getByTestId(`message-${secondReply.message.id}-avatar`)).toHaveCount(0);
-  await expect(secondReplyMessage.getByTestId(`message-${secondReply.message.id}-author`)).toHaveCount(0);
+  await expect(secondReplyMessage).not.toHaveClass(/grouped/);
+  await expect(secondReplyMessage.getByTestId(`message-${secondReply.message.id}-avatar`)).toBeVisible();
+  await expect(secondReplyMessage.getByTestId(`message-${secondReply.message.id}-author`)).toBeVisible();
+  await expect(firstReplyMessage.locator(".time")).toContainText("Today");
+  await expect(secondReplyMessage.locator(".time")).toContainText("Today");
 });

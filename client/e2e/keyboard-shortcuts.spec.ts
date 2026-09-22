@@ -292,6 +292,11 @@ test.describe("documented keyboard shortcuts", () => {
     await search.press("Enter");
     await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
 
+    await search.fill(fixture.bob.username);
+    await expect(page.getByTestId(`search-user-${fixture.bob.username.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`)).toBeVisible();
+    await search.fill(`@${fixture.bob.username}`);
+    await expect(page.getByTestId(`search-user-${fixture.bob.username.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`)).toBeVisible();
+
     await search.fill("in:gen");
     await expect(page.getByTestId("search-channel-general")).toBeVisible();
     await search.press("Tab");
