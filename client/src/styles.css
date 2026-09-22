@@ -12881,6 +12881,25 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 /* Wider navigation for large desktop monitors. Keep the main conversation
    flexible so the added navigation space does not create horizontal overflow. */
 @media (min-width: 1600px) {
+  .workspace-frame {
+    grid-template-columns: 88px clamp(280px, 18vw, 340px) minmax(0, 1fr);
+  }
+
+  .workspace-frame:has(.app-nav.no-sidebar) {
+    grid-template-columns: 88px minmax(0, 1fr);
+  }
+
+  .workspace-rail .rail {
+    width: 88px;
+    padding: 18px 10px 22px;
+  }
+
+  .workspace-rail .rail-brand .echo-logo,
+  .workspace-rail .rail-brand .rail-brand-slot {
+    width: 54px;
+    height: 54px;
+  }
+
   .rail {
     padding: 18px 10px 22px;
   }
@@ -12892,20 +12911,18 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     font-size: 11px;
   }
   .rail-top {
-    width: 54px;
-    flex: none;
-    max-width: none;
-    row-gap: 6px;
-    padding: 5px 4px;
+    width: 100%;
+    flex: 0 1 auto;
+    gap: 9px;
+    padding: 6px;
     border-radius: 27px;
   }
   .rail-item {
-    width: 44px;
-    height: 44px;
-    min-height: 44px;
+    width: 72px;
+    min-height: 70px;
     gap: 5px;
-    padding-block: 0;
-    border-radius: 17px;
+    padding-block: 10px;
+    border-radius: 21px;
     font-size: 12px;
   }
   .rail-active-indicator {
