@@ -102,6 +102,8 @@ services:
 
   client:
     image: arielber/echo-client:0.42.0
+    build:
+      context: ./client
     container_name: echo-client
     restart: unless-stopped
     ports:

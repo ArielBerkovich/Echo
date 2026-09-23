@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api.js";
 import { SearchIcon, UsersRoundIcon } from "lucide-react";
+import { useI18n } from "../lib/i18n.js";
 import Avatar from "./Avatar.js";
 import ConfirmDialog from "./ConfirmDialog.js";
 import { CloseButton } from "./Button.js";
@@ -11,6 +12,7 @@ const MEMBER_ROW_HEIGHT = 58;
 const MEMBER_LIST_HEIGHT = 340;
 
 export default function MembersPanel({ channel, users = [], onOpenProfile, onAddPeople, onRemoveMember, onPromoteManager, onUpdated, onClose }) {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [removeTarget, setRemoveTarget] = useState(null);
   const [memberError, setMemberError] = useState(null);
@@ -174,11 +176,11 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
             <UsersRoundIcon size={20} strokeWidth={1.9} />
           </span>
           <div>
-            <h2 id="members-panel-title">Members</h2>
-            <span>{channel.memberCount ?? members.length} people in {isGroupDm ? "this group DM" : `#${channel.name}`}</span>
+            <h2 id="members-panel-title">{t("members")}</h2>
+            <span>{channel.memberCount ?? members.length} {t("peopleIn")} {isGroupDm ? t("groupDm") : `#${channel.name}`}</span>
           </div>
         </div>
-        <CloseButton size="sm" onClick={onClose} label="Close members" />
+        <CloseButton size="sm" onClick={onClose} label={t("closeMembers")} />
       </header>
 
       <div className="members-panel-body">
@@ -224,7 +226,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
         )}
         {canAddPeople && (
           <Button variant="subtle" className="channel-add-people members-panel-add" onClick={onAddPeople}>
-            + Add people
+            + {t("addPeople")}
           </Button>
         )}
 
@@ -240,8 +242,8 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
               listRef.current?.scrollTo({ top: 0 });
             }}
             onKeyDown={onSearchKeyDown}
-            placeholder="Search members"
-            aria-label="Search members"
+            placeholder={t("searchMembers")}
+            aria-label={t("searchMembers")}
           />
         </InputShell>
 
@@ -253,7 +255,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
           onScroll={(event) => setListScrollTop(event.currentTarget.scrollTop)}
         >
           {members.length === 0 ? (
-            <div className="channel-details-empty">No members yet.</div>
+            <div className="channel-details-empty">{t("noMembersYet")}</div>
           ) : shownMembers.length === 0 ? (
             <div className="channel-details-empty">No members match “{query.trim()}”.</div>
           ) : (

@@ -4,6 +4,7 @@ import Avatar, { GroupAvatar } from "./Avatar.js";
 import { relativeTime } from "../lib/time.js";
 import { useAuthUrls } from "../lib/useAuthUrl.js";
 import { shortcutTitle } from "../lib/keyboardShortcuts.js";
+import { useI18n } from "../lib/i18n.js";
 
 // Sidebar previews only need workspace custom emoji. Native shortcode
 // expansion belongs to the full Markdown renderer, which is loaded with a
@@ -25,14 +26,15 @@ function tokenizePreviewEmojiShortcodes(text, customEmojis) {
 }
 
 function StartConversationButton({ onClick }) {
+  const { t } = useI18n();
   return (
     <button
       type="button"
       className="add-channel start-conversation"
       data-testid="start-dm"
       onClick={onClick}
-      title={shortcutTitle("New message", "new-message")}
-      aria-label="New message"
+      title={shortcutTitle(t("newMessage"), "new-message")}
+      aria-label={t("newMessage")}
     >
       <SquarePenIcon size={15} strokeWidth={2} aria-hidden="true" />
     </button>
@@ -41,7 +43,8 @@ function StartConversationButton({ onClick }) {
 
 // Keep previews compact while allowing each emoji image to occupy one slot.
 function Preview({ body, customEmojis }) {
-  if (!body) return "No messages yet";
+  const { t } = useI18n();
+  if (!body) return t("noMessagesYet");
   const normalized = body.replace(/\s+/g, " ").trim();
   const tokens = tokenizePreviewEmojiShortcodes(normalized, customEmojis);
   const output = [];
@@ -118,6 +121,7 @@ export default function Sidebar({
   onToggleChannelStarred,
   customEmojis = [],
 }) {
+  const { t } = useI18n();
   const dmsOnly = mode === "dms";
   const [filter, setFilter] = useState("");
   const [chCollapsed, setChCollapsed] = useState(false); // Channels section collapsed?
@@ -183,13 +187,13 @@ export default function Sidebar({
         <button
           className={`dm-remove ${isStarred ? "reserved" : ""}`}
           data-testid={`dm-remove-${slug(conv.withUser.displayName)}`}
-          title={isStarred ? undefined : "Remove conversation"}
+          title={isStarred ? undefined : t("removeConversation")}
           onClick={() => onHideDm(conv)}
           disabled={isStarred}
           aria-hidden={isStarred}
           tabIndex={isStarred ? -1 : 0}
         >
-          {dmsOnly ? "Remove" : "✕"}
+          {dmsOnly ? t("remove") : "✕"}
         </button>
       </div>
     );
@@ -207,7 +211,7 @@ export default function Sidebar({
         >
           <Chevron collapsed={starredCollapsed && !f} />
           <StarIcon className="section-icon starred-icon" size={12} strokeWidth={2.5} aria-hidden="true" />
-          <span className="starred-label">Starred</span>
+          <span className="starred-label">{t("saved")}</span>
         </button>
       </div>
       {showStarred && starredChannels.map((c) => (
@@ -233,13 +237,13 @@ export default function Sidebar({
     <aside className={`sidebar ${dmsOnly ? "dms-view" : ""}`} data-testid="sidebar">
       {dmsOnly && (
         <div className="sidebar-header" data-testid="dms-header">
-          <span className="brand-sm">Direct Messages</span>
+          <span className="brand-sm">{t("directMessages")}</span>
         </div>
       )}
       {!dmsOnly && (
         <div className="sidebar-header home-sidebar-header" data-testid="home-header">
-          <span className="brand-sm">Home</span>
-          <div className="sidebar-actions" role="group" aria-label="Sidebar actions">
+          <span className="brand-sm">{t("home")}</span>
+          <div className="sidebar-actions" role="group" aria-label={t("home")}>
             <button
               type="button"
               className={`add-channel filter-button ${filterOpen ? "active" : ""}`}
@@ -248,13 +252,13 @@ export default function Sidebar({
                 setFilterOpen((open) => !open);
                 if (filterOpen) setFilter("");
               }}
-              title={filterOpen ? "Close filter" : "Filter"}
-              aria-label={filterOpen ? "Close filter" : "Filter channels and direct messages"}
+              title={filterOpen ? t("closeFilter") : t("filter")}
+              aria-label={filterOpen ? t("closeFilter") : t("filterChannelsAndDms")}
               aria-pressed={filterOpen}
             >
               <ListFilterIcon size={14} strokeWidth={1.9} aria-hidden="true" />
             </button>
-            <button type="button" className="add-channel" data-testid="create-channel" onClick={onNewChannel} title={shortcutTitle("Create channel", "create-channel")} aria-label="Create channel">
+            <button type="button" className="add-channel" data-testid="create-channel" onClick={onNewChannel} title={shortcutTitle(t("createChannel"), "create-channel")} aria-label={t("createChannel")}>
               <span className="add-channel-mark" aria-hidden="true">
                 <span />
                 <span />
@@ -270,7 +274,7 @@ export default function Sidebar({
             data-testid="sidebar-filter"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            placeholder={dmsOnly ? "Find a DM" : "Filter channels & DMs"}
+            placeholder={dmsOnly ? t("findADm") : t("filterChannelsAndDms")}
             autoFocus={!dmsOnly}
           />
           {dmsOnly && <StartConversationButton onClick={onStartConversation} />}
@@ -285,9 +289,9 @@ export default function Sidebar({
               <PresenceAvatar name={user.displayName} src={user.avatarUrl} size={38} online />
               <div className="dm-text">
                 <div className="dm-row-top">
-                  <span className="dm-name" dir="auto">{user.displayName} <span className="dm-self-tag">you</span></span>
+                  <span className="dm-name" dir="auto">{user.displayName} <span className="dm-self-tag">{t("you")}</span></span>
                 </div>
-                <div className="dm-preview">Notes to self</div>
+                <div className="dm-preview">{t("notesToSelf")}</div>
               </div>
             </button>
           </div>
@@ -316,7 +320,7 @@ export default function Sidebar({
                       <span className="dm-time">{relativeTime(conv.lastAt)}</span>
                     </div>
                     <div className="dm-preview" dir="auto">
-                      {conv.lastFromMe ? "You: " : ""}
+                      {conv.lastFromMe ? `${t("you")}: ` : ""}
                       <Preview body={conv.lastBody} customEmojis={previewEmojis} />
                     </div>
                   </div>
@@ -325,7 +329,7 @@ export default function Sidebar({
             );
           })}
           {shownDms.filter((c) => !c.isSelf).length === 0 && (
-            <div className="dm-empty">{filter ? "No matches." : "No conversations yet. Compose a new message."}</div>
+            <div className="dm-empty">{filter ? (t("noMatches")) : t("noConversationsYet")}</div>
           )}
         </div>
       ) : (
@@ -343,7 +347,7 @@ export default function Sidebar({
             >
               <Chevron collapsed={chCollapsed && !f} />
               <HashIcon className="section-icon" size={12} strokeWidth={2.5} aria-hidden="true" />
-              <span>Channels</span>
+              <span>{t("channels")}</span>
             </button>
           </div>
           {showChannels &&
@@ -363,7 +367,7 @@ export default function Sidebar({
               </button>
             ))}
           {showChannels && shownChannels.length === 0 && (
-            <div className="dm-empty">{filter ? "No matching channels." : "No channels yet."}</div>
+            <div className="dm-empty">{filter ? t("noMatchingChannels") : t("noChannelsYet")}</div>
           )}
           <div className="section-label dm-label section-toggle" data-testid="home-dm-section">
             <button
@@ -375,12 +379,12 @@ export default function Sidebar({
             >
               <Chevron collapsed={dmCollapsed && !f} />
               <MessageCircleIcon className="section-icon" size={12} strokeWidth={2.5} aria-hidden="true" />
-              <span>Direct Messages</span>
+              <span>{t("directMessages")}</span>
             </button>
           </div>
           {showDms && regularDms.map(renderDmRow)}
           {showDms && regularDms.length === 0 && (
-            <div className="dm-empty">{filter ? "No matching DMs." : "Compose a new message to start a conversation."}</div>
+            <div className="dm-empty">{filter ? t("noMatchingDms") : t("composeToStartConversation")}</div>
           )}
         </div>
       )}

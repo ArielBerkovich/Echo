@@ -10,6 +10,7 @@ import { api } from "../api.js";
 import { uploadSizeError } from "../lib/uploads.js";
 import { useAuthUrl, useAuthUrls } from "../lib/useAuthUrl.js";
 import { shortcutTitle } from "../lib/keyboardShortcuts.js";
+import { useI18n } from "../lib/i18n.js";
 
 const icon = (Icon) => () => <Icon size={22} strokeWidth={2} />;
 const ITEMS = [
@@ -25,6 +26,7 @@ function railNameFontSize(name) {
 }
 
 export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroups, badges = {}, user, workspace, workspaceLoading = false, onLogout, onUpdated, customEmojis = [], latestActivity }) {
+  const { t } = useI18n();
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
   const [displayNameDialogOpen, setDisplayNameDialogOpen] = useState(false);
@@ -77,8 +79,9 @@ export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroup
     setDisplayNameDialogOpen(false);
   }
 
+  const labels = { home: t("home"), dms: t("dms"), activity: t("activity"), saved: t("saved") };
   return (
-    <nav className="rail" aria-label="Primary navigation">
+    <nav className="rail" aria-label={t("primaryNavigation")}>
       <div className={`rail-brand${brandReady ? " ready" : ""}`} aria-label={workspace?.name || "Echo"} data-testid="rail-brand">
         {workspaceLoading || (workspace?.logoUrl && !workspaceLogoSrc)
           ? <span className={`rail-brand-slot${workspace?.logoUrl ? " is-workspace-logo" : ""}`} aria-hidden="true" />
@@ -88,7 +91,8 @@ export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroup
         {!workspaceLoading && workspace?.name && workspace.name !== "Echo" && <span className="rail-brand-name">{workspace.name}</span>}
       </div>
       <div className="rail-top">
-        {ITEMS.map(({ key, label, shortcutId, Icon }) => {
+        {ITEMS.map(({ key, shortcutId, Icon }) => {
+          const label = labels[key];
           const count = badges[key] || 0;
           const isLatestReaction = key === "activity" && latestActivity?.kind === "reaction" && latestActivity.unread && latestActivity.emoji;
           const reactionEmoji = isLatestReaction
@@ -137,14 +141,14 @@ export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroup
         })}
         {onOpenGroups ? (
           <div className="rail-more-wrap" ref={moreRef}>
-            <button type="button" className={`rail-item rail-more-trigger ${moreOpen ? "active" : ""}`} data-testid="sidebar-more" onClick={() => setMoreOpen((open) => !open)} title={moreOpen ? undefined : "More workspace options"} aria-label="More workspace options" aria-expanded={moreOpen} aria-haspopup="menu">
+            <button type="button" className={`rail-item rail-more-trigger ${moreOpen ? "active" : ""}`} data-testid="sidebar-more" onClick={() => setMoreOpen((open) => !open)} title={moreOpen ? undefined : t("moreWorkspaceOptions")} aria-label={t("moreWorkspaceOptions")} aria-expanded={moreOpen} aria-haspopup="menu">
               <span className="rail-icon"><MoreIcon /></span>
             </button>
             {moreOpen ? <>
               <div className="menu-overlay" onMouseDown={() => setMoreOpen(false)} />
-              <div className="rail-more-menu" role="menu" aria-label="More workspace options">
-                {onBrowseChannels ? <button type="button" role="menuitem" data-testid="more-browse-channels" onClick={() => { setMoreOpen(false); onBrowseChannels(); }} aria-pressed={view === "browse"}><CompassIcon size={16} aria-hidden="true" /><span><strong>Browse channels</strong><small>Find public channels</small></span></button> : null}
-                <button type="button" role="menuitem" data-testid="open-groups" onClick={() => { setMoreOpen(false); onOpenGroups(); }}><ContactRoundIcon size={16} aria-hidden="true" /><span><strong>Groups</strong><small>Organize people</small></span></button>
+              <div className="rail-more-menu" role="menu" aria-label={t("moreWorkspaceOptions")}>
+                {onBrowseChannels ? <button type="button" role="menuitem" data-testid="more-browse-channels" onClick={() => { setMoreOpen(false); onBrowseChannels(); }} aria-pressed={view === "browse"}><CompassIcon size={16} aria-hidden="true" /><span><strong>{t("browseChannels")}</strong><small>{t("findPublicChannels")}</small></span></button> : null}
+                <button type="button" role="menuitem" data-testid="open-groups" onClick={() => { setMoreOpen(false); onOpenGroups(); }}><ContactRoundIcon size={16} aria-hidden="true" /><span><strong>{t("groups")}</strong><small>{t("organizePeople")}</small></span></button>
               </div>
             </> : null}
           </div>
@@ -157,8 +161,8 @@ export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroup
             className="rail-account-button"
             data-testid="rail-account"
             onClick={() => setAvatarDialogOpen(true)}
-            title="Update profile picture"
-            aria-label="Update profile picture"
+            title={t("updateProfilePicture")}
+            aria-label={t("updateProfilePicture")}
           >
             <span className="avatar-wrap rail-account-avatar">
               <Avatar name={user.displayName} src={user.avatarUrl} size={48} />
@@ -169,8 +173,8 @@ export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroup
             type="button"
             className="rail-account-name-button"
             onClick={() => setDisplayNameDialogOpen(true)}
-            title="Update display name"
-            aria-label="Update display name"
+            title={t("updateDisplayName")}
+            aria-label={t("updateDisplayName")}
           >
             <span className="rail-account-name" data-testid="rail-account-name" dir="auto" style={{ fontSize: `${railNameFontSize(user.displayName)}px` }}>{user.displayName}</span>
           </button>
@@ -181,8 +185,8 @@ export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroup
               data-testid="rail-settings"
               onClick={() => onSelect("settings")}
               aria-current={view === "settings" ? "page" : undefined}
-              title={shortcutTitle("Settings", "open-settings")}
-              aria-label="Settings"
+              title={shortcutTitle(t("settings"), "open-settings")}
+              aria-label={t("settings")}
             >
               <SettingsIcon size={16} strokeWidth={1.8} />
             </button>
@@ -191,8 +195,8 @@ export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroup
               className="rail-account-action rail-signout"
               data-testid="rail-logout"
               onClick={() => setLogoutConfirmOpen(true)}
-              title="Sign out"
-              aria-label="Sign out"
+              title={t("signOut")}
+              aria-label={t("signOut")}
             >
               <LeaveIcon />
             </button>
@@ -203,9 +207,9 @@ export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroup
       {displayNameDialogOpen && <DisplayNameDialog value={user.displayName} onSave={saveDisplayName} onClose={() => setDisplayNameDialogOpen(false)} />}
       {logoutConfirmOpen && (
         <ConfirmDialog
-          title="Sign out?"
-          message="Are you sure you want to sign out of Echo?"
-          confirmLabel="Sign out"
+          title={t("signOutQuestion")}
+          message={t("signOutMessage")}
+          confirmLabel={t("signOut")}
           danger
           onCancel={() => setLogoutConfirmOpen(false)}
           onConfirm={() => {

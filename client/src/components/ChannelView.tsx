@@ -26,13 +26,14 @@ import { Input, InputShell } from "./Input.js";
 import ConfirmDialog from "./ConfirmDialog.js";
 import LeaveChannelDialog from "./LeaveChannelDialog.js";
 import { PinIcon } from "./Icons.js";
-import { formatDayDivider, isDifferentDay } from "../lib/time.js";
+import { formatDate, formatDayDivider, isDifferentDay } from "../lib/time.js";
 import { shouldGroupWithPreviousMessage } from "../lib/messageGrouping.js";
 import { appendReplyParticipant } from "../lib/replyParticipants.js";
 import { formatSize } from "../lib/format.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
 import { ChevronsDownIcon, DownloadIcon, FileIcon, FileTextIcon, MessageSquareTextIcon, PaperclipIcon, SearchIcon, StarIcon, UsersRoundIcon } from "lucide-react";
 import { queryKeys } from "../lib/queryClient.js";
+import { useI18n } from "../lib/i18n.js";
 
 // Shimmering placeholder rows shown while a channel's history loads, so the
 // pane has structure immediately instead of flashing an empty "say hello" state.
@@ -113,6 +114,7 @@ const ChannelView = forwardRef(function ChannelView({
   onThreadOpened,
   mode = "light",
 }, ref) {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const hasUsableCache = cachedMessages !== null && !hasUnread;
   const canPost = channel.type === "dm" || !channel.readOnly || channel.createdBy === user.id || (channel.managers || []).includes(user.id);
@@ -1263,7 +1265,7 @@ const ChannelView = forwardRef(function ChannelView({
                   {dayDivider}
                   {m.id === firstUnreadId && (
                     <div className="new-divider" ref={firstUnreadRefCallback}>
-                      <span className="new-divider-label">New</span>
+                      <span className="new-divider-label">{t("newMessages")}</span>
                     </div>
                   )}
                   <Message
@@ -1586,15 +1588,16 @@ function ChannelSetupActions({ channel, onAddPeople, onOpenDetails, inline = fal
 }
 
 function PinnedPanel({ messages, renderMarkdown, emojiMap, onUnpin, onClose }) {
+  const { t } = useI18n();
   return (
     <aside id="pinned-panel" className="side-panel pinned-panel" data-testid="pinned-panel">
       <div className="panel-header">
-        <span className="panel-title">Pinned messages</span>
+        <span className="panel-title">{t("pinnedMessages")}</span>
         <CloseButton size="sm" onClick={onClose} label="Close" />
       </div>
       <div className="panel-body">
         {messages.length === 0 ? (
-          <p className="pinned-empty">No pinned messages yet.</p>
+          <p className="pinned-empty">{t("noPinnedMessages")}</p>
         ) : (
           messages.map((m) => (
             <div key={m.id} className="pinned-item">
@@ -1625,6 +1628,7 @@ function fileCategory(file) {
 }
 
 function FilesPanel({ files, loading, error, conversationLabel, onRetry, onClose, onJump }) {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All");
   const [unavailable, setUnavailable] = useState(new Set());
@@ -1700,26 +1704,26 @@ function FilesPanel({ files, loading, error, conversationLabel, onRetry, onClose
     <aside className="side-panel files-panel" id="conversation-files-panel" data-testid="files-panel" role="complementary" aria-label={`Files in ${conversationLabel}`}>
       <div className="panel-header">
         <div>
-          <span className="panel-title">Files</span>
+          <span className="panel-title">{t("files")}</span>
         </div>
-        <CloseButton size="sm" onClick={onClose} label="Close files" />
+        <CloseButton size="sm" onClick={onClose} label={t("closeFiles")} />
       </div>
       <div className="files-panel-controls">
         <InputShell className="files-search">
           <SearchIcon size={16} aria-hidden="true" />
-          <Input ref={searchInputRef} value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={onSearchKeyDown} placeholder="Search files…" aria-label="Search files" />
+          <Input ref={searchInputRef} value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={onSearchKeyDown} placeholder={t("searchFiles")} aria-label={t("searchFiles")} />
         </InputShell>
-        <div className="files-filters" role="group" aria-label="Filter files">
+        <div className="files-filters" role="group" aria-label={t("filterFiles")}>
           {["All", "Images", "Documents", "Audio & video", "Other"].map((label) => (
-            <button key={label} type="button" className={filter === label ? "active" : ""} aria-pressed={filter === label} onClick={() => setFilter(label)}>{label}</button>
+            <button key={label} type="button" className={filter === label ? "active" : ""} aria-pressed={filter === label} onClick={() => setFilter(label)}>{({ All: t("allFiles"), Images: t("images"), Documents: t("documents"), "Audio & video": t("audioAndVideo"), Other: t("other") })[label]}</button>
           ))}
         </div>
       </div>
       <div className="panel-body files-panel-body">
-        {loading ? <div className="files-empty files-loading" aria-label="Loading files"><span>Loading files…</span></div>
-          : error ? <div className="files-empty"><strong>Couldn’t load files</strong><button type="button" onClick={onRetry}>Try again</button></div>
-          : files.length === 0 ? <div className="files-empty"><PaperclipIcon size={28} aria-hidden="true" /><strong>No files shared here yet</strong><span>Files sent in this conversation will appear here.</span></div>
-          : visibleFiles.length === 0 ? <div className="files-empty"><strong>No matching files</strong><button type="button" onClick={() => { setQuery(""); setFilter("All"); }}>Clear filters</button></div>
+        {loading ? <div className="files-empty files-loading" aria-label={t("loadingFiles")}><span>{t("loadingFiles")}</span></div>
+          : error ? <div className="files-empty"><strong>{t("couldNotLoadFiles")}</strong><button type="button" onClick={onRetry}>{t("tryAgain")}</button></div>
+          : files.length === 0 ? <div className="files-empty"><PaperclipIcon size={28} aria-hidden="true" /><strong>{t("noFilesYet")}</strong><span>{t("filesWillAppear")}</span></div>
+          : visibleFiles.length === 0 ? <div className="files-empty"><strong>{t("noMatchingFiles")}</strong><button type="button" onClick={() => { setQuery(""); setFilter("All"); }}>{t("clearFilters")}</button></div>
           : visibleFiles.map((file, index) => (
             <div
               className={`file-row${unavailable.has(file.id) ? " unavailable" : ""}${index === activeIndex ? " active" : ""}`}
@@ -1729,13 +1733,13 @@ function FilesPanel({ files, loading, error, conversationLabel, onRetry, onClose
               <div className="file-type" aria-hidden="true">{fileCategory(file) === "Images" ? "IMG" : (file.name || "FILE").split(".").pop()?.slice(0, 4).toUpperCase()}</div>
               <div className="file-info">
                 <strong>{file.name}</strong>
-                {unavailable.has(file.id) ? <span>This file is no longer available</span> : <span>{file.contentType || "File"} · {formatSize(file.size)} · {file.author?.displayName || "Unknown"} · {new Date(file.createdAt).toLocaleDateString()}</span>}
+                {unavailable.has(file.id) ? <span>This file is no longer available</span> : <span>{file.contentType || "File"} · {formatSize(file.size)} · {file.author?.displayName || "Unknown"} · {formatDate(file.createdAt)}</span>}
               </div>
               <div className="file-actions">
                 <button type="button" className="file-download" onClick={() => onJump(file)} title="Jump to message" aria-label={`Jump to the message containing ${file.name}`}>
                   <MessageSquareTextIcon size={17} strokeWidth={2} />
                 </button>
-                <button type="button" className="file-download" disabled={unavailable.has(file.id)} onClick={() => downloadFile(file)} title="Download file" aria-label={`Download ${file.name}`}>
+                <button type="button" className="file-download" disabled={unavailable.has(file.id)} onClick={() => downloadFile(file)} title={t("downloadFile")} aria-label={t("downloadFile")}>
                   {unavailable.has(file.id) ? <FileIcon size={17} /> : <DownloadIcon size={17} />}
                 </button>
               </div>

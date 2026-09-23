@@ -9,7 +9,7 @@ import { getSocket } from "../socket.js";
 import { htmlToMarkdown } from "../htmlToMarkdown.js";
 import { markdownTextToComposerHtml } from "../markdownPaste.js";
 import { formatSize } from "../lib/format.js";
-import { formatDateTime } from "../lib/time.js";
+import { formatDateTime, interfaceLocale } from "../lib/time.js";
 import { readString, writeString } from "../lib/storage.js";
 import { useAttachments } from "../lib/useAttachments.js";
 import { useAuthUrl, useAuthUrls } from "../lib/useAuthUrl.js";
@@ -25,6 +25,7 @@ import Avatar from "./Avatar.js";
 import EmojiPicker from "./EmojiPicker.js";
 import Modal, { ModalActions } from "./Modal.js";
 import { useMentionGate } from "../lib/useMentionGate.js";
+import { useI18n } from "../lib/i18n.js";
 import { MENTION_QUERY_RE, peopleSearchSuggestions } from "../lib/mentions.js";
 import { CalendarClock, ChartNoAxesColumnIncreasing, ChevronRight, FileIcon, LayoutPanelTop, Paperclip, X } from "lucide-react";
 import {
@@ -95,7 +96,7 @@ function composerContent(body) {
 }
 
 function formatScheduleTime(date) {
-  return date.toLocaleString([], {
+  return date.toLocaleString(interfaceLocale(), {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -210,6 +211,7 @@ function hasSendableContent(currentEditor) {
 // emoji, and file attachments. Owns all of its own editor state — mount it with
 // a `key={channel.id}` so switching channels yields a fresh, empty composer.
 const Composer = forwardRef(function Composer({ channel, sendChannel = null, parentId = null, alsoSendToChannel = false, onAlsoSendToChannelChange, users = [], channels = [], onFindChannels, customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, onSend, initialContent = null, sendDisabled = false, allowEmptySend = false, sendAriaLabel, sendTitle, sendTestId, onDraftChange, onEditSave, onEditCancel, editing = null, placeholder: customPlaceholder, mode = "light", captureScreenDrops = false, showSchedule = true, showSend = true, showAttachments = true, submitOnEnter = false, disabled = false }, ref) {
+  const { t } = useI18n();
   // Keep custom-emoji blob URLs alive for the full composer lifetime. The
   // picker unmounts immediately after a selection, so its URLs cannot safely
   // be used by an emoji node inserted into this editor.
@@ -328,10 +330,10 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   const targetChannelId = sendChannel?.id || channel.id;
   const scheduledTargetLabel = isDm ? "this conversation" : "this channel";
   const placeholder = customPlaceholder || (isThread
-    ? "Reply to thread…"
+    ? t("replyToThread")
     : isDm
-      ? isGroupDm ? "Message…" : `Message ${channel.dmName}`
-      : `Message #${channel.name}`);
+      ? isGroupDm ? `${t("message")}…` : `${t("message")} ${channel.dmName}`
+      : `${t("message")} #${channel.name}`);
 
   // Groups are loaded only for the mention picker and only once per composer
   // lifetime. The server returns only active Echo-owned groups.
@@ -887,7 +889,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     onError?.(null);
     const socket = getSocket();
     if (!socket.connected) {
-      onError?.("Echo is reconnecting. Your draft is still here — send it when the connection returns.");
+      onError?.(t("reconnectingDraft"));
       return false;
     }
     socket.emit("message:send", { channelId: targetChannelId, body, attachments, parentId, broadcastToChannel: !!alsoSendToChannel, survey, retro }, (res) => {
@@ -1200,7 +1202,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                 <span>
                   {pastePrompt.tooLarge
                     ? `${formatSize(pastePrompt.byteLength)} · Files are limited to 10 MB.`
-                    : `${pastePrompt.text.length.toLocaleString()} characters · Messages support up to ${MAX_MESSAGE_CHARACTERS.toLocaleString()}.`}
+                    : `${pastePrompt.text.length.toLocaleString(interfaceLocale())} characters · Messages support up to ${MAX_MESSAGE_CHARACTERS.toLocaleString(interfaceLocale())}.`}
                 </span>
               )}
             </div>
@@ -1646,8 +1648,8 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                 type="button"
                 className={`icon-btn plus${moreActionsOpen ? " active" : ""}`}
                 data-testid="composer-more-actions"
-                title="More message actions"
-                aria-label="More message actions"
+                title={t("moreMessageActions")}
+                aria-label={t("moreMessageActions")}
                 aria-haspopup="menu"
                 aria-expanded={moreActionsOpen}
                 onMouseDown={keepFocus}
@@ -1718,7 +1720,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
             type="button"
             className={`icon-btn aa ${showFormatting ? "active" : ""}`}
             data-testid="composer-formatting"
-            title="Formatting"
+            title={t("formatting")}
             onMouseDown={keepFocus}
             onClick={(event) => {
               // Keyboard activation is handled in onKeyDown so it cannot be
@@ -1734,7 +1736,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
           >
             Aa
           </button>
-          <button ref={emojiToggleRef} type="button" className={`icon-btn emoji-toggle ${emojiOpen ? "active" : ""}`} data-testid="composer-emoji-toggle" title="Emoji" onMouseDown={keepFocus} onClick={() => setEmojiOpen((v) => !v)}>
+          <button ref={emojiToggleRef} type="button" className={`icon-btn emoji-toggle ${emojiOpen ? "active" : ""}`} data-testid="composer-emoji-toggle" title={t("emoji")} onMouseDown={keepFocus} onClick={() => setEmojiOpen((v) => !v)}>
             <SmileyIcon />
           </button>
         </div>
@@ -1746,8 +1748,8 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
             data-testid={sendTestId || "composer-send"}
             onMouseDown={keepFocus}
             disabled={sendDisabled || ((!canSend && pending.length === 0 && !pastePrompt) && !allowEmptySend) || uploading}
-            aria-label={sendAriaLabel || (editing ? "Save edit" : "Send")}
-            title={pastePrompt ? "Choose how to handle the pasted content first" : sendTitle || (editing ? "Save edit" : "Send message")}
+            aria-label={sendAriaLabel || (editing ? t("saveEdit") : t("sendMessage"))}
+            title={pastePrompt ? "Choose how to handle the pasted content first" : sendTitle || (editing ? t("saveEdit") : t("sendMessage"))}
           >
             <SendIcon />
           </button>}
@@ -1777,7 +1779,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                 >
                   <span>Tomorrow, 09:00</span>
                   <span className="send-menu-sub">
-                    {tomorrow9am().toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" })}
+                    {tomorrow9am().toLocaleDateString(interfaceLocale(), { weekday: "long", month: "short", day: "numeric" })}
                   </span>
                 </button>
                 <button

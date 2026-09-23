@@ -5,6 +5,7 @@ import App from "./App.js";
 import BrowserCompatibilityNotice from "./components/BrowserCompatibilityNotice.js";
 import UpdateConfirmation from "./components/UpdateConfirmation.js";
 import ThemedTooltipLayer from "./components/ThemedTooltipLayer.js";
+import { LocaleProvider } from "./lib/i18n.js";
 import { queryClient } from "./lib/queryClient.js";
 import "@fontsource/asap/latin-400.css";
 import "@fontsource/asap/latin-500.css";
@@ -17,10 +18,12 @@ const Router = window.location.protocol === "file:" ? HashRouter : BrowserRouter
 createRoot(document.getElementById("root")).render(
   <QueryClientProvider client={queryClient}>
     <Router>
-      <BrowserCompatibilityNotice />
-      <App />
-      <ThemedTooltipLayer />
-      <UpdateConfirmation />
+      <LocaleProvider>
+        <BrowserCompatibilityNotice />
+        <App />
+        <ThemedTooltipLayer />
+        <UpdateConfirmation />
+      </LocaleProvider>
     </Router>
   </QueryClientProvider>
 );

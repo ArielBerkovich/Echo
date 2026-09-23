@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useState } from "react";
+import { useI18n } from "../lib/i18n.js";
 
 // A lightweight first-run guided tour. Each step optionally spotlights a UI
 // element (dimming everything else) and shows a tooltip card beside it; steps
@@ -106,6 +107,26 @@ const STEPS = [
   },
 ];
 
+const HEBREW_STEPS = [
+  ["ברוכים הבאים ל־Echo 👋", "זהו סיור קצר בדברים החשובים. אפשר לדלג בכל שלב."],
+  ["התמצאות", "השתמשו בסרגל הניווט כדי לעבור בין בית, הודעות ישירות, פעילות ושמורים. פתחו אפשרויות נוספות לערוצים, קבוצות ואפשרויות סביבת עבודה נוספות."],
+  ["הסרגל הצדדי", "כאן נמצאים הערוצים שהצטרפתם אליהם וההודעות הישירות האחרונות. בחרו שיחה כדי לפתוח אותה."],
+  ["אפשרויות נוספות", "פתחו את האפשרויות הנוספות בסרגל הניווט כדי לעיין בערוצים ציבוריים או בקבוצות משתמשים."],
+  ["יצירת ערוץ", "השתמשו בכפתור היצירה בראש הסרגל הצדדי כדי ליצור ערוץ ציבורי או פרטי."],
+  ["התחלת הודעה ישירה", "השתמשו בכפתור הכתיבה בראש הסרגל הצדדי כדי למצוא אדם ולהתחיל הודעה ישירה חדשה."],
+  ["חיפוש בכל מקום", "חפשו הודעות, אנשים וערוצים. אפשר לסנן באמצעות in:channel, ‏from:@user ו־has:file ואז ללחוץ Enter."],
+  ["פתיחת פעולות מהירות", "השתמשו בכפתור הניצוצות כדי לפתוח פעולות נפוצות, או הקישו Ctrl K כדי לפתוח את בורר הפעולות."],
+  ["כלי שיחה", "השתמשו בכותרת השיחה כדי למצוא קבצים, לחפש בתוך השיחה, לצפות בחברים ולנהל הודעות נעוצות."],
+  ["שליחת הודעה", "כתבו כאן ולחצו Enter כדי לשלוח. השתמשו ב־Shift+Enter לשורה חדשה, או פתחו את כלי העיצוב."],
+  ["עיצוב הודעה", "אפשר להוסיף קישורים, רשימות, ציטוטים, קוד מוטבע, בלוקי קוד ועיצוב נוסף בלי לצאת משדה הכתיבה."],
+  ["אזכור אנשים וערוצים", "הקלידו @ כדי למצוא אנשים או קבוצות, ו־# כדי למצוא ערוצים ציבוריים. ההצעות יופיעו ליד הסמן."],
+  ["כלי הודעה נוספים", "פתחו את תפריט הפלוס כדי לצרף קבצים, ליצור סקר או להתחיל לוח רטרוספקטיבה."],
+  ["תזמון הודעה", "השתמשו בשעון שליד שליחה כדי לתזמן הודעה ולנהל הודעות שממתינות לשליחה."],
+  ["שמירה על סדר בשיחות", "אפשר להגיב, לענות בשרשור, להעביר, לשמור או לפתוח פעולות הודעה מתוך השיחה."],
+  ["החשבון וההגדרות שלכם", "השתמשו בפקדי החשבון כדי לעדכן את הפרופיל, לפתוח הגדרות, להחליף ערכת צבעים או לצאת."],
+  ["הכול מוכן! 🎉", "עברו אל #general כדי לומר שלום. אפשר להתחיל."],
+];
+
 const CARD_W = 340;
 const GAP = 14;
 const CARD_PAD = 24;
@@ -160,9 +181,21 @@ function spotlightStyle(rect) {
 }
 
 export default function Walkthrough({ onClose }) {
+  const { language, t } = useI18n();
   const [i, setI] = useState(0);
   const [rect, setRect] = useState(null);
-  const step = STEPS[i];
+  const englishStep = STEPS[i];
+  const [title, body] = language === "he" ? HEBREW_STEPS[i] : [englishStep.title, englishStep.body];
+  const step = {
+    ...englishStep,
+    title,
+    body,
+    placement: language === "he" && englishStep.placement === "right"
+      ? "left"
+      : language === "he" && englishStep.placement === "left"
+        ? "right"
+        : englishStep.placement,
+  };
   const last = i === STEPS.length - 1;
 
   useLayoutEffect(() => {
@@ -214,22 +247,22 @@ export default function Walkthrough({ onClose }) {
       )}
       <div className="wt-card" style={cardStyle(rect, step.placement)}>
         <div className="wt-step">
-          {i + 1} of {STEPS.length}
+          {i + 1} {t("stepOf")} {STEPS.length}
         </div>
         <h3>{step.title}</h3>
         <p>{step.body}</p>
         <div className="wt-actions">
           <button type="button" className="wt-skip" onClick={onClose}>
-            {last ? "" : "Skip tour"}
+            {last ? "" : t("skipTour")}
           </button>
           <div className="wt-nav">
             {i > 0 && (
               <button type="button" className="btn-secondary" onClick={() => setI((n) => n - 1)}>
-                Back
+                {t("back")}
               </button>
             )}
             <button type="button" className="btn-primary" onClick={next}>
-              {last ? "Finish" : "Next"}
+              {last ? t("finish") : t("next")}
             </button>
           </div>
         </div>

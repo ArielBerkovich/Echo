@@ -5,6 +5,7 @@ import { api } from "../api.js";
 import { queryKeys } from "../lib/queryClient.js";
 import { Input, InputShell } from "./Input.js";
 import { Button } from "./Button.js";
+import { useI18n } from "../lib/i18n.js";
 
 const FILTERS = [
   { id: "all", label: "All" },
@@ -25,6 +26,7 @@ export default function ChannelBrowser({
   onCatalog,
   onCounts,
 }) {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState("all");
@@ -192,14 +194,14 @@ export default function ChannelBrowser({
         <header className="channel-header channel-browser-header">
           <span className="channel-browser-title">
             <CompassIcon size={20} strokeWidth={1.8} aria-hidden="true" />
-            <span className="ch-name">Browse public channels</span>
+            <span className="ch-name">{t("browsePublicChannels")}</span>
           </span>
           <span className="ch-meta">
-            {counts.all} {counts.all === 1 ? "channel" : "channels"}
+            {counts.all} {t("publicChannels")}
           </span>
           <Button variant="primary" className="channel-browser-create" onClick={onCreate}>
             <PlusIcon size={16} strokeWidth={2} aria-hidden="true" />
-            Create
+            {t("create")}
           </Button>
         </header>
 
@@ -207,19 +209,19 @@ export default function ChannelBrowser({
           <div className="channel-browser-tools">
             <InputShell className="channel-browser-search">
               <SearchIcon size={17} strokeWidth={1.8} aria-hidden="true" />
-              <span className="sr-only">Search public channels</span>
+              <span className="sr-only">{t("searchPublicChannels")}</span>
               <Input
                 ref={searchInputRef}
                 type="search"
                 data-testid="channel-browser-search"
-                aria-label="Search public channels"
+                aria-label={t("searchPublicChannels")}
                 value={query}
                 onChange={(event) => {
                   setQuery(event.target.value);
                   setActionError("");
                 }}
                 onKeyDown={onSearchKeyDown}
-                placeholder="Search by name, topic, or description"
+                placeholder={t("searchChannelsHint")}
                 autoComplete="off"
                 enterKeyHint="search"
                 aria-controls={resultsId}
@@ -240,7 +242,7 @@ export default function ChannelBrowser({
                 </button>
               ) : null}
             </InputShell>
-            <div className="channel-browser-filters" role="group" aria-label="Filter public channels">
+            <div className="channel-browser-filters" role="group" aria-label={t("filterPublicChannels")}>
               {FILTERS.map((item) => (
                 <button
                   key={item.id}
@@ -253,7 +255,7 @@ export default function ChannelBrowser({
                     setActionError("");
                   }}
                 >
-                  <span>{item.label}</span>
+                  <span>{item.id === "all" ? t("allFiles") : item.id === "available" ? t("notJoined") : t("joined")}</span>
                   <span className="channel-browser-filter-count">{counts[item.id] || 0}</span>
                 </button>
               ))}
@@ -262,7 +264,7 @@ export default function ChannelBrowser({
 
           {error && <div className="error channel-browser-error" role="alert">{error}</div>}
           <div className="channel-browser-results-summary" aria-live="polite">
-            {loading ? "Loading public channels…" : resultSummary}
+            {loading ? t("loadingPublicChannels") : resultSummary}
           </div>
           <div
             id={resultsId}
@@ -296,7 +298,7 @@ export default function ChannelBrowser({
                     <button
                       type="button"
                       className="channel-browser-open"
-                      aria-label={`${joined ? "View" : "Preview"} #${channel.name}`}
+                      aria-label={`${joined ? t("view") : t("previewChannel")} #${channel.name}`}
                       onClick={() => onOpen(channel)}
                     >
                       <span className="channel-browser-hash" aria-hidden="true">
@@ -311,7 +313,7 @@ export default function ChannelBrowser({
                         ) : null}
                         <span className="channel-browser-members">
                           <UsersIcon size={14} strokeWidth={1.7} aria-hidden="true" />
-                          {channel.memberCount || 0} {(channel.memberCount || 0) === 1 ? "member" : "members"}
+                          {channel.memberCount || 0} {(channel.memberCount || 0) === 1 ? t("member") : t("groupMembers")}
                         </span>
                       </span>
                     </button>
@@ -319,20 +321,20 @@ export default function ChannelBrowser({
                       <button
                         type="button"
                         className="btn-secondary channel-browser-action"
-                        aria-label={`${hidden ? "Show" : "Open"} #${channel.name}`}
+                        aria-label={`${hidden ? t("show") : t("open")} #${channel.name}`}
                         onClick={() => onOpen(channel)}
                       >
-                        {hidden ? "Show" : "Open"}
+                        {hidden ? t("show") : t("open")}
                       </button>
                     ) : (
                       <button
                         type="button"
                         className="btn-primary channel-browser-action"
                         disabled={joiningId === channel.id}
-                        aria-label={`Join #${channel.name}`}
+                        aria-label={`${t("join")} #${channel.name}`}
                         onClick={() => join(channel)}
                       >
-                        {joiningId === channel.id ? "Joining…" : "Join"}
+                        {joiningId === channel.id ? t("joining") : t("join")}
                       </button>
                     )}
                   </article>

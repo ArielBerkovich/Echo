@@ -13,16 +13,23 @@ import { isEchoMessageLink, workspacePath } from "../lib/workspaceRoutes.js";
 import { parseCardMarkup } from "../lib/cards.js";
 import { decorateGroupMentions, displayGroupMentions } from "../lib/groupMentions.js";
 import Card from "./Card.js";
+import { useI18n } from "../lib/i18n.js";
 import {
   ShareIcon, EmojiAddIcon, ReplyIcon, BookmarkIcon, PencilIcon, TrashIcon, PinIcon, CopyIcon, MoreIcon, QuoteIcon,
 } from "./Icons.js";
 
 // A "joined the channel" / "created this channel" log line.
 export function SystemMessage({ m }) {
+  const { t } = useI18n();
+  const systemBody = {
+    "created this channel": t("createdThisChannel"),
+    "was added": t("wasAdded"),
+    "was removed from the channel": t("wasRemovedFromChannel"),
+  }[m.body] || m.body;
   return (
     <div className="system-msg">
       <span className="system-text">
-        <strong>{m.author?.displayName || "Someone"}</strong> {m.body}
+        <strong>{m.author?.displayName || t("someone")}</strong> {systemBody}
       </span>
       <span className="system-time">{formatTime(m.createdAt)}</span>
     </div>
@@ -76,6 +83,7 @@ function Message({
   canPin = true,
   canQuote = false,
 }) {
+  const { t } = useI18n();
   const isMine = m.author?.id === currentUserId;
   // A forward is an immutable snapshot of the source message. Its sender may
   // delete their copy, but must not be able to alter the forwarded content.
@@ -227,6 +235,7 @@ function Message({
         ? Math.max(8, header.getBoundingClientRect().bottom - 18)
         : 8;
       const toolbarHeight = 38;
+      const toolbarWidth = actionsRef.current?.getBoundingClientRect().width || 180;
       const isRtl = document.documentElement.dataset.interfaceDirection === "rtl";
       setActionsPosition({
         top: Math.min(
@@ -234,7 +243,7 @@ function Message({
           Math.max(topBoundary, window.innerHeight - toolbarHeight - 8)
         ),
         ...(isRtl
-          ? { left: rect.left + 18, right: "auto" }
+          ? { left: Math.min(Math.max(8, rect.left + 18), window.innerWidth - toolbarWidth - 8), right: "auto" }
           : { right: window.innerWidth - rect.right + 18, left: "auto" }),
       });
     };
@@ -269,7 +278,10 @@ function Message({
           Math.max(padding, triggerRect.right - menuRect.width),
           window.innerWidth - menuRect.width - padding
         );
-      setMenuPosition({ top: triggerRect.bottom + gap, left });
+      setMenuPosition({
+        top: Math.max(padding, Math.min(triggerRect.bottom + gap, window.innerHeight - menuRect.height - padding)),
+        left,
+      });
     };
     const frame = requestAnimationFrame(measure);
     const scrollViewport = menuTriggerRef.current?.closest(".messages, .thread-body");
@@ -358,7 +370,7 @@ function Message({
   }
 
   function copyMessage() {
-    copyText(String(m.body || ""), () => onToast?.("Message copied"));
+    copyText(String(m.body || ""), () => onToast?.(t("messageCopied")));
   }
 
   function copyMessageLink() {
@@ -370,7 +382,7 @@ function Message({
       threadId: threadRootId,
     });
     const url = new URL(path, window.location.origin);
-    copyText(url.toString(), () => onToast?.("Message link copied"));
+    copyText(url.toString(), () => onToast?.(t("messageLinkCopied")));
   }
 
   async function issuePasswordAndReply() {
@@ -450,7 +462,7 @@ function Message({
             >
               {author?.displayName || "unknown"}
             </button>
-            <span className="time">{inThread ? `${formatThreadDate(m.createdAt)} at ` : ""}{formatTime(m.createdAt)}</span>
+            <span className="time">{inThread ? `${formatThreadDate(m.createdAt)} ${t("at")} ` : ""}{formatTime(m.createdAt)}</span>
           </div>
         )}
 
@@ -630,8 +642,8 @@ function Message({
                     );
                   })}
                 </span>
-                <span className="thread-reply-link" dir="ltr">
-                  {m.replyCount} {m.replyCount === 1 ? "reply" : "replies"}
+                <span className="thread-reply-link">
+                  {m.replyCount === 1 ? t("oneReply") : `${m.replyCount} ${t("replies")}`}
                 </span>
               </button>
             )}
@@ -662,8 +674,8 @@ function Message({
           <button
             className="react-toggle"
             data-testid={`message-${mid}-add-reaction-action`}
-            aria-label="Add reaction"
-            title="Add reaction"
+            aria-label={t("addReaction")}
+            title={t("addReaction")}
             onMouseEnter={activateMessage}
             onMouseOver={activateMessage}
             onClick={(event) => {
@@ -674,23 +686,23 @@ function Message({
             <EmojiAddIcon />
           </button>
           {!inThread && (
-            <button data-testid={`message-${mid}-reply`} aria-label="Reply in thread" title="Reply in thread" onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onOpenThread}>
+            <button data-testid={`message-${mid}-reply`} aria-label={t("replyInThread")} title={t("replyInThread")} onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onOpenThread}>
               <ReplyIcon />
             </button>
           )}
           {canQuote && (
-            <button data-testid={`message-${mid}-quote`} aria-label="Quote message" title="Quote message" onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onQuote}>
+            <button data-testid={`message-${mid}-quote`} aria-label={t("quoteMessage")} title={t("quoteMessage")} onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onQuote}>
               <QuoteIcon />
             </button>
           )}
-          <button data-testid={`message-${mid}-forward`} aria-label="Forward message" title="Forward message" onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onForward}>
+          <button data-testid={`message-${mid}-forward`} aria-label={t("forwardMessage")} title={t("forwardMessage")} onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onForward}>
             <ShareIcon />
           </button>
           <button
             type="button"
             data-testid={`message-${mid}-more`}
-            title="More message actions"
-            aria-label="More message actions"
+            title={t("moreMessageActions")}
+            aria-label={t("moreMessageActions")}
             aria-expanded={menuOpen}
             className={`message-more-action${menuOpen ? " active" : ""}`}
             onMouseEnter={activateMessage}
@@ -709,10 +721,10 @@ function Message({
           <div className="menu-overlay" onMouseDown={() => setLinkAction(null)} />
           <div
             className="msg-menu menu-fixed"
-            dir="ltr"
+            dir={undefined}
             data-testid={`message-${mid}-link-menu`}
             role="menu"
-            aria-label="Link actions"
+            aria-label={t("linkActions")}
             style={{
               position: "fixed",
               top: linkAction.top,
@@ -726,11 +738,11 @@ function Message({
               role="menuitem"
               data-testid={`message-${mid}-copy-link`}
               onClick={() => {
-                copyText(linkAction.href, () => onToast?.("Link copied"));
+                copyText(linkAction.href, () => onToast?.(t("linkCopied")));
                 setLinkAction(null);
               }}
             >
-              <CopyIcon /> Copy link
+              <CopyIcon /> {t("copyLink")}
             </button>
             <a
               className="message-link-open"
@@ -740,7 +752,7 @@ function Message({
               rel={linkAction.sameTab ? undefined : "noopener noreferrer"}
               onClick={() => setLinkAction(null)}
             >
-              <ShareIcon /> Open link
+              <ShareIcon /> {t("openLink")}
             </a>
           </div>
         </>,
@@ -753,18 +765,18 @@ function Message({
           <div
             ref={menuRef}
             className="msg-menu menu-fixed"
-            dir="ltr"
+            dir={undefined}
             style={menuPosition || { visibility: "hidden" }}
             role="menu"
-            aria-label="Message actions"
+            aria-label={t("messageActions")}
             onKeyDown={onMessageMenuKeyDown}
             onMouseDown={(e) => e.stopPropagation()}
           >
             <button type="button" role="menuitem" data-testid={`message-${mid}-copy`} onClick={() => { copyMessage(); onCloseMenu(); }}>
-              <CopyIcon /> Copy message
+              <CopyIcon /> {t("copyMessage")}
             </button>
             <button type="button" role="menuitem" data-testid={`message-${mid}-copy-message-link`} onClick={() => { copyMessageLink(); onCloseMenu(); }}>
-              <CopyIcon /> Copy message link
+              <CopyIcon /> {t("copyMessageLink")}
             </button>
             <button
               type="button"
@@ -773,11 +785,11 @@ function Message({
               className={saved ? "active" : ""}
                 onClick={() => {
                   onToggleSave();
-                  onToast?.(saved ? "Removed from saved" : "Saved for later");
+                  onToast?.(saved ? t("removedFromSaved") : t("savedForLater"));
                   onCloseMenu();
                 }}
             >
-              <BookmarkIcon /> {saved ? "Remove from saved" : "Save for later"}
+              <BookmarkIcon /> {saved ? t("removeFromSaved") : t("saveForLater")}
             </button>
             {canPin && (
               <button
@@ -787,18 +799,18 @@ function Message({
                 className={m.pinnedAt ? "active" : ""}
                 onClick={() => { onTogglePin(); onCloseMenu(); }}
               >
-                <PinIcon /> {m.pinnedAt ? "Unpin message" : "Pin message"}
+                <PinIcon /> {m.pinnedAt ? t("unpinMessage") : t("pinMessage")}
               </button>
             )}
             {isMine && (
               <>
                 {canEdit && (
                   <button type="button" role="menuitem" data-testid={`message-${mid}-edit`} onClick={() => { onStartEdit(); onCloseMenu(); }}>
-                    <PencilIcon /> Edit message
+                    <PencilIcon /> {t("editMessage")}
                   </button>
                 )}
                 <button type="button" role="menuitem" data-testid={`message-${mid}-delete`} className="danger" onClick={() => { onDelete(); onCloseMenu(); }}>
-                  <TrashIcon /> Delete message
+                  <TrashIcon /> {t("deleteMessage")}
                 </button>
               </>
             )}

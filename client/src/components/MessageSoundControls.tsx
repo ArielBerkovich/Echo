@@ -7,8 +7,10 @@ import {
   selectedMessageSound,
   setSelectedMessageSound,
 } from "../lib/messageSounds.js";
+import { useI18n } from "../lib/i18n.js";
 
 export default function MessageSoundControls() {
+  const { t } = useI18n();
   const [selected, setSelected] = useState(() => selectedMessageSound());
 
   function selectSound(soundId) {
@@ -34,8 +36,8 @@ export default function MessageSoundControls() {
               <span className="message-sound-choice-copy"><strong>{sound.label}</strong><small>{sound.description}</small></span>
             </label>
             {sound.url ? <button type="button" className="btn-secondary message-sound-preview" data-testid={`message-sound-preview-${sound.id}`} aria-label={`Preview ${sound.label} sound`} onClick={() => previewMessageSound(sound.id)}>
-              <PlayIcon size={13} fill="currentColor" aria-hidden="true" /> Preview
-            </button> : <span className="message-sound-preview-placeholder">No preview</span>}
+              <PlayIcon size={13} fill="currentColor" aria-hidden="true" /> {t("preview")}
+            </button> : <span className="message-sound-preview-placeholder">{t("noPreview")}</span>}
           </div>
         ))}
       </div>

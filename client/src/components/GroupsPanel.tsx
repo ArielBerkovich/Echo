@@ -16,6 +16,7 @@ import { Button } from "./Button.js";
 import ConfirmDialog from "./ConfirmDialog.js";
 import Modal, { ModalActions } from "./Modal.js";
 import useRecipientPickerKeyboard from "./useRecipientPickerKeyboard.js";
+import { useI18n } from "../lib/i18n.js";
 
 const EMPTY_FORM = { name: "", description: "", memberIds: [] };
 const PEOPLE_RESULT_LIMIT = 50;
@@ -34,6 +35,7 @@ function matchesQuery(value, query) {
 }
 
 function GroupDirectory({ groups, selected, query, loading, onQueryChange, onSelect }) {
+  const { t } = useI18n();
   const text = query.trim().toLowerCase();
   const visibleGroups = sortGroups(
     text
@@ -46,23 +48,23 @@ function GroupDirectory({ groups, selected, query, loading, onQueryChange, onSel
       <div className="groups-panel-list-head">
         <div className="groups-panel-search">
           <SearchIcon size={16} aria-hidden="true" />
-          <input className="groups-panel-filter" value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="Search groups" aria-label="Search groups" />
+          <input className="groups-panel-filter" value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder={t("searchGroups")} aria-label={t("searchGroups")} />
           {query ? <button type="button" aria-label="Clear group search" onClick={() => onQueryChange("")}><XIcon size={14} aria-hidden="true" /></button> : null}
         </div>
       </div>
       <div className="groups-panel-list-body">
-        {loading ? <div className="groups-empty-state"><p>Loading groups…</p></div> : null}
+        {loading ? <div className="groups-empty-state"><p>{t("loadingGroups")}</p></div> : null}
         {!loading && visibleGroups.length ? visibleGroups.map((group) => (
           <button type="button" key={group.id} className={`groups-panel-group${selected?.id === group.id ? " active" : ""}`} aria-current={selected?.id === group.id ? "true" : undefined} onClick={() => onSelect(group)}>
             <span className="groups-panel-group-icon"><ContactRoundIcon size={18} aria-hidden="true" /></span>
             <span className="groups-panel-group-copy">
-              <strong>{group.name}{group.isMember ? <span className="groups-membership-badge">Joined</span> : null}</strong>
-              <small>{group.memberCount} {group.memberCount === 1 ? "member" : "members"}</small>
+              <strong>{group.name}{group.isMember ? <span className="groups-membership-badge">{t("joined")}</span> : null}</strong>
+              <small>{group.memberCount} {group.memberCount === 1 ? t("member") : t("groupMembers")}</small>
             </span>
             <ChevronRightIcon className="groups-panel-group-arrow" size={16} aria-hidden="true" />
           </button>
         )) : null}
-        {!loading && !visibleGroups.length ? <div className="groups-empty-state"><span className="groups-empty-state-icon"><ContactRoundIcon size={24} aria-hidden="true" /></span><strong>{query ? "No matching groups" : "No groups yet"}</strong><p>{query ? `No group matches “${query.trim()}”.` : "Create a group to bring people together."}</p></div> : null}
+        {!loading && !visibleGroups.length ? <div className="groups-empty-state"><span className="groups-empty-state-icon"><ContactRoundIcon size={24} aria-hidden="true" /></span><strong>{query ? t("noMatchingGroups") : t("noGroupsYet")}</strong><p>{query ? `${t("noMatchingGroups")} “${query.trim()}”.` : t("groupEmptyHint")}</p></div> : null}
       </div>
     </aside>
   );
@@ -158,6 +160,7 @@ function AddPeopleDialog({ users, memberIds, query, loading, addingId, onQueryCh
 }
 
 export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
+  const { t } = useI18n();
   const [groups, setGroups] = useState([]);
   const [selected, setSelected] = useState(null);
   const [users, setUsers] = useState([]);
@@ -280,21 +283,21 @@ export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
   }
 
   return (
-    <main className="groups-panel" data-testid="groups-panel" aria-label="Groups">
+    <main className="groups-panel" data-testid="groups-panel" aria-label={t("groupsTitle")}>
       <header className="channel-header groups-panel-header">
         <div className="groups-panel-title">
           <ContactRoundIcon size={20} strokeWidth={1.8} aria-hidden="true" />
-          <span className="ch-name">Groups</span>
-          <span className="groups-panel-count">{groups.length} {groups.length === 1 ? "group" : "groups"}</span>
+          <span className="ch-name">{t("groupsTitle")}</span>
+          <span className="groups-panel-count">{groups.length} {groups.length === 1 ? t("group") : t("groupsCount")}</span>
         </div>
-        <Button variant="primary" className="groups-create-button" onClick={() => setCreating(true)}><PlusIcon size={16} aria-hidden="true" />Create group</Button>
+        <Button variant="primary" className="groups-create-button" onClick={() => setCreating(true)}><PlusIcon size={16} aria-hidden="true" />{t("createGroup")}</Button>
       </header>
       <div className="groups-panel-body">
         {error ? <div className="error groups-panel-error" role="alert">{error}</div> : null}
         <div className="groups-panel-layout">
           <GroupDirectory groups={groups} selected={selected} query={query} loading={loadingGroups} onQueryChange={setQuery} onSelect={selectGroup} />
           <section className="groups-panel-detail" aria-live="polite">
-            {!selected ? <div className="groups-detail-empty"><span className="groups-empty-state-icon"><ContactRoundIcon size={26} aria-hidden="true" /></span><strong>Select a group</strong><p>Choose a group to view its members.</p></div> : <>
+            {!selected ? <div className="groups-detail-empty"><span className="groups-empty-state-icon"><ContactRoundIcon size={26} aria-hidden="true" /></span><strong>{t("selectGroup")}</strong><p>{t("selectGroupHint")}</p></div> : <>
               <header className="groups-detail-hero"><span className="groups-panel-detail-icon"><ContactRoundIcon size={22} aria-hidden="true" /></span><div className="groups-detail-heading"><div className="groups-detail-title-row"><h2>{selected.name}</h2><span className="groups-role-badge">{selected.currentUserRole || "Workspace group"}</span></div><p className="groups-panel-handle">@{selected.handle}</p>{selected.description ? <p className="groups-panel-description">{selected.description}</p> : null}<div className="groups-detail-stats"><span><UsersRoundIcon size={14} aria-hidden="true" />{selected.memberCount} {selected.memberCount === 1 ? "member" : "members"}</span></div></div></header>
               <div className="groups-detail-grid"><GroupDetails group={selected} onOpenProfile={onOpenProfile} onLeave={leaveGroup} onAddPeople={() => setShowAddPeople(true)} onRemoveMember={removeMember} /></div>
             </>}

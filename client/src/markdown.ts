@@ -66,6 +66,10 @@ export function preserveMarkdownBlankLines(text) {
   return output.join("\n");
 }
 
+function interfaceLocale() {
+  return typeof document !== "undefined" && document.documentElement.dataset.language === "he" ? "he-IL" : "en-US";
+}
+
 export function formatEchoDateTime(value) {
   const iso = String(value || "");
   const match = ECHO_DATETIME_RE.exec(iso);
@@ -78,7 +82,7 @@ export function formatEchoDateTime(value) {
   ];
   if (date.getUTCFullYear() !== year || date.getUTCMonth() + 1 !== month || date.getUTCDate() !== day
     || date.getUTCHours() !== hour || date.getUTCMinutes() !== minute || date.getUTCSeconds() !== second) return null;
-  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "medium" }).format(date);
+  return new Intl.DateTimeFormat(interfaceLocale(), { dateStyle: "medium", timeStyle: "medium" }).format(date);
 }
 
 // Split preview text into safe React-renderable pieces. Unlike the full

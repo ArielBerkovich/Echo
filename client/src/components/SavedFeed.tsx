@@ -7,10 +7,12 @@ import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
 import Avatar from "./Avatar.js";
 import { BookmarkIcon } from "./Icons.js";
 import { FeedContent, FeedLayout, FeedMessage } from "./FeedLayout.js";
+import { useI18n } from "../lib/i18n.js";
 
 // Feed of the current user's saved ("save for later") messages. Clicking a row
 // jumps to the message; the bookmark removes it from saved.
 export default function SavedFeed({ user, users = [], customEmojis = [], onJump, onUnsave }) {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const restoreFocusAfterUnsaveRef = useRef(false);
   const renderMarkdown = useMarkdownRenderer(users, user.username, customEmojis);
@@ -49,12 +51,12 @@ export default function SavedFeed({ user, users = [], customEmojis = [], onJump,
   }
 
   return (
-    <FeedLayout title="Saved" subtitle="Messages you've saved for later" testId="saved">
+    <FeedLayout title={t("saved")} subtitle={t("savedMessagesSubtitle")} testId="saved">
       <FeedContent
         loading={loading}
         items={items}
-        emptyTitle="Nothing saved yet"
-        emptyMessage="Hover a message and hit the bookmark to save it for later."
+        emptyTitle={t("nothingSavedYet")}
+        emptyMessage={t("saveForLaterHint")}
       >
         {items.map((it) => (
           <div
@@ -87,8 +89,8 @@ export default function SavedFeed({ user, users = [], customEmojis = [], onJump,
               type="button"
               className="saved-remove saved-active feed-icon-action"
               data-testid={`saved-remove-${it.id}`}
-              title="Remove from saved"
-              aria-label="Remove from saved"
+              title={t("removeFromSaved")}
+              aria-label={t("removeFromSaved")}
               onClick={(event) => unsave(event, it)}
             >
               <BookmarkIcon />

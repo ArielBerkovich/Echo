@@ -10,9 +10,11 @@ import { queryKeys } from "../lib/queryClient.js";
 import Avatar from "./Avatar.js";
 import ConfirmDialog from "./ConfirmDialog.js";
 import { FeedContent, FeedLayout, FeedMessage } from "./FeedLayout.js";
+import { useI18n } from "../lib/i18n.js";
 
 // Feed of messages that @mention the current user. Clicking jumps to the channel.
 export default function ActivityFeed({ user, users = [], customEmojis = [], onJump, onLoaded, onReady }) {
+  const { t } = useI18n();
   const [confirmClear, setConfirmClear] = useState(false);
   const restoreFocusAfterDismissRef = useRef(false);
   const readyRef = useRef(false);
@@ -80,8 +82,8 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
   return (
     <>
       <FeedLayout
-      title="Activity"
-      subtitle="Mentions, replies & broadcasts · last 30 days"
+      title={t("activity")}
+      subtitle={t("activitySubtitle")}
       testId="activity"
       actions={items.length ? (
         <button
@@ -90,7 +92,7 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
           data-testid="activity-clear-all"
           onClick={() => setConfirmClear(true)}
           disabled={clearMutation.isPending}
-          title="Clear all activity"
+          title={t("clearAllActivity")}
         >
           <Trash2Icon size={15} strokeWidth={1.8} />
           <span>{clearMutation.isPending ? "Clearing…" : "Clear all"}</span>
@@ -100,8 +102,8 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
       <FeedContent
         loading={loading}
         items={displayItems}
-        emptyTitle="No activity yet"
-        emptyMessage="When someone mentions you or reacts to your messages, it'll show up here."
+        emptyTitle={t("noActivityYet")}
+        emptyMessage={t("activityEmpty")}
       >
         {displayItems.map((it) => (
           <div

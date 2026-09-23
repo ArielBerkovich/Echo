@@ -3,6 +3,7 @@ import Sidebar from "./Sidebar.js";
 import SearchBox from "./SearchBox.js";
 import { ArrowLeftIcon, ArrowRightIcon, SparklesIcon } from "lucide-react";
 import { shortcutTitle } from "../lib/keyboardShortcuts.js";
+import { useI18n } from "../lib/i18n.js";
 
 export default function WorkspaceNavigation({
   view,
@@ -43,6 +44,7 @@ export default function WorkspaceNavigation({
   onToggleMode,
   search,
 }) {
+  const { t } = useI18n();
   const badges = {
     home: channels.reduce((sum, channel) => sum + (channel.unread || 0), 0),
     dms: dms.reduce((sum, conversation) => sum + (conversation.unread || 0), 0),
@@ -77,10 +79,10 @@ export default function WorkspaceNavigation({
       <div className="workspace-search" data-testid="workspace-search">
         <div className="workspace-search-inner">
           <div className="workspace-search-navigation">
-            <button type="button" onClick={onNavigateBack} title="Go back" aria-label="Go back">
+            <button type="button" onClick={onNavigateBack} title={t("goBack")} aria-label={t("goBack")}>
               <ArrowLeftIcon size={14} strokeWidth={2} aria-hidden="true" />
             </button>
-            <button type="button" onClick={onNavigateForward} title="Go forward" aria-label="Go forward">
+            <button type="button" onClick={onNavigateForward} title={t("goForward")} aria-label={t("goForward")}>
               <ArrowRightIcon size={14} strokeWidth={2} aria-hidden="true" />
             </button>
           </div>
@@ -105,8 +107,8 @@ export default function WorkspaceNavigation({
               type="button"
               className="workspace-search-actions"
               onClick={() => search.inputRef.current?.openSwitcher()}
-              title={shortcutTitle("Open actions", "open-switcher")}
-              aria-label="Open actions"
+              title={shortcutTitle(t("openActions"), "open-switcher")}
+              aria-label={t("openActions")}
             >
               <SparklesIcon size={14} strokeWidth={2} aria-hidden="true" />
             </button>
@@ -114,8 +116,8 @@ export default function WorkspaceNavigation({
               type="button"
               className="workspace-search-help"
               onClick={onOpenWalkthrough}
-              title="Open walkthrough"
-              aria-label="Open walkthrough"
+              title={t("openWalkthrough")}
+              aria-label={t("openWalkthrough")}
             >
               <span aria-hidden="true">?</span>
             </button>

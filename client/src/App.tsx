@@ -16,6 +16,7 @@ import { notifyPermission, notifySupported, requestNotifyPermission, setNotifyPr
 import { BUILT_IN_GIT_EMOJIS } from "./lib/gitEmojis.js";
 import { THEMES, useThemePreferences } from "./lib/useThemePreferences.js";
 import { useInterfaceDirection } from "./lib/useInterfaceDirection.js";
+import { useI18n } from "./lib/i18n.js";
 import { useConversationCache } from "./lib/useConversationCache.js";
 import { useWorkspaceQueries, workspaceKeys } from "./lib/useWorkspaceQueries.js";
 import { queryKeys } from "./lib/queryClient.js";
@@ -124,6 +125,12 @@ export default function App() {
   }, []);
   const { theme, setTheme, mode, setMode, toggleMode } = useThemePreferences();
   const { preference: interfaceDirection, setPreference: setInterfaceDirection } = useInterfaceDirection();
+  const { language, t } = useI18n();
+  const effectiveDirection = language === "he" ? "rtl" : interfaceDirection;
+  useEffect(() => {
+    document.documentElement.dir = language === "he" ? "rtl" : "ltr";
+    document.documentElement.dataset.interfaceDirection = effectiveDirection;
+  }, [effectiveDirection, language]);
   const {
     scrollStates,
     cacheMessages,
@@ -404,29 +411,29 @@ export default function App() {
     || (view === "dms" && searchChannel?.type === "dm")
     ? searchChannel?.type === "dm"
       ? [
-        { id: "view-files", label: "View files", keywords: ["files"], group: "Current conversation" },
+        { id: "view-files", label: t("viewFiles"), keywords: ["files"], group: t("currentConversation") },
         ...(isSearchGroupDm
-          ? [{ id: "view-members", label: "View members", keywords: ["members", "people", "participants"], group: "Current conversation" }]
-          : [{ id: "view-profile", label: "View profile", keywords: ["profile", "person", "user"], group: "Current conversation" }]),
+          ? [{ id: "view-members", label: t("viewMembers"), keywords: ["members", "people", "participants"], group: t("currentConversation") }]
+          : [{ id: "view-profile", label: t("viewProfile"), keywords: ["profile", "person", "user"], group: t("currentConversation") }]),
         ...(isSearchGroupDm || searchChannel.dmUserId ? [{
           id: "toggle-dm-starred",
-          label: (isSearchGroupDm ? starredChannelIds.has(searchChannel.id) : starredIds.has(searchChannel.dmUserId)) ? "Unstar conversation" : "Star conversation",
+          label: (isSearchGroupDm ? starredChannelIds.has(searchChannel.id) : starredIds.has(searchChannel.dmUserId)) ? t("unstarConversation") : t("starConversation"),
           keywords: ["star", "starred", "favorite", "favourite"],
-          group: "Current conversation",
+          group: t("currentConversation"),
         }] : []),
       ]
       : [
-        ...(searchCanAddPeople ? [{ id: "add-people", label: "Add people", keywords: ["add", "people", "members", "invite"], group: "Current channel" }] : []),
-        { id: "search-channel", label: "Search this channel", keywords: ["search", "channel", "messages"], group: "Current channel" },
-        { id: "view-channel-details", label: "View channel details", keywords: ["details", "topic", "description"], group: "Current channel" },
-        { id: "view-members", label: "View members", keywords: ["members", "people", "participants"], group: "Current channel" },
-        { id: "view-files", label: "View files", keywords: ["files"], group: "Current channel" },
-        { id: "view-pinned", label: "View pinned messages", keywords: ["pinned", "pins", "messages"], group: "Current channel" },
+        ...(searchCanAddPeople ? [{ id: "add-people", label: t("addPeople"), keywords: ["add", "people", "members", "invite"], group: t("currentChannel") }] : []),
+        { id: "search-channel", label: t("searchThisChannel"), keywords: ["search", "channel", "messages"], group: t("currentChannel") },
+        { id: "view-channel-details", label: t("viewChannelDetails"), keywords: ["details", "topic", "description"], group: t("currentChannel") },
+        { id: "view-members", label: t("viewMembers"), keywords: ["members", "people", "participants"], group: t("currentChannel") },
+        { id: "view-files", label: t("viewFiles"), keywords: ["files"], group: t("currentChannel") },
+        { id: "view-pinned", label: t("viewPinnedMessages"), keywords: ["pinned", "pins", "messages"], group: t("currentChannel") },
         ...(searchIsMember ? [{
           id: "toggle-channel-starred",
-          label: starredChannelIds.has(searchChannel.id) ? "Unstar channel" : "Star channel",
+          label: starredChannelIds.has(searchChannel.id) ? t("unstarChannel") : t("starChannel"),
           keywords: ["star", "starred", "favorite", "favourite"],
-          group: "Current channel",
+          group: t("currentChannel"),
         }] : []),
       ]
     : [];
@@ -1527,12 +1534,12 @@ export default function App() {
         >
           <span className="connection-banner-dot" aria-hidden="true" />
           <span className="connection-banner-title">
-            {connectionStatus === "recovering" ? "Connection restored" : "Reconnecting to Echo"}
+            {connectionStatus === "recovering" ? t("connectionRestored") : t("reconnectingToEcho")}
           </span>
           <span className="connection-banner-detail">
             {connectionStatus === "recovering"
-              ? "Syncing recent messages…"
-              : "Messages will sync automatically."}
+              ? t("syncingRecentMessages")
+              : t("messagesSyncAutomatically")}
           </span>
         </div>
       )}
@@ -1668,7 +1675,7 @@ export default function App() {
               onSelectTheme: setTheme,
               mode,
               onSelectMode: setMode,
-              interfaceDirection,
+              interfaceDirection: effectiveDirection,
               onSelectInterfaceDirection: setInterfaceDirection,
               onUpdated: (updated) => setUser((previous) => ({ ...previous, ...updated })),
               onIntegrationsChanged: () => queryClient.invalidateQueries({ queryKey: workspaceKeys.channels }),
@@ -1743,7 +1750,7 @@ export default function App() {
         theme={theme}
         themes={THEMES}
         mode={mode}
-        interfaceDirection={interfaceDirection}
+        interfaceDirection={effectiveDirection}
         showCreate={showCreate}
         showNewMessage={showNewMessage}
         showAddPeople={showAddPeople}

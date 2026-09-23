@@ -1,4 +1,5 @@
 import { lazy, Suspense, useRef } from "react";
+import { useI18n } from "../lib/i18n.js";
 
 // Conversation history, feeds, and browse/search results pull in markdown,
 // sanitization, and message interaction code. Load each surface when selected
@@ -12,6 +13,7 @@ const SearchResults = lazy(() => import("./SearchResults.js"));
 const SettingsModal = lazy(() => import("./SettingsModal.js"));
 
 export default function WorkspaceContent({ view, groups, search, browse, feeds, conversation, channelViewRef }) {
+  const { t } = useI18n();
   const activeChannel = conversation.channel;
 
   return (
@@ -24,12 +26,13 @@ export default function WorkspaceContent({ view, groups, search, browse, feeds, 
         feeds={feeds}
         conversation={conversation}
         channelViewRef={channelViewRef}
+        t={t}
       />
     </div>
   );
 }
 
-function ActiveWorkspaceView({ view, groups, search, browse, feeds, conversation, channelViewRef }) {
+function ActiveWorkspaceView({ view, groups, search, browse, feeds, conversation, channelViewRef, t }) {
   let content;
   if (groups) {
     content = <GroupsPanel {...groups} />;
@@ -73,7 +76,7 @@ function ActiveWorkspaceView({ view, groups, search, browse, feeds, conversation
   } else if (!conversation.channel || (view !== "home" && conversation.channel.type !== "dm")) {
     content = (
       <div className="empty-pane">
-        {view === "dms" ? "Select a conversation, or start a new one." : "Search to start a conversation."}
+        {view === "dms" ? t("selectConversation") : t("searchToStartConversation")}
       </div>
     );
   } else {

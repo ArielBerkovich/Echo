@@ -18,7 +18,6 @@ export function useInterfaceDirection() {
 
   useEffect(() => {
     document.documentElement.dataset.interfaceDirection = direction;
-    // Normalize sessions created before Auto was removed.
     if (preference !== direction) setPreference(direction);
     writeString(STORAGE_KEY, direction);
   }, [direction, preference]);

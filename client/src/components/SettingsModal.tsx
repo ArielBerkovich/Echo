@@ -23,6 +23,8 @@ import {
 } from "../lib/notify.js";
 import MessageSoundControls from "./MessageSoundControls.js";
 import { CloseButton } from "./Button.js";
+import { useI18n } from "../lib/i18n.js";
+import { interfaceLocale } from "../lib/time.js";
 
 const SETTINGS_TABS = [
   { id: "account", label: "Account", Icon: UserRoundIcon },
@@ -80,6 +82,7 @@ export default function SettingsModal({
   settingsTab = "account",
   onSettingsTabChange,
 }) {
+  const { language, setLanguage, t } = useI18n();
   const [displayName, setDisplayName] = useState(user.displayName);
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl || null);
   const [busy, setBusy] = useState(false);
@@ -203,6 +206,17 @@ export default function SettingsModal({
   }, [activeTab, user.isAdmin]);
 
   const visibleTabs = SETTINGS_TABS.filter((tab) => !tab.adminOnly || user.isAdmin);
+  const tabLabels = {
+    account: language === "he" ? "חשבון" : "Account",
+    appearance: t("appearance"),
+    preferences: language === "he" ? "העדפות" : "Preferences",
+    workspace: language === "he" ? "סביבת עבודה" : "Workspace",
+    integrations: language === "he" ? "אינטגרציות" : "Integrations",
+    desktop: language === "he" ? "שולחן עבודה" : "Desktop",
+    shortcuts: language === "he" ? "קיצורי מקלדת" : "Keyboard shortcuts",
+    api: "API",
+    webhooks: language === "he" ? "וובהוקים" : "Webhooks",
+  };
 
   function onAvatarFileSelected(file) {
     if (!file) return;
@@ -544,14 +558,14 @@ export default function SettingsModal({
   return (
     <div className="settings-page" data-testid="settings-page">
       <div className="settings-layout">
-        <aside className="settings-nav" aria-label="Settings categories">
+        <aside className="settings-nav" aria-label={t("settingsCategories")}>
           <div className="settings-nav-account">
             <span className="settings-nav-username">@{user.username}</span>
           </div>
           <nav className="settings-nav-list">
-            {visibleTabs.map(({ id, label, Icon }) => (
+            {visibleTabs.map(({ id, Icon }) => (
                 <button key={id} type="button" className={`settings-nav-item${activeTab === id ? " active" : ""}`} onClick={() => { setActiveTab(id); onSettingsTabChange?.(id); }} aria-current={activeTab === id ? "page" : undefined}>
-                <Icon size={17} strokeWidth={1.8} /><span>{label}</span>
+                <Icon size={17} strokeWidth={1.8} /><span>{tabLabels[id]}</span>
               </button>
             ))}
           </nav>
@@ -592,15 +606,15 @@ export default function SettingsModal({
             <div className="preferences-hero">
               <div className="preferences-hero-icon" aria-hidden="true"><Volume2Icon size={20} strokeWidth={2} /></div>
               <div>
-                <h2>Preferences</h2>
-                <p>Personalize how Echo keeps you informed while you work.</p>
+                <h2>{t("preferencesTitle")}</h2>
+                <p>{t("preferencesSubtitle")}</p>
               </div>
             </div>
             <div className="preferences-card">
               <div className="preferences-card-heading">
                 <div>
-                  <h3>Message sounds</h3>
-                  <p>Choose a sound for new messages.</p>
+                  <h3>{t("messageSounds")}</h3>
+                  <p>{t("chooseMessageSound")}</p>
                 </div>
               </div>
               <MessageSoundControls />
@@ -691,24 +705,32 @@ export default function SettingsModal({
           </section>}
 
           {activeTab === "appearance" && themes.length > 0 && <section className="settings-section settings-appearance-card">
-            <h3>Appearance</h3>
-            <p className="settings-hint">Choose a color theme and the surface mode that works best for you.</p>
-            <div className="mode-toggle" role="group" aria-label="Light or dark mode">
-              <button type="button" className={`mode-option${mode === "light" ? " active" : ""}`} data-testid="settings-mode-light" onClick={() => onSelectMode?.("light")} aria-pressed={mode === "light"}>☀ Light</button>
-              <button type="button" className={`mode-option${mode === "dark" ? " active" : ""}`} data-testid="settings-mode-dark" onClick={() => onSelectMode?.("dark")} aria-pressed={mode === "dark"}>☾ Dark</button>
+            <h3>{t("appearance")}</h3>
+            <p className="settings-hint">{t("chooseColorTheme")}</p>
+            <div className="mode-toggle" role="group" aria-label={`${t("light")} / ${t("dark")}`}>
+              <button type="button" className={`mode-option${mode === "light" ? " active" : ""}`} data-testid="settings-mode-light" onClick={() => onSelectMode?.("light")} aria-pressed={mode === "light"}>☀ {t("light")}</button>
+              <button type="button" className={`mode-option${mode === "dark" ? " active" : ""}`} data-testid="settings-mode-dark" onClick={() => onSelectMode?.("dark")} aria-pressed={mode === "dark"}>☾ {t("dark")}</button>
             </div>
             <div className="theme-grid">
               {themes.map((t) => <button key={t.id} type="button" className={`theme-card${theme === t.id ? " active" : ""}`} data-testid={`settings-theme-${t.id}`} onClick={() => onSelectTheme?.(t.id)} aria-pressed={theme === t.id}>
-                <span className="theme-swatch">{t.swatch.map((c, i) => <span key={i} style={{ background: c }} />)}</span><span className="theme-name">{t.label}</span>
+                <span className="theme-swatch">{t.swatch.map((c, i) => <span key={i} style={{ background: c }} />)}</span><span className="theme-name">{language === "he" ? ({ Azure: "תכלת", Aubergine: "חציל", Nord: "נורד", Sand: "חול", Dracula: "דרקולה", Midnight: "חצות", Stillwater: "מים שקטים" }[t.label] || t.label) : t.label}</span>
               </button>)}
             </div>
             <div className="settings-direction-control">
-              <h3>Interface direction</h3>
-              <p className="settings-hint">Choose your chat layout direction. Left to right is the default.</p>
+              <h3>{t("interfaceDirection")}</h3>
+              <p className="settings-hint">{t("chooseDirection")}</p>
               <div className="mode-toggle" role="group" aria-label="Interface direction">
-                {[['ltr', 'Left to right'], ['rtl', 'Right to left']].map(([value, label]) => (
+                {[["ltr", t("leftToRight")], ["rtl", t("rightToLeft")]].map(([value, label]) => (
                   <button key={value} type="button" className={`mode-option${interfaceDirection === value ? " active" : ""}`} data-testid={`settings-direction-${value}`} onClick={() => onSelectInterfaceDirection?.(value)} aria-pressed={interfaceDirection === value}>{label}</button>
                 ))}
+              </div>
+            </div>
+            <div className="settings-direction-control">
+              <h3>{t("language")}</h3>
+              <p className="settings-hint">{t("chooseLanguage")}</p>
+              <div className="mode-toggle" role="group" aria-label={t("language")}>
+                <button type="button" className={`mode-option${language === "en" ? " active" : ""}`} data-testid="settings-language-en" onClick={() => setLanguage("en")} aria-pressed={language === "en"}>{t("english")}</button>
+                <button type="button" className={`mode-option${language === "he" ? " active" : ""}`} data-testid="settings-language-he" onClick={() => setLanguage("he")} aria-pressed={language === "he"}>{t("hebrew")}</button>
               </div>
             </div>
           </section>}
@@ -881,7 +903,7 @@ export default function SettingsModal({
                   <div className="integration-option-row"><div><strong>Integration status</strong><span>{azureIntegration.active ? "Azure events are enabled" : "Azure events are disabled"}</span></div><label className={`integration-switch${azureIntegration.active ? " is-on" : ""}`}><input type="checkbox" checked={!!azureIntegration.active} disabled={azureLoading} onChange={(event) => setAzureActive(event.target.checked)} /><span className="integration-switch-track"><span /></span></label></div>
                   <div className="integration-dialog-section"><h4>Webhook endpoint</h4><p className="settings-hint">Add this URL to an Azure DevOps Service Hook.</p><input id="azure-webhook-endpoint" className="settings-input" value={azureEndpoint} readOnly /><div className="integration-actions"><button type="button" className="btn-secondary" disabled={!azureEndpoint} onClick={copyAzureEndpoint}>Copy endpoint</button><button type="button" className="btn-secondary" disabled={azureLoading} onClick={regenerateAzureToken}>Regenerate token</button></div></div>
                   <div className="integration-dialog-section"><h4>Events to send</h4><div className="integration-notify-grid">{AZURE_NOTIFY_OPTIONS.map(([key, label]) => <label key={key} className="integration-notify-option"><span>{label}</span><span className={`integration-switch integration-notify-switch${azureIntegration.notify?.[key] !== false ? " is-on" : ""}`}><input type="checkbox" checked={azureIntegration.notify?.[key] !== false} disabled={azureLoading || !azureIntegration.active} onChange={(event) => setAzureNotification(key, event.target.checked)} /><span className="integration-switch-track"><span /></span></span></label>)}</div></div>
-                  {azureIntegration.lastReceivedAt && <p className="settings-hint">Last event: {new Date(azureIntegration.lastReceivedAt).toLocaleString()}</p>}
+                  {azureIntegration.lastReceivedAt && <p className="settings-hint">Last event: {new Date(azureIntegration.lastReceivedAt).toLocaleString(interfaceLocale())}</p>}
                   {azureIntegration.lastError && <p className="error">{azureIntegration.lastError}</p>}
                 </div>
               </section>
@@ -894,16 +916,16 @@ export default function SettingsModal({
 
           {activeTab === "shortcuts" && (
             <section className="settings-section settings-shortcuts-section">
-              <h3>Keyboard shortcuts</h3>
-              <p className="settings-hint">Use these shortcuts to move through Echo quickly. Shortcuts are fixed for everyone.</p>
+              <h3>{t("keyboardShortcutsTitle")}</h3>
+              <p className="settings-hint">{t("keyboardShortcutsHint")}</p>
               <div className="shortcut-groups">
                 {KEYBOARD_SHORTCUT_GROUPS.map((group) => (
                   <section className="shortcut-group" key={group.label} aria-labelledby={`shortcut-group-${group.label.toLowerCase()}`}>
-                    <h4 id={`shortcut-group-${group.label.toLowerCase()}`}>{group.label}</h4>
+                    <h4 id={`shortcut-group-${group.label.toLowerCase()}`}>{group.label === "Navigation" ? t("navigation") : t("messageActionsGroup")}</h4>
                     <div className="shortcut-list">
                       {group.shortcuts.map((shortcut) => (
                         <div className="shortcut-row" key={`${group.label}-${shortcut.description}`}>
-                          <span className="shortcut-description">{shortcut.description}</span>
+                          <span className="shortcut-description">{language === "he" ? ({ "Focus workspace search": "מיקוד בחיפוש סביבת העבודה", "Open quick switcher": "פתיחת מחליף מהיר", "Start a new direct message": "התחלת הודעה ישירה חדשה", "Browse public channels": "עיון בערוצים ציבוריים", "Create a new channel": "יצירת ערוץ חדש", "Focus the message composer": "מיקוד בעורך ההודעות", "Go to Home": "מעבר לבית", "Go to Direct messages": "מעבר להודעות ישירות", "Go to Activity": "מעבר לפעילות", "Go to Saved messages": "מעבר להודעות שמורות", "Open Settings": "פתיחת הגדרות", "Open actions for the focused message": "פתיחת פעולות להודעה הממוקדת" }[shortcut.description] || shortcut.description) : shortcut.description}</span>
                           <span className="shortcut-keys" aria-label={shortcut.keys.join(" ")}>
                             {shortcut.keys.map((key) => <kbd key={key}>{key}</kbd>)}
                           </span>

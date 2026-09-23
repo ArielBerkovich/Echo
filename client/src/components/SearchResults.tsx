@@ -202,7 +202,7 @@ export default function SearchResults({ query, onJump, onClose }) {
                               {r.channelType === "dm" ? "in a DM" : `in #${r.channelName}`}
                               {r.parentId ? " · in thread" : ""}
                             </span>
-                            <span className="time">{formatDateTime(r.createdAt, "en-US")}</span>
+                            <span className="time">{formatDateTime(r.createdAt)}</span>
                           </div>
                           <div
                             className="body markdown"

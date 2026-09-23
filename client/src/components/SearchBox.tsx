@@ -21,6 +21,7 @@ import {
 import Avatar, { GroupAvatar } from "./Avatar.js";
 import { Input } from "./Input.js";
 import { peopleSearchSuggestions } from "../lib/mentions.js";
+import { useI18n } from "../lib/i18n.js";
 
 const QUICK_ACTIONS = [
   { id: "new-message", label: "New message", keywords: ["new", "message", "dm"], shortcut: "⌘/Ctrl+⇧M", Icon: MessageSquarePlusIcon },
@@ -119,6 +120,21 @@ const SearchBox = forwardRef(function SearchBox(
   },
   ref
 ) {
+  const { t } = useI18n();
+  const quickActions = useMemo(() => QUICK_ACTIONS.map((action) => ({
+    ...action,
+    label: ({
+      "new-message": t("newMessage"),
+      "create-channel": t("createChannel"),
+      "browse-channels": t("browseChannels"),
+      home: t("goHome"),
+      dms: t("goDms"),
+      activity: t("goActivity"),
+      saved: t("goSaved"),
+      groups: t("goGroups"),
+      settings: t("openSettings"),
+    })[action.id] || action.label,
+  })), [t]);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [caret, setCaret] = useState(0);
@@ -247,11 +263,11 @@ const SearchBox = forwardRef(function SearchBox(
   const matchingQuickActions = useMemo(
     () => {
       if (!quickSwitcherOpen || peoplePicker || hasFilterTokens) return [];
-      const matches = [...QUICK_ACTIONS, ...currentChannelActions].filter((action) => !q || [action.label, ...action.keywords]
+      const matches = [...quickActions, ...currentChannelActions].filter((action) => !q || [action.label, ...action.keywords]
         .some((value) => value.toLowerCase().includes(q)));
       return [...matches.filter((action) => action.group), ...matches.filter((action) => !action.group)];
     },
-    [currentChannelActions, hasFilterTokens, peoplePicker, q, quickSwitcherOpen]
+    [currentChannelActions, hasFilterTokens, peoplePicker, q, quickActions, quickSwitcherOpen]
   );
   const recentItems = useMemo(
     () => [...new Map(
@@ -492,9 +508,9 @@ const SearchBox = forwardRef(function SearchBox(
         </span>
         <span className="search-name">{c.name}</span>
         {joined ? (
-          kind !== "filter" && <span className="search-kind">channel</span>
+          kind !== "filter" && <span className="search-kind">{t("channel")}</span>
         ) : (
-          <span className="search-notin">Not in channel</span>
+          <span className="search-notin">{t("notInChannel")}</span>
         )}
       </button>
     );
@@ -572,7 +588,7 @@ const SearchBox = forwardRef(function SearchBox(
           <div className="search-input-wrap">
           {!query && (
             <span className="search-placeholder" aria-hidden="true">
-              {quickSwitcherOpen ? "Search commands" : peoplePicker ? "Find someone to message" : "Search messages, people, and channels"}
+              {quickSwitcherOpen ? t("searchCommands") : peoplePicker ? t("findSomeoneToMessage") : t("searchMessagesPeopleAndChannels")}
             </span>
           )}
           <div className="search-highlight" ref={highlightRef} aria-hidden="true" dir="auto">
@@ -582,7 +598,7 @@ const SearchBox = forwardRef(function SearchBox(
             ref={inputRef}
             className="search-input"
             data-testid="search-input"
-            aria-label={quickSwitcherOpen ? "Search commands" : "Search messages, people, and channels"}
+            aria-label={quickSwitcherOpen ? t("searchCommands") : t("searchMessagesPeopleAndChannels")}
             value={query}
             onFocus={() => setOpen(true)}
             onClick={syncCaret}
@@ -601,17 +617,17 @@ const SearchBox = forwardRef(function SearchBox(
         </div>
 
       {open && (
-        <div className="search-dropdown" role={quickSwitcherOpen ? "dialog" : undefined} aria-label={quickSwitcherOpen ? "Commands" : undefined}>
+        <div className="search-dropdown" role={quickSwitcherOpen ? "dialog" : undefined} aria-label={quickSwitcherOpen ? t("commands") : undefined}>
           {quickSwitcherOpen ? (
             <>
               {matchingQuickActions.length > 0
                 ? <>
                     {matchingQuickActions.some((action) => action.group) && <div className="search-section" data-testid="quick-switcher-current-section">{matchingQuickActions.find((action) => action.group).group}</div>}
                     {matchingQuickActions.filter((action) => action.group).map((action, idx) => actionRow(action, idx))}
-                    {matchingQuickActions.some((action) => !action.group) && <div className="search-section" data-testid="quick-switcher-commands-section">Commands</div>}
+                    {matchingQuickActions.some((action) => !action.group) && <div className="search-section" data-testid="quick-switcher-commands-section">{t("commands")}</div>}
                     {matchingQuickActions.filter((action) => !action.group).map((action, idx) => actionRow(action, matchingQuickActions.filter((item) => item.group).length + idx))}
                   </>
-                : <div className="people-empty">No commands match.</div>}
+                : <div className="people-empty">{t("noCommandsMatch")}</div>}
             </>
           ) : (
             <>
@@ -659,12 +675,12 @@ const SearchBox = forwardRef(function SearchBox(
                   </div>
                   {matchingQuickActions.length > 0 && (
                     <>
-                      <div className="search-section">Actions</div>
+                      <div className="search-section">{t("actions")}</div>
                       {matchingQuickActions.map((action, idx) => actionRow(action, idx))}
                     </>
                   )}
-                  <div className="search-section">Recent</div>
-                  {recentItems.length === 0 && <div className="people-empty">No recent conversations.</div>}
+                  <div className="search-section">{t("recent")}</div>
+                  {recentItems.length === 0 && <div className="people-empty">{t("noRecentConversations")}</div>}
                   {recentItems.map((r, idx) =>
                     r.type === "channel"
                       ? channelRow(r, idx, "recent")
@@ -681,7 +697,7 @@ const SearchBox = forwardRef(function SearchBox(
                             >
                               <GroupAvatar size={24} />
                               <span className="search-name">{r.displayName}</span>
-                              <span className="search-kind">Group DM</span>
+                              <span className="search-kind">{t("groupDm")}</span>
                             </button>
                           )
                       : (
@@ -718,26 +734,26 @@ const SearchBox = forwardRef(function SearchBox(
                     onClick={submitMessageSearch}
                   >
                     <SearchIcon size={15} strokeWidth={1.8} />
-                    <span className="search-name">Search messages for “{query.trim()}”</span>
+                    <span className="search-name">{t("searchMessagesFor")} “{query.trim()}”</span>
                     <span className="search-kind">Enter ↵</span>
                   </button>
                   {matchingQuickActions.length > 0 && (
                     <>
-                      <div className="search-section">Actions</div>
+                      <div className="search-section">{t("actions")}</div>
                       {matchingQuickActions.map((action, idx) => actionRow(action, idx + 1))}
                     </>
                   )}
                 </>
               )}
 
-              {!peoplePicker && channelHits.length > 0 && <div className="search-section">Channels</div>}
+              {!peoplePicker && channelHits.length > 0 && <div className="search-section">{t("channels")}</div>}
               {!peoplePicker && channelHits.map((c, i) => channelRow(c, channelStart + matchingQuickActions.length + i, "hit"))}
 
-              {peopleHits.length > 0 && <div className="search-section">People</div>}
+              {peopleHits.length > 0 && <div className="search-section">{t("people")}</div>}
               {peopleHits.map((u, i) => personRow(u, peopleStart + matchingQuickActions.length + i, "hit"))}
 
               {(q || peoplePicker) && !hasFilterTokens && matchingQuickActions.length === 0 && channelHits.length === 0 && peopleHits.length === 0 && (
-                <div className="people-empty">No people match.</div>
+                <div className="people-empty">{t("noPeopleMatch")}</div>
               )}
             </>
           )}

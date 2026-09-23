@@ -4,6 +4,105 @@
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
 
+/* The selected language owns the document direction. Keeping this on the
+   root makes direction inherit into navigation, settings, dialogs, and every
+   other surface, including lazily mounted overlays. */
+html[dir="rtl"] {
+  direction: rtl;
+}
+html[dir="ltr"] {
+  direction: ltr;
+}
+
+html[dir="rtl"] .rail-more-menu {
+  right: calc(100% + 8px);
+  left: auto;
+}
+html[dir="rtl"] .rail-more-menu button {
+  text-align: right;
+}
+/* Search is shared by the top bar, Ctrl+K command palette, side panels, and
+   mobile. Its rows used physical left alignment, which left Hebrew labels on
+   the wrong edge even though the document itself was RTL. */
+html[dir="rtl"] .search-box-field,
+html[dir="rtl"] .search-dropdown {
+  direction: rtl;
+}
+html[dir="rtl"] .search-placeholder,
+html[dir="rtl"] .search-section,
+html[dir="rtl"] .search-row,
+html[dir="rtl"] .search-hint,
+html[dir="rtl"] .people-empty {
+  text-align: right;
+}
+html[dir="rtl"] .search-section {
+  justify-content: flex-start;
+}
+/* Feed rows and directory lists are interactive UI, not message content. Keep
+   their metadata and affordances on the logical RTL edges. */
+html[dir="rtl"] .activity-item,
+html[dir="rtl"] .search-result,
+html[dir="rtl"] .groups-panel-group,
+html[dir="rtl"] .groups-panel-member,
+html[dir="rtl"] .groups-member-profile,
+html[dir="rtl"] .btn-subtle {
+  text-align: right;
+}
+html[dir="rtl"] .activity-dismiss,
+html[dir="rtl"] .groups-panel-group-arrow {
+  margin-right: auto;
+  margin-left: 0;
+}
+/* A saved bookmark identifies the row itself. Keep it with the avatar at the
+   RTL start edge instead of leaving it detached at the far trailing edge. */
+html[dir="rtl"] .saved-remove {
+  order: -1;
+  margin-right: 0;
+  margin-left: 0;
+}
+html[dir="rtl"] .activity-unread-dot {
+  right: 0;
+  left: auto;
+}
+html[dir="rtl"] .groups-panel-list {
+  border-right: 0;
+  border-left: 1px solid var(--border);
+}
+html[dir="rtl"] .groups-panel-group.active {
+  box-shadow: inset -3px 0 var(--accent);
+}
+html[dir="rtl"] .groups-panel-detail-meta,
+html[dir="rtl"] .groups-panel-description {
+  margin-right: 52px;
+  margin-left: 0;
+}
+
+/* The top toolbar uses fixed physical offsets on desktop. Mirror those
+   offsets explicitly; direction alone does not change `left`/`right`. */
+@media (min-width: 761px) {
+  html[dir="rtl"] .workspace-search-navigation {
+    right: calc(50% - 300px);
+    left: auto;
+    transform: translate(50%, -50%);
+  }
+  html[dir="rtl"] .workspace-search-navigation button svg {
+    transform: scaleX(-1);
+  }
+  html[dir="rtl"] .settings-nav {
+    padding: 0 0 0 18px;
+    border-right: 0;
+    border-left: 1px solid var(--border);
+  }
+  html[dir="rtl"] .settings-nav-item {
+    text-align: right;
+  }
+  /* The content gutter belongs between the category rail and its panel. In
+     RTL the rail moves right, so the gutter must move from left to right too. */
+  html[dir="rtl"] .settings-content {
+    padding: 4px 28px 4px 0;
+  }
+}
+
 :root {
   /* Navy core */
   --navy-900: #0a1a33;
