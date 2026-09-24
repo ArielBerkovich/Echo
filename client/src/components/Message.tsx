@@ -448,7 +448,7 @@ function Message({
       <div className="content">
         {m.pinnedAt && (
           <div className="pinned-indicator">
-            <PinIcon /> Pinned
+            <PinIcon /> {t("pinned")}
           </div>
         )}
         {!grouped && (
