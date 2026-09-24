@@ -721,7 +721,7 @@ function Message({
           <div className="menu-overlay" onMouseDown={() => setLinkAction(null)} />
           <div
             className="msg-menu menu-fixed"
-            dir="ltr"
+            dir={document.documentElement.dataset.interfaceDirection || undefined}
             data-testid={`message-${mid}-link-menu`}
             role="menu"
             aria-label={t("linkActions")}
@@ -765,7 +765,7 @@ function Message({
           <div
             ref={menuRef}
             className="msg-menu menu-fixed"
-            dir="ltr"
+            dir={document.documentElement.dataset.interfaceDirection || undefined}
             style={menuPosition || { visibility: "hidden" }}
             role="menu"
             aria-label={t("messageActions")}

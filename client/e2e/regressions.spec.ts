@@ -194,6 +194,7 @@ test("uses the selected Hebrew language for the message layout", async ({ page }
   await page.locator(".message").first().hover();
   await page.locator(".message-more-action").first().click();
   const rtlMessageMenu = page.locator(".msg-menu").last();
+  await expect(rtlMessageMenu).toHaveAttribute("dir", "rtl");
   await expect.poll(() => rtlMessageMenu.evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
   await expect.poll(() => rtlMessageMenu.getByRole("menuitem").first().evaluate((element) => getComputedStyle(element).textAlign)).toBe("right");
 

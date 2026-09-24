@@ -496,7 +496,7 @@ test("keeps the RTL schedule dialog out of the desktop navigation column", async
   expect(box.x).toBeGreaterThanOrEqual(360);
 });
 
-test("keeps message actions LTR while a Hebrew message surface is RTL", async ({ page }) => {
+test("keeps message actions RTL while a Hebrew message surface is RTL", async ({ page }) => {
   const hebrewBody = `הודעה עברית ${fixture.suffix}`;
   await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
     method: "POST",
@@ -515,9 +515,9 @@ test("keeps message actions LTR while a Hebrew message surface is RTL", async ({
   await message.hover();
   await page.locator(".message-more-action").first().click();
   const menu = page.locator(".msg-menu").last();
-  await expect(menu).toHaveAttribute("dir", "ltr");
-  await expect.poll(() => menu.evaluate((element) => getComputedStyle(element).direction)).toBe("ltr");
-  await expect.poll(() => menu.getByRole("menuitem").first().evaluate((element) => getComputedStyle(element).textAlign)).toBe("left");
+  await expect(menu).toHaveAttribute("dir", "rtl");
+  await expect.poll(() => menu.evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
+  await expect.poll(() => menu.getByRole("menuitem").first().evaluate((element) => getComputedStyle(element).textAlign)).toBe("right");
 });
 
 test("keeps Hebrew reply metadata isolated from the RTL message body", async ({ page }) => {
@@ -799,8 +799,8 @@ test("supports a Hebrew RTL thread panel, composer, actions, and jump control", 
   await threadMessage.hover();
   await page.locator(".message-more-action").last().click();
   const menu = page.locator(".msg-menu").last();
-  await expect(menu).toHaveAttribute("dir", "ltr");
-  await expect.poll(() => menu.evaluate((element) => getComputedStyle(element).direction)).toBe("ltr");
+  await expect(menu).toHaveAttribute("dir", "rtl");
+  await expect.poll(() => menu.evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
 
   const threadBody = page.getByTestId("thread-body");
   await threadBody.evaluate((element) => {
