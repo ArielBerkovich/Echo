@@ -438,10 +438,10 @@ function EditableName({ value, error, onCheckAvailability, onSave }) {
   const showFormatError = changed && !valid;
   const showTakenError = changed && valid && availability === "taken";
   const validationError = normalized.length === 0
-    ? "Channel name is required."
+    ? t("channelNameRequired")
     : normalized === "general"
-    ? "“general” is reserved for the default channel."
-    : "Use lowercase letters, numbers, and single dashes only.";
+    ? t("generalChannelReserved")
+    : t("channelNameFormatHint");
 
   function start() {
     setDraft(value || "");
