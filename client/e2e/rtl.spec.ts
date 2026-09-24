@@ -218,7 +218,7 @@ test("keeps an English quote created in the Hebrew composer left-to-right", asyn
   await expect.poll(() => quote.locator("p").last().evaluate((element) => ({
     direction: getComputedStyle(element).direction,
     textAlign: getComputedStyle(element).textAlign,
-  }))).toEqual({ direction: "ltr", textAlign: "start" });
+  }))).toEqual({ direction: "ltr", textAlign: "left" });
   await page.screenshot({ path: "test-results/hebrew-toolbar-english-quote.png", fullPage: true });
 });
 
@@ -314,6 +314,18 @@ test("anchors RTL quote and list structures on the right", async ({ page }) => {
     borderLeft: getComputedStyle(element).borderLeftWidth,
   }))).toEqual({ direction: "rtl", borderRight: "3px", borderLeft: "0px" });
   await expect.poll(() => composer.locator("blockquote > p").evaluate((element) => ({
+    direction: getComputedStyle(element).direction,
+    textAlign: getComputedStyle(element).textAlign,
+  }))).toEqual({ direction: "rtl", textAlign: "right" });
+
+  await composer.pressSequentially("שורה בעברית");
+  await composer.press("Enter");
+  await expect.poll(() => composer.locator("blockquote").evaluate((element) => ({
+    direction: getComputedStyle(element).direction,
+    borderRight: getComputedStyle(element).borderRightWidth,
+    borderLeft: getComputedStyle(element).borderLeftWidth,
+  }))).toEqual({ direction: "rtl", borderRight: "3px", borderLeft: "0px" });
+  await expect.poll(() => composer.locator("blockquote > p").last().evaluate((element) => ({
     direction: getComputedStyle(element).direction,
     textAlign: getComputedStyle(element).textAlign,
   }))).toEqual({ direction: "rtl", textAlign: "right" });

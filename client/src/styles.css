@@ -11010,6 +11010,32 @@ html[dir="rtl"] .composer-more-popover .composer-more-action {
 .composer-editor[data-quote-direction="rtl"] blockquote {
   direction: rtl;
 }
+.composer-editor blockquote[dir="ltr"] > p:has(> br.ProseMirror-trailingBreak) {
+  direction: ltr;
+  text-align: left;
+}
+.composer-editor blockquote[dir="rtl"] > p:has(> br.ProseMirror-trailingBreak) {
+  direction: rtl;
+  text-align: right;
+}
+.composer-editor blockquote[dir="ltr"] > p:empty {
+  direction: ltr;
+  text-align: left;
+}
+.composer-editor blockquote[dir="rtl"] > p:empty {
+  direction: rtl;
+  text-align: right;
+}
+.composer-editor[data-quote-direction="ltr"] blockquote > p:has(br),
+.composer-editor[data-quote-direction="ltr"] blockquote > p:empty {
+  direction: ltr;
+  text-align: left;
+}
+.composer-editor[data-quote-direction="rtl"] blockquote > p:has(br),
+.composer-editor[data-quote-direction="rtl"] blockquote > p:empty {
+  direction: rtl;
+  text-align: right;
+}
 html[data-interface-direction="rtl"] .composer-editor ul:has(> li > p.is-editor-empty),
 html[data-interface-direction="rtl"] .composer-editor ol:has(> li > p.is-editor-empty) {
   direction: rtl !important;
