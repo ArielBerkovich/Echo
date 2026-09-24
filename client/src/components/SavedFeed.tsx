@@ -51,7 +51,7 @@ export default function SavedFeed({ user, users = [], customEmojis = [], onJump,
   }
 
   return (
-    <FeedLayout title={t("saved")} subtitle={t("savedMessagesSubtitle")} testId="saved">
+    <FeedLayout title={t("savedMessages")} subtitle={t("savedMessagesSubtitle")} testId="saved">
       <FeedContent
         loading={loading}
         items={items}
