@@ -102,8 +102,8 @@ export default function ChannelBrowser({
   const firstResult = channels.length > 0 ? (page.number - 1) * PAGE_SIZE + 1 : 0;
   const lastResult = firstResult ? firstResult + channels.length - 1 : 0;
   const resultSummary = totalForFilter > PAGE_SIZE
-    ? `${firstResult}–${lastResult} of ${totalForFilter} channels`
-    : `${totalForFilter} public ${totalForFilter === 1 ? "channel" : "channels"}`;
+    ? t("channelResults").replace("{first}", String(firstResult)).replace("{last}", String(lastResult)).replace("{total}", String(totalForFilter))
+    : t("publicChannelCount").replace("{total}", String(totalForFilter));
 
   function onSearchKeyDown(event) {
     if (event.key === "Enter") {
@@ -127,27 +127,15 @@ export default function ChannelBrowser({
 
   function getEmptyCopy() {
     if ((counts.all || 0) === 0 && !searchTerm) {
-      return {
-        title: "No public channels yet",
-        detail: "Create one to give your workspace a place for open conversations.",
-      };
+      return { title: t("noPublicChannelsYet"), detail: t("createPublicChannelHint") };
     }
     if (searchTerm) {
-      return {
-        title: "No matching channels",
-        detail: `No public channel matches “${searchTerm}”.`,
-      };
+      return { title: t("noMatchingPublicChannels"), detail: t("noPublicChannelMatches").replace("{query}", searchTerm) };
     }
     if (filter === "available") {
-      return {
-        title: "You've joined every public channel",
-        detail: "New public channels will appear here when they're created.",
-      };
+      return { title: t("joinedEveryPublicChannel"), detail: t("newPublicChannelsHint") };
     }
-    return {
-      title: "You haven't joined a public channel yet",
-      detail: "Switch to All to find a channel to join.",
-    };
+    return { title: t("noPublicChannelJoined"), detail: t("switchToAllToJoin") };
   }
   const emptyCopy = !loading && channels.length === 0 ? getEmptyCopy() : null;
 
@@ -271,7 +259,7 @@ export default function ChannelBrowser({
             className="channel-browser-list"
             data-testid="channel-browser-list"
             aria-busy={loading}
-            aria-label="Public channels"
+            aria-label={t("publicChannels")}
             role={channels.length > 0 ? "list" : undefined}
           >
             {loading ? (

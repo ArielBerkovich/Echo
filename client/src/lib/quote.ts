@@ -8,5 +8,8 @@ export function buildQuoteMarkdown(message) {
   const quotedBody = body
     ? body.split("\n").map((line) => `> ${neutralizeMentions(line)}`).join("\n")
     : "> ";
-  return `> ${author} said:\n${quotedBody}\n\n`;
+  // Keep attribution and body in the same quote block. The blank quoted line
+  // gives the composer two paragraphs, allowing the body direction to remain
+  // independent of an author name written in another script.
+  return `> ${neutralizeMentions(author)} said:\n> \n${quotedBody}\n\n`;
 }

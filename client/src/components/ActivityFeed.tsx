@@ -95,7 +95,7 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
           title={t("clearAllActivity")}
         >
           <Trash2Icon size={15} strokeWidth={1.8} />
-          <span>{clearMutation.isPending ? "Clearing…" : "Clear all"}</span>
+          <span>{clearMutation.isPending ? t("clearing") : t("clearAll")}</span>
         </button>
       ) : null}
     >
@@ -132,7 +132,7 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
             <div className="content">
               <FeedMessage
                 author={activityAuthor(it)}
-                context={activityContext(it)}
+                context={activityContext(it, t)}
                 time={formatDateTime(it.createdAt)}
                 body={it.body}
                 renderMarkdown={(body) => decorateGroupMentions(
@@ -162,9 +162,9 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
       </FeedLayout>
       {confirmClear ? (
         <ConfirmDialog
-          title="Clear all activity?"
-          message="This will remove all current activity from your feed. The original messages will not be deleted."
-          confirmLabel="Clear all"
+          title={t("clearActivityTitle")}
+          message={t("clearActivityMessage")}
+          confirmLabel={t("clearAll")}
           danger
           onCancel={() => setConfirmClear(false)}
           onConfirm={() => {
@@ -178,23 +178,23 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
   );
 }
 
-function kindLabel(it) {
-  if (it.kind === "broadcast") return "📣 notified the channel";
-  if (it.kind === "reply") return "replied in a thread";
-  if (it.kind === "reaction") return `reacted ${it.emoji || ""} to your message`;
-  return "mentioned you";
+function kindLabel(it, t) {
+  if (it.kind === "broadcast") return t("notifiedChannel");
+  if (it.kind === "reply") return t("repliedInThread");
+  if (it.kind === "reaction") return t("reactedToMessage").replace("{emoji}", it.emoji || "");
+  return t("mentionedYou");
 }
 
-function activityContext(item) {
-  if (item.kind === "channel_add") return `added you to #${item.channelName}`;
-  if (item.kind === "channel_remove") return `removed you from #${item.channelName}`;
+function activityContext(item, t) {
+  if (item.kind === "channel_add") return t("addedYouToChannel").replace("{channel}", item.channelName);
+  if (item.kind === "channel_remove") return t("removedYouFromChannel").replace("{channel}", item.channelName);
   if (item.kind === "reaction_group") {
     const { emojis } = reactionGroupSummary(item);
-    const location = item.channelType === "dm" ? "in a DM" : `in #${item.channelName}`;
-    return `reacted with ${emojis} to your message ${location}`;
+    const location = item.channelType === "dm" ? t("inDirectMessage") : t("inChannel").replace("{channel}", item.channelName);
+    return t("reactedWith").replace("{emojis}", emojis).replace("{location}", location);
   }
-  const location = item.channelType === "dm" ? "in a DM" : `in #${item.channelName}`;
-  return `${kindLabel(item)} ${location}`;
+  const location = item.channelType === "dm" ? t("inDirectMessage") : t("inChannel").replace("{channel}", item.channelName);
+  return `${kindLabel(item, t)} ${location}`;
 }
 
 function activityAuthor(item) {

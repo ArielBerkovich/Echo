@@ -528,7 +528,7 @@ const SearchBox = forwardRef(function SearchBox(
     >
       <Avatar name={u.displayName} src={u.avatarUrl} size={24} />
       <span className="search-name">{u.displayName}</span>
-      <span className="search-handle">@{u.username}</span>
+      <bdi className="search-handle" dir="ltr">@{u.username}</bdi>
     </button>
   );
 
@@ -670,7 +670,7 @@ const SearchBox = forwardRef(function SearchBox(
               {!q && !peoplePicker && (
                 <>
                   <div className="search-hint" data-testid="search-hint">
-                    Press <b>Enter</b> to search messages. Filter with <code>in:channel</code>,{" "}
+                    {t("searchHint")} <code>in:channel</code>,{" "}
                     <code>from:@user</code>, and <code>has:file</code>.
                   </div>
                   {matchingQuickActions.length > 0 && (

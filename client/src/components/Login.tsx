@@ -6,8 +6,8 @@ import { api, getBackendUrl, rhssoLoginUrl } from "../api.js";
 import BackendConnectionModal from "./BackendConnectionModal.js";
 import CreationMigrationModal from "./CreationMigrationModal.js";
 import Logo from "./Logo.js";
-import { PASSWORD_RULE } from "../lib/password.js";
 import { authSchema } from "../lib/formSchemas.js";
+import { useI18n } from "../lib/i18n.js";
 
 function usernameFromName(firstName, lastName) {
   return `${firstName} ${lastName}`
@@ -48,6 +48,7 @@ const FLOATERS = [
 
 // Combined login / register screen — split hero + auth form.
 export default function Login({ onAuthed, initialError = "" }) {
+  const { t } = useI18n();
   const [mode, setMode] = useState(() => {
     return "login";
   });
@@ -195,7 +196,7 @@ export default function Login({ onAuthed, initialError = "" }) {
     setPasswordHelpMessage("");
     setPasswordHelpError("");
     if (!requestedUsername) {
-      setPasswordHelpError("Enter your username first, then request password help.");
+      setPasswordHelpError(t("loginEnterUsernameForHelp"));
       return;
     }
 
@@ -243,12 +244,12 @@ export default function Login({ onAuthed, initialError = "" }) {
     },
     (validationErrors) => {
       if (validationErrors.confirmPassword) {
-        setServerError(validationErrors.confirmPassword.message || "Please confirm your password.");
+        setServerError(validationErrors.confirmPassword.message || t("loginConfirmPasswordRequired"));
       } else if (validationErrors.password) {
-        setServerError(validationErrors.password.message || "Please enter a valid password.");
+        setServerError(validationErrors.password.message || t("loginValidPasswordRequired"));
       } else {
         const firstError = Object.values(validationErrors)[0];
-        setServerError(firstError?.message || "Please complete all required fields.");
+        setServerError(firstError?.message || t("loginCompleteRequiredFields"));
       }
     }
   );
@@ -259,7 +260,7 @@ export default function Login({ onAuthed, initialError = "" }) {
       setServerError(null);
       setRegisterStep(2);
     } else {
-      setServerError("Please enter your first and last name to continue.");
+      setServerError(t("loginEnterNamesToContinue"));
     }
   }
 
@@ -338,8 +339,8 @@ export default function Login({ onAuthed, initialError = "" }) {
                 type="button"
                 className="auth-back"
                 onClick={backToSso}
-                title="Back to sign-in options"
-                aria-label="Back to sign-in options"
+                title={t("loginBackToOptions")}
+                aria-label={t("loginBackToOptions")}
               >
                 <ArrowLeftIcon size={14} strokeWidth={2} />
               </button>
@@ -355,7 +356,7 @@ export default function Login({ onAuthed, initialError = "" }) {
                 className={!isRegister ? "active" : ""}
                 onClick={() => switchMode("login")}
               >
-                Sign in
+                {t("signIn")}
               </button>
               <button
                 type="button"
@@ -364,13 +365,13 @@ export default function Login({ onAuthed, initialError = "" }) {
                 className={isRegister ? "active" : ""}
                 onClick={() => switchMode("register")}
               >
-                Create account
+                {t("loginCreateAccount")}
               </button>
               <span className={`auth-tab-ind ${isRegister ? "right" : ""}`} />
             </div>
           )}
 
-          {needsSetup && <div className="setup-badge">🛡 First-time setup</div>}
+          {needsSetup && <div className="setup-badge">🛡 {t("loginFirstTimeSetup")}</div>}
 
           {ssoLanding ? (
             <div className="auth-sso-landing">
@@ -385,11 +386,11 @@ export default function Login({ onAuthed, initialError = "" }) {
                   }
                 }}
               >
-                Sign in with RHSSO
+                {t("loginSignInWithRhsso")}
               </button>
-              <div className="auth-divider"><span>or</span></div>
+              <div className="auth-divider"><span>{t("or")}</span></div>
               <button type="button" className="auth-local-link" onClick={showLocalLogin}>
-                Sign in with local account
+                {t("loginSignInLocal")}
               </button>
               {serverError && <span className="field-hint error" data-testid="auth-error">{serverError}</span>}
             </div>
@@ -401,8 +402,8 @@ export default function Login({ onAuthed, initialError = "" }) {
                 type="button"
                 className="auth-back"
                 onClick={() => setRegisterStep(1)}
-                title="Back to names"
-                aria-label="Back to names"
+                title={t("loginBackToNames")}
+                aria-label={t("loginBackToNames")}
               >
                 <ArrowLeftIcon size={14} strokeWidth={2} />
               </button>
@@ -411,8 +412,7 @@ export default function Login({ onAuthed, initialError = "" }) {
 
           {needsSetup && (
             <div className="setup-callout">
-              This first account becomes the workspace <strong>admin</strong> — it can issue
-              one-time passwords to help others who get locked out.
+              {t("loginFirstSetupHint")}
             </div>
           )}
 
@@ -420,13 +420,13 @@ export default function Login({ onAuthed, initialError = "" }) {
           {isRegister && !needsSetup && registerStep === 1 && (
             <>
               <label className="field">
-                <span>First name</span>
+                <span>{t("loginFirstName")}</span>
                 <div className="input-wrap">
                   <IdCardIcon size={17} strokeWidth={1.6} />
                   <input
                     {...firstNameField}
                     autoComplete="given-name"
-                    placeholder="First name"
+                    placeholder={t("loginFirstName")}
                     onKeyDown={(event) => {
                       if (event.key === "Enter") {
                         event.preventDefault();
@@ -444,13 +444,13 @@ export default function Login({ onAuthed, initialError = "" }) {
                 {errors.firstName && <span className="field-hint error small">{errors.firstName.message}</span>}
               </label>
               <label className="field">
-                <span>Last name</span>
+                <span>{t("loginLastName")}</span>
                 <div className="input-wrap">
                   <IdCardIcon size={17} strokeWidth={1.6} />
                   <input
                     {...lastNameField}
                     autoComplete="family-name"
-                    placeholder="Last name"
+                    placeholder={t("loginLastName")}
                     onKeyDown={(event) => {
                       if (event.key === "Enter") {
                         event.preventDefault();
@@ -472,11 +472,11 @@ export default function Login({ onAuthed, initialError = "" }) {
 
           {isRegister && !needsSetup && registerStep === 1 ? (
             <button type="button" className="btn-primary auth-submit" onClick={continueRegistration}>
-              Continue
+              {t("continue")}
             </button>
           ) : <>
           <label className="field">
-            <span>{needsSetup ? "Admin username" : "Username"}</span>
+            <span>{needsSetup ? t("loginAdminUsername") : t("loginUsername")}</span>
             {isRegister && !needsSetup ? (
               <div className="input-wrap username-composed">
                 <UserIcon size={17} strokeWidth={1.6} />
@@ -506,7 +506,7 @@ export default function Login({ onAuthed, initialError = "" }) {
                     setValue("username", `${usernameBase}${suffix}`, { shouldValidate: true });
                   }}
                     autoComplete="off"
-                    placeholder="add letters or numbers"
+                    placeholder={t("loginUsernameSuffix")}
                   />
                 )}
               </div>
@@ -516,7 +516,7 @@ export default function Login({ onAuthed, initialError = "" }) {
                 <input
                   {...usernameField}
                   autoComplete="username"
-                  placeholder={needsSetup ? "admin" : "Username"}
+                  placeholder={needsSetup ? "admin" : t("loginUsername")}
                   readOnly={needsSetup}
                 />
               </div>
@@ -524,12 +524,12 @@ export default function Login({ onAuthed, initialError = "" }) {
             {errors.username && <span className="field-hint error small">{errors.username.message}</span>}
           </label>
           {needsSetup ? (
-            <span className="field-hint">The workspace administrator always uses @admin.</span>
+            <span className="field-hint">{t("loginAdminUsernameHint")}</span>
           ) : null}
 
           {isRegister && !needsSetup && usernameSuggestions.length > 0 && (
             <div className="auth-username-options">
-              <span className="field-hint">That username is taken. Try one of these:</span>
+              <span className="field-hint">{t("loginUsernameTakenHint")}</span>
               <div className="auth-username-suggestions">
                 {usernameSuggestions.map((suggestion) => (
                   <button
@@ -553,13 +553,13 @@ export default function Login({ onAuthed, initialError = "" }) {
 
           <div className="field">
             <div className={`field-heading field-label-row${!isRegister ? " login-password-label" : ""}`}>
-              <label htmlFor="auth-password">Password</label>
+              <label htmlFor="auth-password">{t("password")}</label>
               {isRegister && (
                 <button
                   type="button"
                   className="password-info"
-                  title={PASSWORD_RULE}
-                  aria-label={PASSWORD_RULE}
+                  title={t("passwordRule")}
+                  aria-label={t("passwordRule")}
                 >
                   <InfoIcon size={14} strokeWidth={2} />
                 </button>
@@ -568,11 +568,11 @@ export default function Login({ onAuthed, initialError = "" }) {
                 <button
                   type="button"
                   className="auth-forgot"
-                  aria-label="Forgot password?"
+                  aria-label={t("loginForgotPassword")}
                   disabled={passwordHelpBusy}
                   onClick={requestPasswordHelp}
                 >
-                  {passwordHelpBusy ? "Requesting…" : "Forgot password?"}
+                  {passwordHelpBusy ? t("loginRequesting") : t("loginForgotPassword")}
                 </button>
               )}
             </div>
@@ -584,7 +584,7 @@ export default function Login({ onAuthed, initialError = "" }) {
                   data-testid="auth-password"
                 type={showPw ? "text" : "password"}
                 autoComplete={isRegister ? "new-password" : "current-password"}
-                placeholder={isRegister ? "Create a password" : "Enter your password"}
+                placeholder={isRegister ? t("loginCreatePassword") : t("loginEnterPassword")}
                 onKeyDown={needsSetup ? (event) => {
                   if (event.key === "Enter") {
                     event.preventDefault();
@@ -596,7 +596,7 @@ export default function Login({ onAuthed, initialError = "" }) {
                 type="button"
                 className="pw-toggle"
                 onClick={() => setShowPw((v) => !v)}
-                aria-label={showPw ? "Hide password" : "Show password"}
+                aria-label={showPw ? t("loginHidePassword") : t("loginShowPassword")}
                 tabIndex={-1}
               >
                 {showPw ? <EyeOffIcon size={17} strokeWidth={1.6} /> : <EyeIcon size={17} strokeWidth={1.6} />}
@@ -614,14 +614,14 @@ export default function Login({ onAuthed, initialError = "" }) {
 
           {isRegister && (
             <label className="field confirm-password-field">
-              <span>Confirm password</span>
+              <span>{t("loginConfirmPassword")}</span>
               <div className="input-wrap">
                 <LockIcon size={17} strokeWidth={1.6} />
                 <input
                   {...register("confirmPassword")}
                   type="password"
                   autoComplete="new-password"
-                  placeholder="Re-enter your password"
+                  placeholder={t("loginReenterPassword")}
                 />
               </div>
               {errors.confirmPassword && <span className="field-hint error small">{errors.confirmPassword.message}</span>}
@@ -632,11 +632,11 @@ export default function Login({ onAuthed, initialError = "" }) {
             {isSubmitting ? (
               <span className="spinner" />
             ) : needsSetup ? (
-              "Create admin account"
+              t("loginCreateAdminAccount")
             ) : isRegister ? (
-              "Create account"
+              t("loginCreateAccount")
             ) : (
-              "Sign in"
+              t("signIn")
             )}
           </button>
 
@@ -644,19 +644,19 @@ export default function Login({ onAuthed, initialError = "" }) {
           </>}
           {!needsSetup && !isRegister && !ssoLanding && (
             <p className="auth-switch">
-              New to Echo?{" "}
+              {t("loginNewToEcho")} {" "}
               <button
                 type="button"
                 className="link"
                 onClick={() => switchMode("register")}
               >
-                Create account
+                {t("loginCreateAccount")}
               </button>
             </p>
           )}
           {!needsSetup && isRegister && registerStep === 2 && (
             <p className="auth-switch">
-              Have an old local Echo account?{" "}
+              {t("loginOldAccountQuestion")} {" "}
               <button
                 type="button"
                 className="link"
@@ -671,7 +671,7 @@ export default function Login({ onAuthed, initialError = "" }) {
                   if (valid) setCreationMigration("local");
                 }}
               >
-                Bring its history
+                {t("loginBringHistory")}
               </button>
             </p>
           )}

@@ -4,10 +4,12 @@ import Avatar from "./Avatar.js";
 import Composer from "./Composer.js";
 import Modal from "./Modal.js";
 import useRecipientPickerKeyboard from "./useRecipientPickerKeyboard.js";
+import { useI18n } from "../lib/i18n.js";
 
 const MAX_GROUP_DM_RECIPIENTS = 9;
 
 export default function NewMessageModal({ currentUserId, users, customEmojis, mode, onPrepare, onStart, onClose }) {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selected, setSelected] = useState([]);
@@ -113,7 +115,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
 
   async function handleSent() {
     if (!selected.length || !channel) {
-      setError("Select a recipient first.");
+      setError(t("selectRecipientFirst"));
       return;
     }
     try {
@@ -125,7 +127,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
   }
 
   return (
-    <Modal title="New Message" className="new-message-modal" testId="new-message-modal" closeDisabled={preparing} onClose={onClose}>
+    <Modal title={t("newMessageTitle")} className="new-message-modal" testId="new-message-modal" closeDisabled={preparing} onClose={onClose}>
         <div className="new-message-layout">
           <div className="new-message-picker">
             {selected.length ? (
@@ -144,7 +146,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
                     value={query}
                     onChange={(event) => handleSearchChange(event.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Add people"
+                    placeholder={t("addPeople")}
                     autoFocus
                     role="combobox"
                     aria-autocomplete="list"
@@ -163,7 +165,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
                   value={query}
                   onChange={(event) => handleSearchChange(event.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Search people"
+                  placeholder={t("searchPeople")}
                   autoFocus
                   role="combobox"
                   aria-autocomplete="list"
@@ -174,7 +176,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
               </label>
             )}
 
-            {debouncedQuery ? <div id="new-message-people-list" className="new-message-people" role="listbox" aria-label="People">
+            {debouncedQuery ? <div id="new-message-people-list" className="new-message-people" role="listbox" aria-label={t("people")}>
               {availableMatches.length ? availableMatches.map((user, index) => (
                 <button
                   type="button"
@@ -195,12 +197,12 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
                     <span className="person-handle">@{user.username}</span>
                   </span>
                 </button>
-              )) : <div className="people-empty">No people found.</div>}
+              )) : <div className="people-empty">{t("noPeopleFound")}</div>}
             </div> : null}
           </div>
 
           <div className={`new-message-compose ${channel ? "has-channel" : ""}`}>
-            {preparing ? <div className="people-empty">Opening conversation…</div> : null}
+            {preparing ? <div className="people-empty">{t("openingConversation")}</div> : null}
             <Composer
                 ref={composerRef}
                 key="new-message-composer"
@@ -209,7 +211,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
                 users={users}
                 customEmojis={customEmojis}
                 mode={mode}
-                placeholder="Write a message…"
+                placeholder={t("writeMessage")}
                 showSchedule={false}
                 showSend
                 disabled={!channel}

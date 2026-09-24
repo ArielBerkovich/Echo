@@ -517,14 +517,14 @@ function Message({
           <>
             {!surveyState && !retroState && messageBody}
             {surveyState && (
-              <div className="survey-card" data-testid={`survey-${m.id}`} aria-label="Survey">
+              <div className="survey-card" data-testid={`survey-${m.id}`} aria-label={t("survey")}>
                 {(() => {
                   const totalVotes = surveyState.options.reduce((sum, option) => sum + (option.voteCount ?? option.votes?.length ?? 0), 0);
                   return (
                     <>
                       <div className="survey-card-header">
-                        <span className="survey-card-badge"><ChartNoAxesColumnIncreasing size={15} strokeWidth={2.2} /> Survey</span>
-                        <span className="survey-card-meta">{totalVotes} {totalVotes === 1 ? "vote" : "votes"}</span>
+                        <span className="survey-card-badge"><ChartNoAxesColumnIncreasing size={15} strokeWidth={2.2} /> {t("survey")}</span>
+                        <span className="survey-card-meta">{t(totalVotes === 1 ? "surveyVoteCountOne" : "surveyVoteCountMany").replace("{count}", String(totalVotes))}</span>
                       </div>
                       <strong className="survey-question">{surveyState.question}</strong>
                 <div className="survey-options">
@@ -545,8 +545,8 @@ function Message({
                   })}
                 </div>
                 <div className="survey-card-footer">
-                  <span>{surveyState.allowMultiple ? "Select all that apply" : "Select one option"}</span>
-                  {surveyVoting && <LoaderCircle className="survey-spinner" size={14} aria-label="Saving vote" />}
+                  <span>{surveyState.allowMultiple ? t("surveySelectMultiple") : t("surveySelectOne")}</span>
+                  {surveyVoting && <LoaderCircle className="survey-spinner" size={14} aria-label={t("savingVote")} />}
                 </div>
                 {surveyVoteError && <span className="survey-error" role="alert">{surveyVoteError}</span>}
                     </>

@@ -21,11 +21,18 @@ function tooltipTarget(node: EventTarget | null) {
 }
 
 function tooltipPlacementOrder(target: HTMLElement) {
+  // In RTL the schedule control is on the physical left; its tooltip must
+  // open rightward into the composer rather than into the viewport edge.
+  if (target.matches("[data-testid='composer-send-options']")) return document.documentElement.dir === "rtl"
+    ? ["right", "above", "below", "left"] as const
+    : ["above", "below", "left", "right"] as const;
   // The sidebar and channel-header action groups share the same vertical
   // rhythm, so keep their tooltips consistently above the controls.
   if (target.closest(".sidebar-actions, .header-actions")) return ["above"] as const;
   if (target.closest(".workspace-search-navigation, .workspace-search-actions, .workspace-search-help")) return ["below", "above", "left", "right"] as const;
-  if (target.closest(".rail")) return ["right", "above", "below", "left"] as const;
+  if (target.closest(".rail")) return document.documentElement.dir === "rtl"
+    ? ["left", "above", "below", "right"] as const
+    : ["right", "above", "below", "left"] as const;
   // Keep file-preview toolbar hints vertical. A side placement can make the
   // download hint appear to belong to the neighboring toolbar control.
   if (target.closest(".text-viewer-actions, .lightbox-toolbar-actions")) return ["below", "above"] as const;
@@ -184,7 +191,7 @@ export default function ThemedTooltipLayer() {
         && box.top >= TOOLTIP_EDGE && box.bottom <= window.innerHeight - TOOLTIP_EDGE;
       // Above is the consistent Echo placement. Only fallback placements need
       // to avoid neighboring controls; the target itself is always below it.
-      const railPlacement = candidate === "right" && tooltip.target.closest(".rail");
+      const railPlacement = tooltip.target.closest(".rail") && candidate === (document.documentElement.dir === "rtl" ? "left" : "right");
       return fitsViewport && (candidate === "above" || railPlacement || !overlapsControl(box, tooltip.target));
     }) || tooltip.placement;
     const position = tooltipPosition(tooltip.target, placement, width, height);

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowLeftIcon, EyeIcon, EyeOffIcon, LockIcon, UserIcon } from "lucide-react";
 import { api } from "../api.js";
+import { useI18n } from "../lib/i18n.js";
 
 function callbackState() {
   const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
@@ -11,6 +12,7 @@ function callbackState() {
 }
 
 export default function MigrationForm({ rhssoEnabled, onAuthed, onBack }) {
+  const { t } = useI18n();
   const initial = callbackState();
   const [step, setStep] = useState(initial.ready ? "rhsso-confirm" : "source");
   const [source, setSource] = useState(null);
@@ -64,11 +66,11 @@ export default function MigrationForm({ rhssoEnabled, onAuthed, onBack }) {
   async function confirm() {
     setError("");
     if (!newUsername.trim()) {
-      setError("Choose a new username.");
+      setError(t("migrationChooseUsername"));
       return;
     }
     if (step === "local" && newPassword !== confirmPassword) {
-      setError("Passwords don't match.");
+      setError(t("passwordsDoNotMatch"));
       return;
     }
     setBusy(true);
@@ -88,28 +90,27 @@ export default function MigrationForm({ rhssoEnabled, onAuthed, onBack }) {
   if (step === "source") {
     return (
       <div className="migration-form" data-testid="migration-source">
-        <button type="button" className="auth-back" onClick={onBack} aria-label="Back">
-          <ArrowLeftIcon size={14} /> Back
+        <button type="button" className="auth-back" onClick={onBack} aria-label={t("back")}>
+          <ArrowLeftIcon size={14} /> {t("back")}
         </button>
-        <p className="subtitle">Bring the history from an old local Echo account.</p>
+        <p className="subtitle">{t("migrationSourceSubtitle")}</p>
         <div className="setup-callout">
-          The old account must have been created without RHSSO. Its display name,
-          avatar, messages, and memberships will be preserved.
+          {t("migrationSourceHint")}
         </div>
         <label className="field">
-          <span>Old username</span>
+          <span>{t("migrationOldUsername")}</span>
           <div className="input-wrap">
             <UserIcon size={17} strokeWidth={1.6} />
             <input
               value={oldUsername}
               onChange={(event) => setOldUsername(event.target.value)}
               autoComplete="username"
-              placeholder="Old Echo username"
+              placeholder={t("migrationOldEchoUsername")}
             />
           </div>
         </label>
         <label className="field">
-          <span>Old password</span>
+          <span>{t("migrationOldPassword")}</span>
           <div className="input-wrap">
             <LockIcon size={17} strokeWidth={1.6} />
             <input
@@ -117,7 +118,7 @@ export default function MigrationForm({ rhssoEnabled, onAuthed, onBack }) {
               onChange={(event) => setOldPassword(event.target.value)}
               type={showPasswords ? "text" : "password"}
               autoComplete="current-password"
-              placeholder="Old Echo password"
+              placeholder={t("migrationOldEchoPassword")}
             />
             <button type="button" className="pw-toggle" onClick={() => setShowPasswords((value) => !value)} tabIndex={-1}>
               {showPasswords ? <EyeOffIcon size={17} /> : <EyeIcon size={17} />}
@@ -131,18 +132,18 @@ export default function MigrationForm({ rhssoEnabled, onAuthed, onBack }) {
           disabled={busy || !oldUsername || !oldPassword}
           onClick={() => begin("local")}
         >
-          {busy ? <span className="spinner" /> : "Create a new local login"}
+          {busy ? <span className="spinner" /> : t("migrationCreateLocalLogin")}
         </button>
         {rhssoEnabled && (
           <>
-            <div className="auth-divider"><span>or</span></div>
+            <div className="auth-divider"><span>{t("or")}</span></div>
             <button
               type="button"
               className="auth-sso"
               disabled={busy || !oldUsername || !oldPassword}
               onClick={() => begin("rhsso")}
             >
-              Continue with RHSSO
+              {t("migrationContinueRhsso")}
             </button>
           </>
         )}
@@ -152,20 +153,19 @@ export default function MigrationForm({ rhssoEnabled, onAuthed, onBack }) {
 
   return (
     <div className="migration-form" data-testid="migration-confirm">
-      <p className="subtitle">Confirm the identity replacement.</p>
+      <p className="subtitle">{t("migrationConfirmSubtitle")}</p>
       {source && (
         <div className="setup-callout">
-          <strong>{source.displayName}</strong> remains the display name.<br />
-          @{source.username} will stop being a login and become a historical alias.
+          {t("migrationIdentityHint").replace("{displayName}", source.displayName).replace("{username}", source.username)}
         </div>
       )}
       {step === "rhsso-confirm" && target && (
         <span className="field-hint">
-          RHSSO identity verified: {target.identityLabel || target.username}
+          {t("migrationRhssoVerified").replace("{identity}", target.identityLabel || target.username)}
         </span>
       )}
       <label className="field">
-        <span>New username</span>
+        <span>{t("migrationNewUsername")}</span>
         <div className="input-wrap">
           <UserIcon size={17} strokeWidth={1.6} />
           <input
@@ -175,14 +175,14 @@ export default function MigrationForm({ rhssoEnabled, onAuthed, onBack }) {
               : undefined}
             readOnly={step === "rhsso-confirm"}
             autoComplete="username"
-            placeholder="New Echo username"
+            placeholder={t("migrationNewEchoUsername")}
           />
         </div>
       </label>
       {step === "local" && (
         <>
           <label className="field">
-            <span>New password</span>
+            <span>{t("newPassword")}</span>
             <div className="input-wrap">
               <LockIcon size={17} strokeWidth={1.6} />
               <input
@@ -190,12 +190,12 @@ export default function MigrationForm({ rhssoEnabled, onAuthed, onBack }) {
                 onChange={(event) => setNewPassword(event.target.value)}
                 type={showPasswords ? "text" : "password"}
                 autoComplete="new-password"
-                placeholder="Create a new password"
+                placeholder={t("migrationCreateNewPassword")}
               />
             </div>
           </label>
           <label className="field">
-            <span>Confirm new password</span>
+            <span>{t("confirmNewPassword")}</span>
             <div className="input-wrap">
               <LockIcon size={17} strokeWidth={1.6} />
               <input
@@ -203,7 +203,7 @@ export default function MigrationForm({ rhssoEnabled, onAuthed, onBack }) {
                 onChange={(event) => setConfirmPassword(event.target.value)}
                 type="password"
                 autoComplete="new-password"
-                placeholder="Re-enter the new password"
+                placeholder={t("migrationReenterPassword")}
               />
             </div>
           </label>
@@ -211,10 +211,10 @@ export default function MigrationForm({ rhssoEnabled, onAuthed, onBack }) {
       )}
       {error && <span className="field-hint error small">{error}</span>}
       <button type="button" className="btn-primary auth-submit" disabled={busy} onClick={confirm}>
-        {busy ? <span className="spinner" /> : "Replace login and keep history"}
+        {busy ? <span className="spinner" /> : t("migrationReplaceLogin")}
       </button>
       <button type="button" className="link" disabled={busy} onClick={onBack}>
-        Cancel migration
+        {t("migrationCancel")}
       </button>
     </div>
   );

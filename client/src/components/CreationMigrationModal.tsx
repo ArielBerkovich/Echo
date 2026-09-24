@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { LockIcon, UserIcon } from "lucide-react";
 import { api } from "../api.js";
 import Modal from "./Modal.js";
+import { useI18n } from "../lib/i18n.js";
 
 export default function CreationMigrationModal({
   kind,
@@ -9,6 +10,7 @@ export default function CreationMigrationModal({
   onAuthed,
   onClose,
 }) {
+  const { t } = useI18n();
   const [oldUsername, setOldUsername] = useState("");
   const [oldPassword, setOldPassword] = useState("");
   const [targetUsername, setTargetUsername] = useState(newAccount?.username || "");
@@ -84,7 +86,7 @@ export default function CreationMigrationModal({
     }
   }
 
-  const title = kind === "rhsso" ? "Create your Echo account" : "Bring your history";
+  const title = kind === "rhsso" ? t("migrationCreateEchoAccount") : t("migrationBringHistory");
 
   return (
     <Modal
@@ -103,9 +105,7 @@ export default function CreationMigrationModal({
         {kind === "rhsso" && !showMigration ? (
           <>
             <p>
-              Signed in as <strong>{targetLabel || "your RHSSO identity"}</strong>.
-              Is this a new Echo account, or do you have an old local account whose
-              history you want to keep?
+              {t("migrationSignedInAs").replace("{identity}", targetLabel || t("migrationYourRhssoIdentity"))}
             </p>
             {error ? <span className="field-hint error small">{error}</span> : null}
             <div className="creation-choice-actions">
@@ -115,7 +115,7 @@ export default function CreationMigrationModal({
                 disabled={busy}
                 onClick={() => setShowMigration(true)}
               >
-                Bring history from an old account
+                {t("migrationBringOldHistory")}
               </button>
               <button
                 type="button"
@@ -123,31 +123,30 @@ export default function CreationMigrationModal({
                 disabled={busy}
                 onClick={createRhssoAccount}
               >
-                {busy ? <span className="spinner" /> : "Create a new Echo account"}
+                {busy ? <span className="spinner" /> : t("migrationCreateNewAccount")}
               </button>
             </div>
           </>
         ) : (
           <>
             <p>
-              Enter the credentials for the old local Echo account. Its display
-              name, avatar, messages, and memberships will be preserved.
+              {t("migrationCredentialsHint")}
             </p>
             <label className="field">
-              <span>Old username</span>
+              <span>{t("migrationOldUsername")}</span>
               <div className="input-wrap">
                 <UserIcon size={17} />
                 <input
                   value={oldUsername}
                   onChange={(event) => setOldUsername(event.target.value)}
                   autoComplete="username"
-                  placeholder="Old Echo username"
+                  placeholder={t("migrationOldEchoUsername")}
                   autoFocus
                 />
               </div>
             </label>
             <label className="field">
-              <span>Old password</span>
+              <span>{t("migrationOldPassword")}</span>
               <div className="input-wrap">
                 <LockIcon size={17} />
                 <input
@@ -155,13 +154,13 @@ export default function CreationMigrationModal({
                   onChange={(event) => setOldPassword(event.target.value)}
                   type="password"
                   autoComplete="current-password"
-                  placeholder="Old Echo password"
+                  placeholder={t("migrationOldEchoPassword")}
                 />
               </div>
             </label>
             {kind === "rhsso" ? (
               <label className="field">
-                <span>RHSSO username</span>
+                <span>{t("migrationRhssoUsername")}</span>
                 <div className="input-wrap">
                   <UserIcon size={17} />
                   <input
@@ -172,7 +171,7 @@ export default function CreationMigrationModal({
                   />
                 </div>
                 <span id="rhsso-username-help" className="field-hint">
-                  This username is managed by RHSSO and cannot be changed in Echo.
+                  {t("migrationRhssoUsernameHint")}
                 </span>
               </label>
             ) : null}
@@ -184,7 +183,7 @@ export default function CreationMigrationModal({
                 disabled={busy || !oldUsername || !oldPassword || !targetUsername}
                 onClick={migrate}
               >
-                {busy ? <span className="spinner" /> : "Keep old history and continue"}
+                {busy ? <span className="spinner" /> : t("migrationKeepHistory")}
               </button>
               <button
                 type="button"
@@ -192,7 +191,7 @@ export default function CreationMigrationModal({
                 disabled={busy}
                 onClick={kind === "rhsso" ? () => setShowMigration(false) : onClose}
               >
-                Back
+                {t("back")}
               </button>
             </div>
           </>

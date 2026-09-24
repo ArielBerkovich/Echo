@@ -1091,7 +1091,7 @@ const ChannelView = forwardRef(function ChannelView({
                 data-testid="dm-starred-toggle"
                 aria-label={dmStarred ? `Remove ${dmLabel} from Starred` : `Mark ${dmLabel} as Starred`}
                 aria-pressed={dmStarred}
-                title={dmStarred ? "Remove from Starred" : "Mark as Starred"}
+                title={dmStarred ? t("unstarConversation") : t("starConversation")}
                 onClick={() => isGroupDm ? onToggleChannelStarred?.(channel.id) : onToggleStarred?.(dmUser.id)}
               >
                 <StarIcon size={20} strokeWidth={1.9} fill={dmStarred ? "currentColor" : "none"} />
@@ -1108,7 +1108,7 @@ const ChannelView = forwardRef(function ChannelView({
                 className="ch-name ch-name-btn dm-name-btn interactive-name"
                 data-testid="channel-title"
                 aria-label={dmLabel}
-                title="View profile"
+                title={t("viewProfile")}
                 onClick={() => dmUser?.id && onOpenProfile?.(dmUser.id)}
               >
                 {dmDisplayLabel}
@@ -1118,7 +1118,7 @@ const ChannelView = forwardRef(function ChannelView({
               <ChannelOptionButton
                 active={showFiles}
                 data-testid="channel-files"
-                title="View files"
+                title={t("viewFiles")}
                 label={`Files in ${dmLabel}`}
                 aria-controls="conversation-files-panel"
                 onClick={openFilesPanel}
@@ -1128,8 +1128,8 @@ const ChannelView = forwardRef(function ChannelView({
                 <ChannelOptionButton
                   active={showMembers}
                   data-testid="channel-members"
-                  title="View members"
-                  label="View members"
+                  title={t("viewMembers")}
+                  label={t("viewMembers")}
                   aria-controls="members-panel"
                   onClick={openMembersPanel}
                   icon={<UsersRoundIcon size={16} strokeWidth={1.8} />}
@@ -1146,7 +1146,7 @@ const ChannelView = forwardRef(function ChannelView({
                 data-testid="channel-starred-toggle"
                 aria-label={isChannelStarred ? `Remove #${channel.name} from Starred` : `Mark #${channel.name} as Starred`}
                 aria-pressed={isChannelStarred}
-                title={isChannelStarred ? "Remove from Starred" : "Mark as Starred"}
+                title={isChannelStarred ? t("unstarChannel") : t("starChannel")}
                 onClick={() => onToggleChannelStarred?.(channel.id)}
               >
                 <StarIcon size={20} strokeWidth={1.9} fill={isChannelStarred ? "currentColor" : "none"} />
@@ -1155,7 +1155,7 @@ const ChannelView = forwardRef(function ChannelView({
             <button
               className="ch-name ch-name-btn interactive-name"
               data-testid="channel-title"
-              title="View channel details"
+              title={t("viewChannelDetails")}
               onClick={openDetailsPanel}
             >
               {channel.type === "private" ? "🔒" : "#"} {channel.name}
@@ -1170,15 +1170,15 @@ const ChannelView = forwardRef(function ChannelView({
                 active={showPinned}
                 data-testid="channel-pinned"
                 onClick={openPinnedPanel}
-                title="Pinned messages"
-                label="Pinned messages"
+                title={t("viewPinnedMessages")}
+                label={t("viewPinnedMessages")}
                 aria-controls="pinned-panel"
                 icon={<PinIcon />}
               />
               <ChannelOptionButton
                 active={showFiles}
                 data-testid="channel-files"
-                title="View files"
+                title={t("viewFiles")}
                 label={`Files in #${channel.name}`}
                 aria-controls="conversation-files-panel"
                 onClick={openFilesPanel}
@@ -1187,7 +1187,7 @@ const ChannelView = forwardRef(function ChannelView({
               <ChannelOptionButton
                 className="channel-search-action"
                 data-testid="channel-search"
-                title="Search messages"
+                title={t("searchThisChannel")}
                 label={`Search in #${channel.name}`}
                 aria-expanded={undefined}
                 aria-pressed={undefined}
@@ -1197,8 +1197,8 @@ const ChannelView = forwardRef(function ChannelView({
               <ChannelOptionButton
                 active={showMembers}
                 data-testid="channel-members"
-                title="View members"
-                label="View members"
+                title={t("viewMembers")}
+                label={t("viewMembers")}
                 aria-controls="members-panel"
                 onClick={openMembersPanel}
                 icon={<UsersRoundIcon size={16} strokeWidth={1.8} />}
@@ -1216,7 +1216,7 @@ const ChannelView = forwardRef(function ChannelView({
           onScroll={onMessagesScroll}
         >
           <div className="messages-inner" ref={messagesInnerRef}>
-          {loadingOlder && <div className="older-loader">Loading earlier messages…</div>}
+          {loadingOlder && <div className="older-loader">{t("loadingEarlierMessages")}</div>}
           {loading ? (
             <MessagesSkeleton />
           ) : messages.length === 0 ? (
@@ -1225,7 +1225,7 @@ const ChannelView = forwardRef(function ChannelView({
                 <>
                   {isGroupDm ? <GroupAvatar size={56} /> : <Avatar name={dmAvatarName} src={dmAvatar} size={56} />}
                   <h3>{dmDisplayLabel}</h3>
-                  <p>This is the start of your direct message history. Say hello! 👋</p>
+                  <p>{t("directMessageHistoryStart")}</p>
                 </>
               ) : (
                 <>
@@ -1736,7 +1736,7 @@ function FilesPanel({ files, loading, error, conversationLabel, onRetry, onClose
                 {unavailable.has(file.id) ? <span>This file is no longer available</span> : <span>{file.contentType || "File"} · {formatSize(file.size)} · {file.author?.displayName || "Unknown"} · {formatDate(file.createdAt)}</span>}
               </div>
               <div className="file-actions">
-                <button type="button" className="file-download" onClick={() => onJump(file)} title="Jump to message" aria-label={`Jump to the message containing ${file.name}`}>
+                <button type="button" className="file-download" onClick={() => onJump(file)} title={t("jumpToMessage")} aria-label={t("jumpToMessageContaining").replace("{file}", file.name)}>
                   <MessageSquareTextIcon size={17} strokeWidth={2} />
                 </button>
                 <button type="button" className="file-download" disabled={unavailable.has(file.id)} onClick={() => downloadFile(file)} title={t("downloadFile")} aria-label={t("downloadFile")}>

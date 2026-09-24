@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { UploadIcon } from "lucide-react";
 import Modal, { ModalActions } from "./Modal.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
+import { useI18n } from "../lib/i18n.js";
 
 const PREVIEW_SIZE = 280;
 const OUTPUT_SIZE = 512;
@@ -11,6 +12,7 @@ function clamp(value, min, max) {
 }
 
 export default function ProfilePictureDialog({ file = null, currentSrc = null, onFileSelected, onSave, onClose }) {
+  const { t } = useI18n();
   const imageRef = useRef(null);
   const fileRef = useRef(null);
   const [imageUrl, setImageUrl] = useState("");
@@ -148,7 +150,7 @@ export default function ProfilePictureDialog({ file = null, currentSrc = null, o
   }
 
   return (
-    <Modal title="Update profile picture" onClose={onClose} closeDisabled={saving} testId="profile-picture-dialog">
+    <Modal title={t("updateProfilePicture")} onClose={onClose} closeDisabled={saving} testId="profile-picture-dialog">
       <input ref={fileRef} type="file" accept="image/*" hidden data-testid="profile-picture-import-input" onChange={importFile} />
       <div
         className={`profile-picture-crop${dragging ? " dragging" : ""}`}
@@ -161,7 +163,7 @@ export default function ProfilePictureDialog({ file = null, currentSrc = null, o
           <img
             ref={imageRef}
             src={sourceUrl}
-            alt="Profile preview"
+            alt={t("profilePreview")}
             className="profile-picture-crop-image"
             style={{ width: displayWidth, height: displayHeight, transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))` }}
             onLoad={(event) => setImageSize({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })}
@@ -169,22 +171,22 @@ export default function ProfilePictureDialog({ file = null, currentSrc = null, o
           />
         ) : (
           <button type="button" className="profile-picture-import-empty" onClick={() => fileRef.current?.click()}>
-            Import an image
+            {t("importImage")}
           </button>
         )}
         {sourceUrl && <div className="profile-picture-crop-frame" aria-hidden="true" />}
       </div>
       <button type="button" className="btn-secondary profile-picture-import-button" onClick={() => fileRef.current?.click()} disabled={saving}>
-        <UploadIcon size={16} strokeWidth={2} /><span>Import a different image</span>
+        <UploadIcon size={16} strokeWidth={2} /><span>{t("importDifferentImage")}</span>
       </button>
       <div className="profile-picture-zoom">
-        <span>Zoom</span>
+        <span>{t("zoom")}</span>
         <input type="range" min="0" max="100" step="1" value={Math.round((zoom - 1) * 50)} onChange={changeZoom} disabled={!imageSize || saving} />
       </div>
       {error && <div className="error">{error}</div>}
       <ModalActions>
-        <button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>Cancel</button>
-        <button type="button" className="btn-primary" onClick={save} disabled={!canSave}>{saving ? "Saving…" : "Use this picture"}</button>
+        <button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>{t("cancel")}</button>
+        <button type="button" className="btn-primary" onClick={save} disabled={!canSave}>{saving ? t("saving") : t("useThisPicture")}</button>
       </ModalActions>
     </Modal>
   );

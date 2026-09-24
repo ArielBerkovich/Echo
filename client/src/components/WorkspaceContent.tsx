@@ -84,5 +84,5 @@ function ActiveWorkspaceView({ view, groups, search, browse, feeds, conversation
     content = <ChannelView ref={channelViewRef} key={channel.id} channel={channel} {...props} />;
   }
 
-  return <Suspense fallback={<div className="empty-state"><p>Loading…</p></div>}>{content}</Suspense>;
+  return <Suspense fallback={<div className="empty-state"><p>{t("loading")}</p></div>}>{content}</Suspense>;
 }

@@ -6,6 +6,7 @@ import Avatar from "./Avatar.js";
 import { Button, CloseButton } from "./Button.js";
 import { Input, InputShell } from "./Input.js";
 import Modal from "./Modal.js";
+import { useI18n } from "../lib/i18n.js";
 import {
   FileTextIcon,
   HashIcon,
@@ -24,6 +25,7 @@ const MEMBER_LIST_HEIGHT = 340;
 // Centered channel information dialog. Members can edit the channel metadata,
 // add people, and manage existing members without leaving the conversation.
 export default function ChannelDetailsPanel({ channel, users = [], user, onUpdated, onOpenProfile, onAddPeople, onPromoteManager, onChangeVisibility, onLeave, onClose }) {
+  const { t } = useI18n();
   const [error, setError] = useState(null);
   const [errorField, setErrorField] = useState(null);
   const [memberQuery, setMemberQuery] = useState("");
@@ -56,9 +58,9 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
     [channel.id],
   );
   const tabs = [
-    ["details", "Details"],
-    ["members", "Members"],
-    ...(!isGeneralChannel ? [["actions", "Actions"]] : []),
+    ["details", t("details")],
+    ["members", t("members")],
+    ...(!isGeneralChannel ? [["actions", t("actions")]] : []),
   ];
   const q = memberQuery.trim().toLowerCase();
   const shownMembers = useMemo(() => q
@@ -156,7 +158,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
 
   return (
     <Modal
-      title="Channel details"
+      title={t("channelDetails")}
       className="details-panel channel-details-dialog"
       backdropClassName="channel-details-backdrop"
       testId="channel-details-dialog"
@@ -170,10 +172,10 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
               <ChannelIcon size={21} strokeWidth={2} />
             </span>
             <div className="channel-details-heading-copy">
-              <span className="channel-details-eyebrow">Channel details</span>
+              <span className="channel-details-eyebrow">{t("channelDetails")}</span>
               <Dialog.Title id="channel-details-title">{channel.name}</Dialog.Title>
               <span className="channel-details-meta">
-                {channel.type === "private" ? "Private channel" : "Public channel"} · {channel.memberCount ?? members.length} members
+                {channel.type === "private" ? t("privateChannel") : t("publicChannel")} · {channel.memberCount ?? members.length} {t("groupMembers")}
               </span>
             </div>
           </div>
@@ -201,7 +203,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
 
         <div className={`channel-details-content channel-details-content-${activeTab}`}>
           {activeTab === "details" && <div className="channel-details-tabpanel" role="tabpanel" id="channel-details-panel-details" aria-labelledby="channel-details-tab-details">
-            <div className="channel-details-overview-title">About this channel</div>
+            <div className="channel-details-overview-title">{t("aboutChannel")}</div>
             <div className="channel-details-fields">
               {canManageMembers && !isGeneralChannel && (
                 <EditableName
@@ -212,18 +214,18 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
                 />
               )}
               <EditableField
-                label="Topic"
+                label={t("topic")}
                 icon={<FileTextIcon size={15} strokeWidth={1.9} />}
                 value={channel.topic}
-                placeholder="Add a topic to help people know what this channel is for."
+                placeholder={t("addTopicHint")}
                 editable={isMember}
                 onSave={(value) => save({ topic: value })}
               />
               <EditableField
-                label="Description"
+                label={t("description")}
                 icon={<FileTextIcon size={15} strokeWidth={1.9} />}
                 value={channel.description}
-                placeholder="Add a description for this channel."
+                placeholder={t("addDescriptionHint")}
                 editable={isMember}
                 multiline
                 onSave={(value) => save({ description: value })}
@@ -231,7 +233,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
             </div>
 
             <section className="channel-details-section channel-details-created-section">
-              <div className="channel-details-section-title">Created by</div>
+              <div className="channel-details-section-title">{t("createdBy")}</div>
               <div className="channel-details-created">
                 <Avatar name={creator?.displayName || "Echo"} src={creator?.avatarUrl} size={32} />
                 {creator ? (
@@ -251,11 +253,10 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
               <section className="channel-details-section channel-details-posting-section cd-section">
                 <div className="channel-details-section-head">
                   <div>
-                    <div className="channel-details-section-title">Posting permissions</div>
+                    <div className="channel-details-section-title">{t("postingPermissions")}</div>
                     <p className="channel-details-section-hint">
                       {channel.readOnly
-                        ? "Only the channel creator and managers can post messages and replies."
-                        : "Everyone in this channel can post messages and replies."}
+                        ? t("postingManagersHint") : t("postingEveryoneHint")}
                     </p>
                   </div>
                   <label className={`channel-readonly-toggle${channel.readOnly ? " is-enabled" : ""}`}>
@@ -263,7 +264,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
                       type="checkbox"
                       checked={!!channel.readOnly}
                       data-testid="channel-readonly-toggle"
-                      aria-label="Managers only"
+                      aria-label={t("managersOnly")}
                       onChange={(event) => {
                         void save({ readOnly: event.target.checked }).catch(() => {});
                       }}
@@ -272,8 +273,8 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
                       <span className="channel-readonly-switch-thumb" />
                     </span>
                     <span className="channel-readonly-toggle-copy">
-                      <span>Managers only</span>
-                      <span className="channel-readonly-toggle-state">{channel.readOnly ? "On" : "Off"}</span>
+                      <span>{t("managersOnly")}</span>
+                      <span className="channel-readonly-toggle-state">{channel.readOnly ? t("on") : t("off")}</span>
                     </span>
                   </label>
                 </div>
@@ -282,15 +283,15 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
 
           {(channel.createdBy === user.id && channel.type === "private" || isMember && channel.name?.toLowerCase() !== "general") && (
             <section className="channel-details-section channel-details-actions-section">
-              <div className="channel-details-section-title">Channel actions</div>
-              <p className="channel-details-section-hint">Less frequent changes live here so the conversation stays focused.</p>
+              <div className="channel-details-section-title">{t("channelActions")}</div>
+              <p className="channel-details-section-hint">{t("channelActionsHint")}</p>
               <div className="channel-details-actions-list">
                 {channel.createdBy === user.id && channel.type === "private" && (
                   <button type="button" className="channel-details-action channel-details-action-visibility" data-testid="channel-visibility" onClick={onChangeVisibility}>
                     <Globe2Icon size={16} strokeWidth={1.9} />
                     <span>
-                      <strong>Make public</strong>
-                      <small>Let anyone in the workspace discover and join this channel.</small>
+                      <strong>{t("makePublic")}</strong>
+                      <small>{t("makePublicHint")}</small>
                     </span>
                   </button>
                 )}
@@ -298,8 +299,8 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
                   <button type="button" className="channel-details-action channel-details-action-danger" data-testid="channel-leave" onClick={onLeave}>
                     <LogOutIcon size={16} strokeWidth={1.9} />
                     <span>
-                      <strong>Leave channel</strong>
-                      <small>Stop receiving updates from this conversation.</small>
+                      <strong>{t("leaveChannel")}</strong>
+                      <small>{t("leaveChannelHint")}</small>
                     </span>
                   </button>
                 )}
@@ -312,7 +313,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
             {canAddPeople && (
               <Button variant="subtle" className="channel-add-people channel-details-add-primary" onClick={onAddPeople}>
                 <PlusIcon size={17} strokeWidth={2.2} />
-                <span>Add people to this channel</span>
+                <span>{t("addPeople")}</span>
               </Button>
             )}
 
@@ -328,13 +329,13 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
                   memberListRef.current?.scrollTo({ top: 0 });
                 }}
                 onKeyDown={onMemberSearchKeyDown}
-                placeholder="Search members"
-                aria-label="Search members"
+                placeholder={t("searchMembers")}
+                aria-label={t("searchMembers")}
               />
             </InputShell>
 
             <div className="channel-details-managers" data-testid="channel-details-managers" aria-label="Channel managers">
-              <span className="channel-details-managers-label">Managers</span>
+              <span className="channel-details-managers-label">{t("managers")}</span>
               {managerMembers.length > 0 ? (
                 managerMembers.map((manager) => (
                   <button
@@ -347,7 +348,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
                   </button>
                 ))
               ) : (
-                <span className="channel-details-no-managers">None assigned</span>
+                <span className="channel-details-no-managers">{t("noManagers")}</span>
               )}
             </div>
 
@@ -357,9 +358,9 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
               onScroll={(event) => setMemberListScrollTop(event.currentTarget.scrollTop)}
             >
               {members.length === 0 ? (
-                <div className="channel-details-empty">No members yet.</div>
+                <div className="channel-details-empty">{t("noMembersYet")}</div>
               ) : shownMembers.length === 0 ? (
-                <div className="channel-details-empty">No members match “{memberQuery.trim()}”.</div>
+                <div className="channel-details-empty">{t("noMembersMatchQuery").replace("{query}", memberQuery.trim())}</div>
               ) : (
                 <div className="channel-details-member-virtual-content" style={{ height: shownMembers.length * MEMBER_ROW_HEIGHT }}>
                 {visibleMembers.map((member, index) => (
@@ -377,9 +378,9 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
                         onClick={() => onOpenProfile?.(member.id)}
                       >
                         {member.displayName}
-                        {member.id === channel.createdBy && <span className="channel-details-creator">Creator</span>}
+                        {member.id === channel.createdBy && <span className="channel-details-creator">{t("creator")}</span>}
                         {member.id !== channel.createdBy && (channel.managers || []).includes(member.id) && (
-                          <span className="channel-details-creator">Manager</span>
+                          <span className="channel-details-creator">{t("manager")}</span>
                         )}
                       </button>
                       <span className="channel-details-person-handle">@{member.username}</span>
@@ -393,9 +394,9 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
                             data-testid={`channel-promote-${member.id}`}
                             onClick={() => promoteManager(member)}
                             disabled={promotingId === member.id}
-                            title="Make manager"
+                            title={t("makeManager")}
                           >
-                            {promotingId === member.id ? "Saving…" : "Make manager"}
+                            {promotingId === member.id ? t("saving") : t("makeManager")}
                           </button>
                         )}
                         <button
@@ -403,8 +404,8 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
                           className="channel-details-person-remove"
                           data-testid={`channel-remove-${member.id}`}
                           onClick={() => removeMember(member)}
-                          title="Remove from channel"
-                          aria-label={`Remove ${member.displayName} from the channel`}
+                          title={t("removeFromChannel")}
+                          aria-label={`${t("removeFromChannel")}: ${member.displayName}`}
                         >
                           <Trash2Icon size={14} strokeWidth={1.9} aria-hidden="true" />
                         </button>
@@ -424,6 +425,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
 }
 
 function EditableName({ value, error, onCheckAvailability, onSave }) {
+  const { t } = useI18n();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value || "");
   const [saving, setSaving] = useState(false);
@@ -492,11 +494,11 @@ function EditableName({ value, error, onCheckAvailability, onSave }) {
       <div className="channel-details-section-head compact">
         <div className="channel-details-section-title">
           <PencilIcon size={15} strokeWidth={1.9} />
-          <span>Channel name</span>
+          <span>{t("channelName")}</span>
         </div>
         {!editing && (
           <Button variant="subtle" className="channel-details-edit" onClick={start} data-testid="channel-rename-edit">
-            Edit
+            {t("edit")}
           </Button>
         )}
       </div>
@@ -507,7 +509,7 @@ function EditableName({ value, error, onCheckAvailability, onSave }) {
             value={draft}
             autoFocus
             maxLength={64}
-            aria-label="Channel name"
+            aria-label={t("channelName")}
             aria-invalid={showFormatError || showTakenError}
             aria-describedby={showFormatError || showTakenError ? "channel-rename-hint channel-rename-validation" : "channel-rename-hint"}
             onChange={(event) => {
@@ -522,17 +524,17 @@ function EditableName({ value, error, onCheckAvailability, onSave }) {
             }}
           />
           <div className="channel-details-section-hint" id="channel-rename-hint">
-            Lowercase letters, numbers, and single dashes only.
+            {t("channelNameHint")}
           </div>
           {showFormatError && <div className="error" id="channel-rename-validation" role="alert">{validationError}</div>}
-          {changed && valid && availability === "checking" && <div className="channel-details-section-hint" role="status">Checking name availability…</div>}
+          {changed && valid && availability === "checking" && <div className="channel-details-section-hint" role="status">{t("checkingName")}</div>}
           {showTakenError && <div className="error" id="channel-rename-validation" role="alert">This channel name is already in use.</div>}
           {changed && valid && availability === "error" && <div className="error" id="channel-rename-validation" role="alert">Couldn’t check this name. Try again.</div>}
           {error && <div className="error" role="alert">{error}</div>}
           <div className="channel-details-edit-actions">
-            <button type="button" className="btn-secondary" onClick={() => setEditing(false)}>Cancel</button>
+            <button type="button" className="btn-secondary" onClick={() => setEditing(false)}>{t("cancel")}</button>
             <button type="button" className="btn-primary" disabled={!canSave} onClick={() => void commit()}>
-              {saving ? "Saving…" : "Save"}
+              {saving ? t("saving") : t("save")}
             </button>
           </div>
         </div>
@@ -544,6 +546,7 @@ function EditableName({ value, error, onCheckAvailability, onSave }) {
 }
 
 function EditableField({ label, value, placeholder, editable, multiline, onSave, icon }) {
+  const { t } = useI18n();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value || "");
   const [saving, setSaving] = useState(false);
@@ -588,7 +591,7 @@ function EditableField({ label, value, placeholder, editable, multiline, onSave,
               }
             }}
           >
-            {value ? "Edit" : "Add"}
+            {value ? t("edit") : t("add")}
           </Button>
         )}
       </div>
@@ -615,9 +618,9 @@ function EditableField({ label, value, placeholder, editable, multiline, onSave,
             />
           )}
           <div className="channel-details-edit-actions">
-            <button type="button" className="btn-secondary" onClick={() => setEditing(false)}>Cancel</button>
+            <button type="button" className="btn-secondary" onClick={() => setEditing(false)}>{t("cancel")}</button>
             <button type="button" className="btn-primary" disabled={saving} onClick={commit}>
-              {saving ? "Saving…" : "Save"}
+              {saving ? t("saving") : t("save")}
             </button>
           </div>
         </div>

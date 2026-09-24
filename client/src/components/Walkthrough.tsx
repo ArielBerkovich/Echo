@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useState } from "react";
 import { useI18n } from "../lib/i18n.js";
+import { languageDirection } from "../lib/languages.js";
 
 // A lightweight first-run guided tour. Each step optionally spotlights a UI
 // element (dimming everything else) and shows a tooltip card beside it; steps
@@ -186,13 +187,14 @@ export default function Walkthrough({ onClose }) {
   const [rect, setRect] = useState(null);
   const englishStep = STEPS[i];
   const [title, body] = language === "he" ? HEBREW_STEPS[i] : [englishStep.title, englishStep.body];
+  const isRtl = languageDirection(language) === "rtl";
   const step = {
     ...englishStep,
     title,
     body,
-    placement: language === "he" && englishStep.placement === "right"
+    placement: isRtl && englishStep.placement === "right"
       ? "left"
-      : language === "he" && englishStep.placement === "left"
+      : isRtl && englishStep.placement === "left"
         ? "right"
         : englishStep.placement,
   };

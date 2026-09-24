@@ -6,11 +6,13 @@ import { api } from "../api.js";
 import Modal, { ModalActions } from "./Modal.js";
 import { emojiNameSchema, normalizeEmojiNameInput } from "../lib/formSchemas.js";
 import { uploadSizeError } from "../lib/uploads.js";
+import { useI18n } from "../lib/i18n.js";
 
 const MAX_EMOJI_BYTES = 5 * 1024 * 1024;
 
 // Upload an image/GIF and register it as a :shortcode: custom emoji.
 export default function AddEmojiModal({ existing = [], onCreated, onClose }) {
+  const { t } = useI18n();
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [serverError, setServerError] = useState(null);
@@ -44,7 +46,7 @@ export default function AddEmojiModal({ existing = [], onCreated, onClose }) {
   function pickFile(e) {
     const f = e.target.files?.[0];
     if (f && !f.type.startsWith("image/")) {
-      setServerError("Custom emoji must be an image (PNG, GIF, etc.)");
+      setServerError(t("customEmojiImageRequired"));
       return;
     }
     const sizeError = uploadSizeError(f ? [f] : [], MAX_EMOJI_BYTES, "Emoji images");
@@ -59,7 +61,7 @@ export default function AddEmojiModal({ existing = [], onCreated, onClose }) {
 
   const submit = handleSubmit(async (values) => {
     if (!file) {
-      setServerError("An image file is required");
+      setServerError(t("emojiImageFileRequired"));
       return;
     }
     setServerError(null);
@@ -73,11 +75,11 @@ export default function AddEmojiModal({ existing = [], onCreated, onClose }) {
   });
 
   return (
-    <Modal title="Add custom emoji" onClose={onClose}>
+    <Modal title={t("addCustomEmoji")} onClose={onClose}>
       <form data-testid="add-emoji-modal" onSubmit={submit}>
         <div className="emoji-form-row">
           <label className="emoji-drop">
-            {preview ? <img src={preview} alt="preview" /> : <span className="emoji-drop-hint">Choose image / GIF</span>}
+            {preview ? <img src={preview} alt={t("emojiPreview")} /> : <span className="emoji-drop-hint">{t("chooseEmojiImage")}</span>}
             <input
               type="file"
               accept="image/*"
@@ -88,7 +90,7 @@ export default function AddEmojiModal({ existing = [], onCreated, onClose }) {
           </label>
 
           <div className="emoji-form-fields">
-            <label className="emoji-name-label">Shortcode</label>
+            <label className="emoji-name-label">{t("emojiShortcode")}</label>
             <div className="emoji-name-input">
               <span>:</span>
               <input
@@ -113,11 +115,11 @@ export default function AddEmojiModal({ existing = [], onCreated, onClose }) {
               {errors.name?.message ? (
                 <span className="bad">{errors.name.message}</span>
               ) : taken ? (
-                <span className="bad">":{cleanName}:" already exists</span>
+                <span className="bad">{t("emojiAlreadyExists").replace("{name}", cleanName)}</span>
               ) : watchedName ? (
-                <span>Type :{cleanName || "name"}: in a message to use it.</span>
+                <span>{t("emojiUsageHint").replace("{name}", cleanName || t("name"))}</span>
               ) : (
-                <span>Type :name: in a message to use it.</span>
+                <span>{t("emojiUsageHint").replace("{name}", t("name"))}</span>
               )}
             </div>
           </div>
@@ -127,10 +129,10 @@ export default function AddEmojiModal({ existing = [], onCreated, onClose }) {
 
         <ModalActions>
           <button type="button" className="btn-secondary" data-testid="emoji-cancel" onClick={onClose}>
-            Cancel
+            {t("cancel")}
           </button>
           <button type="submit" className="btn-primary" data-testid="emoji-submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving…" : "Add emoji"}
+            {isSubmitting ? t("saving") : t("addEmoji")}
           </button>
         </ModalActions>
       </form>

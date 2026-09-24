@@ -10,7 +10,7 @@ describe("neutralizeMentions", () => {
 });
 
 describe("buildQuoteMarkdown", () => {
-  it("quotes message bodies without leaving active mention triggers", () => {
+  it("includes the author attribution and quotes bodies without active mention triggers", () => {
     const markdown = buildQuoteMarkdown({
       author: { displayName: "Alice Test" },
       body: [
@@ -24,6 +24,7 @@ describe("buildQuoteMarkdown", () => {
       markdown,
       [
         "> Alice Test said:",
+        "> ",
         "> Hello @\u2060bob.builder",
         "> ",
         "> Please check @\u2060everyone and the deployment notes.",

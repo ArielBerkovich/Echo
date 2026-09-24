@@ -177,7 +177,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
           </span>
           <div>
             <h2 id="members-panel-title">{t("members")}</h2>
-            <span>{channel.memberCount ?? members.length} {t("peopleIn")} {isGroupDm ? t("groupDm") : `#${channel.name}`}</span>
+            <span>{isGroupDm ? `${channel.memberCount ?? members.length} ${t("groupMembers")}` : `${channel.memberCount ?? members.length} ${t("peopleIn")} #${channel.name}`}</span>
           </div>
         </div>
         <CloseButton size="sm" onClick={onClose} label={t("closeMembers")} />
@@ -191,35 +191,35 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
                 <input
                   value={name}
                   onChange={(event) => setName(event.target.value)}
-                  placeholder="Group DM name"
-                  aria-label="Group DM name"
+                  placeholder={t("groupDmName")}
+                  aria-label={t("groupDmName")}
                   autoFocus
                 />
-                <Button variant="primary" onClick={renameGroupDm} disabled={savingName || !name.trim()}>{savingName ? "Saving…" : "Save"}</Button>
-                <Button variant="secondary" onClick={() => setEditName(false)} disabled={savingName}>Cancel</Button>
+                <Button variant="primary" onClick={renameGroupDm} disabled={savingName || !name.trim()}>{savingName ? t("saving") : t("save")}</Button>
+                <Button variant="secondary" onClick={() => setEditName(false)} disabled={savingName}>{t("cancel")}</Button>
                 {managementError && <div className="error members-panel-error group-dm-error" role="alert">{managementError}</div>}
               </div>
             ) : (
               <Button variant="subtle" className="members-panel-action" onClick={() => { setName(channel.name?.startsWith("dm-") ? "" : channel.name || ""); setEditName(true); }}>
-                Rename group DM
+                {t("renameGroupDm")}
               </Button>
             )}
             {convertOpen ? (
               <div className="group-dm-convert-editor">
-                <p>All current members and messages will stay, and this conversation will become a private channel.</p>
+                <p>{t("convertGroupDmHint")}</p>
                 <input
                   value={name}
                   onChange={(event) => setName(event.target.value)}
-                  placeholder="New private channel name"
-                  aria-label="New private channel name"
+                  placeholder={t("privateChannelName")}
+                  aria-label={t("privateChannelName")}
                 />
-                <Button variant="primary" onClick={convertGroupDm} disabled={converting || !name.trim()}>{converting ? "Converting…" : "Convert"}</Button>
-                <Button variant="secondary" onClick={() => setConvertOpen(false)} disabled={converting}>Cancel</Button>
+                <Button variant="primary" onClick={convertGroupDm} disabled={converting || !name.trim()}>{converting ? t("converting") : t("convert")}</Button>
+                <Button variant="secondary" onClick={() => setConvertOpen(false)} disabled={converting}>{t("cancel")}</Button>
                 {managementError && <div className="error members-panel-error group-dm-error" role="alert">{managementError}</div>}
               </div>
             ) : (
               <Button variant="subtle" className="members-panel-action" onClick={() => { setName(""); setConvertOpen(true); }}>
-                Convert to private channel
+                {t("convertPrivateChannel")}
               </Button>
             )}
           </section>

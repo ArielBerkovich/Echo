@@ -15,8 +15,8 @@ import { readJson, readString, writeJson, writeString } from "./lib/storage.js";
 import { notifyPermission, notifySupported, requestNotifyPermission, setNotifyPref } from "./lib/notify.js";
 import { BUILT_IN_GIT_EMOJIS } from "./lib/gitEmojis.js";
 import { THEMES, useThemePreferences } from "./lib/useThemePreferences.js";
-import { useInterfaceDirection } from "./lib/useInterfaceDirection.js";
 import { useI18n } from "./lib/i18n.js";
+import { languageDirection } from "./lib/languages.js";
 import { useConversationCache } from "./lib/useConversationCache.js";
 import { useWorkspaceQueries, workspaceKeys } from "./lib/useWorkspaceQueries.js";
 import { queryKeys } from "./lib/queryClient.js";
@@ -124,11 +124,10 @@ export default function App() {
     return () => window.removeEventListener("beforeunload", disconnectSocket);
   }, []);
   const { theme, setTheme, mode, setMode, toggleMode } = useThemePreferences();
-  const { preference: interfaceDirection, setPreference: setInterfaceDirection } = useInterfaceDirection();
   const { language, t } = useI18n();
-  const effectiveDirection = language === "he" ? "rtl" : interfaceDirection;
+  const effectiveDirection = languageDirection(language);
   useEffect(() => {
-    document.documentElement.dir = language === "he" ? "rtl" : "ltr";
+    document.documentElement.dir = effectiveDirection;
     document.documentElement.dataset.interfaceDirection = effectiveDirection;
   }, [effectiveDirection, language]);
   const {
@@ -1495,7 +1494,7 @@ export default function App() {
     return (
       <>
         <div className="centered" role="status">
-          {startupUnavailable ? "Echo is restarting… reconnecting automatically." : "Loading…"}
+          {startupUnavailable ? t("echoRestarting") : t("loading")}
         </div>
         {showSessionExpiredDialog ? <SessionExpiredDialog onSignOut={handleLogout} /> : null}
       </>
@@ -1675,8 +1674,6 @@ export default function App() {
               onSelectTheme: setTheme,
               mode,
               onSelectMode: setMode,
-              interfaceDirection: effectiveDirection,
-              onSelectInterfaceDirection: setInterfaceDirection,
               onUpdated: (updated) => setUser((previous) => ({ ...previous, ...updated })),
               onIntegrationsChanged: () => queryClient.invalidateQueries({ queryKey: workspaceKeys.channels }),
               onClose: closeSettings,
@@ -1750,7 +1747,6 @@ export default function App() {
         theme={theme}
         themes={THEMES}
         mode={mode}
-        interfaceDirection={effectiveDirection}
         showCreate={showCreate}
         showNewMessage={showNewMessage}
         showAddPeople={showAddPeople}

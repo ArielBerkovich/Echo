@@ -23,6 +23,7 @@ import {
 } from "../lib/notify.js";
 import MessageSoundControls from "./MessageSoundControls.js";
 import { CloseButton } from "./Button.js";
+import { useI18n } from "../lib/i18n.js";
 
 const SETTINGS_TABS = [
   { id: "account", label: "Account", Icon: UserRoundIcon },
@@ -73,13 +74,12 @@ export default function SettingsModal({
   onSelectTheme,
   mode = "dark",
   onSelectMode,
-  interfaceDirection = "ltr",
-  onSelectInterfaceDirection,
   onUpdated,
   onIntegrationsChanged,
   settingsTab = "account",
   onSettingsTabChange,
 }) {
+  const { language, setLanguage, t } = useI18n();
   const [displayName, setDisplayName] = useState(user.displayName);
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl || null);
   const [busy, setBusy] = useState(false);
@@ -203,6 +203,17 @@ export default function SettingsModal({
   }, [activeTab, user.isAdmin]);
 
   const visibleTabs = SETTINGS_TABS.filter((tab) => !tab.adminOnly || user.isAdmin);
+  const tabLabels = {
+    account: t("account"),
+    appearance: t("appearance"),
+    preferences: t("preferences"),
+    workspace: t("workspace"),
+    integrations: t("integrations"),
+    desktop: t("desktop"),
+    shortcuts: t("shortcuts"),
+    api: t("api"),
+    webhooks: t("webhooks"),
+  };
 
   function onAvatarFileSelected(file) {
     if (!file) return;
@@ -551,7 +562,7 @@ export default function SettingsModal({
           <nav className="settings-nav-list">
             {visibleTabs.map(({ id, label, Icon }) => (
                 <button key={id} type="button" className={`settings-nav-item${activeTab === id ? " active" : ""}`} onClick={() => { setActiveTab(id); onSettingsTabChange?.(id); }} aria-current={activeTab === id ? "page" : undefined}>
-                <Icon size={17} strokeWidth={1.8} /><span>{label}</span>
+                <Icon size={17} strokeWidth={1.8} /><span>{tabLabels[id] || label}</span>
               </button>
             ))}
           </nav>
@@ -559,42 +570,50 @@ export default function SettingsModal({
         <main className={`settings-content settings-content-${activeTab}`}>
           {activeTab === "account" && <>
             <section className="settings-section settings-profile-section">
-              <h3>Profile</h3>
+              <h3>{t("profile")}</h3>
               <div className="settings-profile-fields">
                 <div className="settings-profile-field">
-                  <div className="settings-profile-field-label">Profile picture</div>
+                  <div className="settings-profile-field-label">{t("profilePicture")}</div>
                 <div className="settings-avatar-row">
                     <Avatar name={displayName} src={avatarUrl} size={64} />
                   <div className="settings-avatar-actions">
-                    <button type="button" className="btn-secondary" data-testid="settings-avatar-button" disabled={busy} onClick={() => setAvatarDialogOpen(true)}>{avatarUrl ? "Change" : "Upload"}</button>
-                    {avatarUrl && <button type="button" className="link-danger" data-testid="settings-avatar-remove" disabled={busy} onClick={removeAvatar}>Remove</button>}
+                    <button type="button" className="btn-secondary" data-testid="settings-avatar-button" disabled={busy} onClick={() => setAvatarDialogOpen(true)}>{avatarUrl ? t("change") : t("upload")}</button>
+                    {avatarUrl && <button type="button" className="link-danger" data-testid="settings-avatar-remove" disabled={busy} onClick={removeAvatar}>{t("remove")}</button>}
                   </div>
                 </div>
                 </div>
                 <div className="settings-profile-field">
-                  <div className="settings-profile-field-label">Display name</div>
+                  <div className="settings-profile-field-label">{t("displayName")}</div>
                 <div className="settings-name-row">
                   <input className="settings-input" data-testid="settings-display-name" value={displayName} maxLength={MAX_DISPLAY_NAME_LENGTH} dir="auto" onChange={(e) => setDisplayName(e.target.value)} />
-                  <button type="button" className="btn-primary" disabled={!nameChanged || busy} onClick={saveName}>Save</button>
+                  <button type="button" className="btn-primary" disabled={!nameChanged || busy} onClick={saveName}>{t("save")}</button>
                 </div>
                 </div>
               </div>
             </section>
             <section className="settings-section">
-              <h3>Desktop notifications</h3>
-              <p className="settings-hint">Get a desktop alert for direct messages, @mentions, and Starred messages when Echo isn't focused.</p>
+              <h3>{t("desktopNotifications")}</h3>
+              <p className="settings-hint">{t("desktopNotificationsHint")}</p>
               <NotificationToggle />
             </section>
             {!user.isAdmin ? (user.canChangePassword ? <ChangePassword /> : <SsoPasswordNotice />) : <AdminPasswordReset users={users} currentUserId={user.id} />}
           </>}
 
           {activeTab === "preferences" && <section className="settings-section preferences-page" data-testid="preferences-page">
-            <h3>Preferences</h3>
+            <h3>{t("preferences")}</h3>
+            <section className="settings-preference-group settings-language-section" aria-labelledby="language-settings-heading">
+              <h3 id="language-settings-heading">{t("language")}</h3>
+              <p className="settings-hint">{t("chooseLanguage")}</p>
+              <div className="mode-toggle" role="group" aria-label={t("language")}>
+                <button type="button" className={`mode-option${language === "en" ? " active" : ""}`} data-testid="settings-language-en" onClick={() => setLanguage("en")} aria-pressed={language === "en"}>{t("english")}</button>
+                <button type="button" className={`mode-option${language === "he" ? " active" : ""}`} data-testid="settings-language-he" onClick={() => setLanguage("he")} aria-pressed={language === "he"}>{t("hebrew")}</button>
+              </div>
+            </section>
             <section className="preferences-message-sounds" aria-labelledby="message-sounds-heading">
               <div className="preferences-message-sounds-heading">
                 <div>
-                  <h3 id="message-sounds-heading">Message sounds</h3>
-                  <p>Choose a sound for new messages.</p>
+                  <h3 id="message-sounds-heading">{t("messageSounds")}</h3>
+                  <p>{t("chooseMessageSound")}</p>
                 </div>
               </div>
               <MessageSoundControls />
@@ -605,15 +624,15 @@ export default function SettingsModal({
             <div className="mention-webhook-hero">
               <span className="mention-webhook-icon" aria-hidden="true"><WebhookIcon size={22} strokeWidth={2} /></span>
               <div>
-                <h3>Personal webhook</h3>
-                <p>Send a signed event when someone mentions <strong>@{user.username}</strong> or sends you a direct message.</p>
+                <h3>{t("personalWebhook")}</h3>
+                <p>{t("webhookHint")}</p>
               </div>
-              <span className={`mention-webhook-status${mentionWebhook?.enabled ? " is-active" : ""}`}>{mentionWebhook?.enabled ? "Active" : mentionWebhook ? "Paused" : "Not configured"}</span>
+              <span className={`mention-webhook-status${mentionWebhook?.enabled ? " is-active" : ""}`}>{mentionWebhook?.enabled ? t("webhookActive") : mentionWebhook ? t("webhookPaused") : t("webhookNotConfigured")}</span>
             </div>
             <div className="mention-webhook-card">
               <div className="mention-webhook-field">
-                <label className="settings-profile-field-label" htmlFor="mention-webhook-url">Destination URL</label>
-                <span>Echo sends your new mention and direct-message events here.</span>
+                <label className="settings-profile-field-label" htmlFor="mention-webhook-url">{t("destinationUrl")}</label>
+                <span>{t("webhookDestinationHint")}</span>
               </div>
               <input
                 id="mention-webhook-url"
@@ -626,24 +645,24 @@ export default function SettingsModal({
                 disabled={mentionWebhookLoading}
               />
               <label className="mention-webhook-enabled">
-                <span><strong>Deliver events</strong><small>Send each new @mention and direct message to this endpoint.</small></span>
+                <span><strong>{t("deliverEvents")}</strong><small>{t("deliverEventsHint")}</small></span>
                 <span className={`integration-switch${mentionWebhookEnabled ? " is-on" : ""}`}><input type="checkbox" checked={mentionWebhookEnabled} disabled={mentionWebhookLoading} onChange={(event) => { setMentionWebhookEnabled(event.target.checked); setMentionWebhookSaved(false); }} /><span className="integration-switch-track"><span /></span></span>
               </label>
             </div>
             <div className="mention-webhook-actions">
-              <button type="button" className="btn-primary" data-testid="mention-webhook-save" disabled={mentionWebhookLoading || !mentionWebhookUrl.trim()} onClick={saveMentionWebhook}>{mentionWebhook ? "Save webhook" : "Create webhook"}</button>
-              {mentionWebhook && <button type="button" className="btn-danger-outline" data-testid="mention-webhook-remove" disabled={mentionWebhookLoading} onClick={removeMentionWebhook}>Remove webhook</button>}
+              <button type="button" className="btn-primary" data-testid="mention-webhook-save" disabled={mentionWebhookLoading || !mentionWebhookUrl.trim()} onClick={saveMentionWebhook}>{mentionWebhook ? t("saveWebhook") : t("createWebhook")}</button>
+              {mentionWebhook && <button type="button" className="btn-danger-outline" data-testid="mention-webhook-remove" disabled={mentionWebhookLoading} onClick={removeMentionWebhook}>{t("removeWebhook")}</button>}
               {mentionWebhookSaved && <span className="workspace-save-status">Saved ✓</span>}
             </div>
             {mentionWebhook?.signingSecret && <div className="mention-webhook-secret">
               <div>
-                <label className="settings-profile-field-label" htmlFor="mention-webhook-secret">Signing secret</label>
+                <label className="settings-profile-field-label" htmlFor="mention-webhook-secret">{t("signingSecret")}</label>
                 <p>Before accepting an event, verify that <code>x-echo-signature</code> is an HMAC-SHA256 of <code>x-echo-timestamp</code>, a period, and the <strong>raw request body</strong>. Keep this secret on your server—never expose it in a browser or commit it.</p>
               </div>
               <div className="mention-webhook-secret-value">
                 <input id="mention-webhook-secret" className="settings-input" data-testid="mention-webhook-secret" value={mentionWebhook.signingSecret} readOnly />
                 <button type="button" className="btn-secondary" data-testid="mention-webhook-copy-secret" onClick={copyMentionWebhookSecret} aria-live="polite">
-                  {mentionWebhookSecretCopied ? <><CheckIcon size={15} /> Copied</> : "Copy"}
+                  {mentionWebhookSecretCopied ? <><CheckIcon size={15} /> {t("copied")}</> : t("copy")}
                 </button>
               </div>
             </div>}
@@ -695,15 +714,6 @@ export default function SettingsModal({
               {themes.map((t) => <button key={t.id} type="button" className={`theme-card${theme === t.id ? " active" : ""}`} data-testid={`settings-theme-${t.id}`} onClick={() => onSelectTheme?.(t.id)} aria-pressed={theme === t.id}>
                 <span className="theme-swatch">{t.swatch.map((c, i) => <span key={i} style={{ background: c }} />)}</span><span className="theme-name">{t.label}</span>
               </button>)}
-            </div>
-            <div className="settings-direction-control">
-              <h3>Interface direction</h3>
-              <p className="settings-hint">Choose your chat layout direction. Left to right is the default.</p>
-              <div className="mode-toggle" role="group" aria-label="Interface direction">
-                {[['ltr', 'Left to right'], ['rtl', 'Right to left']].map(([value, label]) => (
-                  <button key={value} type="button" className={`mode-option${interfaceDirection === value ? " active" : ""}`} data-testid={`settings-direction-${value}`} onClick={() => onSelectInterfaceDirection?.(value)} aria-pressed={interfaceDirection === value}>{label}</button>
-                ))}
-              </div>
             </div>
           </section>}
 
@@ -920,46 +930,46 @@ export default function SettingsModal({
 }
 
 function DesktopDownloads({ downloads, error }) {
-  if (error) return <section className="settings-section"><h3>Desktop apps</h3><p className="error">{error}</p></section>;
-  if (!downloads) return <section className="settings-section"><h3>Desktop apps</h3><p className="settings-hint">Loading download options…</p></section>;
+  const { t } = useI18n();
+  if (error) return <section className="settings-section"><h3>{t("desktopApps")}</h3><p className="error">{error}</p></section>;
+  if (!downloads) return <section className="settings-section"><h3>{t("desktopApps")}</h3><p className="settings-hint">{t("loadingDownloadOptions")}</p></section>;
 
   const platforms = [
-    { key: "windows", label: "Windows", description: "Install the native Echo desktop app for Windows." },
-    { key: "linux", label: "Linux", description: "Download the portable Echo AppImage for Linux." },
+    { key: "windows", label: "Windows", description: t("windowsDesktopHint") },
+    { key: "linux", label: "Linux", description: t("linuxDesktopHint") },
   ];
   return (
     <section className="settings-section desktop-downloads-section">
-      <h3>Desktop apps</h3>
-      <p className="settings-hint">These installers are provided by this Echo server and are available without internet access.</p>
+      <h3>{t("desktopApps")}</h3>
+      <p className="settings-hint">{t("desktopAppsHint")}</p>
       <div className="desktop-download-grid">
         {platforms.map(({ key, label, description }) => {
           const download = downloads[key];
           return <article className="desktop-download-card" key={key}>
             <h4>{label}</h4>
             <p>{description}</p>
-            {download?.available ? <a className="btn-primary desktop-download-button" href={`${backendOrigin()}${download.url}`} download>{`Download for ${label}`}</a> : <span className="settings-hint">Not included in this deployment.</span>}
+            {download?.available ? <a className="btn-primary desktop-download-button" href={`${backendOrigin()}${download.url}`} download>{t("downloadFor").replace("{platform}", label)}</a> : <span className="settings-hint">{t("notIncludedDeployment")}</span>}
           </article>;
         })}
       </div>
-      {downloads.version && <p className="settings-hint">Package version: {downloads.version}</p>}
+      {downloads.version && <p className="settings-hint">{t("packageVersion").replace("{version}", downloads.version)}</p>}
     </section>
   );
 }
 
 // Enable/disable desktop notifications (requests browser permission on enable).
 function NotificationToggle() {
+  const { t } = useI18n();
   const [perm, setPerm] = useState(() => notifyPermission());
   const [on, setOn] = useState(() => notifyPref() && notifyPermission() === "granted");
 
   if (!notifySupported()) {
-    return <p className="settings-hint">Your browser doesn't support desktop notifications.</p>;
+    return <p className="settings-hint">{t("browserNotificationsUnsupported")}</p>;
   }
   if (perm === "denied") {
     return (
       <p className="settings-hint">
-        Notifications are <strong>blocked</strong> for this site. Allow them in your browser's site
-        settings, then reload. Also make sure your OS notification settings (and
-        Do&nbsp;Not&nbsp;Disturb) allow your browser.
+        {t("notificationsBlocked")}
       </p>
     );
   }
@@ -981,24 +991,26 @@ function NotificationToggle() {
   return (
     <div className="notify-row">
       <button type="button" className={on ? "btn-secondary" : "btn-primary"} data-testid="notification-toggle" onClick={on ? disable : enable}>
-        {on ? "Turn off notifications" : "Enable desktop notifications"}
+        {on ? t("turnOffNotifications") : t("enableDesktopNotifications")}
       </button>
-      {on && <span className="notify-on">On ✓</span>}
+      {on && <span className="notify-on">{t("notificationsOn")}</span>}
     </div>
   );
 }
 
 function SsoPasswordNotice() {
+  const { t } = useI18n();
   return (
     <section className="settings-section" data-testid="sso-password-settings">
-      <h3>Password</h3>
-      <p className="settings-hint">Your password is managed by your single sign-on provider.</p>
+      <h3>{t("password")}</h3>
+      <p className="settings-hint">{t("ssoPasswordManaged")}</p>
     </section>
   );
 }
 
 // Self-service: change your own password (requires the current one).
 function ChangePassword() {
+  const { t } = useI18n();
   const [error, setError] = useState(null);
   const [done, setDone] = useState(false);
   const {
@@ -1032,10 +1044,9 @@ function ChangePassword() {
 
   return (
     <section className="settings-section">
-      <h3>Password</h3>
+      <h3>{t("password")}</h3>
       <p className="settings-hint">
-        Change your password here. Forgot it and can't sign in? Your workspace admin can issue you a
-        one-time password to set a new one.
+        {t("changePasswordHint")}
       </p>
       <div className="pw-form" data-testid="change-password-form">
         <input
@@ -1043,7 +1054,7 @@ function ChangePassword() {
           className="settings-input"
           data-testid="current-password"
           type="password"
-          placeholder="Current password"
+          placeholder={t("currentPassword")}
           onChange={(e) => {
             setDone(false);
             setError(null);
@@ -1056,7 +1067,7 @@ function ChangePassword() {
           className="settings-input"
           data-testid="new-password"
           type="password"
-          placeholder="New password"
+          placeholder={t("newPassword")}
           onChange={(e) => {
             setDone(false);
             setError(null);
@@ -1069,7 +1080,7 @@ function ChangePassword() {
           className="settings-input"
           data-testid="confirm-new-password"
           type="password"
-          placeholder="Confirm new password"
+          placeholder={t("confirmNewPassword")}
           onChange={(e) => {
             setDone(false);
             setError(null);
@@ -1077,12 +1088,12 @@ function ChangePassword() {
           }}
         />
         {errors.confirmPassword && <div className="error small">{errors.confirmPassword.message}</div>}
-        <div className="field-hint">{PASSWORD_RULE}</div>
+        <div className="field-hint">{t("passwordRule")}</div>
         <button type="button" className="btn-primary" data-testid="change-password-submit" disabled={isSubmitting} onClick={submit}>
-          {isSubmitting ? "Updating…" : "Update password"}
+          {isSubmitting ? t("updating") : t("updatePassword")}
         </button>
       </div>
-      {done && <div className="settings-saved">Password updated ✓</div>}
+      {done && <div className="settings-saved">{t("passwordUpdated")}</div>}
       {error && <div className="error">{error}</div>}
     </section>
   );

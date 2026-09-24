@@ -3,6 +3,7 @@ import DOMPurify from "dompurify";
 import emojiData from "@emoji-mart/data";
 import { escapeHtml, highlightCode } from "./lib/syntaxHighlight.js";
 import { isEchoMessageLink } from "./lib/workspaceRoutes.js";
+import { languageLocale } from "./lib/languages.js";
 
 // Syntax-highlight a fenced code block. Uses the declared language (```python)
 // when given/known, otherwise auto-detects across the common languages
@@ -67,7 +68,8 @@ export function preserveMarkdownBlankLines(text) {
 }
 
 function interfaceLocale() {
-  return typeof document !== "undefined" && document.documentElement.dataset.language === "he" ? "he-IL" : "en-US";
+  const language = typeof document !== "undefined" ? document.documentElement.dataset.language : null;
+  return languageLocale(language);
 }
 
 export function formatEchoDateTime(value) {

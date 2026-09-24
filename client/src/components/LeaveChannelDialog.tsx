@@ -2,8 +2,10 @@ import { useMemo, useState } from "react";
 import Avatar from "./Avatar.js";
 import ConfirmDialog from "./ConfirmDialog.js";
 import Modal, { ModalActions } from "./Modal.js";
+import { useI18n } from "../lib/i18n.js";
 
 export default function LeaveChannelDialog({ open, channel, users, currentUserId, onLeave, onDelete, onClose }) {
+  const { t } = useI18n();
   const [managerId, setManagerId] = useState("");
   const [query, setQuery] = useState("");
 
@@ -32,23 +34,23 @@ export default function LeaveChannelDialog({ open, channel, users, currentUserId
 
   if (needsTransfer) {
     return (
-      <Modal title="Choose a manager before leaving" className="manager-modal" onClose={onClose}>
+      <Modal title={t("chooseManagerBeforeLeaving")} className="manager-modal" onClose={onClose}>
         <p className="settings-hint manager-modal-hint">
-          Choose someone to manage members after you leave #{channel.name}.
+          {t("chooseManagerBeforeLeavingHint").replace("{channel}", `#${channel.name}`)}
         </p>
         {channel.type === "private" ? (
           <p className="settings-hint leave-saved-warning">
-            All messages you saved from this private channel will be removed from Saved.
+            {t("leavePrivateChannelSavedWarning")}
           </p>
         ) : null}
         <label className="manager-select-field">
-          <span>New manager</span>
+          <span>{t("newManager")}</span>
           <input
             className="people-filter"
             data-testid="leave-manager-search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search people"
+            placeholder={t("searchPeople")}
             autoFocus
           />
         </label>
@@ -60,10 +62,10 @@ export default function LeaveChannelDialog({ open, channel, users, currentUserId
               selected={managerId === candidate.id}
               onSelect={() => setManagerId(candidate.id)}
             />
-          )) : <div className="people-empty">No matching members.</div>}
+          )) : <div className="people-empty">{t("noMatchingMembers")}</div>}
         </div>
         <ModalActions>
-          <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
+          <button type="button" className="btn-secondary" onClick={onClose}>{t("cancel")}</button>
           <button
             type="button"
             className="btn-danger"
@@ -73,7 +75,7 @@ export default function LeaveChannelDialog({ open, channel, users, currentUserId
               onLeave(channel, managerId);
             }}
           >
-            Transfer & leave
+            {t("transferAndLeave")}
           </button>
         </ModalActions>
       </Modal>
@@ -83,16 +85,14 @@ export default function LeaveChannelDialog({ open, channel, users, currentUserId
   const deletesChannel = isCreator && remainingMemberIds.length === 0;
   const privateChannel = channel.type === "private";
   const message = deletesChannel
-    ? `This channel has no other members. Deleting it will archive its history${privateChannel ? " and remove all messages you saved from it" : ""}.`
-    : `You'll stop receiving messages from this channel. ${privateChannel
-      ? "All messages you saved from it will be removed from Saved."
-      : "You can rejoin later if it's public."}`;
+    ? t(privateChannel ? "deletePrivateChannelMessage" : "deleteChannelMessage")
+    : t(privateChannel ? "leavePrivateChannelMessage" : "leavePublicChannelMessage");
 
   return (
     <ConfirmDialog
-      title={`${deletesChannel ? "Delete" : "Leave"} #${channel.name}?`}
+      title={t(deletesChannel ? "deleteChannelQuestion" : "leaveChannelQuestion").replace("{channel}", `#${channel.name}`)}
       message={message}
-      confirmLabel={deletesChannel ? "Delete channel" : "Leave"}
+      confirmLabel={t(deletesChannel ? "deleteChannel" : "leave")}
       danger
       onConfirm={() => {
         onClose();
@@ -104,6 +104,7 @@ export default function LeaveChannelDialog({ open, channel, users, currentUserId
 }
 
 function ManagerCandidate({ user, selected, onSelect }) {
+  const { t } = useI18n();
   return (
     <div
       className={`person-row manager-candidate ${selected ? "selected" : ""}`}
@@ -123,7 +124,7 @@ function ManagerCandidate({ user, selected, onSelect }) {
         <div className="person-name">{user.displayName}</div>
         <div className="person-handle">@{user.username}</div>
       </div>
-      {selected ? <span className="manager-selected-check" aria-label="Selected manager">✓</span> : null}
+      {selected ? <span className="manager-selected-check" aria-label={t("selectedManager")}>✓</span> : null}
     </div>
   );
 }

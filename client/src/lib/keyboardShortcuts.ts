@@ -40,5 +40,7 @@ export function formatKeyboardShortcut(id) {
 
 export function shortcutTitle(label, id) {
   const shortcut = formatKeyboardShortcut(id);
-  return shortcut ? `${label} · ${shortcut}` : label;
+  // Keep shortcut glyphs as one LTR run in RTL tooltips, so Ctrl/⌘ stays on
+  // the left of the translated label rather than being reordered by bidi.
+  return shortcut ? `${label} · \u2066${shortcut}\u2069` : label;
 }

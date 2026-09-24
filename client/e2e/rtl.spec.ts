@@ -11,7 +11,7 @@ async function selectRtl(page) {
   await page.getByTestId("rail-settings").click();
   await expect(page.getByTestId("settings-page")).toBeVisible();
   await page.getByRole("button", { name: "Appearance", exact: true }).click();
-  await page.getByTestId("settings-direction-rtl").click();
+  await page.getByTestId("settings-language-he").click();
   await expect(page.locator("html")).toHaveAttribute("data-interface-direction", "rtl");
 }
 
@@ -19,7 +19,7 @@ async function selectInterfaceDirection(page, direction) {
   await page.getByTestId("rail-settings").click();
   await expect(page.getByTestId("settings-page")).toBeVisible();
   await page.getByRole("button", { name: "Appearance", exact: true }).click();
-  await page.getByTestId(`settings-direction-${direction}`).click();
+  await page.getByTestId(`settings-language-${direction === "rtl" ? "he" : "en"}`).click();
   await expect(page.locator("html")).toHaveAttribute("data-interface-direction", direction);
 }
 
@@ -29,7 +29,7 @@ async function openProjectChannel(page) {
   await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
 }
 
-test("persists the RTL preference without changing the page chrome direction", async ({ page }) => {
+test("derives the interface direction from the selected language", async ({ page }) => {
   await page.goto(`/channels/${fixture.projectChannel.name}`);
   await selectRtl(page);
   await page.goto(`/channels/${fixture.projectChannel.name}`);
@@ -39,18 +39,21 @@ test("persists the RTL preference without changing the page chrome direction", a
     title: getComputedStyle(document.querySelector('[data-testid="channel-title"]')).direction,
     document: getComputedStyle(document.documentElement).direction,
   }));
-  expect(chromeDirections.title).toBe("ltr");
-  expect(chromeDirections.document).toBe("ltr");
+  expect(chromeDirections.title).toBe("rtl");
+  expect(chromeDirections.document).toBe("rtl");
 
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-interface-direction", "rtl");
 });
 
 test("migrates the legacy automatic direction preference to LTR", async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem("echo.interfaceDirection", "auto"));
+  await page.addInitScript(() => {
+    localStorage.setItem("echo.interfaceDirection", "rtl");
+    localStorage.setItem("echo.language", "en");
+  });
   await page.goto(`/channels/${fixture.projectChannel.name}`);
   await expect(page.locator("html")).toHaveAttribute("data-interface-direction", "ltr");
-  await expect.poll(() => page.evaluate(() => localStorage.getItem("echo.interfaceDirection"))).toBe("ltr");
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("echo.language"))).toBe("en");
 });
 
 test("keeps Hebrew paragraphs RTL, including after a line break", async ({ page }) => {
@@ -65,6 +68,180 @@ test("keeps Hebrew paragraphs RTL, including after a line break", async ({ page 
     await expect.poll(() => paragraph.evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
     await expect.poll(() => paragraph.evaluate((element) => getComputedStyle(element).textAlign)).toBe("start");
   }
+});
+
+test("inspects an English DM quote in the Hebrew interface", async ({ page }) => {
+  const body = `adsfsd\nfdsfgsf ${fixture.suffix}`;
+  const message = await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: { channelId: fixture.dmChannel.id, body, externalKey: `rtl-english-quote-${fixture.suffix}` },
+  });
+
+  await page.addInitScript(() => localStorage.setItem("echo.language", "he"));
+  await page.goto("/dms");
+  await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+  await page.getByTestId(`dm-row-${slug(fixture.bob.displayName)}`).locator(".dm-open").click();
+
+  const source = page.getByTestId(`message-${message.message.id}`);
+  await source.hover();
+  await page.getByTestId(`message-${message.message.id}-quote`).click();
+
+  const quote = page.getByTestId("composer-editor").locator("blockquote");
+  await expect(quote).toBeVisible();
+  await expect(quote).toContainText("Bob Builder said:");
+  await expect(quote.locator(":scope > p")).toHaveCount(2);
+  await expect.poll(() => quote.evaluate((element) => {
+    const paragraph = element.querySelector("p");
+    return {
+      quoteDirection: getComputedStyle(element).direction,
+      paragraphDirection: paragraph && getComputedStyle(paragraph).direction,
+      paragraphAlign: paragraph && getComputedStyle(paragraph).textAlign,
+      borderLeft: getComputedStyle(element).borderLeftWidth,
+      borderRight: getComputedStyle(element).borderRightWidth,
+    };
+  })).toEqual({ quoteDirection: "ltr", paragraphDirection: "ltr", paragraphAlign: "start", borderLeft: "3px", borderRight: "0px" });
+  await expect.poll(() => page.getByTestId("composer-editor").evaluate((editor) => {
+    const replyParagraph = Array.from(editor.children).find((element) =>
+      element.tagName === "P" && element.previousElementSibling?.tagName === "BLOCKQUOTE");
+    return replyParagraph && {
+      direction: getComputedStyle(replyParagraph).direction,
+      textAlign: getComputedStyle(replyParagraph).textAlign,
+    };
+  })).toEqual({ direction: "ltr", textAlign: "left" });
+  await page.screenshot({ path: "test-results/hebrew-english-dm-quote.png", fullPage: true });
+});
+
+test("keeps a quote from a Hebrew-named author on the RTL edge", async ({ page }) => {
+  const authorName = "דנה כהן";
+  const body = `An English message ${fixture.suffix}`;
+  await requestAsToken(page, fixture.bob.token, "/users/me", {
+    method: "PATCH",
+    body: { displayName: authorName },
+  });
+  const message = await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: { channelId: fixture.dmChannel.id, body, externalKey: `rtl-hebrew-author-quote-${fixture.suffix}` },
+  });
+
+  await page.addInitScript(() => localStorage.setItem("echo.language", "he"));
+  await page.goto("/dms");
+  await page.locator(".dm-item").filter({ hasText: authorName }).locator(".dm-open").click();
+
+  const source = page.getByTestId(`message-${message.message.id}`);
+  await source.hover();
+  await page.getByTestId(`message-${message.message.id}-quote`).click();
+
+  const composer = page.getByTestId("composer-editor");
+  const quote = composer.locator("blockquote");
+  await expect(quote).toContainText(`${authorName} said:`);
+  await expect.poll(() => quote.evaluate((element) => ({
+    direction: getComputedStyle(element).direction,
+    borderLeft: getComputedStyle(element).borderLeftWidth,
+    borderRight: getComputedStyle(element).borderRightWidth,
+  }))).toEqual({ direction: "rtl", borderLeft: "0px", borderRight: "3px" });
+  await expect.poll(() => quote.evaluate((element) => {
+    const quoteRect = element.getBoundingClientRect();
+    const composerRect = element.closest(".composer-editor")?.getBoundingClientRect();
+    return Math.abs(quoteRect.right - (composerRect?.right || 0));
+  })).toBeLessThanOrEqual(8);
+  await page.screenshot({ path: "test-results/hebrew-author-english-quote.png", fullPage: true });
+  await requestAsToken(page, fixture.bob.token, "/users/me", {
+    method: "PATCH",
+    body: { displayName: fixture.bob.displayName },
+  });
+});
+
+test("keeps a Hebrew DM quote compact at the RTL reading edge", async ({ page }) => {
+  const body = `ציטוט עברי ${fixture.suffix}`;
+  const message = await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: { channelId: fixture.dmChannel.id, body, externalKey: `rtl-hebrew-quote-${fixture.suffix}` },
+  });
+
+  await page.addInitScript(() => localStorage.setItem("echo.language", "he"));
+  await page.goto("/dms");
+  await page.getByTestId(`dm-row-${slug(fixture.bob.displayName)}`).locator(".dm-open").click();
+
+  const source = page.getByTestId(`message-${message.message.id}`);
+  await source.hover();
+  await page.getByTestId(`message-${message.message.id}-quote`).click();
+
+  const quote = page.getByTestId("composer-editor").locator("blockquote");
+  await expect(quote).toBeVisible();
+  await expect.poll(() => quote.evaluate((element) => {
+    const paragraph = element.querySelector("p");
+    return {
+      quoteDirection: getComputedStyle(element).direction,
+      paragraphDirection: paragraph && getComputedStyle(paragraph).direction,
+      borderLeft: getComputedStyle(element).borderLeftWidth,
+      borderRight: getComputedStyle(element).borderRightWidth,
+    };
+  })).toEqual({ quoteDirection: "rtl", paragraphDirection: "rtl", borderLeft: "0px", borderRight: "3px" });
+  await expect.poll(() => page.getByTestId("composer-editor").evaluate((editor) => {
+    const replyParagraph = Array.from(editor.children).find((element) =>
+      element.tagName === "P" && element.previousElementSibling?.tagName === "BLOCKQUOTE");
+    return replyParagraph && {
+      direction: getComputedStyle(replyParagraph).direction,
+      textAlign: getComputedStyle(replyParagraph).textAlign,
+    };
+  })).toEqual({ direction: "rtl", textAlign: "right" });
+  await page.screenshot({ path: "test-results/hebrew-hebrew-dm-quote.png", fullPage: true });
+});
+
+test("keeps an English quote created in the Hebrew composer left-to-right", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("echo.language", "he"));
+  await page.goto("/dms");
+  await page.getByTestId(`dm-row-${slug(fixture.bob.displayName)}`).locator(".dm-open").click();
+
+  const composer = page.getByTestId("composer-editor");
+  await composer.click();
+  await page.getByTestId("composer-blockquote").click();
+  await page.keyboard.type("Several English words");
+
+  const quote = composer.locator("blockquote");
+  await expect.poll(() => quote.evaluate((element) => {
+    const paragraph = element.querySelector("p");
+    return {
+      quoteDirection: getComputedStyle(element).direction,
+      paragraphDirection: paragraph && getComputedStyle(paragraph).direction,
+      paragraphAlign: paragraph && getComputedStyle(paragraph).textAlign,
+      borderLeft: getComputedStyle(element).borderLeftWidth,
+      borderRight: getComputedStyle(element).borderRightWidth,
+    };
+  })).toEqual({ quoteDirection: "ltr", paragraphDirection: "ltr", paragraphAlign: "start", borderLeft: "3px", borderRight: "0px" });
+  await page.screenshot({ path: "test-results/hebrew-toolbar-english-quote.png", fullPage: true });
+});
+
+test("keeps RTL workspace dividers beside the rail", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("echo.language", "he"));
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+  await openProjectChannel(page);
+
+  const expectRailFacingDivider = async (locator) => {
+    await expect.poll(() => locator.evaluate((element) => ({
+      left: getComputedStyle(element).borderLeftWidth,
+      right: getComputedStyle(element).borderRightWidth,
+    }))).toEqual({ left: "0px", right: "1px" });
+  };
+
+  await page.getByTestId(`message-${fixture.messages.threadRoot.id}-reply-count`).click();
+  await expect(page.getByTestId("thread-panel")).toBeVisible();
+  await expectRailFacingDivider(page.getByTestId("thread-panel"));
+  await page.getByTestId("thread-close").click();
+
+  await page.getByTestId("channel-members").click();
+  await expect(page.getByTestId("members-panel")).toBeVisible();
+  await expectRailFacingDivider(page.getByTestId("members-panel"));
+  await page.getByTestId("members-panel").locator(":scope > header button").click();
+
+  await page.getByTestId("rail-saved").click();
+  await expect(page.locator(".workspace-frame:has(.app-nav.no-sidebar) > .chat-pane")).toBeVisible();
+  await expectRailFacingDivider(page.locator(".workspace-frame:has(.app-nav.no-sidebar) > .chat-pane"));
+
+  await page.getByTestId("rail-activity").click();
+  await expectRailFacingDivider(page.locator(".workspace-frame:has(.app-nav.no-sidebar) > .chat-pane"));
+  await page.screenshot({ path: "test-results/hebrew-activity-rail-divider.png", fullPage: true });
 });
 
 test("places Hebrew quote markers on the RTL side", async ({ page }) => {
@@ -674,4 +851,182 @@ test("places the RTL scroll-to-latest control on the left", async ({ page }) => 
   expect(buttonBox.x).toBeGreaterThanOrEqual(scrollerBox.x);
   expect(buttonBox.x + buttonBox.width).toBeLessThanOrEqual(scrollerBox.x + scrollerBox.width);
   expect(buttonBox.x - scrollerBox.x).toBeLessThanOrEqual(18);
+});
+
+test("keeps rail tooltips and account/API settings usable in Hebrew", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("echo.language", "he"));
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+
+  const settingsRailButton = page.getByTestId("rail-settings");
+  await expect(settingsRailButton).toHaveAttribute("title", /\u2066/);
+  await settingsRailButton.hover();
+  const tooltip = page.locator(".echo-tooltip");
+  await expect(tooltip).toBeVisible();
+  await expect(tooltip).toHaveClass(/echo-tooltip-left/);
+  const [tooltipBox, railBox] = await Promise.all([tooltip.boundingBox(), settingsRailButton.boundingBox()]);
+  expect(tooltipBox).not.toBeNull();
+  expect(railBox).not.toBeNull();
+  expect(tooltipBox.x + tooltipBox.width).toBeLessThanOrEqual(railBox.x + 1);
+
+  await settingsRailButton.click();
+  await expect(page.getByTestId("current-password")).toHaveAttribute("placeholder", "הסיסמה הנוכחית");
+  await expect(page.getByTestId("new-password")).toHaveAttribute("placeholder", "סיסמה חדשה");
+  await expect(page.getByTestId("confirm-new-password")).toHaveAttribute("placeholder", "אישור הסיסמה החדשה");
+  await expect(page.getByTestId("change-password-form")).toContainText("לפחות 8 תווים");
+  await expect(page.getByTestId("settings-page")).toContainText("ההתראות חסומות עבור אתר זה");
+
+  await page.getByRole("button", { name: "API", exact: true }).click();
+  await page.locator(".api-group-toggle").first().click();
+  const apiDescription = page.locator(".api-desc").first();
+  await expect(apiDescription).toBeVisible();
+  await expect.poll(() => apiDescription.evaluate((element) => ({
+    direction: getComputedStyle(element).direction,
+    textAlign: getComputedStyle(element).textAlign,
+  }))).toEqual({ direction: "rtl", textAlign: "right" });
+  await page.screenshot({ path: "test-results/hebrew-settings-tooltips-api.png", fullPage: true });
+});
+
+test("places the first RTL quote reply caret after the quote", async ({ page }) => {
+  const body = `English quote source ${fixture.suffix}`;
+  const message = await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: { channelId: fixture.dmChannel.id, body, externalKey: `rtl-first-quote-caret-${fixture.suffix}` },
+  });
+
+  await page.addInitScript(() => localStorage.setItem("echo.language", "he"));
+  await page.goto("/dms");
+  await page.getByTestId(`dm-row-${slug(fixture.bob.displayName)}`).locator(".dm-open").click();
+  await page.getByTestId(`message-${message.message.id}`).hover();
+  await page.getByTestId(`message-${message.message.id}-quote`).click();
+
+  const composer = page.getByTestId("composer-editor");
+  const reply = `first quote reply ${fixture.suffix}`;
+  await composer.pressSequentially(reply);
+  const quote = composer.locator("blockquote");
+  await expect(quote).not.toContainText(reply);
+  await expect(composer.locator("blockquote + p")).toContainText(reply);
+});
+
+test("translates the Hebrew channel creation dialog", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("echo.language", "he"));
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await page.getByTestId("rail-home").click();
+  await page.getByTestId("create-channel").click();
+
+  const dialog = page.getByTestId("create-channel-modal");
+  await expect(dialog).toContainText("שם הערוץ");
+  await expect(dialog).toContainText("למי תהיה גישה לערוץ הזה?");
+  await expect(dialog).toContainText("מנהלים בלבד");
+  await expect(page.getByTestId("create-channel-cancel")).toHaveText("ביטול");
+  await expect(page.getByTestId("create-channel-submit")).toHaveText("יצירה");
+  await page.screenshot({ path: "test-results/hebrew-create-channel.png", fullPage: true });
+});
+
+test("translates the unauthenticated login screen in Hebrew", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+    localStorage.setItem("echo.language", "he");
+  });
+  await page.goto("/");
+
+  await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+  await expect(page.getByRole("button", { name: "כניסה באמצעות RHSSO", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "כניסה עם חשבון מקומי", exact: true }).click();
+  await expect(page.getByRole("tab", { name: "כניסה", exact: true })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "יצירת חשבון", exact: true })).toBeVisible();
+  const signInTab = page.getByRole("tab", { name: "כניסה", exact: true });
+  const createAccountTab = page.getByRole("tab", { name: "יצירת חשבון", exact: true });
+  const tabIndicator = page.locator(".auth-tab-ind");
+  const expectIndicatorUnder = async (tab) => {
+    await expect.poll(async () => {
+      const [indicatorBox, tabBox] = await Promise.all([tabIndicator.boundingBox(), tab.boundingBox()]);
+      return indicatorBox && tabBox && Math.abs(indicatorBox.x - tabBox.x) < 8;
+    }).toBe(true);
+  };
+  await expectIndicatorUnder(signInTab);
+  await createAccountTab.click();
+  await expectIndicatorUnder(createAccountTab);
+  await signInTab.click();
+  await expectIndicatorUnder(signInTab);
+  await expect(page.getByLabel("שם משתמש")).toBeVisible();
+  await expect(page.getByTestId("auth-password")).toHaveAttribute("placeholder", "הזינו סיסמה");
+  await expect(page.getByRole("button", { name: "כניסה", exact: true })).toBeVisible();
+  await expect.poll(() => page.getByTestId("auth-password").evaluate((input) => ({
+    direction: getComputedStyle(input).direction,
+    textAlign: getComputedStyle(input).textAlign,
+  }))).toEqual({ direction: "ltr", textAlign: "left" });
+  const passwordField = page.getByTestId("auth-password");
+  const [inputBox, lockBox, eyeBox] = await Promise.all([
+    passwordField.boundingBox(),
+    passwordField.locator("xpath=preceding-sibling::*[name()='svg']").boundingBox(),
+    page.getByRole("button", { name: "הצגת סיסמה" }).boundingBox(),
+  ]);
+  expect(inputBox).not.toBeNull();
+  expect(lockBox).not.toBeNull();
+  expect(eyeBox).not.toBeNull();
+  expect(lockBox.x + lockBox.width).toBeLessThan(inputBox.x + inputBox.width / 2);
+  expect(eyeBox.x).toBeGreaterThan(inputBox.x + inputBox.width / 2);
+  await page.screenshot({ path: "test-results/hebrew-login.png", fullPage: true });
+});
+
+test("keeps Hebrew selected after signing out", async ({ page }) => {
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await page.getByTestId("rail-settings").click();
+  await page.getByRole("button", { name: "Appearance", exact: true }).click();
+  await page.getByTestId("settings-language-he").click();
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("echo.language"))).toBe("he");
+
+  await page.getByTestId("rail-logout").click();
+  await page.getByRole("button", { name: "יציאה", exact: true }).last().click();
+  await expect(page.getByRole("button", { name: "כניסה באמצעות RHSSO", exact: true })).toBeVisible();
+  await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+});
+
+test("creates and uses surveys and retrospectives in Hebrew RTL", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("echo.language", "he"));
+  await page.goto(`/channels/${fixture.generalChannel.name}`);
+
+  await page.getByTestId("composer-more-actions").click();
+  await page.getByTestId("composer-survey").click();
+  const surveyModal = page.getByTestId("survey-modal");
+  await expect(surveyModal).toContainText("שאלה");
+  await expect(surveyModal).toContainText("אפשרויות");
+  await expect(surveyModal.getByRole("button", { name: "שליחת סקר" })).toBeVisible();
+  const surveyInputs = surveyModal.locator("input.settings-input");
+  await surveyInputs.nth(0).fill("מה נרצה לשפר?");
+  await surveyInputs.nth(1).fill("מהירות");
+  await surveyInputs.nth(2).fill("יציבות");
+  await surveyModal.getByRole("button", { name: "שליחת סקר" }).click();
+
+  const survey = page.locator(".survey-card").filter({ hasText: "מה נרצה לשפר?" }).last();
+  await expect(survey).toBeVisible();
+  await expect(survey).toContainText("סקר");
+  await expect(survey).toContainText("0 הצבעות");
+  await expect.poll(() => survey.evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
+  await expect.poll(() => survey.evaluate((element) => {
+    const option = element.querySelector(".survey-option").getBoundingClientRect();
+    const progress = element.querySelector(".survey-option-progress").getBoundingClientRect();
+    return Math.abs(Math.round(progress.right - option.right));
+  })).toBeLessThanOrEqual(2);
+  await page.screenshot({ path: "test-results/hebrew-survey.png", fullPage: true });
+  await survey.getByRole("button", { name: /מהירות/ }).click();
+  await expect(survey).toContainText("1 הצבעה");
+
+  await page.getByTestId("composer-more-actions").click();
+  await page.getByTestId("composer-retro").click();
+  const retroCreate = page.locator(".retro-create-modal");
+  await expect(retroCreate).toContainText("התחלת רטרוספקטיבה");
+  await retroCreate.locator("input.settings-input").fill("רטרוספקטיבת ספרינט");
+  await retroCreate.getByRole("button", { name: "יצירת רטרוספקטיבה" }).click();
+  const retroMessage = page.locator(".retro-message-card").filter({ hasText: "רטרוספקטיבת ספרינט" }).last();
+  await expect(retroMessage).toBeVisible();
+  await retroMessage.click();
+  const board = page.locator(".retro-modal");
+  await expect(board).toBeVisible();
+  await expect.poll(() => board.evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
+  await expect(board.locator(".retro-column")).toHaveCount(4);
+  await expect(board.getByRole("button", { name: "הוספת רעיון" }).first()).toBeVisible();
+  await page.screenshot({ path: "test-results/hebrew-survey-retro.png", fullPage: true });
 });

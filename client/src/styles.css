@@ -64,6 +64,18 @@ html[dir="rtl"] .activity-unread-dot {
   right: 0;
   left: auto;
 }
+/* Channel names use the remaining width of their row. Explicitly anchor that
+   text to the RTL start edge so Latin channel slugs stay beside their #/lock
+   icon rather than drifting to the far left of the sidebar. */
+html[dir="rtl"] .channel-item {
+  direction: rtl;
+  text-align: right;
+}
+html[dir="rtl"] .channel-item .ci-name {
+  direction: rtl;
+  unicode-bidi: plaintext;
+  text-align: right;
+}
 html[dir="rtl"] .groups-panel-list {
   border-right: 0;
   border-left: 1px solid var(--border);
@@ -75,6 +87,25 @@ html[dir="rtl"] .groups-panel-detail-meta,
 html[dir="rtl"] .groups-panel-description {
   margin-right: 52px;
   margin-left: 0;
+}
+html[dir="rtl"] .groups-detail-heading,
+html[dir="rtl"] .groups-panel-description {
+  direction: rtl;
+  text-align: right;
+}
+html[dir="rtl"] .groups-panel-description {
+  unicode-bidi: plaintext;
+}
+html[dir="rtl"] .api-group-toggle,
+html[dir="rtl"] .api-group-body,
+html[dir="rtl"] .api-desc,
+html[dir="rtl"] .api-note {
+  text-align: right;
+}
+html[dir="rtl"] .api-desc,
+html[dir="rtl"] .api-note {
+  direction: rtl;
+  unicode-bidi: plaintext;
 }
 
 /* The top toolbar uses fixed physical offsets on desktop. Mirror those
@@ -1215,6 +1246,13 @@ input:focus {
 .auth-tab-ind.right {
   transform: translateX(100%);
 }
+html[dir="rtl"] .auth-tab-ind {
+  left: auto;
+  right: 4px;
+}
+html[dir="rtl"] .auth-tab-ind.right {
+  transform: translateX(-100%);
+}
 
 .subtitle {
   margin: 0;
@@ -1333,6 +1371,9 @@ input:focus {
   flex-direction: column;
   gap: 6px;
 }
+.auth-screen .field {
+  gap: 10px;
+}
 .field > span {
   font-size: 12px;
   font-weight: 600;
@@ -1383,6 +1424,8 @@ input:focus {
 }
 .input-wrap input {
   width: 100%;
+  direction: ltr;
+  text-align: left;
   padding: 11px 12px 11px 38px;
   border: 1.5px solid var(--border);
   border-radius: 11px;
@@ -1458,6 +1501,69 @@ input:focus {
 .pw-toggle:hover {
   color: var(--text);
   background: var(--surface-2);
+}
+
+/* Authentication fields keep their familiar LTR editing direction even when
+   the surrounding authentication screen is Hebrew/RTL. */
+html[dir="rtl"] .auth-screen .field {
+  text-align: right;
+}
+html[dir="rtl"] .auth-screen .input-wrap,
+html[dir="rtl"] .auth-screen .username-composed {
+  direction: ltr;
+}
+html[dir="rtl"] .auth-screen .input-wrap > svg:first-child {
+  left: 12px;
+  right: auto;
+}
+html[dir="rtl"] .auth-screen .input-wrap input {
+  direction: ltr;
+  text-align: left;
+  padding: 11px 42px 11px 38px;
+}
+html[dir="rtl"] .auth-screen .pw-toggle {
+  left: auto;
+  right: 8px;
+}
+html[dir="rtl"] .auth-screen .auth-username-prefix {
+  margin-left: 38px;
+  margin-right: 0;
+  padding-left: 0;
+  padding-right: 8px;
+}
+html[dir="rtl"] .auth-screen .username-composed input {
+  border-left: 1px solid var(--border);
+  border-right: 0;
+  border-radius: 0 10px 10px 0;
+}
+html[dir="rtl"] .auth-screen .field > span:not(.field-hint),
+html[dir="rtl"] .auth-screen .field-heading {
+  padding-inline: 12px;
+}
+html[dir="rtl"] .auth-screen .login-password-label {
+  gap: 12px;
+}
+
+html[dir="rtl"] .survey-card,
+html[dir="rtl"] .survey-modal,
+html[dir="rtl"] .retro-modal,
+html[dir="rtl"] .retro-idea-modal {
+  direction: rtl;
+  text-align: right;
+}
+html[dir="rtl"] .survey-option-progress {
+  right: 0;
+  left: auto;
+}
+html[dir="rtl"] .survey-multiple-toggle {
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+}
+html[dir="rtl"] .survey-multiple-toggle.is-enabled .survey-multiple-switch span {
+  transform: translateX(-14px);
+}
+html[dir="rtl"] .retro-item-link {
+  direction: rtl;
 }
 
 .auth-submit {
@@ -2402,6 +2508,22 @@ html[data-mode="dark"] .backend-connection-error {
 /* Desktop navigation frame: the rail spans both rows, while search sits above
    the sidebar and the existing conversation surface. */
 @media (min-width: 761px) {
+  /* Grid and flex row starts mirror in RTL, but physical borders do not.
+     Keep every divider on the rail-facing edge instead of leaving it at the
+     far end of the screen. */
+  html[dir="rtl"] .workspace-sidebar,
+  html[dir="rtl"] .workspace-frame:has(.app-nav.no-sidebar) > .chat-pane {
+    border-left: 0;
+    border-right: 1px solid color-mix(in srgb, var(--on-navy) 10%, transparent);
+  }
+  html[dir="rtl"] .thread-panel,
+  html[dir="rtl"] .details-panel,
+  html[dir="rtl"] .pinned-panel,
+  html[dir="rtl"] .files-panel {
+    border-left: 0;
+    border-right: 1px solid var(--border);
+  }
+
   .workspace-frame {
     display: grid;
     grid-template-columns: 68px 260px minmax(0, 1fr);
@@ -3797,6 +3919,42 @@ html[data-mode="dark"] .sidebar {
   color: rgba(255, 255, 255, 0.8);
 }
 
+/* Mirror conversational navigation as a whole in RTL, including English
+   snippets: message previews belong on the reading edge, not their language's
+   intrinsic edge. */
+html[dir="rtl"] .dm-rich,
+html[dir="rtl"] .dm-rich .dm-open,
+html[dir="rtl"] .dm-text,
+html[dir="rtl"] .dm-preview,
+html[dir="rtl"] .dm-rich .dm-name {
+  direction: rtl;
+  text-align: right;
+  unicode-bidi: plaintext;
+}
+html[dir="rtl"] .dm-row-top .unread-badge {
+  margin-left: 0;
+  margin-right: auto;
+}
+html[dir="rtl"] .new-message-person,
+html[dir="rtl"] .new-message-people .person-info,
+html[dir="rtl"] .search-row,
+html[dir="rtl"] .search-row .search-name {
+  direction: rtl;
+  text-align: right;
+}
+html[dir="rtl"] .new-message-person .person-handle,
+html[dir="rtl"] .search-row .search-handle {
+  display: inline-block;
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: left;
+}
+html[dir="rtl"] .channel-details-actions-section,
+html[dir="rtl"] .channel-details-action,
+html[dir="rtl"] .channel-details-section-hint {
+  text-align: right;
+}
+
 /* Sidebar search trigger */
 .sidebar-search {
   display: flex;
@@ -4959,9 +5117,9 @@ html[data-interface-direction="rtl"] .composer-editor p.is-editor-empty:first-ch
   text-align: right;
 }
 html[data-interface-direction="rtl"] .composer-editor p.is-editor-empty:first-child::before {
-  float: left;
-  direction: ltr;
-  text-align: left;
+  float: right;
+  direction: rtl;
+  text-align: right;
 }
 .composer.has-mention-empty.has-mention-rtl .composer-editor {
   direction: rtl;
@@ -5446,25 +5604,31 @@ html[data-interface-direction="rtl"] .message .msg-menu {
 }
 
 .message-sound-settings { display: grid; gap: 18px; }
-.message-sound-options { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-.message-sound-option { position: relative; display: flex; flex-direction: column; align-items: stretch; gap: 16px; min-height: 166px; padding: 15px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-raised); transition: border-color .16s ease, background .16s ease, box-shadow .16s ease, transform .16s ease; }
+.message-sound-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.message-sound-option { position: relative; display: flex; align-items: center; gap: 12px; min-height: 76px; padding: 11px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-raised); transition: border-color .16s ease, background .16s ease; }
+.message-sound-option::before { content: ""; position: absolute; inset-block: 10px; inset-inline-start: 0; width: 2px; border-radius: 0 2px 2px 0; background: transparent; transition: background .16s ease; }
 .message-sound-option:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); }
-.message-sound-option:hover:not(.disabled) { transform: translateY(-1px); }
-.message-sound-option.active { border-color: color-mix(in srgb, var(--accent) 65%, var(--border)); background: color-mix(in srgb, var(--accent) 8%, var(--surface-raised)); box-shadow: none; }
+.message-sound-option:hover:not(.disabled) { background: var(--surface-2); }
+.message-sound-option:focus-within { border-color: color-mix(in srgb, var(--accent) 65%, var(--border)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent); }
+.message-sound-option.active { border-color: color-mix(in srgb, var(--accent) 58%, var(--border)); background: color-mix(in srgb, var(--accent) 5%, var(--surface-raised)); }
+.message-sound-option.active::before { background: var(--accent); }
 .message-sound-option.disabled { opacity: .58; }
-.message-sound-choice { display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 0; padding: 2px 0; cursor: pointer; }
-.message-sound-choice-copy { display: grid; gap: 3px; min-width: 0; }
-.message-sound-icon { display: grid; place-items: center; width: 30px; height: 30px; flex: 0 0 auto; border: 1px solid var(--border); border-radius: 9px; background: var(--surface-2); color: var(--muted); }
-.message-sound-option.active .message-sound-icon { border-color: color-mix(in srgb, var(--accent) 35%, var(--border)); background: color-mix(in srgb, var(--accent) 16%, var(--surface-2)); color: var(--accent); }
+.message-sound-choice { display: flex; align-items: center; gap: 9px; flex: 1; min-width: 0; padding: 2px 0; cursor: pointer; }
+.message-sound-choice-copy { display: grid; gap: 4px; min-width: 0; text-align: start; }
+.message-sound-icon { display: grid; place-items: center; width: 28px; height: 28px; flex: 0 0 auto; color: var(--muted); }
+.message-sound-option.active .message-sound-icon { color: var(--accent); }
 .message-sound-choice-copy strong { color: var(--text); font-size: 14px; }
 .message-sound-choice-copy small { color: var(--text-muted); line-height: 1.35; }
 .message-sound-option input[type="radio"] { appearance: none; width: 18px; height: 18px; flex: 0 0 auto; margin: 1px 0 0; padding: 0; border: 2px solid var(--muted); border-radius: 50%; background: transparent; box-shadow: none; cursor: pointer; }
 .message-sound-option input[type="radio"]:checked { border-color: var(--accent); background: radial-gradient(circle, var(--accent) 0 4px, transparent 4.5px); }
 .message-sound-option input[type="radio"]:focus-visible { position: static; inset: auto; outline: 2px solid color-mix(in srgb, var(--accent) 72%, transparent); outline-offset: 3px; border: 2px solid var(--accent); box-shadow: none; }
 .message-sound-option input:disabled { cursor: not-allowed; }
-.message-sound-preview { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 auto; min-width: 0; width: 100%; }
+.message-sound-preview { display: inline-flex; align-items: center; justify-content: center; gap: 5px; flex: 0 0 auto; min-width: 74px; min-height: 32px; padding-inline: 9px; }
 .message-sound-preview-placeholder { display: inline-flex; align-items: center; justify-content: center; min-height: 36px; color: var(--muted); font-size: 12px; }
 .preferences-page { width: min(760px, 100%); display: grid; gap: 22px; }
+.settings-preference-group { display: grid; gap: 8px; }
+.settings-preference-group h3 { margin: 0; color: var(--text); font-size: 16px; }
+.settings-preference-group .settings-hint { margin-bottom: 2px; }
 .preferences-message-sounds { display: grid; gap: 20px; }
 .preferences-message-sounds-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .preferences-message-sounds-heading h3 { margin: 0; color: var(--text); font-size: 16px; }
@@ -5472,8 +5636,7 @@ html[data-interface-direction="rtl"] .message .msg-menu {
 
 @media (max-width: 520px) {
   .message-sound-options { grid-template-columns: 1fr; }
-  .message-sound-option { min-height: 0; gap: 12px; }
-  .message-sound-preview { align-self: flex-start; }
+  .message-sound-option { min-height: 0; }
 }
 .notify-on {
   color: #16a34a;
@@ -9720,6 +9883,22 @@ html[data-mode="dark"] .channel-header {
   min-width: 0;
   justify-content: flex-end;
 }
+html[dir="rtl"] .channel-header .header-actions {
+  margin-left: 0;
+  margin-right: auto;
+}
+html[dir="rtl"] .channel-header .ch-name-btn,
+html[dir="rtl"] .channel-header .ch-topic {
+  text-align: right;
+}
+html[dir="rtl"] .channel-header .ch-topic {
+  border-left: 0;
+  border-right: 1px solid var(--border);
+  padding-left: 0;
+  padding-right: 12px;
+  margin-left: 0;
+  margin-right: 2px;
+}
 .header-action {
   display: inline-flex;
   align-items: center;
@@ -9904,7 +10083,11 @@ html[data-mode="dark"] .channel-header {
 }
 .messages-inner {
   width: calc(100% + (2 * var(--messages-gutter)));
-  margin-left: calc(-1 * var(--messages-gutter));
+  /* The expanded message row begins at the reading start edge.  A physical
+     left margin made RTL conversations retain LTR's offset, enlarging the
+     gap beside the sidebar instead of mirroring it. */
+  margin-left: 0;
+  margin-inline-start: calc(-1 * var(--messages-gutter));
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -10444,6 +10627,13 @@ html[data-interface-direction="ltr"] .composer-user-mention {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
+/* Composer menus must clear the message scroller and its overlays.  Giving
+   the active composer its own raised stacking context keeps both the schedule
+   menu and the more-actions menu visible without changing closed composers. */
+.composer:has(.composer-more-popover),
+.composer:has(.send-menu) {
+  z-index: 1001;
+}
 .composer:focus-within {
   border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 24%, transparent);
@@ -10593,7 +10783,7 @@ html[data-interface-direction="ltr"] .composer-user-mention {
   position: absolute;
   left: 0;
   bottom: calc(100% + 8px);
-  z-index: 31;
+  z-index: 1002;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -10621,8 +10811,23 @@ html[data-interface-direction="ltr"] .composer-user-mention {
 .composer-more-popover .composer-more-action:focus-visible {
   background: var(--surface-2);
 }
+/* The left action cluster becomes the physical right edge in RTL. Mirror the
+   popover anchor so the panel grows into the composer instead of beyond it. */
+html[dir="rtl"] .composer-more-popover {
+  right: 0;
+  left: auto;
+  animation-name: composer-actions-in-rtl;
+}
+html[dir="rtl"] .composer-more-popover .composer-more-action {
+  justify-content: flex-start;
+  text-align: right;
+}
 @keyframes composer-actions-in {
   from { opacity: 0; transform: translateX(-4px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes composer-actions-in-rtl {
+  from { opacity: 0; transform: translateX(4px); }
   to { opacity: 1; transform: translateX(0); }
 }
 
@@ -10741,16 +10946,34 @@ html[data-interface-direction="ltr"] .composer-user-mention {
   text-align: right !important;
 }
 .composer-editor blockquote {
+  width: fit-content;
+  max-width: 100%;
   margin: 4px 0;
+  /* Keep the quote compact and pinned to its logical start: English quotes
+     sit at the left and Hebrew quotes at the right. */
+  margin-inline-end: auto;
   padding: 2px 0;
   padding-inline-start: 12px;
   border-inline-start: 3px solid var(--blue-400);
   color: #475569;
 }
-/* An empty structural block has no strong character for ProseMirror's
-   direction detector. Anchor it to the selected interface direction until
-   the user enters text. */
-html[data-interface-direction="rtl"] .composer-editor blockquote {
+/* Quote paragraphs decide their own base direction. This keeps an English
+   quoted message readable inside a Hebrew composer and vice versa. */
+.composer-editor blockquote > p {
+  unicode-bidi: plaintext;
+  text-align: start;
+}
+/* Attribution and body remain one continuous visual quote even though the
+   editor stores them as separate paragraphs for bidi correctness. */
+.composer-editor blockquote > p:first-child {
+  margin-bottom: 0;
+}
+/* The editor root retains the quote direction while ProseMirror updates its
+   child nodes, so a Hebrew author continues to anchor the quote on the right. */
+.composer-editor[data-quote-direction="ltr"] blockquote {
+  direction: ltr;
+}
+.composer-editor[data-quote-direction="rtl"] blockquote {
   direction: rtl;
 }
 html[data-interface-direction="rtl"] .composer-editor ul:has(> li > p.is-editor-empty),
@@ -10760,6 +10983,17 @@ html[data-interface-direction="rtl"] .composer-editor ol:has(> li > p.is-editor-
 html[data-interface-direction="rtl"] .composer-editor p:has(> br.ProseMirror-trailingBreak) {
   direction: rtl;
   text-align: right;
+}
+/* Quoting a message creates a blank paragraph for the reply. Its caret must
+   continue from the quote's reading edge, rather than jumping to the RTL edge
+   of the whole composer after an English quote. */
+html[data-interface-direction="rtl"] .composer-editor[data-quote-reply-direction="ltr"] blockquote + p:has(> br.ProseMirror-trailingBreak) {
+  direction: ltr !important;
+  text-align: left !important;
+}
+html[data-interface-direction="rtl"] .composer-editor[data-quote-reply-direction="rtl"] blockquote + p:has(> br.ProseMirror-trailingBreak) {
+  direction: rtl !important;
+  text-align: right !important;
 }
 html[data-interface-direction="rtl"] .composer-editor li > p {
   text-align: right;
@@ -10854,11 +11088,16 @@ html[data-interface-direction="rtl"] .composer-editor li > p {
   opacity: 0.55;
   cursor: not-allowed;
 }
+html[dir="rtl"] .send-menu,
 html[data-interface-direction="rtl"] .send-menu {
   /* In RTL the send controls sit on the physical left. Anchor the menu from
      that side so its 210px panel does not extend off-screen. */
   right: auto;
   left: 0;
+}
+html[dir="rtl"] .send-menu,
+html[dir="rtl"] .send-menu button {
+  text-align: right;
 }
 
 /* Pending-scheduled banner above the composer */
