@@ -259,6 +259,11 @@ jobs:
           fi
           npm run test:e2e -- --shard=${{ matrix.shard }}
 
+      - name: Show server log on failure
+        if: failure()
+        working-directory: .
+        run: cat /tmp/echo-server.log
+
   # Preserve the established required-check name while the work runs in
   # isolated shards above. Branch protection accepts this only after every
   # shard succeeds.
