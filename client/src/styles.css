@@ -9056,6 +9056,13 @@ html[dir="rtl"] .channel-details-person-handle {
   color: var(--muted);
   font-size: 11px;
 }
+html[dir="rtl"] .groups-create-modal .forward-destination-row {
+  direction: rtl;
+  text-align: right;
+}
+html[dir="rtl"] .groups-create-modal .forward-destination-copy {
+  text-align: right;
+}
 .forward-selection-indicator {
   flex: none;
   width: 22px;
