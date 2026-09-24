@@ -336,7 +336,7 @@ test("keeps LTR list text beside the marker", async ({ page }) => {
   await openProjectChannel(page);
 
   const composer = page.getByTestId("composer-editor");
-  await page.getByTitle("Bulleted list").click();
+  await page.getByTitle("רשימת תבליטים").click();
   await composer.type("English list item");
   await expect.poll(() => composer.locator("ul").evaluate((element) => getComputedStyle(element).direction)).toBe("ltr");
   await expect.poll(() => composer.locator("ul li > p").evaluate((element) => ({
@@ -387,7 +387,7 @@ test("anchors an empty Hebrew composer and mention popup to the RTL side", async
   }))).toEqual({ direction: "rtl", textAlign: "start" });
 
   await composer.fill("");
-  await page.getByTitle("Bulleted list").click();
+  await page.getByTitle("רשימת תבליטים").click();
   await composer.type("טקסט עברי");
   await expect.poll(() => composer.locator("li p").evaluate((element) => ({
     direction: getComputedStyle(element).direction,
@@ -422,7 +422,9 @@ test("anchors an empty Hebrew composer and mention popup to the RTL side", async
   });
   expect(triggerGeometry.caretLeft).toBeGreaterThan(triggerGeometry.editorRight - 120);
   await composer.type("b");
-  await page.locator(".mention-item").filter({ hasText: fixture.bob.displayName }).click();
+  const userMention = page.locator(".mention-item").filter({ hasText: "@" }).first();
+  await expect(userMention).toBeVisible();
+  await userMention.click();
   const selectedMention = composer.locator("[data-user-mention]");
   await expect(selectedMention).toBeVisible();
   const selectedGeometry = await selectedMention.boundingBox();
@@ -440,8 +442,8 @@ test("places the RTL schedule dialog to the right of the mobile drawer", async (
 
   await page.getByTestId("composer-editor").fill("הודעה לתזמון");
   await page.getByTestId("composer-send-options").press("Enter");
-  await page.getByRole("button", { name: "Custom time…" }).press("Enter");
-  const dialog = page.getByRole("dialog", { name: "Schedule message" });
+  await page.getByRole("button", { name: "זמן מותאם…" }).press("Enter");
+  const dialog = page.getByRole("dialog", { name: "תזמון הודעה" });
   await expect(dialog).toBeVisible();
   const [box, viewport] = await Promise.all([
     dialog.boundingBox(),
@@ -480,8 +482,8 @@ test("keeps the RTL schedule dialog out of the desktop navigation column", async
 
   await page.getByTestId("composer-editor").fill("הודעה לתזמון בשולחן העבודה");
   await page.getByTestId("composer-send-options").press("Enter");
-  await page.getByRole("button", { name: "Custom time…" }).press("Enter");
-  const dialog = page.getByRole("dialog", { name: "Schedule message" });
+  await page.getByRole("button", { name: "זמן מותאם…" }).press("Enter");
+  const dialog = page.getByRole("dialog", { name: "תזמון הודעה" });
   await expect(dialog).toBeVisible();
   const box = await dialog.boundingBox();
   expect(box).not.toBeNull();
