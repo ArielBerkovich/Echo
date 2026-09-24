@@ -297,7 +297,7 @@ test("anchors RTL quote and list structures on the right", async ({ page }) => {
   await openProjectChannel(page);
 
   const composer = page.getByTestId("composer-editor");
-  await page.getByTitle("Blockquote").click();
+  await page.getByTitle("ציטוט").click();
   await expect.poll(() => composer.locator("blockquote").evaluate((element) => ({
     direction: getComputedStyle(element).direction,
     borderRight: getComputedStyle(element).borderRightWidth,
@@ -309,17 +309,17 @@ test("anchors RTL quote and list structures on the right", async ({ page }) => {
   }))).toEqual({ direction: "rtl", textAlign: "right" });
 
   await composer.fill("");
-  await page.getByTitle("Bulleted list").click();
+  await page.getByTitle("רשימת תבליטים").click();
   await expect.poll(() => composer.locator("ul").evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
 
   await composer.fill("");
-  await page.getByTitle("Ordered list").click();
+  await page.getByTitle("רשימה ממוספרת").click();
   await expect.poll(() => composer.locator("ol").evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
 
   await page.reload();
   await openProjectChannel(page);
   const englishListComposer = page.getByTestId("composer-editor");
-  await page.getByTitle("Ordered list").click();
+  await page.getByTitle("רשימה ממוספרת").click();
   await englishListComposer.type("English list item");
   await expect.poll(() => englishListComposer.locator("ol").evaluate((element) => ({
     direction: getComputedStyle(element).direction,
@@ -346,8 +346,8 @@ test("keeps LTR list text beside the marker", async ({ page }) => {
 });
 
 for (const listType of [
-  { name: "bullet", title: "Bulleted list", selector: "ul" },
-  { name: "numbered", title: "Ordered list", selector: "ol" },
+  { name: "bullet", title: { en: "Bulleted list", he: "רשימת תבליטים" }, selector: "ul" },
+  { name: "numbered", title: { en: "Ordered list", he: "רשימה ממוספרת" }, selector: "ol" },
 ]) for (const listCase of [
   { name: "English list in RTL", interfaceDirection: "rtl", listDirection: "ltr", text: "English list item", itemDirection: "ltr", itemAlign: "left" },
   { name: "Hebrew list in RTL", interfaceDirection: "rtl", listDirection: "rtl", text: "טקסט עברי", itemDirection: "rtl", itemAlign: "right" },
@@ -360,7 +360,7 @@ for (const listType of [
     await openProjectChannel(page);
 
     const composer = page.getByTestId("composer-editor");
-    await page.getByTitle(listType.title).click();
+    await page.getByTitle(listType.title[listCase.interfaceDirection === "rtl" ? "he" : "en"]).click();
     await composer.type(listCase.text);
 
     await expect.poll(() => composer.locator(listType.selector).evaluate((element) => ({
