@@ -70,7 +70,7 @@ test("lets channel managers rename channels and rejects invalid or unauthorized 
     const details = page.getByTestId("channel-details-dialog");
     const rename = details.getByTestId("channel-rename-section");
     await rename.getByTestId("channel-rename-edit").click();
-    const renameInput = rename.getByRole("textbox", { name: "Channel name" });
+    const renameInput = rename.getByRole("textbox", { name: "Name" });
     const saveRename = rename.getByRole("button", { name: "Save" });
     await renameInput.fill("bad_name");
     await expect(rename).toContainText("Use lowercase letters, numbers, and single dashes only.");
