@@ -505,7 +505,7 @@ const ChannelView = forwardRef(function ChannelView({
   function togglePin(m) {
     getSocket().emit("message:pin", { messageId: m.id }, (res) => {
       if (res?.error) setError(res.error);
-      else onToast?.(m.pinnedAt ? "Message unpinned" : "Message pinned");
+      else onToast?.(m.pinnedAt ? t("messageUnpinned") : t("messagePinned"));
     });
   }
 
@@ -1594,7 +1594,7 @@ function PinnedPanel({ messages, renderMarkdown, emojiMap, onUnpin, onClose }) {
     <aside id="pinned-panel" className="side-panel pinned-panel" data-testid="pinned-panel">
       <div className="panel-header">
         <span className="panel-title">{t("pinnedMessages")}</span>
-        <CloseButton size="sm" onClick={onClose} label="Close" />
+        <CloseButton size="sm" onClick={onClose} label={t("close")} />
       </div>
       <div className="panel-body">
         {messages.length === 0 ? (
