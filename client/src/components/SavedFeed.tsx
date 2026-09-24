@@ -77,8 +77,10 @@ export default function SavedFeed({ user, users = [], customEmojis = [], onJump,
             <Avatar name={it.author?.displayName || "?"} src={it.author?.avatarUrl} size={36} />
             <div className="content">
               <FeedMessage
-                author={it.author?.displayName || "unknown"}
-                context={`${it.channelType === "dm" ? `in your DM with ${it.channelName}` : `in #${it.channelName}`}${it.threadId ? " · thread" : ""}`}
+                author={it.author?.displayName || t("unknown")}
+                context={`${it.channelType === "dm"
+                  ? t("savedInDirectMessageWith").replace("{name}", it.channelName || t("someone"))
+                  : t("inChannel").replace("{channel}", it.channelName)}${it.threadId ? ` · ${t("savedThread")}` : ""}`}
                 time={formatDateTime(it.createdAt)}
                 body={it.body}
                 renderMarkdown={renderMarkdown}
