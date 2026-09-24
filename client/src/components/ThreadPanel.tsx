@@ -403,7 +403,7 @@ export default function ThreadPanel({
               />
               {index === 0 && (
                 <div className="thread-divider" data-testid="thread-reply-count">
-                  <span>{replies.length === 1 ? "1 reply" : `${replies.length} replies`}</span>
+                  <span dir="auto">{replies.length === 1 ? t("oneReply") : t("replyCount").replace("{count}", String(replies.length))}</span>
                 </div>
               )}
             </Fragment>
