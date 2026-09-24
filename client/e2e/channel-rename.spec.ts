@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { requestAsToken, seedWorkspaceFixture, slug, uniqueSuffix } from "./helpers.js";
+import { apiRequestUrl, requestAsToken, seedWorkspaceFixture, slug, uniqueSuffix } from "./helpers.js";
 
 let fixture: Awaited<ReturnType<typeof seedWorkspaceFixture>>;
 
@@ -8,11 +8,22 @@ test.beforeEach(async ({ page }) => {
 });
 
 async function rawApi(page, token, path, options: { method?: string; body?: unknown } = {}) {
-  return page.request.fetch(`/api${path}`, {
+  // Use the host HTTP client for this API-only assertion flow. The browser's
+  // Playwright request context can remain stuck behind the page's long-lived
+  // Socket.IO connection after the channel has been renamed; this does not
+  // reproduce with a normal HTTP client and is unrelated to the UI path.
+  const response = await fetch(apiRequestUrl(`/api${path}`), {
     method: options.method || "GET",
     headers: { Authorization: `Bearer ${token}` },
-    data: options.body,
+    ...(options.body === undefined ? {} : {
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(options.body),
+    }),
   });
+  return {
+    status: () => response.status,
+    json: () => response.json(),
+  };
 }
 
 test("lets channel managers rename channels and rejects invalid or unauthorized changes", async ({ page }) => {

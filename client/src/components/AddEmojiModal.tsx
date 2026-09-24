@@ -12,7 +12,7 @@ const MAX_EMOJI_BYTES = 5 * 1024 * 1024;
 
 // Upload an image/GIF and register it as a :shortcode: custom emoji.
 export default function AddEmojiModal({ existing = [], onCreated, onClose }) {
-  const { t } = useI18n();
+  const { t, translateError } = useI18n();
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [serverError, setServerError] = useState(null);
@@ -70,7 +70,7 @@ export default function AddEmojiModal({ existing = [], onCreated, onClose }) {
       onCreated?.(emoji);
       onClose();
     } catch (err) {
-      setServerError(err.message);
+      setServerError(translateError(err.message));
     }
   });
 
@@ -113,7 +113,7 @@ export default function AddEmojiModal({ existing = [], onCreated, onClose }) {
             </div>
             <div className="emoji-name-hint">
               {errors.name?.message ? (
-                <span className="bad">{errors.name.message}</span>
+                <span className="bad">{translateError(errors.name.message)}</span>
               ) : taken ? (
                 <span className="bad">{t("emojiAlreadyExists").replace("{name}", cleanName)}</span>
               ) : watchedName ? (

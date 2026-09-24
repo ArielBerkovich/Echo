@@ -12,7 +12,7 @@ function callbackState() {
 }
 
 export default function MigrationForm({ rhssoEnabled, onAuthed, onBack }) {
-  const { t } = useI18n();
+  const { t, translateError } = useI18n();
   const initial = callbackState();
   const [step, setStep] = useState(initial.ready ? "rhsso-confirm" : "source");
   const [source, setSource] = useState(null);
@@ -39,7 +39,7 @@ export default function MigrationForm({ rhssoEnabled, onAuthed, onBack }) {
         setNewUsername(status.target?.username || "");
       })
       .catch((err) => {
-        setError(err.message);
+        setError(translateError(err.message));
         setStep("source");
       })
       .finally(() => setBusy(false));
@@ -57,7 +57,7 @@ export default function MigrationForm({ rhssoEnabled, onAuthed, onBack }) {
       }
       setStep("local");
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     } finally {
       setBusy(false);
     }
@@ -81,7 +81,7 @@ export default function MigrationForm({ rhssoEnabled, onAuthed, onBack }) {
       });
       onAuthed(result);
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     } finally {
       setBusy(false);
     }

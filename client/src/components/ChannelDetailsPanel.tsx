@@ -25,7 +25,7 @@ const MEMBER_LIST_HEIGHT = 340;
 // Centered channel information dialog. Members can edit the channel metadata,
 // add people, and manage existing members without leaving the conversation.
 export default function ChannelDetailsPanel({ channel, users = [], user, onUpdated, onOpenProfile, onAddPeople, onPromoteManager, onChangeVisibility, onLeave, onClose }) {
-  const { t } = useI18n();
+  const { t, translateError } = useI18n();
   const [error, setError] = useState(null);
   const [errorField, setErrorField] = useState(null);
   const [memberQuery, setMemberQuery] = useState("");
@@ -124,7 +124,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
       const { channel: updated } = await api.removeChannelMember(channel.id, member.id);
       onUpdated?.(updated);
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     }
   }
 
@@ -136,7 +136,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
     try {
       await onPromoteManager(member.id);
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     } finally {
       setPromotingId(null);
     }
@@ -149,7 +149,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
       const { channel: updated } = await api.setChannelInfo(channel.id, patch);
       onUpdated?.(updated);
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
       throw err;
     }
   }

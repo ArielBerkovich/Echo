@@ -10,7 +10,7 @@ export default function CreationMigrationModal({
   onAuthed,
   onClose,
 }) {
-  const { t } = useI18n();
+  const { t, translateError } = useI18n();
   const [oldUsername, setOldUsername] = useState("");
   const [oldPassword, setOldPassword] = useState("");
   const [targetUsername, setTargetUsername] = useState(newAccount?.username || "");
@@ -41,7 +41,7 @@ export default function CreationMigrationModal({
         setTargetLabel(target?.identityLabel || target?.username || "");
       })
       .catch((err) => {
-        if (!cancelled) setError(err.message);
+        if (!cancelled) setError(translateError(err.message));
       })
       .finally(() => {
         if (!cancelled) setBusy(false);
@@ -70,7 +70,7 @@ export default function CreationMigrationModal({
       await api.attachMigrationSource({ oldUsername, oldPassword });
       completeAuthentication(await api.confirmMigration({}));
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
       setBusy(false);
     }
   }
@@ -81,7 +81,7 @@ export default function CreationMigrationModal({
     try {
       completeAuthentication(await api.createRhssoUser());
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
       setBusy(false);
     }
   }

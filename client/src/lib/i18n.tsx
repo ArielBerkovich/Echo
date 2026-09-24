@@ -210,6 +210,7 @@ const translations = {
   en: {
     language: "Language",
     account: "Account",
+    settingsCategories: "Settings categories",
     preferences: "Preferences",
     workspace: "Workspace",
     integrations: "Integrations",
@@ -229,6 +230,7 @@ const translations = {
     channels: "Channels",
     filter: "Filter",
     close: "Close",
+    done: "Done",
     closeFilter: "Close filter",
     filterChannelsAndDms: "Filter channels and direct messages",
     findADm: "Find a direct message",
@@ -279,6 +281,7 @@ const translations = {
     notesToSelf: "Notes to self",
     newMessage: "New message",
     createChannel: "Create channel",
+    createChannelDialogTitle: "Create a channel",
     searchMessagesPeopleAndChannels: "Search messages, people, and channels",
     searchCommands: "Search commands",
     findSomeoneToMessage: "Find someone to message",
@@ -308,10 +311,12 @@ const translations = {
     themeDracula: "Dracula",
     themeSand: "Sand",
     themeStillwater: "Stillwater",
-    settingsCategories: "Settings categories",
     skipTour: "Skip tour",
     back: "Back",
     next: "Next",
+    previous: "Previous",
+    pageNumber: "Page {count}",
+    channelCatalogPages: "Channel catalog pages",
     finish: "Finish",
     stepOf: "of",
     actions: "Actions",
@@ -508,6 +513,28 @@ const translations = {
     emojiAlreadyExists: ":{name}: already exists",
     emojiUsageHint: "Type :{name}: in a message to use it.",
     addEmoji: "Add emoji",
+    usernameLengthError: "Username must be 2-32 characters",
+    usernameCharactersError: "Username can only contain letters, numbers, . _ or -",
+    nameRequiredError: "Name is required",
+    nameLengthError: "Name must be 64 characters or fewer",
+    nameEnglishOnlyError: "Name can only contain English letters",
+    passwordRequiredError: "Password is required",
+    confirmPasswordRequiredError: "Please confirm your password",
+    passwordsMismatchError: "Passwords don't match",
+    channelNameLengthError: "Channel name must be 64 characters or fewer",
+    channelNameFormatError: "Channel names cannot contain underscores, consecutive dashes, or start/end with a dash",
+    shortcodeLengthError: "Shortcode must be 2-32 characters",
+    shortcodeCharactersError: "Shortcode can only contain letters, numbers, _ or -",
+    currentPasswordRequiredError: "Current password is required",
+    confirmNewPasswordRequiredError: "Please confirm your new password",
+    passwordMinLengthError: "Password must be at least 8 characters",
+    passwordLowercaseError: "Password must include a lowercase letter",
+    passwordUppercaseError: "Password must include an uppercase letter",
+    passwordNumberError: "Password must include a number",
+    profilePictureTypeError: "Profile picture must be an image",
+    workspaceLogoTypeError: "Workspace logo must be a PNG, JPEG, or WebP image",
+    organizationNameLengthError: "Organization name must be at most 80 characters",
+    copySigningSecretError: "Couldn't copy the signing secret. Select and copy it manually.",
     migrationChooseUsername: "Choose a new username.",
     passwordsDoNotMatch: "Passwords don't match.",
     migrationSourceSubtitle: "Bring the history from an old local Echo account.",
@@ -602,7 +629,7 @@ const translations = {
     confirm: "Confirm",
     renameGroupDm: "Rename group DM", groupDmName: "Group DM name", convertPrivateChannel: "Convert to private channel", privateChannelName: "New private channel name", converting: "Converting…", convert: "Convert", convertGroupDmHint: "All current members and messages will stay, and this conversation will become a private channel.",
     importImage: "Import an image", importDifferentImage: "Import a different image", zoom: "Zoom", useThisPicture: "Use this picture", profilePreview: "Profile preview",
-    groupName: "Group name", description: "Description", optional: "Optional", groupDescriptionHint: "What is this group for?", groupNameHint: "For example, Product Design", groupNameFormatHint: "Use English letters, numbers, spaces, and hyphens only", cancel: "Cancel", creating: "Creating…", add: "Add", adding: "Adding…", loadingPeople: "Loading people…", selectedGroupMembers: "Selected group members", peopleToAdd: "People to add", addPeopleToGroup: "Add people to group", groupMembershipHint: "Members can mention this group and manage its membership.", everyoneAlreadyInGroup: "Everyone in the workspace is already in this group.",
+    groupName: "Group name", description: "Description", optional: "Optional", groupDescriptionHint: "What is this group for?", groupNameHint: "For example, Product Design", groupNameFormatHint: "Use English letters, numbers, spaces, and hyphens only", groupNameFormatError: "Group names may contain English letters, numbers, spaces, and hyphens only.", groupUnavailableError: "This group is no longer available. It may have been deleted.", groupsLoadError: "Could not load groups.", peopleLoadError: "Could not load people.", groupCreateError: "Could not create group.", groupUpdateError: "Group update could not be completed.", cancel: "Cancel", creating: "Creating…", add: "Add", adding: "Adding…", loadingPeople: "Loading people…", selectedGroupMembers: "Selected group members", peopleToAdd: "People to add", addPeopleToGroup: "Add people to group", groupMembershipHint: "Members can mention this group and manage its membership.", everyoneAlreadyInGroup: "Everyone in the workspace is already in this group.",
     attachFiles: "Attach files", createSurvey: "Create survey", createRetrospective: "Create retrospective", scheduleTomorrow: "Tomorrow, 09:00", customTime: "Custom time…", channelDetails: "Channel details", privateChannel: "Private channel", publicChannel: "Public channel", details: "Details", aboutChannel: "About this channel", topic: "Topic", createdBy: "Created by", channelActions: "Channel actions", leaveChannel: "Leave channel", makePublic: "Make public", managers: "Managers", noManagers: "None assigned", creator: "Creator", manager: "Manager", makeManager: "Make manager", saving: "Saving…", removeFromChannel: "Remove from channel",
     startRetrospective: "Start a retrospective", retrospectiveHint: "A shared board for capturing wins, improvements, and next steps.", boardTitle: "Board title", retrospectiveTitlePlaceholder: "Sprint retrospective", retrospectiveTitleRequired: "Give your retrospective a title.",
     bold: "Bold", italic: "Italic", strikethrough: "Strikethrough", link: "Link", orderedList: "Ordered list", bulletedList: "Bulleted list", blockquote: "Blockquote", inlineCode: "Code", codeBlock: "Code block",
@@ -720,6 +747,7 @@ const translations = {
   he: {
     language: "שפה",
     account: "חשבון",
+    settingsCategories: "קטגוריות הגדרות",
     preferences: "העדפות",
     workspace: "סביבת עבודה",
     integrations: "אינטגרציות",
@@ -739,6 +767,7 @@ const translations = {
     channels: "ערוצים",
     filter: "סינון",
     close: "סגירה",
+    done: "סיום",
     closeFilter: "סגירת סינון",
     filterChannelsAndDms: "סינון ערוצים והודעות ישירות",
     findADm: "חיפוש הודעה ישירה",
@@ -789,6 +818,7 @@ const translations = {
     notesToSelf: "הערות לעצמי",
     newMessage: "הודעה חדשה",
     createChannel: "יצירת ערוץ",
+    createChannelDialogTitle: "יצירת ערוץ",
     searchMessagesPeopleAndChannels: "חיפוש הודעות, אנשים וערוצים",
     searchCommands: "חיפוש פקודות",
     findSomeoneToMessage: "חיפוש אדם לשליחת הודעה",
@@ -818,10 +848,12 @@ const translations = {
     themeDracula: "דרקולה",
     themeSand: "חול",
     themeStillwater: "מים שקטים",
-    settingsCategories: "קטגוריות הגדרות",
     skipTour: "דילוג על הסיור",
     back: "הקודם",
     next: "הבא",
+    previous: "הקודם",
+    pageNumber: "עמוד {count}",
+    channelCatalogPages: "עמודי קטלוג הערוצים",
     finish: "סיום",
     stepOf: "מתוך",
     actions: "פעולות",
@@ -962,7 +994,7 @@ const translations = {
     confirm: "אישור",
     renameGroupDm: "שינוי שם שיחה קבוצתית", groupDmName: "שם השיחה הקבוצתית", convertPrivateChannel: "המרה לערוץ פרטי", privateChannelName: "שם הערוץ הפרטי החדש", converting: "ממיר…", convert: "המרה", convertGroupDmHint: "כל החברים וההודעות הקיימים יישארו, והשיחה הזו תהפוך לערוץ פרטי.",
     importImage: "ייבוא תמונה", importDifferentImage: "ייבוא תמונה אחרת", zoom: "הגדלה", useThisPicture: "שימוש בתמונה זו", profilePreview: "תצוגה מקדימה של הפרופיל",
-    groupName: "שם הקבוצה", description: "תיאור", optional: "אופציונלי", groupDescriptionHint: "למה מיועדת הקבוצה הזו?", groupNameHint: "לדוגמה, עיצוב מוצר", groupNameFormatHint: "השתמשו באותיות באנגלית, מספרים, רווחים ומקפים בלבד", cancel: "ביטול", creating: "יוצרים…", add: "הוספה", adding: "מוסיפים…", loadingPeople: "טוענים אנשים…", selectedGroupMembers: "חברי הקבוצה שנבחרו", peopleToAdd: "אנשים להוספה", addPeopleToGroup: "הוספת אנשים לקבוצה", groupMembershipHint: "חברים יכולים לתייג קבוצה זו ולנהל את החברות בה.", everyoneAlreadyInGroup: "כל האנשים בסביבת העבודה כבר בקבוצה זו.",
+    groupName: "שם הקבוצה", description: "תיאור", optional: "אופציונלי", groupDescriptionHint: "למה מיועדת הקבוצה הזו?", groupNameHint: "לדוגמה, עיצוב מוצר", groupNameFormatHint: "השתמשו באותיות באנגלית, מספרים, רווחים ומקפים בלבד", groupNameFormatError: "שמות קבוצות יכולים להכיל אותיות באנגלית, מספרים, רווחים ומקפים בלבד.", groupUnavailableError: "הקבוצה הזו אינה זמינה יותר. ייתכן שנמחקה.", groupsLoadError: "לא ניתן לטעון את הקבוצות.", peopleLoadError: "לא ניתן לטעון את האנשים.", groupCreateError: "לא ניתן ליצור את הקבוצה.", groupUpdateError: "לא ניתן להשלים את עדכון הקבוצה.", cancel: "ביטול", creating: "יוצרים…", add: "הוספה", adding: "מוסיפים…", loadingPeople: "טוענים אנשים…", selectedGroupMembers: "חברי הקבוצה שנבחרו", peopleToAdd: "אנשים להוספה", addPeopleToGroup: "הוספת אנשים לקבוצה", groupMembershipHint: "חברים יכולים לתייג קבוצה זו ולנהל את החברות בה.", everyoneAlreadyInGroup: "כל האנשים בסביבת העבודה כבר בקבוצה זו.",
     attachFiles: "צירוף קבצים", createSurvey: "יצירת סקר", createRetrospective: "יצירת רטרוספקטיבה", scheduleTomorrow: "מחר, 09:00", customTime: "זמן מותאם…", channelDetails: "פרטי ערוץ", privateChannel: "ערוץ פרטי", publicChannel: "ערוץ ציבורי", details: "פרטים", aboutChannel: "אודות ערוץ זה", topic: "נושא", createdBy: "נוצר על ידי", channelActions: "פעולות ערוץ", leaveChannel: "עזיבת ערוץ", makePublic: "הפיכת הערוץ לציבורי", managers: "מנהלים", noManagers: "לא הוקצו מנהלים", creator: "יוצר", manager: "מנהל", makeManager: "הפיכה למנהל", saving: "שומר…", removeFromChannel: "הסרה מהערוץ",
     desktopApps: "יישומי שולחן עבודה",
     loadingDownloadOptions: "טוען אפשרויות הורדה…",
@@ -1142,6 +1174,28 @@ const translations = {
     emojiAlreadyExists: ":{name}: כבר קיים",
     emojiUsageHint: "הקלידו :{name}: בהודעה כדי להשתמש בו.",
     addEmoji: "הוספת אימוג׳י",
+    usernameLengthError: "שם המשתמש חייב להכיל 2–32 תווים",
+    usernameCharactersError: "שם המשתמש יכול להכיל רק אותיות, מספרים, נקודה, קו תחתון או מקף",
+    nameRequiredError: "נדרש שם",
+    nameLengthError: "השם יכול להכיל עד 64 תווים",
+    nameEnglishOnlyError: "השם יכול להכיל אותיות באנגלית בלבד",
+    passwordRequiredError: "נדרשת סיסמה",
+    confirmPasswordRequiredError: "אנא אשרו את הסיסמה",
+    passwordsMismatchError: "הסיסמאות אינן תואמות",
+    channelNameLengthError: "שם הערוץ יכול להכיל עד 64 תווים",
+    channelNameFormatError: "שמות ערוצים אינם יכולים להכיל קווים תחתונים, מקפים רצופים או להתחיל או להסתיים במקף",
+    shortcodeLengthError: "קיצור הדרך חייב להכיל 2–32 תווים",
+    shortcodeCharactersError: "קיצור הדרך יכול להכיל רק אותיות, מספרים, קו תחתון או מקף",
+    currentPasswordRequiredError: "נדרשת הסיסמה הנוכחית",
+    confirmNewPasswordRequiredError: "אנא אשרו את הסיסמה החדשה",
+    passwordMinLengthError: "הסיסמה חייבת להכיל לפחות 8 תווים",
+    passwordLowercaseError: "הסיסמה חייבת לכלול אות קטנה",
+    passwordUppercaseError: "הסיסמה חייבת לכלול אות גדולה",
+    passwordNumberError: "הסיסמה חייבת לכלול מספר",
+    profilePictureTypeError: "תמונת הפרופיל חייבת להיות תמונה",
+    workspaceLogoTypeError: "לוגו סביבת העבודה חייב להיות תמונת PNG, JPEG או WebP",
+    organizationNameLengthError: "שם הארגון יכול להכיל עד 80 תווים",
+    copySigningSecretError: "לא ניתן להעתיק את סוד החתימה. בחרו אותו והעתיקו ידנית.",
     migrationChooseUsername: "בחרו שם משתמש חדש.",
     passwordsDoNotMatch: "הסיסמאות אינן תואמות.",
     migrationSourceSubtitle: "העברת ההיסטוריה מחשבון Echo מקומי ישן.",
@@ -1230,10 +1284,46 @@ const translations = {
 } as const;
 
 type TranslationKey = keyof typeof translations.en;
+type Translate = (key: TranslationKey) => string;
+
+const ERROR_TRANSLATIONS: Record<string, TranslationKey> = {
+  "Username must be 2-32 characters": "usernameLengthError",
+  "Username can only contain letters, numbers, . _ or -": "usernameCharactersError",
+  "Name is required": "nameRequiredError",
+  "Name must be 64 characters or fewer": "nameLengthError",
+  "Name can only contain English letters": "nameEnglishOnlyError",
+  "Password is required": "passwordRequiredError",
+  "Please confirm your password": "confirmPasswordRequiredError",
+  "Passwords don't match": "passwordsMismatchError",
+  "Channel name is required": "channelNameRequired",
+  "Channel name is required.": "channelNameRequired",
+  "Channel name must be 64 characters or fewer": "channelNameLengthError",
+  "Channel names cannot contain underscores, consecutive dashes, or start/end with a dash": "channelNameFormatError",
+  "Shortcode must be 2-32 characters": "shortcodeLengthError",
+  "Shortcode can only contain letters, numbers, _ or -": "shortcodeCharactersError",
+  "Current password is required": "currentPasswordRequiredError",
+  "Please confirm your new password": "confirmNewPasswordRequiredError",
+  "Password must be at least 8 characters": "passwordMinLengthError",
+  "Password must include a lowercase letter": "passwordLowercaseError",
+  "Password must include an uppercase letter": "passwordUppercaseError",
+  "Password must include a number": "passwordNumberError",
+};
+
+/** Translate known validation/API errors while preserving unknown server errors. */
+export function translateErrorMessage(message: unknown, t: Translate): string {
+  const text = String(message ?? "");
+  const key = ERROR_TRANSLATIONS[text];
+  if (key) return t(key);
+  const duplicateEmoji = text.match(/^:(.+): already exists$/);
+  if (duplicateEmoji) return t("emojiAlreadyExists").replace("{name}", duplicateEmoji[1]);
+  return text;
+}
+
 type I18nValue = {
   language: Language;
   setLanguage: (language: Language) => void;
   t: (key: TranslationKey) => string;
+  translateError: (message: unknown) => string;
 };
 
 const I18nContext = createContext<I18nValue | null>(null);
@@ -1261,6 +1351,7 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
     language,
     setLanguage,
     t: (key: TranslationKey) => translations[language][key] || translations.en[key],
+    translateError: (message: unknown) => translateErrorMessage(message, (key) => translations[language][key] || translations.en[key]),
   }), [language]);
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

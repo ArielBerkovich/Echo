@@ -21,7 +21,6 @@ import { useI18n } from "../lib/i18n.js";
 const EMPTY_FORM = { name: "", description: "", memberIds: [] };
 const PEOPLE_RESULT_LIMIT = 50;
 const GROUP_NAME_PATTERN = /^[A-Za-z0-9]+(?:[ -][A-Za-z0-9]+)*$/;
-const GROUP_NAME_ERROR = "Group names may contain English letters, numbers, spaces, and hyphens only.";
 
 function sortGroups(groups) {
   return [...groups].sort((left, right) => {
@@ -164,7 +163,7 @@ function AddPeopleDialog({ users, memberIds, query, loading, addingId, onQueryCh
 }
 
 export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
-  const { t } = useI18n();
+  const { t, translateError } = useI18n();
   const [groups, setGroups] = useState([]);
   const [selected, setSelected] = useState(null);
   const [users, setUsers] = useState([]);
@@ -196,17 +195,17 @@ export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
       const requestedGroupExists = !openGroup || nextGroups.some((group) => group.id === openGroup.id);
       setGroups(nextGroups);
       setSelected((current) => nextGroups.find((group) => group.id === (selectId || current?.id)) || nextGroups[0] || null);
-      setError(requestedGroupExists ? "" : "This group is no longer available. It may have been deleted.");
+      setError(requestedGroupExists ? "" : t("groupUnavailableError"));
     } catch (requestError) {
-      setError(requestError.message || "Could not load groups.");
+      setError(requestError.message ? translateError(requestError.message) : t("groupsLoadError"));
     } finally {
       setLoadingGroups(false);
     }
-  }, []);
+  }, [openGroup, t, translateError]);
 
   useEffect(() => {
     refresh(openGroup?.id);
-    api.listUsers().then((result) => setUsers(result.users || [])).catch(() => setError("Could not load people.")).finally(() => setLoadingDirectory(false));
+    api.listUsers().then((result) => setUsers(result.users || [])).catch(() => setError(t("peopleLoadError"))).finally(() => setLoadingDirectory(false));
   }, [openGroup?.id, refresh]);
 
   const selectedMemberIds = useMemo(() => new Set((selected?.members || []).map((member) => member.id)), [selected?.members]);
@@ -231,7 +230,7 @@ export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
     event.preventDefault();
     const name = form.name.trim();
     if (!GROUP_NAME_PATTERN.test(name)) {
-      setCreateError(GROUP_NAME_ERROR);
+      setCreateError(t("groupNameFormatError"));
       return;
     }
     setCreatingGroup(true);
@@ -241,7 +240,7 @@ export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
       resetCreateDialog();
       await refresh(result.group.id);
     } catch (requestError) {
-      setCreateError(requestError.message || "Could not create group.");
+      setCreateError(requestError.message ? translateError(requestError.message) : t("groupCreateError"));
     } finally {
       setCreatingGroup(false);
     }
@@ -253,7 +252,7 @@ export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
       setError("");
       await refresh(selectId);
     } catch (requestError) {
-      setError(requestError.message || "Group update could not be completed.");
+      setError(requestError.message ? translateError(requestError.message) : t("groupUpdateError"));
       throw requestError;
     }
   }

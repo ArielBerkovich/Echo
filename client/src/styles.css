@@ -5142,6 +5142,14 @@ html[data-interface-direction="rtl"] .composer-editor p.is-editor-empty:first-ch
   direction: rtl;
   text-align: right;
 }
+/* Forward notes keep their English placeholder and editor affordance LTR,
+   even when the surrounding workspace is Hebrew/RTL. */
+html[data-interface-direction="rtl"] .forward-modal .composer-editor p.is-editor-empty:first-child::before,
+html[data-interface-direction="rtl"] .forward-note-field .composer-editor p.is-editor-empty:first-child::before {
+  float: left;
+  direction: ltr;
+  text-align: left !important;
+}
 .composer.has-mention-empty.has-mention-rtl .composer-editor {
   direction: rtl;
   text-align: right;
@@ -6051,6 +6059,30 @@ html[data-interface-direction="rtl"] .message .msg-menu {
 }
 .api-token-hint {
   margin-top: 10px;
+}
+
+/* The API reference is developer documentation: keep its reading order and
+   code-oriented layout LTR even when the surrounding Echo interface is RTL. */
+.api-page,
+.api-embedded {
+  direction: ltr;
+  text-align: left;
+}
+.api-page *,
+.api-embedded * {
+  direction: ltr;
+  text-align: left;
+}
+.api-page .api-group-toggle,
+.api-page .api-group-body,
+.api-page .api-desc,
+.api-page .api-note,
+.api-embedded .api-group-toggle,
+.api-embedded .api-group-body,
+.api-embedded .api-desc,
+.api-embedded .api-note {
+  direction: ltr;
+  text-align: left;
 }
 .notif-status {
   font-size: 13.5px;
@@ -11730,6 +11762,9 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
   color: var(--muted);
 }
 .person-row .btn-secondary {
+  flex: 0 0 auto;
+  min-width: 68px;
+  white-space: nowrap;
   padding: 7px 16px;
 }
 .people-empty {
@@ -14056,8 +14091,9 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
+  overflow: hidden;
   padding: 0;
   background: transparent;
   color: inherit;
@@ -14081,7 +14117,10 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 }
 .channel-browser-copy {
   display: grid;
+  flex: 1 1 auto;
+  width: 0;
   min-width: 0;
+  overflow: hidden;
   gap: 4px;
 }
 .channel-browser-name {
@@ -14108,7 +14147,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   font-size: 11.5px;
 }
 .channel-browser-action {
-  flex: none;
+  flex: 0 0 auto;
   min-width: 72px;
   padding: 9px 14px;
   box-shadow: none;
@@ -14116,6 +14155,19 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 }
 .channel-browser-action:focus-visible {
   outline-offset: 3px;
+}
+html[dir="rtl"] .channel-browser-open {
+  direction: rtl;
+}
+html[dir="rtl"] .channel-browser-copy {
+  direction: rtl;
+  justify-items: stretch;
+  text-align: right;
+}
+html[dir="rtl"] .channel-browser-name,
+html[dir="rtl"] .channel-browser-topic,
+html[dir="rtl"] .channel-browser-members {
+  text-align: right;
 }
 .channel-browser-empty {
   min-height: 260px;

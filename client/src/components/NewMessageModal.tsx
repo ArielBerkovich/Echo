@@ -9,7 +9,7 @@ import { useI18n } from "../lib/i18n.js";
 const MAX_GROUP_DM_RECIPIENTS = 9;
 
 export default function NewMessageModal({ currentUserId, users, customEmojis, mode, onPrepare, onStart, onClose }) {
-  const { t } = useI18n();
+  const { t, translateError } = useI18n();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selected, setSelected] = useState([]);
@@ -82,7 +82,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
         setChannel(nextChannel);
       }
     } catch (err) {
-      if (requestId === prepareRequestRef.current) setError(err.message);
+      if (requestId === prepareRequestRef.current) setError(translateError(err.message));
     } finally {
       if (requestId === prepareRequestRef.current) setPreparing(false);
     }
@@ -122,7 +122,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
       await onStart(selected, channel);
       onClose();
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     }
   }
 

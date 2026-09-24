@@ -332,7 +332,7 @@ export default function ChannelBrowser({
           </div>
 
           {page.number > 1 || hasMore ? (
-            <nav className="channel-browser-pagination" aria-label="Channel catalog pages">
+            <nav className="channel-browser-pagination" aria-label={t("channelCatalogPages")}>
               <button
                 type="button"
                 className="btn-secondary"
@@ -343,9 +343,9 @@ export default function ChannelBrowser({
                   history: current.history.slice(0, -1),
                 }))}
               >
-                Previous
+                {t("previous")}
               </button>
-              <span>Page {page.number}</span>
+              <span>{t("pageNumber").replace("{count}", String(page.number))}</span>
               <button
                 type="button"
                 className="btn-secondary"
@@ -356,7 +356,7 @@ export default function ChannelBrowser({
                   history: [...current.history, current.cursor],
                 }))}
               >
-                Next
+                {t("next")}
               </button>
             </nav>
           ) : null}

@@ -256,6 +256,9 @@ jobs:
           # IPv6 while the test server is bound to 127.0.0.1, which leaves
           # long-running shards with stale API/WebSocket proxy sockets.
           ECHO_API_PROXY_TARGET: http://127.0.0.1:4000
+          # Keep fixture/cleanup API requests off the long-lived browser proxy
+          # connection. The UI still exercises the Vite proxy as users do.
+          ECHO_E2E_API_BASE_URL: http://127.0.0.1:4000
         run: |
           if ! curl -fsS http://127.0.0.1:4000/api/health >/dev/null; then
             echo "Echo server is unavailable before starting the E2E shard"

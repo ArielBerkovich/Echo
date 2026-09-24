@@ -10,7 +10,7 @@ import { useI18n } from "../lib/i18n.js";
 
 // "Create a channel" dialog with a name field and public/private choice.
 export default function CreateChannelModal({ onCreate, onClose }) {
-  const { t } = useI18n();
+  const { t, translateError } = useI18n();
   const [error, setError] = useState(null);
   const inputRef = useRef(null);
   const {
@@ -52,12 +52,12 @@ export default function CreateChannelModal({ onCreate, onClose }) {
       await onCreate(values.name, values.type, !!values.readOnly);
       onClose();
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     }
   });
 
   return (
-    <Modal title={t("createChannel")} onClose={onClose} onOpenAutoFocus={focusNameOnOpen}>
+    <Modal title={t("createChannelDialogTitle")} onClose={onClose} onOpenAutoFocus={focusNameOnOpen}>
       <form data-testid="create-channel-modal" onSubmit={submit}>
         <label className="field">
           <span className="field-label">{t("channelName")}</span>
@@ -94,7 +94,7 @@ export default function CreateChannelModal({ onCreate, onClose }) {
           </InputShell>
           {errors.name && (
             <span className="field-hint error small">
-              {errors.name.message === "Channel name is required" ? t("channelNameRequired") : errors.name.message}
+              {translateError(errors.name.message)}
             </span>
           )}
         </label>

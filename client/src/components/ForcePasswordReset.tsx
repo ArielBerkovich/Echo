@@ -10,7 +10,7 @@ import { useI18n } from "../lib/i18n.js";
 // Shown (blocking) right after a user signs in with an admin-issued one-time
 // password: they must choose their own new password before using the app.
 export default function ForcePasswordReset({ user, onDone, onCancel }) {
-  const { t } = useI18n();
+  const { t, translateError } = useI18n();
   const [error, setError] = useState(null);
   const {
     register,
@@ -37,7 +37,7 @@ export default function ForcePasswordReset({ user, onDone, onCancel }) {
       onDone(updated);
       reset();
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     }
   });
 
@@ -60,7 +60,7 @@ export default function ForcePasswordReset({ user, onDone, onCancel }) {
             newPasswordField.onChange(e);
           }}
         />
-        {errors.newPassword && <div className="error small">{errors.newPassword.message}</div>}
+        {errors.newPassword && <div className="error small">{translateError(errors.newPassword.message)}</div>}
         <input
           {...confirmPasswordField}
           className="settings-input"
@@ -71,7 +71,7 @@ export default function ForcePasswordReset({ user, onDone, onCancel }) {
             confirmPasswordField.onChange(e);
           }}
         />
-        {errors.confirmPassword && <div className="error small">{errors.confirmPassword.message}</div>}
+        {errors.confirmPassword && <div className="error small">{translateError(errors.confirmPassword.message)}</div>}
         <div className="field-hint">{t("passwordRule")}</div>
         <button type="submit" className="btn-primary" disabled={isSubmitting}>
           {isSubmitting ? t("saving") : t("saveAndContinue")}

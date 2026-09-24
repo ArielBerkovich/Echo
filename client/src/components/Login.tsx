@@ -48,7 +48,7 @@ const FLOATERS = [
 
 // Combined login / register screen — split hero + auth form.
 export default function Login({ onAuthed, initialError = "" }) {
-  const { t } = useI18n();
+  const { t, translateError } = useI18n();
   const [mode, setMode] = useState(() => {
     return "login";
   });
@@ -210,7 +210,7 @@ export default function Login({ onAuthed, initialError = "" }) {
         setConnectionIssue(issue);
         return;
       }
-      setPasswordHelpError(error.message);
+      setPasswordHelpError(translateError(error.message));
     } finally {
       setPasswordHelpBusy(false);
     }
@@ -235,7 +235,7 @@ export default function Login({ onAuthed, initialError = "" }) {
           setConnectionIssue(issue);
           return;
         }
-        setServerError(err.message);
+        setServerError(translateError(err.message));
         if (err.usernameTaken && err.suggestions) {
           setUsernameTaken(true);
           setUsernameSuggestions(err.suggestions);
@@ -244,12 +244,12 @@ export default function Login({ onAuthed, initialError = "" }) {
     },
     (validationErrors) => {
       if (validationErrors.confirmPassword) {
-        setServerError(validationErrors.confirmPassword.message || t("loginConfirmPasswordRequired"));
+        setServerError(translateError(validationErrors.confirmPassword.message) || t("loginConfirmPasswordRequired"));
       } else if (validationErrors.password) {
-        setServerError(validationErrors.password.message || t("loginValidPasswordRequired"));
+        setServerError(translateError(validationErrors.password.message) || t("loginValidPasswordRequired"));
       } else {
         const firstError = Object.values(validationErrors)[0];
-        setServerError(firstError?.message || t("loginCompleteRequiredFields"));
+        setServerError(translateError(firstError?.message) || t("loginCompleteRequiredFields"));
       }
     }
   );
@@ -441,7 +441,7 @@ export default function Login({ onAuthed, initialError = "" }) {
                     })}
                   />
                 </div>
-                {errors.firstName && <span className="field-hint error small">{errors.firstName.message}</span>}
+                {errors.firstName && <span className="field-hint error small">{translateError(errors.firstName.message)}</span>}
               </label>
               <label className="field">
                 <span>{t("loginLastName")}</span>
@@ -465,7 +465,7 @@ export default function Login({ onAuthed, initialError = "" }) {
                     })}
                   />
                 </div>
-                {errors.lastName && <span className="field-hint error small">{errors.lastName.message}</span>}
+                {errors.lastName && <span className="field-hint error small">{translateError(errors.lastName.message)}</span>}
               </label>
             </>
           )}
@@ -521,7 +521,7 @@ export default function Login({ onAuthed, initialError = "" }) {
                 />
               </div>
             )}
-            {errors.username && <span className="field-hint error small">{errors.username.message}</span>}
+            {errors.username && <span className="field-hint error small">{translateError(errors.username.message)}</span>}
           </label>
           {needsSetup ? (
             <span className="field-hint">{t("loginAdminUsernameHint")}</span>
@@ -602,7 +602,7 @@ export default function Login({ onAuthed, initialError = "" }) {
                 {showPw ? <EyeOffIcon size={17} strokeWidth={1.6} /> : <EyeIcon size={17} strokeWidth={1.6} />}
               </button>
             </div>
-            {errors.password && <span className="field-hint error small">{errors.password.message}</span>}
+            {errors.password && <span className="field-hint error small">{translateError(errors.password.message)}</span>}
             {!isRegister && serverError && <span className="field-hint error small" data-testid="auth-error">{serverError}</span>}
             {!isRegister && passwordHelpError && (
               <span className="field-hint error small">{passwordHelpError}</span>
@@ -624,7 +624,7 @@ export default function Login({ onAuthed, initialError = "" }) {
                   placeholder={t("loginReenterPassword")}
                 />
               </div>
-              {errors.confirmPassword && <span className="field-hint error small">{errors.confirmPassword.message}</span>}
+              {errors.confirmPassword && <span className="field-hint error small">{translateError(errors.confirmPassword.message)}</span>}
             </label>
           )}
 

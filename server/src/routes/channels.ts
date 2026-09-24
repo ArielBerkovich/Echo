@@ -482,34 +482,42 @@ channelsRouter.delete("/:id/members/:userId", async (req, res) => {
   const wasMember = channel.members.some((m) => m.equals(userId));
   await Channel.updateOne({ _id: channel._id }, { $pull: { members: userId, managers: userId } });
 
-  if (wasMember) {
-    const removedUser = await User.findById(userId);
-    if (removedUser) await clearChannelStar(removedUser, channel._id);
-    await ActivityEvent.deleteMany({
-      recipient: userId,
-      channel: channel._id,
-      type: { $ne: "channel_remove" },
-    }).catch(() => {});
-    removeUserFromChannel(userId, channel._id.toString());
-    emitToUser(userId, "channel:removed", { channelId: channel._id.toString() });
-    const systemMessage = await logSystem(channel._id, userId, "was removed from the channel");
-    // Removing someone is useful activity even though they can no longer see
-    // a private channel in the normal channel listing.
-    await ActivityEvent.updateOne(
-      { recipient: userId, actor: req.user._id, message: systemMessage._id, emoji: "" },
-      {
-        $set: {
-          type: "channel_remove",
-          channel: channel._id,
-          createdAt: new Date(),
-        },
-      },
-      { upsert: true }
-    ).catch(() => {});
-    emitToUser(userId, "activity:bump");
-  }
   const updated = await Channel.findById(channel._id);
+  // Membership has already been persisted. Return the updated channel before
+  // performing non-critical realtime/activity bookkeeping so a slow socket or
+  // activity write cannot leave the HTTP request hanging.
   res.json({ channel: updated.toPublicJSON() });
+
+  if (!wasMember) return;
+
+  void (async () => {
+    try {
+      const removedUser = await User.findById(userId);
+      if (removedUser) await clearChannelStar(removedUser, channel._id);
+      await ActivityEvent.deleteMany({
+        recipient: userId,
+        channel: channel._id,
+        type: { $ne: "channel_remove" },
+      });
+      removeUserFromChannel(userId, channel._id.toString());
+      emitToUser(userId, "channel:removed", { channelId: channel._id.toString() });
+      const systemMessage = await logSystem(channel._id, userId, "was removed from the channel");
+      await ActivityEvent.updateOne(
+        { recipient: userId, actor: req.user._id, message: systemMessage._id, emoji: "" },
+        {
+          $set: {
+            type: "channel_remove",
+            channel: channel._id,
+            createdAt: new Date(),
+          },
+        },
+        { upsert: true }
+      );
+      emitToUser(userId, "activity:bump");
+    } catch (error) {
+      console.warn("Could not finish channel member removal bookkeeping:", error.message);
+    }
+  })();
 });
 
 // POST /api/channels/:id/leave — remove the current user from a channel.

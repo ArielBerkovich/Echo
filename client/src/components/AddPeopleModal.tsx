@@ -9,7 +9,7 @@ const PEOPLE_LIST_HEIGHT = 340;
 // Pick workspace members to add to a channel. Adding is immediate; the person
 // then drops out of the list. "Done" closes the dialog.
 export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
-  const { t } = useI18n();
+  const { t, translateError } = useI18n();
   const [adding, setAdding] = useState(null);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState("");
@@ -79,7 +79,7 @@ export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
     try {
       await onAdd(u.id);
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     } finally {
       setAdding(null);
     }

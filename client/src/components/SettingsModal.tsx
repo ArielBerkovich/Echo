@@ -157,7 +157,7 @@ export default function SettingsModal({
         setMentionWebhookUrl(webhook?.url || "");
         setMentionWebhookEnabled(webhook?.enabled ?? true);
       })
-      .catch((err) => !cancelled && setError(err.message))
+      .catch((err) => !cancelled && setError(translateError(err.message)))
       .finally(() => !cancelled && setMentionWebhookLoading(false));
     return () => { cancelled = true; };
   }, [activeTab]);
@@ -187,7 +187,7 @@ export default function SettingsModal({
         setAzureIntegration(integration);
         setAzureEndpoint(integration?.endpoint ? `${backendOrigin()}${integration.endpoint}` : "");
       })
-      .catch((err) => !cancelled && setError(err.message))
+      .catch((err) => !cancelled && setError(translateError(err.message)))
       .finally(() => !cancelled && setAzureLoading(false));
     return () => { cancelled = true; };
   }, [activeTab, user.isAdmin]);
@@ -207,7 +207,7 @@ export default function SettingsModal({
         setAllureSelectedProjects(allure?.selectedProjectIds?.length ? allure.selectedProjectIds : currentProjects);
         setAllureChannelMappings(Object.fromEntries((allure?.projects || []).map((project) => [project.id, project.channel || defaultAllureChannelName(project.id)])));
       })
-      .catch((err) => !cancelled && setError(err.message))
+      .catch((err) => !cancelled && setError(translateError(err.message)))
       .finally(() => !cancelled && setAllureLoading(false));
     return () => { cancelled = true; };
   }, [activeTab, user.isAdmin]);
@@ -227,7 +227,7 @@ export default function SettingsModal({
 
   function onAvatarFileSelected(file) {
     if (!file) return;
-    if (!file.type.startsWith("image/")) return setError("Profile picture must be an image");
+    if (!file.type.startsWith("image/")) return setError(t("profilePictureTypeError"));
     const sizeError = uploadSizeError([file], undefined, "Profile pictures");
     if (sizeError) return setError(sizeError);
     setError(null);
@@ -245,7 +245,7 @@ export default function SettingsModal({
       setAvatarDialogOpen(false);
       flashSaved();
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
       throw err;
     } finally {
       setBusy(false);
@@ -261,7 +261,7 @@ export default function SettingsModal({
       onUpdated(updated);
       flashSaved();
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     } finally {
       setBusy(false);
     }
@@ -271,7 +271,7 @@ export default function SettingsModal({
     if (!nameChanged) return;
     const nextName = displayName.trim();
     if (!nextName || nextName.length > MAX_DISPLAY_NAME_LENGTH) {
-      setError(`Display name must be 1-${MAX_DISPLAY_NAME_LENGTH} characters`);
+      setError(t("displayNameMaxLength").replace("{count}", String(MAX_DISPLAY_NAME_LENGTH)));
       return;
     }
     setBusy(true);
@@ -281,7 +281,7 @@ export default function SettingsModal({
       onUpdated(updated);
       flashSaved();
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     } finally {
       setBusy(false);
     }
@@ -297,7 +297,7 @@ export default function SettingsModal({
     const file = event.target.files?.[0];
     if (!file) return;
     if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
-      setError("Workspace logo must be a PNG, JPEG, or WebP image");
+      setError(t("workspaceLogoTypeError"));
       return;
     }
     const sizeError = uploadSizeError([file], undefined, "Workspace logos");
@@ -309,7 +309,7 @@ export default function SettingsModal({
 
   async function saveWorkspace() {
     const nextName = workspaceName.trim();
-    if (nextName.length > 80) return setError("Organization name must be at most 80 characters");
+    if (nextName.length > 80) return setError(t("organizationNameLengthError"));
     setBusy(true);
     setError(null);
     try {
@@ -323,7 +323,7 @@ export default function SettingsModal({
       setWorkspaceLogoFile(null);
       flashSaved();
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     } finally {
       setBusy(false);
     }
@@ -339,7 +339,7 @@ export default function SettingsModal({
       setWorkspaceLogoUrl(null);
       flashSaved();
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     } finally {
       setBusy(false);
     }
@@ -353,7 +353,7 @@ export default function SettingsModal({
       setAzureIntegration(result.integration);
       setAzureEndpoint(`${backendOrigin()}${result.endpointPath}`);
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     } finally {
       setAzureLoading(false);
     }
@@ -367,7 +367,7 @@ export default function SettingsModal({
       const result = await api.regenerateAzureDevOpsToken(azureIntegration.id);
       setAzureEndpoint(`${backendOrigin()}${result.endpoint}`);
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     } finally {
       setAzureLoading(false);
     }
@@ -498,7 +498,7 @@ export default function SettingsModal({
       const { integration } = await api.updateAzureDevOpsIntegration(azureIntegration.id, { active });
       setAzureIntegration(integration);
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     } finally {
       setAzureLoading(false);
     }
@@ -516,7 +516,7 @@ export default function SettingsModal({
       setMentionWebhookSecretCopied(false);
       setMentionWebhookSaved(true);
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     } finally {
       setMentionWebhookLoading(false);
     }
@@ -532,7 +532,7 @@ export default function SettingsModal({
       setMentionWebhookUrl("");
       setMentionWebhookEnabled(true);
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     } finally {
       setMentionWebhookLoading(false);
     }
@@ -544,7 +544,7 @@ export default function SettingsModal({
       await navigator.clipboard.writeText(mentionWebhook.signingSecret);
       setMentionWebhookSecretCopied(true);
     } catch {
-      setError("Couldn't copy the signing secret. Select and copy it manually.");
+      setError(t("copySigningSecretError"));
     }
   }
 
@@ -556,7 +556,7 @@ export default function SettingsModal({
       const { integration } = await api.updateAzureDevOpsIntegration(azureIntegration.id, { notify: { [key]: enabled } });
       setAzureIntegration(integration);
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     } finally {
       setAzureLoading(false);
     }
@@ -565,7 +565,7 @@ export default function SettingsModal({
   return (
     <div className="settings-page" data-testid="settings-page">
       <div className="settings-layout">
-        <aside className="settings-nav" aria-label="Settings categories">
+        <aside className="settings-nav" aria-label={t("settingsCategories")}>
           <div className="settings-nav-account">
             <span className="settings-nav-username">@{user.username}</span>
           </div>
@@ -940,7 +940,7 @@ export default function SettingsModal({
 }
 
 function DesktopDownloads({ downloads, error }) {
-  const { t } = useI18n();
+  const { t, translateError } = useI18n();
   if (error) return <section className="settings-section"><h3>{t("desktopApps")}</h3><p className="error">{error}</p></section>;
   if (!downloads) return <section className="settings-section"><h3>{t("desktopApps")}</h3><p className="settings-hint">{t("loadingDownloadOptions")}</p></section>;
 
@@ -1020,7 +1020,7 @@ function SsoPasswordNotice() {
 
 // Self-service: change your own password (requires the current one).
 function ChangePassword() {
-  const { t } = useI18n();
+  const { t, translateError } = useI18n();
   const [error, setError] = useState(null);
   const [done, setDone] = useState(false);
   const {
@@ -1048,7 +1048,7 @@ function ChangePassword() {
       setDone(true);
       reset();
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     }
   });
 
@@ -1071,7 +1071,7 @@ function ChangePassword() {
             currentPasswordField.onChange(e);
           }}
         />
-        {errors.currentPassword && <div className="error small">{errors.currentPassword.message}</div>}
+        {errors.currentPassword && <div className="error small">{translateError(errors.currentPassword.message)}</div>}
         <input
           {...newPasswordField}
           className="settings-input"
@@ -1084,7 +1084,7 @@ function ChangePassword() {
             newPasswordField.onChange(e);
           }}
         />
-        {errors.newPassword && <div className="error small">{errors.newPassword.message}</div>}
+        {errors.newPassword && <div className="error small">{translateError(errors.newPassword.message)}</div>}
         <input
           {...confirmPasswordField}
           className="settings-input"
@@ -1097,7 +1097,7 @@ function ChangePassword() {
             confirmPasswordField.onChange(e);
           }}
         />
-        {errors.confirmPassword && <div className="error small">{errors.confirmPassword.message}</div>}
+        {errors.confirmPassword && <div className="error small">{translateError(errors.confirmPassword.message)}</div>}
         <div className="field-hint">{t("passwordRule")}</div>
         <button type="button" className="btn-primary" data-testid="change-password-submit" disabled={isSubmitting} onClick={submit}>
           {isSubmitting ? t("updating") : t("updatePassword")}
@@ -1156,7 +1156,7 @@ function AdminPasswordReset({ users, currentUserId }) {
       const { tempPassword } = await api.adminResetPassword(selected.id);
       setOtp(tempPassword);
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     } finally {
       setBusy(false);
     }
