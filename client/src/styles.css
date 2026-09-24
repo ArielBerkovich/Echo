@@ -4641,6 +4641,13 @@ html[data-mode="dark"] .search-highlight .kw-has .kw-label { color: #fcd34d; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.members-panel-person-copy .channel-details-person-handle {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+html[dir="rtl"] .members-panel-person-copy .channel-details-person-handle {
+  text-align: right;
+}
 .members-panel-remove {
   margin-left: auto;
   flex: none;
