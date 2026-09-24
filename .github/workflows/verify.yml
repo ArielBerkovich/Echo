@@ -247,6 +247,10 @@ jobs:
       - name: Run E2E tests
         env:
           E2E_WORKERS: 1
+          # Keep the Vite proxy on IPv4 in CI. Using localhost can resolve to
+          # IPv6 while the test server is bound to 127.0.0.1, which leaves
+          # long-running shards with stale API/WebSocket proxy sockets.
+          ECHO_API_PROXY_TARGET: http://127.0.0.1:4000
         run: |
           if ! curl -fsS http://127.0.0.1:4000/api/health >/dev/null; then
             echo "Echo server is unavailable before starting the E2E shard"

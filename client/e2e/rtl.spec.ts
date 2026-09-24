@@ -314,7 +314,7 @@ test("anchors RTL quote and list structures on the right", async ({ page }) => {
   }))).toEqual({ direction: "rtl", textAlign: "right" });
 
   await composer.fill("");
-  await page.getByTitle("Bulleted list").click();
+  await page.getByTitle("רשימת תבליטים").click();
   await expect.poll(() => composer.locator("ul").evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
 
   await composer.fill("");
