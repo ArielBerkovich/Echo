@@ -609,8 +609,8 @@ function Message({
                   type="button"
                   className="reaction add react-toggle"
                   data-testid={`message-${mid}-add-reaction`}
-                  aria-label="Add another reaction"
-                  title="Add another reaction"
+                  aria-label={t("addReaction")}
+                  title={t("addReaction")}
                   onClick={onReact}
                 >
                   <EmojiAddIcon />
