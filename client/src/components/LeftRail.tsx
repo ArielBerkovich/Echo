@@ -79,7 +79,7 @@ export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroup
     setDisplayNameDialogOpen(false);
   }
 
-  const labels = { home: t("home"), dms: t("dms"), activity: t("activity"), saved: t("saved") };
+  const labels = { home: t("home"), dms: t("dms"), activity: t("activity"), saved: t("savedMessages") };
   return (
     <nav className="rail" aria-label={t("primaryNavigation")}>
       <div className={`rail-brand${brandReady ? " ready" : ""}`} aria-label={workspace?.name || "Echo"} data-testid="rail-brand">
