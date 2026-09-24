@@ -14,6 +14,20 @@ html[dir="ltr"] {
   direction: ltr;
 }
 
+/* User handles are identifiers, not natural-language text. Isolate them as
+   LTR tokens so the @ stays before the username inside Hebrew layouts. */
+.profile-handle,
+.search-handle,
+.settings-nav-username,
+.person-handle,
+.mi-handle,
+.groups-panel-handle,
+.channel-details-person-handle {
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: left;
+}
+
 html[dir="rtl"] .rail-more-menu {
   right: calc(100% + 8px);
   left: auto;
