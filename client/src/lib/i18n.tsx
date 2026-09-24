@@ -1096,7 +1096,7 @@ const translations = {
     dismissBrowserWarning: "סגירת אזהרת תאימות הדפדפן",
     dismiss: "סגירה",
     channelName: "שם הערוץ",
-    channelNameExample: "לדוגמה, שיווק",
+    channelNameExample: "לדוגמה, marketing",
     channelAccessQuestion: "למי תהיה גישה לערוץ הזה?",
     channelVisibilityPublic: "ציבורי",
     publicChannelHint: "כל אחד יכול למצוא ולהצטרף לערוץ הזה.",

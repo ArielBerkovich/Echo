@@ -92,7 +92,11 @@ export default function CreateChannelModal({ onCreate, onClose }) {
               maxLength={64}
             />
           </InputShell>
-          {errors.name && <span className="field-hint error small">{errors.name.message}</span>}
+          {errors.name && (
+            <span className="field-hint error small">
+              {errors.name.message === "Channel name is required" ? t("channelNameRequired") : errors.name.message}
+            </span>
+          )}
         </label>
 
         <fieldset className="field visibility-field">
