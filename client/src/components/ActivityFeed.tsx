@@ -187,14 +187,14 @@ function kindLabel(it, t) {
 }
 
 function activityContext(item, t) {
+  const location = item.channelType === "dm" ? t("inDirectMessage") : t("inChannel").replace("{channel}", item.channelName);
+  if (item.kind === "broadcast") return t("notifiedChannel").replace("{location}", location);
   if (item.kind === "channel_add") return t("addedYouToChannel").replace("{channel}", item.channelName);
   if (item.kind === "channel_remove") return t("removedYouFromChannel").replace("{channel}", item.channelName);
   if (item.kind === "reaction_group") {
     const { emojis } = reactionGroupSummary(item, t);
-    const location = item.channelType === "dm" ? t("inDirectMessage") : t("inChannel").replace("{channel}", item.channelName);
     return t("reactedWith").replace("{emojis}", emojis).replace("{location}", location);
   }
-  const location = item.channelType === "dm" ? t("inDirectMessage") : t("inChannel").replace("{channel}", item.channelName);
   return `${kindLabel(item, t)} ${location}`;
 }
 
