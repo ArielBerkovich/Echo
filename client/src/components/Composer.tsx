@@ -418,6 +418,9 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       // first keystroke is a reply, not text inserted before the attribution.
       editor.chain().focus().insertContent(html).run();
       editor.chain().focus().insertContentAt(editor.state.doc.content.size, { type: "paragraph" }).run();
+      const fallback = document.documentElement.dataset.interfaceDirection === "rtl" ? "rtl" : "ltr";
+      const author = message?.author?.displayName || message?.author?.username || "Someone";
+      const quoteDirection = quoteContainerDirection(`${author} ${String(message?.body || "")}`, fallback);
       // Do not rely on the visual direction when resolving "end". In an RTL
       // document Tiptap can resolve that to the quote's last text block, so
       // the first typed character is inserted into the blockquote. The
@@ -425,6 +428,13 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       // paragraph, regardless of bidi layout.
       editor.view.dispatch(editor.state.tr.setSelection(TextSelection.atEnd(editor.state.doc)));
       syncParagraphDirections(editor);
+      editor.view.dom.dataset.quoteDirection = quoteDirection;
+      editor.view.dom.dataset.quoteReplyDirection = quoteDirection;
+      const insertedQuote = editor.view.dom.querySelector("blockquote");
+      if (insertedQuote) {
+        insertedQuote.setAttribute("dir", quoteDirection);
+        insertedQuote.style.direction = quoteDirection;
+      }
       editor.view.focus();
     },
   }), [editor, editing]);
