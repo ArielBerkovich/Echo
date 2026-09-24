@@ -940,6 +940,8 @@ test("places the first RTL quote reply caret after the quote", async ({ page }) 
 
   const composer = page.getByTestId("composer-editor");
   const reply = `first quote reply ${fixture.suffix}`;
+  await expect(composer.locator("blockquote + p")).toHaveCount(1);
+  await expect.poll(() => composer.locator("blockquote + p").evaluate((element) => element.querySelectorAll("br").length)).toBe(1);
   await composer.pressSequentially(reply);
   const quote = composer.locator("blockquote");
   await expect(quote).not.toContainText(reply);

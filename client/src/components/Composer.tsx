@@ -411,18 +411,20 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       // a completely empty trailing paragraph while normalizing the inserted
       // HTML, which makes the first reply character land in the quote and
       // serializes the attribution/body with the reply on the same line.
-      const html = `${quoteComposerHtml(message)}<p><br></p>`;
+      const html = quoteComposerHtml(message);
       // `insertContent` retains the selection at the start of its first block
       // when a fresh RTL composer has not yet established a text direction.
       // Put the caret in the empty paragraph after the quote explicitly so the
       // first keystroke is a reply, not text inserted before the attribution.
       editor.chain().focus().insertContent(html).run();
+      editor.chain().focus().insertContentAt(editor.state.doc.content.size, { type: "paragraph" }).run();
       // Do not rely on the visual direction when resolving "end". In an RTL
       // document Tiptap can resolve that to the quote's last text block, so
       // the first typed character is inserted into the blockquote. The
       // document-end text selection always targets the trailing reply
       // paragraph, regardless of bidi layout.
       editor.view.dispatch(editor.state.tr.setSelection(TextSelection.atEnd(editor.state.doc)));
+      syncParagraphDirections(editor);
       editor.view.focus();
     },
   }), [editor, editing]);

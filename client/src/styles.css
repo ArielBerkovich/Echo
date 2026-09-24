@@ -11055,12 +11055,6 @@ html[data-interface-direction="rtl"] .composer-editor[data-quote-reply-direction
   direction: rtl !important;
   text-align: right !important;
 }
-/* Tiptap keeps the explicit quote-reply break and adds its own trailing
-   break. Hide the duplicate visual break without removing the real paragraph
-   that keeps the caret outside the quote. */
-.composer-editor > p:has(> br:first-child + br.ProseMirror-trailingBreak) > br:first-child {
-  display: none;
-}
 html[data-interface-direction="rtl"] .composer-editor li > p {
   text-align: right;
 }
