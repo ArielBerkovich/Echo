@@ -7552,6 +7552,13 @@ html[data-interface-direction="rtl"] .message .msg-menu {
   color: var(--muted);
   font-size: 12px;
 }
+.channel-details-person-handle {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+html[dir="rtl"] .channel-details-person-handle {
+  text-align: right;
+}
 .channel-details-person-add,
 .channel-details-person-remove {
   margin-left: auto;
