@@ -1032,7 +1032,7 @@ const translations = {
     searchThisChannel: "חיפוש בערוץ זה",
     viewChannelDetails: "הצגת פרטי ערוץ",
     viewPinnedMessages: "הצגת הודעות נעוצות",
-    starChannel: "סימון ערוץ בכוכב",
+    starChannel: "הוספה למועדפים",
     unstarChannel: "הסרה ממועדפים",
     searchMessagesFor: "חיפוש הודעות עבור",
     message: "הודעה",
