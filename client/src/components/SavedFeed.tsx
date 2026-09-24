@@ -91,8 +91,8 @@ export default function SavedFeed({ user, users = [], customEmojis = [], onJump,
               type="button"
               className="saved-remove saved-active feed-icon-action"
               data-testid={`saved-remove-${it.id}`}
-              title={t("removeFromSaved")}
-              aria-label={t("removeFromSaved")}
+              title={t("removeSavedMessage")}
+              aria-label={t("removeSavedMessage")}
               onClick={(event) => unsave(event, it)}
             >
               <BookmarkIcon />
