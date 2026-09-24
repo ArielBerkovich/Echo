@@ -5142,14 +5142,6 @@ html[data-interface-direction="rtl"] .composer-editor p.is-editor-empty:first-ch
   direction: rtl;
   text-align: right;
 }
-/* Forward notes keep their English placeholder and editor affordance LTR,
-   even when the surrounding workspace is Hebrew/RTL. */
-html[data-interface-direction="rtl"] .forward-modal .composer-editor p.is-editor-empty:first-child::before,
-html[data-interface-direction="rtl"] .forward-note-field .composer-editor p.is-editor-empty:first-child::before {
-  float: left;
-  direction: ltr;
-  text-align: left !important;
-}
 .composer.has-mention-empty.has-mention-rtl .composer-editor {
   direction: rtl;
   text-align: right;

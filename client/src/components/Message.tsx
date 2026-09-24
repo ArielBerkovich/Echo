@@ -644,7 +644,7 @@ function Message({
                     );
                   })}
                 </span>
-                <span className="thread-reply-link" dir="ltr">
+                <span className="thread-reply-link" dir={language === "he" ? "rtl" : "ltr"}>
                   {m.replyCount === 1 ? t("oneReply") : t("replyCount").replace("{count}", String(m.replyCount))}
                 </span>
               </button>

@@ -577,9 +577,35 @@ test("keeps Hebrew reply metadata isolated from the RTL message body", async ({ 
   await expect(rootMessage).toBeVisible();
   const replyLink = rootMessage.locator(".thread-reply-link");
   await expect(replyLink).toBeVisible();
-  await expect(replyLink).toHaveAttribute("dir", "ltr");
-  await expect.poll(() => replyLink.evaluate((element) => getComputedStyle(element).direction)).toBe("ltr");
+  await expect(replyLink).toHaveAttribute("dir", "rtl");
+  await expect.poll(() => replyLink.evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
   await expect.poll(() => replyLink.evaluate((element) => getComputedStyle(element).unicodeBidi)).toBe("isolate");
+  await expect(replyLink).toHaveText("תגובה אחת");
+});
+
+test("keeps the Hebrew forward-note placeholder RTL", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("echo.language", "he"));
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+
+  const message = page.getByTestId(`message-${fixture.messages.threadRoot.id}`);
+  await message.hover();
+  const forward = page.getByTestId(`message-${fixture.messages.threadRoot.id}-forward`);
+  await expect(forward).toBeVisible();
+  await forward.click({ force: true });
+
+  const forwardModal = page.getByTestId("forward-modal");
+  const editor = forwardModal.getByTestId("composer-editor");
+  await expect(editor).toHaveAttribute("data-placeholder", "הוסיפו הקשר לנמען…");
+  await expect.poll(() => editor.locator("p").first().evaluate((element) => ({
+    direction: getComputedStyle(element).direction,
+    textAlign: getComputedStyle(element).textAlign,
+  }))).toEqual({ direction: "rtl", textAlign: "right" });
+  await expect.poll(() => editor.locator("p").first().evaluate((element) => ({
+    direction: getComputedStyle(element, "::before").direction,
+    textAlign: getComputedStyle(element, "::before").textAlign,
+    float: getComputedStyle(element, "::before").float,
+  }))).toEqual({ direction: "rtl", textAlign: "right", float: "right" });
 });
 
 test("isolates selected mentions in the RTL composer", async ({ page }) => {
