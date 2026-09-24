@@ -29,6 +29,12 @@ async function openProjectChannel(page) {
   await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
 }
 
+function bobMentionOption(page) {
+  return page.locator(".mention-item").filter({
+    has: page.locator(".mi-handle").filter({ hasText: `@${fixture.bob.username}` }),
+  }).first();
+}
+
 test("derives the interface direction from the selected language", async ({ page }) => {
   await page.goto(`/channels/${fixture.projectChannel.name}`);
   await selectRtl(page);
@@ -553,9 +559,10 @@ test("isolates selected mentions in the RTL composer", async ({ page }) => {
   await page.getByTestId("channel-row-general").click();
 
   const editor = page.getByTestId("composer-editor");
-  await editor.fill("ערעהכגה גד @b");
+  await editor.fill("ערעהכגה גד @");
   await expect(page.locator(".mention-popup")).toBeVisible();
-  await page.locator(".mention-item").filter({ hasText: fixture.bob.displayName }).click();
+  await editor.type(fixture.bob.username);
+  await bobMentionOption(page).click();
   await editor.type(" sdfvsdfsdfsdfsdfsdfsdfsd");
 
   const mention = editor.locator("[data-user-mention]");
@@ -582,8 +589,8 @@ test("keeps the RTL mention trigger and selected token on the same text edge", a
     text: element.textContent,
   }))).toEqual({ direction: "rtl", text: "שלום @" });
 
-  await editor.type("b");
-  await page.locator(".mention-item").filter({ hasText: fixture.bob.displayName }).click();
+  await editor.type(fixture.bob.username);
+  await bobMentionOption(page).click();
   const paragraph = editor.locator("p").first();
   const mention = editor.locator("[data-user-mention]");
   await expect(paragraph).toHaveCSS("direction", "rtl");
@@ -612,8 +619,8 @@ test("keeps the LTR composer aligned after typing following a mention", async ({
   const editor = page.getByTestId("composer-editor");
   await editor.fill("@");
   await expect(page.locator(".mention-popup")).toBeVisible();
-  await editor.type("b");
-  await page.locator(".mention-item").filter({ hasText: fixture.bob.displayName }).click();
+  await editor.type(fixture.bob.username);
+  await bobMentionOption(page).click();
   await editor.type(" testing");
 
   const paragraph = editor.locator("p").first();
@@ -649,7 +656,7 @@ test("switches an RTL composer to LTR after an English mention suffix", async ({
   await editor.fill("@");
   await expect(page.locator(".mention-popup")).toBeVisible();
   await editor.type(fixture.bob.username);
-  await page.locator(".mention-item").filter({ hasText: fixture.bob.displayName }).click();
+  await bobMentionOption(page).click();
   await editor.type(" hello world");
 
   const paragraph = editor.locator("p").first();
