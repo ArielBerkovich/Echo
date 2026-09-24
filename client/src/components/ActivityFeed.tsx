@@ -102,6 +102,7 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
       <FeedContent
         loading={loading}
         items={displayItems}
+        loadingLabel={t("loading")}
         emptyTitle={t("noActivityYet")}
         emptyMessage={t("activityEmpty")}
       >
@@ -123,15 +124,15 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
               }
             }}
           >
-            {it.unread && <span className="activity-unread-dot" aria-label="Unread" />}
+            {it.unread && <span className="activity-unread-dot" aria-label={t("unread")} />}
             <Avatar
-              name={activityAuthor(it)}
+              name={activityAuthor(it, t)}
               src={it.kind === "reaction_group" && it.reactionItems.length > 1 ? null : it.author?.avatarUrl}
               size={36}
             />
             <div className="content">
               <FeedMessage
-                author={activityAuthor(it)}
+                author={activityAuthor(it, t)}
                 context={activityContext(it, t)}
                 time={formatDateTime(it.createdAt)}
                 body={it.body}
@@ -146,8 +147,8 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
               type="button"
               className="activity-dismiss feed-icon-action"
               data-testid={`activity-delete-${it.id}`}
-              title="Delete activity"
-              aria-label="Delete activity"
+              title={t("deleteActivity")}
+              aria-label={t("deleteActivity")}
               onClick={(event) => {
                 event.stopPropagation();
                 restoreFocusAfterDismissRef.current = true;
@@ -189,7 +190,7 @@ function activityContext(item, t) {
   if (item.kind === "channel_add") return t("addedYouToChannel").replace("{channel}", item.channelName);
   if (item.kind === "channel_remove") return t("removedYouFromChannel").replace("{channel}", item.channelName);
   if (item.kind === "reaction_group") {
-    const { emojis } = reactionGroupSummary(item);
+    const { emojis } = reactionGroupSummary(item, t);
     const location = item.channelType === "dm" ? t("inDirectMessage") : t("inChannel").replace("{channel}", item.channelName);
     return t("reactedWith").replace("{emojis}", emojis).replace("{location}", location);
   }
@@ -197,21 +198,21 @@ function activityContext(item, t) {
   return `${kindLabel(item, t)} ${location}`;
 }
 
-function activityAuthor(item) {
-  if (item.kind === "reaction_group") return reactionGroupSummary(item).actors;
+function activityAuthor(item, t) {
+  if (item.kind === "reaction_group") return reactionGroupSummary(item, t).actors;
   return item.author?.displayName || "unknown";
 }
 
-function reactionGroupSummary(item) {
-  const actors = [...new Set(item.reactionItems.map((reaction) => reaction.author?.displayName || "Someone"))];
+function reactionGroupSummary(item, t) {
+  const actors = [...new Set(item.reactionItems.map((reaction) => reaction.author?.displayName || t("someone")))];
   const emojis = [...new Set(item.reactionItems.map((reaction) => reaction.emoji).filter(Boolean))];
   const actorLabel = actors.length <= 2
-    ? actors.join(" and ")
-    : `${actors.slice(0, 2).join(", ")}, and ${actors.length - 2} other${actors.length - 2 === 1 ? "" : "s"}`;
+    ? actors.join(` ${t("and")} `)
+    : `${actors.slice(0, 2).join(", ")}, ${t("and")} ${actors.length - 2} ${actors.length - 2 === 1 ? t("other") : t("others")}`;
   const emojiLabel = emojis.length <= 2
-    ? emojis.join(" and ")
-    : `${emojis.slice(0, 2).join(", ")}, and ${emojis.length - 2} more`;
-  return { actors: actorLabel || "Someone", emojis: emojiLabel || "an emoji" };
+    ? emojis.join(` ${t("and")} `)
+    : `${emojis.slice(0, 2).join(", ")}, ${t("and")} ${emojis.length - 2} ${t("more")}`;
+  return { actors: actorLabel || t("someone"), emojis: emojiLabel || t("anEmoji") };
 }
 
 function groupReactionActivities(items) {
