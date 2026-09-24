@@ -406,12 +406,16 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     },
     quoteMessage(message) {
       if (!editor || editing) return;
-      const html = `${quoteComposerHtml(message)}<p></p>`;
+      // Keep a real, addressable paragraph after the quote. ProseMirror drops
+      // a completely empty trailing paragraph while normalizing the inserted
+      // HTML, which makes the first reply character land in the quote and
+      // serializes the attribution/body with the reply on the same line.
+      const html = `${quoteComposerHtml(message)}<p><br></p>`;
       // `insertContent` retains the selection at the start of its first block
       // when a fresh RTL composer has not yet established a text direction.
       // Put the caret in the empty paragraph after the quote explicitly so the
       // first keystroke is a reply, not text inserted before the attribution.
-      editor.chain().focus().insertContent(html).setTextSelection("end").run();
+      editor.chain().focus().insertContent(html).focus("end").run();
     },
   }), [editor, editing]);
   useEffect(() => {
