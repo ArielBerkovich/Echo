@@ -608,6 +608,31 @@ test("keeps the Hebrew forward-note placeholder RTL", async ({ page }) => {
   }))).toEqual({ direction: "rtl", textAlign: "right", float: "right" });
 });
 
+test("aligns selected group details to the RTL content edge", async ({ page }) => {
+  const created = await requestAsToken(page, fixture.alice.token, "/groups", {
+    method: "POST",
+    body: { name: `RTL Group ${fixture.suffix}`, description: "תיאור הקבוצה" },
+  });
+  try {
+    await page.addInitScript(() => localStorage.setItem("echo.language", "he"));
+    await page.goto("/groups");
+    const panel = page.getByTestId("groups-panel");
+    await panel.getByRole("button", { name: new RegExp(created.group.name) }).click();
+
+    const description = panel.locator(".groups-panel-description");
+    const handle = panel.locator(".groups-panel-handle");
+    await expect(description).toHaveText("תיאור הקבוצה");
+    await expect.poll(() => description.evaluate((element) => ({
+      marginRight: getComputedStyle(element).marginRight,
+      marginLeft: getComputedStyle(element).marginLeft,
+      textAlign: getComputedStyle(element).textAlign,
+    }))).toEqual({ marginRight: "0px", marginLeft: "0px", textAlign: "right" });
+    await expect.poll(() => handle.evaluate((element) => getComputedStyle(element).textAlign)).toBe("right");
+  } finally {
+    await requestAsToken(page, fixture.alice.token, `/groups/${created.group.id}`, { method: "DELETE" }).catch(() => {});
+  }
+});
+
 test("isolates selected mentions in the RTL composer", async ({ page }) => {
   await page.goto("/channels/general");
   await selectRtl(page);

@@ -99,7 +99,7 @@ html[dir="rtl"] .groups-panel-group.active {
 }
 html[dir="rtl"] .groups-panel-detail-meta,
 html[dir="rtl"] .groups-panel-description {
-  margin-right: 52px;
+  margin-right: 0;
   margin-left: 0;
 }
 html[dir="rtl"] .groups-detail-heading,
@@ -109,6 +109,9 @@ html[dir="rtl"] .groups-panel-description {
 }
 html[dir="rtl"] .groups-panel-description {
   unicode-bidi: plaintext;
+}
+html[dir="rtl"] .groups-panel-handle {
+  text-align: right;
 }
 html[dir="rtl"] .api-group-toggle,
 html[dir="rtl"] .api-group-body,
