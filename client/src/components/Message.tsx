@@ -468,16 +468,16 @@ function Message({
 
         {m.broadcastToChannel && !inThread && (
           <div className="broadcast-reply-label">
-            <span>Reply sent to the channel</span>
+            <span>{t("replySentToChannel")}</span>
             <button
               type="button"
               className="broadcast-reply-thread-link"
               data-testid={`message-${mid}-view-thread`}
-              aria-label="View thread"
+              aria-label={t("viewThread")}
               onClick={() => onOpenThread?.()}
             >
               <span aria-hidden="true"><ReplyIcon /></span>
-              <span>View thread</span>
+              <span>{t("viewThread")}</span>
             </button>
           </div>
         )}
