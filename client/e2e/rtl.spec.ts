@@ -202,6 +202,7 @@ test("keeps an English quote created in the Hebrew composer left-to-right", asyn
   await composer.click();
   await page.getByTestId("composer-blockquote").click();
   await page.keyboard.type("Several English words");
+  await page.keyboard.press("Enter");
 
   const quote = composer.locator("blockquote");
   await expect.poll(() => quote.evaluate((element) => {
@@ -214,6 +215,10 @@ test("keeps an English quote created in the Hebrew composer left-to-right", asyn
       borderRight: getComputedStyle(element).borderRightWidth,
     };
   })).toEqual({ quoteDirection: "ltr", paragraphDirection: "ltr", paragraphAlign: "start", borderLeft: "3px", borderRight: "0px" });
+  await expect.poll(() => quote.locator("p").last().evaluate((element) => ({
+    direction: getComputedStyle(element).direction,
+    textAlign: getComputedStyle(element).textAlign,
+  }))).toEqual({ direction: "ltr", textAlign: "start" });
   await page.screenshot({ path: "test-results/hebrew-toolbar-english-quote.png", fullPage: true });
 });
 

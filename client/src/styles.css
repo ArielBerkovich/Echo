@@ -11014,7 +11014,7 @@ html[data-interface-direction="rtl"] .composer-editor ul:has(> li > p.is-editor-
 html[data-interface-direction="rtl"] .composer-editor ol:has(> li > p.is-editor-empty) {
   direction: rtl !important;
 }
-html[data-interface-direction="rtl"] .composer-editor p:has(> br.ProseMirror-trailingBreak) {
+html[data-interface-direction="rtl"] .composer-editor > p:has(> br.ProseMirror-trailingBreak) {
   direction: rtl;
   text-align: right;
 }
