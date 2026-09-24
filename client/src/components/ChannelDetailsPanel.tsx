@@ -311,7 +311,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
 
           {activeTab === "members" && <section className="channel-details-section channel-details-members-section cd-section" role="tabpanel" id="channel-details-panel-members" aria-labelledby="channel-details-tab-members">
             {canAddPeople && (
-              <Button variant="subtle" className="channel-add-people channel-details-add-primary" onClick={onAddPeople}>
+              <Button variant="subtle" className="channel-add-people channel-details-add-primary" onClick={onAddPeople} aria-label={t("addPeopleToThisChannel")}>
                 <PlusIcon size={17} strokeWidth={2.2} />
                 <span>{t("addPeople")}</span>
               </Button>

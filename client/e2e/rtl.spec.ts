@@ -10,7 +10,7 @@ test.beforeEach(async ({ page }) => {
 async function selectRtl(page) {
   await page.getByTestId("rail-settings").click();
   await expect(page.getByTestId("settings-page")).toBeVisible();
-  await page.getByRole("button", { name: "Appearance", exact: true }).click();
+  await page.getByRole("button", { name: "Preferences", exact: true }).click();
   await page.getByTestId("settings-language-he").click();
   await expect(page.locator("html")).toHaveAttribute("data-interface-direction", "rtl");
 }
@@ -18,7 +18,7 @@ async function selectRtl(page) {
 async function selectInterfaceDirection(page, direction) {
   await page.getByTestId("rail-settings").click();
   await expect(page.getByTestId("settings-page")).toBeVisible();
-  await page.getByRole("button", { name: "Appearance", exact: true }).click();
+  await page.getByRole("button", { name: "Preferences", exact: true }).click();
   await page.getByTestId(`settings-language-${direction === "rtl" ? "he" : "en"}`).click();
   await expect(page.locator("html")).toHaveAttribute("data-interface-direction", direction);
 }
@@ -974,7 +974,7 @@ test("translates the unauthenticated login screen in Hebrew", async ({ page }) =
 test("keeps Hebrew selected after signing out", async ({ page }) => {
   await page.goto(`/channels/${fixture.projectChannel.name}`);
   await page.getByTestId("rail-settings").click();
-  await page.getByRole("button", { name: "Appearance", exact: true }).click();
+  await page.getByRole("button", { name: "Preferences", exact: true }).click();
   await page.getByTestId("settings-language-he").click();
   await expect.poll(() => page.evaluate(() => localStorage.getItem("echo.language"))).toBe("he");
 

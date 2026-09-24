@@ -182,7 +182,7 @@ test("uses the selected Hebrew language for the message layout", async ({ page }
   await page.goto(`/channels/${fixture.projectChannel.name}`);
   await page.getByTestId("rail-settings").click();
   await expect(page.getByTestId("settings-page")).toBeVisible();
-  await page.getByRole("button", { name: "Appearance", exact: true }).click();
+  await page.getByRole("button", { name: "Preferences", exact: true }).click();
   await page.getByTestId("settings-language-he").click();
   await expect(page.locator("html")).toHaveAttribute("data-interface-direction", "rtl");
 

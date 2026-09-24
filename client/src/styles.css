@@ -5121,6 +5121,14 @@ html[data-interface-direction="rtl"] .composer-editor p.is-editor-empty:first-ch
   direction: rtl;
   text-align: right;
 }
+/* Forwarding keeps its English placeholder LTR even while the surrounding
+   Hebrew interface remains RTL. Actual Hebrew note text still resolves via
+   the editor's direction logic once the user starts typing. */
+html[data-interface-direction="rtl"] .forward-note-field .composer-editor p.is-editor-empty:first-child::before {
+  float: left;
+  direction: ltr;
+  text-align: left;
+}
 .composer.has-mention-empty.has-mention-rtl .composer-editor {
   direction: rtl;
   text-align: right;
