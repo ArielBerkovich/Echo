@@ -1231,7 +1231,7 @@ const ChannelView = forwardRef(function ChannelView({
                 <>
                   <div className="empty-state-glyph">{channel.type === "private" ? "🔒" : "#"}</div>
                   <h3>{channel.name}</h3>
-                  <p>This is the very beginning of the {channel.type === "private" ? "private " : ""}#{channel.name} channel. Say hello! 👋</p>
+                  <p>{t(channel.type === "private" ? "privateChannelBeginning" : "channelBeginning", { channel: `#${channel.name}` })} 👋</p>
                   {isMember && <ChannelSetupActions channel={channel} onAddPeople={onAddPeople} onOpenDetails={openDetailsPanel} />}
                 </>
               )}
@@ -1416,8 +1416,8 @@ const ChannelView = forwardRef(function ChannelView({
       )}
       {isMember && !canPost && (
         <div className="channel-readonly-notice" role="status" data-testid="channel-readonly-notice">
-          <strong>Managers only</strong>
-          <span>This channel is read-only. Only the channel creator and managers can post.</span>
+          <strong>{t("managersOnly")}</strong>
+          <span>{t("channelReadOnlyHint")}</span>
         </div>
       )}
       </div>
@@ -1567,20 +1567,21 @@ const ChannelView = forwardRef(function ChannelView({
 export default ChannelView;
 
 function ChannelSetupActions({ channel, onAddPeople, onOpenDetails, inline = false }) {
+  const { t } = useI18n();
   return (
-    <div className={`empty-state-setup${inline ? " channel-setup-inline" : ""}`} aria-label="Set up this channel">
-      <strong>Make this space useful</strong>
-      <span>Add people and a little context so everyone knows what belongs here.</span>
+    <div className={`empty-state-setup${inline ? " channel-setup-inline" : ""}`} aria-label={t("setUpChannel")}>
+      <strong>{t("makeSpaceUseful")}</strong>
+      <span>{t("makeSpaceUsefulHint")}</span>
       <div className="empty-state-actions">
         {channel.name?.toLowerCase() !== "general" && (
           <button type="button" className="empty-state-action primary" data-testid="empty-channel-add-people" onClick={onAddPeople}>
             <UsersRoundIcon size={16} strokeWidth={1.9} />
-            Add people
+            {t("addPeople")}
           </button>
         )}
         <button type="button" className="empty-state-action" data-testid="empty-channel-details" onClick={onOpenDetails}>
           <FileTextIcon size={16} strokeWidth={1.9} />
-          Add topic or description
+          {t("addTopicOrDescription")}
         </button>
       </div>
     </div>
