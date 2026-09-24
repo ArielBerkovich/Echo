@@ -794,7 +794,7 @@ const translations = {
     people: "אנשים",
     groupDm: "שיחה קבוצתית",
     channel: "ערוץ",
-    notInChannel: "אינם חברים בערוץ",
+    notInChannel: "אינכם חברים בערוץ",
     noPeopleMatch: "לא נמצאו אנשים תואמים.",
     noCommandsMatch: "לא נמצאו פקודות תואמות.",
     noRecentConversations: "אין שיחות אחרונות.",
