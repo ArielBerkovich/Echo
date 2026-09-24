@@ -623,7 +623,7 @@ function Message({
                 type="button"
                 className="thread-indicator"
                 data-testid={`message-${mid}-reply-count`}
-                aria-label={`Open thread with ${m.replyCount} ${m.replyCount === 1 ? "reply" : "replies"}${replyNames ? ` from ${replyNames}` : ""}`}
+                aria-label={`${t("openThreadWithCount").replace("{count}", String(m.replyCount))}${replyNames ? ` ${t("fromPeople").replace("{names}", replyNames)}` : ""}`}
                 onClick={onOpenThread}
               >
                 <span className="thread-participants" aria-hidden="true">
@@ -642,8 +642,8 @@ function Message({
                     );
                   })}
                 </span>
-                <span className="thread-reply-link" dir="ltr">
-                  {m.replyCount === 1 ? t("oneReply") : `${m.replyCount} ${t("replies")}`}
+                <span className="thread-reply-link" dir="auto">
+                  {m.replyCount === 1 ? t("oneReply") : t("replyCount").replace("{count}", String(m.replyCount))}
                 </span>
               </button>
             )}
