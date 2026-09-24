@@ -24,7 +24,6 @@ describe("buildQuoteMarkdown", () => {
       markdown,
       [
         "> Alice Test said:",
-        "> ",
         "> Hello @\u2060bob.builder",
         "> ",
         "> Please check @\u2060everyone and the deployment notes.",

@@ -929,6 +929,31 @@ test("places the first RTL quote reply caret after the quote", async ({ page }) 
   await expect(composer.locator("blockquote + p")).toContainText(reply);
 });
 
+test("keeps a multiline English quote reply outside the quote block", async ({ page }) => {
+  const body = `English multiline quote ${fixture.suffix}`;
+  const message = await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: { channelId: fixture.dmChannel.id, body, externalKey: `rtl-multiline-quote-${fixture.suffix}` },
+  });
+
+  await page.addInitScript(() => localStorage.setItem("echo.language", "he"));
+  await page.goto("/dms");
+  await page.getByTestId(`dm-row-${slug(fixture.bob.displayName)}`).locator(".dm-open").click();
+  await page.getByTestId(`message-${message.message.id}`).hover();
+  await page.getByTestId(`message-${message.message.id}-quote`).click();
+
+  const composer = page.getByTestId("composer");
+  await composer.pressSequentially("first English line");
+  await composer.press("Enter");
+  await composer.pressSequentially("second English line");
+
+  const quote = page.locator("blockquote").filter({ hasText: "Bob Builder said:" });
+  await expect(quote).toHaveCount(1);
+  await expect(quote).not.toContainText("first English line");
+  await expect(quote).not.toContainText("second English line");
+  await expect(page.getByText("second English line", { exact: true })).toBeVisible();
+});
+
 test("translates the Hebrew channel creation dialog", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("echo.language", "he"));
   await page.goto(`/channels/${fixture.projectChannel.name}`);
