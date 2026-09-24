@@ -37,6 +37,16 @@ const SETTINGS_TABS = [
   { id: "webhooks", label: "Webhooks", Icon: WebhookIcon },
 ];
 
+const THEME_TRANSLATION_KEYS = {
+  nord: "themeNord",
+  aubergine: "themeAubergine",
+  azure: "themeAzure",
+  midnight: "themeMidnight",
+  dracula: "themeDracula",
+  sand: "themeSand",
+  calm: "themeStillwater",
+};
+
 const AZURE_NOTIFY_OPTIONS = [
   ["pullRequestCreated", "Pull request created"],
   ["pullRequestTitleChanged", "Title changed"],
@@ -704,15 +714,15 @@ export default function SettingsModal({
           </section>}
 
           {activeTab === "appearance" && themes.length > 0 && <section className="settings-section settings-appearance-card">
-            <h3>Appearance</h3>
-            <p className="settings-hint">Choose a color theme and the surface mode that works best for you.</p>
-            <div className="mode-toggle" role="group" aria-label="Light or dark mode">
-              <button type="button" className={`mode-option${mode === "light" ? " active" : ""}`} data-testid="settings-mode-light" onClick={() => onSelectMode?.("light")} aria-pressed={mode === "light"}>☀ Light</button>
-              <button type="button" className={`mode-option${mode === "dark" ? " active" : ""}`} data-testid="settings-mode-dark" onClick={() => onSelectMode?.("dark")} aria-pressed={mode === "dark"}>☾ Dark</button>
+            <h3>{t("appearance")}</h3>
+            <p className="settings-hint">{t("chooseColorTheme")}</p>
+            <div className="mode-toggle" role="group" aria-label={`${t("light")} / ${t("dark")}`}>
+              <button type="button" className={`mode-option${mode === "light" ? " active" : ""}`} data-testid="settings-mode-light" onClick={() => onSelectMode?.("light")} aria-pressed={mode === "light"}>☀ {t("light")}</button>
+              <button type="button" className={`mode-option${mode === "dark" ? " active" : ""}`} data-testid="settings-mode-dark" onClick={() => onSelectMode?.("dark")} aria-pressed={mode === "dark"}>☾ {t("dark")}</button>
             </div>
             <div className="theme-grid">
-              {themes.map((t) => <button key={t.id} type="button" className={`theme-card${theme === t.id ? " active" : ""}`} data-testid={`settings-theme-${t.id}`} onClick={() => onSelectTheme?.(t.id)} aria-pressed={theme === t.id}>
-                <span className="theme-swatch">{t.swatch.map((c, i) => <span key={i} style={{ background: c }} />)}</span><span className="theme-name">{t.label}</span>
+              {themes.map((themeOption) => <button key={themeOption.id} type="button" className={`theme-card${theme === themeOption.id ? " active" : ""}`} data-testid={`settings-theme-${themeOption.id}`} onClick={() => onSelectTheme?.(themeOption.id)} aria-pressed={theme === themeOption.id}>
+                <span className="theme-swatch">{themeOption.swatch.map((c, i) => <span key={i} style={{ background: c }} />)}</span><span className="theme-name">{THEME_TRANSLATION_KEYS[themeOption.id] ? t(THEME_TRANSLATION_KEYS[themeOption.id]) : themeOption.label}</span>
               </button>)}
             </div>
           </section>}
