@@ -642,7 +642,7 @@ function Message({
                     );
                   })}
                 </span>
-                <span className="thread-reply-link">
+                <span className="thread-reply-link" dir="ltr">
                   {m.replyCount === 1 ? t("oneReply") : `${m.replyCount} ${t("replies")}`}
                 </span>
               </button>
@@ -721,7 +721,7 @@ function Message({
           <div className="menu-overlay" onMouseDown={() => setLinkAction(null)} />
           <div
             className="msg-menu menu-fixed"
-            dir={undefined}
+            dir="ltr"
             data-testid={`message-${mid}-link-menu`}
             role="menu"
             aria-label={t("linkActions")}
@@ -765,7 +765,7 @@ function Message({
           <div
             ref={menuRef}
             className="msg-menu menu-fixed"
-            dir={undefined}
+            dir="ltr"
             style={menuPosition || { visibility: "hidden" }}
             role="menu"
             aria-label={t("messageActions")}
