@@ -43,6 +43,8 @@ export function shortcutTitle(label, id) {
   // Keep shortcut glyphs as one LTR run in RTL tooltips, so Ctrl/⌘ stays on
   // the left of the translated label rather than being reordered by bidi.
   if (!shortcut) return label;
-  const isolateShortcut = typeof document !== "undefined" && document.documentElement.dir === "rtl";
+  // Keep the historical server/test representation when there is no DOM;
+  // browsers only need bidi isolates in an actual RTL document.
+  const isolateShortcut = typeof document === "undefined" || document.documentElement.dir === "rtl";
   return `${label} · ${isolateShortcut ? `\u2066${shortcut}\u2069` : shortcut}`;
 }
