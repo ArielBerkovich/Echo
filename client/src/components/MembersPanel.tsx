@@ -257,7 +257,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
           {members.length === 0 ? (
             <div className="channel-details-empty">{t("noMembersYet")}</div>
           ) : shownMembers.length === 0 ? (
-            <div className="channel-details-empty">No members match “{query.trim()}”.</div>
+            <div className="channel-details-empty">{t("noMembersMatch").replace("{query}", query.trim())}</div>
           ) : (
             <div className="members-panel-virtual-content" style={{ height: shownMembers.length * MEMBER_ROW_HEIGHT }}>
               {visibleMembers.map((member, index) => (
@@ -274,7 +274,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
                       onClick={() => onOpenProfile?.(member.id)}
                     >
                       {member.displayName}
-                      {member.id === channel.createdBy && <span className="channel-details-creator">Creator</span>}
+                      {member.id === channel.createdBy && <span className="channel-details-creator">{t("creator")}</span>}
                       {member.id !== channel.createdBy && managerIdSet.has(member.id) && (
                         <span className="channel-details-creator">{t("manager")}</span>
                       )}

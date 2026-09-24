@@ -528,8 +528,8 @@ function EditableName({ value, error, onCheckAvailability, onSave }) {
           </div>
           {showFormatError && <div className="error" id="channel-rename-validation" role="alert">{validationError}</div>}
           {changed && valid && availability === "checking" && <div className="channel-details-section-hint" role="status">{t("checkingName")}</div>}
-          {showTakenError && <div className="error" id="channel-rename-validation" role="alert">This channel name is already in use.</div>}
-          {changed && valid && availability === "error" && <div className="error" id="channel-rename-validation" role="alert">Couldn’t check this name. Try again.</div>}
+          {showTakenError && <div className="error" id="channel-rename-validation" role="alert">{t("channelNameAlreadyInUse")}</div>}
+          {changed && valid && availability === "error" && <div className="error" id="channel-rename-validation" role="alert">{t("couldNotCheckChannelName")}</div>}
           {error && <div className="error" role="alert">{error}</div>}
           <div className="channel-details-edit-actions">
             <button type="button" className="btn-secondary" onClick={() => setEditing(false)}>{t("cancel")}</button>

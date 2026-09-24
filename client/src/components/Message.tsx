@@ -21,11 +21,13 @@ import {
 // A "joined the channel" / "created this channel" log line.
 export function SystemMessage({ m }) {
   const { t } = useI18n();
+  const renamedChannel = String(m.body || "").match(/^renamed this channel to (#[^\s]+)$/);
   const systemBody = {
     "created this channel": t("createdThisChannel"),
+    joined: t("joinedChannel"),
     "was added": t("wasAdded"),
     "was removed from the channel": t("wasRemovedFromChannel"),
-  }[m.body] || m.body;
+  }[m.body] || (renamedChannel ? t("renamedThisChannelTo").replace("{channel}", renamedChannel[1]) : m.body);
   return (
     <div className="system-msg">
       <span className="system-text">
@@ -194,8 +196,8 @@ function Message({
         }}
       />
       <div className="msg-edit-actions" data-testid="message-edit-actions">
-        <button type="button" className="btn-secondary" onClick={onEditCancel}>Cancel</button>
-        <button type="button" className="btn-primary" disabled={!editing.draft.trim()} onClick={onEditSave}>Save</button>
+        <button type="button" className="btn-secondary" onClick={onEditCancel}>{t("cancel")}</button>
+        <button type="button" className="btn-primary" disabled={!editing.draft.trim()} onClick={onEditSave}>{t("save")}</button>
       </div>
     </div>
   ) : (
@@ -208,7 +210,7 @@ function Message({
     >
       {cardMarkup?.before && <div dangerouslySetInnerHTML={{ __html: renderMarkdown(cardMarkup.before) }} />}
       {!cardMarkup && m.body && <div dangerouslySetInnerHTML={{ __html: decorateGroupMentions(renderMarkdown(displayGroupMentions(m.body, m.mentionedGroups), { mentionedChannels: m.mentionedChannels }), m.mentionedGroups) }} />}
-      {m.editedAt && <span className="edited-label"> (edited)</span>}
+      {m.editedAt && <span className="edited-label"> ({t("edited")})</span>}
       {messageCard && <Card card={messageCard} usersById={usersById} />}
     </div>
   );
@@ -501,14 +503,14 @@ function Message({
                 </span>
                 {m.forwardedFrom.messageId && (canJumpToForward?.(m.forwardedFrom) ? (
                   <button type="button" className="forwarded-link" onClick={(event) => { event.currentTarget.blur(); onJump?.(m.forwardedFrom); }}>
-                    <span>View original</span>
+                    <span>{t("viewOriginal")}</span>
                     <ArrowUpRight aria-hidden="true" />
                   </button>
                 ) : m.forwardedFrom.channelType === "public" ? (
-                  <span className="forwarded-noaccess" title="You don't have access to the channel this was forwarded from">· original not accessible</span>
+                  <span className="forwarded-noaccess" title={t("originalNotAccessible")}>{t("originalNotAccessible")}</span>
                 ) : null)}
               </div>
-              <div className="forwarded-message-label">Forwarded message</div>
+              <div className="forwarded-message-label">{t("forwardedMessage")}</div>
               {m.retro ? <RetroBoard messageId={m.id} retro={m.retro} usersById={usersById} currentUserId={currentUserId} creatorId={m.author?.id} /> : messageBody}
               {messageAttachments}
             </div>
@@ -562,7 +564,7 @@ function Message({
         {m.passwordHelpRequest && usersById?.get(currentUserId)?.isAdmin && (
           <div className="password-help-action">
             {m.passwordHelpRequest.status === "issued" ? (
-              <span className="password-help-issued">One-time password issued and posted below ✓</span>
+              <span className="password-help-issued">{t("oneTimePasswordIssued")}</span>
             ) : (
               <button
                 type="button"
@@ -572,8 +574,8 @@ function Message({
                 onClick={issuePasswordAndReply}
               >
                 {issuingPassword || m.passwordHelpRequest.status === "issuing"
-                  ? "Issuing…"
-                  : `Issue OTP for @${m.passwordHelpRequest.username} and reply`}
+                  ? t("issuing")
+                  : t("issueOtpAndReply").replace("{username}", m.passwordHelpRequest.username)}
               </button>
             )}
             {passwordActionError && <span className="error small">{passwordActionError}</span>}

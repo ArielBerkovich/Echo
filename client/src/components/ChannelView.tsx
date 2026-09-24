@@ -1069,15 +1069,15 @@ const ChannelView = forwardRef(function ChannelView({
       {!isMember && (
         <div className="join-bar">
           <span className="join-text">
-            You're previewing <strong>#{channel.name}</strong>
+            {t("previewingChannel")} <strong>#{channel.name}</strong>
           </span>
           <button
             className="join-btn"
             data-testid="join-channel"
-            aria-label={`Join channel #${channel.name}`}
+            aria-label={`${t("joinChannel")} #${channel.name}`}
             onClick={() => onJoin(channel)}
           >
-            Join channel
+            {t("joinChannel")}
           </button>
         </div>
       )}
@@ -1734,7 +1734,7 @@ function FilesPanel({ files, loading, error, conversationLabel, onRetry, onClose
               <div className="file-type" aria-hidden="true">{fileCategory(file) === "Images" ? "IMG" : (file.name || "FILE").split(".").pop()?.slice(0, 4).toUpperCase()}</div>
               <div className="file-info">
                 <strong>{file.name}</strong>
-                {unavailable.has(file.id) ? <span>This file is no longer available</span> : <span>{file.contentType || "File"} · {formatSize(file.size)} · {file.author?.displayName || "Unknown"} · {formatDate(file.createdAt)}</span>}
+                {unavailable.has(file.id) ? <span>{t("fileNoLongerAvailableShort")}</span> : <span>{file.contentType || t("file")} · {formatSize(file.size)} · {file.author?.displayName || t("unknown")} · {formatDate(file.createdAt)}</span>}
               </div>
               <div className="file-actions">
                 <button type="button" className="file-download" onClick={() => onJump(file)} title={t("jumpToMessage")} aria-label={t("jumpToMessageContaining").replace("{file}", file.name)}>

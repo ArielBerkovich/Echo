@@ -908,16 +908,16 @@ export default function SettingsModal({
 
           {activeTab === "shortcuts" && (
             <section className="settings-section settings-shortcuts-section">
-              <h3>Keyboard shortcuts</h3>
-              <p className="settings-hint">Use these shortcuts to move through Echo quickly. Shortcuts are fixed for everyone.</p>
+              <h3>{t("keyboardShortcutsTitle")}</h3>
+              <p className="settings-hint">{t("keyboardShortcutsHint")}</p>
               <div className="shortcut-groups">
                 {KEYBOARD_SHORTCUT_GROUPS.map((group) => (
                   <section className="shortcut-group" key={group.label} aria-labelledby={`shortcut-group-${group.label.toLowerCase()}`}>
-                    <h4 id={`shortcut-group-${group.label.toLowerCase()}`}>{group.label}</h4>
+                    <h4 id={`shortcut-group-${group.label.toLowerCase()}`}>{group.label === "Navigation" ? t("navigation") : t("messageActionsGroup")}</h4>
                     <div className="shortcut-list">
                       {group.shortcuts.map((shortcut) => (
                         <div className="shortcut-row" key={`${group.label}-${shortcut.description}`}>
-                          <span className="shortcut-description">{shortcut.description}</span>
+                          <span className="shortcut-description">{t(`shortcut${shortcut.id.replace(/(^|-)(\w)/g, (_, __, letter) => letter.toUpperCase())}` as never)}</span>
                           <span className="shortcut-keys" aria-label={shortcut.keys.join(" ")}>
                             {shortcut.keys.map((key) => <kbd key={key}>{key}</kbd>)}
                           </span>

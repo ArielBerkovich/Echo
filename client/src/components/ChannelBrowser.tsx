@@ -170,7 +170,7 @@ export default function ChannelBrowser({
         }
       });
     } catch (joinError) {
-      setActionError(joinError?.message || "We couldn't join that channel. Please try again.");
+      setActionError(joinError?.message || t("couldNotJoinChannel"));
     } finally {
       setJoiningId(null);
     }

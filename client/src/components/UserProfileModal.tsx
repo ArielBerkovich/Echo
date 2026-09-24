@@ -1,10 +1,12 @@
 import Avatar from "./Avatar.js";
 import Modal from "./Modal.js";
 import { StarIcon } from "lucide-react";
+import { useI18n } from "../lib/i18n.js";
 
 // A small profile card shown when you click someone's name, avatar, or @mention.
 // Offers a quick "Message" action that opens a DM with them.
 export default function UserProfileModal({ user, currentUserId, online, isStarred, onToggleStarred, onMessage, onClose }) {
+  const { t } = useI18n();
   if (!user) return null;
   const isSelf = user.id === currentUserId;
   const isDirectoryOnly = user.directoryOnly === true;
@@ -26,7 +28,7 @@ export default function UserProfileModal({ user, currentUserId, online, isStarre
         {isDirectoryOnly ? <div className="profile-directory-source">Managed in RHSSO</div> : !(["azure", "system"].includes(user.username)) && (
           <div className={`profile-presence ${online ? "online" : ""}`} data-testid="profile-presence">
             <span className="profile-dot" />
-            {online ? "Active" : "Away"}
+            {online ? t("active") : t("away")}
           </div>
         )}
       </div>
@@ -37,8 +39,8 @@ export default function UserProfileModal({ user, currentUserId, online, isStarre
             className={`profile-starred ${isStarred ? "active" : ""}`}
             data-testid="profile-starred"
             onClick={onToggleStarred}
-            aria-label={isStarred ? "Remove from Starred" : "Mark as Starred"}
-            title={isStarred ? "Remove from Starred" : "Mark as Starred"}
+            aria-label={isStarred ? t("removeFromStarred") : t("markAsStarred")}
+            title={isStarred ? t("removeFromStarred") : t("markAsStarred")}
           >
             <StarIcon className="profile-star-icon" size={23} strokeWidth={1.8} fill={isStarred ? "currentColor" : "none"} />
           </button>

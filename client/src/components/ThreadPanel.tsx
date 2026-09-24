@@ -481,8 +481,8 @@ export default function ThreadPanel({
         }}
       /> : (
         <div className="channel-readonly-notice thread-readonly-notice" role="status">
-          <strong>Managers only</strong>
-          <span>Only the channel creator and managers can reply.</span>
+          <strong>{t("managersOnly")}</strong>
+          <span>{t("managersOnlyReplyHint")}</span>
         </div>
       )}
 

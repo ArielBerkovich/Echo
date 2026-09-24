@@ -35,9 +35,9 @@ import {
 } from "./ComposerIcons.js";
 
 const SCHEDULE_PRESETS = [
-  { label: "In 30 min", getWhen: () => new Date(Date.now() + 30 * 60 * 1000) },
-  { label: "In 1 hour", getWhen: () => new Date(Date.now() + 60 * 60 * 1000) },
-  { label: "Tomorrow, 09:00", getWhen: tomorrow9am },
+  { label: "in30Minutes", getWhen: () => new Date(Date.now() + 30 * 60 * 1000) },
+  { label: "inOneHour", getWhen: () => new Date(Date.now() + 60 * 60 * 1000) },
+  { label: "tomorrowAtNine", getWhen: tomorrow9am },
 ];
 
 const MAX_SURVEY_OPTION_CHARACTERS = 80;
@@ -1286,13 +1286,13 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
           </div>
           <div className="composer-paste-actions">
             {!pastePrompt.tooLarge && showAttachments && (
-              <button type="button" className="btn-primary" onClick={attachPastedText}>Attach as file</button>
+              <button type="button" className="btn-primary" onClick={attachPastedText}>{t("attachAsFile")}</button>
             )}
             {!pastePrompt.tooLarge && pastePrompt.text.length <= MAX_MESSAGE_CHARACTERS && (
-              <button type="button" className="btn-secondary" onClick={pasteAsText}>Paste as text</button>
+              <button type="button" className="btn-secondary" onClick={pasteAsText}>{t("pasteAsText")}</button>
             )}
             <button type="button" className="composer-paste-dismiss" onClick={clearPastePrompt}>
-              {pastePrompt.tooLarge ? "Dismiss" : "Cancel"}
+              {pastePrompt.tooLarge ? t("dismiss") : t("cancel")}
             </button>
           </div>
         </div>
@@ -1308,7 +1308,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
             setScheduleError(null);
           }}
         >
-          <p className="settings-hint">Choose a quick option or pick an exact time. Echo uses your local time.</p>
+          <p className="settings-hint">{t("scheduleHint")}</p>
           <div className="schedule-presets">
             {SCHEDULE_PRESETS.map(({ label, getWhen }) => (
               <button
@@ -1319,12 +1319,12 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                   setScheduleAt(toLocalInput(getWhen()));
                 }}
               >
-                {label}
+                {t(label)}
               </button>
             ))}
           </div>
           <label className="schedule-custom-field survey-question-field">
-            <span>Custom date and time</span>
+            <span>{t("customDateAndTime")}</span>
             <input
               className="settings-input schedule-input"
               type="datetime-local"
@@ -1345,8 +1345,8 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
             />
           </label>
           <div className="schedule-preview-time">
-            <span>Will send</span>
-            <strong>{scheduleAt ? formatScheduleTime(new Date(scheduleAt)) : "Pick a time"}</strong>
+            <span>{t("willSend")}</span>
+            <strong>{scheduleAt ? formatScheduleTime(new Date(scheduleAt)) : t("pickTime")}</strong>
           </div>
           {scheduleError && <div className="error schedule-error" role="alert">{scheduleError}</div>}
           <ModalActions>
@@ -1429,7 +1429,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
 
       {!editing && showScheduled && (
         <Modal
-          title="Scheduled messages"
+              title={t("scheduledMessages")}
           className="scheduled-modal"
           onClose={() => {
             setShowScheduled(false);
@@ -1444,9 +1444,9 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                 <CalendarClock size={18} strokeWidth={1.9} />
               </span>
               <div>
-                <span className="scheduled-modal-eyebrow">Upcoming messages</span>
+                <span className="scheduled-modal-eyebrow">{t("upcomingMessages")}</span>
                 <strong><span className="scheduled-modal-count">{scheduledMsgs.length}</span> queued for {scheduledTargetLabel}</strong>
-                <span>These messages will be sent automatically at their scheduled time.</span>
+                <span>{t("scheduledMessagesHint").replace("{target}", scheduledTargetLabel)}</span>
               </div>
             </div>
           )}
@@ -1455,8 +1455,8 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
               <span className="scheduled-empty-icon" aria-hidden="true">
                 <CalendarClock size={22} strokeWidth={1.8} />
               </span>
-              <strong>Nothing scheduled</strong>
-              <span>Messages you schedule for {scheduledTargetLabel} will appear here.</span>
+              <strong>{t("nothingScheduled")}</strong>
+              <span>{t("scheduledMessagesHint").replace("{target}", scheduledTargetLabel)}</span>
             </div>
           ) : (
             <div className="scheduled-list">
@@ -1465,8 +1465,8 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                   <div className="scheduled-item editing" key={s.id}>
                     <div className="scheduled-edit">
                       <div className="scheduled-edit-heading">
-                        <strong>Edit scheduled message</strong>
-                        <span>Update the message or choose a new delivery time.</span>
+                        <strong>{t("editScheduledMessage")}</strong>
+                        <span>{t("updateScheduledMessageHint")}</span>
                       </div>
                       <textarea
                         className="settings-input"
@@ -1484,10 +1484,10 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                       />
                       <div className="scheduled-edit-actions">
                         <button type="button" className="btn-secondary" onClick={() => setEditingSched(null)}>
-                          Cancel
+                          {t("cancel")}
                         </button>
                         <button type="button" className="btn-primary" onClick={saveSchedEdit}>
-                          Save
+                          {t("save")}
                         </button>
                       </div>
                     </div>
@@ -1499,22 +1499,22 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                     </span>
                     <div className="scheduled-body">
                       <div className="scheduled-when">
-                        {index === 0 && <span className="scheduled-next-label">Next up</span>}
+                        {index === 0 && <span className="scheduled-next-label">{t("nextUp")}</span>}
                         {formatDateTime(s.scheduledFor)}
                       </div>
                       <div className="scheduled-preview" dir="auto">
-                        {s.body || `${s.attachments.length} attachment(s)`}
+                        {s.body || t("attachmentCount").replace("{count}", String(s.attachments.length))}
                       </div>
                       {!!s.attachments?.length && (
-                        <span className="scheduled-attachments">{s.attachments.length} attachment{s.attachments.length === 1 ? "" : "s"}</span>
+                        <span className="scheduled-attachments">{t("attachmentCount").replace("{count}", String(s.attachments.length))}</span>
                       )}
                     </div>
                     <div className="scheduled-actions">
                       <button type="button" className="scheduled-edit-btn" onClick={() => startSchedEdit(s)}>
-                        Edit
+                        {t("edit")}
                       </button>
                       <button type="button" className="link-danger" onClick={() => cancelScheduled(s.id)}>
-                        Cancel scheduled message
+                        {t("cancelScheduledMessage")}
                       </button>
                     </div>
                   </div>
@@ -1524,9 +1524,9 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
           )}
           {undoScheduled && (
             <div className="scheduled-undo" role="status">
-              <span>Scheduled message canceled.</span>
+              <span>{t("scheduledMessageCanceled")}</span>
               <button type="button" onClick={undoCancelScheduled} disabled={undoScheduled.busy}>
-                {undoScheduled.busy ? "Restoring…" : "Undo"}
+                {undoScheduled.busy ? t("restoring") : t("undo")}
               </button>
             </div>
           )}
@@ -1534,9 +1534,9 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       )}
 
       {linkDraft && (
-        <Modal title="Add link" className="link-modal" onClose={() => setLinkDraft(null)}>
+        <Modal title={t("addLink")} className="link-modal" onClose={() => setLinkDraft(null)}>
           <label className="link-field">
-            <span>Text</span>
+            <span>{t("text")}</span>
             <input
               className="settings-input"
               value={linkDraft.text}
@@ -1545,7 +1545,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
             />
           </label>
           <label className="link-field">
-            <span>URL</span>
+            <span>{t("url")}</span>
             <input
               className="settings-input"
               value={linkDraft.url}
@@ -1654,7 +1654,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
               </button>
             </div>
           ))}
-          {uploading && <div className="pending-att uploading">Uploading…</div>}
+          {uploading && <div className="pending-att uploading">{t("uploading")}</div>}
         </div>
       )}
 
