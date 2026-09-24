@@ -5196,7 +5196,6 @@ html[data-interface-direction="rtl"] .composer-editor p.is-editor-empty:first-ch
   display: block;
 }
 .thread-reply-link {
-  direction: ltr;
   unicode-bidi: isolate;
   white-space: nowrap;
   color: var(--link-color);
