@@ -21,11 +21,6 @@ function tooltipTarget(node: EventTarget | null) {
 }
 
 function tooltipPlacementOrder(target: HTMLElement) {
-  // In RTL the schedule control is on the physical left; its tooltip must
-  // open rightward into the composer rather than into the viewport edge.
-  if (target.matches("[data-testid='composer-send-options']")) return document.documentElement.dir === "rtl"
-    ? ["right", "above", "below", "left"] as const
-    : ["above", "below", "left", "right"] as const;
   // The sidebar and channel-header action groups share the same vertical
   // rhythm, so keep their tooltips consistently above the controls.
   if (target.closest(".sidebar-actions, .header-actions")) return ["above"] as const;
@@ -46,7 +41,7 @@ function tooltipPosition(target: HTMLElement, placement: TooltipState["placement
   const halfWidth = (width || TOOLTIP_MAX_WIDTH) / 2;
   const minLeft = Math.min(TOOLTIP_EDGE + halfWidth, window.innerWidth / 2);
   const maxLeft = Math.max(window.innerWidth - TOOLTIP_EDGE - halfWidth, window.innerWidth / 2);
-  const rightAligned = target.matches("[data-testid='composer-send-options'], .timeline-jump-button, .message-more-action, .header-action.leave") && placement === "above";
+  const rightAligned = target.matches(".timeline-jump-button, .message-more-action, .header-action.leave") && placement === "above";
   const centeredLeft = rightAligned
     ? rect.right - halfWidth
     : Math.min(
@@ -185,7 +180,7 @@ export default function ThemedTooltipLayer() {
     const placement = tooltipPlacementOrder(tooltip.target).find((candidate) => {
       const position = tooltipPosition(tooltip.target, candidate, width, height);
       const box = tooltipBox(position, candidate, width, height);
-      const rightAnchored = tooltip.target.matches("[data-testid='composer-send-options'], .timeline-jump-button, .message-more-action, .header-action.leave");
+      const rightAnchored = tooltip.target.matches(".timeline-jump-button, .message-more-action, .header-action.leave");
       const viewportEdge = rightAnchored ? 4 : TOOLTIP_EDGE;
       const fitsViewport = box.left >= viewportEdge && box.right <= window.innerWidth - viewportEdge
         && box.top >= TOOLTIP_EDGE && box.bottom <= window.innerHeight - TOOLTIP_EDGE;

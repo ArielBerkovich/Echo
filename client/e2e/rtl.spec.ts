@@ -479,6 +479,19 @@ test("keeps the RTL send-options menu above navigation", async ({ page }) => {
   await expect.poll(() => menu.evaluate((element) => getComputedStyle(element).zIndex)).toBe("1000");
 });
 
+test("keeps the RTL schedule tooltip above the composer control", async ({ page }) => {
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await selectRtl(page);
+  await openProjectChannel(page);
+
+  const scheduleButton = page.getByTestId("composer-send-options");
+  await scheduleButton.hover();
+  const tooltip = page.locator(".echo-tooltip");
+  await expect(tooltip).toBeVisible();
+  await expect(tooltip).toHaveClass(/echo-tooltip-above/);
+  await expect(tooltip).toHaveText("תזמון הודעה");
+});
+
 test("keeps the RTL schedule dialog out of the desktop navigation column", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(`/channels/${fixture.projectChannel.name}`);
