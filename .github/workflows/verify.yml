@@ -116,7 +116,7 @@ jobs:
     runs-on: ubuntu-latest
     # Shard 1 contains the largest UI specs; setup and server startup are
     # included in the job timeout, so three minutes is too tight.
-    timeout-minutes: 6
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
