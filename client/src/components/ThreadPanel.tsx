@@ -43,7 +43,7 @@ export default function ThreadPanel({
   openThreadJumpMessageId = null,
   composerFocusRequest = 0,
 }) {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const [rootMsg, setRootMsg] = useState(root); // local copy so live edits/reactions apply
   const [replies, setReplies] = useState([]);
   const [reactingTo, setReactingTo] = useState(null); // { id, rect } for the react picker
@@ -403,7 +403,7 @@ export default function ThreadPanel({
               />
               {index === 0 && (
                 <div className="thread-divider" data-testid="thread-reply-count">
-                  <span dir="auto">{replies.length === 1 ? t("oneReply") : t("replyCount").replace("{count}", String(replies.length))}</span>
+                  <span dir={language === "he" ? "rtl" : "ltr"}>{replies.length === 1 ? t("oneReply") : t("replyCount").replace("{count}", String(replies.length))}</span>
                 </div>
               )}
             </Fragment>

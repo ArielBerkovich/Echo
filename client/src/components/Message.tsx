@@ -20,7 +20,7 @@ import {
 
 // A "joined the channel" / "created this channel" log line.
 export function SystemMessage({ m }) {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const systemBody = {
     "created this channel": t("createdThisChannel"),
     "was added": t("wasAdded"),
@@ -642,7 +642,7 @@ function Message({
                     );
                   })}
                 </span>
-                <span className="thread-reply-link" dir="auto">
+                <span className="thread-reply-link" dir={language === "he" ? "rtl" : "ltr"}>
                   {m.replyCount === 1 ? t("oneReply") : t("replyCount").replace("{count}", String(m.replyCount))}
                 </span>
               </button>
