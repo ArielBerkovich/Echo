@@ -129,7 +129,7 @@ jobs:
           - 6/6
     services:
       minio:
-        image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+        image: ghcr.io/librefs/librefs:RELEASE.2026-04-12T22-27-24Z
         ports:
           - 9000:9000
         env:
