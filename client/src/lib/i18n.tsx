@@ -1232,7 +1232,7 @@ export const translations = {
     keyboardShortcutsTitle: "קיצורי מקלדת",
     keyboardShortcutsHint: "אפשר להשתמש בקיצורים האלה כדי לנוע ב־Echo במהירות. הקיצורים קבועים לכל המשתמשים.",
     shortcutFocusSearch: "התמקדות בחיפוש בסביבת העבודה",
-    shortcutOpenSwitcher: "פתיחת מחליף הפעולות המהירות",
+    shortcutOpenSwitcher: "פתיחת תפריט המעבר המהיר",
     shortcutNewMessage: "התחלת הודעה ישירה חדשה",
     shortcutBrowseChannels: "עיון בערוצים ציבוריים",
     shortcutCreateChannel: "יצירת ערוץ חדש",
