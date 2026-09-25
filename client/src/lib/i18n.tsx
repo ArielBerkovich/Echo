@@ -1436,7 +1436,7 @@ export const translations = {
     reconnectingToEcho: "מתחברים מחדש ל־Echo",
     echoRestarting: "Echo מופעל מחדש… מתחברים מחדש אוטומטית.",
     connectionRestored: "החיבור שוחזר",
-    syncingRecentMessages: "מסנכרנים הודעות אחרונות…",
+    syncingRecentMessages: "הודעות אחרונות מסתנכרנות",
     messagesSyncAutomatically: "ההודעות יסונכרנו אוטומטית.",
     reconnectingDraft: "Echo מתחבר מחדש. הטיוטה שלך נשמרה — אפשר לשלוח אותה כשהחיבור יחזור.",
     interfaceDirection: "כיוון הממשק",
