@@ -953,7 +953,7 @@ export const translations = {
     text: "טקסט",
     url: "כתובת URL",
     uploading: "מעלים…",
-    fileNoLongerAvailableShort: "הקובץ הזה אינו זמין יותר",
+    fileNoLongerAvailableShort: "קובץ זה אינו זמין יותר",
     in30Minutes: "בעוד 30 דקות",
     inOneHour: "בעוד שעה",
     tomorrowAtNine: "מחר, 09:00",
