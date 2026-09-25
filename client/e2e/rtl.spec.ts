@@ -596,7 +596,7 @@ test("keeps the Hebrew forward-note placeholder RTL", async ({ page }) => {
 
   const forwardModal = page.getByTestId("forward-modal");
   const editor = forwardModal.getByTestId("composer-editor");
-  await expect(editor).toHaveAttribute("data-placeholder", "הוסיפו הקשר לנמען…");
+  await expect(editor).toHaveAttribute("data-placeholder", "הוספת הקשר לנמען…");
   await expect.poll(() => editor.locator("p").first().evaluate((element) => ({
     direction: getComputedStyle(element).direction,
     textAlign: getComputedStyle(element).textAlign,
@@ -1070,7 +1070,7 @@ test("translates the unauthenticated login screen in Hebrew", async ({ page }) =
   await signInTab.click();
   await expectIndicatorUnder(signInTab);
   await expect(page.getByLabel("שם משתמש")).toBeVisible();
-  await expect(page.getByTestId("auth-password")).toHaveAttribute("placeholder", "הזינו סיסמה");
+  await expect(page.getByTestId("auth-password")).toHaveAttribute("placeholder", "הזנת סיסמה");
   await expect(page.getByRole("button", { name: "כניסה", exact: true })).toBeVisible();
   await expect.poll(() => page.getByTestId("auth-password").evaluate((input) => ({
     direction: getComputedStyle(input).direction,
@@ -1132,7 +1132,7 @@ test("creates and uses surveys and retrospectives in Hebrew RTL", async ({ page 
   })).toBeLessThanOrEqual(2);
   await page.screenshot({ path: "test-results/hebrew-survey.png", fullPage: true });
   await survey.getByRole("button", { name: /מהירות/ }).click();
-  await expect(survey).toContainText("1 הצבעה");
+  await expect(survey).toContainText("הצבעה אחת");
 
   await page.getByTestId("composer-more-actions").click();
   await page.getByTestId("composer-retro").click();
