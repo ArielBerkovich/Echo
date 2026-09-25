@@ -225,7 +225,7 @@ function hasSendableContent(currentEditor) {
 // emoji, and file attachments. Owns all of its own editor state — mount it with
 // a `key={channel.id}` so switching channels yields a fresh, empty composer.
 const Composer = forwardRef(function Composer({ channel, sendChannel = null, parentId = null, alsoSendToChannel = false, onAlsoSendToChannelChange, users = [], channels = [], onFindChannels, customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, onSend, initialContent = null, sendDisabled = false, allowEmptySend = false, sendAriaLabel, sendTitle, sendTestId, onDraftChange, onEditSave, onEditCancel, editing = null, placeholder: customPlaceholder, mode = "light", captureScreenDrops = false, showSchedule = true, showSend = true, showAttachments = true, submitOnEnter = false, disabled = false }, ref) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   // Keep custom-emoji blob URLs alive for the full composer lifetime. The
   // picker unmounts immediately after a selection, so its URLs cannot safely
   // be used by an emoji node inserted into this editor.
@@ -348,7 +348,9 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     ? t("replyToThread")
     : isDm
       ? isGroupDm ? `${t("message")}…` : dmPlaceholder
-      : `${t("message")} #${channel.name}`);
+      : language === "he"
+        ? `${t("message")} \u2066#${channel.name}\u2069`
+        : `${t("message")} #${channel.name}`);
 
   // Groups are loaded only for the mention picker and only once per composer
   // lifetime. The server returns only active Echo-owned groups.

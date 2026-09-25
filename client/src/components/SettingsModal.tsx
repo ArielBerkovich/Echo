@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Building2Icon, CheckIcon, Code2Icon, DownloadIcon, GitPullRequestIcon, KeyboardIcon, PaletteIcon, SlidersHorizontalIcon, UserRoundIcon, WebhookIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Building2Icon, CheckIcon, ChevronDownIcon, Code2Icon, DownloadIcon, GitPullRequestIcon, KeyboardIcon, PaletteIcon, SlidersHorizontalIcon, UserRoundIcon, WebhookIcon } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { api, getBackendUrl } from "../api.js";
@@ -46,6 +46,90 @@ const THEME_TRANSLATION_KEYS = {
   sand: "themeSand",
   calm: "themeStillwater",
 };
+
+function LanguageSelect({ language, setLanguage, t }) {
+  const [open, setOpen] = useState(false);
+  const controlRef = useRef(null);
+  const options = [
+    { value: "en", label: t("english") },
+    { value: "he", label: t("hebrew") },
+  ];
+  const selected = options.find((option) => option.value === language) || options[0];
+
+  useEffect(() => {
+    if (!open) return undefined;
+    function closeOnOutsideClick(event) {
+      if (!controlRef.current?.contains(event.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
+  }, [open]);
+
+  function selectLanguage(nextLanguage) {
+    setLanguage(nextLanguage);
+    setOpen(false);
+  }
+
+  function onKeyDown(event) {
+    if (event.key === "Escape") {
+      setOpen(false);
+      return;
+    }
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      const nextIndex = options.findIndex((option) => option.value === language) + (event.key === "ArrowDown" ? 1 : -1);
+      const nextOption = options[(nextIndex + options.length) % options.length];
+      selectLanguage(nextOption.value);
+    }
+  }
+
+  return (
+    <div className="settings-language-control" ref={controlRef}>
+      <select
+        className="settings-language-native"
+        data-testid="settings-language"
+        aria-hidden="true"
+        tabIndex={-1}
+        value={language}
+        onChange={(event) => {
+          const nextLanguage = event.target.value;
+          if (nextLanguage === "en" || nextLanguage === "he") selectLanguage(nextLanguage);
+        }}
+      >
+        {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+      </select>
+      <button
+        type="button"
+        className="settings-language-trigger"
+        aria-label={t("language")}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        onKeyDown={onKeyDown}
+      >
+        <span>{selected.label}</span>
+        <ChevronDownIcon className="settings-language-chevron" size={14} strokeWidth={2} aria-hidden="true" />
+      </button>
+      {open && (
+        <div className="settings-language-menu" role="listbox" aria-label={t("language")}>
+          {options.map((option) => (
+            <button
+              type="button"
+              role="option"
+              aria-selected={option.value === language}
+              className={`settings-language-option${option.value === language ? " selected" : ""}`}
+              key={option.value}
+              onClick={() => selectLanguage(option.value)}
+            >
+              {option.label}
+              {option.value === language && <CheckIcon size={14} aria-hidden="true" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const AZURE_NOTIFY_OPTIONS = [
   ["pullRequestCreated", "Pull request created"],
@@ -613,20 +697,7 @@ export default function SettingsModal({
             <h3>{t("preferences")}</h3>
             <section className="settings-preference-group settings-language-section" aria-labelledby="language-settings-heading">
               <h3 id="language-settings-heading">{t("language")}</h3>
-              <p className="settings-hint">{t("chooseLanguage")}</p>
-              <select
-                className="settings-language-select"
-                data-testid="settings-language"
-                aria-label={t("language")}
-                value={language}
-                onChange={(event) => {
-                  const nextLanguage = event.target.value;
-                  if (nextLanguage === "en" || nextLanguage === "he") setLanguage(nextLanguage);
-                }}
-              >
-                <option value="en" data-testid="settings-language-en">{t("english")}</option>
-                <option value="he" data-testid="settings-language-he">{t("hebrew")}</option>
-              </select>
+              <LanguageSelect language={language} setLanguage={setLanguage} t={t} />
             </section>
             <section className="preferences-message-sounds" aria-labelledby="message-sounds-heading">
               <div className="preferences-message-sounds-heading">

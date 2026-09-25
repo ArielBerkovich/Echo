@@ -5620,27 +5620,87 @@ html[data-interface-direction="rtl"] .message .msg-menu {
   color: var(--text);
   box-shadow: var(--shadow-sm), 0 0 0 1px var(--active-ring);
 }
-.settings-language-select {
+.settings-language-control {
+  position: relative;
+  display: inline-flex;
   width: min(150px, 100%);
+}
+.settings-language-native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.settings-language-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
   min-height: 32px;
-  padding: 6px 9px;
-  border: 0;
-  border-radius: 8px;
-  background: var(--surface-2);
+  padding: 6px 30px 6px 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
   color: var(--text);
   font: inherit;
   font-size: 12px;
   font-weight: 600;
   text-align: start;
   cursor: pointer;
-  transition: background-color 120ms ease, color 120ms ease;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
 }
-.settings-language-select:hover {
+.settings-language-trigger:hover {
   background: var(--border);
+  color: var(--text);
 }
-.settings-language-select:focus-visible {
-  outline: 2px solid var(--active-ring);
-  outline-offset: 2px;
+.settings-language-trigger:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.settings-language-chevron {
+  position: absolute;
+  inset-inline-end: 9px;
+  top: 50%;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+.settings-language-menu {
+  position: absolute;
+  z-index: 20;
+  inset-inline: 0;
+  top: calc(100% + 5px);
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  box-shadow: var(--shadow-md, 0 8px 24px rgb(0 0 0 / 18%));
+}
+.settings-language-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  text-align: start;
+  cursor: pointer;
+}
+.settings-language-option:hover,
+.settings-language-option.selected {
+  background: var(--surface-2);
+}
+.settings-language-option.selected {
+  color: var(--accent);
+  font-weight: 700;
 }
 .notify-row {
   display: flex;
