@@ -206,7 +206,7 @@ function useStaticLabelLocalization(language: Language) {
 }
 }
 
-const translations = {
+export const translations = {
   en: {
     language: "Language",
     account: "Account",
@@ -1392,11 +1392,11 @@ const translations = {
     migrationRhssoUsernameHint: "שם המשתמש הזה מנוהל על־ידי RHSSO ואי אפשר לשנותו ב־Echo.",
     migrationKeepHistory: "שמירת ההיסטוריה והמשך",
     survey: "סקר",
-    surveyVoteCountOne: "{count} הצבעה",
+    surveyVoteCountOne: "הצבעה אחת",
     surveyVoteCountMany: "{count} הצבעות",
     surveySelectMultiple: "בחירת כל האפשרויות המתאימות",
     surveySelectOne: "בחירת אפשרות אחת",
-    savingVote: "שומרים את ההצבעה",
+    savingVote: "ההצבעה נשמרת",
     surveyOptionsMustBeUnique: "כל אפשרויות הסקר חייבות להיות ייחודיות.",
     signIn: "כניסה",
     continue: "המשך",
