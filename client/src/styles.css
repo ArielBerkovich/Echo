@@ -5620,6 +5620,28 @@ html[data-interface-direction="rtl"] .message .msg-menu {
   color: var(--text);
   box-shadow: var(--shadow-sm), 0 0 0 1px var(--active-ring);
 }
+.settings-language-select {
+  width: min(150px, 100%);
+  min-height: 32px;
+  padding: 6px 9px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.settings-language-select:hover {
+  background: var(--border);
+}
+.settings-language-select:focus-visible {
+  outline: 2px solid var(--active-ring);
+  outline-offset: 2px;
+}
 .notify-row {
   display: flex;
   align-items: center;
@@ -6880,6 +6902,8 @@ html[data-interface-direction="rtl"] .message .msg-menu {
   flex: 0 0 auto;
   align-items: center;
   gap: 4px;
+  direction: ltr;
+  unicode-bidi: isolate;
 }
 .shortcut-keys kbd {
   min-width: 27px;

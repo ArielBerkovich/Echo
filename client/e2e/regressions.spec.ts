@@ -183,7 +183,7 @@ test("uses the selected Hebrew language for the message layout", async ({ page }
   await page.getByTestId("rail-settings").click();
   await expect(page.getByTestId("settings-page")).toBeVisible();
   await page.getByRole("button", { name: "Preferences", exact: true }).click();
-  await page.getByTestId("settings-language-he").click();
+  await page.getByTestId("settings-language").selectOption("he");
   await expect(page.locator("html")).toHaveAttribute("data-interface-direction", "rtl");
 
   await page.getByTestId("rail-home").click();

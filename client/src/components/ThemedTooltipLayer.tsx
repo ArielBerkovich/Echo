@@ -23,7 +23,7 @@ function tooltipTarget(node: EventTarget | null) {
 function tooltipPlacementOrder(target: HTMLElement) {
   // The sidebar and channel-header action groups share the same vertical
   // rhythm, so keep their tooltips consistently above the controls.
-  if (target.closest(".sidebar-actions, .header-actions")) return ["above"] as const;
+  if (target.closest(".sidebar-actions, .header-actions, .dm-starred-toggle")) return ["above"] as const;
   if (target.closest(".workspace-search-navigation, .workspace-search-actions, .workspace-search-help")) return ["below", "above", "left", "right"] as const;
   if (target.closest(".rail")) return document.documentElement.dir === "rtl"
     ? ["left", "above", "below", "right"] as const

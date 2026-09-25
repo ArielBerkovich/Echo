@@ -6,7 +6,7 @@ test("captures the Hebrew workspace for visual inspection", async ({ page }) => 
   await page.goto(`/channels/${fixture.projectChannel.name}`);
   await page.getByTestId("rail-settings").click();
   await page.getByRole("button", { name: "Preferences", exact: true }).click();
-  await page.getByTestId("settings-language-he").click();
+  await page.getByTestId("settings-language").selectOption("he");
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   await page.screenshot({ path: "test-results/hebrew-settings.png", fullPage: true });
 
@@ -79,10 +79,10 @@ test("mirrors settings gutters between English and Hebrew", async ({ page }) => 
   await page.goto(`/channels/${fixture.projectChannel.name}`);
   await page.getByTestId("rail-settings").click();
   await page.getByRole("button", { name: "Preferences", exact: true }).click();
-  await page.getByTestId("settings-language-en").click();
+  await page.getByTestId("settings-language").selectOption("en");
   await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
   await page.screenshot({ path: "test-results/settings-english.png", fullPage: true });
-  await page.getByTestId("settings-language-he").click();
+  await page.getByTestId("settings-language").selectOption("he");
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   await page.screenshot({ path: "test-results/settings-hebrew.png", fullPage: true });
 });
@@ -92,7 +92,7 @@ test("renders every primary Hebrew workspace page in RTL", async ({ page }) => {
   await page.goto(`/channels/${fixture.projectChannel.name}`);
   await page.getByTestId("rail-settings").click();
   await page.getByRole("button", { name: "Preferences", exact: true }).click();
-  await page.getByTestId("settings-language-he").click();
+  await page.getByTestId("settings-language").selectOption("he");
 
   const capture = async (name, locator) => {
     await expect(page.locator("html")).toHaveAttribute("dir", "rtl");

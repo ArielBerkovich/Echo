@@ -614,10 +614,19 @@ export default function SettingsModal({
             <section className="settings-preference-group settings-language-section" aria-labelledby="language-settings-heading">
               <h3 id="language-settings-heading">{t("language")}</h3>
               <p className="settings-hint">{t("chooseLanguage")}</p>
-              <div className="mode-toggle" role="group" aria-label={t("language")}>
-                <button type="button" className={`mode-option${language === "en" ? " active" : ""}`} data-testid="settings-language-en" onClick={() => setLanguage("en")} aria-pressed={language === "en"}>{t("english")}</button>
-                <button type="button" className={`mode-option${language === "he" ? " active" : ""}`} data-testid="settings-language-he" onClick={() => setLanguage("he")} aria-pressed={language === "he"}>{t("hebrew")}</button>
-              </div>
+              <select
+                className="settings-language-select"
+                data-testid="settings-language"
+                aria-label={t("language")}
+                value={language}
+                onChange={(event) => {
+                  const nextLanguage = event.target.value;
+                  if (nextLanguage === "en" || nextLanguage === "he") setLanguage(nextLanguage);
+                }}
+              >
+                <option value="en" data-testid="settings-language-en">{t("english")}</option>
+                <option value="he" data-testid="settings-language-he">{t("hebrew")}</option>
+              </select>
             </section>
             <section className="preferences-message-sounds" aria-labelledby="message-sounds-heading">
               <div className="preferences-message-sounds-heading">
