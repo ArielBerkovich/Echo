@@ -1300,7 +1300,7 @@ export const translations = {
     setNewPassword: "הגדרת סיסמה חדשה",
     forcePasswordResetHint: "טוב שחזרת{name}. הכניסה בוצעה באמצעות סיסמה חד־פעמית — יש לבחור סיסמה חדשה כדי לסיים.",
     saveAndContinue: "שמירה והמשך",
-    signOutInstead: "יציאה במקום זאת",
+    signOutInstead: "יציאה מהחשבון",
     browserUpdateRequired: "נדרש עדכון דפדפן",
     browserUpdateHint: "{browser} {version} ישן יותר מגרסת Chromium הנתמכת של Echo ({minimum}+). ייתכן שחלק מהתכונות לא יפעלו כראוי עד לעדכון.",
     preferApp: "מעדיפים יישום?",
