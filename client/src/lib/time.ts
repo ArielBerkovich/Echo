@@ -1,3 +1,5 @@
+import { languageConfig, languageLocale } from "./languages.js";
+
 // Shared date/time formatting helpers. All are forgiving: a bad/missing input
 // yields an empty string rather than throwing.
 
@@ -6,16 +8,21 @@ const TIME = { hour: "2-digit", minute: "2-digit", hour12: false };
 // Dates are part of Echo's interface, so they follow the language selected in
 // Echo rather than whichever language the browser happens to be using.
 export function interfaceLocale() {
-  if (typeof document !== "undefined" && document.documentElement.dataset.language === "he") return "he-IL";
+  return languageLocale(interfaceLanguage());
+}
+
+function interfaceLanguage() {
+  const documentLanguage = typeof document !== "undefined" ? document.documentElement.dataset.language : null;
+  if (documentLanguage) return documentLanguage;
   try {
-    return globalThis.localStorage?.getItem("echo.language") === "he" ? "he-IL" : "en-US";
+    return globalThis.localStorage?.getItem("echo.language") || "en";
   } catch {
-    return "en-US";
+    return "en";
   }
 }
 
-function isHebrewInterface() {
-  return interfaceLocale() === "he-IL";
+function relativeLabels() {
+  return languageConfig(interfaceLanguage()).relativeLabels;
 }
 
 // "21:42" — used for message timestamps.
@@ -57,8 +64,8 @@ export function formatDayDivider(iso) {
     a.getFullYear() === b.getFullYear() &&
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate();
-  if (sameDay(d, today)) return isHebrewInterface() ? "היום" : "Today";
-  if (sameDay(d, yesterday)) return isHebrewInterface() ? "אתמול" : "Yesterday";
+  if (sameDay(d, today)) return relativeLabels().today;
+  if (sameDay(d, yesterday)) return relativeLabels().yesterday;
   return d.toLocaleDateString(interfaceLocale(), { year: "numeric", month: "long", day: "numeric" });
 }
 
@@ -69,8 +76,8 @@ export function formatThreadDate(iso) {
   const today = new Date();
   const dayNumber = (value) => Date.UTC(value.getFullYear(), value.getMonth(), value.getDate()) / 86400000;
   const daysAgo = dayNumber(today) - dayNumber(d);
-  if (daysAgo === 0) return isHebrewInterface() ? "היום" : "Today";
-  if (daysAgo === 1) return isHebrewInterface() ? "אתמול" : "Yesterday";
+  if (daysAgo === 0) return relativeLabels().today;
+  if (daysAgo === 1) return relativeLabels().yesterday;
   if (daysAgo > 1 && daysAgo < 7) return d.toLocaleDateString(interfaceLocale(), { weekday: "long" });
   return d.toLocaleDateString(interfaceLocale(), { year: "numeric", month: "long", day: "numeric" });
 }
@@ -106,9 +113,9 @@ export function relativeTime(iso) {
   const d = new Date(iso);
   const diff = (Date.now() - d.getTime()) / 1000;
   if (Number.isNaN(diff)) return "";
-  if (diff < 60) return isHebrewInterface() ? "עכשיו" : "now";
-  if (diff < 3600) return isHebrewInterface() ? `לפני ${Math.floor(diff / 60)} דק׳` : `${Math.floor(diff / 60)} min`;
+  if (diff < 60) return relativeLabels().now;
+  if (diff < 3600) return relativeLabels().minutesAgo(Math.floor(diff / 60));
   if (diff < 86400) return d.toLocaleTimeString(interfaceLocale(), TIME);
-  if (diff < 172800) return isHebrewInterface() ? "אתמול" : "Yesterday";
+  if (diff < 172800) return relativeLabels().yesterday;
   return d.toLocaleDateString(interfaceLocale(), { month: "short", day: "numeric" });
 }

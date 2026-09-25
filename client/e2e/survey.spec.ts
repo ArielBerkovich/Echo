@@ -35,7 +35,7 @@ test("creates a survey and lets the sender vote", async ({ page }) => {
     options: ["Product improvements", "Bug fixes"],
   });
   await expect(modal.getByRole("checkbox", { name: "Allow multiple selections" })).not.toBeChecked();
-  await modal.getByRole("button", { name: "Send survey" }).click();
+  await modal.getByRole("button", { name: "Send a survey" }).click();
 
   const card = page.locator(".survey-card").filter({ hasText: question }).last();
   await expect(card).toBeVisible();
@@ -56,7 +56,7 @@ test("uses a polished multiple-selection toggle and records multiple choices", a
   const toggle = modal.getByRole("checkbox", { name: "Allow multiple selections" });
   await expect(toggle).toBeChecked();
   await expect(modal.locator(".survey-multiple-toggle")).toContainText("Multiple selections");
-  await modal.getByRole("button", { name: "Send survey" }).click();
+  await modal.getByRole("button", { name: "Send a survey" }).click();
 
   const card = page.locator(".survey-card").filter({ hasText: question }).last();
   await expect(card).toBeVisible();
@@ -77,7 +77,7 @@ test("warns about duplicate options and blocks sending", async ({ page }) => {
 
   await expect(modal.locator(".survey-option-warning")).toHaveText("This option matches an earlier choice.");
   await expect(modal.locator(".survey-option-entry").nth(0).locator(".survey-option-warning")).toHaveCount(0);
-  await modal.getByRole("button", { name: "Send survey" }).click();
+  await modal.getByRole("button", { name: "Send a survey" }).click();
 
   await expect(modal).toBeVisible();
   await expect(modal).toContainText("Each survey option must be unique.");

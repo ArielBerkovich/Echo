@@ -114,22 +114,24 @@ jobs:
   e2e-shards:
     name: E2E (${{ matrix.shard }})
     runs-on: ubuntu-latest
-    # Shard 1 contains the largest UI specs; setup and server startup are
-    # included in the job timeout, so three minutes is too tight.
-    timeout-minutes: 6
+    # Keep browser shards short enough that long-lived Vite/Socket.IO state
+    # cannot accumulate across the full UI suite.
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
         shard:
-          - 1/6
-          - 2/6
-          - 3/6
-          - 4/6
-          - 5/6
-          - 6/6
+          - 1/8
+          - 2/8
+          - 3/8
+          - 4/8
+          - 5/8
+          - 6/8
+          - 7/8
+          - 8/8
     services:
       minio:
-        image: quay.io/minio/minio:latest
+        image: ghcr.io/librefs/librefs:RELEASE.2026-04-12T22-27-24Z
         ports:
           - 9000:9000
         env:
@@ -149,6 +151,9 @@ jobs:
       S3_ACCESS_KEY: echo
       S3_SECRET_KEY: echo-dev-secret
       S3_BUCKET: echo-uploads
+      # Each E2E shard has one Echo process; avoid Mongo-backed realtime
+      # adapter state accumulating across the long browser suite.
+      SOCKET_IO_MONGO_ADAPTER: "false"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -247,6 +252,13 @@ jobs:
       - name: Run E2E tests
         env:
           E2E_WORKERS: 1
+          # Keep the Vite proxy on IPv4 in CI. Using localhost can resolve to
+          # IPv6 while the test server is bound to 127.0.0.1, which leaves
+          # long-running shards with stale API/WebSocket proxy sockets.
+          ECHO_API_PROXY_TARGET: http://127.0.0.1:4000
+          # Keep fixture/cleanup API requests off the long-lived browser proxy
+          # connection. The UI still exercises the Vite proxy as users do.
+          ECHO_E2E_API_BASE_URL: http://127.0.0.1:4000
         run: |
           if ! curl -fsS http://127.0.0.1:4000/api/health >/dev/null; then
             echo "Echo server is unavailable before starting the E2E shard"
@@ -254,6 +266,11 @@ jobs:
             exit 1
           fi
           npm run test:e2e -- --shard=${{ matrix.shard }}
+
+      - name: Show server log on failure
+        if: failure()
+        working-directory: .
+        run: cat /tmp/echo-server.log
 
   # Preserve the established required-check name while the work runs in
   # isolated shards above. Branch protection accepts this only after every

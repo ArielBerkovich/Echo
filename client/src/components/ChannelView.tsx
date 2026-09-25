@@ -505,7 +505,7 @@ const ChannelView = forwardRef(function ChannelView({
   function togglePin(m) {
     getSocket().emit("message:pin", { messageId: m.id }, (res) => {
       if (res?.error) setError(res.error);
-      else onToast?.(m.pinnedAt ? "Message unpinned" : "Message pinned");
+      else onToast?.(m.pinnedAt ? t("messageUnpinned") : t("messagePinned"));
     });
   }
 
@@ -1069,15 +1069,15 @@ const ChannelView = forwardRef(function ChannelView({
       {!isMember && (
         <div className="join-bar">
           <span className="join-text">
-            You're previewing <strong>#{channel.name}</strong>
+            {t("previewingChannel")} <strong>#{channel.name}</strong>
           </span>
           <button
             className="join-btn"
             data-testid="join-channel"
-            aria-label={`Join channel #${channel.name}`}
+            aria-label={`${t("joinChannel")} #${channel.name}`}
             onClick={() => onJoin(channel)}
           >
-            Join channel
+            {t("joinChannel")}
           </button>
         </div>
       )}
@@ -1091,7 +1091,7 @@ const ChannelView = forwardRef(function ChannelView({
                 data-testid="dm-starred-toggle"
                 aria-label={dmStarred ? `Remove ${dmLabel} from Starred` : `Mark ${dmLabel} as Starred`}
                 aria-pressed={dmStarred}
-                title={dmStarred ? "Remove from Starred" : "Mark as Starred"}
+                title={dmStarred ? t("unstarConversation") : t("starConversation")}
                 onClick={() => isGroupDm ? onToggleChannelStarred?.(channel.id) : onToggleStarred?.(dmUser.id)}
               >
                 <StarIcon size={20} strokeWidth={1.9} fill={dmStarred ? "currentColor" : "none"} />
@@ -1108,7 +1108,7 @@ const ChannelView = forwardRef(function ChannelView({
                 className="ch-name ch-name-btn dm-name-btn interactive-name"
                 data-testid="channel-title"
                 aria-label={dmLabel}
-                title="View profile"
+                title={t("viewProfile")}
                 onClick={() => dmUser?.id && onOpenProfile?.(dmUser.id)}
               >
                 {dmDisplayLabel}
@@ -1118,7 +1118,7 @@ const ChannelView = forwardRef(function ChannelView({
               <ChannelOptionButton
                 active={showFiles}
                 data-testid="channel-files"
-                title="View files"
+                title={t("viewFiles")}
                 label={`Files in ${dmLabel}`}
                 aria-controls="conversation-files-panel"
                 onClick={openFilesPanel}
@@ -1128,8 +1128,8 @@ const ChannelView = forwardRef(function ChannelView({
                 <ChannelOptionButton
                   active={showMembers}
                   data-testid="channel-members"
-                  title="View members"
-                  label="View members"
+                  title={t("viewMembers")}
+                  label={t("viewMembers")}
                   aria-controls="members-panel"
                   onClick={openMembersPanel}
                   icon={<UsersRoundIcon size={16} strokeWidth={1.8} />}
@@ -1146,7 +1146,7 @@ const ChannelView = forwardRef(function ChannelView({
                 data-testid="channel-starred-toggle"
                 aria-label={isChannelStarred ? `Remove #${channel.name} from Starred` : `Mark #${channel.name} as Starred`}
                 aria-pressed={isChannelStarred}
-                title={isChannelStarred ? "Remove from Starred" : "Mark as Starred"}
+                title={isChannelStarred ? t("unstarChannel") : t("starChannel")}
                 onClick={() => onToggleChannelStarred?.(channel.id)}
               >
                 <StarIcon size={20} strokeWidth={1.9} fill={isChannelStarred ? "currentColor" : "none"} />
@@ -1155,7 +1155,7 @@ const ChannelView = forwardRef(function ChannelView({
             <button
               className="ch-name ch-name-btn interactive-name"
               data-testid="channel-title"
-              title="View channel details"
+              title={t("viewChannelDetails")}
               onClick={openDetailsPanel}
             >
               {channel.type === "private" ? "🔒" : "#"} {channel.name}
@@ -1170,15 +1170,15 @@ const ChannelView = forwardRef(function ChannelView({
                 active={showPinned}
                 data-testid="channel-pinned"
                 onClick={openPinnedPanel}
-                title="Pinned messages"
-                label="Pinned messages"
+                title={t("viewPinnedMessages")}
+                label={t("viewPinnedMessages")}
                 aria-controls="pinned-panel"
                 icon={<PinIcon />}
               />
               <ChannelOptionButton
                 active={showFiles}
                 data-testid="channel-files"
-                title="View files"
+                title={t("viewFiles")}
                 label={`Files in #${channel.name}`}
                 aria-controls="conversation-files-panel"
                 onClick={openFilesPanel}
@@ -1187,7 +1187,7 @@ const ChannelView = forwardRef(function ChannelView({
               <ChannelOptionButton
                 className="channel-search-action"
                 data-testid="channel-search"
-                title="Search messages"
+                title={t("searchThisChannel")}
                 label={`Search in #${channel.name}`}
                 aria-expanded={undefined}
                 aria-pressed={undefined}
@@ -1197,8 +1197,8 @@ const ChannelView = forwardRef(function ChannelView({
               <ChannelOptionButton
                 active={showMembers}
                 data-testid="channel-members"
-                title="View members"
-                label="View members"
+                title={t("viewMembers")}
+                label={t("viewMembers")}
                 aria-controls="members-panel"
                 onClick={openMembersPanel}
                 icon={<UsersRoundIcon size={16} strokeWidth={1.8} />}
@@ -1216,7 +1216,7 @@ const ChannelView = forwardRef(function ChannelView({
           onScroll={onMessagesScroll}
         >
           <div className="messages-inner" ref={messagesInnerRef}>
-          {loadingOlder && <div className="older-loader">Loading earlier messages…</div>}
+          {loadingOlder && <div className="older-loader">{t("loadingEarlierMessages")}</div>}
           {loading ? (
             <MessagesSkeleton />
           ) : messages.length === 0 ? (
@@ -1225,13 +1225,13 @@ const ChannelView = forwardRef(function ChannelView({
                 <>
                   {isGroupDm ? <GroupAvatar size={56} /> : <Avatar name={dmAvatarName} src={dmAvatar} size={56} />}
                   <h3>{dmDisplayLabel}</h3>
-                  <p>This is the start of your direct message history. Say hello! 👋</p>
+                  <p>{t("directMessageHistoryStart")}</p>
                 </>
               ) : (
                 <>
                   <div className="empty-state-glyph">{channel.type === "private" ? "🔒" : "#"}</div>
                   <h3>{channel.name}</h3>
-                  <p>This is the very beginning of the {channel.type === "private" ? "private " : ""}#{channel.name} channel. Say hello! 👋</p>
+                  <p>{t(channel.type === "private" ? "privateChannelBeginning" : "channelBeginning", { channel: `#${channel.name}` })} 👋</p>
                   {isMember && <ChannelSetupActions channel={channel} onAddPeople={onAddPeople} onOpenDetails={openDetailsPanel} />}
                 </>
               )}
@@ -1416,8 +1416,8 @@ const ChannelView = forwardRef(function ChannelView({
       )}
       {isMember && !canPost && (
         <div className="channel-readonly-notice" role="status" data-testid="channel-readonly-notice">
-          <strong>Managers only</strong>
-          <span>This channel is read-only. Only the channel creator and managers can post.</span>
+          <strong>{t("managersOnly")}</strong>
+          <span>{t("channelReadOnlyHint")}</span>
         </div>
       )}
       </div>
@@ -1567,20 +1567,21 @@ const ChannelView = forwardRef(function ChannelView({
 export default ChannelView;
 
 function ChannelSetupActions({ channel, onAddPeople, onOpenDetails, inline = false }) {
+  const { t } = useI18n();
   return (
-    <div className={`empty-state-setup${inline ? " channel-setup-inline" : ""}`} aria-label="Set up this channel">
-      <strong>Make this space useful</strong>
-      <span>Add people and a little context so everyone knows what belongs here.</span>
+    <div className={`empty-state-setup${inline ? " channel-setup-inline" : ""}`} aria-label={t("setUpChannel")}>
+      <strong>{t("makeSpaceUseful")}</strong>
+      <span>{t("makeSpaceUsefulHint")}</span>
       <div className="empty-state-actions">
         {channel.name?.toLowerCase() !== "general" && (
           <button type="button" className="empty-state-action primary" data-testid="empty-channel-add-people" onClick={onAddPeople}>
             <UsersRoundIcon size={16} strokeWidth={1.9} />
-            Add people
+            {t("addPeople")}
           </button>
         )}
         <button type="button" className="empty-state-action" data-testid="empty-channel-details" onClick={onOpenDetails}>
           <FileTextIcon size={16} strokeWidth={1.9} />
-          Add topic or description
+          {t("addTopicOrDescription")}
         </button>
       </div>
     </div>
@@ -1593,7 +1594,7 @@ function PinnedPanel({ messages, renderMarkdown, emojiMap, onUnpin, onClose }) {
     <aside id="pinned-panel" className="side-panel pinned-panel" data-testid="pinned-panel">
       <div className="panel-header">
         <span className="panel-title">{t("pinnedMessages")}</span>
-        <CloseButton size="sm" onClick={onClose} label="Close" />
+        <CloseButton size="sm" onClick={onClose} label={t("close")} />
       </div>
       <div className="panel-body">
         {messages.length === 0 ? (
@@ -1609,7 +1610,7 @@ function PinnedPanel({ messages, renderMarkdown, emojiMap, onUnpin, onClose }) {
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(m.body || "", { mentionedChannels: m.mentionedChannels }) }}
               />
               <button className="pinned-unpin" data-testid={`pinned-${m.id}-unpin`} onClick={() => onUnpin(m)}>
-                Unpin
+                {t("unpinMessage")}
               </button>
             </div>
           ))
@@ -1733,10 +1734,10 @@ function FilesPanel({ files, loading, error, conversationLabel, onRetry, onClose
               <div className="file-type" aria-hidden="true">{fileCategory(file) === "Images" ? "IMG" : (file.name || "FILE").split(".").pop()?.slice(0, 4).toUpperCase()}</div>
               <div className="file-info">
                 <strong>{file.name}</strong>
-                {unavailable.has(file.id) ? <span>This file is no longer available</span> : <span>{file.contentType || "File"} · {formatSize(file.size)} · {file.author?.displayName || "Unknown"} · {formatDate(file.createdAt)}</span>}
+                {unavailable.has(file.id) ? <span>{t("fileNoLongerAvailableShort")}</span> : <span>{file.contentType || t("file")} · {formatSize(file.size)} · {file.author?.displayName || t("unknown")} · {formatDate(file.createdAt)}</span>}
               </div>
               <div className="file-actions">
-                <button type="button" className="file-download" onClick={() => onJump(file)} title="Jump to message" aria-label={`Jump to the message containing ${file.name}`}>
+                <button type="button" className="file-download" onClick={() => onJump(file)} title={t("jumpToMessage")} aria-label={t("jumpToMessageContaining").replace("{file}", file.name)}>
                   <MessageSquareTextIcon size={17} strokeWidth={2} />
                 </button>
                 <button type="button" className="file-download" disabled={unavailable.has(file.id)} onClick={() => downloadFile(file)} title={t("downloadFile")} aria-label={t("downloadFile")}>

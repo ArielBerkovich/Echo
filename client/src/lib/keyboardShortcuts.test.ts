@@ -12,7 +12,7 @@ describe("keyboard shortcut registry", () => {
   it("keeps displayed shortcuts and runtime hotkeys together", () => {
     assert.deepEqual(getKeyboardHotkeys("new-message"), ["ctrl+shift+m", "meta+shift+m"]);
     assert.equal(formatKeyboardShortcut("new-message"), "⌘/Ctrl+⇧M");
-    assert.equal(shortcutTitle("New message", "new-message"), "New message · ⌘/Ctrl+⇧M");
+    assert.equal(shortcutTitle("New message", "new-message"), "New message · \u2066⌘/Ctrl+⇧M\u2069");
   });
 
   it("exposes every registered shortcut in the settings groups", () => {

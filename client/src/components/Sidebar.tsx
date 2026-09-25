@@ -243,7 +243,7 @@ export default function Sidebar({
       {!dmsOnly && (
         <div className="sidebar-header home-sidebar-header" data-testid="home-header">
           <span className="brand-sm">{t("home")}</span>
-          <div className="sidebar-actions" role="group" aria-label={t("home")}>
+          <div className="sidebar-actions" role="group" aria-label={t("sidebarActions")}>
             <button
               type="button"
               className={`add-channel filter-button ${filterOpen ? "active" : ""}`}

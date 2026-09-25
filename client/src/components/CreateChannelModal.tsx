@@ -6,9 +6,11 @@ import Modal, { ModalActions } from "./Modal.js";
 import { Button } from "./Button.js";
 import { channelSchema, normalizeChannelNameInput } from "../lib/formSchemas.js";
 import { Input, InputShell } from "./Input.js";
+import { useI18n } from "../lib/i18n.js";
 
 // "Create a channel" dialog with a name field and public/private choice.
 export default function CreateChannelModal({ onCreate, onClose }) {
+  const { t, translateError } = useI18n();
   const [error, setError] = useState(null);
   const inputRef = useRef(null);
   const {
@@ -50,15 +52,15 @@ export default function CreateChannelModal({ onCreate, onClose }) {
       await onCreate(values.name, values.type, !!values.readOnly);
       onClose();
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     }
   });
 
   return (
-    <Modal title="Create a channel" onClose={onClose} onOpenAutoFocus={focusNameOnOpen}>
+    <Modal title={t("createChannelDialogTitle")} onClose={onClose} onOpenAutoFocus={focusNameOnOpen}>
       <form data-testid="create-channel-modal" onSubmit={submit}>
         <label className="field">
-          <span className="field-label">Name</span>
+          <span className="field-label">{t("channelName")}</span>
           <InputShell className="name-input">
             <span className="name-prefix">{type === "private" ? "🔒" : "#"}</span>
             <Input
@@ -86,15 +88,19 @@ export default function CreateChannelModal({ onCreate, onClose }) {
                 }
               }}
               onBlur={nameField.onBlur}
-              placeholder="e.g. marketing"
+              placeholder={t("channelNameExample")}
               maxLength={64}
             />
           </InputShell>
-          {errors.name && <span className="field-hint error small">{errors.name.message}</span>}
+          {errors.name && (
+            <span className="field-hint error small">
+              {translateError(errors.name.message)}
+            </span>
+          )}
         </label>
 
         <fieldset className="field visibility-field">
-          <legend className="field-label">Who can access this channel?</legend>
+          <legend className="field-label">{t("channelAccessQuestion")}</legend>
           <div className="visibility">
             <label className={`visibility-option ${type === "public" ? "selected" : ""}`}>
               <input
@@ -109,8 +115,8 @@ export default function CreateChannelModal({ onCreate, onClose }) {
               />
               <span className="vo-icon public"><Globe2 size={18} strokeWidth={1.8} /></span>
               <div className="vo-body">
-                <div className="vo-title">Public</div>
-                <div className="vo-desc">Everyone can discover and join this channel.</div>
+                <div className="vo-title">{t("channelVisibilityPublic")}</div>
+                <div className="vo-desc">{t("publicChannelHint")}</div>
               </div>
               <span className="vo-check"><Check size={15} strokeWidth={2.5} /></span>
             </label>
@@ -127,13 +133,13 @@ export default function CreateChannelModal({ onCreate, onClose }) {
               />
               <span className="vo-icon private"><LockKeyhole size={18} strokeWidth={1.8} /></span>
               <div className="vo-body">
-                <div className="vo-title">Private</div>
-                <div className="vo-desc">Only people you invite can view and join.</div>
+                <div className="vo-title">{t("channelVisibilityPrivate")}</div>
+                <div className="vo-desc">{t("privateChannelHint")}</div>
               </div>
               <span className="vo-check"><Check size={15} strokeWidth={2.5} /></span>
             </label>
           </div>
-          <p className="visibility-note">You can make a private channel public later, but public channels can’t be made private.</p>
+          <p className="visibility-note">{t("channelVisibilityNote")}</p>
         </fieldset>
 
         <section className="channel-advanced-options">
@@ -143,17 +149,17 @@ export default function CreateChannelModal({ onCreate, onClose }) {
                 {...readOnlyField}
                 type="checkbox"
                 data-testid="create-channel-readonly-toggle"
-                aria-label="Managers only"
+                aria-label={t("managersOnly")}
               />
               <span className="channel-readonly-switch" aria-hidden="true">
                 <span className="channel-readonly-switch-thumb" />
               </span>
               <span className="channel-readonly-toggle-copy">
-                <span>Managers only</span>
-                <span className="channel-readonly-toggle-state">{readOnly ? "On" : "Off"}</span>
+                <span>{t("managersOnly")}</span>
+                <span className="channel-readonly-toggle-state">{readOnly ? t("on") : t("off")}</span>
               </span>
             </label>
-            <p className="channel-advanced-hint">Only the channel creator and managers can post messages and replies.</p>
+            <p className="channel-advanced-hint">{t("managersOnlyPostingHint")}</p>
           </div>
         </section>
 
@@ -161,10 +167,10 @@ export default function CreateChannelModal({ onCreate, onClose }) {
 
         <ModalActions>
                   <Button variant="secondary" data-testid="create-channel-cancel" onClick={onClose}>
-            Cancel
+            {t("cancel")}
                   </Button>
                   <Button type="submit" variant="primary" data-testid="create-channel-submit" disabled={isSubmitting}>
-            {isSubmitting ? "Creating…" : "Create"}
+            {isSubmitting ? t("creating") : t("create")}
                   </Button>
         </ModalActions>
       </form>

@@ -10,7 +10,7 @@ describe("neutralizeMentions", () => {
 });
 
 describe("buildQuoteMarkdown", () => {
-  it("quotes message bodies without leaving active mention triggers", () => {
+  it("includes the author attribution and quotes bodies without active mention triggers", () => {
     const markdown = buildQuoteMarkdown({
       author: { displayName: "Alice Test" },
       body: [

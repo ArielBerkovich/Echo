@@ -51,7 +51,7 @@ export default function SavedFeed({ user, users = [], customEmojis = [], onJump,
   }
 
   return (
-    <FeedLayout title={t("saved")} subtitle={t("savedMessagesSubtitle")} testId="saved">
+    <FeedLayout title={t("savedMessages")} subtitle={t("savedMessagesSubtitle")} testId="saved">
       <FeedContent
         loading={loading}
         items={items}
@@ -77,8 +77,10 @@ export default function SavedFeed({ user, users = [], customEmojis = [], onJump,
             <Avatar name={it.author?.displayName || "?"} src={it.author?.avatarUrl} size={36} />
             <div className="content">
               <FeedMessage
-                author={it.author?.displayName || "unknown"}
-                context={`${it.channelType === "dm" ? `in your DM with ${it.channelName}` : `in #${it.channelName}`}${it.threadId ? " · thread" : ""}`}
+                author={it.author?.displayName || t("unknown")}
+                context={`${it.channelType === "dm"
+                  ? t("savedInDirectMessageWith").replace("{name}", it.channelName || t("someone"))
+                  : t("inChannel").replace("{channel}", it.channelName)}${it.threadId ? ` · ${t("savedThread")}` : ""}`}
                 time={formatDateTime(it.createdAt)}
                 body={it.body}
                 renderMarkdown={renderMarkdown}
@@ -89,8 +91,8 @@ export default function SavedFeed({ user, users = [], customEmojis = [], onJump,
               type="button"
               className="saved-remove saved-active feed-icon-action"
               data-testid={`saved-remove-${it.id}`}
-              title={t("removeFromSaved")}
-              aria-label={t("removeFromSaved")}
+              title={t("removeSavedMessage")}
+              aria-label={t("removeSavedMessage")}
               onClick={(event) => unsave(event, it)}
             >
               <BookmarkIcon />

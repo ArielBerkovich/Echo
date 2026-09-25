@@ -13,15 +13,17 @@ import ConfirmDialog from "./ConfirmDialog.js";
 import Composer from "./Composer.js";
 import Avatar from "./Avatar.js";
 import { getSocket } from "../socket.js";
+import { useI18n } from "../lib/i18n.js";
 
 const COLUMNS = [
-  { id: "went-well", label: "Went well", tone: "sun" },
-  { id: "to-improve", label: "To improve", tone: "coral" },
-  { id: "backlog", label: "Backlog", tone: "violet" },
-  { id: "action-items", label: "Action items", tone: "mint" },
+  { id: "went-well", labelKey: "retroWentWell", tone: "sun" },
+  { id: "to-improve", labelKey: "retroToImprove", tone: "coral" },
+  { id: "backlog", labelKey: "retroBacklog", tone: "violet" },
+  { id: "action-items", labelKey: "retroActionItems", tone: "mint" },
 ];
 const canLink = (column) => column === "backlog" || column === "action-items";
 function RetroIdeaModal({ draft, messageId, onClose, onSave }) {
+  const { t } = useI18n();
   const [link, setLink] = useState(draft.link || "");
   const [, setBody] = useState(draft.text || "");
   const composerRef = useRef(null);
@@ -31,8 +33,8 @@ function RetroIdeaModal({ draft, messageId, onClose, onSave }) {
     <Modal
       title={
         draft.id
-          ? "Edit idea"
-          : `Add to ${COLUMNS.find((column) => column.id === draft.column)?.label}`
+          ? t("editIdea")
+          : t("addIdeaTo").replace("{column}", t(COLUMNS.find((column) => column.id === draft.column)?.labelKey || "retroBacklog"))
       }
       className="retro-idea-modal"
       onOpenAutoFocus={(event) => {
@@ -44,13 +46,13 @@ function RetroIdeaModal({ draft, messageId, onClose, onSave }) {
       {hasLink && (
         <label className="schedule-custom-field retro-modal-link">
           <span>
-            Linked work URL <em>(optional)</em>
+            {t("linkedWorkUrl")} <em>({t("optional")})</em>
           </span>
           <input
             className="settings-input"
             type="url"
             value={link}
-            placeholder="Paste a link (optional)"
+            placeholder={t("pasteLinkOptional")}
             onChange={(event) => setLink(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "Tab" && !event.shiftKey) {
@@ -71,9 +73,9 @@ function RetroIdeaModal({ draft, messageId, onClose, onSave }) {
         onSend={(text) => {
           if (text.trim()) onSave({ ...draft, text, link });
         }}
-        sendAriaLabel={draft.id ? "Save changes" : "Add idea"}
-        sendTitle={draft.id ? "Save changes" : "Add idea"}
-        placeholder="Write an idea…"
+        sendAriaLabel={draft.id ? t("saveChanges") : t("addIdea")}
+        sendTitle={draft.id ? t("saveChanges") : t("addIdea")}
+        placeholder={t("writeIdea")}
         showSchedule={false}
         showAttachments={false}
       />
@@ -91,6 +93,7 @@ function RetroItem({
   onDragStart,
   onDragEnd,
 }) {
+  const { t } = useI18n();
   return (
     <article
       draggable
@@ -107,8 +110,8 @@ function RetroItem({
           <span className="retro-item-actions">
             <button
               type="button"
-              title="Edit idea"
-              aria-label="Edit idea"
+              title={t("editIdea")}
+              aria-label={t("editIdea")}
               onPointerDown={(event) => event.stopPropagation()}
               onClick={() => onEdit(item)}
             >
@@ -116,8 +119,8 @@ function RetroItem({
             </button>
             <button
               type="button"
-              title="Delete idea"
-              aria-label="Delete idea"
+              title={t("deleteIdea")}
+              aria-label={t("deleteIdea")}
               onPointerDown={(event) => event.stopPropagation()}
               onClick={() => onDelete(item)}
             >
@@ -132,22 +135,22 @@ function RetroItem({
           target="_blank"
           rel="noreferrer"
           className="retro-item-link"
-          title="Open linked item"
+          title={t("openLinkedItem")}
           onPointerDown={(event) => event.stopPropagation()}
         >
-          <Link size={13} /> Linked work <ArrowUpRight size={13} />
+          <Link size={13} /> {t("linkedWork")} <ArrowUpRight size={13} />
         </a>
       )}
       <footer>
         <Avatar
-          name={author?.displayName || author?.username || "Teammate"}
+          name={author?.displayName || author?.username || t("teammate")}
           src={author?.avatarUrl || null}
           size={20}
         />
         <span>
           {item.authorId === currentUserId
-            ? "You"
-            : author?.displayName || author?.username || "Teammate"}
+          ? t("you")
+            : author?.displayName || author?.username || t("teammate")}
         </span>
       </footer>
     </article>
@@ -166,6 +169,7 @@ function RetroColumn({
   onDragEnd,
   onDrop,
 }) {
+  const { t } = useI18n();
   const [isOver, setIsOver] = useState(false);
   return (
     <section
@@ -203,16 +207,17 @@ function RetroColumn({
           />
         ))}
       </div>
-      {!items.length && <div className="retro-empty">No ideas yet</div>}
+      {!items.length && <div className="retro-empty">{t("noIdeasYet")}</div>}
     </section>
   );
 }
 
 function RetroColumnHeader({ column, itemCount, onAdd }) {
+  const { t } = useI18n();
   return (
     <header className={`retro-column-header ${column.tone}`}>
       <div className="retro-column-heading">
-        <span>{column.label}</span>
+        <span>{t(column.labelKey)}</span>
         <b>{itemCount}</b>
       </div>
       <button
@@ -220,7 +225,7 @@ function RetroColumnHeader({ column, itemCount, onAdd }) {
         className="retro-column-submit"
         onClick={() => onAdd(column.id)}
       >
-        <Plus size={14} /> Add idea
+        <Plus size={14} /> {t("addIdea")}
       </button>
     </header>
   );
@@ -233,6 +238,7 @@ export default function RetroBoard({
   currentUserId,
   creatorId,
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false),
     [ideaDraft, setIdeaDraft] = useState(null),
     [deleteItem, setDeleteItem] = useState(null),
@@ -323,7 +329,7 @@ export default function RetroBoard({
         type="button"
         className="retro-message-card"
         onClick={() => setOpen(true)}
-        aria-label="Open retrospective board"
+        aria-label={t("openRetrospectiveBoard")}
       >
         <span className="retro-message-icon">
           <LayoutPanelTop size={18} />
@@ -331,12 +337,12 @@ export default function RetroBoard({
         <span className="retro-message-copy">
           <strong>{retro.title}</strong>
           <small>
-            Retrospective board · {retro.items.length}{" "}
-            {retro.items.length === 1 ? "idea" : "ideas"}
+            {t("retrospectiveBoard")} · {retro.items.length}{" "}
+            {retro.items.length === 1 ? t("idea") : t("ideas")}
           </small>
         </span>
         <span className="retro-message-open">
-          Open board <ArrowUpRight size={15} />
+          {t("openBoard")} <ArrowUpRight size={15} />
         </span>
       </button>
       {open && (
@@ -348,7 +354,7 @@ export default function RetroBoard({
         >
           <div className="retro-intro">
             <span>
-              <LayoutPanelTop size={17} /> Team retrospective
+              <LayoutPanelTop size={17} /> {t("teamRetrospective")}
             </span>
           </div>
           {error && (
@@ -410,9 +416,9 @@ export default function RetroBoard({
       )}
       {deleteItem && (
         <ConfirmDialog
-          title="Delete idea?"
-          message="This will permanently remove this idea from the retrospective."
-          confirmLabel="Delete idea"
+          title={t("deleteIdeaQuestion")}
+          message={t("deleteIdeaMessage")}
+          confirmLabel={t("deleteIdea")}
           danger
           onCancel={() => setDeleteItem(null)}
           onConfirm={() =>

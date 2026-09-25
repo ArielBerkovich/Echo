@@ -5,10 +5,12 @@ import { api } from "../api.js";
 import Logo from "./Logo.js";
 import { PASSWORD_RULE } from "../lib/password.js";
 import { passwordPairSchema } from "../lib/formSchemas.js";
+import { useI18n } from "../lib/i18n.js";
 
 // Shown (blocking) right after a user signs in with an admin-issued one-time
 // password: they must choose their own new password before using the app.
 export default function ForcePasswordReset({ user, onDone, onCancel }) {
+  const { t, translateError } = useI18n();
   const [error, setError] = useState(null);
   const {
     register,
@@ -35,7 +37,7 @@ export default function ForcePasswordReset({ user, onDone, onCancel }) {
       onDone(updated);
       reset();
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     }
   });
 
@@ -43,42 +45,41 @@ export default function ForcePasswordReset({ user, onDone, onCancel }) {
     <div className="force-reset">
       <form className="force-reset-card" onSubmit={submit}>
         <Logo size={40} />
-        <h2>Set a new password</h2>
+        <h2>{t("setNewPassword")}</h2>
         <p>
-          Welcome back{user?.displayName ? `, ${user.displayName}` : ""}. You signed in with a
-          one-time password — choose a new password to finish.
+          {t("forcePasswordResetHint").replace("{name}", user?.displayName || "")}
         </p>
         <input
           {...newPasswordField}
           className="settings-input"
           type="password"
-          placeholder="New password"
+          placeholder={t("newPassword")}
           autoFocus
           onChange={(e) => {
             setError(null);
             newPasswordField.onChange(e);
           }}
         />
-        {errors.newPassword && <div className="error small">{errors.newPassword.message}</div>}
+        {errors.newPassword && <div className="error small">{translateError(errors.newPassword.message)}</div>}
         <input
           {...confirmPasswordField}
           className="settings-input"
           type="password"
-          placeholder="Confirm new password"
+          placeholder={t("confirmNewPassword")}
           onChange={(e) => {
             setError(null);
             confirmPasswordField.onChange(e);
           }}
         />
-        {errors.confirmPassword && <div className="error small">{errors.confirmPassword.message}</div>}
-        <div className="field-hint">{PASSWORD_RULE}</div>
+        {errors.confirmPassword && <div className="error small">{translateError(errors.confirmPassword.message)}</div>}
+        <div className="field-hint">{t("passwordRule")}</div>
         <button type="submit" className="btn-primary" disabled={isSubmitting}>
-          {isSubmitting ? "Saving…" : "Save and continue"}
+          {isSubmitting ? t("saving") : t("saveAndContinue")}
         </button>
         {error && <div className="error">{error}</div>}
         {onCancel && (
           <button type="button" className="link" onClick={onCancel}>
-            Sign out instead
+            {t("signOutInstead")}
           </button>
         )}
       </form>

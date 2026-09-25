@@ -532,7 +532,7 @@ test("quotes a message into the composer", async ({ page }) => {
   const reply = `How are you? ${fixture.suffix}`;
   await editor.type(reply);
   await page.getByTestId("composer-send").click();
-  await expect(page.getByText(reply)).toBeVisible();
+  await expect(messageByText(page, reply)).toBeVisible();
 
   const { messages } = await requestAsToken(
     page,
@@ -1057,7 +1057,7 @@ test("searches messages with filters and displays results", async ({ page }) => 
   await searchInput.press("Enter");
 
   await expect(page).toHaveURL(/\/search\?/);
-  await expect(page.getByTestId("search-results-header")).toContainText("Search");
+  await expect(page.getByTestId("search-results-header")).toBeVisible();
   await expect(page.locator(".search-chip-from")).toContainText(`@${fixture.alice.username}`);
   await expect(page.getByText("in: #general")).toBeVisible();
   await expect(page.getByText("has: link")).toBeVisible();

@@ -5,8 +5,11 @@ const DEFAULT_PASSWORD = "Password1";
 const FIXTURE_ID = uniqueSuffix("e2e");
 let workspaceFixturePromise = null;
 
-function apiRequestUrl(path) {
-  const baseUrl = process.env.ECHO_E2E_BASE_URL || process.env.ECHO_URL || "http://127.0.0.1:5173";
+export function apiRequestUrl(path) {
+  const baseUrl = process.env.ECHO_E2E_API_BASE_URL
+    || process.env.ECHO_E2E_BASE_URL
+    || process.env.ECHO_URL
+    || "http://127.0.0.1:5173";
   return new URL(path, baseUrl).toString();
 }
 
@@ -145,14 +148,26 @@ export async function requestAsToken(page, token, path, options = {}) {
       },
     };
   }
-  const response = await page.request.fetch(apiRequestUrl(`/api${path}`), {
-    method: options.method || "GET",
-    headers: {
-      ...(options.headers || {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    data: options.body !== undefined ? options.body : undefined,
-  });
+  const headers = {
+    ...(options.headers || {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(options.body !== undefined ? { "Content-Type": "application/json" } : {}),
+  };
+  const response = process.env.ECHO_E2E_API_BASE_URL
+    ? await fetch(apiRequestUrl(`/api${path}`), {
+      method: options.method || "GET",
+      headers,
+      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    }).then((nativeResponse) => ({
+      ok: () => nativeResponse.ok,
+      status: () => nativeResponse.status,
+      json: () => nativeResponse.json(),
+    }))
+    : await page.request.fetch(apiRequestUrl(`/api${path}`), {
+      method: options.method || "GET",
+      headers,
+      data: options.body !== undefined ? options.body : undefined,
+    });
   const data = await response.json().catch(() => ({}));
   if (!response.ok()) throw new Error(data.error || `request failed (${response.status()})`);
   return data;

@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { useI18n } from "../lib/i18n.js";
 import {
   detectCurrentChromiumBrowser,
   MIN_CHROMIUM_MAJOR,
 } from "../lib/browserCompatibility.js";
 
 export default function BrowserCompatibilityNotice() {
+  const { t } = useI18n();
   const [dismissed, setDismissed] = useState(false);
   const navigate = useNavigate();
   const browser = detectCurrentChromiumBrowser();
@@ -15,10 +17,9 @@ export default function BrowserCompatibilityNotice() {
   return (
     <aside className="browser-warning" role="alert">
       <div className="browser-warning-copy">
-        <strong>Browser update required</strong>
+        <strong>{t("browserUpdateRequired")}</strong>
         <span>
-          {browser.name} {browser.major} is below Echo’s supported Chromium version ({MIN_CHROMIUM_MAJOR}+).
-          Some features may not work correctly until you update.
+          {t("browserUpdateHint").replace("{browser}", browser.name).replace("{version}", String(browser.major)).replace("{minimum}", String(MIN_CHROMIUM_MAJOR))}
         </span>
       </div>
       <a
@@ -30,11 +31,11 @@ export default function BrowserCompatibilityNotice() {
           navigate("/settings/desktop");
         }}
       >
-        <span>Prefer an app?</span>
-        <strong>Download Echo native app</strong>
+        <span>{t("preferApp")}</span>
+        <strong>{t("downloadEchoApp")}</strong>
       </a>
-      <button type="button" onClick={() => setDismissed(true)} aria-label="Dismiss browser compatibility warning">
-        Dismiss
+      <button type="button" onClick={() => setDismissed(true)} aria-label={t("dismissBrowserWarning")}>
+        {t("dismiss")}
       </button>
     </aside>
   );

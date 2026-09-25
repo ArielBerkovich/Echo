@@ -8,5 +8,8 @@ export function buildQuoteMarkdown(message) {
   const quotedBody = body
     ? body.split("\n").map((line) => `> ${neutralizeMentions(line)}`).join("\n")
     : "> ";
-  return `> ${author} said:\n${quotedBody}\n\n`;
+  // Keep attribution and body in the same quote block. The composer adds a
+  // separate real paragraph after this block for the reply; an empty quoted
+  // paragraph would make the reply caret appear to remain inside the quote.
+  return `> ${neutralizeMentions(author)} said:\n${quotedBody}\n\n`;
 }

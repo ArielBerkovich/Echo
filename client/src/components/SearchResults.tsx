@@ -6,6 +6,7 @@ import { formatDateTime } from "../lib/time.js";
 import { parseSearchQuery, filterChipLabel } from "../lib/searchQuery.js";
 import { queryKeys } from "../lib/queryClient.js";
 import { HashIcon, PaperclipIcon, UserRoundIcon } from "lucide-react";
+import { useI18n } from "../lib/i18n.js";
 
 const SNIPPET_MAX = 240;
 
@@ -63,6 +64,7 @@ function snippet(body, query) {
 
 // Dedicated results pane for full-text message search (triggered on Enter).
 export default function SearchResults({ query, onJump, onClose }) {
+  const { t } = useI18n();
   const [activeIndex, setActiveIndex] = useState(0);
   const paneRef = useRef(null);
   const resultRefs = useRef([]);
@@ -94,7 +96,7 @@ export default function SearchResults({ query, onJump, onClose }) {
       if (!group) {
         group = {
           key,
-          label: result.channelType === "dm" ? "Direct message" : `#${result.channelName || "unknown"}`,
+          label: result.channelType === "dm" ? t("directMessage") : `#${result.channelName || t("unknown")}`,
           results: [],
         };
         byConversation.set(key, group);
@@ -103,7 +105,7 @@ export default function SearchResults({ query, onJump, onClose }) {
       group.results.push(result);
     });
     return groups;
-  }, [results]);
+  }, [results, t]);
 
   useEffect(() => {
     setActiveIndex(0);
@@ -143,11 +145,11 @@ export default function SearchResults({ query, onJump, onClose }) {
       data-testid="search-results-pane"
       tabIndex={-1}
       onKeyDown={onResultsKeyDown}
-      aria-label="Search results"
+      aria-label={t("searchResults")}
     >
       <div className="channel-main">
         <header className="channel-header" data-testid="search-results-header">
-          <span className="ch-name">Search</span>
+          <span className="ch-name">{t("search")}</span>
           <div className="search-chips">
             {parsed.filters.map((f) => (
               <SearchFilterChip key={f.type} filter={f} />
@@ -156,24 +158,24 @@ export default function SearchResults({ query, onJump, onClose }) {
           </div>
           {!loading && !error && results.length > 0 && (
             <span className="search-result-count" data-testid="search-result-count">
-              {results.length} {results.length === 1 ? "result" : "results"}
+              {t("searchResultCount").replace("{count}", String(results.length))}
             </span>
           )}
           <button className="ch-meta ch-meta-btn search-close-btn" data-testid="search-results-clear" onClick={onClose}>
-            Clear
+            {t("clear")}
           </button>
         </header>
 
         <div className="messages search-results" data-testid="search-results">
           {loading ? (
-            <div className="empty-state"><p>Searching…</p></div>
+            <div className="empty-state"><p>{t("searching")}</p></div>
           ) : error ? (
-            <div className="empty-state"><h3>Search failed</h3><p>{error.message}</p></div>
+            <div className="empty-state"><h3>{t("searchFailed")}</h3><p>{error.message}</p></div>
           ) : results.length === 0 ? (
             <div className="empty-state">
-              <h3>No messages found</h3>
-              <p>Nothing matched “{query}”. Try a shorter phrase or remove a filter.</p>
-              <p className="search-empty-hint">Tip: use <code>in:channel</code>, <code>from:@user</code>, or <code>has:file</code>.</p>
+              <h3>{t("noMessagesFound")}</h3>
+              <p>{t("searchNoMatch").replace("{query}", query)}</p>
+              <p className="search-empty-hint">{t("searchSyntaxHint")} <code>in:channel</code>, <code>from:@user</code>, {t("or")} <code>has:file</code>.</p>
             </div>
           ) : (
             <>
@@ -197,10 +199,10 @@ export default function SearchResults({ query, onJump, onClose }) {
                         <Avatar name={r.author?.displayName || "?"} src={r.author?.avatarUrl} size={36} />
                         <div className="content">
                           <div className="meta">
-                            <span className="author">{r.author?.displayName || "unknown"}</span>
+                            <span className="author">{r.author?.displayName || t("unknown")}</span>
                             <span className="activity-where">
-                              {r.channelType === "dm" ? "in a DM" : `in #${r.channelName}`}
-                              {r.parentId ? " · in thread" : ""}
+                              {r.channelType === "dm" ? t("searchInDirectMessage") : t("searchInChannel").replace("{channel}", `#${r.channelName}`)}
+                              {r.parentId ? ` · ${t("inThread")}` : ""}
                             </span>
                             <span className="time">{formatDateTime(r.createdAt)}</span>
                           </div>
@@ -217,7 +219,7 @@ export default function SearchResults({ query, onJump, onClose }) {
               ))}
               {hasMore && (
                 <button className="btn-secondary search-more" data-testid="search-load-more" disabled={loadingMore} onClick={() => fetchNextPage()}>
-                  {loadingMore ? "Loading…" : "Load more results"}
+                  {loadingMore ? t("loading") : t("loadMoreResults")}
                 </button>
               )}
             </>

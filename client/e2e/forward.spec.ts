@@ -151,7 +151,7 @@ test.describe("forwarding", () => {
       const paragraph = editor.querySelector("p.is-editor-empty:first-child");
       const hint = paragraph ? getComputedStyle(paragraph, "::before") : null;
       return hint && `${paragraph?.dir || ""}|${getComputedStyle(paragraph).direction}|${hint.direction}|${hint.textAlign}|${hint.float}`;
-    })).toBe("|rtl|ltr|left|left");
+    })).toBe("|rtl|rtl|right|right");
     await expect(modal.locator(".composer")).toBeVisible();
     await expect(modal.getByTestId("forward-send-selected")).toBeDisabled();
 

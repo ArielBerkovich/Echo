@@ -17,8 +17,8 @@ export function FeedLayout({ title, subtitle, testId, actions, children }) {
   );
 }
 
-export function FeedContent({ loading, items, emptyTitle, emptyMessage, children }) {
-  if (loading) return <div className="empty-state"><p>Loading…</p></div>;
+export function FeedContent({ loading, loadingLabel = "Loading…", items, emptyTitle, emptyMessage, children }) {
+  if (loading) return <div className="empty-state"><p>{loadingLabel}</p></div>;
   if (!items.length) {
     return (
       <div className="empty-state">

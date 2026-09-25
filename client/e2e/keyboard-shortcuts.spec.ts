@@ -97,7 +97,7 @@ test.describe("documented keyboard shortcuts", () => {
     await expect(page.getByTestId("channel-starred-toggle")).toHaveAttribute("aria-pressed", "true");
 
     await page.keyboard.press("Control+k");
-    await expect(page.getByTestId("search-action-toggle-channel-starred")).toContainText("Unstar channel");
+    await expect(page.getByTestId("search-action-toggle-channel-starred")).toContainText("Remove channel from favorites");
     await page.keyboard.press("Escape");
 
     await page.keyboard.press("Control+k");

@@ -9,6 +9,13 @@ import {
 } from "../lib/messageSounds.js";
 import { useI18n } from "../lib/i18n.js";
 
+const SOUND_COPY_KEYS = {
+  none: { label: "soundNone", description: "soundNoneDescription" },
+  "bright-pop": { label: "soundBrightPop", description: "soundBrightPopDescription" },
+  "short-alert": { label: "soundShortAlert", description: "soundShortAlertDescription" },
+  "warm-bell": { label: "soundWarmBell", description: "soundWarmBellDescription" },
+} as const;
+
 export default function MessageSoundControls() {
   const { t } = useI18n();
   const [selected, setSelected] = useState(() => selectedMessageSound());
@@ -21,7 +28,7 @@ export default function MessageSoundControls() {
 
   return (
     <div className="message-sound-settings">
-      <div className="message-sound-options" role="radiogroup" aria-label="Message sound">
+      <div className="message-sound-options" role="radiogroup" aria-label={t("messageSounds")}>
         {MESSAGE_SOUNDS.map((sound) => (
           <div key={sound.id} className={`message-sound-option${selected === sound.id ? " active" : ""}`}>
             <label className="message-sound-choice">
@@ -33,10 +40,13 @@ export default function MessageSoundControls() {
                 onChange={() => selectSound(sound.id)}
               />
               <span className="message-sound-icon" aria-hidden="true">{sound.id === NONE_SOUND_ID ? <XIcon size={16} strokeWidth={2.5} /> : <Volume2Icon size={16} strokeWidth={2} />}</span>
-              <span className="message-sound-choice-copy"><strong>{sound.label}</strong><small>{sound.description}</small></span>
+              <span className="message-sound-choice-copy">
+                <strong>{t(SOUND_COPY_KEYS[sound.id].label)}</strong>
+                <small>{t(SOUND_COPY_KEYS[sound.id].description)}</small>
+              </span>
             </label>
-            {sound.url ? <button type="button" className="btn-secondary message-sound-preview" data-testid={`message-sound-preview-${sound.id}`} aria-label={`Preview ${sound.label} sound`} onClick={() => previewMessageSound(sound.id)}>
-              <PlayIcon size={13} fill="currentColor" aria-hidden="true" /> {t("preview")}
+            {sound.url ? <button type="button" className="btn-secondary message-sound-preview" data-testid={`message-sound-preview-${sound.id}`} aria-label={`${t("preview")} ${t(SOUND_COPY_KEYS[sound.id].label)}`} onClick={() => previewMessageSound(sound.id)}>
+              <PlayIcon size={13} fill="currentColor" aria-hidden="true" /> <span>{t("preview")}</span>
             </button> : <span className="message-sound-preview-placeholder">{t("noPreview")}</span>}
           </div>
         ))}

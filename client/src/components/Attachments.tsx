@@ -6,6 +6,7 @@ import { useAuthUrl } from "../lib/useAuthUrl.js";
 import { fetchFile } from "../api.js";
 import { highlightFile, languageForFilename } from "../lib/syntaxHighlight.js";
 import Avatar from "./Avatar.js";
+import { useI18n } from "../lib/i18n.js";
 
 // Renders a message's attachments: images inline, everything else as a
 // downloadable file chip. Pass onOpenLightbox(src, name) to delegate image
@@ -284,6 +285,7 @@ function FileAttachment({ a }) {
 }
 
 function PresentationAttachment({ a }) {
+  const { t } = useI18n();
   const src = useAuthUrl(a.url);
   const [presentation, setPresentation] = useState(null);
   const [slideIndex, setSlideIndex] = useState(0);
@@ -361,7 +363,7 @@ function PresentationAttachment({ a }) {
           </button>
         </div>
         <div className="presentation-preview">
-          {error ? <span>Preview unavailable. Download the presentation to open it.</span> : svg ? slideView : <span>Preparing presentation preview…</span>}
+          {error ? <span>{t("previewUnavailable")}</span> : svg ? slideView : <span>{t("preparingPreview")}</span>}
         </div>
       </div>
       {open && createPortal(
@@ -372,13 +374,13 @@ function PresentationAttachment({ a }) {
               <div className="presentation-viewer-actions">
                 <span aria-live="polite">Slide {slideIndex + 1} of {presentation?.parsed.slides.length || 0}</span>
                 <button type="button" onClick={download} title="Download presentation" aria-label="Download presentation"><DownloadIcon size={18} /></button>
-                <button type="button" onClick={() => setOpen(false)} title="Close presentation" aria-label="Close presentation"><XIcon size={18} /></button>
+                <button type="button" onClick={() => setOpen(false)} title={t("closePresentation")} aria-label={t("closePresentation")}><XIcon size={18} /></button>
               </div>
             </div>
             <div className="presentation-viewer-body">
               <button type="button" className="presentation-viewer-nav" onClick={() => changeSlide(-1)} disabled={slideIndex === 0} title="Previous slide" aria-label="Previous slide"><ChevronLeft size={32} strokeWidth={2.25} /></button>
               {slideView}
-              <button type="button" className="presentation-viewer-nav" onClick={() => changeSlide(1)} disabled={!presentation || slideIndex >= presentation.parsed.slides.length - 1} title="Next slide" aria-label="Next slide"><ChevronRight size={32} strokeWidth={2.25} /></button>
+              <button type="button" className="presentation-viewer-nav" onClick={() => changeSlide(1)} disabled={!presentation || slideIndex >= presentation.parsed.slides.length - 1} title={t("nextSlide")} aria-label={t("nextSlide")}><ChevronRight size={32} strokeWidth={2.25} /></button>
             </div>
           </div>
         </div>,
@@ -389,6 +391,7 @@ function PresentationAttachment({ a }) {
 }
 
 function TextAttachment({ a }) {
+  const { t } = useI18n();
   const [expanded, setExpanded] = useState(false);
   const [open, setOpen] = useState(false);
   const [text, setText] = useState(null);
@@ -529,7 +532,7 @@ function TextAttachment({ a }) {
                 </button>
               </div>
             </div>
-            <pre className="text-viewer-content">{highlightedText ? <code dangerouslySetInnerHTML={{ __html: highlightedText }} /> : "Loading preview…"}</pre>
+            <pre className="text-viewer-content">{highlightedText ? <code dangerouslySetInnerHTML={{ __html: highlightedText }} /> : t("loadingPreview")}</pre>
           </div>
         </div>,
         document.body

@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Building2Icon, CheckIcon, Code2Icon, DownloadIcon, GitPullRequestIcon, KeyboardIcon, PaletteIcon, SlidersHorizontalIcon, UserRoundIcon, Volume2Icon, WebhookIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Building2Icon, CheckIcon, ChevronDownIcon, Code2Icon, DownloadIcon, GitPullRequestIcon, KeyboardIcon, PaletteIcon, SlidersHorizontalIcon, UserRoundIcon, WebhookIcon } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { api, getBackendUrl } from "../api.js";
@@ -24,7 +24,6 @@ import {
 import MessageSoundControls from "./MessageSoundControls.js";
 import { CloseButton } from "./Button.js";
 import { useI18n } from "../lib/i18n.js";
-import { interfaceLocale } from "../lib/time.js";
 
 const SETTINGS_TABS = [
   { id: "account", label: "Account", Icon: UserRoundIcon },
@@ -37,6 +36,100 @@ const SETTINGS_TABS = [
   { id: "api", label: "API", Icon: Code2Icon },
   { id: "webhooks", label: "Webhooks", Icon: WebhookIcon },
 ];
+
+const THEME_TRANSLATION_KEYS = {
+  nord: "themeNord",
+  aubergine: "themeAubergine",
+  azure: "themeAzure",
+  midnight: "themeMidnight",
+  dracula: "themeDracula",
+  sand: "themeSand",
+  calm: "themeStillwater",
+};
+
+function LanguageSelect({ language, setLanguage, t }) {
+  const [open, setOpen] = useState(false);
+  const controlRef = useRef(null);
+  const options = [
+    { value: "en", label: t("english") },
+    { value: "he", label: t("hebrew") },
+  ];
+  const selected = options.find((option) => option.value === language) || options[0];
+
+  useEffect(() => {
+    if (!open) return undefined;
+    function closeOnOutsideClick(event) {
+      if (!controlRef.current?.contains(event.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
+  }, [open]);
+
+  function selectLanguage(nextLanguage) {
+    setLanguage(nextLanguage);
+    setOpen(false);
+  }
+
+  function onKeyDown(event) {
+    if (event.key === "Escape") {
+      setOpen(false);
+      return;
+    }
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      const nextIndex = options.findIndex((option) => option.value === language) + (event.key === "ArrowDown" ? 1 : -1);
+      const nextOption = options[(nextIndex + options.length) % options.length];
+      selectLanguage(nextOption.value);
+    }
+  }
+
+  return (
+    <div className="settings-language-control" ref={controlRef}>
+      <select
+        className="settings-language-native"
+        data-testid="settings-language"
+        aria-hidden="true"
+        tabIndex={-1}
+        value={language}
+        onChange={(event) => {
+          const nextLanguage = event.target.value;
+          if (nextLanguage === "en" || nextLanguage === "he") selectLanguage(nextLanguage);
+        }}
+      >
+        {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+      </select>
+      <button
+        type="button"
+        className="settings-language-trigger"
+        aria-label={t("language")}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        onKeyDown={onKeyDown}
+      >
+        <span>{selected.label}</span>
+        <ChevronDownIcon className="settings-language-chevron" size={14} strokeWidth={2} aria-hidden="true" />
+      </button>
+      {open && (
+        <div className="settings-language-menu" role="listbox" aria-label={t("language")}>
+          {options.map((option) => (
+            <button
+              type="button"
+              role="option"
+              aria-selected={option.value === language}
+              className={`settings-language-option${option.value === language ? " selected" : ""}`}
+              key={option.value}
+              onClick={() => selectLanguage(option.value)}
+            >
+              {option.label}
+              {option.value === language && <CheckIcon size={14} aria-hidden="true" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const AZURE_NOTIFY_OPTIONS = [
   ["pullRequestCreated", "Pull request created"],
@@ -75,8 +168,6 @@ export default function SettingsModal({
   onSelectTheme,
   mode = "dark",
   onSelectMode,
-  interfaceDirection = "ltr",
-  onSelectInterfaceDirection,
   onUpdated,
   onIntegrationsChanged,
   settingsTab = "account",
@@ -150,7 +241,7 @@ export default function SettingsModal({
         setMentionWebhookUrl(webhook?.url || "");
         setMentionWebhookEnabled(webhook?.enabled ?? true);
       })
-      .catch((err) => !cancelled && setError(err.message))
+      .catch((err) => !cancelled && setError(translateError(err.message)))
       .finally(() => !cancelled && setMentionWebhookLoading(false));
     return () => { cancelled = true; };
   }, [activeTab]);
@@ -180,7 +271,7 @@ export default function SettingsModal({
         setAzureIntegration(integration);
         setAzureEndpoint(integration?.endpoint ? `${backendOrigin()}${integration.endpoint}` : "");
       })
-      .catch((err) => !cancelled && setError(err.message))
+      .catch((err) => !cancelled && setError(translateError(err.message)))
       .finally(() => !cancelled && setAzureLoading(false));
     return () => { cancelled = true; };
   }, [activeTab, user.isAdmin]);
@@ -200,27 +291,27 @@ export default function SettingsModal({
         setAllureSelectedProjects(allure?.selectedProjectIds?.length ? allure.selectedProjectIds : currentProjects);
         setAllureChannelMappings(Object.fromEntries((allure?.projects || []).map((project) => [project.id, project.channel || defaultAllureChannelName(project.id)])));
       })
-      .catch((err) => !cancelled && setError(err.message))
+      .catch((err) => !cancelled && setError(translateError(err.message)))
       .finally(() => !cancelled && setAllureLoading(false));
     return () => { cancelled = true; };
   }, [activeTab, user.isAdmin]);
 
   const visibleTabs = SETTINGS_TABS.filter((tab) => !tab.adminOnly || user.isAdmin);
   const tabLabels = {
-    account: language === "he" ? "חשבון" : "Account",
+    account: t("account"),
     appearance: t("appearance"),
-    preferences: language === "he" ? "העדפות" : "Preferences",
-    workspace: language === "he" ? "סביבת עבודה" : "Workspace",
-    integrations: language === "he" ? "אינטגרציות" : "Integrations",
-    desktop: language === "he" ? "שולחן עבודה" : "Desktop",
-    shortcuts: language === "he" ? "קיצורי מקלדת" : "Keyboard shortcuts",
-    api: "API",
-    webhooks: language === "he" ? "וובהוקים" : "Webhooks",
+    preferences: t("preferences"),
+    workspace: t("workspace"),
+    integrations: t("integrations"),
+    desktop: t("desktop"),
+    shortcuts: t("shortcuts"),
+    api: t("api"),
+    webhooks: t("webhooks"),
   };
 
   function onAvatarFileSelected(file) {
     if (!file) return;
-    if (!file.type.startsWith("image/")) return setError("Profile picture must be an image");
+    if (!file.type.startsWith("image/")) return setError(t("profilePictureTypeError"));
     const sizeError = uploadSizeError([file], undefined, "Profile pictures");
     if (sizeError) return setError(sizeError);
     setError(null);
@@ -238,7 +329,7 @@ export default function SettingsModal({
       setAvatarDialogOpen(false);
       flashSaved();
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
       throw err;
     } finally {
       setBusy(false);
@@ -254,7 +345,7 @@ export default function SettingsModal({
       onUpdated(updated);
       flashSaved();
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     } finally {
       setBusy(false);
     }
@@ -264,7 +355,7 @@ export default function SettingsModal({
     if (!nameChanged) return;
     const nextName = displayName.trim();
     if (!nextName || nextName.length > MAX_DISPLAY_NAME_LENGTH) {
-      setError(`Display name must be 1-${MAX_DISPLAY_NAME_LENGTH} characters`);
+      setError(t("displayNameMaxLength").replace("{count}", String(MAX_DISPLAY_NAME_LENGTH)));
       return;
     }
     setBusy(true);
@@ -274,7 +365,7 @@ export default function SettingsModal({
       onUpdated(updated);
       flashSaved();
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     } finally {
       setBusy(false);
     }
@@ -290,7 +381,7 @@ export default function SettingsModal({
     const file = event.target.files?.[0];
     if (!file) return;
     if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
-      setError("Workspace logo must be a PNG, JPEG, or WebP image");
+      setError(t("workspaceLogoTypeError"));
       return;
     }
     const sizeError = uploadSizeError([file], undefined, "Workspace logos");
@@ -302,7 +393,7 @@ export default function SettingsModal({
 
   async function saveWorkspace() {
     const nextName = workspaceName.trim();
-    if (nextName.length > 80) return setError("Organization name must be at most 80 characters");
+    if (nextName.length > 80) return setError(t("organizationNameLengthError"));
     setBusy(true);
     setError(null);
     try {
@@ -316,7 +407,7 @@ export default function SettingsModal({
       setWorkspaceLogoFile(null);
       flashSaved();
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     } finally {
       setBusy(false);
     }
@@ -332,7 +423,7 @@ export default function SettingsModal({
       setWorkspaceLogoUrl(null);
       flashSaved();
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     } finally {
       setBusy(false);
     }
@@ -346,7 +437,7 @@ export default function SettingsModal({
       setAzureIntegration(result.integration);
       setAzureEndpoint(`${backendOrigin()}${result.endpointPath}`);
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     } finally {
       setAzureLoading(false);
     }
@@ -360,7 +451,7 @@ export default function SettingsModal({
       const result = await api.regenerateAzureDevOpsToken(azureIntegration.id);
       setAzureEndpoint(`${backendOrigin()}${result.endpoint}`);
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     } finally {
       setAzureLoading(false);
     }
@@ -491,7 +582,7 @@ export default function SettingsModal({
       const { integration } = await api.updateAzureDevOpsIntegration(azureIntegration.id, { active });
       setAzureIntegration(integration);
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     } finally {
       setAzureLoading(false);
     }
@@ -509,7 +600,7 @@ export default function SettingsModal({
       setMentionWebhookSecretCopied(false);
       setMentionWebhookSaved(true);
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     } finally {
       setMentionWebhookLoading(false);
     }
@@ -525,7 +616,7 @@ export default function SettingsModal({
       setMentionWebhookUrl("");
       setMentionWebhookEnabled(true);
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     } finally {
       setMentionWebhookLoading(false);
     }
@@ -537,7 +628,7 @@ export default function SettingsModal({
       await navigator.clipboard.writeText(mentionWebhook.signingSecret);
       setMentionWebhookSecretCopied(true);
     } catch {
-      setError("Couldn't copy the signing secret. Select and copy it manually.");
+      setError(t("copySigningSecretError"));
     }
   }
 
@@ -549,7 +640,7 @@ export default function SettingsModal({
       const { integration } = await api.updateAzureDevOpsIntegration(azureIntegration.id, { notify: { [key]: enabled } });
       setAzureIntegration(integration);
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     } finally {
       setAzureLoading(false);
     }
@@ -563,9 +654,9 @@ export default function SettingsModal({
             <span className="settings-nav-username">@{user.username}</span>
           </div>
           <nav className="settings-nav-list">
-            {visibleTabs.map(({ id, Icon }) => (
+            {visibleTabs.map(({ id, label, Icon }) => (
                 <button key={id} type="button" className={`settings-nav-item${activeTab === id ? " active" : ""}`} onClick={() => { setActiveTab(id); onSettingsTabChange?.(id); }} aria-current={activeTab === id ? "page" : undefined}>
-                <Icon size={17} strokeWidth={1.8} /><span>{tabLabels[id]}</span>
+                <Icon size={17} strokeWidth={1.8} /><span>{tabLabels[id] || label}</span>
               </button>
             ))}
           </nav>
@@ -573,67 +664,65 @@ export default function SettingsModal({
         <main className={`settings-content settings-content-${activeTab}`}>
           {activeTab === "account" && <>
             <section className="settings-section settings-profile-section">
-              <h3>Profile</h3>
+              <h3>{t("profile")}</h3>
               <div className="settings-profile-fields">
                 <div className="settings-profile-field">
-                  <div className="settings-profile-field-label">Profile picture</div>
+                  <div className="settings-profile-field-label">{t("profilePicture")}</div>
                 <div className="settings-avatar-row">
                     <Avatar name={displayName} src={avatarUrl} size={64} />
                   <div className="settings-avatar-actions">
-                    <button type="button" className="btn-secondary" data-testid="settings-avatar-button" disabled={busy} onClick={() => setAvatarDialogOpen(true)}>{avatarUrl ? "Change" : "Upload"}</button>
-                    {avatarUrl && <button type="button" className="link-danger" data-testid="settings-avatar-remove" disabled={busy} onClick={removeAvatar}>Remove</button>}
+                    <button type="button" className="btn-secondary" data-testid="settings-avatar-button" disabled={busy} onClick={() => setAvatarDialogOpen(true)}>{avatarUrl ? t("change") : t("upload")}</button>
+                    {avatarUrl && <button type="button" className="link-danger" data-testid="settings-avatar-remove" disabled={busy} onClick={removeAvatar}>{t("remove")}</button>}
                   </div>
                 </div>
                 </div>
                 <div className="settings-profile-field">
-                  <div className="settings-profile-field-label">Display name</div>
+                  <div className="settings-profile-field-label">{t("displayName")}</div>
                 <div className="settings-name-row">
                   <input className="settings-input" data-testid="settings-display-name" value={displayName} maxLength={MAX_DISPLAY_NAME_LENGTH} dir="auto" onChange={(e) => setDisplayName(e.target.value)} />
-                  <button type="button" className="btn-primary" disabled={!nameChanged || busy} onClick={saveName}>Save</button>
+                  <button type="button" className="btn-primary" disabled={!nameChanged || busy} onClick={saveName}>{t("save")}</button>
                 </div>
                 </div>
               </div>
             </section>
             <section className="settings-section">
-              <h3>Desktop notifications</h3>
-              <p className="settings-hint">Get a desktop alert for direct messages, @mentions, and Starred messages when Echo isn't focused.</p>
+              <h3>{t("desktopNotifications")}</h3>
+              <p className="settings-hint">{t("desktopNotificationsHint")}</p>
               <NotificationToggle />
             </section>
             {!user.isAdmin ? (user.canChangePassword ? <ChangePassword /> : <SsoPasswordNotice />) : <AdminPasswordReset users={users} currentUserId={user.id} />}
           </>}
 
           {activeTab === "preferences" && <section className="settings-section preferences-page" data-testid="preferences-page">
-            <div className="preferences-hero">
-              <div className="preferences-hero-icon" aria-hidden="true"><Volume2Icon size={20} strokeWidth={2} /></div>
-              <div>
-                <h2>{t("preferencesTitle")}</h2>
-                <p>{t("preferencesSubtitle")}</p>
-              </div>
-            </div>
-            <div className="preferences-card">
-              <div className="preferences-card-heading">
+            <h3>{t("preferences")}</h3>
+            <section className="settings-preference-group settings-language-section" aria-labelledby="language-settings-heading">
+              <h3 id="language-settings-heading">{t("language")}</h3>
+              <LanguageSelect language={language} setLanguage={setLanguage} t={t} />
+            </section>
+            <section className="preferences-message-sounds" aria-labelledby="message-sounds-heading">
+              <div className="preferences-message-sounds-heading">
                 <div>
-                  <h3>{t("messageSounds")}</h3>
+                  <h3 id="message-sounds-heading">{t("messageSounds")}</h3>
                   <p>{t("chooseMessageSound")}</p>
                 </div>
               </div>
               <MessageSoundControls />
-            </div>
+            </section>
           </section>}
 
           {activeTab === "webhooks" && <section className="settings-section mention-webhook-settings" data-testid="mention-webhook-settings">
             <div className="mention-webhook-hero">
               <span className="mention-webhook-icon" aria-hidden="true"><WebhookIcon size={22} strokeWidth={2} /></span>
               <div>
-                <h3>Personal webhook</h3>
-                <p>Send a signed event when someone mentions <strong>@{user.username}</strong> or sends you a direct message.</p>
+                <h3>{t("personalWebhook")}</h3>
+                <p>{t("webhookHint")}</p>
               </div>
-              <span className={`mention-webhook-status${mentionWebhook?.enabled ? " is-active" : ""}`}>{mentionWebhook?.enabled ? "Active" : mentionWebhook ? "Paused" : "Not configured"}</span>
+              <span className={`mention-webhook-status${mentionWebhook?.enabled ? " is-active" : ""}`}>{mentionWebhook?.enabled ? t("webhookActive") : mentionWebhook ? t("webhookPaused") : t("webhookNotConfigured")}</span>
             </div>
             <div className="mention-webhook-card">
               <div className="mention-webhook-field">
-                <label className="settings-profile-field-label" htmlFor="mention-webhook-url">Destination URL</label>
-                <span>Echo sends your new mention and direct-message events here.</span>
+                <label className="settings-profile-field-label" htmlFor="mention-webhook-url">{t("destinationUrl")}</label>
+                <span>{t("webhookDestinationHint")}</span>
               </div>
               <input
                 id="mention-webhook-url"
@@ -646,24 +735,24 @@ export default function SettingsModal({
                 disabled={mentionWebhookLoading}
               />
               <label className="mention-webhook-enabled">
-                <span><strong>Deliver events</strong><small>Send each new @mention and direct message to this endpoint.</small></span>
+                <span><strong>{t("deliverEvents")}</strong><small>{t("deliverEventsHint")}</small></span>
                 <span className={`integration-switch${mentionWebhookEnabled ? " is-on" : ""}`}><input type="checkbox" checked={mentionWebhookEnabled} disabled={mentionWebhookLoading} onChange={(event) => { setMentionWebhookEnabled(event.target.checked); setMentionWebhookSaved(false); }} /><span className="integration-switch-track"><span /></span></span>
               </label>
             </div>
             <div className="mention-webhook-actions">
-              <button type="button" className="btn-primary" data-testid="mention-webhook-save" disabled={mentionWebhookLoading || !mentionWebhookUrl.trim()} onClick={saveMentionWebhook}>{mentionWebhook ? "Save webhook" : "Create webhook"}</button>
-              {mentionWebhook && <button type="button" className="btn-danger-outline" data-testid="mention-webhook-remove" disabled={mentionWebhookLoading} onClick={removeMentionWebhook}>Remove webhook</button>}
+              <button type="button" className="btn-primary" data-testid="mention-webhook-save" disabled={mentionWebhookLoading || !mentionWebhookUrl.trim()} onClick={saveMentionWebhook}>{mentionWebhook ? t("saveWebhook") : t("createWebhook")}</button>
+              {mentionWebhook && <button type="button" className="btn-danger-outline" data-testid="mention-webhook-remove" disabled={mentionWebhookLoading} onClick={removeMentionWebhook}>{t("removeWebhook")}</button>}
               {mentionWebhookSaved && <span className="workspace-save-status">Saved ✓</span>}
             </div>
             {mentionWebhook?.signingSecret && <div className="mention-webhook-secret">
               <div>
-                <label className="settings-profile-field-label" htmlFor="mention-webhook-secret">Signing secret</label>
+                <label className="settings-profile-field-label" htmlFor="mention-webhook-secret">{t("signingSecret")}</label>
                 <p>Before accepting an event, verify that <code>x-echo-signature</code> is an HMAC-SHA256 of <code>x-echo-timestamp</code>, a period, and the <strong>raw request body</strong>. Keep this secret on your server—never expose it in a browser or commit it.</p>
               </div>
               <div className="mention-webhook-secret-value">
                 <input id="mention-webhook-secret" className="settings-input" data-testid="mention-webhook-secret" value={mentionWebhook.signingSecret} readOnly />
                 <button type="button" className="btn-secondary" data-testid="mention-webhook-copy-secret" onClick={copyMentionWebhookSecret} aria-live="polite">
-                  {mentionWebhookSecretCopied ? <><CheckIcon size={15} /> Copied</> : "Copy"}
+                  {mentionWebhookSecretCopied ? <><CheckIcon size={15} /> {t("copied")}</> : t("copy")}
                 </button>
               </div>
             </div>}
@@ -712,26 +801,9 @@ export default function SettingsModal({
               <button type="button" className={`mode-option${mode === "dark" ? " active" : ""}`} data-testid="settings-mode-dark" onClick={() => onSelectMode?.("dark")} aria-pressed={mode === "dark"}>☾ {t("dark")}</button>
             </div>
             <div className="theme-grid">
-              {themes.map((t) => <button key={t.id} type="button" className={`theme-card${theme === t.id ? " active" : ""}`} data-testid={`settings-theme-${t.id}`} onClick={() => onSelectTheme?.(t.id)} aria-pressed={theme === t.id}>
-                <span className="theme-swatch">{t.swatch.map((c, i) => <span key={i} style={{ background: c }} />)}</span><span className="theme-name">{language === "he" ? ({ Azure: "תכלת", Aubergine: "חציל", Nord: "נורד", Sand: "חול", Dracula: "דרקולה", Midnight: "חצות", Stillwater: "מים שקטים" }[t.label] || t.label) : t.label}</span>
+              {themes.map((themeOption) => <button key={themeOption.id} type="button" className={`theme-card${theme === themeOption.id ? " active" : ""}`} data-testid={`settings-theme-${themeOption.id}`} onClick={() => onSelectTheme?.(themeOption.id)} aria-pressed={theme === themeOption.id}>
+                <span className="theme-swatch">{themeOption.swatch.map((c, i) => <span key={i} style={{ background: c }} />)}</span><span className="theme-name">{THEME_TRANSLATION_KEYS[themeOption.id] ? t(THEME_TRANSLATION_KEYS[themeOption.id]) : themeOption.label}</span>
               </button>)}
-            </div>
-            <div className="settings-direction-control">
-              <h3>{t("interfaceDirection")}</h3>
-              <p className="settings-hint">{t("chooseDirection")}</p>
-              <div className="mode-toggle" role="group" aria-label="Interface direction">
-                {[["ltr", t("leftToRight")], ["rtl", t("rightToLeft")]].map(([value, label]) => (
-                  <button key={value} type="button" className={`mode-option${interfaceDirection === value ? " active" : ""}`} data-testid={`settings-direction-${value}`} onClick={() => onSelectInterfaceDirection?.(value)} aria-pressed={interfaceDirection === value}>{label}</button>
-                ))}
-              </div>
-            </div>
-            <div className="settings-direction-control">
-              <h3>{t("language")}</h3>
-              <p className="settings-hint">{t("chooseLanguage")}</p>
-              <div className="mode-toggle" role="group" aria-label={t("language")}>
-                <button type="button" className={`mode-option${language === "en" ? " active" : ""}`} data-testid="settings-language-en" onClick={() => setLanguage("en")} aria-pressed={language === "en"}>{t("english")}</button>
-                <button type="button" className={`mode-option${language === "he" ? " active" : ""}`} data-testid="settings-language-he" onClick={() => setLanguage("he")} aria-pressed={language === "he"}>{t("hebrew")}</button>
-              </div>
             </div>
           </section>}
 
@@ -903,7 +975,7 @@ export default function SettingsModal({
                   <div className="integration-option-row"><div><strong>Integration status</strong><span>{azureIntegration.active ? "Azure events are enabled" : "Azure events are disabled"}</span></div><label className={`integration-switch${azureIntegration.active ? " is-on" : ""}`}><input type="checkbox" checked={!!azureIntegration.active} disabled={azureLoading} onChange={(event) => setAzureActive(event.target.checked)} /><span className="integration-switch-track"><span /></span></label></div>
                   <div className="integration-dialog-section"><h4>Webhook endpoint</h4><p className="settings-hint">Add this URL to an Azure DevOps Service Hook.</p><input id="azure-webhook-endpoint" className="settings-input" value={azureEndpoint} readOnly /><div className="integration-actions"><button type="button" className="btn-secondary" disabled={!azureEndpoint} onClick={copyAzureEndpoint}>Copy endpoint</button><button type="button" className="btn-secondary" disabled={azureLoading} onClick={regenerateAzureToken}>Regenerate token</button></div></div>
                   <div className="integration-dialog-section"><h4>Events to send</h4><div className="integration-notify-grid">{AZURE_NOTIFY_OPTIONS.map(([key, label]) => <label key={key} className="integration-notify-option"><span>{label}</span><span className={`integration-switch integration-notify-switch${azureIntegration.notify?.[key] !== false ? " is-on" : ""}`}><input type="checkbox" checked={azureIntegration.notify?.[key] !== false} disabled={azureLoading || !azureIntegration.active} onChange={(event) => setAzureNotification(key, event.target.checked)} /><span className="integration-switch-track"><span /></span></span></label>)}</div></div>
-                  {azureIntegration.lastReceivedAt && <p className="settings-hint">Last event: {new Date(azureIntegration.lastReceivedAt).toLocaleString(interfaceLocale())}</p>}
+                  {azureIntegration.lastReceivedAt && <p className="settings-hint">Last event: {new Date(azureIntegration.lastReceivedAt).toLocaleString()}</p>}
                   {azureIntegration.lastError && <p className="error">{azureIntegration.lastError}</p>}
                 </div>
               </section>
@@ -925,7 +997,7 @@ export default function SettingsModal({
                     <div className="shortcut-list">
                       {group.shortcuts.map((shortcut) => (
                         <div className="shortcut-row" key={`${group.label}-${shortcut.description}`}>
-                          <span className="shortcut-description">{language === "he" ? ({ "Focus workspace search": "מיקוד בחיפוש סביבת העבודה", "Open quick switcher": "פתיחת מחליף מהיר", "Start a new direct message": "התחלת הודעה ישירה חדשה", "Browse public channels": "עיון בערוצים ציבוריים", "Create a new channel": "יצירת ערוץ חדש", "Focus the message composer": "מיקוד בעורך ההודעות", "Go to Home": "מעבר לבית", "Go to Direct messages": "מעבר להודעות ישירות", "Go to Activity": "מעבר לפעילות", "Go to Saved messages": "מעבר להודעות שמורות", "Open Settings": "פתיחת הגדרות", "Open actions for the focused message": "פתיחת פעולות להודעה הממוקדת" }[shortcut.description] || shortcut.description) : shortcut.description}</span>
+                          <span className="shortcut-description">{t(`shortcut${shortcut.id.replace(/(^|-)(\w)/g, (_, __, letter) => letter.toUpperCase())}` as never)}</span>
                           <span className="shortcut-keys" aria-label={shortcut.keys.join(" ")}>
                             {shortcut.keys.map((key) => <kbd key={key}>{key}</kbd>)}
                           </span>
@@ -948,46 +1020,46 @@ export default function SettingsModal({
 }
 
 function DesktopDownloads({ downloads, error }) {
-  if (error) return <section className="settings-section"><h3>Desktop apps</h3><p className="error">{error}</p></section>;
-  if (!downloads) return <section className="settings-section"><h3>Desktop apps</h3><p className="settings-hint">Loading download options…</p></section>;
+  const { t, translateError } = useI18n();
+  if (error) return <section className="settings-section"><h3>{t("desktopApps")}</h3><p className="error">{error}</p></section>;
+  if (!downloads) return <section className="settings-section"><h3>{t("desktopApps")}</h3><p className="settings-hint">{t("loadingDownloadOptions")}</p></section>;
 
   const platforms = [
-    { key: "windows", label: "Windows", description: "Install the native Echo desktop app for Windows." },
-    { key: "linux", label: "Linux", description: "Download the portable Echo AppImage for Linux." },
+    { key: "windows", label: "Windows", description: t("windowsDesktopHint") },
+    { key: "linux", label: "Linux", description: t("linuxDesktopHint") },
   ];
   return (
     <section className="settings-section desktop-downloads-section">
-      <h3>Desktop apps</h3>
-      <p className="settings-hint">These installers are provided by this Echo server and are available without internet access.</p>
+      <h3>{t("desktopApps")}</h3>
+      <p className="settings-hint">{t("desktopAppsHint")}</p>
       <div className="desktop-download-grid">
         {platforms.map(({ key, label, description }) => {
           const download = downloads[key];
           return <article className="desktop-download-card" key={key}>
             <h4>{label}</h4>
             <p>{description}</p>
-            {download?.available ? <a className="btn-primary desktop-download-button" href={`${backendOrigin()}${download.url}`} download>{`Download for ${label}`}</a> : <span className="settings-hint">Not included in this deployment.</span>}
+            {download?.available ? <a className="btn-primary desktop-download-button" href={`${backendOrigin()}${download.url}`} download>{t("downloadFor").replace("{platform}", label)}</a> : <span className="settings-hint">{t("notIncludedDeployment")}</span>}
           </article>;
         })}
       </div>
-      {downloads.version && <p className="settings-hint">Package version: {downloads.version}</p>}
+      {downloads.version && <p className="settings-hint">{t("packageVersion").replace("{version}", downloads.version)}</p>}
     </section>
   );
 }
 
 // Enable/disable desktop notifications (requests browser permission on enable).
 function NotificationToggle() {
+  const { t } = useI18n();
   const [perm, setPerm] = useState(() => notifyPermission());
   const [on, setOn] = useState(() => notifyPref() && notifyPermission() === "granted");
 
   if (!notifySupported()) {
-    return <p className="settings-hint">Your browser doesn't support desktop notifications.</p>;
+    return <p className="settings-hint">{t("browserNotificationsUnsupported")}</p>;
   }
   if (perm === "denied") {
     return (
       <p className="settings-hint">
-        Notifications are <strong>blocked</strong> for this site. Allow them in your browser's site
-        settings, then reload. Also make sure your OS notification settings (and
-        Do&nbsp;Not&nbsp;Disturb) allow your browser.
+        {t("notificationsBlocked")}
       </p>
     );
   }
@@ -1009,24 +1081,26 @@ function NotificationToggle() {
   return (
     <div className="notify-row">
       <button type="button" className={on ? "btn-secondary" : "btn-primary"} data-testid="notification-toggle" onClick={on ? disable : enable}>
-        {on ? "Turn off notifications" : "Enable desktop notifications"}
+        {on ? t("turnOffNotifications") : t("enableDesktopNotifications")}
       </button>
-      {on && <span className="notify-on">On ✓</span>}
+      {on && <span className="notify-on">{t("notificationsOn")}</span>}
     </div>
   );
 }
 
 function SsoPasswordNotice() {
+  const { t } = useI18n();
   return (
     <section className="settings-section" data-testid="sso-password-settings">
-      <h3>Password</h3>
-      <p className="settings-hint">Your password is managed by your single sign-on provider.</p>
+      <h3>{t("password")}</h3>
+      <p className="settings-hint">{t("ssoPasswordManaged")}</p>
     </section>
   );
 }
 
 // Self-service: change your own password (requires the current one).
 function ChangePassword() {
+  const { t, translateError } = useI18n();
   const [error, setError] = useState(null);
   const [done, setDone] = useState(false);
   const {
@@ -1054,16 +1128,15 @@ function ChangePassword() {
       setDone(true);
       reset();
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     }
   });
 
   return (
     <section className="settings-section">
-      <h3>Password</h3>
+      <h3>{t("password")}</h3>
       <p className="settings-hint">
-        Change your password here. Forgot it and can't sign in? Your workspace admin can issue you a
-        one-time password to set a new one.
+        {t("changePasswordHint")}
       </p>
       <div className="pw-form" data-testid="change-password-form">
         <input
@@ -1071,46 +1144,46 @@ function ChangePassword() {
           className="settings-input"
           data-testid="current-password"
           type="password"
-          placeholder="Current password"
+          placeholder={t("currentPassword")}
           onChange={(e) => {
             setDone(false);
             setError(null);
             currentPasswordField.onChange(e);
           }}
         />
-        {errors.currentPassword && <div className="error small">{errors.currentPassword.message}</div>}
+        {errors.currentPassword && <div className="error small">{translateError(errors.currentPassword.message)}</div>}
         <input
           {...newPasswordField}
           className="settings-input"
           data-testid="new-password"
           type="password"
-          placeholder="New password"
+          placeholder={t("newPassword")}
           onChange={(e) => {
             setDone(false);
             setError(null);
             newPasswordField.onChange(e);
           }}
         />
-        {errors.newPassword && <div className="error small">{errors.newPassword.message}</div>}
+        {errors.newPassword && <div className="error small">{translateError(errors.newPassword.message)}</div>}
         <input
           {...confirmPasswordField}
           className="settings-input"
           data-testid="confirm-new-password"
           type="password"
-          placeholder="Confirm new password"
+          placeholder={t("confirmNewPassword")}
           onChange={(e) => {
             setDone(false);
             setError(null);
             confirmPasswordField.onChange(e);
           }}
         />
-        {errors.confirmPassword && <div className="error small">{errors.confirmPassword.message}</div>}
-        <div className="field-hint">{PASSWORD_RULE}</div>
+        {errors.confirmPassword && <div className="error small">{translateError(errors.confirmPassword.message)}</div>}
+        <div className="field-hint">{t("passwordRule")}</div>
         <button type="button" className="btn-primary" data-testid="change-password-submit" disabled={isSubmitting} onClick={submit}>
-          {isSubmitting ? "Updating…" : "Update password"}
+          {isSubmitting ? t("updating") : t("updatePassword")}
         </button>
       </div>
-      {done && <div className="settings-saved">Password updated ✓</div>}
+      {done && <div className="settings-saved">{t("passwordUpdated")}</div>}
       {error && <div className="error">{error}</div>}
     </section>
   );
@@ -1163,7 +1236,7 @@ function AdminPasswordReset({ users, currentUserId }) {
       const { tempPassword } = await api.adminResetPassword(selected.id);
       setOtp(tempPassword);
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     } finally {
       setBusy(false);
     }

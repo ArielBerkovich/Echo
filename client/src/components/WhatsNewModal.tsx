@@ -9,6 +9,7 @@ import {
   isWhatsNewPreview,
   markWhatsNewSeen,
 } from "../lib/whatsNew.js";
+import { useI18n } from "../lib/i18n.js";
 
 function hasSeenLegacyUpdateNotice(version: string) {
   try {
@@ -19,6 +20,7 @@ function hasSeenLegacyUpdateNotice(version: string) {
 }
 
 export default function WhatsNewModal() {
+  const { t } = useI18n();
   const appVersion = window.echoDesktopConfig?.appVersion || "";
   const nativeDesktop = isNativeDesktop();
   // Preview mode is intentionally latched for this mount. App startup may
@@ -56,10 +58,10 @@ export default function WhatsNewModal() {
     }
 
     return (
-      <Modal title="Echo was updated" className="update-confirmation-modal" onClose={closeLegacyNotice} onPointerDownOutside={(event) => event.preventDefault()}>
-        <p className="update-confirmation-version">Echo has been updated to version {appVersion}.</p>
+      <Modal title={t("echoUpdated")} className="update-confirmation-modal" onClose={closeLegacyNotice} onPointerDownOutside={(event) => event.preventDefault()}>
+        <p className="update-confirmation-version">{t("echoUpdatedVersion").replace("{version}", appVersion)}</p>
         <ModalActions>
-          <button type="button" className="btn-primary" onClick={closeLegacyNotice}>OK</button>
+          <button type="button" className="btn-primary" onClick={closeLegacyNotice}>{t("ok")}</button>
         </ModalActions>
       </Modal>
     );
@@ -71,7 +73,7 @@ export default function WhatsNewModal() {
   }
 
   return (
-    <Modal title={preview ? "What's new in Echo" : `Welcome to Echo ${release.id}`} className="whats-new-modal" onClose={close} onPointerDownOutside={(event) => event.preventDefault()}>
+    <Modal title={preview ? t("whatsNew") : t("welcomeToEcho").replace("{version}", release.id)} className="whats-new-modal" onClose={close} onPointerDownOutside={(event) => event.preventDefault()}>
       <div className="whats-new-items">
         {releases.map((releaseItem, index) => {
           const expanded = expandedIds.has(releaseItem.id);
@@ -95,8 +97,8 @@ export default function WhatsNewModal() {
               >
                 <span className="whats-new-release-heading">
                   <span className="whats-new-release-version">
-                    <strong>Version {releaseItem.id}</strong>
-                    {index === 0 && <small>Latest</small>}
+                    <strong>{t("version").replace("{version}", releaseItem.id)}</strong>
+                    {index === 0 && <small>{t("latest")}</small>}
                   </span>
                   <span className="whats-new-release-summary">{releaseItem.summary}</span>
                 </span>

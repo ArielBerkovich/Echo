@@ -2,7 +2,6 @@ import { useState } from "react";
 import { ChevronDownIcon } from "lucide-react";
 import { api, getBackendUrl } from "../api.js";
 import { apiEndpointKey } from "../lib/apiDocs.js";
-import { useI18n } from "../lib/i18n.js";
 import { CloseButton } from "./Button.js";
 
 const ORIGIN = getBackendUrl() || (typeof window !== "undefined" ? window.location.origin : "https://your-echo-host");
@@ -154,7 +153,6 @@ curl -X POST ${ORIGIN}/api/channels/general/messages \\
 }
 
 export default function ApiDocsPage({ onClose, embedded = false }) {
-  const { t } = useI18n();
   const [token, setToken] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -198,7 +196,7 @@ export default function ApiDocsPage({ onClose, embedded = false }) {
           {/* Token generation lives in its own panel above the columns, so
               generating a token doesn't reflow/shift the endpoint cards. */}
           <section className="settings-section api-token-panel">
-            <h3>{t("yourApiToken")}</h3>
+            <h3>Your API token</h3>
             <p className="settings-hint">
               Bearer token for the REST API at <code>{ORIGIN}/api</code>. Every curl below includes
               it. Valid for three years — keep it secret.
@@ -207,18 +205,18 @@ export default function ApiDocsPage({ onClose, embedded = false }) {
               <div className="token-box" data-testid="api-token-box">
                 <code className="token-value" data-testid="api-token-value">{token}</code>
                 <button type="button" className="btn-secondary" data-testid="api-token-copy" onClick={() => copy(token, "token")}>
-                  {copied === "token" ? t("copied") : t("copy")}
+                  {copied === "token" ? "Copied" : "Copy"}
                 </button>
               </div>
             ) : (
               <button type="button" className="btn-primary" data-testid="api-token-generate" disabled={busy} onClick={generate}>
-                {busy ? t("generating") : t("generateApiToken")}
+                {busy ? "Generating…" : "Generate API token"}
               </button>
             )}
             {error && <div className="error">{error}</div>}
             {!token && (
               <p className="settings-hint api-token-hint">
-                {t("apiTokenHint")}
+                Until you generate one, the curls below use a YOUR_API_TOKEN placeholder.
               </p>
             )}
           </section>
@@ -269,7 +267,7 @@ export default function ApiDocsPage({ onClose, embedded = false }) {
                             </div>
                             <div className="api-desc">{e.desc}</div>
                             <button type="button" className="api-copy" onClick={() => copy(e.curl, k)}>
-                              {copied === k ? t("copied") : t("copyCurl")}
+                              {copied === k ? "Copied" : "Copy curl"}
                             </button>
                           </li>
                         );
@@ -288,8 +286,8 @@ export default function ApiDocsPage({ onClose, embedded = false }) {
   return (
     <div className="settings-page api-page" data-testid="api-reference-page">
       <header className="settings-page-head">
-        <h2>{t("apiReference")}</h2>
-        <CloseButton onClick={onClose} label={t("apiReference")} />
+        <h2>API reference</h2>
+        <CloseButton onClick={onClose} label="API reference" />
       </header>
       <div className="settings-page-body">{content}</div>
     </div>

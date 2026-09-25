@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Avatar from "./Avatar.js";
 import Modal, { ModalActions } from "./Modal.js";
+import { useI18n } from "../lib/i18n.js";
 
 const PEOPLE_ROW_HEIGHT = 52;
 const PEOPLE_LIST_HEIGHT = 340;
@@ -8,6 +9,7 @@ const PEOPLE_LIST_HEIGHT = 340;
 // Pick workspace members to add to a channel. Adding is immediate; the person
 // then drops out of the list. "Done" closes the dialog.
 export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
+  const { t, translateError } = useI18n();
   const [adding, setAdding] = useState(null);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState("");
@@ -77,22 +79,23 @@ export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
     try {
       await onAdd(u.id);
     } catch (err) {
-      setError(err.message);
+      setError(translateError(err.message));
     } finally {
       setAdding(null);
     }
   }
 
   return (
-    <Modal title={isGroupDm ? "Add people to this group DM" : `Add people to ${channel.type === "private" ? "🔒" : "#"} ${channel.name}`} onClose={onClose}>
+    <Modal title={isGroupDm ? t("addPeopleToGroupConversation") : t("addPeopleToChannel").replace("{channel}", `${channel.type === "private" ? "🔒" : "#"} ${channel.name}`)} onClose={onClose}>
       <div data-testid="add-people-modal">
         {isGroupDm && memberIds.size >= 10 ? (
-          <div className="people-empty">This group DM has reached the 10-person limit.</div>
+          <div className="people-empty">{t("groupConversationLimit")}</div>
         ) : null}
         <input
           className="people-filter"
           ref={searchRef}
           data-testid="add-people-search"
+          aria-label={t("searchPeopleToAdd")}
           value={filter}
           onChange={(e) => {
             setFilter(e.target.value);
@@ -101,7 +104,7 @@ export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
             listRef.current?.scrollTo({ top: 0 });
           }}
           onKeyDown={onSearchKeyDown}
-          placeholder="Search people"
+          placeholder={t("searchPeople")}
           autoFocus
         />
 
@@ -111,7 +114,7 @@ export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
           onScroll={(event) => setListScrollTop(event.currentTarget.scrollTop)}
         >
           {isGroupDm && memberIds.size >= 10 ? null : available.length === 0 ? (
-            <div className="people-empty">Everyone in the workspace is already here.</div>
+            <div className="people-empty">{t("everyoneAlreadyHere")}</div>
           ) : (
             <div className="people-virtual-content" style={{ height: available.length * PEOPLE_ROW_HEIGHT }}>
               {visibleUsers.map((u, index) => (
@@ -122,7 +125,7 @@ export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
                     <div className="person-handle">@{u.username}</div>
                   </div>
                   <button type="button" className="btn-secondary" data-testid={`add-people-add-${u.username}`} disabled={adding === u.id} onClick={() => add(u)}>
-                    {adding === u.id ? "Adding…" : "Add"}
+                    {adding === u.id ? t("adding") : t("add")}
                   </button>
                 </div>
               ))}
@@ -134,7 +137,7 @@ export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
 
         <ModalActions>
           <button type="button" className="btn-primary" data-testid="add-people-done" onClick={onClose}>
-            Done
+            {t("done")}
           </button>
         </ModalActions>
       </div>

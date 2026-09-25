@@ -106,7 +106,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
       onUpdated?.(updated);
       setEditName(false);
     } catch (error) {
-      setManagementError(error.message || "Could not rename group DM");
+      setManagementError(error.message || t("couldNotRenameGroupDm"));
     } finally {
       setSavingName(false);
     }
@@ -120,7 +120,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
       onUpdated?.(updated);
       setConvertOpen(false);
     } catch (error) {
-      setManagementError(error.message || "Could not convert group DM");
+      setManagementError(error.message || t("couldNotConvertGroupDm"));
     } finally {
       setConverting(false);
     }
@@ -149,7 +149,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
       await onRemoveMember(removeTarget.id);
       setRemoveTarget(null);
     } catch (error) {
-      setMemberError(error.message || "Could not remove member");
+      setMemberError(error.message || t("couldNotRemoveMember"));
     } finally {
       setRemoving(false);
     }
@@ -162,7 +162,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
     try {
       await onPromoteManager(member.id);
     } catch (error) {
-      setMemberError(error.message || "Could not make member a manager");
+      setMemberError(error.message || t("couldNotMakeManager"));
     } finally {
       setPromotingId(null);
     }
@@ -177,7 +177,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
           </span>
           <div>
             <h2 id="members-panel-title">{t("members")}</h2>
-            <span>{channel.memberCount ?? members.length} {t("peopleIn")} {isGroupDm ? t("groupDm") : `#${channel.name}`}</span>
+            <span>{isGroupDm ? `${channel.memberCount ?? members.length} ${t("groupMembers")}` : `${channel.memberCount ?? members.length} ${t("peopleIn")} #${channel.name}`}</span>
           </div>
         </div>
         <CloseButton size="sm" onClick={onClose} label={t("closeMembers")} />
@@ -191,35 +191,35 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
                 <input
                   value={name}
                   onChange={(event) => setName(event.target.value)}
-                  placeholder="Group DM name"
-                  aria-label="Group DM name"
+                  placeholder={t("groupDmName")}
+                  aria-label={t("groupDmName")}
                   autoFocus
                 />
-                <Button variant="primary" onClick={renameGroupDm} disabled={savingName || !name.trim()}>{savingName ? "Saving…" : "Save"}</Button>
-                <Button variant="secondary" onClick={() => setEditName(false)} disabled={savingName}>Cancel</Button>
+                <Button variant="primary" onClick={renameGroupDm} disabled={savingName || !name.trim()}>{savingName ? t("saving") : t("save")}</Button>
+                <Button variant="secondary" onClick={() => setEditName(false)} disabled={savingName}>{t("cancel")}</Button>
                 {managementError && <div className="error members-panel-error group-dm-error" role="alert">{managementError}</div>}
               </div>
             ) : (
               <Button variant="subtle" className="members-panel-action" onClick={() => { setName(channel.name?.startsWith("dm-") ? "" : channel.name || ""); setEditName(true); }}>
-                Rename group DM
+                {t("renameGroupDm")}
               </Button>
             )}
             {convertOpen ? (
               <div className="group-dm-convert-editor">
-                <p>All current members and messages will stay, and this conversation will become a private channel.</p>
+                <p>{t("convertGroupDmHint")}</p>
                 <input
                   value={name}
                   onChange={(event) => setName(event.target.value)}
-                  placeholder="New private channel name"
-                  aria-label="New private channel name"
+                  placeholder={t("privateChannelName")}
+                  aria-label={t("privateChannelName")}
                 />
-                <Button variant="primary" onClick={convertGroupDm} disabled={converting || !name.trim()}>{converting ? "Converting…" : "Convert"}</Button>
-                <Button variant="secondary" onClick={() => setConvertOpen(false)} disabled={converting}>Cancel</Button>
+                <Button variant="primary" onClick={convertGroupDm} disabled={converting || !name.trim()}>{converting ? t("converting") : t("convert")}</Button>
+                <Button variant="secondary" onClick={() => setConvertOpen(false)} disabled={converting}>{t("cancel")}</Button>
                 {managementError && <div className="error members-panel-error group-dm-error" role="alert">{managementError}</div>}
               </div>
             ) : (
               <Button variant="subtle" className="members-panel-action" onClick={() => { setName(""); setConvertOpen(true); }}>
-                Convert to private channel
+                {t("convertPrivateChannel")}
               </Button>
             )}
           </section>
@@ -257,7 +257,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
           {members.length === 0 ? (
             <div className="channel-details-empty">{t("noMembersYet")}</div>
           ) : shownMembers.length === 0 ? (
-            <div className="channel-details-empty">No members match “{query.trim()}”.</div>
+            <div className="channel-details-empty">{t("noMembersMatch").replace("{query}", query.trim())}</div>
           ) : (
             <div className="members-panel-virtual-content" style={{ height: shownMembers.length * MEMBER_ROW_HEIGHT }}>
               {visibleMembers.map((member, index) => (
@@ -274,9 +274,9 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
                       onClick={() => onOpenProfile?.(member.id)}
                     >
                       {member.displayName}
-                      {member.id === channel.createdBy && <span className="channel-details-creator">Creator</span>}
+                      {member.id === channel.createdBy && <span className="channel-details-creator">{t("creator")}</span>}
                       {member.id !== channel.createdBy && managerIdSet.has(member.id) && (
-                        <span className="channel-details-creator">Manager</span>
+                        <span className="channel-details-creator">{t("manager")}</span>
                       )}
                     </button>
                     <span className="channel-details-person-handle">@{member.username}</span>
@@ -292,16 +292,16 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
                             onClick={() => promoteManager(member)}
                             disabled={promotingId === member.id}
                           >
-                            {promotingId === member.id ? "Saving…" : "Make manager"}
+                            {promotingId === member.id ? t("saving") : t("makeManager")}
                           </button>
                         )}
                       <button
                         type="button"
                         className="members-panel-remove"
                         onClick={() => setRemoveTarget(member)}
-                        aria-label={`Remove ${member.displayName}`}
+                        aria-label={`${t("removeFromChannel")}: ${member.displayName}`}
                       >
-                        Remove
+                        {t("removeFromChannel")}
                       </button>
                     </div>
                   )}
@@ -313,9 +313,9 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
       </div>
       {removeTarget && (
         <ConfirmDialog
-          title={`Remove ${removeTarget.displayName}?`}
-          message={`They will lose access to #${channel.name}.`}
-          confirmLabel="Remove"
+          title={t("removeMemberQuestion").replace("{name}", removeTarget.displayName)}
+          message={t("removeMemberMessage").replace("{channel}", `#${channel.name}`)}
+          confirmLabel={t("removeFromChannel")}
           danger
           closeDisabled={removing}
           onConfirm={confirmRemove}

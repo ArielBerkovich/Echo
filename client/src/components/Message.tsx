@@ -20,16 +20,26 @@ import {
 
 // A "joined the channel" / "created this channel" log line.
 export function SystemMessage({ m }) {
-  const { t } = useI18n();
-  const systemBody = {
-    "created this channel": t("createdThisChannel"),
-    "was added": t("wasAdded"),
-    "was removed from the channel": t("wasRemovedFromChannel"),
-  }[m.body] || m.body;
+  const { t, language } = useI18n();
+  const renamedChannel = String(m.body || "").match(/^renamed this channel to (#[^\s]+)$/);
+  const systemKey = {
+    "created this channel": "createdThisChannel",
+    joined: "joinedChannel",
+    "was added": "wasAdded",
+    "was removed from the channel": "wasRemovedFromChannel",
+  }[m.body] || (renamedChannel ? "renamedThisChannelTo" : null);
+  const authorName = m.author?.displayName || t("someone");
+  const systemBody = systemKey
+    ? t(systemKey).replace("{channel}", renamedChannel?.[1] || "")
+    : m.body;
+  const hebrewSystemBody = language === "he"
+    ? systemBody.replace("{name}", authorName)
+    : systemBody;
+  const usesHebrewNamePlacement = language === "he" && Boolean(systemKey);
   return (
     <div className="system-msg">
       <span className="system-text">
-        <strong>{m.author?.displayName || t("someone")}</strong> {systemBody}
+        {usesHebrewNamePlacement ? hebrewSystemBody : <><strong>{authorName}</strong> {hebrewSystemBody}</>}
       </span>
       <span className="system-time">{formatTime(m.createdAt)}</span>
     </div>
@@ -83,7 +93,7 @@ function Message({
   canPin = true,
   canQuote = false,
 }) {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const isMine = m.author?.id === currentUserId;
   // A forward is an immutable snapshot of the source message. Its sender may
   // delete their copy, but must not be able to alter the forwarded content.
@@ -194,8 +204,8 @@ function Message({
         }}
       />
       <div className="msg-edit-actions" data-testid="message-edit-actions">
-        <button type="button" className="btn-secondary" onClick={onEditCancel}>Cancel</button>
-        <button type="button" className="btn-primary" disabled={!editing.draft.trim()} onClick={onEditSave}>Save</button>
+        <button type="button" className="btn-secondary" onClick={onEditCancel}>{t("cancel")}</button>
+        <button type="button" className="btn-primary" disabled={!editing.draft.trim()} onClick={onEditSave}>{t("save")}</button>
       </div>
     </div>
   ) : (
@@ -208,7 +218,7 @@ function Message({
     >
       {cardMarkup?.before && <div dangerouslySetInnerHTML={{ __html: renderMarkdown(cardMarkup.before) }} />}
       {!cardMarkup && m.body && <div dangerouslySetInnerHTML={{ __html: decorateGroupMentions(renderMarkdown(displayGroupMentions(m.body, m.mentionedGroups), { mentionedChannels: m.mentionedChannels }), m.mentionedGroups) }} />}
-      {m.editedAt && <span className="edited-label"> (edited)</span>}
+      {m.editedAt && <span className="edited-label"> ({t("edited")})</span>}
       {messageCard && <Card card={messageCard} usersById={usersById} />}
     </div>
   );
@@ -448,7 +458,7 @@ function Message({
       <div className="content">
         {m.pinnedAt && (
           <div className="pinned-indicator">
-            <PinIcon /> Pinned
+            <PinIcon /> {t("pinned")}
           </div>
         )}
         {!grouped && (
@@ -468,16 +478,16 @@ function Message({
 
         {m.broadcastToChannel && !inThread && (
           <div className="broadcast-reply-label">
-            <span>Reply sent to the channel</span>
+            <span>{t("replySentToChannel")}</span>
             <button
               type="button"
               className="broadcast-reply-thread-link"
               data-testid={`message-${mid}-view-thread`}
-              aria-label="View thread"
+              aria-label={t("viewThread")}
               onClick={() => onOpenThread?.()}
             >
               <span aria-hidden="true"><ReplyIcon /></span>
-              <span>View thread</span>
+              <span>{t("viewThread")}</span>
             </button>
           </div>
         )}
@@ -501,14 +511,14 @@ function Message({
                 </span>
                 {m.forwardedFrom.messageId && (canJumpToForward?.(m.forwardedFrom) ? (
                   <button type="button" className="forwarded-link" onClick={(event) => { event.currentTarget.blur(); onJump?.(m.forwardedFrom); }}>
-                    <span>View original</span>
+                    <span>{t("viewOriginal")}</span>
                     <ArrowUpRight aria-hidden="true" />
                   </button>
                 ) : m.forwardedFrom.channelType === "public" ? (
-                  <span className="forwarded-noaccess" title="You don't have access to the channel this was forwarded from">· original not accessible</span>
+                  <span className="forwarded-noaccess" title={t("originalNotAccessible")}>{t("originalNotAccessible")}</span>
                 ) : null)}
               </div>
-              <div className="forwarded-message-label">Forwarded message</div>
+              <div className="forwarded-message-label">{t("forwardedMessage")}</div>
               {m.retro ? <RetroBoard messageId={m.id} retro={m.retro} usersById={usersById} currentUserId={currentUserId} creatorId={m.author?.id} /> : messageBody}
               {messageAttachments}
             </div>
@@ -517,14 +527,14 @@ function Message({
           <>
             {!surveyState && !retroState && messageBody}
             {surveyState && (
-              <div className="survey-card" data-testid={`survey-${m.id}`} aria-label="Survey">
+              <div className="survey-card" data-testid={`survey-${m.id}`} aria-label={t("survey")}>
                 {(() => {
                   const totalVotes = surveyState.options.reduce((sum, option) => sum + (option.voteCount ?? option.votes?.length ?? 0), 0);
                   return (
                     <>
                       <div className="survey-card-header">
-                        <span className="survey-card-badge"><ChartNoAxesColumnIncreasing size={15} strokeWidth={2.2} /> Survey</span>
-                        <span className="survey-card-meta">{totalVotes} {totalVotes === 1 ? "vote" : "votes"}</span>
+                        <span className="survey-card-badge"><ChartNoAxesColumnIncreasing size={15} strokeWidth={2.2} /> {t("survey")}</span>
+                        <span className="survey-card-meta">{t(totalVotes === 1 ? "surveyVoteCountOne" : "surveyVoteCountMany").replace("{count}", String(totalVotes))}</span>
                       </div>
                       <strong className="survey-question">{surveyState.question}</strong>
                 <div className="survey-options">
@@ -545,8 +555,8 @@ function Message({
                   })}
                 </div>
                 <div className="survey-card-footer">
-                  <span>{surveyState.allowMultiple ? "Select all that apply" : "Select one option"}</span>
-                  {surveyVoting && <LoaderCircle className="survey-spinner" size={14} aria-label="Saving vote" />}
+                  <span>{surveyState.allowMultiple ? t("surveySelectMultiple") : t("surveySelectOne")}</span>
+                  {surveyVoting && <LoaderCircle className="survey-spinner" size={14} aria-label={t("savingVote")} />}
                 </div>
                 {surveyVoteError && <span className="survey-error" role="alert">{surveyVoteError}</span>}
                     </>
@@ -562,7 +572,7 @@ function Message({
         {m.passwordHelpRequest && usersById?.get(currentUserId)?.isAdmin && (
           <div className="password-help-action">
             {m.passwordHelpRequest.status === "issued" ? (
-              <span className="password-help-issued">One-time password issued and posted below ✓</span>
+              <span className="password-help-issued">{t("oneTimePasswordIssued")}</span>
             ) : (
               <button
                 type="button"
@@ -572,8 +582,8 @@ function Message({
                 onClick={issuePasswordAndReply}
               >
                 {issuingPassword || m.passwordHelpRequest.status === "issuing"
-                  ? "Issuing…"
-                  : `Issue OTP for @${m.passwordHelpRequest.username} and reply`}
+                  ? t("issuing")
+                  : t("issueOtpAndReply").replace("{username}", m.passwordHelpRequest.username)}
               </button>
             )}
             {passwordActionError && <span className="error small">{passwordActionError}</span>}
@@ -609,8 +619,8 @@ function Message({
                   type="button"
                   className="reaction add react-toggle"
                   data-testid={`message-${mid}-add-reaction`}
-                  aria-label="Add another reaction"
-                  title="Add another reaction"
+                  aria-label={t("addReaction")}
+                  title={t("addReaction")}
                   onClick={onReact}
                 >
                   <EmojiAddIcon />
@@ -623,7 +633,7 @@ function Message({
                 type="button"
                 className="thread-indicator"
                 data-testid={`message-${mid}-reply-count`}
-                aria-label={`Open thread with ${m.replyCount} ${m.replyCount === 1 ? "reply" : "replies"}${replyNames ? ` from ${replyNames}` : ""}`}
+                aria-label={`${t("openThreadWithCount").replace("{count}", String(m.replyCount))}${replyNames ? ` ${t("fromPeople").replace("{names}", replyNames)}` : ""}`}
                 onClick={onOpenThread}
               >
                 <span className="thread-participants" aria-hidden="true">
@@ -642,8 +652,8 @@ function Message({
                     );
                   })}
                 </span>
-                <span className="thread-reply-link">
-                  {m.replyCount === 1 ? t("oneReply") : `${m.replyCount} ${t("replies")}`}
+                <span className="thread-reply-link" dir={language === "he" ? "rtl" : "ltr"}>
+                  {m.replyCount === 1 ? t("oneReply") : t("replyCount").replace("{count}", String(m.replyCount))}
                 </span>
               </button>
             )}
@@ -721,7 +731,7 @@ function Message({
           <div className="menu-overlay" onMouseDown={() => setLinkAction(null)} />
           <div
             className="msg-menu menu-fixed"
-            dir={undefined}
+            dir={document.documentElement.dataset.interfaceDirection || undefined}
             data-testid={`message-${mid}-link-menu`}
             role="menu"
             aria-label={t("linkActions")}
@@ -765,7 +775,7 @@ function Message({
           <div
             ref={menuRef}
             className="msg-menu menu-fixed"
-            dir={undefined}
+            dir={document.documentElement.dataset.interfaceDirection || undefined}
             style={menuPosition || { visibility: "hidden" }}
             role="menu"
             aria-label={t("messageActions")}

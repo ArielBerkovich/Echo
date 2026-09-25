@@ -5,6 +5,7 @@ import Message from "./Message.js";
 import Modal from "./Modal.js";
 import { Check, Plus, XIcon } from "lucide-react";
 import useRecipientPickerKeyboard from "./useRecipientPickerKeyboard.js";
+import { useI18n } from "../lib/i18n.js";
 
 const MAX_DESTINATIONS = 10;
 const MAX_VISIBLE_SEARCH_RESULTS = 20;
@@ -57,6 +58,7 @@ function uniqueById(items) {
 // Recipient-first forwarding flow. Search and selection stay synchronous so
 // keyboard input always acts on exactly what is visible.
 export default function ForwardModal({ message, channels = [], dms = [], users = [], customEmojis = [], channelId = "", channelType = "public", currentUserId = "", usersById = new Map(), renderMarkdown, emojiMap = {}, onAddCustomEmoji, onForward, onSuccess, onClose }) {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState([]);
   const [note, setNote] = useState("");
@@ -85,8 +87,8 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
       id: dm.id,
       kind: "dm",
       userId: isGroup ? undefined : dm.withUser.id,
-      label: participants.map((person) => person.displayName || person.username).join(", ") || "Direct message",
-      handle: isGroup ? "Group direct message" : "Direct message",
+      label: participants.map((person) => person.displayName || person.username).join(", ") || t("directMessage"),
+      handle: isGroup ? t("groupDirectMessage") : t("directMessage"),
       avatarUrl: !isGroup ? dm.withUser?.avatarUrl || null : null,
       username: !isGroup ? dm.withUser?.username || "" : "",
       isGroup,
@@ -120,8 +122,8 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
     if (!hasQuery) return [];
 
     return [
-      { label: "Channels", items: matches.filter((item) => item.kind === "channel") },
-      { label: "People and direct messages", items: matches.filter((item) => item.kind !== "channel") },
+      { label: "channels", items: matches.filter((item) => item.kind === "channel") },
+      { label: "peopleAndDirectMessages", items: matches.filter((item) => item.kind !== "channel") },
     ].filter((group) => group.items.length);
   }, [destinationGroups, hasQuery, query]);
 
@@ -198,7 +200,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
 
   return (
     <Modal
-      title="Forward to"
+      title={t("forwardTo")}
       className="forward-modal"
       closeClassName="forward-close"
       closeDisabled={isSubmitting}
@@ -214,18 +216,18 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
           <section className="forward-recipient-picker" aria-labelledby="forward-recipient-heading">
             <div className="forward-destination-heading">
               <div>
-                <strong id="forward-recipient-heading">Send to</strong>
-                {selected.length > 0 && <span>{`${selected.length} recipient${selected.length === 1 ? "" : "s"} selected`}</span>}
+                <strong id="forward-recipient-heading">{t("sendTo")}</strong>
+                {selected.length > 0 && <span>{t("recipientsSelected").replace("{count}", String(selected.length))}</span>}
               </div>
-              <small>{selected.length} of {MAX_DESTINATIONS}</small>
+              <small>{t("recipientsLimit").replace("{count}", String(selected.length)).replace("{max}", String(MAX_DESTINATIONS))}</small>
             </div>
 
             {selected.length > 0 && (
-              <div className="forward-selected-chips" aria-label="Selected recipients">
+              <div className="forward-selected-chips" aria-label={t("selectedRecipients")}>
                 {selected.map((destination) => (
                   <span className="forward-chip" key={destinationKey(destination)}>
                     <span>{labelFor(destination)}</span>
-                    <button type="button" className="chip-remove" aria-label={`Remove ${labelFor(destination)}`} onClick={() => removeDestination(destination)} disabled={isSubmitting}>
+                    <button type="button" className="chip-remove" aria-label={t("removeRecipient").replace("{recipient}", labelFor(destination))} onClick={() => removeDestination(destination)} disabled={isSubmitting}>
                       <XIcon size={13} aria-hidden="true" />
                     </button>
                   </span>
@@ -246,10 +248,10 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
               onFocus={() => setSearchFocused(true)}
               onBlur={handleSearchBlur}
               onKeyDown={handleSearchKeyDown}
-              placeholder="Search people and channels"
+              placeholder={t("searchPeopleAndChannels")}
               autoFocus
               disabled={!destinationGroups.all.length || isSubmitting}
-              aria-label="Search people and channels"
+              aria-label={t("searchPeopleAndChannels")}
               role="combobox"
               aria-autocomplete="list"
               aria-controls="forward-destination-list"
@@ -258,12 +260,12 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
             />
 
             {showResultList && (flatResults.length > 0 || hasQuery || selected.length > 0) && (
-              <div id="forward-destination-list" className="forward-destination-list" data-testid="forward-destination-list" role="listbox" aria-label="Recipient search results">
+              <div id="forward-destination-list" className="forward-destination-list" data-testid="forward-destination-list" role="listbox" aria-label={t("recipientSearchResults")}>
                 {!flatResults.length && hasQuery ? (
-                  <div className="people-empty">No recipients match “{query.trim()}”</div>
+                  <div className="people-empty">{t("noRecipientsMatch").replace("{query}", query.trim())}</div>
                 ) : resultGroups.map((group) => (
-                  <section className="forward-result-group" key={group.label} aria-label={group.label}>
-                    {hasQuery && <div className="forward-result-group-label">{group.label}</div>}
+                  <section className="forward-result-group" key={group.label} aria-label={t(group.label as never)}>
+                    {hasQuery && <div className="forward-result-group-label">{t(group.label as never)}</div>}
                     {group.items.map((destination) => {
                       const index = flatResults.indexOf(destination);
                       const isSelected = selectedKeys.has(destinationKey(destination));
@@ -314,10 +316,10 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
               onSend={submit}
               sendDisabled={disabled}
               allowEmptySend
-              sendAriaLabel="Forward message"
-              sendTitle="Forward message"
+              sendAriaLabel={t("forwardMessage")}
+              sendTitle={t("forwardMessage")}
               sendTestId="forward-send-selected"
-              placeholder="Add context for the recipient…"
+              placeholder={t("addForwardContext")}
               showSchedule={false}
               showSend
               showAttachments={false}

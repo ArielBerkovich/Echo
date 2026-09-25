@@ -95,13 +95,14 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
           title={t("clearAllActivity")}
         >
           <Trash2Icon size={15} strokeWidth={1.8} />
-          <span>{clearMutation.isPending ? "Clearing…" : "Clear all"}</span>
+          <span>{clearMutation.isPending ? t("clearing") : t("clearAll")}</span>
         </button>
       ) : null}
     >
       <FeedContent
         loading={loading}
         items={displayItems}
+        loadingLabel={t("loading")}
         emptyTitle={t("noActivityYet")}
         emptyMessage={t("activityEmpty")}
       >
@@ -123,16 +124,16 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
               }
             }}
           >
-            {it.unread && <span className="activity-unread-dot" aria-label="Unread" />}
+            {it.unread && <span className="activity-unread-dot" aria-label={t("unread")} />}
             <Avatar
-              name={activityAuthor(it)}
+              name={activityAuthor(it, t)}
               src={it.kind === "reaction_group" && it.reactionItems.length > 1 ? null : it.author?.avatarUrl}
               size={36}
             />
             <div className="content">
               <FeedMessage
-                author={activityAuthor(it)}
-                context={activityContext(it)}
+                author={activityAuthor(it, t)}
+                context={activityContext(it, t)}
                 time={formatDateTime(it.createdAt)}
                 body={it.body}
                 renderMarkdown={(body) => decorateGroupMentions(
@@ -146,8 +147,8 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
               type="button"
               className="activity-dismiss feed-icon-action"
               data-testid={`activity-delete-${it.id}`}
-              title="Delete activity"
-              aria-label="Delete activity"
+              title={t("deleteActivity")}
+              aria-label={t("deleteActivity")}
               onClick={(event) => {
                 event.stopPropagation();
                 restoreFocusAfterDismissRef.current = true;
@@ -162,9 +163,9 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
       </FeedLayout>
       {confirmClear ? (
         <ConfirmDialog
-          title="Clear all activity?"
-          message="This will remove all current activity from your feed. The original messages will not be deleted."
-          confirmLabel="Clear all"
+          title={t("clearActivityTitle")}
+          message={t("clearActivityMessage")}
+          confirmLabel={t("clearAll")}
           danger
           onCancel={() => setConfirmClear(false)}
           onConfirm={() => {
@@ -178,40 +179,40 @@ export default function ActivityFeed({ user, users = [], customEmojis = [], onJu
   );
 }
 
-function kindLabel(it) {
-  if (it.kind === "broadcast") return "📣 notified the channel";
-  if (it.kind === "reply") return "replied in a thread";
-  if (it.kind === "reaction") return `reacted ${it.emoji || ""} to your message`;
-  return "mentioned you";
+function kindLabel(it, t) {
+  if (it.kind === "broadcast") return t("notifiedChannel");
+  if (it.kind === "reply") return t("repliedInThread");
+  if (it.kind === "reaction") return t("reactedToMessage").replace("{emoji}", it.emoji || "");
+  return t("mentionedYou");
 }
 
-function activityContext(item) {
-  if (item.kind === "channel_add") return `added you to #${item.channelName}`;
-  if (item.kind === "channel_remove") return `removed you from #${item.channelName}`;
+function activityContext(item, t) {
+  const location = item.channelType === "dm" ? t("inDirectMessage") : t("inChannel").replace("{channel}", item.channelName);
+  if (item.kind === "broadcast") return t("notifiedChannel").replace("{location}", location);
+  if (item.kind === "channel_add") return t("addedYouToChannel").replace("{channel}", item.channelName);
+  if (item.kind === "channel_remove") return t("removedYouFromChannel").replace("{channel}", item.channelName);
   if (item.kind === "reaction_group") {
-    const { emojis } = reactionGroupSummary(item);
-    const location = item.channelType === "dm" ? "in a DM" : `in #${item.channelName}`;
-    return `reacted with ${emojis} to your message ${location}`;
+    const { emojis } = reactionGroupSummary(item, t);
+    return t("reactedWith").replace("{emojis}", emojis).replace("{location}", location);
   }
-  const location = item.channelType === "dm" ? "in a DM" : `in #${item.channelName}`;
-  return `${kindLabel(item)} ${location}`;
+  return `${kindLabel(item, t)} ${location}`;
 }
 
-function activityAuthor(item) {
-  if (item.kind === "reaction_group") return reactionGroupSummary(item).actors;
+function activityAuthor(item, t) {
+  if (item.kind === "reaction_group") return reactionGroupSummary(item, t).actors;
   return item.author?.displayName || "unknown";
 }
 
-function reactionGroupSummary(item) {
-  const actors = [...new Set(item.reactionItems.map((reaction) => reaction.author?.displayName || "Someone"))];
+function reactionGroupSummary(item, t) {
+  const actors = [...new Set(item.reactionItems.map((reaction) => reaction.author?.displayName || t("someone")))];
   const emojis = [...new Set(item.reactionItems.map((reaction) => reaction.emoji).filter(Boolean))];
   const actorLabel = actors.length <= 2
-    ? actors.join(" and ")
-    : `${actors.slice(0, 2).join(", ")}, and ${actors.length - 2} other${actors.length - 2 === 1 ? "" : "s"}`;
+    ? actors.join(` ${t("and")} `)
+    : `${actors.slice(0, 2).join(", ")}, ${t("and")} ${actors.length - 2} ${actors.length - 2 === 1 ? t("other") : t("others")}`;
   const emojiLabel = emojis.length <= 2
-    ? emojis.join(" and ")
-    : `${emojis.slice(0, 2).join(", ")}, and ${emojis.length - 2} more`;
-  return { actors: actorLabel || "Someone", emojis: emojiLabel || "an emoji" };
+    ? emojis.join(` ${t("and")} `)
+    : `${emojis.slice(0, 2).join(", ")}, ${t("and")} ${emojis.length - 2} ${t("more")}`;
+  return { actors: actorLabel || t("someone"), emojis: emojiLabel || t("anEmoji") };
 }
 
 function groupReactionActivities(items) {

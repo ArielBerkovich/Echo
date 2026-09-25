@@ -100,7 +100,7 @@ test.describe("post-login forms are keyboard operable", () => {
     await modal.getByPlaceholder("Option 1").pressSequentially("Now");
     await modal.getByPlaceholder("Option 2").pressSequentially("Later");
     await pressEnter(modal.getByLabel("Allow multiple selections"));
-    const send = modal.getByRole("button", { name: "Send survey" });
+    const send = modal.getByRole("button", { name: "Send a survey" });
     await tabTo(page, send);
     await page.keyboard.press("Enter");
     await expect(page.locator(".survey-question").filter({ hasText: `Keyboard survey ${fixture.suffix}` })).toBeVisible();
