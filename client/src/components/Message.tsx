@@ -20,18 +20,26 @@ import {
 
 // A "joined the channel" / "created this channel" log line.
 export function SystemMessage({ m }) {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const renamedChannel = String(m.body || "").match(/^renamed this channel to (#[^\s]+)$/);
-  const systemBody = {
-    "created this channel": t("createdThisChannel"),
-    joined: t("joinedChannel"),
-    "was added": t("wasAdded"),
-    "was removed from the channel": t("wasRemovedFromChannel"),
-  }[m.body] || (renamedChannel ? t("renamedThisChannelTo").replace("{channel}", renamedChannel[1]) : m.body);
+  const systemKey = {
+    "created this channel": "createdThisChannel",
+    joined: "joinedChannel",
+    "was added": "wasAdded",
+    "was removed from the channel": "wasRemovedFromChannel",
+  }[m.body] || (renamedChannel ? "renamedThisChannelTo" : null);
+  const authorName = m.author?.displayName || t("someone");
+  const systemBody = systemKey
+    ? t(systemKey).replace("{channel}", renamedChannel?.[1] || "")
+    : m.body;
+  const hebrewSystemBody = language === "he"
+    ? systemBody.replace("{name}", authorName)
+    : systemBody;
+  const usesHebrewNamePlacement = language === "he" && Boolean(systemKey);
   return (
     <div className="system-msg">
       <span className="system-text">
-        <strong>{m.author?.displayName || t("someone")}</strong> {systemBody}
+        {usesHebrewNamePlacement ? hebrewSystemBody : <><strong>{authorName}</strong> {hebrewSystemBody}</>}
       </span>
       <span className="system-time">{formatTime(m.createdAt)}</span>
     </div>
