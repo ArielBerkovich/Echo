@@ -37,6 +37,9 @@ function createPendingAttachment(file) {
 
 function revokePreview(attachment) {
   if (attachment?.previewUrl?.startsWith("blob:")) URL.revokeObjectURL(attachment.previewUrl);
+  if (attachment?.originalPreviewUrl?.startsWith("blob:") && attachment.originalPreviewUrl !== attachment.previewUrl) {
+    URL.revokeObjectURL(attachment.originalPreviewUrl);
+  }
 }
 
 export function useAttachments({ captureScreenDrops, onError }) {
@@ -180,6 +183,53 @@ export function useAttachments({ captureScreenDrops, onError }) {
     });
   }, []);
 
+  const editPending = useCallback(async (key, file) => {
+    if (!file?.type.startsWith("image/")) return false;
+    const sizeError = uploadSizeError([file]);
+    if (sizeError) {
+      onErrorRef.current?.(sizeError);
+      return false;
+    }
+    const current = pendingRef.current.find((attachment) => attachment.key === key);
+    if (!current) return false;
+    onErrorRef.current?.(null);
+    setUploading(true);
+    try {
+      const [dimensions, { attachments }] = await Promise.all([
+        readImageSize(file),
+        api.uploadFiles([file]),
+      ]);
+      const previewUrl = URL.createObjectURL(file);
+      setPending((previous) => previous.map((attachment) => {
+        if (attachment.key !== key) return attachment;
+        const originalPreviewUrl = attachment.originalPreviewUrl || attachment.previewUrl;
+        const originalUrl = attachment.originalUrl || attachment.url;
+        if (attachment.previewUrl?.startsWith("blob:") && attachment.previewUrl !== originalPreviewUrl) {
+          URL.revokeObjectURL(attachment.previewUrl);
+        }
+        return {
+          ...(attachments[0] || {}),
+          width: dimensions?.width,
+          height: dimensions?.height,
+          name: file.name,
+          size: file.size,
+          contentType: file.type,
+          isImage: true,
+          previewUrl,
+          originalPreviewUrl,
+          originalUrl,
+          tempId: attachment.tempId,
+        };
+      }));
+      return true;
+    } catch (error) {
+      onErrorRef.current?.(error.message);
+      return false;
+    } finally {
+      setUploading(false);
+    }
+  }, []);
+
   return {
     pending,
     uploading,
@@ -190,5 +240,6 @@ export function useAttachments({ captureScreenDrops, onError }) {
     removePending,
     clearAttachments,
     replacePending,
+    editPending,
   };
 }

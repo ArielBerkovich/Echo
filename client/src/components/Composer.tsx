@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Suspense, forwardRef, lazy, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { Node } from "@tiptap/core";
@@ -28,7 +28,7 @@ import Modal, { ModalActions } from "./Modal.js";
 import { useMentionGate } from "../lib/useMentionGate.js";
 import { useI18n } from "../lib/i18n.js";
 import { MENTION_QUERY_RE, peopleSearchSuggestions } from "../lib/mentions.js";
-import { CalendarClock, ChartNoAxesColumnIncreasing, ChevronRight, FileIcon, LayoutPanelTop, Paperclip, X } from "lucide-react";
+import { CalendarClock, ChartNoAxesColumnIncreasing, ChevronRight, FileIcon, LayoutPanelTop, Paperclip, Pencil, X } from "lucide-react";
 import {
   LinkIcon, OrderedListIcon, BulletListIcon, QuoteIcon, CodeIcon, CodeBlockIcon,
   PlusIcon, SmileyIcon, SendIcon,
@@ -39,6 +39,8 @@ const SCHEDULE_PRESETS = [
   { label: "inOneHour", getWhen: () => new Date(Date.now() + 60 * 60 * 1000) },
   { label: "tomorrowAtNine", getWhen: tomorrow9am },
 ];
+
+const ImageEditorModal = lazy(() => import("./ImageEditorModal"));
 
 const MAX_SURVEY_OPTION_CHARACTERS = 80;
 const MENTION_POPUP_WIDTH = 320;
@@ -334,7 +336,9 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     removePending,
     clearAttachments,
     replacePending,
+    editPending,
   } = useAttachments({ captureScreenDrops, onError });
+  const [imageToEdit, setImageToEdit] = useState(null);
 
   const isDm = channel.type === "dm";
   const isGroupDm = isDm && (
@@ -1643,7 +1647,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
           {pending.map((a) => (
             <div className={`pending-att ${a.isImage ? "is-image" : "is-file"}`} key={a.key}>
               {a.isImage ? (
-                <PendingImage attachment={a} />
+                <PendingImage attachment={a} onEdit={() => setImageToEdit(a)} editLabel={t("editImage")} />
               ) : (
                 <div className={`pending-file${a.name?.startsWith("pasted.") ? " is-pasted" : ""}`}>
                   <span className="pending-file-icon" aria-hidden="true"><FileIcon size={18} strokeWidth={1.8} /></span>
@@ -1658,6 +1662,18 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
           ))}
           {uploading && <div className="pending-att uploading">{t("uploading")}</div>}
         </div>
+      )}
+
+      {imageToEdit && (
+        <Suspense fallback={<div className="custom-image-editor-shell"><div className="image-editor-loading" role="status">{t("loading")}</div></div>}>
+          <ImageEditorModal
+            attachment={imageToEdit}
+            onClose={() => setImageToEdit(null)}
+            onSave={async (file) => {
+              if (await editPending(imageToEdit.key, file)) setImageToEdit(null);
+            }}
+          />
+        </Suspense>
       )}
 
       {showFormatting && (
@@ -1879,7 +1895,14 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
 
 export default Composer;
 
-function PendingImage({ attachment }) {
+function PendingImage({ attachment, onEdit, editLabel }) {
   const src = useAuthUrl(attachment.previewUrl || attachment.url);
-  return <img src={src || undefined} alt={attachment.name} />;
+  return (
+    <>
+      <img src={src || undefined} alt={attachment.name} />
+      <button type="button" className="pending-image-edit" onClick={onEdit} title={editLabel} aria-label={editLabel}>
+        <Pencil size={13} strokeWidth={2.3} aria-hidden="true" />
+      </button>
+    </>
+  );
 }
