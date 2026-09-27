@@ -29,6 +29,66 @@ test("explains and rejects an eleventh message attachment before uploading", asy
   expect(uploadRequests).toBe(0);
 });
 
+test("opens the image editor with localized controls and supports crop and undo/redo", async ({ page }) => {
+  await page.goto("/");
+  await page.getByTestId("composer-attachments").setInputFiles({
+    name: "editor-fixture.png",
+    mimeType: "image/png",
+    // A small valid PNG keeps this test independent of external image assets.
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+      "base64",
+    ),
+  });
+
+  await page.getByRole("button", { name: "Edit image" }).click();
+  const dialog = page.getByRole("dialog", { name: "Edit image" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Undo" })).toBeDisabled();
+  await expect(dialog.getByRole("button", { name: "Redo" })).toBeDisabled();
+  await expect(dialog.getByRole("button", { name: "Select" })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Pen" })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Text" })).toBeVisible();
+
+  await dialog.getByRole("button", { name: "Rectangle" }).click();
+  await expect(dialog.getByRole("button", { name: "Undo" })).toBeEnabled();
+  await page.keyboard.press("Control+z");
+  await expect(dialog.getByRole("button", { name: "Redo" })).toBeEnabled();
+  await page.keyboard.press("Control+Shift+z");
+  await expect(dialog.getByRole("button", { name: "Redo" })).toBeDisabled();
+
+  await dialog.getByRole("button", { name: "Crop" }).click();
+  await expect(dialog.getByRole("button", { name: "Cancel crop" })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Apply crop" })).toBeVisible();
+  await dialog.getByRole("button", { name: "Cancel crop" }).click();
+  await expect(dialog.getByRole("button", { name: "Apply crop" })).toHaveCount(0);
+
+  await dialog.getByRole("button", { name: "Cancel" }).click();
+  await expect(dialog).toBeHidden();
+});
+
+test("translates image editor controls into Hebrew", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("echo.language", "he"));
+  await page.goto("/");
+  await page.getByTestId("composer-attachments").setInputFiles({
+    name: "editor-hebrew-fixture.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+      "base64",
+    ),
+  });
+
+  await page.getByRole("button", { name: "עריכת תמונה" }).click();
+  const dialog = page.getByRole("dialog", { name: "עריכת תמונה" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "בחירה" })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "עט" })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "ביטול הפעולה" })).toBeDisabled();
+  await expect(dialog.getByRole("button", { name: "ביצוע מחדש" })).toBeDisabled();
+  await dialog.getByRole("button", { name: "ביטול", exact: true }).click();
+});
+
 test("keeps code attachments compact until expanded and highlights them full-screen", async ({ page }) => {
   const attachment = (await uploadAsToken(page, fixture.alice.token, {
     name: "preview.ts",
