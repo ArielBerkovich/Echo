@@ -14697,6 +14697,11 @@ html[dir="rtl"] .channel-browser-members {
     box-sizing: border-box;
   }
 
+  html[dir="rtl"] .app-nav .rail-more-menu {
+    left: 8px;
+    right: 8px;
+  }
+
   .app-nav {
     position: fixed;
     inset: auto 0 0;
