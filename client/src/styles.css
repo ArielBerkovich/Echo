@@ -14785,7 +14785,7 @@ html[dir="rtl"] .channel-browser-members {
   .rail-account-actions {
     width: auto;
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     gap: 0;
   }
 
