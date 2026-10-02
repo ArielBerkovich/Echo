@@ -5134,10 +5134,9 @@ html[dir="rtl"] .members-panel-person-copy .channel-details-person-handle {
 }
 .thread-body > div > .message {
   width: calc(100% + (2 * var(--thread-body-gutter)));
-  margin-left: calc(-1 * var(--thread-body-gutter));
+  margin-inline-start: calc(-1 * var(--thread-body-gutter));
   box-sizing: border-box;
-  padding-left: calc(var(--thread-body-gutter) + 14px);
-  padding-right: calc(var(--thread-body-gutter) + 14px);
+  padding-inline: calc(var(--thread-body-gutter) + 14px);
 }
 .thread-divider {
   display: flex;

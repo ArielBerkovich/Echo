@@ -891,6 +891,8 @@ test("supports a Hebrew RTL thread panel, composer, actions, and jump control", 
   await expect(thread).toBeVisible();
   await expect(thread.locator(".message").filter({ hasText: rootBody })).toBeVisible();
   await expect.poll(() => thread.locator(".message").first().evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
+  const threadBody = page.getByTestId("thread-body");
+  await expect.poll(() => threadBody.evaluate((element) => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(1);
 
   const threadComposer = thread.getByTestId("composer-editor");
   await threadComposer.fill("תגובה חדשה בעברית");
@@ -905,7 +907,6 @@ test("supports a Hebrew RTL thread panel, composer, actions, and jump control", 
   await expect(menu).toHaveAttribute("dir", "rtl");
   await expect.poll(() => menu.evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
 
-  const threadBody = page.getByTestId("thread-body");
   await threadBody.evaluate((element) => {
     element.scrollTop = 0;
     element.dispatchEvent(new Event("scroll", { bubbles: true }));
