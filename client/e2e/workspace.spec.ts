@@ -1001,7 +1001,7 @@ test("localizes profile presence and message action in Hebrew", async ({ page })
   const profile = page.getByTestId("profile-modal");
   await expect(profile).toBeVisible();
   await expect(profile.getByTestId("profile-presence")).toContainText(/אונליין|אופליין/);
-  await expect(profile.getByTestId("profile-message")).toHaveText("הודעה");
+  await expect(profile.getByTestId("profile-message")).toHaveText("שליחת הודעה");
 });
 
 test("opens a DM at the latest message when there is no unread history", async ({ page }) => {

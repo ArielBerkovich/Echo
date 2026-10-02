@@ -2,9 +2,19 @@ import { expect, test } from "@playwright/test";
 import { requestAsToken, seedWorkspaceFixture, slug } from "./helpers.js";
 
 let fixture: Awaited<ReturnType<typeof seedWorkspaceFixture>>;
+let changedBobDisplayName = false;
 
 test.beforeEach(async ({ page }) => {
   fixture = await seedWorkspaceFixture(page);
+  changedBobDisplayName = false;
+});
+
+test.afterEach(async ({ page }) => {
+  if (!changedBobDisplayName) return;
+  await requestAsToken(page, fixture.bob.token, "/users/me", {
+    method: "PATCH",
+    body: { displayName: fixture.bob.displayName },
+  });
 });
 
 async function selectRtl(page) {
@@ -58,6 +68,7 @@ test("isolates a Hebrew DM name in the English interface", async ({ page }) => {
     method: "PATCH",
     body: { displayName: hebrewName },
   });
+  changedBobDisplayName = true;
 
   await page.goto(`/dms/${encodeURIComponent(fixture.dmChannel.id)}`);
   const title = page.getByTestId("channel-title");
@@ -471,7 +482,7 @@ test("anchors an empty Hebrew composer and mention popup to the RTL side", async
   expect(selectedGeometry.x + selectedGeometry.width).toBeGreaterThan(selectedEditor.x + selectedEditor.width - 140);
 });
 
-test("places the RTL schedule dialog to the right of the mobile drawer", async ({ page }) => {
+test("centers the RTL schedule dialog in the mobile viewport", async ({ page }) => {
   await page.setViewportSize({ width: 742, height: 900 });
   await page.goto(`/channels/${fixture.projectChannel.name}`);
   await selectRtl(page);
@@ -484,13 +495,10 @@ test("places the RTL schedule dialog to the right of the mobile drawer", async (
   await expect(dialog).toBeVisible();
   const [box, viewport] = await Promise.all([
     dialog.boundingBox(),
-    page.evaluate(() => ({
-      width: window.innerWidth,
-      drawerWidth: Math.min(300, window.innerWidth - 88),
-    })),
+    page.evaluate(() => ({ width: window.innerWidth })),
   ]);
   expect(box).not.toBeNull();
-  expect(box.x).toBeGreaterThanOrEqual(viewport.drawerWidth);
+  expect(Math.abs(box.x + box.width / 2 - viewport.width / 2)).toBeLessThan(2);
   expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1);
 });
 

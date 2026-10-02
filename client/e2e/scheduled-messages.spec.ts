@@ -47,3 +47,23 @@ test("can cancel a scheduled message and undo the cancellation", async ({ page }
   await expect(modal).toContainText(body);
   await expect(modal.getByRole("button", { name: "Cancel scheduled message", exact: true })).toBeVisible();
 });
+
+test("aligns the scheduled-message banner RTL in Hebrew", async ({ page }) => {
+  await requestAsToken(page, fixture.alice.token, "/scheduled", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body: `Scheduled RTL ${uniqueSuffix("message")}`,
+      scheduledFor: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+    },
+  });
+
+  await page.addInitScript(() => localStorage.setItem("echo.language", "he"));
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-interface-direction", "rtl");
+  const banner = page.locator(".scheduled-banner");
+  await expect(banner).toBeVisible();
+  await expect.poll(() => banner.evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
+  await expect.poll(() => banner.evaluate((element) => getComputedStyle(element).textAlign)).toBe("right");
+  await expect.poll(() => banner.locator(".scheduled-banner-copy").evaluate((element) => getComputedStyle(element).textAlign)).toBe("right");
+});

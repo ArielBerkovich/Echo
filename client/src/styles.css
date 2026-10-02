@@ -11637,6 +11637,11 @@ html[dir="rtl"] .send-menu button {
 html[dir="rtl"] .scheduled-banner,
 html[data-interface-direction="rtl"] .scheduled-banner {
   direction: rtl;
+  text-align: right;
+}
+html[dir="rtl"] .scheduled-banner-copy,
+html[data-interface-direction="rtl"] .scheduled-banner-copy {
+  text-align: right;
 }
 
 /* Schedule dialog */
