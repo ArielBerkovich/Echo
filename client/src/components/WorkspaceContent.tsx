@@ -12,22 +12,26 @@ const SavedFeed = lazy(() => import("./SavedFeed.js"));
 const SearchResults = lazy(() => import("./SearchResults.js"));
 const SettingsModal = lazy(() => import("./SettingsModal.js"));
 
-export default function WorkspaceContent({ view, groups, search, browse, feeds, conversation, channelViewRef }) {
+export default function WorkspaceContent({ isRestoringLocation = false, view, groups, search, browse, feeds, conversation, channelViewRef }) {
   const { t } = useI18n();
   const activeChannel = conversation.channel;
 
   return (
     <div className="chat-pane">
-      <ActiveWorkspaceView
-        view={view}
-        groups={groups}
-        search={search}
-        browse={browse}
-        feeds={feeds}
-        conversation={conversation}
-        channelViewRef={channelViewRef}
-        t={t}
-      />
+      {isRestoringLocation ? (
+        <div className="empty-pane" data-testid="workspace-route-loading" role="status">{t("loading")}</div>
+      ) : (
+        <ActiveWorkspaceView
+          view={view}
+          groups={groups}
+          search={search}
+          browse={browse}
+          feeds={feeds}
+          conversation={conversation}
+          channelViewRef={channelViewRef}
+          t={t}
+        />
+      )}
     </div>
   );
 }

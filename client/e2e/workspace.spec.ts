@@ -62,6 +62,33 @@ test("restores an authenticated session into the default channel", async ({ page
   }
 });
 
+test("keeps the requested page selected while restoring the workspace after refresh", async ({ page }) => {
+  await page.goto("/groups");
+  await expect(page.getByTestId("groups-panel")).toBeVisible();
+
+  let releaseChannelRequest;
+  const channelRequestGate = new Promise((resolve) => { releaseChannelRequest = resolve; });
+  let notifyChannelRequestStarted;
+  const channelRequestStarted = new Promise((resolve) => { notifyChannelRequestStarted = resolve; });
+  await page.route("**/api/channels**", async (route) => {
+    notifyChannelRequestStarted();
+    await channelRequestGate;
+    await route.continue();
+  });
+
+  try {
+    await page.reload();
+    await channelRequestStarted;
+    await expect(page.getByTestId("rail-home")).not.toHaveAttribute("aria-current", "page");
+    await expect(page.getByTestId("workspace-route-loading")).toBeVisible();
+    await expect(page.getByTestId("groups-panel")).toHaveCount(0);
+  } finally {
+    releaseChannelRequest();
+  }
+
+  await expect(page.getByTestId("groups-panel")).toBeVisible();
+});
+
 test("does not allow Echo images to start native drags", async ({ page }) => {
   await page.goto("/");
   const logo = page.getByTestId("rail-brand").locator("img");
