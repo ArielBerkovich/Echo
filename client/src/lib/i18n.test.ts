@@ -65,10 +65,17 @@ describe("Hebrew scheduled message translations", () => {
   });
 });
 
+describe("Hebrew starred navigation translation", () => {
+  it("keeps the Starred section distinct from saved messages", () => {
+    assert.equal(translations.he.starred, "מועדפים");
+    assert.equal(translations.he.savedMessages, "הודעות שמורות");
+  });
+});
+
 describe("Hebrew user profile translations", () => {
   it("uses gender-neutral presence labels and translates the message action", () => {
     assert.equal(translations.he.online, "אונליין");
     assert.equal(translations.he.offline, "אופליין");
-    assert.equal(translations.he.message, "הודעה");
+    assert.equal(translations.he.message, "שליחת הודעה");
   });
 });
