@@ -53,7 +53,7 @@ test("derives the interface direction from the selected language", async ({ page
 });
 
 test("isolates a Hebrew DM name in the English interface", async ({ page }) => {
-  const hebrewName = "אריאל ברקוביץ'";
+  const hebrewName = "שם לדוגמה'";
   await requestAsToken(page, fixture.bob.token, "/users/me", {
     method: "PATCH",
     body: { displayName: hebrewName },
