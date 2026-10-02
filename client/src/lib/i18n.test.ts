@@ -13,6 +13,12 @@ describe("Hebrew survey translations", () => {
 });
 
 describe("Hebrew emoji picker translations", () => {
+  it("keeps Emoji Mart locale labels in the central translation map", () => {
+    assert.equal(translations.he.emojiMart.categories.people, "סמיילי ואנשים");
+    assert.equal(translations.he.emojiMart.categories.frequent, "אחרונים");
+    assert.equal(translations.en.emojiMart.categories.people, "Smileys & People");
+  });
+
   it("translates the reaction picker actions", () => {
     assert.equal(translations.he.moreEmojis, "עוד אימוג׳ים");
     assert.equal(translations.he.chooseReaction, "בחירת תגובה");

@@ -6,6 +6,7 @@ import RetroBoard from "./RetroBoard.js";
 import Avatar from "./Avatar.js";
 import Attachments from "./Attachments.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
+import { languageDirection } from "../lib/languages.js";
 import { getSocket } from "../socket.js";
 import { formatThreadDate, formatTime } from "../lib/time.js";
 import { replyParticipantNames, visibleReplyParticipants } from "../lib/replyParticipants.js";
@@ -94,6 +95,7 @@ function Message({
   canQuote = false,
 }) {
   const { t, language } = useI18n();
+  const direction = languageDirection(language);
   const isMine = m.author?.id === currentUserId;
   // A forward is an immutable snapshot of the source message. Its sender may
   // delete their copy, but must not be able to alter the forwarded content.
@@ -652,7 +654,7 @@ function Message({
                     );
                   })}
                 </span>
-                <span className="thread-reply-link" dir={language === "he" ? "rtl" : "ltr"}>
+                <span className="thread-reply-link" dir={direction}>
                   {m.replyCount === 1 ? t("oneReply") : t("replyCount").replace("{count}", String(m.replyCount))}
                 </span>
               </button>

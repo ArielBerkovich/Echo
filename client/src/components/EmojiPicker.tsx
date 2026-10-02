@@ -1,7 +1,8 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAuthUrls } from "../lib/useAuthUrl.js";
-import { useI18n } from "../lib/i18n.js";
+import { translations, useI18n } from "../lib/i18n.js";
+import { languageDirection } from "../lib/languages.js";
 
 // A people/group glyph for the avatar-emoji category tab — distinct from the
 // default smiley emoji-mart uses for custom categories.
@@ -13,36 +14,6 @@ const GIT_ICON =
 
 const CUSTOM_ICON =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5s1.25 2 3.5 2 3.5-2 3.5-2M9 9h.01M15 9h.01"/><path d="M19 2v4M17 4h4"/></svg>';
-
-const HEBREW_EMOJI_I18N = {
-  search: "חיפוש",
-  search_no_results_1: "אוי לא!",
-  search_no_results_2: "לא נמצא אימוג׳י כזה",
-  pick: "בחירת אימוג׳י…",
-  add_custom: "הוספת אימוג׳י מותאם אישית",
-  categories: {
-    activity: "פעילויות",
-    custom: "מותאמים אישית",
-    flags: "דגלים",
-    foods: "מזון ומשקאות",
-    frequent: "אחרונים",
-    nature: "חיות וטבע",
-    objects: "אובייקטים",
-    people: "סמיילי ואנשים",
-    places: "טיולים ומקומות",
-    search: "תוצאות חיפוש",
-    symbols: "סמלים",
-  },
-  skins: {
-    choose: "בחירת גוון עור כברירת מחדל",
-    1: "ברירת מחדל",
-    2: "בהיר",
-    3: "בהיר-בינוני",
-    4: "בינוני",
-    5: "בינוני-כהה",
-    6: "כהה",
-  },
-};
 
 const EmojiMartPicker = lazy(async () => {
   const [{ default: data }, { default: Picker }] = await Promise.all([
@@ -63,6 +34,8 @@ export default function EmojiPicker({ onPick, onClose, customEmojis = [], onAddC
   const ref = useRef(null);
   const [viewportStyle, setViewportStyle] = useState(null);
   const { language, t } = useI18n();
+  const direction = languageDirection(language);
+  const emojiMartI18n = translations[language].emojiMart;
   const authUrls = useAuthUrls(customEmojis.map((e) => e.url));
   const customEmojiByName = useMemo(
     () => new Map(customEmojis.map((emoji) => [emoji.name, emoji])),
@@ -145,11 +118,11 @@ export default function EmojiPicker({ onPick, onClose, customEmojis = [], onAddC
   }, [anchorRef, onClose]);
 
   useEffect(() => {
-    if (language !== "he" || !ref.current) return undefined;
+    if (direction !== "rtl" || !ref.current) return undefined;
     const wrapper = ref.current;
     let shadowObserver;
     const categoryLabels = new Set([
-      ...Object.values(HEBREW_EMOJI_I18N.categories),
+      ...Object.values(emojiMartI18n.categories),
       t("people"),
       t("customEmojiCategory"),
     ]);
@@ -209,7 +182,7 @@ export default function EmojiPicker({ onPick, onClose, customEmojis = [], onAddC
       wrapperObserver.disconnect();
       shadowObserver?.disconnect();
     };
-  }, [language, t]);
+  }, [direction, emojiMartI18n, language, t]);
 
   // emoji-mart custom categories: Echo's built-in Git set, workspace uploads,
   // and user-avatar emoji (:username:), each kept distinct in the picker.
@@ -242,7 +215,7 @@ export default function EmojiPicker({ onPick, onClose, customEmojis = [], onAddC
     <div
       className={`emoji-popup-wrap${anchorRef ? " is-viewport-positioned" : ""}${anchorRef?.current?.closest(".modal") ? " is-modal-positioned" : ""}`}
       ref={ref}
-      dir={language === "he" ? "rtl" : "ltr"}
+      dir={direction}
       style={anchorRef ? (viewportStyle || { visibility: "hidden" }) : undefined}
     >
       <Suspense fallback={<div className="emoji-picker-loading" aria-hidden="true" />}>
@@ -251,8 +224,8 @@ export default function EmojiPicker({ onPick, onClose, customEmojis = [], onAddC
           key={`${language}:${customEmojis.length}:${[...authUrls.values()].join(",")}`}
           custom={custom}
           locale={language}
-          dir={language === "he" ? "rtl" : "ltr"}
-          i18n={language === "he" ? HEBREW_EMOJI_I18N : undefined}
+          dir={direction}
+          i18n={emojiMartI18n}
           theme={mode === "dark" ? "dark" : "light"}
           previewPosition="none"
           skinTonePosition="search"

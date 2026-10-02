@@ -450,6 +450,35 @@ export const translations = {
     moreEmojis: "More emojis",
     chooseReaction: "Choose a reaction",
     customEmojiCategory: "Custom",
+    emojiMart: {
+      search: "Search",
+      search_no_results_1: "Oh no!",
+      search_no_results_2: "No emojis found",
+      pick: "Pick an emoji…",
+      add_custom: "Add custom emoji",
+      categories: {
+        activity: "Activity",
+        custom: "Custom",
+        flags: "Flags",
+        foods: "Food & Drink",
+        frequent: "Frequently Used",
+        nature: "Animals & Nature",
+        objects: "Objects",
+        people: "Smileys & People",
+        places: "Travel & Places",
+        search: "Search Results",
+        symbols: "Symbols",
+      },
+      skins: {
+        choose: "Choose default skin tone",
+        1: "Default",
+        2: "Light",
+        3: "Medium-Light",
+        4: "Medium",
+        5: "Medium-Dark",
+        6: "Dark",
+      },
+    },
     channelNameRequired: "Channel name is required.",
     generalChannelReserved: "“general” is reserved for the default channel.",
     channelNameFormatHint: "Use lowercase letters, numbers, and single dashes only.",
@@ -1129,6 +1158,35 @@ export const translations = {
     moreEmojis: "עוד אימוג׳ים",
     chooseReaction: "בחירת תגובה",
     customEmojiCategory: "מותאמים אישית",
+    emojiMart: {
+      search: "חיפוש",
+      search_no_results_1: "אוי לא!",
+      search_no_results_2: "לא נמצא אימוג׳י כזה",
+      pick: "בחירת אימוג׳י…",
+      add_custom: "הוספת אימוג׳י מותאם אישית",
+      categories: {
+        activity: "פעילויות",
+        custom: "מותאמים אישית",
+        flags: "דגלים",
+        foods: "מזון ומשקאות",
+        frequent: "אחרונים",
+        nature: "חיות וטבע",
+        objects: "אובייקטים",
+        people: "סמיילי ואנשים",
+        places: "טיולים ומקומות",
+        search: "תוצאות חיפוש",
+        symbols: "סמלים",
+      },
+      skins: {
+        choose: "בחירת גוון עור כברירת מחדל",
+        1: "ברירת מחדל",
+        2: "בהיר",
+        3: "בהיר-בינוני",
+        4: "בינוני",
+        5: "בינוני-כהה",
+        6: "כהה",
+      },
+    },
     channelNameRequired: "נדרש שם ערוץ.",
     generalChannelReserved: "„general” שמור לערוץ ברירת המחדל.",
     channelNameFormatHint: "יש להשתמש באותיות קטנות באנגלית, מספרים ומקפים בודדים בלבד.",
@@ -1567,7 +1625,9 @@ export const translations = {
   },
 } as const;
 
-type TranslationKey = keyof typeof translations.en;
+type TranslationKey = {
+  [Key in keyof typeof translations.en]: (typeof translations.en)[Key] extends string ? Key : never;
+}[keyof typeof translations.en];
 type Translate = (key: TranslationKey) => string;
 
 const ERROR_TRANSLATIONS: Record<string, TranslationKey> = {
