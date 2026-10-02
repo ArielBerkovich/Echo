@@ -156,7 +156,6 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
   function addDestination(destination) {
     if (selectedKeys.has(destinationKey(destination)) || selected.length >= MAX_DESTINATIONS) return;
     setSelected((previous) => [...previous, destination]);
-    setQuery("");
     setActiveIndex(0);
     requestAnimationFrame(() => searchRef.current?.focus());
   }

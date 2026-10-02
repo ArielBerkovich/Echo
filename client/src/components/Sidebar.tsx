@@ -163,7 +163,7 @@ export default function Sidebar({
     const active = activeChannel?.type === "dm" && activeChannel?.id === conv.id;
     const unread = conv.unread > 0;
     const isStarred = people.length === 1 ? starredIds.has(people[0].id) : starredChannelIds.has(conv.id);
-    const label = conv.isSelf ? `${conv.withUser.displayName} (you)` : dmLabel(conv);
+    const label = conv.isSelf ? `${conv.withUser.displayName} (${t("you")})` : dmLabel(conv);
     const displayLabel = truncateDmTitle(label);
     return (
       <div key={conv.id} className={`channel-item dm-item ${active ? "active" : ""} ${unread ? "unread" : ""}`} data-testid={`dm-row-${slug(conv.withUser.displayName)}`}>

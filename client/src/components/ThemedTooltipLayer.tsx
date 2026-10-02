@@ -21,6 +21,9 @@ function tooltipTarget(node: EventTarget | null) {
 }
 
 function tooltipPlacementOrder(target: HTMLElement) {
+  // The message action tooltip should stay above its trigger; when it cannot
+  // fit there, prefer a side placement instead of dropping below the toolbar.
+  if (target.matches(".message-more-action")) return ["above", "right"] as const;
   // The sidebar and channel-header action groups share the same vertical
   // rhythm, so keep their tooltips consistently above the controls.
   if (target.closest(".sidebar-actions, .header-actions, .dm-starred-toggle")) return ["above"] as const;
@@ -43,12 +46,15 @@ function tooltipPosition(target: HTMLElement, placement: TooltipState["placement
   const maxLeft = Math.max(window.innerWidth - TOOLTIP_EDGE - halfWidth, window.innerWidth / 2);
   const rightAligned = target.matches(".timeline-jump-button, .message-more-action, .header-action.leave") && placement === "above";
   const centeredLeft = rightAligned
-    ? rect.right - halfWidth
+    ? Math.min(Math.max(rect.right - halfWidth, minLeft), maxLeft)
     : Math.min(
       Math.max(rect.left + rect.width / 2, minLeft),
       maxLeft,
     );
-  if (placement === "right") return { left: rect.right + 10, top: rect.top + rect.height / 2, placement };
+  if (placement === "right") {
+    const maxLeft = Math.max(TOOLTIP_EDGE, window.innerWidth - (width || TOOLTIP_MAX_WIDTH) - TOOLTIP_EDGE);
+    return { left: Math.min(rect.right + 10, maxLeft), top: rect.top + rect.height / 2, placement };
+  }
   if (placement === "left") return { left: rect.left - 10, top: rect.top + rect.height / 2, placement };
   return { left: centeredLeft, top: placement === "above" ? rect.top - 10 : rect.bottom + 10, placement };
 }

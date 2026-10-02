@@ -41,7 +41,16 @@ test("keeps a message active while hovering and opening its action menu", async 
   await actions.getByTestId(`message-${id}-forward`).hover();
   await expect(message).toHaveClass(/actions-hovered/);
 
-  await actions.getByTestId(`message-${id}-more`).click();
+  const moreActions = actions.getByTestId(`message-${id}-more`);
+  await moreActions.hover();
+  const tooltip = page.locator(".echo-tooltip");
+  await expect(tooltip).toBeVisible();
+  await expect(tooltip).toHaveClass(/echo-tooltip-(above|right)/);
+  const tooltipBox = await tooltip.boundingBox();
+  expect(tooltipBox).not.toBeNull();
+  expect(tooltipBox!.x).toBeGreaterThanOrEqual(12);
+  expect(tooltipBox!.x + tooltipBox!.width).toBeLessThanOrEqual(1268);
+  await moreActions.click();
   await expect(message).toHaveClass(/menu-open/);
 
   const menu = page.getByRole("menu", { name: "Message actions" });
@@ -50,6 +59,28 @@ test("keeps a message active while hovering and opening its action menu", async 
   await expect(menu.getByRole("menuitem", { name: "Forward message" })).toHaveCount(0);
   await menu.getByRole("menuitem", { name: "Copy message", exact: true }).hover();
   await expect(message).toHaveClass(/menu-open/);
+});
+
+test("keeps the message action tooltip visible near the left viewport edge", async ({ page }) => {
+  const { id, message } = await openFreshMessage(
+    page,
+    "tooltip-left-edge",
+    `Tooltip viewport edge ${fixture.suffix}`
+  );
+  await message.hover();
+  const moreActions = page.getByTestId(`message-${id}-more`);
+  await moreActions.evaluate((button) => {
+    Object.assign(button.style, { position: "fixed", left: "4px", right: "auto", top: "180px" });
+  });
+  await moreActions.hover();
+
+  const tooltip = page.locator(".echo-tooltip");
+  await expect(tooltip).toBeVisible();
+  await expect(tooltip).toHaveClass(/echo-tooltip-above/);
+  const tooltipBox = await tooltip.boundingBox();
+  expect(tooltipBox).not.toBeNull();
+  expect(tooltipBox!.x).toBeGreaterThanOrEqual(12);
+  expect(tooltipBox!.x + tooltipBox!.width).toBeLessThanOrEqual(1268);
 });
 
 test("supports arrow-key navigation in the message actions menu", async ({ page }) => {

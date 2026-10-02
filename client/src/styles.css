@@ -11581,7 +11581,7 @@ html[dir="rtl"] .send-menu button {
   align-items: center;
   gap: 10px;
   width: 100%;
-  text-align: left;
+  text-align: start;
   background: linear-gradient(135deg, var(--surface), var(--surface-2));
   border: 1px solid var(--border);
   border-radius: 12px 12px 0 0;
@@ -11634,6 +11634,10 @@ html[dir="rtl"] .send-menu button {
   font-size: 12px;
   font-weight: 750;
 }
+html[dir="rtl"] .scheduled-banner,
+html[data-interface-direction="rtl"] .scheduled-banner {
+  direction: rtl;
+}
 
 /* Schedule dialog */
 .schedule-presets {
@@ -11646,30 +11650,29 @@ html[dir="rtl"] .send-menu button {
    keep the schedule dialog visible when it is opened from an RTL composer. */
 .modal-backdrop.schedule-modal-backdrop,
 .modal-backdrop:has(.schedule-modal) {
-  /* Keep scheduling above navigation drawers and other app-level panels. */
+  /* Keep scheduling above navigation drawers and center it in the viewport. */
   z-index: 1100 !important;
   box-sizing: border-box;
-  justify-content: flex-start;
-  padding-left: calc(88px + 260px + 12px);
-  padding-right: 12px;
+  justify-content: center;
+  padding: 12px;
+}
+.schedule-modal {
+  text-align: start;
 }
 .modal-backdrop.schedule-modal-backdrop .schedule-modal,
 .modal-backdrop:has(.schedule-modal) .schedule-modal {
-  width: min(480px, calc(100vw - 88px - 260px - 24px));
-  max-width: calc(100vw - 88px - 260px - 24px);
+  width: min(480px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
 }
 @media (max-width: 760px) {
-  /* The mobile drawer remains on the physical left even in RTL. Reserve its
-     width so the dialog never opens underneath it. */
   .modal-backdrop.schedule-modal-backdrop,
   .modal-backdrop:has(.schedule-modal) {
-    --mobile-drawer-width: min(300px, calc(100vw - 88px));
-    padding-left: calc(var(--mobile-drawer-width) + 12px);
+    padding: 12px;
   }
   .modal-backdrop.schedule-modal-backdrop .schedule-modal,
   .modal-backdrop:has(.schedule-modal) .schedule-modal {
-    width: min(480px, calc(100vw - var(--mobile-drawer-width) - 24px));
-    max-width: calc(100vw - var(--mobile-drawer-width) - 24px);
+    width: min(480px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
     animation: none;
     transform: none;
   }
@@ -11749,7 +11752,7 @@ html[dir="rtl"] .send-menu button {
   justify-content: center;
   min-width: 20px;
   height: 20px;
-  margin-right: 2px;
+  margin-inline-end: 2px;
   padding: 0 5px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--accent) 16%, var(--surface));
@@ -12067,6 +12070,9 @@ html[dir="rtl"] .send-menu button {
   --rgb-accent: 37, 99, 235;
   overscroll-behavior: contain;
   touch-action: pan-y;
+}
+.emoji-popup-wrap[dir="rtl"] em-emoji-picker {
+  direction: rtl;
 }
 .emoji-popup-wrap.is-viewport-positioned em-emoji-picker {
   width: 100%;
@@ -15471,6 +15477,7 @@ html[dir="rtl"] .channel-browser-members {
     min-height: 48px;
     font-size: 17px;
   }
+
   .section-label {
     font-size: 13px;
   }
@@ -15505,20 +15512,11 @@ html[dir="rtl"] .channel-browser-members {
   .search-highlight {
     font-size: 17px;
   }
-  .composer-editor {
-    font-size: 19px;
-  }
-  .composer-input {
-    padding-block: 13px;
-  }
+
   .header-action,
   .channel-browser-create {
     min-height: 42px;
     font-size: 16px;
-  }
-  .settings-input,
-  .settings-page-body {
-    font-size: 17px;
   }
 }
 

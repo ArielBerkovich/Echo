@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import EmojiPicker from "./EmojiPicker.js";
 import { BUILT_IN_GIT_EMOJIS } from "../lib/gitEmojis.js";
+import { useI18n } from "../lib/i18n.js";
 
 const QUICK_REACTIONS = [
   { value: "👍", label: "thumbs up" },
@@ -30,6 +31,7 @@ function ReactionGlyph({ value }) {
 // The full emoji picker remains available for less common reactions.
 export default function ReactionPicker({ onPick, onClose, onExpand, expanded = false, customEmojis = [], onAddCustom, mode = "light" }) {
   const ref = useRef(null);
+  const { t, language } = useI18n();
 
   useEffect(() => {
     const focusTimer = window.setTimeout(() => ref.current?.querySelector("button")?.focus(), 0);
@@ -79,7 +81,7 @@ export default function ReactionPicker({ onPick, onClose, onExpand, expanded = f
   }
 
   return (
-    <div className="reaction-picker-quick" ref={ref} role="dialog" aria-label="Choose a reaction">
+    <div className="reaction-picker-quick" ref={ref} role="dialog" aria-label={t("chooseReaction")}>
       <div className="reaction-quick-grid">
         {QUICK_REACTIONS.slice(0, 4).map(({ value, label }) => (
           <button
@@ -118,7 +120,7 @@ export default function ReactionPicker({ onPick, onClose, onExpand, expanded = f
         ))}
       </div>
       <button type="button" className="reaction-more-button" onClick={showFullPicker}>
-        More emojis <span aria-hidden="true">→</span>
+        {t("moreEmojis")} <span aria-hidden="true">{language === "he" ? "←" : "→"}</span>
       </button>
     </div>
   );

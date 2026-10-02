@@ -596,7 +596,7 @@ function Message({
               <div className="reactions" aria-label="Message reactions">
                 {m.reactions.map((r) => {
                   const mine = r.users.includes(currentUserId);
-                  const tip = reactionTip(r.users, usersById, currentUserId, r.emoji);
+                  const tip = reactionTip(r.users, usersById, currentUserId, r.emoji, t);
                   return (
                     <button
                       type="button"
@@ -857,7 +857,7 @@ function areMessagePropsEqual(prev, next) {
 }
 
 // "Who reacted" text, e.g. "Alice, Bob and you reacted with 🎉".
-function reactionTip(userIds = [], usersById, currentUserId, emoji) {
+function reactionTip(userIds = [], usersById, currentUserId, emoji, t) {
   const byId = usersById || new Map();
   const others = [];
   let includesMe = false;
@@ -865,13 +865,21 @@ function reactionTip(userIds = [], usersById, currentUserId, emoji) {
     if (id === currentUserId) includesMe = true;
     else others.push(byId.get(id)?.displayName || "Someone");
   }
-  const names = includesMe ? [...others, "you"] : others; // keep "you" last
+  if (includesMe && others.length === 0) return t("youReactedWith").replace("{emoji}", emoji);
+  if (includesMe) {
+    if (others.length === 1) {
+      return t("oneOtherReactedWithYou").replace("{name}", others[0]).replace("{emoji}", emoji);
+    }
+    const names = others.length === 1 ? others[0] : `${others.slice(0, -1).join(", ")} ${t("and")} ${others[others.length - 1]}`;
+    return t("othersReactedWithYou").replace("{names}", names).replace("{emoji}", emoji);
+  }
+  const names = others;
   let who;
-  if (names.length === 0) who = "Someone";
+  if (names.length === 0) who = t("someone");
   else if (names.length === 1) who = names[0];
-  else if (names.length === 2) who = `${names[0]} and ${names[1]}`;
-  else who = `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
-  return `${who} reacted with ${emoji}`;
+  else if (names.length === 2) who = `${names[0]} ${t("and")} ${names[1]}`;
+  else who = `${names.slice(0, -1).join(", ")} ${t("and")} ${names[names.length - 1]}`;
+  return t("reactionByWithEmoji").replace("{who}", who).replace("{emoji}", emoji);
 }
 
 // A reaction value: a native emoji char, or a custom-emoji image for a known
