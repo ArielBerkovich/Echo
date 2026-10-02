@@ -52,6 +52,20 @@ test("derives the interface direction from the selected language", async ({ page
   await expect(page.locator("html")).toHaveAttribute("data-interface-direction", "rtl");
 });
 
+test("isolates a Hebrew DM name in the English interface", async ({ page }) => {
+  const hebrewName = "אריאל ברקוביץ'";
+  await requestAsToken(page, fixture.bob.token, "/users/me", {
+    method: "PATCH",
+    body: { displayName: hebrewName },
+  });
+
+  await page.goto(`/dms/${encodeURIComponent(fixture.dmChannel.id)}`);
+  const title = page.getByTestId("channel-title");
+  const isolatedName = title.locator("bdi[dir=auto]");
+  await expect(isolatedName).toHaveText(hebrewName);
+  await expect.poll(() => isolatedName.evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
+});
+
 test("migrates the legacy automatic direction preference to LTR", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem("echo.interfaceDirection", "rtl");

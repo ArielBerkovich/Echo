@@ -182,7 +182,7 @@ export default function Sidebar({
             online={people.length === 1 && onlineIds.has(people[0].id)}
             showPresence={!(["azure", "system"].includes(conv.withUser.username))}
           />
-          <span className="dm-name" aria-label={label}>{displayLabel}</span>
+          <span className="dm-name" aria-label={label}><bdi dir="auto">{displayLabel}</bdi></span>
         </button>
         <button
           className={`dm-remove ${isStarred ? "reserved" : ""}`}
