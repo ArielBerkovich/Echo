@@ -66,4 +66,5 @@ test("aligns the scheduled-message banner RTL in Hebrew", async ({ page }) => {
   await expect.poll(() => banner.evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
   await expect.poll(() => banner.evaluate((element) => getComputedStyle(element).textAlign)).toBe("right");
   await expect.poll(() => banner.locator(".scheduled-banner-copy").evaluate((element) => getComputedStyle(element).textAlign)).toBe("right");
+  await expect.poll(() => banner.locator(".scheduled-banner-action svg").evaluate((element) => getComputedStyle(element).transform)).not.toBe("none");
 });

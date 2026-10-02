@@ -11634,10 +11634,17 @@ html[dir="rtl"] .send-menu button {
   font-size: 12px;
   font-weight: 750;
 }
+.scheduled-banner-action svg {
+  transition: transform 160ms ease;
+}
 html[dir="rtl"] .scheduled-banner,
 html[data-interface-direction="rtl"] .scheduled-banner {
   direction: rtl;
   text-align: right;
+}
+html[dir="rtl"] .scheduled-banner-action svg,
+html[data-interface-direction="rtl"] .scheduled-banner-action svg {
+  transform: rotate(180deg);
 }
 html[dir="rtl"] .scheduled-banner-copy,
 html[data-interface-direction="rtl"] .scheduled-banner-copy {
