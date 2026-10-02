@@ -4959,11 +4959,11 @@ html[dir="rtl"] .members-panel-person-copy .channel-details-person-handle {
 .groups-panel-title { flex-wrap: wrap; }
 .groups-create-button { display: inline-flex; align-items: center; gap: 7px; min-height: 32px; padding: 0 10px; }
 .groups-panel-body { padding: 18px; background: color-mix(in srgb, var(--surface-2) 35%, var(--surface)); }
-.groups-panel-error { width: min(1180px, 100%); margin: 0 auto 12px; box-sizing: border-box; }
+.groups-panel-error { width: min(1200px, 100%); margin: 0 0 12px; box-sizing: border-box; }
 .groups-panel-layout {
   grid-template-columns: minmax(250px, 310px) minmax(0, 1fr);
-  width: min(1180px, 100%);
-  margin: 0 auto;
+  width: min(1200px, 100%);
+  margin: 0;
   border: 0;
   border-radius: 0;
   background: transparent;
