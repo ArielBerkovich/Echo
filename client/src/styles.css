@@ -8948,6 +8948,10 @@ html[data-mode="light"] .image-editor-tool.active { background: var(--active-sof
   background: color-mix(in srgb, var(--active-soft) 82%, transparent) !important;
   box-shadow: inset 3px 0 0 var(--accent), 0 0 0 1px var(--active-ring) !important;
 }
+html[dir="rtl"] .message.flash,
+html[data-interface-direction="rtl"] .message.flash {
+  box-shadow: inset -3px 0 0 var(--accent), 0 0 0 1px var(--active-ring) !important;
+}
 
 /* Transient notice (e.g. no access to a forwarded message's channel) */
 .toast {

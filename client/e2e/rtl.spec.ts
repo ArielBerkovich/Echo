@@ -87,6 +87,16 @@ test("migrates the legacy automatic direction preference to LTR", async ({ page 
   await expect.poll(() => page.evaluate(() => localStorage.getItem("echo.language"))).toBe("en");
 });
 
+test("places the focused message accent on the right in RTL", async ({ page }) => {
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await selectRtl(page);
+  await openProjectChannel(page);
+
+  const message = page.locator(".message").first();
+  await message.evaluate((element) => element.classList.add("flash"));
+  await expect.poll(() => message.evaluate((element) => getComputedStyle(element).boxShadow)).toContain("-3px 0px 0px 0px inset");
+});
+
 test("keeps Hebrew paragraphs RTL, including after a line break", async ({ page }) => {
   await page.goto(`/channels/${fixture.projectChannel.name}`);
   await selectRtl(page);
