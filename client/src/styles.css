@@ -15386,7 +15386,7 @@ html[data-theme="calm"] .channel-list::-webkit-scrollbar-track {
   .workspace-frame {
     --workspace-sidebar-edge: 328px;
     --workspace-search-offset: 0px;
-    grid-template-rows: 36px minmax(0, 1fr);
+    grid-template-rows: 34px minmax(0, 1fr);
   }
 
   .workspace-frame:has(.app-nav.no-sidebar) {
@@ -15399,7 +15399,7 @@ html[data-theme="calm"] .channel-list::-webkit-scrollbar-track {
   }
 
   .workspace-search {
-    height: 36px;
+    height: 34px;
   }
 
   .workspace-search-inner {
@@ -15464,7 +15464,7 @@ html[data-theme="calm"] .channel-list::-webkit-scrollbar-track {
 }
 
 .workspace-search .search-box-field {
-  height: 28px;
+  height: 26px;
   border-radius: 7px;
 }
 
