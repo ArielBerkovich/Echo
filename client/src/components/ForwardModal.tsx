@@ -17,14 +17,15 @@ function destinationKey(destination) {
 function fuzzyMatch(destination, query) {
   const normalizedQuery = query.trim().toLowerCase();
   if (!normalizedQuery) return false;
-  return destination.label.toLowerCase().includes(normalizedQuery)
-    || destination.handle.toLowerCase().includes(normalizedQuery);
+  const label = typeof destination.label === "string" ? destination.label.toLowerCase() : "";
+  const handle = typeof destination.handle === "string" ? destination.handle.toLowerCase() : "";
+  return label.includes(normalizedQuery) || handle.includes(normalizedQuery);
 }
 
 function matchRank(destination, query) {
   const normalizedQuery = query.trim().toLowerCase();
-  const label = destination.label.toLowerCase();
-  const handle = destination.handle.toLowerCase();
+  const label = typeof destination.label === "string" ? destination.label.toLowerCase() : "";
+  const handle = typeof destination.handle === "string" ? destination.handle.toLowerCase() : "";
   if (label === normalizedQuery) return 0;
   if (label.startsWith(normalizedQuery)) return 1;
   if (label.includes(normalizedQuery)) return 2;
@@ -88,7 +89,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
       kind: "dm",
       userId: isGroup ? undefined : dm.withUser.id,
       label: participants.map((person) => person.displayName || person.username).join(", ") || t("directMessage"),
-      handle: isGroup ? t("groupDirectMessage") : t("directMessage"),
+      handle: isGroup ? t("groupDm") : t("directMessage"),
       avatarUrl: !isGroup ? dm.withUser?.avatarUrl || null : null,
       username: !isGroup ? dm.withUser?.username || "" : "",
       isGroup,
