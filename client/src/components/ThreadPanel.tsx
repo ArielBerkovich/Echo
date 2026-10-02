@@ -10,6 +10,7 @@ import ConfirmDialog from "./ConfirmDialog.js";
 import { hasThreadJumpTarget, scrollThreadMessageIntoView } from "../lib/threadNavigation.js";
 import { CloseButton } from "./Button.js";
 import { useI18n } from "../lib/i18n.js";
+import { languageDirection } from "../lib/languages.js";
 
 // Right-hand thread view: the root message + its replies + a reply composer.
 // Reuses the full Message (reactions, forward, edit) and Composer (emoji, bold,
@@ -44,6 +45,7 @@ export default function ThreadPanel({
   composerFocusRequest = 0,
 }) {
   const { t, language } = useI18n();
+  const direction = languageDirection(language);
   const [rootMsg, setRootMsg] = useState(root); // local copy so live edits/reactions apply
   const [replies, setReplies] = useState([]);
   const [reactingTo, setReactingTo] = useState(null); // { id, rect } for the react picker
@@ -403,7 +405,7 @@ export default function ThreadPanel({
               />
               {index === 0 && (
                 <div className="thread-divider" data-testid="thread-reply-count">
-                  <span dir={language === "he" ? "rtl" : "ltr"}>{replies.length === 1 ? t("oneReply") : t("replyCount").replace("{count}", String(replies.length))}</span>
+                  <span dir={direction}>{replies.length === 1 ? t("oneReply") : t("replyCount").replace("{count}", String(replies.length))}</span>
                 </div>
               )}
             </Fragment>

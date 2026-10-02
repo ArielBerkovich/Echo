@@ -9,6 +9,8 @@ test("captures the Hebrew workspace for visual inspection", async ({ page }) => 
   await page.getByTestId("settings-language").selectOption("he");
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   await page.screenshot({ path: "test-results/hebrew-settings.png", fullPage: true });
+  await page.getByTestId("rail-dms").click();
+  await expect(page.locator(".dm-self-tag")).toHaveText("אני");
 
   await page.goto(`/channels/${fixture.projectChannel.name}`);
   await expect(page.getByTestId("channel-title")).toBeVisible();

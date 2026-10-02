@@ -1,6 +1,8 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAuthUrls } from "../lib/useAuthUrl.js";
+import { translations, useI18n } from "../lib/i18n.js";
+import { languageDirection } from "../lib/languages.js";
 
 // A people/group glyph for the avatar-emoji category tab — distinct from the
 // default smiley emoji-mart uses for custom categories.
@@ -31,6 +33,9 @@ const EmojiMartPicker = lazy(async () => {
 export default function EmojiPicker({ onPick, onClose, customEmojis = [], onAddCustom, mode = "light", anchorRef }) {
   const ref = useRef(null);
   const [viewportStyle, setViewportStyle] = useState(null);
+  const { language, t } = useI18n();
+  const direction = languageDirection(language);
+  const emojiMartI18n = translations[language].emojiMart;
   const authUrls = useAuthUrls(customEmojis.map((e) => e.url));
   const customEmojiByName = useMemo(
     () => new Map(customEmojis.map((emoji) => [emoji.name, emoji])),
@@ -112,6 +117,73 @@ export default function EmojiPicker({ onPick, onClose, customEmojis = [], onAddC
     return () => document.removeEventListener("mousedown", onDown);
   }, [anchorRef, onClose]);
 
+  useEffect(() => {
+    if (direction !== "rtl" || !ref.current) return undefined;
+    const wrapper = ref.current;
+    let shadowObserver;
+    const categoryLabels = new Set([
+      ...Object.values(emojiMartI18n.categories),
+      t("people"),
+      t("customEmojiCategory"),
+    ]);
+    const setRtl = (element) => {
+      if (!element) return;
+      if (element.getAttribute("dir") !== "rtl") element.setAttribute("dir", "rtl");
+      if (element.style.direction !== "rtl") element.style.direction = "rtl";
+    };
+    const applyDirection = () => {
+      const pickerElement = wrapper.querySelector("em-emoji-picker");
+      if (!pickerElement?.shadowRoot) return;
+      setRtl(pickerElement);
+      const pickerContent = pickerElement.shadowRoot.firstElementChild;
+      setRtl(pickerContent);
+      setRtl(pickerElement.shadowRoot.querySelector('input[type="search"]'));
+      const nav = pickerElement.shadowRoot.querySelector("#nav");
+      setRtl(nav);
+      if (nav) {
+        const categoryButtons = Array.from(nav.querySelectorAll("button[title]"))
+          .filter((button) => categoryLabels.has(button.getAttribute("title")));
+        const selectedIndex = categoryButtons.findIndex((button) => button.hasAttribute("aria-selected"));
+        const underline = nav.querySelector(".bar");
+        if (underline && selectedIndex >= 0) {
+          const transform = `scaleX(-1) translateX(${selectedIndex * 100}%)`;
+          if (underline.style.transform !== transform) underline.style.transform = transform;
+        }
+      }
+      const categoryButtons = Array.from(pickerElement.shadowRoot.querySelectorAll("button[title]"))
+        .filter((button) => categoryLabels.has(button.getAttribute("title")));
+      for (const button of categoryButtons) {
+        let layout = button.parentElement;
+        while (layout && layout !== pickerContent && !["flex", "grid", "inline-flex", "inline-grid"].includes(getComputedStyle(layout).display)) {
+          layout = layout.parentElement;
+        }
+        setRtl(layout);
+      }
+      for (const element of pickerElement.shadowRoot.querySelectorAll("*")) {
+        if (categoryLabels.has(element.textContent?.trim()) || categoryLabels.has(element.getAttribute("title"))) {
+          setRtl(element);
+          if (element.style.textAlign !== "right") element.style.textAlign = "right";
+        }
+      }
+      if (!shadowObserver) {
+        shadowObserver = new MutationObserver(applyDirection);
+        shadowObserver.observe(pickerElement.shadowRoot, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ["aria-selected"],
+        });
+      }
+    };
+    const wrapperObserver = new MutationObserver(applyDirection);
+    wrapperObserver.observe(wrapper, { childList: true, subtree: true });
+    applyDirection();
+    return () => {
+      wrapperObserver.disconnect();
+      shadowObserver?.disconnect();
+    };
+  }, [direction, emojiMartI18n, language, t]);
+
   // emoji-mart custom categories: Echo's built-in Git set, workspace uploads,
   // and user-avatar emoji (:username:), each kept distinct in the picker.
   const custom = useMemo(() => {
@@ -131,25 +203,29 @@ export default function EmojiPicker({ onPick, onClose, customEmojis = [], onAddC
     // Supplying an icon is also what tells emoji-mart this is a standalone
     // category; otherwise it groups it under the preceding custom category.
     if (uploaded.length)
-      cats.push({ id: "custom", name: "Custom", icon: { svg: CUSTOM_ICON }, emojis: uploaded.map(toEmoji) });
+      cats.push({ id: "custom", name: t("customEmojiCategory"), icon: { svg: CUSTOM_ICON }, emojis: uploaded.map(toEmoji) });
     // id must NOT be a built-in category id ("people" would inherit the smiley
     // icon) — use a distinct id and give it an explicit people icon.
     if (people.length)
-      cats.push({ id: "members", name: "People", icon: { svg: PEOPLE_ICON }, emojis: people.map(toEmoji) });
+      cats.push({ id: "members", name: t("people"), icon: { svg: PEOPLE_ICON }, emojis: people.map(toEmoji) });
     return cats.length ? cats : undefined;
-  }, [customEmojis, authUrls]);
+  }, [customEmojis, authUrls, t]);
 
   const picker = (
     <div
       className={`emoji-popup-wrap${anchorRef ? " is-viewport-positioned" : ""}${anchorRef?.current?.closest(".modal") ? " is-modal-positioned" : ""}`}
       ref={ref}
+      dir={direction}
       style={anchorRef ? (viewportStyle || { visibility: "hidden" }) : undefined}
     >
       <Suspense fallback={<div className="emoji-picker-loading" aria-hidden="true" />}>
         <EmojiMartPicker
           // Remount when the custom set changes so new emoji appear immediately.
-          key={`${customEmojis.length}:${[...authUrls.values()].join(",")}`}
+          key={`${language}:${customEmojis.length}:${[...authUrls.values()].join(",")}`}
           custom={custom}
+          locale={language}
+          dir={direction}
+          i18n={emojiMartI18n}
           theme={mode === "dark" ? "dark" : "light"}
           previewPosition="none"
           skinTonePosition="search"
@@ -180,7 +256,7 @@ export default function EmojiPicker({ onPick, onClose, customEmojis = [], onAddC
           onMouseDown={(e) => e.preventDefault()}
           onClick={onAddCustom}
         >
-          <span className="eac-plus">＋</span> Add custom emoji
+          <span className="eac-plus">＋</span> {t("addCustomEmoji")}
         </button>
       )}
     </div>

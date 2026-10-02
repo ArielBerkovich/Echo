@@ -28,7 +28,7 @@ export default function UserProfileModal({ user, currentUserId, online, isStarre
         {isDirectoryOnly ? <div className="profile-directory-source">Managed in RHSSO</div> : !(["azure", "system"].includes(user.username)) && (
           <div className={`profile-presence ${online ? "online" : ""}`} data-testid="profile-presence">
             <span className="profile-dot" />
-            {online ? t("active") : t("away")}
+            {online ? t("online") : t("offline")}
           </div>
         )}
       </div>
@@ -45,7 +45,7 @@ export default function UserProfileModal({ user, currentUserId, online, isStarre
             <StarIcon className="profile-star-icon" size={23} strokeWidth={1.8} fill={isStarred ? "currentColor" : "none"} />
           </button>
           <button type="button" className="btn-primary profile-message" data-testid="profile-message" onClick={() => onMessage(user)}>
-            Message
+            {t("message")}
           </button>
         </div>
       )}

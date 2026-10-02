@@ -992,6 +992,18 @@ test("opens a profile from an @mention in a message", async ({ page }) => {
   await expect(page.getByTestId("profile-modal")).toContainText(`@${fixture.alice.username}`);
 });
 
+test("localizes profile presence and message action in Hebrew", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("echo.language", "he"));
+  await page.goto("/");
+  await dmRow(page, fixture.bob.displayName).locator(".dm-open").click();
+  await page.getByTestId("channel-title").click();
+
+  const profile = page.getByTestId("profile-modal");
+  await expect(profile).toBeVisible();
+  await expect(profile.getByTestId("profile-presence")).toContainText(/אונליין|אופליין/);
+  await expect(profile.getByTestId("profile-message")).toHaveText("שליחת הודעה");
+});
+
 test("opens a DM at the latest message when there is no unread history", async ({ page }) => {
   const selfDm = await requestAsToken(page, fixture.alice.token, "/dms", {
     method: "POST",

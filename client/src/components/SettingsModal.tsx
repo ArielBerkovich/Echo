@@ -808,8 +808,8 @@ export default function SettingsModal({
           </section>}
 
           {activeTab === "workspace" && user.isAdmin && <section className="settings-section workspace-branding-section">
-            <h3>Workspace identity</h3>
-            <p className="settings-hint">Set the name and logo your team sees in the Echo navigation.</p>
+            <h3>{t("workspaceIdentity")}</h3>
+            <p className="settings-hint">{t("workspaceIdentityDescription")}</p>
             <div className="workspace-branding-layout">
               <div className="workspace-branding-showcase">
                 <div className="workspace-branding-preview">
@@ -817,30 +817,30 @@ export default function SettingsModal({
                     {workspaceLogoSrc ? <img src={workspaceLogoSrc} alt="" /> : <span className="workspace-branding-fallback">E</span>}
                   </div>
                   <div className="workspace-branding-preview-copy">
-                    <span>Preview</span>
-                    <strong>{workspaceName.trim() || "Your organization"}</strong>
-                    <small>Shown in the navigation and browser title.</small>
+                    <span>{t("preview")}</span>
+                    <strong>{workspaceName.trim() || t("workspaceOrganizationPlaceholder")}</strong>
+                    <small>{t("workspaceNavigationHint")}</small>
                   </div>
                 </div>
               </div>
               <div className="workspace-branding-form">
                 <div className="workspace-branding-field">
-                  <label className="settings-profile-field-label" htmlFor="workspace-name">Organization name</label>
+                  <label className="settings-profile-field-label" htmlFor="workspace-name">{t("organizationName")}</label>
                   <input id="workspace-name" className="settings-input" value={workspaceName} maxLength={80} onChange={(event) => setWorkspaceName(event.target.value)} />
                 </div>
                 <div className="workspace-branding-field">
-                  <span className="settings-profile-field-label">Logo</span>
+                  <span className="settings-profile-field-label">{t("logo")}</span>
                   <div className="workspace-logo-picker">
-                    <label className="workspace-upload-button" htmlFor="workspace-logo">Choose image</label>
-                    <span>{workspaceLogoFile?.name || (workspaceLogoUrl ? "Current logo selected" : "No logo selected")}</span>
+                    <label className="workspace-upload-button" htmlFor="workspace-logo">{t("chooseImage")}</label>
+                    <span>{workspaceLogoFile?.name || (workspaceLogoUrl ? t("currentLogoSelected") : t("noLogoSelected"))}</span>
                     <input id="workspace-logo" className="workspace-logo-input" type="file" accept="image/png,image/jpeg,image/webp" onChange={onWorkspaceLogoSelected} disabled={busy} />
                   </div>
-                  <p className="settings-hint">PNG, JPEG, or WebP · up to 10 MB.</p>
+                  <p className="settings-hint">{t("imageFileTypesHint")}</p>
                 </div>
                 <div className="workspace-branding-actions">
-                  <button type="button" className="btn-primary" disabled={busy} onClick={saveWorkspace}>Save branding</button>
-                  {workspaceLogoUrl && <button type="button" className="link-danger" disabled={busy} onClick={removeWorkspaceLogo}>Remove logo</button>}
-                  {saved && <span className="workspace-save-status">Saved ✓</span>}
+                  <button type="button" className="btn-primary" disabled={busy} onClick={saveWorkspace}>{t("saveBranding")}</button>
+                  {workspaceLogoUrl && <button type="button" className="link-danger" disabled={busy} onClick={removeWorkspaceLogo}>{t("removeLogo")}</button>}
+                  {saved && <span className="workspace-save-status">{t("saved")} ✓</span>}
                 </div>
               </div>
             </div>
@@ -849,8 +849,8 @@ export default function SettingsModal({
           {activeTab === "integrations" && user.isAdmin && <section className="integration-page">
             <div className="integration-page-heading">
               <div>
-                <h2>Integrations and connected apps</h2>
-                <p>Connect the tools your team uses every day.</p>
+                <h2>{t("integrationsTitle")}</h2>
+                <p>{t("integrationsDescription")}</p>
               </div>
             </div>
             <div className="integration-card-grid">
@@ -864,8 +864,8 @@ export default function SettingsModal({
                 </div>
               </button>
               <div className="integration-card-footer">
-                <button type="button" className="btn-secondary" onClick={() => { setJenkinsDownloadError(null); setJenkinsOptionsOpen(true); }}>Configure</button>
-                <span className="integration-card-status">Available</span>
+                <button type="button" className="btn-secondary" onClick={() => { setJenkinsDownloadError(null); setJenkinsOptionsOpen(true); }}>{t("configure")}</button>
+                <span className="integration-card-status">{t("available")}</span>
               </div>
             </article>
             {azureLoading && !azureIntegration && <article className="integration-card integration-card-placeholder"><p className="settings-hint">Loading integration…</p></article>}
@@ -880,7 +880,7 @@ export default function SettingsModal({
                 </div>
               </button>
               <div className="integration-card-footer">
-                <button type="button" className="btn-secondary" onClick={() => setAzureOptionsOpen(true)}>Configure</button>
+                <button type="button" className="btn-secondary" onClick={() => setAzureOptionsOpen(true)}>{t("configure")}</button>
               </div>
             </article>}
             <article className="integration-card allure-integration-card">
@@ -893,8 +893,8 @@ export default function SettingsModal({
                 </div>
               </button>
               <div className="integration-card-footer">
-                <button type="button" className="btn-secondary" onClick={() => setAllureOptionsOpen(true)}>{allureIntegration?.enabled ? "Configure" : "Connect"}</button>
-                <span className="integration-card-status">{allureIntegration?.enabled ? "Connected" : "Disabled"}</span>
+                <button type="button" className="btn-secondary" onClick={() => setAllureOptionsOpen(true)}>{allureIntegration?.enabled ? t("configure") : t("connect")}</button>
+                <span className="integration-card-status">{allureIntegration?.enabled ? "Connected" : t("disabled")}</span>
               </div>
             </article>
             </div>
@@ -953,7 +953,7 @@ export default function SettingsModal({
                     {allureProjects.length > 1 && <div className="allure-project-picker-actions"><button type="button" className="link-button" onClick={() => setAllureSelectedProjects([...allureProjects])}>Select all</button><button type="button" className="link-button" onClick={() => setAllureSelectedProjects([])}>Clear all</button></div>}
                   </div>
                   <div className="integration-actions">
-                    <button type="button" className="btn-primary" disabled={allureLoading || !allureProjects.length || (!allureIntegration?.enabled && !allureSelectedProjects.length)} title={!allureProjects.length ? "Discover projects before connecting" : undefined} onClick={saveAllure}>{allureIntegration?.enabled ? "Save and sync" : "Connect Allure"}</button>
+                    <button type="button" className="btn-primary" disabled={allureLoading || !allureProjects.length || (!allureIntegration?.enabled && !allureSelectedProjects.length)} title={!allureProjects.length ? "Discover projects before connecting" : undefined} onClick={saveAllure}>{allureIntegration?.enabled ? "Save and sync" : t("connectAllure")}</button>
                     {allureIntegration?.enabled && <button type="button" className="btn-secondary" disabled={allureLoading} onClick={syncAllure}>Sync projects</button>}
                   </div>
                   <div className="integration-danger-zone"><div><strong>Reset integration</strong><span>Remove the connection and archive its Echo channels.</span></div><button type="button" className="btn-danger-outline" disabled={allureLoading} onClick={() => setAllureResetOpen(true)}>Reset</button></div>
@@ -1192,6 +1192,7 @@ function ChangePassword() {
 // Admin-only: pick a user and issue them a one-time password. The admin shares
 // it; the user logs in with it and is forced to choose their own new password.
 function AdminPasswordReset({ users, currentUserId }) {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -1254,18 +1255,15 @@ function AdminPasswordReset({ users, currentUserId }) {
 
   return (
     <section className="settings-section">
-      <h3>Admin · Issue a one-time password</h3>
-      <p className="settings-hint">
-        For a member who's locked out: issue a one-time password, share it with them, and they'll be
-        prompted to set their own new password the next time they sign in.
-      </p>
+      <h3>{t("adminOtpTitle")}</h3>
+      <p className="settings-hint">{t("adminOtpDescription")}</p>
 
       <div className="admin-reset" data-testid="admin-reset">
         <div className="admin-user-pick">
           <input
             className="settings-input"
             data-testid="admin-reset-search"
-            placeholder="Find a user by name or username"
+            placeholder={t("findUserByName")}
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -1293,15 +1291,14 @@ function AdminPasswordReset({ users, currentUserId }) {
 
         {selected && !otp && (
           <button type="button" className="btn-primary" data-testid="admin-reset-issue" disabled={busy} onClick={issue}>
-            {busy ? "Issuing…" : `Issue one-time password for ${selected.displayName}`}
+            {busy ? t("issuing") : t("issueOtpFor").replace("{name}", selected.displayName)}
           </button>
         )}
 
         {otp && (
           <div className="otp-box">
             <div className="settings-saved">
-              One-time password for {selected.displayName} — share it securely. They'll set a new
-              password on next sign-in.
+              {t("shareOtpWith").replace("{name}", selected.displayName)}
             </div>
             <div className="token-box">
               <code className="token-value">{otp}</code>

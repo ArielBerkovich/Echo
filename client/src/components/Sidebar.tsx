@@ -163,7 +163,7 @@ export default function Sidebar({
     const active = activeChannel?.type === "dm" && activeChannel?.id === conv.id;
     const unread = conv.unread > 0;
     const isStarred = people.length === 1 ? starredIds.has(people[0].id) : starredChannelIds.has(conv.id);
-    const label = conv.isSelf ? `${conv.withUser.displayName} (you)` : dmLabel(conv);
+    const label = conv.isSelf ? `${conv.withUser.displayName} (${t("you")})` : dmLabel(conv);
     const displayLabel = truncateDmTitle(label);
     return (
       <div key={conv.id} className={`channel-item dm-item ${active ? "active" : ""} ${unread ? "unread" : ""}`} data-testid={`dm-row-${slug(conv.withUser.displayName)}`}>
@@ -182,7 +182,7 @@ export default function Sidebar({
             online={people.length === 1 && onlineIds.has(people[0].id)}
             showPresence={!(["azure", "system"].includes(conv.withUser.username))}
           />
-          <span className="dm-name" aria-label={label}>{displayLabel}</span>
+          <span className="dm-name" aria-label={label}><bdi dir="auto">{displayLabel}</bdi></span>
         </button>
         <button
           className={`dm-remove ${isStarred ? "reserved" : ""}`}
@@ -211,7 +211,7 @@ export default function Sidebar({
         >
           <Chevron collapsed={starredCollapsed && !f} />
           <StarIcon className="section-icon starred-icon" size={12} strokeWidth={2.5} aria-hidden="true" />
-          <span className="starred-label">{t("saved")}</span>
+          <span className="starred-label">{t("starred")}</span>
         </button>
       </div>
       {showStarred && starredChannels.map((c) => (

@@ -2,9 +2,19 @@ import { expect, test } from "@playwright/test";
 import { requestAsToken, seedWorkspaceFixture, slug } from "./helpers.js";
 
 let fixture: Awaited<ReturnType<typeof seedWorkspaceFixture>>;
+let changedBobDisplayName = false;
 
 test.beforeEach(async ({ page }) => {
   fixture = await seedWorkspaceFixture(page);
+  changedBobDisplayName = false;
+});
+
+test.afterEach(async ({ page }) => {
+  if (!changedBobDisplayName) return;
+  await requestAsToken(page, fixture.bob.token, "/users/me", {
+    method: "PATCH",
+    body: { displayName: fixture.bob.displayName },
+  });
 });
 
 async function selectRtl(page) {
@@ -52,6 +62,21 @@ test("derives the interface direction from the selected language", async ({ page
   await expect(page.locator("html")).toHaveAttribute("data-interface-direction", "rtl");
 });
 
+test("isolates a Hebrew DM name in the English interface", async ({ page }) => {
+  const hebrewName = "שם לדוגמה'";
+  await requestAsToken(page, fixture.bob.token, "/users/me", {
+    method: "PATCH",
+    body: { displayName: hebrewName },
+  });
+  changedBobDisplayName = true;
+
+  await page.goto(`/dms/${encodeURIComponent(fixture.dmChannel.id)}`);
+  const title = page.getByTestId("channel-title");
+  const isolatedName = title.locator("bdi[dir=auto]");
+  await expect(isolatedName).toHaveText(hebrewName);
+  await expect.poll(() => isolatedName.evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
+});
+
 test("migrates the legacy automatic direction preference to LTR", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem("echo.interfaceDirection", "rtl");
@@ -60,6 +85,16 @@ test("migrates the legacy automatic direction preference to LTR", async ({ page 
   await page.goto(`/channels/${fixture.projectChannel.name}`);
   await expect(page.locator("html")).toHaveAttribute("data-interface-direction", "ltr");
   await expect.poll(() => page.evaluate(() => localStorage.getItem("echo.language"))).toBe("en");
+});
+
+test("places the focused message accent on the right in RTL", async ({ page }) => {
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await selectRtl(page);
+  await openProjectChannel(page);
+
+  const message = page.locator(".message").first();
+  await message.evaluate((element) => element.classList.add("flash"));
+  await expect.poll(() => message.evaluate((element) => getComputedStyle(element).boxShadow)).toContain("-3px 0px 0px 0px inset");
 });
 
 test("keeps Hebrew paragraphs RTL, including after a line break", async ({ page }) => {
@@ -457,7 +492,7 @@ test("anchors an empty Hebrew composer and mention popup to the RTL side", async
   expect(selectedGeometry.x + selectedGeometry.width).toBeGreaterThan(selectedEditor.x + selectedEditor.width - 140);
 });
 
-test("places the RTL schedule dialog to the right of the mobile drawer", async ({ page }) => {
+test("centers the RTL schedule dialog in the mobile viewport", async ({ page }) => {
   await page.setViewportSize({ width: 742, height: 900 });
   await page.goto(`/channels/${fixture.projectChannel.name}`);
   await selectRtl(page);
@@ -470,13 +505,10 @@ test("places the RTL schedule dialog to the right of the mobile drawer", async (
   await expect(dialog).toBeVisible();
   const [box, viewport] = await Promise.all([
     dialog.boundingBox(),
-    page.evaluate(() => ({
-      width: window.innerWidth,
-      drawerWidth: Math.min(300, window.innerWidth - 88),
-    })),
+    page.evaluate(() => ({ width: window.innerWidth })),
   ]);
   expect(box).not.toBeNull();
-  expect(box.x).toBeGreaterThanOrEqual(viewport.drawerWidth);
+  expect(Math.abs(box.x + box.width / 2 - viewport.width / 2)).toBeLessThan(2);
   expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1);
 });
 
@@ -869,6 +901,8 @@ test("supports a Hebrew RTL thread panel, composer, actions, and jump control", 
   await expect(thread).toBeVisible();
   await expect(thread.locator(".message").filter({ hasText: rootBody })).toBeVisible();
   await expect.poll(() => thread.locator(".message").first().evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
+  const threadBody = page.getByTestId("thread-body");
+  await expect.poll(() => threadBody.evaluate((element) => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(1);
 
   const threadComposer = thread.getByTestId("composer-editor");
   await threadComposer.fill("תגובה חדשה בעברית");
@@ -883,7 +917,6 @@ test("supports a Hebrew RTL thread panel, composer, actions, and jump control", 
   await expect(menu).toHaveAttribute("dir", "rtl");
   await expect.poll(() => menu.evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
 
-  const threadBody = page.getByTestId("thread-body");
   await threadBody.evaluate((element) => {
     element.scrollTop = 0;
     element.dispatchEvent(new Event("scroll", { bubbles: true }));

@@ -6,6 +6,7 @@ import { TextSelection } from "@tiptap/pm/state";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import { api } from "../api.js";
+import { languageDirection } from "../lib/languages.js";
 import { getSocket } from "../socket.js";
 import { htmlToMarkdown } from "../htmlToMarkdown.js";
 import { markdownTextToComposerHtml } from "../markdownPaste.js";
@@ -228,6 +229,7 @@ function hasSendableContent(currentEditor) {
 // a `key={channel.id}` so switching channels yields a fresh, empty composer.
 const Composer = forwardRef(function Composer({ channel, sendChannel = null, parentId = null, alsoSendToChannel = false, onAlsoSendToChannelChange, users = [], channels = [], onFindChannels, customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, onSend, initialContent = null, sendDisabled = false, allowEmptySend = false, sendAriaLabel, sendTitle, sendTestId, onDraftChange, onEditSave, onEditCancel, editing = null, placeholder: customPlaceholder, mode = "light", captureScreenDrops = false, showSchedule = true, showSend = true, showAttachments = true, submitOnEnter = false, disabled = false }, ref) {
   const { language, t } = useI18n();
+  const direction = languageDirection(language);
   // Keep custom-emoji blob URLs alive for the full composer lifetime. The
   // picker unmounts immediately after a selection, so its URLs cannot safely
   // be used by an emoji node inserted into this editor.
@@ -346,13 +348,13 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     (channel.participants || []).length > 2
   );
   const targetChannelId = sendChannel?.id || channel.id;
-  const scheduledTargetLabel = isDm ? "this conversation" : "this channel";
+  const scheduledTargetLabel = t(isDm ? "thisConversation" : "thisChannel");
   const dmPlaceholder = t("messageToPerson").replace("{name}", `\u2068${channel.dmName}\u2069`);
   const placeholder = customPlaceholder || (isThread
     ? t("replyToThread")
     : isDm
       ? isGroupDm ? `${t("message")}…` : dmPlaceholder
-      : language === "he"
+      : direction === "rtl"
         ? `${t("message")} \u2066#${channel.name}\u2069`
         : `${t("message")} #${channel.name}`);
 
@@ -1038,12 +1040,12 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       else onError?.(message);
     };
     if (!(when instanceof Date) || Number.isNaN(when.getTime()) || when.getTime() <= Date.now()) {
-      reportError("Pick a time in the future.");
+      reportError(t("pickFutureTime"));
       return;
     }
     const hasContent = hasSendableContent(editor);
     if (!hasContent && pending.length === 0) {
-      reportError("Write a message before scheduling it.");
+      reportError(t("writeBeforeScheduling"));
       return;
     }
     const body = hasContent ? deliveryMarkdown(editor) : "";
@@ -1071,7 +1073,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     setSendMenuOpen(false);
     const hasContent = hasSendableContent(editor);
     if (!hasContent && pending.length === 0) {
-      onError?.("Write a message before scheduling it.");
+      onError?.(t("writeBeforeScheduling"));
       return;
     }
     const next = new Date(Date.now() + 60 * 60 * 1000);
@@ -1126,12 +1128,12 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     const { id, body, at } = editingSched;
     const when = new Date(at);
     if (Number.isNaN(when.getTime()) || when.getTime() <= Date.now()) {
-      setScheduleError("Pick a time in the future.");
+      setScheduleError(t("pickFutureTime"));
       return;
     }
     const orig = scheduledMsgs.find((s) => s.id === id);
     if (!body.trim() && (orig?.attachments?.length || 0) === 0) {
-      setScheduleError("Message can't be empty.");
+      setScheduleError(t("scheduledMessageCannotBeEmpty"));
       return;
     }
     try {
@@ -1250,7 +1252,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
         <button
           type="button"
           className="scheduled-banner"
-          aria-label={`View ${scheduledMsgs.length} scheduled message${scheduledMsgs.length === 1 ? "" : "s"} for ${scheduledTargetLabel}`}
+          aria-label={t("viewScheduledFor").replace("{count}", String(scheduledMsgs.length)).replace("{target}", scheduledTargetLabel)}
           onClick={() => {
             refreshScheduled();
             setShowScheduled(true);
@@ -1260,11 +1262,11 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
             <CalendarClock size={17} strokeWidth={2} />
           </span>
           <span className="scheduled-banner-copy">
-            <strong>{scheduledMsgs.length} scheduled message{scheduledMsgs.length === 1 ? "" : "s"}</strong>
-            <span>for {scheduledTargetLabel}</span>
+            <strong>{t(scheduledMsgs.length === 1 ? "scheduledMessageSingular" : "scheduledMessagesPlural").replace("{count}", String(scheduledMsgs.length))}</strong>
+            <span>{t("scheduledForTarget").replace("{target}", scheduledTargetLabel)}</span>
           </span>
           <span className="scheduled-banner-action">
-            View
+            {t("view")}
             <ChevronRight size={15} strokeWidth={2.2} aria-hidden="true" />
           </span>
         </button>
@@ -1364,10 +1366,10 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                 setScheduleError(null);
               }}
             >
-              Cancel
+              {t("cancel")}
             </button>
             <button type="button" className="btn-primary" onClick={confirmSchedule}>
-              Schedule
+              {t("scheduleAction")}
             </button>
           </ModalActions>
         </Modal>
@@ -1451,7 +1453,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
               </span>
               <div>
                 <span className="scheduled-modal-eyebrow">{t("upcomingMessages")}</span>
-                <strong><span className="scheduled-modal-count">{scheduledMsgs.length}</span> queued for {scheduledTargetLabel}</strong>
+                <strong><span className="scheduled-modal-count">{scheduledMsgs.length}</span> {t("queuedForTarget").replace("{target}", scheduledTargetLabel)}</strong>
                 <span>{t("scheduledMessagesHint").replace("{target}", scheduledTargetLabel)}</span>
               </div>
             </div>

@@ -1100,7 +1100,7 @@ const ChannelView = forwardRef(function ChannelView({
             {isGroupDm ? <GroupAvatar size={36} /> : <Avatar name={dmAvatarName} src={dmAvatar} size={36} />}
             {isGroupDm ? (
               <span className="ch-name dm-name-btn" data-testid="channel-title" aria-label={dmLabel}>
-                {dmDisplayLabel}
+                <bdi dir="auto">{dmDisplayLabel}</bdi>
               </span>
             ) : (
               <button
@@ -1111,7 +1111,7 @@ const ChannelView = forwardRef(function ChannelView({
                 title={t("viewProfile")}
                 onClick={() => dmUser?.id && onOpenProfile?.(dmUser.id)}
               >
-                {dmDisplayLabel}
+                <bdi dir="auto">{dmDisplayLabel}</bdi>
               </button>
             )}
             <div className="header-actions">
