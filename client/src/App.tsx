@@ -69,6 +69,7 @@ export default function App() {
   const queryClient = useQueryClient();
   const location = useLocation();
   const navigate = useNavigate();
+  const [initialRoute] = useState(() => currentRoute(location));
   const [rhssoError] = useState(() => consumeRhssoCallback());
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -83,11 +84,11 @@ export default function App() {
   const [showAddPeople, setShowAddPeople] = useState(false);
   const [showAddEmoji, setShowAddEmoji] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [showApiDocs, setShowApiDocs] = useState(false); // REST API reference page
+  const [showApiDocs, setShowApiDocs] = useState(initialRoute.overlay === "api-docs"); // REST API reference page
   const [groupToOpen, setGroupToOpen] = useState(null);
   const [profileUser, setProfileUser] = useState(null); // user whose profile card is open
   const [hidden, setHidden] = useState(loadHidden); // hidden channel ids
-  const [view, setViewState] = useState("home"); // home | browse | groups | dms | activity | saved | settings
+  const [view, setViewState] = useState(initialRoute.view); // home | browse | groups | dms | activity | saved | settings
   const {
     channels,
     setChannels,
@@ -139,7 +140,8 @@ export default function App() {
     prefetchMessages,
   } = useConversationCache(user?.id);
   const [jumpMessageId, setJumpMessageId] = useState(null); // message to scroll to + highlight
-  const [searchQuery, setSearchQuery] = useState(null); // active message-search query (results pane)
+  const [searchQuery, setSearchQuery] = useState(initialRoute.searchQuery); // active message-search query (results pane)
+  const [locationRestored, setLocationRestored] = useState(false);
   const [openThreadReq, setOpenThreadReq] = useState(null); // { channelId, rootId, messageId } — thread to open after a jump
   const [scrollToBottomTarget, setScrollToBottomTarget] = useState(null); // { id, channelId } pinned-open request
   const [toast, setToast] = useState(null); // transient notice (e.g. no access)
@@ -724,6 +726,7 @@ export default function App() {
     if (!user || !channelsQuery.isSuccess || !dmsQuery.isSuccess || !usersQuery.isSuccess) return;
     if (restoredUserRef.current === user.id) return;
     restoredUserRef.current = user.id;
+    setLocationRestored(false);
     restoredRef.current = false; // restore again for this (possibly new) account
     navDuringRestoreRef.current = false;
     let cancelled = false;
@@ -762,9 +765,11 @@ export default function App() {
           writeCurrentLocation(user.id);
         }
         restoredRef.current = true;
+        setLocationRestored(true);
       })
       .catch(() => {
         restoredRef.current = true;
+        setLocationRestored(true);
       });
     return () => {
       cancelled = true;
@@ -1608,6 +1613,7 @@ export default function App() {
           <div className="nav-backdrop" data-testid="nav-backdrop" onClick={() => setNavOpen(false)} />
 
           <WorkspaceContent
+          isRestoringLocation={!locationRestored}
           view={view}
           groups={view === "groups" ? {
             openGroup: groupToOpen,
