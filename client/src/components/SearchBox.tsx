@@ -22,6 +22,7 @@ import Avatar, { GroupAvatar } from "./Avatar.js";
 import { Input } from "./Input.js";
 import { peopleSearchSuggestions } from "../lib/mentions.js";
 import { useI18n } from "../lib/i18n.js";
+import { formatKeyboardShortcut } from "../lib/keyboardShortcuts.js";
 
 const QUICK_ACTIONS = [
   { id: "new-message", label: "New message", keywords: ["new", "message", "dm"], shortcut: "⌘/Ctrl+⇧M", Icon: MessageSquarePlusIcon },
@@ -614,6 +615,11 @@ const SearchBox = forwardRef(function SearchBox(
             dir="auto"
             />
           </div>
+          {!query && !peoplePicker && !quickSwitcherOpen && (
+            <kbd className="search-shortcut-hint" aria-hidden="true">
+              {formatKeyboardShortcut("focus-search")}
+            </kbd>
+          )}
         </div>
 
       {open && (

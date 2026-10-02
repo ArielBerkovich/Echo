@@ -2551,7 +2551,7 @@ html[data-mode="dark"] .backend-connection-error {
   .workspace-frame {
     display: grid;
     grid-template-columns: 68px 260px minmax(0, 1fr);
-    grid-template-rows: 38px minmax(0, 1fr);
+    grid-template-rows: 44px minmax(0, 1fr);
     flex: 1;
     min-width: 0;
     min-height: 0;
@@ -2593,7 +2593,7 @@ html[data-mode="dark"] .backend-connection-error {
     grid-column: 2 / -1;
     grid-row: 1;
     min-width: 0;
-    height: 38px;
+    height: 44px;
     background: transparent;
     position: relative;
   }
@@ -2719,15 +2719,28 @@ html[data-mode="dark"] .backend-connection-error {
 
   .workspace-search .search-box-field {
     width: 100%;
-    height: 28px;
+    height: 36px;
     border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
     background: var(--surface);
     box-shadow: none;
   }
 
+  .workspace-search .search-placeholder,
+  .workspace-search .search-box-field input.search-input,
+  .workspace-search .search-highlight {
+    height: 21px;
+    font-size: 15px;
+    line-height: 21px;
+  }
+
+  .workspace-search .search-input-wrap {
+    height: 21px;
+  }
+
   .workspace-search .search-dropdown {
     width: 100%;
     box-sizing: border-box;
+    top: calc(100% - 5px);
   }
 
   .workspace-search .search-box-field:hover:not(:focus-within),
@@ -4316,6 +4329,18 @@ html[data-mode="light"] .search-box-field:focus-within {
   flex: 1;
   min-width: 0;
 }
+.search-shortcut-hint {
+  flex: none;
+  padding: 3px 7px;
+  border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+  border-radius: 5px;
+  color: color-mix(in srgb, var(--text) 82%, #000);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
 .search-placeholder {
   position: absolute;
   inset: 0;
@@ -4934,11 +4959,11 @@ html[dir="rtl"] .members-panel-person-copy .channel-details-person-handle {
 .groups-panel-title { flex-wrap: wrap; }
 .groups-create-button { display: inline-flex; align-items: center; gap: 7px; min-height: 32px; padding: 0 10px; }
 .groups-panel-body { padding: 18px; background: color-mix(in srgb, var(--surface-2) 35%, var(--surface)); }
-.groups-panel-error { width: min(1180px, 100%); margin: 0 auto 12px; box-sizing: border-box; }
+.groups-panel-error { width: min(1200px, 100%); margin: 0 0 12px; box-sizing: border-box; }
 .groups-panel-layout {
   grid-template-columns: minmax(250px, 310px) minmax(0, 1fr);
-  width: min(1180px, 100%);
-  margin: 0 auto;
+  width: min(1200px, 100%);
+  margin: 0;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -15405,15 +15430,19 @@ html[dir="rtl"] .channel-browser-members {
   }
 
   .workspace-frame {
-    grid-template-rows: 50px minmax(0, 1fr);
+    grid-template-rows: 54px minmax(0, 1fr);
   }
 
   .workspace-search {
-    height: 50px;
+    height: 54px;
   }
 
   .workspace-search .search-box-field {
-    height: 38px;
+    height: 42px;
+  }
+
+  .workspace-search .search-dropdown {
+    top: calc(100% - 7px);
   }
 
   .workspace-search .search-placeholder,
