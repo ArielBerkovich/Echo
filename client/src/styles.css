@@ -129,7 +129,7 @@ html[dir="rtl"] .api-note {
    offsets explicitly; direction alone does not change `left`/`right`. */
 @media (min-width: 761px) {
   html[dir="rtl"] .workspace-search-navigation {
-    right: calc(50% - 300px);
+    right: calc(50% - 360px);
     left: auto;
     transform: translate(50%, -50%);
   }
@@ -428,26 +428,32 @@ html[data-theme="calm"][data-mode="light"] {
   --code-border: #c5d4db;
 }
 html[data-theme="calm"][data-mode="light"] .workspace-search .search-box-field {
-  background: color-mix(in srgb, var(--rail-bg) 68%, transparent);
-  border-color: color-mix(in srgb, var(--on-navy) 16%, transparent);
+  background: #fff;
+  border-color: color-mix(in srgb, var(--text) 18%, transparent);
+}
+html[data-theme="calm"][data-mode="light"] .workspace-search .search-box-field:hover:not(:focus-within) {
+  background: #fff;
+}
+html[data-theme="calm"][data-mode="light"] .workspace-search .search-box-field:focus-within {
+  background: #fff;
 }
 html[data-theme="calm"][data-mode="light"] .workspace-search .search-box-field input.search-input {
-  color: var(--on-navy);
+  color: var(--text);
 }
 html[data-theme="calm"][data-mode="light"] .workspace-search .search-placeholder {
-  color: var(--on-navy-muted);
+  color: color-mix(in srgb, var(--text) 62%, var(--muted));
 }
 html[data-theme="calm"][data-mode="light"] .workspace-search .search-highlight .kw {
-  color: var(--on-navy);
+  color: color-mix(in srgb, var(--text) 82%, #000);
 }
 html[data-theme="calm"][data-mode="light"] .workspace-search .search-highlight .kw-in .kw-label {
-  color: #86efac;
+  color: #166534;
 }
 html[data-theme="calm"][data-mode="light"] .workspace-search .search-highlight .kw-from .kw-label {
-  color: #93c5fd;
+  color: #1e40af;
 }
 html[data-theme="calm"][data-mode="light"] .workspace-search .search-highlight .kw-has .kw-label {
-  color: #fcd34d;
+  color: #92400e;
 }
 html[data-theme="calm"][data-mode="light"] .messages {
   background: var(--bg);
@@ -2605,7 +2611,7 @@ html[data-mode="dark"] .backend-connection-error {
   .workspace-search-inner {
     position: relative;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 520px) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 640px) minmax(0, 1fr);
     align-items: center;
     gap: 12px;
     width: 100%;
@@ -2623,7 +2629,7 @@ html[data-mode="dark"] .backend-connection-error {
   .workspace-search-navigation {
     position: absolute;
     top: 50%;
-    left: calc(50% - 300px);
+    left: calc(50% - 360px);
     transform: translate(-50%, -50%);
     display: flex;
     align-items: center;
@@ -2715,7 +2721,7 @@ html[data-mode="dark"] .backend-connection-error {
     width: 100%;
     height: 28px;
     border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
-    background: var(--surface-2);
+    background: var(--surface);
     box-shadow: none;
   }
 
@@ -2731,7 +2737,7 @@ html[data-mode="dark"] .backend-connection-error {
 
   .workspace-search .search-box-field:hover:not(:focus-within) {
     border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
-    background: color-mix(in srgb, var(--surface-2) 88%, var(--surface));
+    background: color-mix(in srgb, var(--surface) 90%, var(--surface-2) 10%);
   }
 
   .workspace-search .search-box-field:focus-within {
@@ -2742,12 +2748,35 @@ html[data-mode="dark"] .backend-connection-error {
     transform: translateY(-1px);
   }
 
-  .workspace-search .search-box-field input.search-input {
-    color: var(--on-navy-muted);
+  html[data-mode="dark"] .workspace-search .search-box-field,
+  html[data-mode="dark"] .workspace-search .search-box-field:hover:not(:focus-within),
+  html[data-mode="dark"] .workspace-search .search-box-field:focus-within {
+    background: var(--surface-2);
+  }
+
+  html[data-mode="light"] .workspace-search .search-box-field,
+  html[data-mode="light"] .workspace-search .search-box-field:focus-within {
+    background: #fff;
+  }
+
+  html[data-mode="light"] .workspace-search .search-box-field:hover:not(:focus-within) {
+    background: #fff;
   }
 
   .workspace-search .search-box-field input.search-input {
-    caret-color: var(--on-navy);
+    color: var(--text);
+  }
+
+  html[data-mode="light"] .workspace-search .search-box-field input.search-input {
+    color: color-mix(in srgb, var(--text) 72%, #000);
+  }
+
+  .workspace-search .search-box-field input.search-input {
+    caret-color: var(--text);
+  }
+
+  html[data-mode="light"] .workspace-search .search-box-field input.search-input {
+    caret-color: color-mix(in srgb, var(--text) 72%, #000);
   }
 
   .workspace-search .search-icon-badge {
@@ -2755,7 +2784,26 @@ html[data-mode="dark"] .backend-connection-error {
     height: auto;
     border-radius: 0;
     background: transparent;
-    color: var(--accent);
+    color: var(--text);
+  }
+
+  html[data-mode="light"] .workspace-search .search-icon-badge,
+  html[data-mode="light"] .workspace-search .search-highlight,
+  html[data-mode="light"] .workspace-search .search-highlight .kw {
+    color: color-mix(in srgb, var(--text) 72%, #000);
+  }
+
+  .workspace-search .search-highlight,
+  .workspace-search .search-highlight .kw {
+    color: var(--text);
+  }
+
+  .workspace-search .search-placeholder {
+    color: var(--muted);
+  }
+
+  html[data-mode="light"] .workspace-search .search-placeholder {
+    color: color-mix(in srgb, var(--text) 62%, var(--muted));
   }
 
   .workspace-search .search-box-field:focus-within .search-icon-badge {
@@ -4244,6 +4292,19 @@ html[dir="rtl"] .channel-details-section-hint {
   background: color-mix(in srgb, var(--accent) 18%, var(--surface));
   transform: scale(1.03);
 }
+
+/* Keep the actual search entry field distinct from surrounding surfaces in
+   every light theme. The visible query is rendered by .search-highlight. */
+html[data-mode="light"] .search-box-field {
+  background: color-mix(in srgb, var(--surface) 22%, #fff);
+  color: color-mix(in srgb, var(--text) 72%, #000);
+}
+html[data-mode="light"] .search-box-field:hover:not(:focus-within) {
+  background: color-mix(in srgb, var(--surface) 12%, #fff);
+}
+html[data-mode="light"] .search-box-field:focus-within {
+  background: color-mix(in srgb, var(--surface) 18%, #fff);
+}
 /* The input sits transparently over a "mirror" that renders the same text
    with the filter keywords (in:/from:/has:) styled — native inputs can't
    colour parts of their own text. */
@@ -4260,7 +4321,7 @@ html[dir="rtl"] .channel-details-section-hint {
   inset: 0;
   overflow: hidden;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 14.5px;
   line-height: 18px;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -4268,7 +4329,7 @@ html[dir="rtl"] .channel-details-section-hint {
 }
 .search-box-field input.search-input,
 .search-highlight {
-  font-size: 14px;
+  font-size: 14.5px;
   font-family: inherit;
   line-height: 1.4;
   letter-spacing: normal;
@@ -4301,14 +4362,41 @@ html[dir="rtl"] .channel-details-section-hint {
   color: var(--text);
   line-height: 18px;
 }
-/* Colour-only (NOT bold): the transparent input renders normal-weight text, so
-   bold keywords here would be wider than the input's metrics and the caret
-   would land left of the token (e.g. before the ":"). Colour keeps alignment. */
+/* The transparent input and its rendered mirror share typography so the caret
+   stays aligned with the visible query. */
 .search-highlight .kw {
   color: var(--text);
 }
+html[data-mode="light"] .search-highlight,
+html[data-mode="light"] .search-highlight .kw {
+  color: color-mix(in srgb, var(--text) 72%, #000);
+}
+html[data-mode="light"] .search-box-field input.search-input {
+  color: transparent;
+  caret-color: color-mix(in srgb, var(--text) 72%, #000);
+}
 .search-highlight .kw-label {
   font-weight: 600;
+}
+
+/* The main message-search entry is a div (not the nested native input), so
+   style its stable test-id directly. This follows the theme's surface/text
+   palette while clearly separating the field from the top bar. */
+html[data-theme][data-mode] .workspace-search [data-testid="search-box-field"],
+html[data-theme][data-mode] .workspace-search [data-testid="search-box-field"]:hover:not(:focus-within),
+html[data-theme][data-mode] .workspace-search [data-testid="search-box-field"]:focus-within {
+  background: color-mix(in srgb, var(--surface) 78%, #fff 22%);
+  color: color-mix(in srgb, var(--text) 82%, #000);
+}
+html[data-theme][data-mode] .workspace-search [data-testid="search-box-field"] .search-highlight,
+html[data-theme][data-mode] .workspace-search [data-testid="search-box-field"] .search-highlight .kw,
+html[data-theme][data-mode] .workspace-search [data-testid="search-box-field"] .search-placeholder,
+html[data-theme][data-mode] .workspace-search [data-testid="search-box-field"] input.search-input {
+  color: color-mix(in srgb, var(--text) 82%, #000);
+  font-weight: 500;
+}
+html[data-theme][data-mode] .workspace-search [data-testid="search-box-field"] input.search-input {
+  color: transparent;
 }
 .search-highlight .kw-in .kw-label { color: #166534; }
 .search-highlight .kw-from .kw-label { color: #1e40af; }
@@ -15304,6 +15392,47 @@ html[dir="rtl"] .channel-browser-members {
 /* Extra-comfortable density for very large desktop workspaces. Keep the
    layout scale stable while enlarging the surfaces people read and click. */
 @media (min-width: 1920px) {
+  .workspace-search-inner {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1000px) minmax(0, 1fr);
+  }
+
+  .workspace-search-navigation {
+    left: calc(50% - 540px);
+  }
+
+  html[dir="rtl"] .workspace-search-navigation {
+    right: calc(50% - 540px);
+  }
+
+  .workspace-frame {
+    grid-template-rows: 50px minmax(0, 1fr);
+  }
+
+  .workspace-search {
+    height: 50px;
+  }
+
+  .workspace-search .search-box-field {
+    height: 38px;
+  }
+
+  .workspace-search .search-placeholder,
+  .workspace-search .search-box-field input.search-input,
+  .workspace-search .search-highlight {
+    font-size: 18px;
+  }
+
+  .workspace-search .search-input-wrap {
+    height: 22px;
+  }
+
+  .workspace-search .search-placeholder,
+  .workspace-search .search-box-field input.search-input,
+  .workspace-search .search-highlight {
+    height: 22px;
+    line-height: 22px;
+  }
+
   .rail-item {
     min-height: 76px;
     font-size: 13px;
