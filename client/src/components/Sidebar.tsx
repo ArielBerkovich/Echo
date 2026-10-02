@@ -211,7 +211,7 @@ export default function Sidebar({
         >
           <Chevron collapsed={starredCollapsed && !f} />
           <StarIcon className="section-icon starred-icon" size={12} strokeWidth={2.5} aria-hidden="true" />
-          <span className="starred-label">{t("saved")}</span>
+          <span className="starred-label">{t("starred")}</span>
         </button>
       </div>
       {showStarred && starredChannels.map((c) => (

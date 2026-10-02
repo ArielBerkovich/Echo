@@ -15380,3 +15380,99 @@ html[data-theme="calm"] .channel-list {
 html[data-theme="calm"] .channel-list::-webkit-scrollbar-track {
   background: #1f252b;
 }
+
+/* Keep one compact toolbar geometry across Home, Activity, and Starred. */
+@media (min-width: 761px) {
+  .workspace-frame {
+    --workspace-sidebar-edge: 328px;
+    --workspace-search-offset: 0px;
+    grid-template-rows: 36px minmax(0, 1fr);
+  }
+
+  .workspace-frame:has(.app-nav.no-sidebar) {
+    --workspace-sidebar-edge: 328px;
+    --workspace-search-offset: 260px;
+  }
+
+  .workspace-frame:has(.app-nav.no-sidebar) .workspace-search {
+    grid-column: 2 / -1;
+  }
+
+  .workspace-search {
+    height: 36px;
+  }
+
+  .workspace-search-inner {
+    display: block;
+    padding-inline: 0;
+  }
+
+  .workspace-search-inner > .search-box {
+    width: calc(100vw - var(--workspace-sidebar-edge) - var(--workspace-sidebar-edge));
+    margin: 0;
+    margin-inline-start: var(--workspace-search-offset);
+  }
+
+  .workspace-search-navigation {
+    position: absolute;
+    top: 50%;
+    left: calc(var(--workspace-search-offset) - 68px);
+    transform: translateY(-50%);
+    z-index: 1;
+  }
+
+  html[dir="rtl"] .workspace-search-navigation {
+    left: auto;
+    right: calc(var(--workspace-search-offset) - 68px);
+  }
+
+  .workspace-search-tools {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    width: var(--workspace-sidebar-edge);
+    box-sizing: border-box;
+    justify-content: flex-end;
+    padding-right: 12px;
+    transform: translateY(-50%);
+  }
+
+  html[dir="rtl"] .workspace-search-tools {
+    right: auto;
+    left: 0;
+    padding-right: 0;
+    padding-left: 12px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .workspace-frame {
+    --workspace-sidebar-edge: calc(68px + clamp(280px, 18vw, 340px));
+  }
+
+  .workspace-frame:has(.app-nav.no-sidebar) {
+    --workspace-sidebar-edge: calc(68px + clamp(280px, 18vw, 340px));
+    --workspace-search-offset: clamp(280px, 18vw, 340px);
+  }
+}
+
+@media (min-width: 1600px) {
+  .workspace-frame,
+  .workspace-frame:has(.app-nav.no-sidebar) {
+    --workspace-sidebar-edge: calc(88px + clamp(280px, 18vw, 340px));
+  }
+}
+
+.workspace-search .search-box-field {
+  height: 28px;
+  border-radius: 7px;
+}
+
+.workspace-search .search-icon-badge {
+  background: transparent;
+  color: var(--text);
+}
+
+.workspace-search .search-box-field:focus-within .search-icon-badge {
+  background: transparent;
+}
