@@ -2719,7 +2719,7 @@ html[data-mode="dark"] .backend-connection-error {
 
   .workspace-search .search-box-field {
     width: 100%;
-    height: 36px;
+    height: 34px;
     border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
     background: var(--surface);
     box-shadow: none;
@@ -4331,6 +4331,8 @@ html[data-mode="light"] .search-box-field:focus-within {
 }
 .search-shortcut-hint {
   flex: none;
+  direction: ltr;
+  unicode-bidi: isolate;
   padding: 3px 7px;
   border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
   border-radius: 5px;
@@ -15459,7 +15461,7 @@ html[dir="rtl"] .channel-browser-members {
   }
 
   .workspace-search .search-box-field {
-    height: 42px;
+    height: 40px;
   }
 
   .workspace-search .search-dropdown {
