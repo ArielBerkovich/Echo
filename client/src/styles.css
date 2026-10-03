@@ -592,6 +592,244 @@ html[data-theme="sand"][data-mode="dark"] {
   --code-border: #3d3322;
 }
 
+/* Forest — botanical green with soft sage surfaces. */
+html[data-theme="forest"] {
+  --accent: #4d7059;
+  --active-bg: #3d5e49;
+  --on-navy: #f2f6f2;
+  --on-navy-muted: #b3c6b8;
+  --sidebar-bg: linear-gradient(180deg, #395448, #26392f);
+  --rail-bg: #202f27;
+}
+html[data-theme="forest"][data-mode="light"] {
+  --bg: #eef3ee;
+  --surface: #fafcfa;
+  --surface-2: #e3ebe3;
+  --border: #cdd9ce;
+  --text: #27362b;
+  --muted: #617365;
+  --code-bg: #e3ebe3;
+  --code-text: #27362b;
+  --code-border: #cdd9ce;
+}
+html[data-theme="forest"][data-mode="dark"] {
+  --accent: #92a99a;
+  --active-bg: #718776;
+  --bg: #151c17;
+  --surface: #202922;
+  --surface-2: #2c382f;
+  --border: #424e44;
+  --text: #e7eee8;
+  --muted: #a9b5aa;
+  --code-bg: #101511;
+  --code-text: #e7eee8;
+  --code-border: #424e44;
+}
+
+/* Ocean — deep blue-green navigation with clear aqua accents. */
+html[data-theme="ocean"] {
+  --accent: #4b7782;
+  --active-bg: #3d6670;
+  --on-navy: #f1f7f8;
+  --on-navy-muted: #b2cbd0;
+  --sidebar-bg: linear-gradient(180deg, #355761, #263e46);
+  --rail-bg: #1e333a;
+}
+html[data-theme="ocean"][data-mode="light"] {
+  --bg: #eef4f5;
+  --surface: #fafcfc;
+  --surface-2: #e1eaec;
+  --border: #c7d7da;
+  --text: #293b40;
+  --muted: #62777c;
+  --code-bg: #e1eaec;
+  --code-text: #293b40;
+  --code-border: #c7d7da;
+}
+html[data-theme="ocean"][data-mode="dark"] {
+  --accent: #91b9c0;
+  --active-bg: #648f98;
+  --bg: #111b1e;
+  --surface: #1b282b;
+  --surface-2: #26373b;
+  --border: #3c5055;
+  --text: #e6eff0;
+  --muted: #a8b9bc;
+  --code-bg: #0c1416;
+  --code-text: #e6eff0;
+  --code-border: #3c5055;
+}
+
+/* Rose — muted berry accents over a gentle blush palette. */
+html[data-theme="rose"] {
+  --accent: #a06b80;
+  --active-bg: #89586d;
+  --on-navy: #faf3f5;
+  --on-navy-muted: #d4b8c2;
+  --sidebar-bg: linear-gradient(180deg, #624653, #44313b);
+  --rail-bg: #352630;
+}
+html[data-theme="rose"][data-mode="light"] {
+  --bg: #fbf2f4;
+  --surface: #fdfbfc;
+  --surface-2: #f2e5e9;
+  --border: #dfcbd2;
+  --text: #392c32;
+  --muted: #796570;
+  --code-bg: #f2e5e9;
+  --code-text: #392c32;
+  --code-border: #dfcbd2;
+}
+html[data-theme="rose"][data-mode="dark"] {
+  --accent: #d0a1b1;
+  --active-bg: #a77588;
+  --bg: #1b1418;
+  --surface: #282025;
+  --surface-2: #372b32;
+  --border: #51414a;
+  --text: #f1e9ec;
+  --muted: #c1adb5;
+  --code-bg: #130e11;
+  --code-text: #f1e9ec;
+  --code-border: #51414a;
+}
+
+/* Lavender — soft lilac in light mode and a dusky violet in dark mode. */
+html[data-theme="lavender"] {
+  --accent: #7b6f91;
+  --active-bg: #685d7d;
+  --on-navy: #f6f3f9;
+  --on-navy-muted: #c8bfd4;
+  --sidebar-bg: linear-gradient(180deg, #4a435a, #332d42);
+  --rail-bg: #292435;
+}
+html[data-theme="lavender"][data-mode="light"] {
+  --bg: #f4f1f8;
+  --surface: #fcfbfd;
+  --surface-2: #eae5f0;
+  --border: #d6cddd;
+  --text: #332d3b;
+  --muted: #71697d;
+  --code-bg: #eae5f0;
+  --code-text: #332d3b;
+  --code-border: #d6cddd;
+}
+html[data-theme="lavender"][data-mode="dark"] {
+  --accent: #b7acc8;
+  --active-bg: #8e829f;
+  --bg: #19171d;
+  --surface: #25222b;
+  --surface-2: #332e3c;
+  --border: #4a4354;
+  --text: #efebf2;
+  --muted: #b8b0c0;
+  --code-bg: #100f13;
+  --code-text: #efebf2;
+  --code-border: #4a4354;
+}
+
+/* Ember — warm copper accents with a charcoal-to-rust sidebar. */
+html[data-theme="ember"] {
+  --accent: #a06f55;
+  --active-bg: #895a43;
+  --on-navy: #faf4f0;
+  --on-navy-muted: #d7bcae;
+  --sidebar-bg: linear-gradient(180deg, #60483b, #423229);
+  --rail-bg: #342820;
+}
+html[data-theme="ember"][data-mode="light"] {
+  --bg: #faf2ed;
+  --surface: #fdfbfa;
+  --surface-2: #f0e5de;
+  --border: #ddcabe;
+  --text: #382e29;
+  --muted: #79675d;
+  --code-bg: #f0e5de;
+  --code-text: #382e29;
+  --code-border: #ddcabe;
+}
+html[data-theme="ember"][data-mode="dark"] {
+  --accent: #c8a28c;
+  --active-bg: #9d7965;
+  --bg: #1b1714;
+  --surface: #29221e;
+  --surface-2: #382e28;
+  --border: #514239;
+  --text: #f0e9e4;
+  --muted: #c0aea2;
+  --code-bg: #120f0d;
+  --code-text: #f0e9e4;
+  --code-border: #514239;
+}
+
+/* Graphite — restrained blue-grey with a crisp steel accent. */
+html[data-theme="graphite"] {
+  --accent: #626b6f;
+  --active-bg: #50595d;
+  --on-navy: #f4f5f5;
+  --on-navy-muted: #c0c7c9;
+  --sidebar-bg: linear-gradient(180deg, #3a3d3f, #25282a);
+  --rail-bg: #1c1e20;
+}
+html[data-theme="graphite"][data-mode="light"] {
+  --bg: #f2f3f3;
+  --surface: #fcfdfd;
+  --surface-2: #e5e8e8;
+  --border: #cfd5d6;
+  --text: #2d3436;
+  --muted: #687477;
+  --code-bg: #e5e8e8;
+  --code-text: #2d3436;
+  --code-border: #cfd5d6;
+}
+html[data-theme="graphite"][data-mode="dark"] {
+  --accent: #aeb8bb;
+  --active-bg: #778286;
+  --bg: #151719;
+  --surface: #202426;
+  --surface-2: #2d3335;
+  --border: #424a4d;
+  --text: #e9eded;
+  --muted: #afb8ba;
+  --code-bg: #0e1011;
+  --code-text: #e9eded;
+  --code-border: #424a4d;
+}
+
+/* Citrus — earthy olive with bright but readable citron accents. */
+html[data-theme="citrus"] {
+  --accent: #73775a;
+  --active-bg: #62664c;
+  --on-navy: #f6f6ef;
+  --on-navy-muted: #d1d2b4;
+  --sidebar-bg: linear-gradient(180deg, #51563a, #383d2b);
+  --rail-bg: #2d3122;
+}
+html[data-theme="citrus"][data-mode="light"] {
+  --bg: #f4f4ec;
+  --surface: #fcfcf9;
+  --surface-2: #e9eadc;
+  --border: #d4d5c1;
+  --text: #36372d;
+  --muted: #74755f;
+  --code-bg: #e9eadc;
+  --code-text: #36372d;
+  --code-border: #d4d5c1;
+}
+html[data-theme="citrus"][data-mode="dark"] {
+  --accent: #a9aa8f;
+  --active-bg: #81836c;
+  --bg: #191a15;
+  --surface: #252720;
+  --surface-2: #323429;
+  --border: #4a4c3e;
+  --text: #edeee6;
+  --muted: #b6b8a1;
+  --code-bg: #11120f;
+  --code-text: #edeee6;
+  --code-border: #4a4c3e;
+}
+
 /* ---- Theme-tinted light surfaces for the themes whose signature look is
    dark, so they also feel on-theme in light mode. ---- */
 html[data-theme="azure"][data-mode="light"] {
@@ -15550,4 +15788,31 @@ html[data-theme="calm"] .channel-list {
 }
 html[data-theme="calm"] .channel-list::-webkit-scrollbar-track {
   background: #1f252b;
+}
+
+/* Forest and Citrus keep their color identity in navigation and accents, but
+   use the standard neutral conversation canvas for calmer message reading. */
+html[data-theme="forest"] .chat-pane,
+html[data-theme="citrus"] .chat-pane {
+  --bg: #f5f8fd;
+  --surface: #ffffff;
+  --surface-2: #eef3fb;
+  --border: #e3e9f2;
+  --text: #0f1f3a;
+  --muted: #64748b;
+  --code-bg: #eef1f5;
+  --code-text: #1f2937;
+  --code-border: #d3d9e2;
+}
+html[data-theme="forest"][data-mode="dark"] .chat-pane,
+html[data-theme="citrus"][data-mode="dark"] .chat-pane {
+  --bg: #151719;
+  --surface: #202426;
+  --surface-2: #2d3335;
+  --border: #424a4d;
+  --text: #e9eded;
+  --muted: #afb8ba;
+  --code-bg: #0e1011;
+  --code-text: #e9eded;
+  --code-border: #424a4d;
 }
