@@ -78,6 +78,7 @@ export default function ThreadPanel({
   }
   const direction = languageDirection(language);
   const [rootMsg, setRootMsg] = useState(root); // local copy so live edits/reactions apply
+  const [rootDeleted, setRootDeleted] = useState(!!root.deleted);
   const [replies, setReplies] = useState([]);
   const [reactingTo, setReactingTo] = useState(null); // { id, rect } for the react picker
   const [menuFor, setMenuFor] = useState(null); // message id with the "more" menu open
@@ -92,6 +93,7 @@ export default function ThreadPanel({
   const scrollerRef = useRef(null);
   const bodyInnerRef = useRef(null); // content wrapper used to track height changes
   const composerRef = useRef(null); // thread reply composer, for quote insertion
+  const rootDeletedRef = useRef(!!root.deleted);
 
   useEffect(() => {
     if (!composerFocusRequest || !canPost) return undefined;
@@ -120,6 +122,8 @@ export default function ThreadPanel({
   // Reset the local root when a different thread is opened.
   useEffect(() => {
     setRootMsg(root);
+    rootDeletedRef.current = !!root.deleted;
+    setRootDeleted(!!root.deleted);
     initialScrolledRef.current = false;
     prevReplyCountRef.current = 0;
     stickToBottomRef.current = true;
@@ -129,6 +133,13 @@ export default function ThreadPanel({
     setNewMessageCount(0);
     setAlsoSendToChannel(false);
   }, [root.id]);
+
+  useEffect(() => {
+    if (!root.deleted) return;
+    rootDeletedRef.current = true;
+    setRootDeleted(true);
+    setRootMsg((previous) => ({ ...previous, deleted: true }));
+  }, [root.id, root.deleted]);
 
   useEffect(() => {
     if (openThreadJumpMessageId) jumpTargetRef.current = openThreadJumpMessageId;
@@ -142,11 +153,11 @@ export default function ThreadPanel({
       .then(({ replies, parent }) => {
         if (cancelled) return;
         setReplies(replies);
-        if (parent) setRootMsg((prev) => ({ ...prev, ...parent }));
+        if (parent && !rootDeletedRef.current) setRootMsg((prev) => ({ ...prev, ...parent }));
         setError(null);
       })
       .catch((error) => {
-        if (!cancelled) setError(error.message);
+        if (!cancelled && !rootDeletedRef.current) setError(error.message);
       });
 
     const socket = getSocket();
@@ -178,7 +189,15 @@ export default function ThreadPanel({
           : r))
       );
     };
-    const onDeleted = ({ id }) => setReplies((prev) => prev.filter((r) => r.id !== id));
+    const onDeleted = ({ id }) => {
+      if (id === root.id) {
+        rootDeletedRef.current = true;
+        setRootDeleted(true);
+        setRootMsg((previous) => ({ ...previous, deleted: true }));
+        return;
+      }
+      setReplies((prev) => prev.filter((r) => r.id !== id));
+    };
     const onReaction = ({ messageId, reactions }) => {
       setRootMsg((prev) => (prev.id === messageId ? { ...prev, reactions } : prev));
       setReplies((prev) => prev.map((r) => (r.id === messageId ? { ...r, reactions } : r)));
@@ -373,7 +392,7 @@ export default function ThreadPanel({
           <span className="thread-title">{t("thread")}</span>
         </div>
         <div className="thread-header-actions">
-          <button
+          {!rootDeleted && <button
             type="button"
             className={`thread-follow-toggle${following || muted ? " is-following" : ""}`}
             data-testid="thread-follow-toggle"
@@ -384,7 +403,7 @@ export default function ThreadPanel({
             onClick={toggleThreadFollow}
           >
             {following ? <BellIcon size={16} strokeWidth={1.8} /> : <BellOffIcon size={16} strokeWidth={1.8} />}
-          </button>
+          </button>}
           <CloseButton size="sm" data-testid="thread-close" onClick={onClose} label={t("closeThread")} />
         </div>
       </header>
@@ -396,7 +415,11 @@ export default function ThreadPanel({
             // Threads show complete metadata for every message, including replies.
             return (
             <Fragment key={m.id}>
-              <Message
+              {rootDeleted && index === 0 ? (
+                <div className="thread-root-deleted" data-testid="thread-root-deleted" role="status">
+                  {t("messageDeleted")}
+                </div>
+              ) : <Message
                 m={m}
                 channelId={channel.id}
                 channelType={channel.type}
@@ -457,7 +480,7 @@ export default function ThreadPanel({
                 onToast={onToast}
                 canPin={canPin}
                 canQuote={channel.type === "dm"}
-              />
+              />}
               {index === 0 && (
                 <div className="thread-divider" data-testid="thread-reply-count">
                   <span dir={direction}>{replies.length === 1 ? t("oneReply") : t("replyCount").replace("{count}", String(replies.length))}</span>
@@ -514,7 +537,7 @@ export default function ThreadPanel({
 
       {error && <div className="error">{error}</div>}
 
-      {canPost ? <Composer
+      {!rootDeleted && canPost ? <Composer
         ref={composerRef}
         key={`thread-${root.id}`}
         channel={channel}
@@ -543,7 +566,7 @@ export default function ThreadPanel({
           setEditing(null);
           setError(null);
         }}
-      /> : (
+      /> : !rootDeleted && (
         <div className="channel-readonly-notice thread-readonly-notice" role="status">
           <strong>{t("managersOnly")}</strong>
           <span>{t("managersOnlyReplyHint")}</span>
