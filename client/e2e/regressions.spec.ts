@@ -558,6 +558,59 @@ test("restores the last channel after visiting Saved and Activity", async ({ pag
   await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
 });
 
+test("keeps a DM scroll position when switching conversations and refreshing", async ({ page }) => {
+  const charlie = await registerUser(page, {
+    username: `scroll.dm${Date.now()}`,
+    displayName: "Scroll DM",
+  });
+  await requestAsToken(page, charlie.token, "/users/me/onboarded", { method: "POST" });
+  const secondDm = await requestAsToken(page, fixture.alice.token, "/dms", {
+    method: "POST",
+    body: { userId: charlie.user.id },
+  });
+
+  for (const [channelId, senderToken] of [[fixture.dmChannel.id, fixture.bob.token], [secondDm.channel.id, charlie.token]]) {
+    for (let index = 0; index < 36; index += 1) {
+      await requestAsToken(page, senderToken, "/messages/upsert", {
+        method: "POST",
+        body: { channelId, body: `DM scroll seed ${index} ${fixture.suffix}` },
+      });
+    }
+    await requestAsToken(page, fixture.alice.token, `/channels/${channelId}/read`, { method: "POST" });
+  }
+
+  await page.goto("/");
+  await expect(page.getByTestId("channel-view")).toBeVisible();
+  const openDm = async (name) => {
+    await page.getByTestId(`dm-open-${slug(name)}`).click();
+    await expect(page.getByTestId("channel-view")).toBeVisible();
+    await expect(page.getByTestId("channel-title")).toContainText(name);
+  };
+  const scroller = page.getByTestId("messages");
+
+  await openDm(fixture.bob.displayName);
+  await expect.poll(() => scroller.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
+  await scroller.evaluate((element) => {
+    element.scrollTop = Math.round((element.scrollHeight - element.clientHeight) * 0.45);
+    element.dispatchEvent(new Event("scroll", { bubbles: true }));
+  });
+  const expectedTop = await scroller.evaluate((element) => element.scrollTop);
+
+  await openDm(charlie.user.displayName);
+  await openDm(fixture.bob.displayName);
+  await expect.poll(() => scroller.evaluate((element, top) => Math.abs(element.scrollTop - top), expectedTop)).toBeLessThanOrEqual(2);
+
+  await scroller.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+    element.dispatchEvent(new Event("scroll", { bubbles: true }));
+  });
+  await expect.poll(() => scroller.evaluate((element) => element.scrollHeight - element.scrollTop - element.clientHeight)).toBeLessThanOrEqual(2);
+  await page.reload();
+  await expect(page.getByTestId("channel-view")).toBeVisible();
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.bob.displayName);
+  await expect.poll(() => scroller.evaluate((element) => element.scrollHeight - element.scrollTop - element.clientHeight)).toBeLessThanOrEqual(2);
+});
+
 test("creates the channel creator as a manager and lets them promote a member", async ({ page }) => {
   const channelName = `manager-regression-${fixture.suffix}`;
   const created = await requestAsToken(page, fixture.alice.token, "/channels", {
@@ -904,6 +957,29 @@ test("threads offer new replies while scrolled up and follow your own reply", as
   await expect(page.locator(".thread-panel .message").filter({ hasText: ownBody })).toBeVisible();
   await expect.poll(async () => scroller.evaluate((el) => el.scrollHeight - el.scrollTop - el.clientHeight)).toBeLessThanOrEqual(2);
   await expect(newRepliesButton).toHaveCount(0);
+});
+
+test("deleting a thread root removes it from chat and marks it deleted in the open thread", async ({ page }) => {
+  const rootId = fixture.messages.threadRoot.id;
+  const replyId = fixture.messages.threadReply.id;
+  await page.goto(`/channels/${fixture.projectChannel.id}`);
+  await page.getByTestId(`message-${rootId}-reply-count`).click();
+
+  const panel = page.getByTestId("thread-panel");
+  const rootMessage = panel.getByTestId(`message-${rootId}`);
+  const replyMessage = panel.getByTestId(`message-${replyId}`);
+  await expect(rootMessage).toBeVisible();
+  await expect(replyMessage).toBeVisible();
+
+  await rootMessage.hover();
+  await page.getByTestId(`message-${rootId}-more`).click();
+  await page.getByTestId(`message-${rootId}-delete`).click();
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
+
+  await expect(panel.getByTestId("thread-root-deleted")).toHaveText("This message was deleted.");
+  await expect(replyMessage).toBeVisible();
+  await expect(panel.getByTestId("composer-editor")).toHaveCount(0);
+  await expect(page.getByTestId(`message-${rootId}`)).toHaveCount(0);
 });
 
 test("top-level messages keep their jump control in the channel while a thread is open", async ({ page }) => {

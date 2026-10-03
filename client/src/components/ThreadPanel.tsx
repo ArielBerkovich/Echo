@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { ChevronsDownIcon } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { BellIcon, BellOffIcon, ChevronsDownIcon } from "lucide-react";
 import { api } from "../api.js";
 import { getSocket } from "../socket.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
@@ -11,6 +12,7 @@ import { hasThreadJumpTarget, scrollThreadMessageIntoView } from "../lib/threadN
 import { CloseButton } from "./Button.js";
 import { useI18n } from "../lib/i18n.js";
 import { languageDirection } from "../lib/languages.js";
+import { queryKeys } from "../lib/queryClient.js";
 
 // Right-hand thread view: the root message + its replies + a reply composer.
 // Reuses the full Message (reactions, forward, edit) and Composer (emoji, bold,
@@ -46,8 +48,37 @@ export default function ThreadPanel({
   composerFocusRequest = 0,
 }) {
   const { t, language } = useI18n();
+  const queryClient = useQueryClient();
+  const notificationQuery = useQuery({
+    queryKey: queryKeys.notificationSettings,
+    queryFn: api.getNotificationSettings,
+    staleTime: Infinity,
+  });
+  const following = (notificationQuery.data?.followedThreads || []).includes(root.id);
+  const muted = (notificationQuery.data?.mutedThreads || []).includes(root.id);
+  async function toggleThreadFollow() {
+    const nextFollowing = !following;
+    const previous = queryClient.getQueryData(queryKeys.notificationSettings);
+    queryClient.setQueryData(queryKeys.notificationSettings, (settings) => settings ? {
+      ...settings,
+      followedThreads: nextFollowing
+        ? [...new Set([...(settings.followedThreads || []), root.id])]
+        : (settings.followedThreads || []).filter((id) => id !== root.id),
+      mutedThreads: nextFollowing
+        ? (settings.mutedThreads || []).filter((id) => id !== root.id)
+        : [...new Set([...(settings.mutedThreads || []), root.id])],
+    } : settings);
+    try {
+      await api.setThreadFollow(channel.id, root.id, nextFollowing);
+      onToast?.(t("threadNotificationPreferenceSaved"));
+    } catch (followError) {
+      queryClient.setQueryData(queryKeys.notificationSettings, previous);
+      setError(followError.message || t("threadNotificationSaveFailed"));
+    }
+  }
   const direction = languageDirection(language);
   const [rootMsg, setRootMsg] = useState(root); // local copy so live edits/reactions apply
+  const [rootDeleted, setRootDeleted] = useState(!!root.deleted);
   const [replies, setReplies] = useState([]);
   const [reactingTo, setReactingTo] = useState(null); // { id, rect } for the react picker
   const [menuFor, setMenuFor] = useState(null); // message id with the "more" menu open
@@ -62,6 +93,7 @@ export default function ThreadPanel({
   const scrollerRef = useRef(null);
   const bodyInnerRef = useRef(null); // content wrapper used to track height changes
   const composerRef = useRef(null); // thread reply composer, for quote insertion
+  const rootDeletedRef = useRef(!!root.deleted);
 
   useEffect(() => {
     if (!composerFocusRequest || !canPost) return undefined;
@@ -90,6 +122,8 @@ export default function ThreadPanel({
   // Reset the local root when a different thread is opened.
   useEffect(() => {
     setRootMsg(root);
+    rootDeletedRef.current = !!root.deleted;
+    setRootDeleted(!!root.deleted);
     initialScrolledRef.current = false;
     prevReplyCountRef.current = 0;
     stickToBottomRef.current = true;
@@ -99,6 +133,13 @@ export default function ThreadPanel({
     setNewMessageCount(0);
     setAlsoSendToChannel(false);
   }, [root.id]);
+
+  useEffect(() => {
+    if (!root.deleted) return;
+    rootDeletedRef.current = true;
+    setRootDeleted(true);
+    setRootMsg((previous) => ({ ...previous, deleted: true }));
+  }, [root.id, root.deleted]);
 
   useEffect(() => {
     if (openThreadJumpMessageId) jumpTargetRef.current = openThreadJumpMessageId;
@@ -112,11 +153,11 @@ export default function ThreadPanel({
       .then(({ replies, parent }) => {
         if (cancelled) return;
         setReplies(replies);
-        if (parent) setRootMsg((prev) => ({ ...prev, ...parent }));
+        if (parent && !rootDeletedRef.current) setRootMsg((prev) => ({ ...prev, ...parent }));
         setError(null);
       })
       .catch((error) => {
-        if (!cancelled) setError(error.message);
+        if (!cancelled && !rootDeletedRef.current) setError(error.message);
       });
 
     const socket = getSocket();
@@ -148,7 +189,15 @@ export default function ThreadPanel({
           : r))
       );
     };
-    const onDeleted = ({ id }) => setReplies((prev) => prev.filter((r) => r.id !== id));
+    const onDeleted = ({ id }) => {
+      if (id === root.id) {
+        rootDeletedRef.current = true;
+        setRootDeleted(true);
+        setRootMsg((previous) => ({ ...previous, deleted: true }));
+        return;
+      }
+      setReplies((prev) => prev.filter((r) => r.id !== id));
+    };
     const onReaction = ({ messageId, reactions }) => {
       setRootMsg((prev) => (prev.id === messageId ? { ...prev, reactions } : prev));
       setReplies((prev) => prev.map((r) => (r.id === messageId ? { ...r, reactions } : r)));
@@ -342,7 +391,21 @@ export default function ThreadPanel({
         <div className="thread-heading">
           <span className="thread-title">{t("thread")}</span>
         </div>
-        <CloseButton size="sm" data-testid="thread-close" onClick={onClose} label={t("closeThread")} />
+        <div className="thread-header-actions">
+          {!rootDeleted && <button
+            type="button"
+            className={`thread-follow-toggle${following || muted ? " is-following" : ""}`}
+            data-testid="thread-follow-toggle"
+            aria-pressed={following}
+            aria-label={following ? t("turnOffThreadNotifications") : t("getThreadNotifications")}
+            title={following ? t("turnOffThreadNotifications") : t("getThreadNotifications")}
+            disabled={notificationQuery.isLoading}
+            onClick={toggleThreadFollow}
+          >
+            {following ? <BellIcon size={16} strokeWidth={1.8} /> : <BellOffIcon size={16} strokeWidth={1.8} />}
+          </button>}
+          <CloseButton size="sm" data-testid="thread-close" onClick={onClose} label={t("closeThread")} />
+        </div>
       </header>
 
       <div className="thread-messages-shell">
@@ -352,7 +415,11 @@ export default function ThreadPanel({
             // Threads show complete metadata for every message, including replies.
             return (
             <Fragment key={m.id}>
-              <Message
+              {rootDeleted && index === 0 ? (
+                <div className="thread-root-deleted" data-testid="thread-root-deleted" role="status">
+                  {t("messageDeleted")}
+                </div>
+              ) : <Message
                 m={m}
                 channelId={channel.id}
                 channelType={channel.type}
@@ -413,7 +480,7 @@ export default function ThreadPanel({
                 onToast={onToast}
                 canPin={canPin}
                 canQuote={channel.type === "dm"}
-              />
+              />}
               {index === 0 && (
                 <div className="thread-divider" data-testid="thread-reply-count">
                   <span dir={direction}>{replies.length === 1 ? t("oneReply") : t("replyCount").replace("{count}", String(replies.length))}</span>
@@ -470,14 +537,21 @@ export default function ThreadPanel({
 
       {error && <div className="error">{error}</div>}
 
-      {canPost ? <Composer
+      {!rootDeleted && canPost ? <Composer
         ref={composerRef}
         key={`thread-${root.id}`}
         channel={channel}
         parentId={root.id}
         alsoSendToChannel={alsoSendToChannel}
         onAlsoSendToChannelChange={setAlsoSendToChannel}
-        onSent={() => setAlsoSendToChannel(false)}
+        onSent={() => {
+          setAlsoSendToChannel(false);
+          queryClient.setQueryData(queryKeys.notificationSettings, (settings) => settings ? {
+            ...settings,
+            followedThreads: [...new Set([...(settings.followedThreads || []), root.id])],
+            mutedThreads: (settings.mutedThreads || []).filter((id) => id !== root.id),
+          } : settings);
+        }}
         users={users}
         channels={channels}
         onFindChannels={onFindChannels}
@@ -492,7 +566,7 @@ export default function ThreadPanel({
           setEditing(null);
           setError(null);
         }}
-      /> : (
+      /> : !rootDeleted && (
         <div className="channel-readonly-notice thread-readonly-notice" role="status">
           <strong>{t("managersOnly")}</strong>
           <span>{t("managersOnlyReplyHint")}</span>

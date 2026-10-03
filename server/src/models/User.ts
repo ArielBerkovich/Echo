@@ -52,6 +52,8 @@ const userSchema = new mongoose.Schema(
     vips: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     // Channels this user has marked for quick access in the Starred section.
     starredChannels: [{ type: mongoose.Schema.Types.ObjectId, ref: "Channel" }],
+    notificationDefaults: { type: String, enum: ["mentions", "all"], default: "mentions" },
+    conversationNotifications: { type: Map, of: String, default: {} },
   },
   { timestamps: true }
 );

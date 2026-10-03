@@ -5,6 +5,7 @@ import { roomFor, userRoom } from "./lib/rooms.js";
 import { buildMessageActivityMetadata } from "./lib/messageActivity.js";
 import { dispatchMentionWebhooks } from "./mentionWebhooks.js";
 import mongoose from "mongoose";
+import { ThreadFollow } from "./models/ThreadFollow.js";
 
 export const MAX_MESSAGE_ATTACHMENTS = 10;
 export const MAX_SURVEY_OPTION_CHARACTERS = 80;
@@ -206,6 +207,19 @@ export async function deliverMessage({ channel, authorId, body, parentId, broadc
   const idem = String(idempotencyKey || "").trim().slice(0, 128);
   if (idem) doc.idempotencyKey = idem;
   const message = await Message.create(doc);
+  // Starting or replying in a thread opts the sender into future replies.
+  await ThreadFollow.updateOne(
+    { user: authorId, thread: parentId || message._id },
+    {
+      $set: { following: true },
+      $setOnInsert: { user: authorId, thread: parentId || message._id, channel: channel._id },
+    },
+    { upsert: true }
+  );
+  io?.to(userRoom(authorId.toString())).emit("thread:follow", {
+    threadId: (parentId || message._id).toString(),
+    following: true,
+  });
   await message.populate("author");
 
   // A new DM message brings the conversation back for anyone who hid it.

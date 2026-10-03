@@ -25,8 +25,8 @@ export function useRealtime({
   setSavedIds,
   setStarredIds,
   setStarredChannelIds,
-  setView,
   setActiveChannel,
+  jumpToMessage,
   setProfileUser,
   refreshChannels,
   refreshDms,
@@ -39,6 +39,11 @@ export function useRealtime({
   const [onlineIds, setOnlineIds] = useState(() => new Set()); // ids of users currently connected
   const [connectionStatus, setConnectionStatus] = useState("online");
   const [recoveryEpoch, setRecoveryEpoch] = useState(0);
+  const jumpToMessageRef = useRef(jumpToMessage);
+  jumpToMessageRef.current = jumpToMessage;
+  useEffect(() => {
+    if (user) queryClient.fetchQuery({ queryKey: queryKeys.notificationSettings, queryFn: api.getNotificationSettings }).catch(() => {});
+  }, [user?.id, queryClient]);
 
   // Mirror state into refs so the stable socket listeners read current values.
   const activeRef = useRef(null);
@@ -368,7 +373,22 @@ export function useRealtime({
 
       // Desktop notification — Starred DMs, and channel @mentions.
       // Skipped if you're already focused on that conversation.
-      if (!mine && msg.kind !== "system" && notificationsActive()) {
+      const notificationSettings = queryClient.getQueryData(queryKeys.notificationSettings);
+      const conversationRule = notificationSettings?.conversations?.[msg.channelId] || "default";
+      const groupDm = inDms && !!dmsRef.current.find((d) => d.id === msg.channelId)?.isGroup;
+      const effectiveRule = conversationRule === "default"
+        ? (inChannels || groupDm ? notificationSettings?.defaults || "mentions" : "all")
+        : conversationRule;
+      const followsThread = !!msg.parentId && (notificationSettings?.followedThreads || []).includes(msg.parentId);
+      const mutesThread = !!msg.parentId && (notificationSettings?.mutedThreads || []).includes(msg.parentId);
+      const normalNotification = (inChannels || groupDm)
+        ? effectiveRule === "all" || (effectiveRule === "mentions" && mentionsMe)
+        : effectiveRule !== "mute";
+      const mentionedInUnmutedConversation = personallyMentioned && effectiveRule !== "mute";
+      const shouldNotify = followsThread || (mutesThread
+        ? mentionedInUnmutedConversation
+        : normalNotification);
+      if (!mine && msg.kind !== "system" && shouldNotify && notificationsActive()) {
         const focusedHere = !!active && msg.channelId === active.id && document.hasFocus();
         if (!focusedHere) {
           const sender = msg.author?.displayName || "Someone";
@@ -380,25 +400,27 @@ export function useRealtime({
               body: preview,
               tag: msg.channelId,
               onClick: () => {
-                setView("dms");
-                if (dm) {
-                  setActiveChannel({
-                    id: dm.id,
-                    type: "dm",
-                    dmName: dm.withUser.displayName,
-                    dmUserId: dm.withUser.id,
-                  });
-                }
+                jumpToMessageRef.current?.({
+                  channelId: msg.channelId,
+                  messageId: msg.id,
+                  threadId: msg.parentId || undefined,
+                  channelType: "dm",
+                });
               },
             }) || notificationShown;
-          } else if (mentionsMe && inChannels) {
+          } else if (inChannels) {
             const ch = channelsRef.current.find((c) => c.id === msg.channelId);
             notificationShown = showNotification(`Mention from ${sender}`, {
               body: `${ch?.name ? `#${ch.name} · ` : ""}${preview}`,
               tag: msg.channelId,
               onClick: () => {
-                setView("home");
-                if (ch) setActiveChannel(ch);
+                jumpToMessageRef.current?.({
+                  channelId: msg.channelId,
+                  messageId: msg.id,
+                  threadId: msg.parentId || undefined,
+                  channelType: ch?.type,
+                  channelName: ch?.name,
+                });
               },
             }) || notificationShown;
           }
@@ -407,6 +429,19 @@ export function useRealtime({
       if (notificationShown) playIncomingMessageSound();
     };
     socket.on("message:new", onMessage);
+
+    const onThreadFollow = ({ threadId, following, muted }) => {
+      queryClient.setQueryData(queryKeys.notificationSettings, (previous) => previous ? {
+        ...previous,
+        followedThreads: following
+          ? [...new Set([...(previous.followedThreads || []), threadId])]
+          : (previous.followedThreads || []).filter((id) => id !== threadId),
+        mutedThreads: muted
+          ? [...new Set([...(previous.mutedThreads || []), threadId])]
+          : (previous.mutedThreads || []).filter((id) => id !== threadId),
+      } : previous);
+    };
+    socket.on("thread:follow", onThreadFollow);
 
     // Server flags a message as "activity" for us — re-sync the badge (works even
     // for mentions in channels we haven't joined, where no message:new arrives).
@@ -420,6 +455,7 @@ export function useRealtime({
 
     return () => {
       socket.off("message:new", onMessage);
+      socket.off("thread:follow", onThreadFollow);
       socket.off("activity:bump", onActivityBump);
       socket.off("channel:catalog", onActivityBump);
     };

@@ -34,6 +34,7 @@ import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
 import { ChevronsDownIcon, DownloadIcon, FileIcon, FileTextIcon, MessageSquareTextIcon, PaperclipIcon, SearchIcon, StarIcon, UsersRoundIcon } from "lucide-react";
 import { queryKeys } from "../lib/queryClient.js";
 import { useI18n } from "../lib/i18n.js";
+import ConversationNotificationButton from "./NotificationPreferences.js";
 
 // Shimmering placeholder rows shown while a channel's history loads, so the
 // pane has structure immediately instead of flashing an empty "say hello" state.
@@ -382,14 +383,21 @@ const ChannelView = forwardRef(function ChannelView({
       if (channelId !== channel.id) return;
       if (parentId) {
         // A deleted thread reply: drop the parent's reply count.
-        setMessages((prev) =>
-          prev.map((m) =>
+        setMessages((prev) => {
+          const next = prev.map((m) =>
             m.id === parentId ? { ...m, replyCount: Math.max(0, (m.replyCount || 0) - 1) } : m
-          )
-        );
+          );
+          onCacheMessages?.(channel.id, next);
+          return next;
+        });
       } else {
-        setMessages((prev) => prev.filter((m) => m.id !== id));
+        setMessages((prev) => {
+          const next = prev.filter((m) => m.id !== id);
+          onCacheMessages?.(channel.id, next);
+          return next;
+        });
         setFiles((prev) => prev.filter((file) => file.messageId !== id));
+        setThread((prev) => prev?.id === id ? { ...prev, deleted: true } : prev);
       }
     };
     socket.on("message:deleted", onDeleted);
@@ -998,10 +1006,17 @@ const ChannelView = forwardRef(function ChannelView({
     }
   }, [jumpMessageId, messages, channel.id, loading, historyReady]);
 
+  // Every external jump is a fresh request, even when this thread is already
+  // open or the same reply is selected again.
+  useEffect(() => {
+    if (!openThreadJumpMessageId) return;
+    setThreadJumpTargetId(openThreadJumpMessageId);
+    setThreadJumpRequestId((requestId) => requestId + 1);
+  }, [openThreadJumpMessageId]);
+
   // Open a specific thread on request (e.g. clicking a thread reply in Activity).
   useEffect(() => {
     if (!openThreadId) return;
-    if (openThreadJumpMessageId) setThreadJumpTargetId(openThreadJumpMessageId);
     let cancelled = false;
     api
       .getThread(channel.id, openThreadId)
@@ -1123,6 +1138,7 @@ const ChannelView = forwardRef(function ChannelView({
               </button>
             )}
             <div className="header-actions">
+              <ConversationNotificationButton channel={channel} onToast={onToast} />
               <ChannelOptionButton
                 active={showFiles}
                 data-testid="channel-files"
@@ -1174,6 +1190,7 @@ const ChannelView = forwardRef(function ChannelView({
               </span>
             )}
             <div className="header-actions">
+              {isMember && <ConversationNotificationButton channel={channel} onToast={onToast} />}
               <ChannelOptionButton
                 active={showPinned}
                 data-testid="channel-pinned"
