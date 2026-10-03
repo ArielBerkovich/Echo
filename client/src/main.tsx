@@ -11,6 +11,10 @@ import "@fontsource/asap/latin-400.css";
 import "@fontsource/asap/latin-500.css";
 import "@fontsource/asap/latin-600.css";
 import "@fontsource/asap/latin-700.css";
+import "@fontsource/rubik/hebrew-400.css";
+import "@fontsource/rubik/hebrew-500.css";
+import "@fontsource/rubik/hebrew-600.css";
+import "@fontsource/rubik/hebrew-700.css";
 import "./styles.css";
 
 const Router = window.location.protocol === "file:" ? HashRouter : BrowserRouter;
