@@ -15,6 +15,7 @@
 - Public and private channels, direct messages, threads, mentions, reactions, pins, and saved messages.
 - Rich messages with Markdown, code blocks, emoji, uploads, forwarding, and scheduled delivery.
 - Search across messages, people, and channels, plus activity and saved-message views.
+- Per-user notification defaults, conversation overrides, and thread notification controls ([notification rules](docs/notifications.md)).
 - Selectable incoming-message sounds stored locally for fully offline playback.
 - API tokens, incoming webhooks, and an in-app OpenAPI reference.
 - Docker Compose and Helm deployments with MongoDB and S3-compatible storage.

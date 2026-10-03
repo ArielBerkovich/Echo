@@ -22,6 +22,7 @@ import {
   showTestNotification,
 } from "../lib/notify.js";
 import MessageSoundControls from "./MessageSoundControls.js";
+import { NotificationDefaults } from "./NotificationPreferences.js";
 import { CloseButton } from "./Button.js";
 import { useI18n } from "../lib/i18n.js";
 
@@ -693,22 +694,22 @@ export default function SettingsModal({
             {!user.isAdmin ? (user.canChangePassword ? <ChangePassword /> : <SsoPasswordNotice />) : <AdminPasswordReset users={users} currentUserId={user.id} />}
           </>}
 
-          {activeTab === "preferences" && <section className="settings-section preferences-page" data-testid="preferences-page">
-            <h3>{t("preferences")}</h3>
-            <section className="settings-preference-group settings-language-section" aria-labelledby="language-settings-heading">
-              <h3 id="language-settings-heading">{t("language")}</h3>
+          {activeTab === "preferences" && <>
+            <section className="settings-section" data-testid="preferences-page">
+              <h3>{t("notificationDefaults")}</h3>
+              <p className="settings-hint">{t("notificationDefaultsHint")}</p>
+              <NotificationDefaults />
+            </section>
+            <section className="settings-section">
+              <h3>{t("language")}</h3>
               <LanguageSelect language={language} setLanguage={setLanguage} t={t} />
             </section>
-            <section className="preferences-message-sounds" aria-labelledby="message-sounds-heading">
-              <div className="preferences-message-sounds-heading">
-                <div>
-                  <h3 id="message-sounds-heading">{t("messageSounds")}</h3>
-                  <p>{t("chooseMessageSound")}</p>
-                </div>
-              </div>
+            <section className="settings-section">
+              <h3>{t("messageSounds")}</h3>
+              <p className="settings-hint">{t("chooseMessageSound")}</p>
               <MessageSoundControls />
             </section>
-          </section>}
+          </>}
 
           {activeTab === "webhooks" && <section className="settings-section mention-webhook-settings" data-testid="mention-webhook-settings">
             <div className="mention-webhook-hero">
