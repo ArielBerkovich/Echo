@@ -173,7 +173,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
             </span>
             <div className="channel-details-heading-copy">
               <span className="channel-details-eyebrow">{t("channelDetails")}</span>
-              <Dialog.Title id="channel-details-title">{channel.name}</Dialog.Title>
+              <Dialog.Title id="channel-details-title"><bdi dir="ltr">{channel.name}</bdi></Dialog.Title>
               <span className="channel-details-meta">
                 {channel.type === "private" ? t("privateChannel") : t("publicChannel")} · {channel.memberCount ?? members.length} {t("groupMembers")}
               </span>
@@ -539,7 +539,7 @@ function EditableName({ value, error, onCheckAvailability, onSave }) {
           </div>
         </div>
       ) : (
-        <div className="channel-details-value" dir="ltr">#{value}</div>
+        <div className="channel-details-value channel-details-channel-name" dir="ltr"><bdi dir="ltr">#{value}</bdi></div>
       )}
     </section>
   );

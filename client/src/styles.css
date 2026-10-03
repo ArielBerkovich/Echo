@@ -7249,6 +7249,10 @@ html[data-interface-direction="rtl"] .message .msg-menu {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+html[dir="rtl"] .channel-details-heading h2 {
+  direction: ltr;
+  text-align: left;
+}
 .channel-details-meta {
   display: block;
   margin-top: 5px;
@@ -7429,6 +7433,16 @@ html[data-interface-direction="rtl"] .message .msg-menu {
   line-height: 1.55;
   white-space: pre-wrap;
   word-break: break-word;
+}
+.channel-details-channel-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  word-break: normal;
+}
+html[dir="rtl"] .channel-details-channel-name {
+  direction: ltr;
+  text-align: left;
 }
 .channel-details-value.empty {
   color: var(--muted);
@@ -9484,6 +9498,11 @@ html[data-interface-direction="rtl"] .message.flash {
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+html[dir="rtl"] .forward-destination-copy strong.forward-channel-label,
+html[dir="rtl"] .forward-chip > span.forward-channel-label {
+  direction: ltr;
+  text-align: left;
 }
 .forward-destination-copy small {
   color: var(--muted);
