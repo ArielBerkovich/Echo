@@ -71,6 +71,7 @@ function Message({
   onReact,
   onToggleReaction,
   onOpenThread,
+  onViewInChannel,
   onQuote,
   onForward,
   onJump,
@@ -478,19 +479,32 @@ function Message({
           </div>
         )}
 
-        {m.broadcastToChannel && !inThread && (
+        {m.broadcastToChannel && (
           <div className="broadcast-reply-label">
             <span>{t("replySentToChannel")}</span>
-            <button
-              type="button"
-              className="broadcast-reply-thread-link"
-              data-testid={`message-${mid}-view-thread`}
-              aria-label={t("viewThread")}
-              onClick={() => onOpenThread?.()}
-            >
-              <span aria-hidden="true"><ReplyIcon /></span>
-              <span>{t("viewThread")}</span>
-            </button>
+            {inThread ? (
+              <button
+                type="button"
+                className="broadcast-reply-thread-link"
+                data-testid={`message-${mid}-view-in-channel`}
+                aria-label={t("viewInChannel")}
+                onClick={() => onViewInChannel?.()}
+              >
+                <span aria-hidden="true"><ArrowUpRight size={16} strokeWidth={1.7} /></span>
+                <span>{t("viewInChannel")}</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="broadcast-reply-thread-link"
+                data-testid={`message-${mid}-view-thread`}
+                aria-label={t("viewThread")}
+                onClick={() => onOpenThread?.()}
+              >
+                <span aria-hidden="true"><ReplyIcon /></span>
+                <span>{t("viewThread")}</span>
+              </button>
+            )}
           </div>
         )}
 

@@ -42,6 +42,7 @@ export default function ThreadPanel({
   onOpenLightbox,
   onToast,
   openThreadJumpMessageId = null,
+  openThreadJumpRequestId = 0,
   composerFocusRequest = 0,
 }) {
   const { t, language } = useI18n();
@@ -220,17 +221,18 @@ export default function ThreadPanel({
   useEffect(() => {
     const targetId = openThreadJumpMessageId || jumpTargetRef.current;
     if (!targetId) return;
-    if (jumpHandledRef.current === targetId) return;
+    const requestKey = `${openThreadJumpRequestId}:${targetId}`;
+    if (jumpHandledRef.current === requestKey) return;
     const target = document.querySelector(`.thread-body [data-mid="${targetId}"]`);
     if (!target) return;
-    jumpHandledRef.current = targetId;
+    jumpHandledRef.current = requestKey;
     // Prevent the ResizeObserver and live-reply handling from immediately
     // restoring the thread to its bottom after this permalink scrolls.
     scrollThreadMessageIntoView(target, (stickToBottom) => {
       stickToBottomRef.current = stickToBottom;
     });
     setHighlightId(targetId);
-  }, [openThreadJumpMessageId, replies, rootMsg.id]);
+  }, [openThreadJumpMessageId, openThreadJumpRequestId, replies, rootMsg.id]);
 
   useEffect(() => {
     if (!highlightId) return undefined;
@@ -383,6 +385,15 @@ export default function ThreadPanel({
                 }}
                 onToggleReaction={(emoji) => toggleReaction(m.id, emoji)}
                 onOpenThread={() => {}}
+                onViewInChannel={() => {
+                  onClose?.();
+                  onJumpToMessage?.({
+                    channelId: channel.id,
+                    messageId: m.id,
+                    channelType: channel.type,
+                    channelName: channel.name,
+                  });
+                }}
                 onQuote={() => {
                   setActionsFor(null);
                   setMenuFor(null);
