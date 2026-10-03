@@ -23,6 +23,7 @@ import { allureRouter } from "./routes/allure.js";
 import { jenkinsRouter } from "./routes/jenkins.js";
 import { mentionWebhooksRouter } from "./routes/mentionWebhooks.js";
 import { groupsRouter } from "./routes/groups.js";
+import { mcpRouter } from "./routes/mcp.js";
 
 export function createApp() {
   const app = express();
@@ -41,6 +42,7 @@ export function createApp() {
 
   app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
   app.get("/api/openapi.json", (_req, res) => res.json(openApiDocument()));
+  app.use("/mcp", mcpRouter);
   app.use("/api/desktop-downloads", desktopDownloadsRouter(config.desktopUpdateDir));
   app.use("/api/desktop-updates", desktopUpdatesRouter(config.desktopUpdateDir));
   app.use("/api/auth", authRouter);
