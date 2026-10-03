@@ -5165,6 +5165,15 @@ html[dir="rtl"] .members-panel-person-copy .channel-details-person-handle {
   box-sizing: border-box;
   padding-inline: calc(var(--thread-body-gutter) + 14px);
 }
+.thread-root-deleted {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px 16px;
+  border-inline-start: 2px solid var(--border);
+  color: var(--muted);
+  font-size: 14px;
+  font-style: italic;
+}
 .thread-divider {
   display: flex;
   align-items: center;

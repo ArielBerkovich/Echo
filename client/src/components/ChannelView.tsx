@@ -383,14 +383,21 @@ const ChannelView = forwardRef(function ChannelView({
       if (channelId !== channel.id) return;
       if (parentId) {
         // A deleted thread reply: drop the parent's reply count.
-        setMessages((prev) =>
-          prev.map((m) =>
+        setMessages((prev) => {
+          const next = prev.map((m) =>
             m.id === parentId ? { ...m, replyCount: Math.max(0, (m.replyCount || 0) - 1) } : m
-          )
-        );
+          );
+          onCacheMessages?.(channel.id, next);
+          return next;
+        });
       } else {
-        setMessages((prev) => prev.filter((m) => m.id !== id));
+        setMessages((prev) => {
+          const next = prev.filter((m) => m.id !== id);
+          onCacheMessages?.(channel.id, next);
+          return next;
+        });
         setFiles((prev) => prev.filter((file) => file.messageId !== id));
+        setThread((prev) => prev?.id === id ? { ...prev, deleted: true } : prev);
       }
     };
     socket.on("message:deleted", onDeleted);
