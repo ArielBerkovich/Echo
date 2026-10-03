@@ -1067,7 +1067,7 @@ export default function App() {
     const activeDm = {
       ...channel,
       type: "dm",
-      dmName: isSelf ? `${target.displayName} (you)` : (participants.length > 1 ? participants.filter((person) => person.id !== user.id).map((person) => person.displayName).join(", ") : target.displayName),
+      dmName: isSelf ? `${target.displayName} (${t("you")})` : (participants.length > 1 ? participants.filter((person) => person.id !== user.id).map((person) => person.displayName).join(", ") : target.displayName),
       dmUsername: participants.length > 1 ? undefined : target.username,
       dmUserId: participants.length > 1 ? undefined : target.id,
       participants,

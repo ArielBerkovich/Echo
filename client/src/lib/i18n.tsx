@@ -944,7 +944,7 @@ export const translations = {
     filterChannelsAndDms: "סינון ערוצים והודעות ישירות",
     findADm: "חיפוש הודעה ישירה",
     noMessagesYet: "אין הודעות עדיין",
-    directMessageHistoryStart: "כאן מתחילה היסטוריית ההודעות הישירות שלך. אפשר להתחיל בהודעת שלום 👋",
+    directMessageHistoryStart: "כאן מתחילה השיחה. אפשר להגיד שלום 👋",
     noMatches: "לא נמצאו התאמות.",
     noConversationsYet: "אין שיחות עדיין. אפשר להתחיל בהודעה חדשה.",
     noMatchingChannels: "לא נמצאו ערוצים תואמים.",
