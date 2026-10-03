@@ -8,6 +8,8 @@ test("captures the Hebrew workspace for visual inspection", async ({ page }) => 
   await page.getByRole("button", { name: "Preferences", exact: true }).click();
   await page.getByTestId("settings-language").selectOption("he");
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+  await expect(page.locator(".search-shortcut-hint")).toHaveCSS("direction", "ltr");
+  await expect(page.locator(".search-shortcut-hint")).toHaveCSS("unicode-bidi", "isolate");
   await page.screenshot({ path: "test-results/hebrew-settings.png", fullPage: true });
   await page.getByTestId("rail-dms").click();
   await expect(page.locator(".dm-self-tag")).toHaveText("אני");
