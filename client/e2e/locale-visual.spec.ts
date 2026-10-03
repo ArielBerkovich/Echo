@@ -8,9 +8,17 @@ test("captures the Hebrew workspace for visual inspection", async ({ page }) => 
   await page.getByRole("button", { name: "Preferences", exact: true }).click();
   await page.getByTestId("settings-language").selectOption("he");
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+  await expect(page.locator(".search-shortcut-hint")).toHaveCSS("direction", "ltr");
+  await expect(page.locator(".search-shortcut-hint")).toHaveCSS("unicode-bidi", "isolate");
   await page.screenshot({ path: "test-results/hebrew-settings.png", fullPage: true });
   await page.getByTestId("rail-dms").click();
   await expect(page.locator(".dm-self-tag")).toHaveText("אני");
+  await page.getByTestId("dm-self-open").click();
+  const selfDmTitle = page.locator(".channel-header .ch-name");
+  await expect(selfDmTitle).toContainText("(אני)");
+  await expect(selfDmTitle).not.toContainText("(you)");
+  await expect(selfDmTitle.locator("bdi")).toHaveCount(2);
+  await expect(page.locator(".empty-state p")).toHaveText("כאן מתחילה השיחה. אפשר להגיד שלום 👋");
 
   await page.goto(`/channels/${fixture.projectChannel.name}`);
   await expect(page.getByTestId("channel-title")).toBeVisible();

@@ -1111,7 +1111,14 @@ const ChannelView = forwardRef(function ChannelView({
                 title={t("viewProfile")}
                 onClick={() => dmUser?.id && onOpenProfile?.(dmUser.id)}
               >
-                <bdi dir="auto">{dmDisplayLabel}</bdi>
+                {channel.isSelf ? (
+                  <>
+                    <bdi dir="auto">{dmUser?.displayName || dmDisplayLabel}</bdi>{" "}
+                    <bdi dir="auto">({t("you")})</bdi>
+                  </>
+                ) : (
+                  <bdi dir="auto">{dmDisplayLabel}</bdi>
+                )}
               </button>
             )}
             <div className="header-actions">

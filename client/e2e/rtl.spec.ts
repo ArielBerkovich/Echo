@@ -640,6 +640,95 @@ test("keeps the Hebrew forward-note placeholder RTL", async ({ page }) => {
   }))).toEqual({ direction: "rtl", textAlign: "right", float: "right" });
 });
 
+test("keeps the channel hash before its name in Hebrew forward results", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => localStorage.setItem("echo.language", "he"));
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
+
+  const message = page.getByTestId(`message-${fixture.messages.threadRoot.id}`);
+  await expect(message).toBeVisible();
+  await message.hover();
+  const forward = page.getByTestId(`message-${fixture.messages.threadRoot.id}-forward`);
+  await expect(forward).toBeVisible();
+  await forward.click({ force: true });
+
+  const modal = page.getByTestId("forward-modal");
+  await expect(modal).toBeVisible();
+  await modal.getByTestId("forward-search").fill(fixture.projectChannel.name);
+  const result = modal.locator(".forward-destination-row").filter({ hasText: fixture.projectChannel.name }).first();
+  const resultTitle = result.locator(".forward-destination-copy strong");
+  const resultLabel = resultTitle.locator("bdi");
+  await expect(resultLabel).toHaveAttribute("dir", "ltr");
+  await expect(resultLabel).toHaveText(`#${fixture.projectChannel.name}`);
+  await expect.poll(() => resultTitle.evaluate((element) => ({
+    direction: getComputedStyle(element).direction,
+    textAlign: getComputedStyle(element).textAlign,
+    textOverflow: getComputedStyle(element).textOverflow,
+    isTruncated: element.scrollWidth > element.clientWidth,
+  }))).toEqual({ direction: "ltr", textAlign: "left", textOverflow: "ellipsis", isTruncated: true });
+
+  const hashBeforeName = await resultLabel.evaluate((element) => {
+    const text = element.firstChild;
+    if (!text || text.nodeType !== Node.TEXT_NODE) return false;
+    const hash = document.createRange();
+    hash.setStart(text, 0);
+    hash.setEnd(text, 1);
+    const name = document.createRange();
+    name.setStart(text, 1);
+    name.setEnd(text, text.textContent.length);
+    return hash.getBoundingClientRect().left < name.getBoundingClientRect().left;
+  });
+  expect(hashBeforeName).toBe(true);
+
+  await result.click();
+  const selectedLabel = modal.locator(".forward-chip").filter({ hasText: fixture.projectChannel.name }).locator("bdi");
+  await expect(selectedLabel).toHaveAttribute("dir", "ltr");
+  await expect(selectedLabel).toHaveText(`#${fixture.projectChannel.name}`);
+  await expect.poll(() => selectedLabel.locator("..").evaluate((element) => ({
+    direction: getComputedStyle(element).direction,
+    textAlign: getComputedStyle(element).textAlign,
+    textOverflow: getComputedStyle(element).textOverflow,
+  }))).toEqual({ direction: "ltr", textAlign: "left", textOverflow: "ellipsis" });
+});
+
+test("truncates long channel names from the correct side in Hebrew details", async ({ page }) => {
+  const longName = `rtl-${fixture.suffix.replace(/[^a-z0-9]/gi, "").slice(-8)}-${"x".repeat(48)}`;
+  const created = await requestAsToken(page, fixture.alice.token, "/channels", {
+    method: "POST",
+    body: { name: longName, type: "public" },
+  });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => localStorage.setItem("echo.language", "he"));
+  try {
+    await page.goto(`/channels/${longName}`);
+    await page.getByTestId("channel-title").click();
+
+    const details = page.getByTestId("channel-details-dialog");
+    await expect(details).toBeVisible();
+    const heading = details.locator(".channel-details-heading h2");
+    await expect(heading.locator("bdi")).toHaveAttribute("dir", "ltr");
+    await expect.poll(() => heading.evaluate((element) => ({
+      direction: getComputedStyle(element).direction,
+      textAlign: getComputedStyle(element).textAlign,
+      textOverflow: getComputedStyle(element).textOverflow,
+      isTruncated: element.scrollWidth > element.clientWidth,
+    }))).toEqual({ direction: "ltr", textAlign: "left", textOverflow: "ellipsis", isTruncated: true });
+    const channelName = details.locator(".channel-details-channel-name");
+    await expect(channelName).toHaveText(`#${longName}`);
+    await expect.poll(() => channelName.evaluate((element) => ({
+      direction: getComputedStyle(element).direction,
+      textAlign: getComputedStyle(element).textAlign,
+      textOverflow: getComputedStyle(element).textOverflow,
+      isTruncated: element.scrollWidth > element.clientWidth,
+    }))).toEqual({ direction: "ltr", textAlign: "left", textOverflow: "ellipsis", isTruncated: true });
+  } finally {
+    await requestAsToken(page, fixture.alice.token, `/channels/${created.channel.id}`, { method: "DELETE" }).catch(() => {});
+  }
+});
+
 test("aligns selected group details to the RTL content edge", async ({ page }) => {
   const created = await requestAsToken(page, fixture.alice.token, "/groups", {
     method: "POST",
