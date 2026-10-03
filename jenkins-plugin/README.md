@@ -14,6 +14,26 @@ echoSend(
 )
 ```
 
+For a channel notification, the step can send a native Echo preview card and mention Echo users. Mentioned usernames are added to the message body, so Echo applies its normal mention notifications. Card attributes with `type: 'user'` (or `'person'`) render as people on the card; that visual attribute does not itself create a mention.
+
+```groovy
+echoSend(
+  channel: 'builds',
+  message: 'Deployment completed successfully.',
+  mentions: ['user.c'],
+  card: [
+    title: 'Build #42',
+    description: 'Deployment completed successfully.',
+    url: 'https://jenkins.example/job/deploy/42/',
+    color: 'green',
+    attributes: [
+      [label: 'Owner', value: 'user.c', type: 'user'],
+      [label: 'Status', value: 'Success']
+    ]
+  ]
+)
+```
+
 Exactly one of `channel` or `recipient` must be supplied. Store the Echo API token as a Jenkins Secret Text credential, then select it in the global Echo Notifier configuration.
 
-For a channel notification, use `channel: 'builds'` instead of `recipient`. `fields` is a map rendered as Markdown bullets, and `idempotencyKey` is forwarded to Echo for safe retries. The plugin uses Echo's existing `/api/channels/:id/messages` and `/api/users/:username/messages` endpoints; no Echo API changes are required.
+`fields` is a map rendered as Markdown bullets, and `idempotencyKey` is forwarded to Echo for safe retries. Cards use Echo's message-card fields: `eyebrow`, `title`, `description`, `url`, `color`, `titleColor`, `timestamp`, and up to 12 `attributes` (`label`, `value`, and optional `type`). Echo validates the card when the message is sent. The plugin uses Echo's existing `/api/channels/:id/messages` and `/api/users/:username/messages` endpoints; no Echo API changes are required.
