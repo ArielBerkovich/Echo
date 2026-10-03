@@ -45,6 +45,18 @@ async function expectStaticRailSelection(page, view = "home") {
 }
 
 test("restores an authenticated session into the default channel", async ({ page }) => {
+  const composerErrors: string[] = [];
+  page.on("console", (message) => {
+    const text = message.text();
+    if (
+      message.type() === "error"
+      && text.includes("Composer")
+      && (text.includes("hasn't mounted yet") || text.includes("reading 'commands'"))
+    ) {
+      composerErrors.push(text);
+    }
+  });
+
   const earlierChannel = await requestAsToken(page, fixture.alice.token, "/channels", {
     method: "POST",
     body: { name: `aaa-default-check-${fixture.suffix}`, type: "private" },
@@ -55,6 +67,9 @@ test("restores an authenticated session into the default channel", async ({ page
     await expect(page.getByTestId("rail-brand")).toBeVisible();
     await expect(page.getByText("#general", { exact: true })).toBeVisible();
     await expect(page.getByTestId("composer-editor")).toBeVisible();
+    await page.reload();
+    await expect(page.getByTestId("composer-editor")).toBeVisible();
+    expect(composerErrors).toEqual([]);
   } finally {
     await requestAsToken(page, fixture.alice.token, `/channels/${earlierChannel.channel.id}`, {
       method: "DELETE",
