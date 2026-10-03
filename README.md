@@ -148,6 +148,12 @@ POST /api/channels/general/messages
 POST /api/users/bob.builder/messages
 ```
 
+Echo also exposes a token-protected MCP endpoint at `/mcp` over Streamable
+HTTP. Configure an MCP client with an Echo API token as `Authorization:
+Bearer <token>`. The endpoint exposes authenticated channel, search, user,
+message-reading, and message-sending tools; private-channel visibility and
+channel posting permissions are enforced as the authenticated Echo user.
+
 ## Repository layout
 
 ```text
