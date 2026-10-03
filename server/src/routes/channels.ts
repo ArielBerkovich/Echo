@@ -18,6 +18,7 @@ import { ActivityEvent } from "../models/ActivityEvent.js";
 import { isValidChannelName } from "../lib/channelName.js";
 import { CustomEmoji } from "../models/CustomEmoji.js";
 import { applyReaction, reactionSummary } from "../lib/reactions.js";
+import { ThreadFollow } from "../models/ThreadFollow.js";
 
 // Whitelist attachment fields (keys produced by /api/uploads). Mirrors the
 // socket sender so the REST and realtime paths behave identically.
@@ -79,6 +80,58 @@ import { requireAuth } from "../middleware/requireAuth.js";
 
 export const channelsRouter = Router();
 channelsRouter.use(requireAuth);
+
+// Follow a specific thread for notifications. Thread follows are per-user and
+// remain active even when the containing conversation is muted.
+channelsRouter.get("/:channelId/threads/:threadId/follow", async (req, res) => {
+  const { channelId, threadId } = req.params;
+  if (!mongoose.isValidObjectId(channelId) || !mongoose.isValidObjectId(threadId)) return res.status(404).json({ error: "thread not found" });
+  const channel = await Channel.findById(channelId).select("members type");
+  const root = await Message.findOne({ _id: threadId, channel: channelId, parentId: null }).select("_id");
+  if (!channel || !root || (channel.type !== "public" && !channel.members.some((member) => member.equals(req.user._id)))) return res.status(404).json({ error: "thread not found" });
+  const preference = await ThreadFollow.findOne({ user: req.user._id, thread: root._id }).select("following").lean();
+  res.json({
+    threadId: root._id.toString(),
+    following: !!preference && preference.following !== false,
+    muted: preference?.following === false,
+  });
+});
+
+channelsRouter.put("/:channelId/threads/:threadId/follow", async (req, res) => {
+  const { channelId, threadId } = req.params;
+  if (!mongoose.isValidObjectId(channelId) || !mongoose.isValidObjectId(threadId)) {
+    return res.status(404).json({ error: "thread not found" });
+  }
+  const channel = await Channel.findById(channelId).select("members type");
+  const root = await Message.findOne({ _id: threadId, channel: channelId, parentId: null }).select("_id");
+  if (!channel || !root || (channel.type !== "public" && !channel.members.some((member) => member.equals(req.user._id)))) {
+    return res.status(404).json({ error: "thread not found" });
+  }
+  const following = req.body?.following;
+  if (following !== true && following !== false && following !== null) {
+    return res.status(400).json({ error: "following must be true, false, or null" });
+  }
+  if (following === null) {
+    await ThreadFollow.deleteOne({ user: req.user._id, thread: root._id });
+  } else {
+    await ThreadFollow.updateOne(
+      { user: req.user._id, thread: root._id },
+      {
+        $set: { following },
+        $setOnInsert: { user: req.user._id, thread: root._id, channel: channel._id },
+      },
+      { upsert: true }
+    );
+  }
+  const isFollowing = following === true;
+  const isMuted = following === false;
+  emitToUser(req.user._id.toString(), "thread:follow", {
+    threadId: root._id.toString(),
+    following: isFollowing,
+    muted: isMuted,
+  });
+  res.json({ threadId: root._id.toString(), following: isFollowing, muted: isMuted });
+});
 
 function escapeRegex(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

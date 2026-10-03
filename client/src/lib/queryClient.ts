@@ -1,6 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 
 export const queryKeys = {
+  notificationSettings: ["notification-settings"] as const,
   activity: ["activity"] as const,
   saved: ["saved"] as const,
   savedIds: ["workspace", "saved-ids"] as const,

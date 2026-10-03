@@ -224,6 +224,9 @@ export const api = {
   usernameOptions: (firstName, lastName, username) =>
     request(`/auth/username-options?firstName=${encodeURIComponent(firstName)}&lastName=${encodeURIComponent(lastName)}&username=${encodeURIComponent(username)}`),
   me: () => request("/auth/me"),
+  getNotificationSettings: () => request("/users/notification-settings"),
+  updateNotificationSettings: (payload) => request("/users/notification-settings", { method: "PUT", body: payload }),
+  setThreadFollow: (channelId, threadId, following) => request(`/channels/${encodeURIComponent(channelId)}/threads/${encodeURIComponent(threadId)}/follow`, { method: "PUT", body: { following } }),
   getWorkspace: () => request("/workspace"),
   updateWorkspace: (payload) => request("/workspace", { method: "PATCH", body: payload }),
   getMentionWebhook: () => request("/mention-webhook"),

@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { ChevronsDownIcon } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { BellIcon, BellOffIcon, ChevronsDownIcon } from "lucide-react";
 import { api } from "../api.js";
 import { getSocket } from "../socket.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
@@ -11,6 +12,7 @@ import { hasThreadJumpTarget, scrollThreadMessageIntoView } from "../lib/threadN
 import { CloseButton } from "./Button.js";
 import { useI18n } from "../lib/i18n.js";
 import { languageDirection } from "../lib/languages.js";
+import { queryKeys } from "../lib/queryClient.js";
 
 // Right-hand thread view: the root message + its replies + a reply composer.
 // Reuses the full Message (reactions, forward, edit) and Composer (emoji, bold,
@@ -46,6 +48,34 @@ export default function ThreadPanel({
   composerFocusRequest = 0,
 }) {
   const { t, language } = useI18n();
+  const queryClient = useQueryClient();
+  const notificationQuery = useQuery({
+    queryKey: queryKeys.notificationSettings,
+    queryFn: api.getNotificationSettings,
+    staleTime: Infinity,
+  });
+  const following = (notificationQuery.data?.followedThreads || []).includes(root.id);
+  const muted = (notificationQuery.data?.mutedThreads || []).includes(root.id);
+  async function toggleThreadFollow() {
+    const nextFollowing = !following;
+    const previous = queryClient.getQueryData(queryKeys.notificationSettings);
+    queryClient.setQueryData(queryKeys.notificationSettings, (settings) => settings ? {
+      ...settings,
+      followedThreads: nextFollowing
+        ? [...new Set([...(settings.followedThreads || []), root.id])]
+        : (settings.followedThreads || []).filter((id) => id !== root.id),
+      mutedThreads: nextFollowing
+        ? (settings.mutedThreads || []).filter((id) => id !== root.id)
+        : [...new Set([...(settings.mutedThreads || []), root.id])],
+    } : settings);
+    try {
+      await api.setThreadFollow(channel.id, root.id, nextFollowing);
+      onToast?.(t("threadNotificationPreferenceSaved"));
+    } catch (followError) {
+      queryClient.setQueryData(queryKeys.notificationSettings, previous);
+      setError(followError.message || t("threadNotificationSaveFailed"));
+    }
+  }
   const direction = languageDirection(language);
   const [rootMsg, setRootMsg] = useState(root); // local copy so live edits/reactions apply
   const [replies, setReplies] = useState([]);
@@ -342,7 +372,21 @@ export default function ThreadPanel({
         <div className="thread-heading">
           <span className="thread-title">{t("thread")}</span>
         </div>
-        <CloseButton size="sm" data-testid="thread-close" onClick={onClose} label={t("closeThread")} />
+        <div className="thread-header-actions">
+          <button
+            type="button"
+            className={`thread-follow-toggle${following || muted ? " is-following" : ""}`}
+            data-testid="thread-follow-toggle"
+            aria-pressed={following}
+            aria-label={following ? t("turnOffThreadNotifications") : t("getThreadNotifications")}
+            title={following ? t("turnOffThreadNotifications") : t("getThreadNotifications")}
+            disabled={notificationQuery.isLoading}
+            onClick={toggleThreadFollow}
+          >
+            {following ? <BellIcon size={16} strokeWidth={1.8} /> : <BellOffIcon size={16} strokeWidth={1.8} />}
+          </button>
+          <CloseButton size="sm" data-testid="thread-close" onClick={onClose} label={t("closeThread")} />
+        </div>
       </header>
 
       <div className="thread-messages-shell">
@@ -477,7 +521,14 @@ export default function ThreadPanel({
         parentId={root.id}
         alsoSendToChannel={alsoSendToChannel}
         onAlsoSendToChannelChange={setAlsoSendToChannel}
-        onSent={() => setAlsoSendToChannel(false)}
+        onSent={() => {
+          setAlsoSendToChannel(false);
+          queryClient.setQueryData(queryKeys.notificationSettings, (settings) => settings ? {
+            ...settings,
+            followedThreads: [...new Set([...(settings.followedThreads || []), root.id])],
+            mutedThreads: (settings.mutedThreads || []).filter((id) => id !== root.id),
+          } : settings);
+        }}
         users={users}
         channels={channels}
         onFindChannels={onFindChannels}

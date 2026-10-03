@@ -13,9 +13,68 @@ import { aliasesByUserId } from "../lib/userAliases.js";
 import { ensureDmChannel, ensureSelfDmChannel } from "../lib/dms.js";
 import { deliverMessage, sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError } from "../deliver.js";
 import { cardError, sanitizeCard } from "../lib/messageCard.js";
+import { ThreadFollow } from "../models/ThreadFollow.js";
 
 export const usersRouter = Router();
 usersRouter.use(requireAuth);
+
+// Personal notification rules follow the user across devices. Conversation
+// overrides are per-user; unread/read state remains entirely independent.
+usersRouter.get("/notification-settings", async (req, res) => {
+  const conversations = Object.fromEntries(req.user.conversationNotifications || []);
+  const channels = await Channel.find({ _id: { $in: Object.keys(conversations) } }).populate("members", "displayName");
+  const labels = Object.fromEntries(channels.map((channel) => {
+    const names = (channel.members || []).filter((member) => !member._id.equals(req.user._id)).map((member) => member.displayName);
+    return [channel._id.toString(), channel.type === "dm" ? names.join(", ") || "Direct message" : `#${channel.name}`];
+  }));
+  const [followedThreads, mutedThreads] = await Promise.all([
+    ThreadFollow.find({ user: req.user._id, following: { $ne: false } }).select("thread -_id").lean(),
+    ThreadFollow.find({ user: req.user._id, following: false }).select("thread -_id").lean(),
+  ]);
+  res.json({
+    defaults: req.user.notificationDefaults || "mentions",
+    conversations,
+    labels,
+    followedThreads: followedThreads.map((item) => String(item.thread)),
+    mutedThreads: mutedThreads.map((item) => String(item.thread)),
+  });
+});
+
+usersRouter.put("/notification-settings", async (req, res) => {
+  const { defaults, conversationId, rule } = req.body || {};
+  if (defaults !== undefined) {
+    if (!["mentions", "all"].includes(defaults)) return res.status(400).json({ error: "invalid notification default" });
+    req.user.notificationDefaults = defaults;
+  }
+  if (conversationId !== undefined) {
+    if (!/^[a-f0-9]{24}$/i.test(String(conversationId))) return res.status(400).json({ error: "invalid conversation id" });
+    if (!["default", "all", "mentions", "mute"].includes(rule)) return res.status(400).json({ error: "invalid conversation notification rule" });
+    const channel = await Channel.findById(conversationId).select("members");
+    if (!channel || !channel.members.some((id) => id.equals(req.user._id))) return res.status(404).json({ error: "conversation not found" });
+    const rules = new Map(req.user.conversationNotifications || []);
+    if (rule === "default") rules.delete(String(conversationId));
+    else rules.set(String(conversationId), rule);
+    req.user.conversationNotifications = rules;
+  }
+  await req.user.save();
+  const conversations = Object.fromEntries(req.user.conversationNotifications || []);
+  const channels = await Channel.find({ _id: { $in: Object.keys(conversations) } }).populate("members", "displayName");
+  const labels = Object.fromEntries(channels.map((channel) => {
+    const names = (channel.members || []).filter((member) => !member._id.equals(req.user._id)).map((member) => member.displayName);
+    return [channel._id.toString(), channel.type === "dm" ? names.join(", ") || "Direct message" : `#${channel.name}`];
+  }));
+  const [followedThreads, mutedThreads] = await Promise.all([
+    ThreadFollow.find({ user: req.user._id, following: { $ne: false } }).select("thread -_id").lean(),
+    ThreadFollow.find({ user: req.user._id, following: false }).select("thread -_id").lean(),
+  ]);
+  res.json({
+    defaults: req.user.notificationDefaults || "mentions",
+    conversations,
+    labels,
+    followedThreads: followedThreads.map((item) => String(item.thread)),
+    mutedThreads: mutedThreads.map((item) => String(item.thread)),
+  });
+});
 
 // GET /api/users — directory used to power @mention autocomplete.
 // Excludes the internal system account.
