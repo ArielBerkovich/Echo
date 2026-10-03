@@ -9,6 +9,13 @@ export const THEMES = [
   { id: "dracula", label: "Dracula", swatch: ["#343746", "#282a36", "#bd93f9"] },
   { id: "sand", label: "Sand", swatch: ["#5a4632", "#fffdf8", "#c2682a"] },
   { id: "calm", label: "Stillwater", swatch: ["#1d2936", "#202a35", "#78a9c4"] },
+  { id: "forest", label: "Forest", swatch: ["#395448", "#eef3ee", "#4d7059"] },
+  { id: "ocean", label: "Ocean", swatch: ["#355761", "#eef4f5", "#4b7782"] },
+  { id: "rose", label: "Rose", swatch: ["#624653", "#fbf2f4", "#a06b80"] },
+  { id: "lavender", label: "Lavender", swatch: ["#4a435a", "#f4f1f8", "#7b6f91"] },
+  { id: "ember", label: "Ember", swatch: ["#60483b", "#faf2ed", "#a06f55"] },
+  { id: "graphite", label: "Graphite", swatch: ["#3a3d3f", "#f2f3f3", "#626b6f"] },
+  { id: "citrus", label: "Citrus", swatch: ["#51563a", "#f4f4ec", "#73775a"] },
 ];
 
 const DEFAULT_THEME = "nord";

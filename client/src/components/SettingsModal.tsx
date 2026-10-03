@@ -45,6 +45,13 @@ const THEME_TRANSLATION_KEYS = {
   dracula: "themeDracula",
   sand: "themeSand",
   calm: "themeStillwater",
+  forest: "themeForest",
+  ocean: "themeOcean",
+  rose: "themeRose",
+  lavender: "themeLavender",
+  ember: "themeEmber",
+  graphite: "themeGraphite",
+  citrus: "themeCitrus",
 };
 
 function LanguageSelect({ language, setLanguage, t }) {
