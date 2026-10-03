@@ -8,7 +8,6 @@ import hudson.Extension;
 import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.security.ACL;
-import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
 import java.io.Serializable;
@@ -17,10 +16,13 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import jenkins.model.Jenkins;
+import net.sf.json.JSONObject;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
@@ -29,7 +31,6 @@ import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
 
 /** Sends a structured notification through Echo's existing REST API. */
 public class EchoSendStep extends AbstractStepImpl implements Serializable {
@@ -39,9 +40,12 @@ public class EchoSendStep extends AbstractStepImpl implements Serializable {
   private String credentialId;
   private String channel;
   private String recipient;
+  private String parentId;
   private String status;
   private String title;
   private Map<String, String> fields;
+  private Map<String, Object> card;
+  private List<String> mentions;
   private String idempotencyKey;
   private boolean failOnError;
 
@@ -55,9 +59,12 @@ public class EchoSendStep extends AbstractStepImpl implements Serializable {
   public String getCredentialId() { return credentialId; }
   public String getChannel() { return channel; }
   public String getRecipient() { return recipient; }
+  public String getParentId() { return parentId; }
   public String getStatus() { return status; }
   public String getTitle() { return title; }
   public Map<String, String> getFields() { return fields; }
+  public Map<String, Object> getCard() { return card; }
+  public List<String> getMentions() { return mentions; }
   public String getIdempotencyKey() { return idempotencyKey; }
   public boolean isFailOnError() { return failOnError; }
 
@@ -65,9 +72,12 @@ public class EchoSendStep extends AbstractStepImpl implements Serializable {
   @DataBoundSetter public void setCredentialId(String value) { credentialId = Util.fixEmpty(value); }
   @DataBoundSetter public void setChannel(String value) { channel = Util.fixEmpty(value); }
   @DataBoundSetter public void setRecipient(String value) { recipient = Util.fixEmpty(value); }
+  @DataBoundSetter public void setParentId(String value) { parentId = Util.fixEmpty(value); }
   @DataBoundSetter public void setStatus(String value) { status = Util.fixEmpty(value); }
   @DataBoundSetter public void setTitle(String value) { title = Util.fixEmpty(value); }
   @DataBoundSetter public void setFields(Map<String, String> value) { fields = value; }
+  @DataBoundSetter public void setCard(Map<String, Object> value) { card = value; }
+  @DataBoundSetter public void setMentions(List<String> value) { mentions = value; }
   @DataBoundSetter public void setIdempotencyKey(String value) { idempotencyKey = Util.fixEmpty(value); }
   @DataBoundSetter public void setFailOnError(boolean value) { failOnError = value; }
 
@@ -91,12 +101,9 @@ public class EchoSendStep extends AbstractStepImpl implements Serializable {
               Collections.<DomainRequirement>emptyList()));
     }
 
-    public FormValidation doCheckChannel(@QueryParameter String value) {
-      return Util.fixEmpty(value) == null ? FormValidation.ok() : FormValidation.ok();
-    }
   }
 
-  public static class EchoSendStepExecution extends AbstractSynchronousNonBlockingStepExecution<Void> {
+  public static class EchoSendStepExecution extends AbstractSynchronousNonBlockingStepExecution<String> {
     private static final long serialVersionUID = 1L;
     private final EchoSendStep step;
 
@@ -105,7 +112,7 @@ public class EchoSendStep extends AbstractStepImpl implements Serializable {
       this.step = step;
     }
 
-    @Override protected Void run() throws Exception {
+    @Override protected String run() throws Exception {
       TaskListener taskListener = getContext().get(TaskListener.class);
       if ((step.channel == null) == (step.recipient == null)) {
         throw new IllegalArgumentException("Exactly one of channel or recipient must be supplied");
@@ -122,6 +129,8 @@ public class EchoSendStep extends AbstractStepImpl implements Serializable {
           : "/api/channels/" + encodePath(step.channel) + "/messages";
       Map<String, Object> payload = new LinkedHashMap<>();
       payload.put("body", renderBody());
+      if (step.parentId != null) payload.put("parentId", step.parentId);
+      if (step.card != null && !step.card.isEmpty()) payload.put("card", step.card);
       if (step.idempotencyKey != null) payload.put("idempotencyKey", step.idempotencyKey);
 
       HttpRequest.Builder request = HttpRequest.newBuilder()
@@ -142,10 +151,24 @@ public class EchoSendStep extends AbstractStepImpl implements Serializable {
         String error = "Echo notification failed (HTTP " + response.statusCode() + "): " + detail;
         if (step.failOnError) throw new IOException(error);
         taskListener.error(error);
-      } else {
-        taskListener.getLogger().println("Echo notification sent to " + (step.recipient != null ? "@" + step.recipient : "#" + step.channel));
+        return null;
       }
-      return null;
+
+      String messageId;
+      try {
+        JSONObject responseBody = JSONObject.fromObject(response.body());
+        JSONObject message = responseBody.optJSONObject("message");
+        messageId = message == null ? "" : message.optString("id", "").trim();
+        if (messageId.isEmpty()) throw new IllegalArgumentException("response has no message id");
+      } catch (RuntimeException error) {
+        String detail = "Echo notification response did not include a message id";
+        if (step.failOnError) throw new IOException(detail, error);
+        taskListener.error(detail);
+        return null;
+      }
+
+      taskListener.getLogger().println("Echo notification sent to " + (step.recipient != null ? "@" + step.recipient : "#" + step.channel));
+      return messageId;
     }
 
     private String renderBody() {
@@ -162,6 +185,13 @@ public class EchoSendStep extends AbstractStepImpl implements Serializable {
           body.append("\n- **").append(field.getKey()).append(":** ").append(field.getValue());
         }
       }
+      if (step.mentions != null) {
+        for (String mention : step.mentions) {
+          if (mention != null && !mention.trim().isEmpty()) {
+            body.append("\n@").append(mention.trim().replaceFirst("^@", ""));
+          }
+        }
+      }
       return body.toString();
     }
 
@@ -175,23 +205,63 @@ public class EchoSendStep extends AbstractStepImpl implements Serializable {
     }
 
     private String toJson(Map<String, Object> payload) {
-      String body = String.valueOf(payload.get("body"));
-      StringBuilder json = new StringBuilder("{\"body\":\"");
-      json.append(escapeJson(body)).append('"');
-      if (payload.containsKey("idempotencyKey")) {
-        json.append(",\"idempotencyKey\":\"")
-            .append(escapeJson(String.valueOf(payload.get("idempotencyKey"))))
-            .append('"');
+      return jsonValue(payload);
+    }
+
+    private String jsonValue(Object value) {
+      if (value == null) return "null";
+      if (value instanceof String || value instanceof Character) {
+        return "\"" + escapeJson(String.valueOf(value)) + "\"";
       }
-      return json.append('}').toString();
+      if (value instanceof Number || value instanceof Boolean) return String.valueOf(value);
+      if (value instanceof Map<?, ?>) {
+        StringBuilder json = new StringBuilder("{");
+        boolean first = true;
+        for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
+          if (!first) json.append(',');
+          first = false;
+          json.append(jsonValue(String.valueOf(entry.getKey()))).append(':').append(jsonValue(entry.getValue()));
+        }
+        return json.append('}').toString();
+      }
+      if (value instanceof Iterable<?>) {
+        StringBuilder json = new StringBuilder("[");
+        boolean first = true;
+        for (Object item : (Iterable<?>) value) {
+          if (!first) json.append(',');
+          first = false;
+          json.append(jsonValue(item));
+        }
+        return json.append(']').toString();
+      }
+      if (value.getClass().isArray()) {
+        List<Object> items = new ArrayList<>();
+        for (int i = 0; i < java.lang.reflect.Array.getLength(value); i++) {
+          items.add(java.lang.reflect.Array.get(value, i));
+        }
+        return jsonValue(items);
+      }
+      return jsonValue(String.valueOf(value));
     }
 
     private String escapeJson(String value) {
-      return value.replace("\\", "\\\\")
-          .replace("\"", "\\\"")
-          .replace("\r", "\\r")
-          .replace("\n", "\\n")
-          .replace("\t", "\\t");
+      StringBuilder escaped = new StringBuilder(value.length() + 16);
+      for (int i = 0; i < value.length(); i++) {
+        char c = value.charAt(i);
+        switch (c) {
+          case '"': escaped.append("\\\""); break;
+          case '\\': escaped.append("\\\\"); break;
+          case '\b': escaped.append("\\b"); break;
+          case '\f': escaped.append("\\f"); break;
+          case '\n': escaped.append("\\n"); break;
+          case '\r': escaped.append("\\r"); break;
+          case '\t': escaped.append("\\t"); break;
+          default:
+            if (c < 0x20) escaped.append(String.format("\\u%04x", (int) c));
+            else escaped.append(c);
+        }
+      }
+      return escaped.toString();
     }
   }
 
