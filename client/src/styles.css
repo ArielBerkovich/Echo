@@ -758,8 +758,8 @@ html,
 body {
   margin: 0;
   height: 100%;
-  font-family: "Asap", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    Helvetica, Arial, sans-serif;
+  font-family: "Asap", "Rubik", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
@@ -2539,6 +2539,10 @@ html[data-mode="dark"] .backend-connection-error {
   html[dir="rtl"] .workspace-frame:has(.app-nav.no-sidebar) > .chat-pane {
     border-left: 0;
     border-right: 1px solid color-mix(in srgb, var(--on-navy) 10%, transparent);
+  }
+  html[dir="rtl"][data-mode="dark"] .workspace-sidebar .sidebar {
+    border-right: 0;
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
   }
   html[dir="rtl"] .thread-panel,
   html[dir="rtl"] .details-panel,
