@@ -36,6 +36,11 @@ function labelFor(destination) {
   return destination.kind === "channel" ? `#${destination.label}` : destination.label;
 }
 
+function DestinationLabel({ destination }) {
+  const label = labelFor(destination);
+  return destination.kind === "channel" ? <bdi dir="ltr">{label}</bdi> : label;
+}
+
 function resultId(destination) {
   return `forward-destination-${destinationKey(destination).replace(/[^a-zA-Z0-9_-]/g, "-")}`;
 }
@@ -226,7 +231,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
               <div className="forward-selected-chips" aria-label={t("selectedRecipients")}>
                 {selected.map((destination) => (
                   <span className="forward-chip" key={destinationKey(destination)}>
-                    <span>{labelFor(destination)}</span>
+                    <span className={destination.kind === "channel" ? "forward-channel-label" : undefined}><DestinationLabel destination={destination} /></span>
                     <button type="button" className="chip-remove" aria-label={t("removeRecipient").replace("{recipient}", labelFor(destination))} onClick={() => removeDestination(destination)} disabled={isSubmitting}>
                       <XIcon size={13} aria-hidden="true" />
                     </button>
@@ -289,7 +294,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
                         >
                           <DestinationIcon destination={destination} />
                           <span className="forward-destination-copy">
-                            <strong>{labelFor(destination)}</strong>
+                            <strong className={destination.kind === "channel" ? "forward-channel-label" : undefined}><DestinationLabel destination={destination} /></strong>
                             <small>{destination.handle}</small>
                           </span>
                           <span className="forward-selection-indicator" aria-hidden="true">{isSelected ? <Check size={14} strokeWidth={2.5} /> : <Plus size={14} strokeWidth={2.5} />}</span>
