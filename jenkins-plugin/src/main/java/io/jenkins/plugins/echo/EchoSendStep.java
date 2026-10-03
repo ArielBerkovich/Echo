@@ -40,6 +40,7 @@ public class EchoSendStep extends AbstractStepImpl implements Serializable {
   private String credentialId;
   private String channel;
   private String recipient;
+  private String parentId;
   private String status;
   private String title;
   private Map<String, String> fields;
@@ -58,6 +59,7 @@ public class EchoSendStep extends AbstractStepImpl implements Serializable {
   public String getCredentialId() { return credentialId; }
   public String getChannel() { return channel; }
   public String getRecipient() { return recipient; }
+  public String getParentId() { return parentId; }
   public String getStatus() { return status; }
   public String getTitle() { return title; }
   public Map<String, String> getFields() { return fields; }
@@ -70,6 +72,7 @@ public class EchoSendStep extends AbstractStepImpl implements Serializable {
   @DataBoundSetter public void setCredentialId(String value) { credentialId = Util.fixEmpty(value); }
   @DataBoundSetter public void setChannel(String value) { channel = Util.fixEmpty(value); }
   @DataBoundSetter public void setRecipient(String value) { recipient = Util.fixEmpty(value); }
+  @DataBoundSetter public void setParentId(String value) { parentId = Util.fixEmpty(value); }
   @DataBoundSetter public void setStatus(String value) { status = Util.fixEmpty(value); }
   @DataBoundSetter public void setTitle(String value) { title = Util.fixEmpty(value); }
   @DataBoundSetter public void setFields(Map<String, String> value) { fields = value; }
@@ -126,6 +129,7 @@ public class EchoSendStep extends AbstractStepImpl implements Serializable {
           : "/api/channels/" + encodePath(step.channel) + "/messages";
       Map<String, Object> payload = new LinkedHashMap<>();
       payload.put("body", renderBody());
+      if (step.parentId != null) payload.put("parentId", step.parentId);
       if (step.card != null && !step.card.isEmpty()) payload.put("card", step.card);
       if (step.idempotencyKey != null) payload.put("idempotencyKey", step.idempotencyKey);
 

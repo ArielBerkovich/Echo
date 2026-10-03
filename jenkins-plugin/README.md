@@ -22,6 +22,12 @@ def messageId = echoSend(
 )
 echo "Echo message ID: ${messageId}"
 
+def replyId = echoSend(
+  channel: 'builds',
+  parentId: messageId,
+  message: 'The deployment finished successfully.'
+)
+
 def reactionPresent = echoReact(
   channel: 'builds',
   messageId: messageId,
@@ -31,6 +37,8 @@ def reactionPresent = echoReact(
 ```
 
 `echoReact` returns whether the current user has the reaction after the request. Pass `present: true` to ensure it is added, `present: false` to remove it, or omit `present` to toggle it. `channel` may be a channel name or ID.
+
+Set `parentId` to the root message ID to reply in its thread. Capture that ID from an earlier `echoSend` call, or supply an existing Echo message ID.
 
 Exactly one of `channel` or `recipient` must be supplied for `echoSend`. For a direct message, use `recipient: 'alice'` instead of `channel`. Store the Echo API token as a Jenkins Secret Text credential, then select it in the global Echo Notifier configuration.
 

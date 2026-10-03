@@ -91,6 +91,7 @@ public class EchoSendStepTest {
             "  serverUrl: 'http://127.0.0.1:" + port + "',\n" +
             "  credentialId: 'echo-api-token',\n" +
             "  channel: 'general',\n" +
+            "  parentId: '507f1f77bcf86cd799439010',\n" +
             "  message: 'The deployment is ready.',\n" +
             "  mentions: ['user.c'],\n" +
             "  card: [title: 'Build #42', description: 'Deployment completed.', " +
@@ -108,6 +109,7 @@ public class EchoSendStepTest {
     assertEquals("/api/channels/general/messages", requestPath.get());
     assertEquals("Bearer test-token", authorization.get());
     assertTrue(requestBody.get().contains("\"body\":\"The deployment is ready.\\n@user.c\""));
+    assertTrue(requestBody.get().contains("\"parentId\":\"507f1f77bcf86cd799439010\""));
     assertTrue(requestBody.get().contains("\"title\":\"Build #42\""));
     assertTrue(requestBody.get().contains("\"type\":\"user\""));
     assertTrue(requestBody.get().contains("\"value\":\"user.c\""));
