@@ -483,17 +483,17 @@ channelsRouter.delete("/:id/members/:userId", async (req, res) => {
   await Channel.updateOne({ _id: channel._id }, { $pull: { members: userId, managers: userId } });
 
   const updated = await Channel.findById(channel._id);
-  // Membership has already been persisted. Return the updated channel before
-  // performing non-critical realtime/activity bookkeeping so a slow socket or
-  // activity write cannot leave the HTTP request hanging.
+  // Clear the removed user's star before responding so the membership change
+  // cannot race the next /users/vips request. Realtime and activity updates
+  // remain non-critical bookkeeping and can finish after the response.
+  const removedUser = wasMember ? await User.findById(userId) : null;
+  if (removedUser) await clearChannelStar(removedUser, channel._id);
   res.json({ channel: updated.toPublicJSON() });
 
   if (!wasMember) return;
 
   void (async () => {
     try {
-      const removedUser = await User.findById(userId);
-      if (removedUser) await clearChannelStar(removedUser, channel._id);
       await ActivityEvent.deleteMany({
         recipient: userId,
         channel: channel._id,

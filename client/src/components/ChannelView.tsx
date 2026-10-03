@@ -122,6 +122,7 @@ const ChannelView = forwardRef(function ChannelView({
   const [error, setError] = useState(null);
   const [thread, setThread] = useState(null); // open thread root message, or null
   const [threadJumpTargetId, setThreadJumpTargetId] = useState(null);
+  const [threadJumpRequestId, setThreadJumpRequestId] = useState(0);
   const [reactingTo, setReactingTo] = useState(null); // message id with the react picker open
   const [menuFor, setMenuFor] = useState(null); // message id with the "more" menu open
   const [actionsFor, setActionsFor] = useState(null); // message whose hover toolbar is shown (only one)
@@ -1308,10 +1309,14 @@ const ChannelView = forwardRef(function ChannelView({
                     onOpenThread={() => {
                       setActionsFor(null);
                       setShowDetails(false);
-                      setThreadJumpTargetId(null);
                       if (m.parentId) {
-                        api.getThread(channel.id, m.parentId).then(({ parent }) => setThread(parent)).catch((err) => setError(err.message));
+                        setThreadJumpTargetId(m.id);
+                        setThreadJumpRequestId((requestId) => requestId + 1);
+                        if (thread?.id !== m.parentId) {
+                          api.getThread(channel.id, m.parentId).then(({ parent }) => setThread(parent)).catch((err) => setError(err.message));
+                        }
                       } else {
+                        setThreadJumpTargetId(null);
                         setThread(m);
                       }
                     }}
@@ -1458,6 +1463,7 @@ const ChannelView = forwardRef(function ChannelView({
             onOpenLightbox={(src, name, sender) => setThreadLightbox({ src, name, sender })}
             onToast={onToast}
             openThreadJumpMessageId={threadJumpTargetId || openThreadJumpMessageId}
+            openThreadJumpRequestId={threadJumpTargetId ? threadJumpRequestId : 0}
             composerFocusRequest={composerFocusRequest}
           />
         </>
