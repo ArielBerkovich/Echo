@@ -20,7 +20,7 @@
   <url>https://github.com/ArielBerkovich/Echo</url>
 
   <properties>
-    <jenkins.version>2.568.1</jenkins.version>
+    <jenkins.version>2.516.3</jenkins.version>
     <java.level>17</java.level>
   </properties>
 
@@ -64,7 +64,7 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>credentials</artifactId>
-      <version>1506.v948b_b_b_7dec44</version>
+      <version>1487.va_d001ede2c31</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
@@ -84,19 +84,19 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
       <artifactId>workflow-cps</artifactId>
-      <version>4383.v04fa_a_3d67b_d9</version>
+      <version>4350.vcc65d4958821</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
       <artifactId>workflow-api</artifactId>
-      <version>1413.v2ff1a_5e720fa_</version>
+      <version>1384.vdc05a_48f535f</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
       <artifactId>workflow-job</artifactId>
-      <version>1602.v2a_70b_80a_2396</version>
+      <version>1571.1580.v18e46842c125</version>
       <scope>test</scope>
     </dependency>
     <dependency>

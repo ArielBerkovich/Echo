@@ -1,6 +1,7 @@
 # Echo Notifier Jenkins plugin
 
 The plugin adds an `echoSend` Pipeline step and uses Echo's existing authenticated REST API.
+The minimum supported Jenkins version is 2.516.3 (the 2025 LTS release); the Pipeline integration test runs against that baseline.
 
 Configure the default Echo server URL and API-token credential at **Manage Jenkins → System → Echo Notifier**. The step accepts optional `serverUrl` and `credentialId` overrides when a job needs a different Echo instance or credential.
 
