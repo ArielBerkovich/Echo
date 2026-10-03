@@ -21,9 +21,18 @@ def messageId = echoSend(
   ]
 )
 echo "Echo message ID: ${messageId}"
+
+def reactionPresent = echoReact(
+  channel: 'builds',
+  messageId: messageId,
+  emoji: '🚀',
+  present: true
+)
 ```
 
-Exactly one of `channel` or `recipient` must be supplied. For a direct message, use `recipient: 'alice'` instead of `channel`. Store the Echo API token as a Jenkins Secret Text credential, then select it in the global Echo Notifier configuration.
+`echoReact` returns whether the current user has the reaction after the request. Pass `present: true` to ensure it is added, `present: false` to remove it, or omit `present` to toggle it. `channel` may be a channel name or ID.
+
+Exactly one of `channel` or `recipient` must be supplied for `echoSend`. For a direct message, use `recipient: 'alice'` instead of `channel`. Store the Echo API token as a Jenkins Secret Text credential, then select it in the global Echo Notifier configuration.
 
 `mentions` adds `@username` lines to the message body, which triggers Echo's normal mention behavior. Card attributes with `type: 'user'` (or `'person'`) display a person on the card but do not create a mention. `fields` is a map rendered as Markdown bullets, and `idempotencyKey` is forwarded to Echo for safe retries.
 

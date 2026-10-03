@@ -29,11 +29,19 @@ public class EchoSendStepTest {
   private AtomicReference<String> requestBody;
   private AtomicReference<String> requestPath;
   private AtomicReference<String> authorization;
+  private AtomicReference<String> channelLookupPath;
+  private AtomicReference<String> reactionPath;
+  private AtomicReference<String> reactionBody;
+  private AtomicReference<String> reactionAuthorization;
 
   @Before public void startEchoEndpoint() throws Exception {
     requestBody = new AtomicReference<>();
     requestPath = new AtomicReference<>();
     authorization = new AtomicReference<>();
+    channelLookupPath = new AtomicReference<>();
+    reactionPath = new AtomicReference<>();
+    reactionBody = new AtomicReference<>();
+    reactionAuthorization = new AtomicReference<>();
     echo = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
     echo.createContext("/api/channels/general/messages", exchange -> {
       requestPath.set(exchange.getRequestURI().getPath());
@@ -43,6 +51,24 @@ public class EchoSendStepTest {
       requestBody.set(body.toString(StandardCharsets.UTF_8));
       byte[] response = "{\"message\":{\"id\":\"echo-message-123\"}}".getBytes(StandardCharsets.UTF_8);
       exchange.sendResponseHeaders(201, response.length);
+      exchange.getResponseBody().write(response);
+      exchange.close();
+    });
+    echo.createContext("/api/channels/by-name/general", exchange -> {
+      channelLookupPath.set(exchange.getRequestURI().getPath());
+      byte[] response = "{\"channel\":{\"id\":\"507f1f77bcf86cd799439011\"}}".getBytes(StandardCharsets.UTF_8);
+      exchange.sendResponseHeaders(200, response.length);
+      exchange.getResponseBody().write(response);
+      exchange.close();
+    });
+    echo.createContext("/api/channels/507f1f77bcf86cd799439011/messages/echo-message-123/reactions", exchange -> {
+      reactionPath.set(exchange.getRequestURI().getPath());
+      reactionAuthorization.set(exchange.getRequestHeaders().getFirst("Authorization"));
+      ByteArrayOutputStream body = new ByteArrayOutputStream();
+      exchange.getRequestBody().transferTo(body);
+      reactionBody.set(body.toString(StandardCharsets.UTF_8));
+      byte[] response = "{\"messageId\":\"echo-message-123\",\"added\":true,\"present\":true,\"changed\":true}".getBytes(StandardCharsets.UTF_8);
+      exchange.sendResponseHeaders(200, response.length);
       exchange.getResponseBody().write(response);
       exchange.close();
     });
@@ -70,7 +96,10 @@ public class EchoSendStepTest {
             "  card: [title: 'Build #42', description: 'Deployment completed.', " +
             "url: 'https://jenkins.example/job/deploy/42/', attributes: [[label: 'Owner', value: 'user.c', type: 'user']]]\n" +
             ")\n" +
-            "assert messageId == 'echo-message-123'",
+            "assert messageId == 'echo-message-123'\n" +
+            "def reactionPresent = echoReact(serverUrl: 'http://127.0.0.1:" + port + "', credentialId: 'echo-api-token', " +
+            "channel: 'general', messageId: messageId, emoji: '🚀', present: true)\n" +
+            "assert reactionPresent == true",
         true));
 
     var run = job.scheduleBuild2(0).get(60, TimeUnit.SECONDS);
@@ -82,5 +111,10 @@ public class EchoSendStepTest {
     assertTrue(requestBody.get().contains("\"title\":\"Build #42\""));
     assertTrue(requestBody.get().contains("\"type\":\"user\""));
     assertTrue(requestBody.get().contains("\"value\":\"user.c\""));
+    assertEquals("/api/channels/by-name/general", channelLookupPath.get());
+    assertEquals("/api/channels/507f1f77bcf86cd799439011/messages/echo-message-123/reactions", reactionPath.get());
+    assertEquals("Bearer test-token", reactionAuthorization.get());
+    assertTrue(reactionBody.get().contains("\"emoji\":\"🚀\""));
+    assertTrue(reactionBody.get().contains("\"present\":true"));
   }
 }
