@@ -237,6 +237,13 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   const isThread = !!parentId; // a thread reply composer (hides channel-level scheduling)
   const [mention, setMention] = useState(null); // { trigger, query, from, to } or null
   const composerRef = useRef(null);
+  const composerMountedRef = useRef(false);
+  useLayoutEffect(() => {
+    composerMountedRef.current = true;
+    return () => {
+      composerMountedRef.current = false;
+    };
+  }, []);
   const mentionPopupRef = useRef(null);
   const [mentionPopupPosition, setMentionPopupPosition] = useState(null);
   const [groups, setGroups] = useState([]);
@@ -400,7 +407,9 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
         return event.defaultPrevented;
       },
     },
-    onCreate: ({ editor: currentEditor }) => syncEditorState(currentEditor),
+    onCreate: ({ editor: currentEditor }) => {
+      if (composerMountedRef.current && !currentEditor.isDestroyed) syncEditorState(currentEditor);
+    },
     onUpdate: ({ editor: currentEditor }) => syncEditorState(currentEditor),
     onBlur: () => setMention(null),
     onSelectionUpdate: ({ editor: currentEditor }) => {
@@ -411,10 +420,11 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   }, [channel.id, parentId, placeholder]);
   useImperativeHandle(ref, () => ({
     focus() {
-      editor?.commands.focus();
+      if (!editor || editor.isDestroyed) return;
+      editor.commands.focus();
     },
     quoteMessage(message) {
-      if (!editor || editing) return;
+      if (!editor || editor.isDestroyed || editing) return;
       // Keep a real, addressable paragraph after the quote. ProseMirror drops
       // a completely empty trailing paragraph while normalizing the inserted
       // HTML, which makes the first reply character land in the quote and
@@ -462,10 +472,10 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     return () => dom.removeEventListener("input", handleInput);
   }, [editor]);
   useLayoutEffect(() => {
-    if (editor) syncParagraphDirections(editor);
+    if (editor && !editor.isDestroyed) syncParagraphDirections(editor);
   }, [editor, editorState]);
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || editor.isDestroyed) return;
     if (!editing) {
       const key = draftStorageKey(channel.id, isThread);
       const draft = key ? readString(key, "") : "";
@@ -630,6 +640,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   // ---- Tiptap editor integration ----
 
   function syncEditorState(currentEditor) {
+    if (!currentEditor || currentEditor.isDestroyed) return;
     setEditorState(readEditorState(currentEditor));
     const direction = editorDirection(currentEditor);
     if (direction) currentEditor.view.dom.dataset.composerDirection = direction;
