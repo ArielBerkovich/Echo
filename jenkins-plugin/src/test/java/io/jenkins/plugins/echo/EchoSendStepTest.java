@@ -41,7 +41,7 @@ public class EchoSendStepTest {
       ByteArrayOutputStream body = new ByteArrayOutputStream();
       exchange.getRequestBody().transferTo(body);
       requestBody.set(body.toString(StandardCharsets.UTF_8));
-      byte[] response = "{\"ok\":true}".getBytes(StandardCharsets.UTF_8);
+      byte[] response = "{\"message\":{\"id\":\"echo-message-123\"}}".getBytes(StandardCharsets.UTF_8);
       exchange.sendResponseHeaders(201, response.length);
       exchange.getResponseBody().write(response);
       exchange.close();
@@ -61,7 +61,7 @@ public class EchoSendStepTest {
     int port = echo.getAddress().getPort();
     WorkflowJob job = jenkins.createProject(WorkflowJob.class, "echo-notification");
     job.setDefinition(new CpsFlowDefinition(
-        "echoSend(\n" +
+        "def messageId = echoSend(\n" +
             "  serverUrl: 'http://127.0.0.1:" + port + "',\n" +
             "  credentialId: 'echo-api-token',\n" +
             "  channel: 'general',\n" +
@@ -69,10 +69,12 @@ public class EchoSendStepTest {
             "  mentions: ['user.c'],\n" +
             "  card: [title: 'Build #42', description: 'Deployment completed.', " +
             "url: 'https://jenkins.example/job/deploy/42/', attributes: [[label: 'Owner', value: 'user.c', type: 'user']]]\n" +
-            ")",
+            ")\n" +
+            "assert messageId == 'echo-message-123'",
         true));
 
-    jenkins.assertBuildStatusSuccess(job.scheduleBuild2(0).get(60, TimeUnit.SECONDS));
+    var run = job.scheduleBuild2(0).get(60, TimeUnit.SECONDS);
+    jenkins.assertBuildStatusSuccess(run);
 
     assertEquals("/api/channels/general/messages", requestPath.get());
     assertEquals("Bearer test-token", authorization.get());

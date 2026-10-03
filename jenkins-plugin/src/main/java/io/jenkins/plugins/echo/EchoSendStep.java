@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import jenkins.model.Jenkins;
+import net.sf.json.JSONObject;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
@@ -99,7 +100,7 @@ public class EchoSendStep extends AbstractStepImpl implements Serializable {
 
   }
 
-  public static class EchoSendStepExecution extends AbstractSynchronousNonBlockingStepExecution<Void> {
+  public static class EchoSendStepExecution extends AbstractSynchronousNonBlockingStepExecution<String> {
     private static final long serialVersionUID = 1L;
     private final EchoSendStep step;
 
@@ -108,7 +109,7 @@ public class EchoSendStep extends AbstractStepImpl implements Serializable {
       this.step = step;
     }
 
-    @Override protected Void run() throws Exception {
+    @Override protected String run() throws Exception {
       TaskListener taskListener = getContext().get(TaskListener.class);
       if ((step.channel == null) == (step.recipient == null)) {
         throw new IllegalArgumentException("Exactly one of channel or recipient must be supplied");
@@ -146,10 +147,24 @@ public class EchoSendStep extends AbstractStepImpl implements Serializable {
         String error = "Echo notification failed (HTTP " + response.statusCode() + "): " + detail;
         if (step.failOnError) throw new IOException(error);
         taskListener.error(error);
-      } else {
-        taskListener.getLogger().println("Echo notification sent to " + (step.recipient != null ? "@" + step.recipient : "#" + step.channel));
+        return null;
       }
-      return null;
+
+      String messageId;
+      try {
+        JSONObject responseBody = JSONObject.fromObject(response.body());
+        JSONObject message = responseBody.optJSONObject("message");
+        messageId = message == null ? "" : message.optString("id", "").trim();
+        if (messageId.isEmpty()) throw new IllegalArgumentException("response has no message id");
+      } catch (RuntimeException error) {
+        String detail = "Echo notification response did not include a message id";
+        if (step.failOnError) throw new IOException(detail, error);
+        taskListener.error(detail);
+        return null;
+      }
+
+      taskListener.getLogger().println("Echo notification sent to " + (step.recipient != null ? "@" + step.recipient : "#" + step.channel));
+      return messageId;
     }
 
     private String renderBody() {
