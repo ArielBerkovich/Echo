@@ -6,7 +6,6 @@ import { canParticipateInChannel, Channel, canPostToChannel, isChannelManager } 
 import { Message } from "./models/Message.js";
 import { User } from "./models/User.js";
 import { ActivityEvent } from "./models/ActivityEvent.js";
-import { ScheduledMessage } from "./models/ScheduledMessage.js";
 import { CustomEmoji } from "./models/CustomEmoji.js";
 import { deliverMessage, sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, sanitizeRetro, retroError, updateRetro } from "./deliver.js";
 import { sanitizeCard, cardError } from "./lib/messageCard.js";
@@ -31,6 +30,11 @@ import {
 } from "./services/channelService.js";
 import { sendMessage } from "./services/messageService.js";
 import { markRead, setThreadFollow, toggleSavedMessage } from "./services/userStateService.js";
+import {
+  cancelScheduledMessage,
+  createScheduledMessage,
+  listScheduledMessages,
+} from "./services/scheduledMessageService.js";
 
 const MAX_RESULTS = 50;
 
@@ -640,7 +644,7 @@ function registerTools(server, user) {
       const when = new Date(scheduledFor);
       if (Number.isNaN(when.getTime()) || when <= new Date()) return toolError("scheduledFor must be a future time");
       const files = sanitizeAttachments(attachments);
-      const scheduled = await ScheduledMessage.create({ channel: channel._id, author: userId, body: String(body || "").trim(), parentId: parentId && validObjectId(parentId), attachments: files, scheduledFor: when });
+      const scheduled = await createScheduledMessage({ channelId: channel._id, authorId: userId, body: String(body || "").trim(), parentId: parentId && validObjectId(parentId), attachments: files, scheduledFor: when });
       return textResult({ scheduled: scheduled.toPublicJSON() });
     }
   );
@@ -654,13 +658,13 @@ function registerTools(server, user) {
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
     async ({ channel: channelKey }) => {
-      const filter = { author: userId, scheduledFor: { $gt: new Date() } };
+      let channelId;
       if (channelKey) {
         const channel = await findVisibleChannel(channelKey, userId);
         if (!channel) return toolError("Channel not found or access denied");
-        filter.channel = channel._id;
+        channelId = channel._id;
       }
-      const scheduled = await ScheduledMessage.find(filter).sort({ scheduledFor: 1 });
+      const scheduled = await listScheduledMessages({ authorId: userId, channelId, pendingOnly: true });
       return textResult({ scheduled: scheduled.map((item) => item.toPublicJSON()) });
     }
   );
@@ -675,8 +679,8 @@ function registerTools(server, user) {
     },
     async ({ messageId }) => {
       if (!mongoose.isValidObjectId(messageId)) return toolError("Scheduled message not found");
-      const deleted = await ScheduledMessage.deleteOne({ _id: messageId, author: userId });
-      if (!deleted.deletedCount) return toolError("Scheduled message not found");
+      const cancelled = await cancelScheduledMessage({ messageId, authorId: userId });
+      if (!cancelled) return toolError("Scheduled message not found");
       return textResult({ messageId, cancelled: true });
     }
   );
