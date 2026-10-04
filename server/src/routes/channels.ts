@@ -17,8 +17,8 @@ import { normalizeChannelName } from "../automation.js";
 import { ActivityEvent } from "../models/ActivityEvent.js";
 import { isValidChannelName } from "../lib/channelName.js";
 import { CustomEmoji } from "../models/CustomEmoji.js";
-import { ThreadFollow } from "../models/ThreadFollow.js";
 import { reactToMessage, voteInSurvey } from "../services/messageActionService.js";
+import { getThreadFollow, markRead, setThreadFollow } from "../services/userStateService.js";
 import {
   addChannelMember,
   createChannel,
@@ -75,11 +75,10 @@ channelsRouter.get("/:channelId/threads/:threadId/follow", async (req, res) => {
   const channel = await Channel.findById(channelId).select("members type");
   const root = await Message.findOne({ _id: threadId, channel: channelId, parentId: null }).select("_id");
   if (!channel || !root || !canParticipateInChannel(channel, req.user._id)) return res.status(404).json({ error: "thread not found" });
-  const preference = await ThreadFollow.findOne({ user: req.user._id, thread: root._id }).select("following").lean();
+  const preference = await getThreadFollow({ userId: req.user._id, threadId: root._id });
   res.json({
     threadId: root._id.toString(),
-    following: !!preference && preference.following !== false,
-    muted: preference?.following === false,
+    ...preference,
   });
 });
 
@@ -97,26 +96,8 @@ channelsRouter.put("/:channelId/threads/:threadId/follow", async (req, res) => {
   if (following !== true && following !== false && following !== null) {
     return res.status(400).json({ error: "following must be true, false, or null" });
   }
-  if (following === null) {
-    await ThreadFollow.deleteOne({ user: req.user._id, thread: root._id });
-  } else {
-    await ThreadFollow.updateOne(
-      { user: req.user._id, thread: root._id },
-      {
-        $set: { following },
-        $setOnInsert: { user: req.user._id, thread: root._id, channel: channel._id },
-      },
-      { upsert: true }
-    );
-  }
-  const isFollowing = following === true;
-  const isMuted = following === false;
-  emitToUser(req.user._id.toString(), "thread:follow", {
-    threadId: root._id.toString(),
-    following: isFollowing,
-    muted: isMuted,
-  });
-  res.json({ threadId: root._id.toString(), following: isFollowing, muted: isMuted });
+  const result = await setThreadFollow({ userId: req.user._id, threadId: root._id, channelId: channel._id, following });
+  res.json({ threadId: root._id.toString(), ...result });
 });
 
 function escapeRegex(value) {
@@ -441,11 +422,7 @@ channelsRouter.post("/:id/read", async (req, res) => {
   }
   const thread =
     req.body?.thread && mongoose.isValidObjectId(req.body.thread) ? req.body.thread : null;
-  await Read.updateOne(
-    { user: req.user._id, channel: req.params.id, thread },
-    { $set: { lastReadAt: new Date() } },
-    { upsert: true }
-  );
+  await markRead({ userId: req.user._id, channelId: req.params.id, threadId: thread });
   res.json({ ok: true });
 });
 
