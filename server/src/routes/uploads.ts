@@ -4,9 +4,7 @@ import { config } from "../config.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { getObject } from "../storage.js";
 import { decodeMultipartFilename } from "../lib/filenames.js";
-import { Message } from "../models/Message.js";
-import { Channel } from "../models/Channel.js";
-import { isImageContentType, storeAttachment } from "../services/attachmentService.js";
+import { canAccessAttachment, isImageContentType, storeAttachment } from "../services/attachmentService.js";
 
 export const uploadsRouter = Router();
 
@@ -71,18 +69,7 @@ filesRouter.get("/:key", requireAuth, async (req, res) => {
     // Once a file is attached to a message, conversation access governs the
     // file as well. This prevents a removed private-channel/DM member from
     // continuing to use a previously learned attachment URL.
-    const references = await Message.find({ "attachments.key": key }, { channel: 1 }).lean();
-    if (references.length > 0) {
-      const channelIds = [...new Set(references.map((message) => String(message.channel)))];
-      const channels = await Channel.find(
-        { _id: { $in: channelIds }, isArchived: { $ne: true } },
-        { type: 1, members: 1 }
-      );
-      const canAccess = channels.some(
-        (channel) => channel.type === "public" || channel.members.some((member) => member.equals(req.user._id))
-      );
-      if (!canAccess) return res.status(403).json({ error: "access denied" });
-    }
+    if (!(await canAccessAttachment(key, req.user._id))) return res.status(403).json({ error: "access denied" });
 
     const range = typeof req.headers.range === "string" && /^bytes=\d*-\d*$/.test(req.headers.range)
       ? req.headers.range

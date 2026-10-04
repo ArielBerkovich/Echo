@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import mongoose from "mongoose";
 
-import { ensureDmChannel, ensureGroupDmChannel, dmName } from "./dms.js";
+import { ensureDmChannel, ensureGroupDmChannel, dmName } from "../services/conversationService.js";
 import { Channel } from "../models/Channel.js";
 
 describe("DM helpers", () => {
