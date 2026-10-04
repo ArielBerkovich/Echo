@@ -286,3 +286,33 @@ export async function leaveChannel(channelKey: string, userId: ChannelActor, man
   removeUserFromChannel(String(userId), channel._id.toString());
   return { channel: payload, left: true, ...(transferredTo ? { managerTransferredTo: transferredTo } : {}) };
 }
+
+export async function archiveChannel(channelKey: string, userId: ChannelActor): Promise<ChannelOperationResult<{ channel: ReturnType<Channel["toPublicJSON"]> }>> {
+  const channel = await resolveChannel(channelKey);
+  if (!channel || channel.isArchived) return { error: "channel not found" };
+  if (channel.type === "dm") return { error: "cannot delete a direct message" };
+  if (!sameId(channel.createdBy, userId)) return { error: "only the channel creator can delete it" };
+  if (channel.members.some((memberId) => !sameId(memberId, userId))) {
+    return { error: "remove all other members before deleting the channel" };
+  }
+
+  if (channel.type === "private") {
+    const savedMessageIds = await Message.find({ channel: channel._id }, { _id: 1 }).lean();
+    if (savedMessageIds.length) {
+      await User.updateOne(
+        { _id: userId },
+        { $pull: { savedMessages: { $in: savedMessageIds.map((message) => message._id) } } },
+      );
+    }
+  }
+  await ActivityEvent.deleteMany({ channel: channel._id }).catch(() => {});
+  channel.isArchived = true;
+  channel.members = [];
+  channel.managers = [];
+  await channel.save();
+
+  const payload = channel.toPublicJSON();
+  emitAll("channel:catalog", { channel: payload });
+  removeUserFromChannel(String(userId), channel._id.toString());
+  return { channel: payload };
+}

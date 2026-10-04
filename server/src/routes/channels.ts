@@ -21,6 +21,7 @@ import { reactToMessage, voteInSurvey } from "../services/messageActionService.j
 import { getThreadFollow, markRead, setThreadFollow } from "../services/userStateService.js";
 import {
   addChannelMember,
+  archiveChannel,
   createChannel,
   joinChannel,
   leaveChannel,
@@ -385,31 +386,11 @@ channelsRouter.delete("/:id", async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) {
     return res.status(404).json({ error: "channel not found" });
   }
-  const channel = await Channel.findById(req.params.id);
-  if (!channel || channel.isArchived) return res.status(404).json({ error: "channel not found" });
-  if (channel.type === "dm") return res.status(400).json({ error: "cannot delete a direct message" });
-  if (!channel.createdBy.equals(req.user._id)) {
-    return res.status(403).json({ error: "only the channel creator can delete it" });
+  const result = await archiveChannel(req.params.id, req.user._id);
+  if (result.error) {
+    const status = result.error === "channel not found" ? 404 : result.error.includes("creator") ? 403 : 400;
+    return res.status(status).json({ error: result.error });
   }
-  if (channel.members.some((memberId) => !memberId.equals(req.user._id))) {
-    return res.status(400).json({ error: "remove all other members before deleting the channel" });
-  }
-  if (channel.type === "private") {
-    const savedMessageIds = await Message.find({ channel: channel._id }, { _id: 1 }).lean();
-    if (savedMessageIds.length) {
-      await User.updateOne(
-        { _id: req.user._id },
-        { $pull: { savedMessages: { $in: savedMessageIds.map((message) => message._id) } } }
-      );
-    }
-  }
-  await ActivityEvent.deleteMany({ channel: channel._id }).catch(() => {});
-  channel.isArchived = true;
-  channel.members = [];
-  channel.managers = [];
-  await channel.save();
-  emitAll("channel:catalog", { channel: channel.toPublicJSON() });
-  removeUserFromChannel(req.user._id.toString(), channel._id.toString());
   res.json({ ok: true });
 });
 
