@@ -1,9 +1,15 @@
 import { Router } from "express";
 import mongoose from "mongoose";
 import { canPostToChannel, Channel } from "../models/Channel.js";
-import { ScheduledMessage } from "../models/ScheduledMessage.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { sanitizeAttachments, attachmentLimitError } from "../deliver.js";
+import {
+  cancelScheduledMessage,
+  createScheduledMessage,
+  findScheduledMessage,
+  listScheduledMessages,
+  updateScheduledMessage,
+} from "../services/scheduledMessageService.js";
 
 export const scheduledRouter = Router();
 scheduledRouter.use(requireAuth);
@@ -35,9 +41,9 @@ scheduledRouter.post("/", async (req, res) => {
     return res.status(403).json({ error: "only channel managers can post in this read-only channel" });
   }
 
-  const doc = await ScheduledMessage.create({
-    channel: channel._id,
-    author: req.user._id,
+  const doc = await createScheduledMessage({
+    channelId: channel._id,
+    authorId: req.user._id,
     body: text,
     parentId: parentId && mongoose.isValidObjectId(parentId) ? parentId : null,
     attachments: files,
@@ -48,11 +54,10 @@ scheduledRouter.post("/", async (req, res) => {
 
 // GET /api/scheduled[?channelId=...] — the caller's pending scheduled messages.
 scheduledRouter.get("/", async (req, res) => {
-  const filter = { author: req.user._id };
-  if (req.query.channelId && mongoose.isValidObjectId(req.query.channelId)) {
-    filter.channel = req.query.channelId;
-  }
-  const docs = await ScheduledMessage.find(filter).sort({ scheduledFor: 1 });
+  const docs = await listScheduledMessages({
+    authorId: req.user._id,
+    channelId: req.query.channelId && mongoose.isValidObjectId(req.query.channelId) ? req.query.channelId : undefined,
+  });
   res.json({ scheduled: docs.map((d) => d.toPublicJSON()) });
 });
 
@@ -61,7 +66,7 @@ scheduledRouter.patch("/:id", async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) {
     return res.status(404).json({ error: "not found" });
   }
-  const doc = await ScheduledMessage.findOne({ _id: req.params.id, author: req.user._id });
+  const doc = await findScheduledMessage({ messageId: req.params.id, authorId: req.user._id });
   if (!doc) return res.status(404).json({ error: "not found" });
 
   const { body, scheduledFor } = req.body || {};
@@ -70,17 +75,21 @@ scheduledRouter.patch("/:id", async (req, res) => {
     if (!text && (doc.attachments?.length || 0) === 0) {
       return res.status(400).json({ error: "message needs text or an attachment" });
     }
-    doc.body = text;
   }
   if (scheduledFor !== undefined) {
     const when = new Date(scheduledFor);
     if (Number.isNaN(when.getTime()) || when.getTime() <= Date.now()) {
       return res.status(400).json({ error: "scheduledFor must be a future time" });
     }
-    doc.scheduledFor = when;
   }
-  await doc.save();
-  res.json({ scheduled: doc.toPublicJSON() });
+  const updated = await updateScheduledMessage({
+    messageId: req.params.id,
+    authorId: req.user._id,
+    body: body !== undefined ? String(body).trim() : undefined,
+    scheduledFor: scheduledFor !== undefined ? new Date(scheduledFor) : undefined,
+  });
+  if (!updated) return res.status(404).json({ error: "not found" });
+  res.json({ scheduled: updated.toPublicJSON() });
 });
 
 // DELETE /api/scheduled/:id — cancel one of your scheduled messages.
@@ -88,7 +97,7 @@ scheduledRouter.delete("/:id", async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) {
     return res.status(404).json({ error: "not found" });
   }
-  const result = await ScheduledMessage.deleteOne({ _id: req.params.id, author: req.user._id });
-  if (result.deletedCount === 0) return res.status(404).json({ error: "not found" });
+  const cancelled = await cancelScheduledMessage({ messageId: req.params.id, authorId: req.user._id });
+  if (!cancelled) return res.status(404).json({ error: "not found" });
   res.json({ ok: true });
 });
