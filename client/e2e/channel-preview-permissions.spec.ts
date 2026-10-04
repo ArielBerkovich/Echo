@@ -142,3 +142,34 @@ test("public channel previews are read-only until the user joins", async ({ page
     await api(page, aliceAuth.token, `/channels/${channel.id}`, { method: "DELETE" });
   }
 });
+
+test("private channel creation is not broadcast through the public catalog", async ({ page }) => {
+  const fixture = await seedWorkspaceFixture(page);
+  await page.goto("/");
+  const suffix = uniqueSuffix("private-catalog");
+  const socket = io(new URL(page.url()).origin, {
+    auth: { token: fixture.alice.token },
+    transports: ["websocket"],
+  });
+  const catalogEvents: any[] = [];
+  socket.on("channel:catalog", (payload) => catalogEvents.push(payload));
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      socket.once("connect", resolve);
+      socket.once("connect_error", reject);
+    });
+    const response = await api(page, fixture.alice.token, "/channels", {
+      method: "POST",
+      body: { name: suffix, type: "private" },
+    });
+    expect(response.ok()).toBeTruthy();
+    const channel = (await response.json()).channel;
+
+    await page.waitForTimeout(300);
+    expect(catalogEvents.some((event) => event.channel?.id === channel.id)).toBe(false);
+    await api(page, fixture.alice.token, `/channels/${channel.id}`, { method: "DELETE" });
+  } finally {
+    socket.disconnect();
+  }
+});

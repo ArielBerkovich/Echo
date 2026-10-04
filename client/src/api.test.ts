@@ -135,6 +135,20 @@ describe("api request helpers", () => {
     );
   });
 
+  it("localizes forbidden-action errors using the selected interface language", async () => {
+    globalThis.localStorage.setItem("echo.language", "he");
+    globalThis.fetch = async () => ({
+      ok: false,
+      status: 403,
+      json: async () => ({ error: "access denied" }),
+    });
+
+    await assert.rejects(
+      api.me(),
+      (error) => error.message === "אין לך הרשאה לבצע פעולה זו."
+    );
+  });
+
   it("does not expose internal server errors to the UI", async () => {
     globalThis.fetch = async () => ({
       ok: false,
