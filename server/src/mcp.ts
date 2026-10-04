@@ -11,6 +11,7 @@ import { normalizeChannelName } from "./automation.js";
 import { emitToChannel, joinUserToChannel } from "./realtime.js";
 import { ensureDmChannel, ensureGroupDmChannel, ensureSelfDmChannel } from "./lib/dms.js";
 import { deleteMessage, editMessage, reactToMessage, toggleMessagePin, voteInSurvey } from "./services/messageActionService.js";
+import { getThreadMessages, listPinnedMessages } from "./services/messageQueryService.js";
 import { isValidChannelName } from "./lib/channelName.js";
 import { putObject } from "./storage.js";
 import { fileTypeFromBuffer } from "file-type";
@@ -416,10 +417,9 @@ function registerTools(server, user) {
     async ({ channel: channelKey, messageId }) => {
       const found = await visibleMessage(channelKey, messageId, userId);
       if (!found) return toolError("Thread not found or access denied");
-      const rootId = found.message.parentId || found.message._id;
-      const root = await Message.findOne({ _id: rootId, channel: found.channel._id }).populate("author");
-      const replies = await Message.find({ channel: found.channel._id, parentId: rootId }).sort({ createdAt: 1 }).populate("author");
-      return textResult({ channel: found.channel.toPublicJSON(), root: publicMessage(root), replies: replies.map(publicMessage) });
+      const thread = await getThreadMessages({ channelId: found.channel._id, messageId: found.message._id });
+      if (!thread) return toolError("Thread not found or access denied");
+      return textResult({ channel: found.channel.toPublicJSON(), root: publicMessage(thread.root), replies: thread.replies.map(publicMessage) });
     }
   );
 
@@ -504,7 +504,7 @@ function registerTools(server, user) {
     async ({ channel: channelKey }) => {
       const channel = await findVisibleChannel(channelKey, userId);
       if (!channel) return toolError("Channel not found or access denied");
-      const messages = await Message.find({ channel: channel._id, pinnedAt: { $ne: null } }).sort({ pinnedAt: 1 }).populate("author");
+      const messages = await listPinnedMessages(channel._id);
       return textResult({ channel: channel.toPublicJSON(), messages: messages.map(publicMessage) });
     }
   );

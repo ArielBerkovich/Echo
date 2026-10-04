@@ -18,6 +18,7 @@ import { ActivityEvent } from "../models/ActivityEvent.js";
 import { isValidChannelName } from "../lib/channelName.js";
 import { CustomEmoji } from "../models/CustomEmoji.js";
 import { reactToMessage, voteInSurvey } from "../services/messageActionService.js";
+import { getThreadMessages, listPinnedMessages } from "../services/messageQueryService.js";
 import { getThreadFollow, markRead, setThreadFollow } from "../services/userStateService.js";
 import {
   addChannelMember,
@@ -632,15 +633,12 @@ channelsRouter.get("/:id/messages/:msgId/thread", async (req, res) => {
   // Bind the message lookup to the requested channel. Without this condition,
   // a caller who knows a message id could read a private channel's thread by
   // routing the request through any public channel they can access.
-  const root = await Message.findOne({ _id: req.params.msgId, channel: channel._id }).populate("author");
-  if (!root) return res.status(404).json({ error: "message not found" });
-  const replies = await Message.find({ parentId: root._id, channel: channel._id })
-    .sort({ createdAt: 1 })
-    .populate("author");
+  const thread = await getThreadMessages({ channelId: channel._id, messageId: req.params.msgId, resolveParent: false });
+  if (!thread) return res.status(404).json({ error: "message not found" });
 
   res.json({
-    parent: root.toPublicJSON(),
-    replies: replies.map((r) => r.toPublicJSON()),
+    parent: thread.root.toPublicJSON(),
+    replies: thread.replies.map((reply) => reply.toPublicJSON()),
   });
 });
 
@@ -654,9 +652,7 @@ channelsRouter.get("/:id/pinned", async (req, res) => {
   if (channel.type !== "public" && !channel.members.some((m) => m.equals(req.user._id))) {
     return res.status(403).json({ error: "access denied" });
   }
-  const docs = await Message.find({ channel: channel._id, pinnedAt: { $ne: null } })
-    .sort({ pinnedAt: 1 })
-    .populate("author");
+  const docs = await listPinnedMessages(channel._id);
   res.json({ messages: docs.map((m) => m.toPublicJSON()) });
 });
 
