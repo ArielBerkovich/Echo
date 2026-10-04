@@ -3,6 +3,7 @@ import { Channel } from "../models/Channel.js";
 import { Message } from "../models/Message.js";
 import { User } from "../models/User.js";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { toggleSavedMessage } from "../services/userStateService.js";
 
 export const savedRouter = Router();
 savedRouter.use(requireAuth);
@@ -21,17 +22,9 @@ savedRouter.post("/:messageId", async (req, res) => {
   if (!channel || channel.isArchived) return res.status(404).json({ error: "message not found" });
   if (!canAccess(channel, me._id)) return res.status(403).json({ error: "access denied" });
 
-  const idx = me.savedMessages.findIndex((m) => m.equals(msg._id));
-  let saved;
-  if (idx >= 0) {
-    me.savedMessages.splice(idx, 1);
-    saved = false;
-  } else {
-    me.savedMessages.push(msg._id);
-    saved = true;
-  }
-  await me.save();
-  res.json({ saved });
+  const result = await toggleSavedMessage({ userId: me._id, messageId: msg._id });
+  if (!result) return res.status(401).json({ error: "user not found" });
+  res.json(result);
 });
 
 // GET /api/saved — the current user's saved messages that are still accessible,

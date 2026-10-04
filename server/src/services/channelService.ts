@@ -2,11 +2,11 @@ import mongoose from "mongoose";
 import { ActivityEvent } from "../models/ActivityEvent.js";
 import { Channel, isChannelManager } from "../models/Channel.js";
 import { Message } from "../models/Message.js";
-import { Read } from "../models/Read.js";
 import { User } from "../models/User.js";
 import { normalizeChannelName } from "../automation.js";
 import { isValidChannelName } from "../lib/channelName.js";
 import { emitAll, emitToChannel, emitToUser, joinUserToChannel, removeUserFromChannel } from "../realtime.js";
+import { markRead } from "./userStateService.js";
 
 export type ChannelActor = mongoose.Types.ObjectId | string;
 
@@ -28,11 +28,7 @@ async function logSystem(channelId: ChannelActor, authorId: ChannelActor, body: 
 }
 
 async function markChannelReadAtJoin(channelId: ChannelActor, userId: ChannelActor) {
-  await Read.updateOne(
-    { user: userId, channel: channelId, thread: null },
-    { $set: { lastReadAt: new Date() } },
-    { upsert: true },
-  );
+  await markRead({ userId, channelId });
 }
 
 async function clearChannelStar(userId: ChannelActor, channelId: ChannelActor) {

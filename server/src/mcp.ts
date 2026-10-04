@@ -5,10 +5,8 @@ import { z } from "zod";
 import { canParticipateInChannel, Channel, canPostToChannel, isChannelManager } from "./models/Channel.js";
 import { Message } from "./models/Message.js";
 import { User } from "./models/User.js";
-import { Read } from "./models/Read.js";
 import { ActivityEvent } from "./models/ActivityEvent.js";
 import { ScheduledMessage } from "./models/ScheduledMessage.js";
-import { ThreadFollow } from "./models/ThreadFollow.js";
 import { CustomEmoji } from "./models/CustomEmoji.js";
 import { deliverMessage, sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, sanitizeRetro, retroError, updateRetro } from "./deliver.js";
 import { sanitizeCard, cardError } from "./lib/messageCard.js";
@@ -32,6 +30,7 @@ import {
   leaveChannel,
 } from "./services/channelService.js";
 import { sendMessage } from "./services/messageService.js";
+import { markRead, setThreadFollow, toggleSavedMessage } from "./services/userStateService.js";
 
 const MAX_RESULTS = 50;
 
@@ -454,13 +453,9 @@ function registerTools(server, user) {
     async ({ channel: channelKey, messageId, saved }) => {
       const found = await visibleMessage(channelKey, messageId, userId);
       if (!found) return toolError("Message not found or access denied");
-      const me = await User.findById(userId);
-      const index = me.savedMessages.findIndex((id) => id.equals(found.message._id));
-      const next = saved === undefined ? index < 0 : saved;
-      if (next && index < 0) me.savedMessages.push(found.message._id);
-      if (!next && index >= 0) me.savedMessages.splice(index, 1);
-      await me.save();
-      return textResult({ messageId: messageId.toString(), saved: next });
+      const result = await toggleSavedMessage({ userId, messageId: found.message._id, saved });
+      if (!result) return toolError("User not found");
+      return textResult({ messageId: messageId.toString(), ...result });
     }
   );
 
@@ -528,8 +523,8 @@ function registerTools(server, user) {
       const found = await findVisibleChannel(channelKey, userId);
       if (!found) return toolError("Channel not found or access denied");
       if (thread && !mongoose.isValidObjectId(thread)) return toolError("Invalid thread id");
-      await Read.updateOne({ user: userId, channel: found._id, thread: thread || null }, { $set: { lastReadAt: new Date() } }, { upsert: true });
-      return textResult({ channelId: found._id.toString(), thread: thread || null, read: true });
+      const result = await markRead({ userId, channelId: found._id, threadId: thread || null });
+      return textResult({ channelId: found._id.toString(), thread: result.thread || null, read: true });
     }
   );
 
@@ -545,9 +540,8 @@ function registerTools(server, user) {
       const found = await visibleMessage(channelKey, thread, userId);
       if (!found || found.message.parentId) return toolError("Thread not found or access denied");
       if (!canParticipateInChannel(found.channel, userId)) return toolError("Join the channel to participate");
-      if (following === null) await ThreadFollow.deleteOne({ user: userId, thread: found.message._id });
-      else await ThreadFollow.updateOne({ user: userId, thread: found.message._id }, { $set: { following }, $setOnInsert: { channel: found.channel._id } }, { upsert: true });
-      return textResult({ threadId: found.message._id.toString(), following: following === true, muted: following === false });
+      const result = await setThreadFollow({ userId, threadId: found.message._id, channelId: found.channel._id, following });
+      return textResult({ threadId: found.message._id.toString(), ...result });
     }
   );
 
