@@ -51,6 +51,13 @@ export async function resolveChannel(channelKey: string) {
     : Channel.findOne({ name: normalizeChannelName(key) });
 }
 
+export function listVisibleChannels(userId: ChannelActor, includeArchived = false) {
+  return Channel.find({
+    ...(includeArchived ? {} : { isArchived: false }),
+    $or: [{ type: "public" }, { members: userId }],
+  }).sort({ name: 1 });
+}
+
 export async function findVisibleChannel(channelKey: string, userId: ChannelActor) {
   const channel = await resolveChannel(channelKey);
   if (!channel || channel.isArchived) return null;

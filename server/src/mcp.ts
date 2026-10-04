@@ -1,16 +1,14 @@
-import mongoose from "mongoose";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
-import { canParticipateInChannel, Channel, canPostToChannel, isChannelManager } from "./models/Channel.js";
-import { Message } from "./models/Message.js";
+import { canParticipateInChannel, canPostToChannel, isChannelManager } from "./models/Channel.js";
 import { deliverMessage, sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, sanitizeRetro, retroError, updateRetro } from "./deliver.js";
 import { sanitizeCard, cardError } from "./lib/messageCard.js";
 import { normalizeChannelName } from "./automation.js";
 import { emitToChannel, joinUserToChannel } from "./realtime.js";
 import { ensureDmChannel, ensureGroupDmChannel, ensureSelfDmChannel } from "./lib/dms.js";
 import { deleteMessage, editMessage, reactToMessage, toggleMessagePin, voteInSurvey } from "./services/messageActionService.js";
-import { getThreadMessages, listPinnedMessages } from "./services/messageQueryService.js";
+import { findMessageInChannel, getThreadMessages, listPinnedMessages } from "./services/messageQueryService.js";
 import { findSearchableChannels, searchMessages } from "./services/messageSearchService.js";
 import { queryChannelHistory } from "./services/messageHistoryService.js";
 import { isValidChannelName } from "./lib/channelName.js";
@@ -27,12 +25,14 @@ import {
   removeChannelMember,
   updateChannel,
   leaveChannel,
+  listVisibleChannels,
 } from "./services/channelService.js";
 import { sendMessage } from "./services/messageService.js";
 import { markRead, setThreadFollow, toggleSavedMessage } from "./services/userStateService.js";
 import { listSavedMessages } from "./services/savedMessageService.js";
 import { listDmConversations } from "./services/conversationService.js";
 import { findUserByIdOrUsername, listDirectoryUsers } from "./services/userDirectoryService.js";
+import { isValidObjectId, validObjectId } from "./lib/objectId.js";
 import {
   cancelScheduledMessage,
   createScheduledMessage,
@@ -55,15 +55,11 @@ function toolError(message) {
 }
 
 async function visibleMessage(channelKey, messageId, userId) {
-  if (!mongoose.isValidObjectId(messageId)) return null;
+  if (!isValidObjectId(messageId)) return null;
   const channel = await findVisibleChannel(channelKey, userId);
   if (!channel) return null;
-  const message = await Message.findOne({ _id: messageId, channel: channel._id }).populate("author");
+  const message = await findMessageInChannel({ messageId, channelId: channel._id });
   return message ? { channel, message } : null;
-}
-
-function validObjectId(value) {
-  return mongoose.isValidObjectId(value) ? new mongoose.Types.ObjectId(value) : null;
 }
 
 async function uploadAttachment({ data, name, contentType }) {
@@ -93,10 +89,7 @@ function registerTools(server, user) {
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
     async ({ includeArchived }) => {
-      const channels = await Channel.find({
-        ...(includeArchived ? {} : { isArchived: false }),
-        $or: [{ type: "public" }, { members: userId }],
-      }).sort({ name: 1 });
+      const channels = await listVisibleChannels(userId, includeArchived);
       return textResult({ channels: channels.map((channel) => channel.toPublicJSON()) });
     }
   );
@@ -325,7 +318,7 @@ function registerTools(server, user) {
       if (!channel) return toolError("Channel not found or access denied");
       if (!canParticipateInChannel(channel, userId)) return toolError("Join the channel to participate");
       if (!canPostToChannel(channel, userId)) return toolError("Only channel managers can post in this channel");
-      if (parentId && !mongoose.isValidObjectId(parentId)) return toolError("Invalid parent message id");
+      if (parentId && !isValidObjectId(parentId)) return toolError("Invalid parent message id");
       const attachmentError = attachmentLimitError(attachments);
       if (attachmentError) return toolError(attachmentError);
       if (surveyError(rawSurvey)) return toolError(surveyError(rawSurvey));
@@ -514,7 +507,7 @@ function registerTools(server, user) {
     async ({ channel: channelKey, thread }) => {
       const found = await findVisibleChannel(channelKey, userId);
       if (!found) return toolError("Channel not found or access denied");
-      if (thread && !mongoose.isValidObjectId(thread)) return toolError("Invalid thread id");
+      if (thread && !isValidObjectId(thread)) return toolError("Invalid thread id");
       const result = await markRead({ userId, channelId: found._id, threadId: thread || null });
       return textResult({ channelId: found._id.toString(), thread: result.thread || null, read: true });
     }
@@ -666,7 +659,7 @@ function registerTools(server, user) {
       annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     },
     async ({ messageId }) => {
-      if (!mongoose.isValidObjectId(messageId)) return toolError("Scheduled message not found");
+      if (!isValidObjectId(messageId)) return toolError("Scheduled message not found");
       const cancelled = await cancelScheduledMessage({ messageId, authorId: userId });
       if (!cancelled) return toolError("Scheduled message not found");
       return textResult({ messageId, cancelled: true });

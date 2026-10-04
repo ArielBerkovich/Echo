@@ -2,6 +2,13 @@ import { Message } from "../models/Message.js";
 
 export type MessageQueryActor = string | { toString(): string };
 
+export function findMessageInChannel({ channelId, messageId }: {
+  channelId: MessageQueryActor;
+  messageId: MessageQueryActor;
+}) {
+  return Message.findOne({ _id: messageId, channel: channelId }).populate("author");
+}
+
 export async function getThreadMessages({ channelId, messageId, resolveParent = true }: {
   channelId: MessageQueryActor;
   messageId: MessageQueryActor;
