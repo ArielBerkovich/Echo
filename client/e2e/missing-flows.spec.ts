@@ -181,7 +181,7 @@ test("configures one personal mention webhook from Settings", async ({ page }) =
   await page.getByTestId("rail-settings").click();
   await expect(page.getByTestId("settings-page")).toBeVisible();
   await expect(page.locator('[aria-label="Settings categories"] button')).toHaveText([
-    "Account", "Appearance", "Preferences", "Desktop", "Keyboard shortcuts", "API", "Webhooks",
+    "Account", "Appearance", "Preferences", "Desktop", "Keyboard shortcuts", "API", "MCP", "Webhooks",
   ]);
   const webhookLoaded = page.waitForResponse((response) => response.url().includes("/api/mention-webhook") && response.request().method() === "GET");
   await page.getByRole("button", { name: "Webhooks" }).click();
