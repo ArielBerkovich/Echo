@@ -14,6 +14,23 @@ export type WhatsNewRelease = {
 // Keep release notes in the renderer so they work for air-gapped deployments
 // and always match the desktop binary that shipped them.
 const RELEASES: Record<string, WhatsNewRelease> = {
+  "0.43.0": {
+    id: "0.43.0",
+    title: "What's new in 0.43.0",
+    summary: "MCP integration and flexible conversation notifications.",
+    items: [
+      {
+        title: "Echo MCP integration",
+        description: "Connect Echo via MCP from Settings, with API token setup.",
+        category: "New",
+      },
+      {
+        title: "Conversation notification controls",
+        description: "Follow, notify, or mute conversations and threads.",
+        category: "New",
+      },
+    ],
+  },
   "0.42.0": {
     id: "0.42.0",
     title: "What's new in 0.42.0",
