@@ -314,7 +314,9 @@ function registerTools(server, user) {
       if (cardError(rawCard)) return toolError(cardError(rawCard));
       const normalizedContent = normalizeMessageContent({ body, attachments, survey: rawSurvey, retro: rawRetro, card: rawCard });
       const files = normalizedContent.attachments;
-      if (!String(body || "").trim() && !files.length && !survey && !retro && !card) return toolError("Message needs text, an attachment, or structured content");
+      if (!normalizedContent.body && !files.length && !normalizedContent.survey && !normalizedContent.retro && !normalizedContent.card) {
+        return toolError("Message needs text, an attachment, or structured content");
+      }
       const result = await sendMessage({
         channel,
         authorId: userId,
