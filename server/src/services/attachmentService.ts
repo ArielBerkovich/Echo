@@ -1,8 +1,23 @@
 import { fileTypeFromBuffer } from "file-type";
 import { config } from "../config.js";
+import { Channel } from "../models/Channel.js";
+import { Message } from "../models/Message.js";
 import { putObject } from "../storage.js";
 
 const BLOCKED_MIME = new Set(["image/svg+xml", "text/html", "text/javascript", "application/javascript"]);
+
+export async function canAccessAttachment(key: string, userId: string | { toString(): string }) {
+  const references = await Message.find({ "attachments.key": key }, { channel: 1 }).lean();
+  if (references.length === 0) return true;
+  const channelIds = [...new Set(references.map((message) => String(message.channel)))];
+  const channels = await Channel.find(
+    { _id: { $in: channelIds }, isArchived: { $ne: true } },
+    { type: 1, members: 1 }
+  );
+  return channels.some(
+    (channel) => channel.type === "public" || channel.members.some((member) => member.equals(userId))
+  );
+}
 
 export function isImageContentType(contentType: string) {
   return /^image\//.test(contentType || "") && !BLOCKED_MIME.has(contentType);
