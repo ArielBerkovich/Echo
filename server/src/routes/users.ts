@@ -1,7 +1,6 @@
 import { Router } from "express";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
-import { User } from "../models/User.js";
 import { Channel } from "../models/Channel.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { signToken, signApiToken } from "../auth.js";
@@ -14,6 +13,7 @@ import { ensureDmChannel, ensureSelfDmChannel } from "../lib/dms.js";
 import { deliverMessage, sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError } from "../deliver.js";
 import { cardError, sanitizeCard } from "../lib/messageCard.js";
 import { ThreadFollow } from "../models/ThreadFollow.js";
+import { findUserById, findUserByUsername, listDirectoryUsers, userExists } from "../services/userDirectoryService.js";
 
 export const usersRouter = Router();
 usersRouter.use(requireAuth);
@@ -79,12 +79,11 @@ usersRouter.put("/notification-settings", async (req, res) => {
 // GET /api/users — directory used to power @mention autocomplete.
 // Excludes the internal system account.
 usersRouter.get("/", async (req, res) => {
-  const users = await User.find({ username: { $ne: "system" } })
-    .sort({ displayName: 1 });
+  const users = await listDirectoryUsers();
   // Keep the signed-in user discoverable even when a large directory pushes
   // them past the autocomplete limit.
   if (!users.some((user) => user._id.equals(req.user._id))) {
-    const currentUser = await User.findById(req.user._id);
+    const currentUser = await findUserById(req.user._id);
     if (currentUser && currentUser.username !== "system") users.push(currentUser);
   }
   const aliases = await aliasesByUserId(users.map((u) => u._id));
@@ -115,7 +114,7 @@ usersRouter.get("/vips", async (req, res) => {
 // POST /api/users/:username/messages — open or reuse a DM by username and send.
 usersRouter.post("/:username/messages", async (req, res) => {
   const username = decodeURIComponent(String(req.params.username)).trim().toLowerCase();
-  const recipient = username === "system" ? null : await User.findOne({ username });
+  const recipient = username === "system" ? null : await findUserByUsername(username);
   if (!recipient) return res.status(404).json({ error: "user not found" });
 
   const isSelf = recipient._id.equals(req.user._id);
@@ -164,7 +163,7 @@ usersRouter.post("/:username/messages", async (req, res) => {
 // client refreshed its full user list.
 usersRouter.get("/:id", async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ error: "valid user id is required" });
-  const user = await User.findById(req.params.id);
+  const user = await findUserById(req.params.id);
   if (!user || user.username === "system") return res.status(404).json({ error: "user not found" });
   const aliases = await aliasesByUserId([user._id]);
   res.json({ user: { ...user.toPublicJSON(), aliases: aliases.get(user._id.toString()) || [] } });
@@ -185,7 +184,7 @@ usersRouter.post("/:id/vip", async (req, res) => {
     req.user.vips.splice(idx, 1);
     vip = false;
   } else {
-    if (!(await User.exists({ _id: id }))) {
+    if (!(await userExists(id))) {
       return res.status(404).json({ error: "user not found" });
     }
     await ensureDmChannel(req.user._id, id);
