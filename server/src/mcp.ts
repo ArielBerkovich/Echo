@@ -15,7 +15,7 @@ import { sanitizeCard, cardError } from "./lib/messageCard.js";
 import { normalizeChannelName } from "./automation.js";
 import { emitAll, emitToChannel, joinUserToChannel, removeUserFromChannel } from "./realtime.js";
 import { ensureDmChannel, ensureGroupDmChannel, ensureSelfDmChannel } from "./lib/dms.js";
-import { reactToMessage, voteInSurvey } from "./services/messageActionService.js";
+import { deleteMessage, editMessage, reactToMessage, toggleMessagePin, voteInSurvey } from "./services/messageActionService.js";
 import { isValidChannelName } from "./lib/channelName.js";
 import { putObject } from "./storage.js";
 import { fileTypeFromBuffer } from "file-type";
@@ -476,12 +476,8 @@ function registerTools(server, user) {
       const found = await visibleMessage(channelKey, messageId, userId);
       if (!found) return toolError("Message not found or access denied");
       if (!canParticipateInChannel(found.channel, userId)) return toolError("Join the channel to participate");
-      const next = pinned === undefined ? !found.message.pinnedAt : pinned;
-      found.message.pinnedAt = next ? new Date() : null;
-      found.message.pinnedBy = next ? userId : null;
-      await found.message.save();
-      emitToChannel(found.channel._id.toString(), "message:update", publicMessage(found.message));
-      return textResult({ messageId: messageId.toString(), pinned: next });
+      const result = await toggleMessagePin({ channel: found.channel, message: found.message, userId, pinned });
+      return textResult({ messageId: messageId.toString(), pinned: result.pinned });
     }
   );
 
@@ -568,11 +564,8 @@ function registerTools(server, user) {
       if (!found) return toolError("Message not found or access denied");
       if (!canParticipateInChannel(found.channel, userId)) return toolError("Join the channel to participate");
       if (!found.message.author._id.equals(userId)) return toolError("You can only edit your own messages");
-      found.message.body = body.trim();
-      found.message.editedAt = new Date();
-      await found.message.save();
-      emitToChannel(found.channel._id.toString(), "message:update", publicMessage(found.message));
-      return textResult({ message: publicMessage(found.message) });
+      const result = await editMessage({ channel: found.channel, message: found.message, userId, body: body.trim() });
+      return textResult({ message: publicMessage(result.message) });
     }
   );
 
@@ -589,12 +582,8 @@ function registerTools(server, user) {
       if (!found) return toolError("Message not found or access denied");
       if (!canParticipateInChannel(found.channel, userId)) return toolError("Join the channel to participate");
       if (!found.message.author._id.equals(userId)) return toolError("You can only delete your own messages");
-      found.message.body = "[deleted]";
-      found.message.attachments = [];
-      found.message.editedAt = new Date();
-      await found.message.save();
-      emitToChannel(found.channel._id.toString(), "message:update", publicMessage(found.message));
-      return textResult({ messageId: messageId.toString(), deleted: true });
+      const result = await deleteMessage({ channel: found.channel, message: found.message, softDelete: true });
+      return textResult({ messageId: result.messageId, deleted: true });
     }
   );
 
