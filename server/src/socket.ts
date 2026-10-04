@@ -12,7 +12,7 @@ import { cardError, sanitizeCard } from "./lib/messageCard.js";
 import { buildMessageActivityMetadata } from "./lib/messageActivity.js";
 import { roomFor, userRoom } from "./lib/rooms.js";
 import { activeConnections, recordSocketError } from "./metrics.js";
-import { reactToMessage, voteInSurvey } from "./services/messageActionService.js";
+import { deleteMessage, editMessage, reactToMessage, toggleMessagePin, voteInSurvey } from "./services/messageActionService.js";
 
 // Wire up the real-time messaging layer on top of the HTTP server.
 export function attachSocket(httpServer) {
@@ -280,22 +280,7 @@ export function attachSocket(httpServer) {
           return ackError(ack, "message_edit", "only channel managers can edit messages in this read-only channel");
         }
 
-        message.body = text;
-        message.attachments = files;
-        Object.assign(message, await buildMessageActivityMetadata({ body: text, parentId: message.parentId, authorId: socket.user._id }));
-        message.editedAt = new Date();
-        await message.save();
-
-        io.to(roomFor(message.channel.toString())).emit("message:update", {
-          id: message._id.toString(),
-          channelId: message.channel.toString(),
-          parentId: message.parentId ? message.parentId.toString() : null,
-          body: message.body,
-          attachments: message.toPublicJSON().attachments,
-          editedAt: message.editedAt,
-          mentionedUserIds: message.mentionedUserIds.map((id) => id.toString()),
-          mentionedChannels: message.mentionedChannels.map((mention) => ({ channelId: mention.channelId.toString(), name: mention.name })),
-        });
+        await editMessage({ channel: editChannel, message, userId: socket.user._id, body: text, attachments: files });
         ack?.({ ok: true });
       } catch (err) {
         ackError(ack, "message_edit", err.message || "could not edit message");
@@ -317,30 +302,7 @@ export function attachSocket(httpServer) {
           return ackError(ack, "message_delete", "access denied");
         }
 
-        const channelId = message.channel.toString();
-        const parentId = message.parentId ? message.parentId.toString() : null;
-        const removedMessages = await Message.find(
-          parentId ? { _id: message._id } : { $or: [{ _id: message._id }, { parentId: message._id }] },
-          { mentionedUserIds: 1, threadRootAuthor: 1, author: 1 }
-        );
-        await Message.deleteOne({ _id: message._id });
-        // A thread root takes its replies with it.
-        if (!parentId) await Message.deleteMany({ parentId: message._id });
-
-        io.to(roomFor(channelId)).emit("message:deleted", {
-          id: message._id.toString(),
-          channelId,
-          parentId,
-        });
-        // Mention recipients can be outside the channel room. Refresh their
-        // feed too, including reactions and activities in deleted threads.
-        const recipients = new Set(deleteChannel.members.map((id) => id.toString()));
-        for (const removed of removedMessages) {
-          for (const id of [...(removed.mentionedUserIds || []), removed.threadRootAuthor, removed.author]) {
-            if (id) recipients.add(id.toString());
-          }
-        }
-        for (const id of recipients) io.to(userRoom(id)).emit("activity:bump");
+        await deleteMessage({ channel: deleteChannel, message });
         ack?.({ ok: true });
       } catch (err) {
         ackError(ack, "message_delete", err.message || "could not delete message");
@@ -359,17 +321,7 @@ export function attachSocket(httpServer) {
           return ackError(ack, "message_pin", "access denied");
         }
 
-        const alreadyPinned = !!message.pinnedAt;
-        message.pinnedAt = alreadyPinned ? null : new Date();
-        message.pinnedBy = alreadyPinned ? null : socket.user._id;
-        await message.save();
-
-        io.to(roomFor(message.channel.toString())).emit("message:pin", {
-          messageId: message._id.toString(),
-          channelId: message.channel.toString(),
-          pinnedAt: message.pinnedAt || null,
-          pinnedBy: message.pinnedBy ? message.pinnedBy.toString() : null,
-        });
+        await toggleMessagePin({ channel, message, userId: socket.user._id });
         ack?.({ ok: true });
       } catch (err) {
         ackError(ack, "message_pin", err.message || "could not pin message");
