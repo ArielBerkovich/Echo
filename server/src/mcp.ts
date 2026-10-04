@@ -4,7 +4,6 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { z } from "zod";
 import { canParticipateInChannel, Channel, canPostToChannel, isChannelManager } from "./models/Channel.js";
 import { Message } from "./models/Message.js";
-import { User } from "./models/User.js";
 import { deliverMessage, sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, sanitizeRetro, retroError, updateRetro } from "./deliver.js";
 import { sanitizeCard, cardError } from "./lib/messageCard.js";
 import { normalizeChannelName } from "./automation.js";
@@ -33,6 +32,7 @@ import { sendMessage } from "./services/messageService.js";
 import { markRead, setThreadFollow, toggleSavedMessage } from "./services/userStateService.js";
 import { listSavedMessages } from "./services/savedMessageService.js";
 import { listDmConversations } from "./services/conversationService.js";
+import { findUserByIdOrUsername, listDirectoryUsers } from "./services/userDirectoryService.js";
 import {
   cancelScheduledMessage,
   createScheduledMessage,
@@ -170,7 +170,7 @@ function registerTools(server, user) {
       annotations: { readOnlyHint: false, openWorldHint: false },
     },
     async ({ channel: channelKey, user: userKey }) => {
-      const targetId = validObjectId(userKey) || (await User.findOne({ username: String(userKey).toLowerCase() }))?._id;
+      const targetId = (await findUserByIdOrUsername(userKey))?._id;
       if (!targetId) return toolError("User not found");
       const result = await addChannelMember(channelKey, userId, targetId);
       return result.error ? toolError(result.error) : textResult(result);
@@ -186,7 +186,7 @@ function registerTools(server, user) {
       annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     },
     async ({ channel: channelKey, user: userKey }) => {
-      const targetId = validObjectId(userKey) || (await User.findOne({ username: String(userKey).toLowerCase() }))?._id;
+      const targetId = (await findUserByIdOrUsername(userKey))?._id;
       if (!targetId) return toolError("Member not found in channel");
       const result = await removeChannelMember(channelKey, userId, targetId);
       return result.error ? toolError(result.error) : textResult(result);
@@ -202,7 +202,7 @@ function registerTools(server, user) {
       annotations: { readOnlyHint: false, openWorldHint: false },
     },
     async ({ channel: channelKey, user: userKey }) => {
-      const targetId = validObjectId(userKey) || (await User.findOne({ username: String(userKey).toLowerCase() }))?._id;
+      const targetId = (await findUserByIdOrUsername(userKey))?._id;
       if (!targetId) return toolError("Manager must be a channel member");
       const result = await promoteChannelManager(channelKey, userId, targetId);
       return result.error ? toolError(result.error) : textResult(result);
@@ -363,7 +363,7 @@ function registerTools(server, user) {
     async ({ users: userKeys }) => {
       const targets = [];
       for (const key of userKeys) {
-        const target = validObjectId(key) ? await User.findById(key) : await User.findOne({ username: String(key).toLowerCase() });
+        const target = await findUserByIdOrUsername(key);
         if (!target) return toolError(`User not found: ${key}`);
         if (!target._id.equals(userId)) targets.push(target._id);
       }
@@ -682,7 +682,7 @@ function registerTools(server, user) {
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
     async () => {
-      const users = await User.find({ username: { $ne: "system" } }).sort({ displayName: 1 }).limit(500);
+      const users = await listDirectoryUsers({ limit: 500 });
       return textResult({ users: users.map((item) => item.toPublicJSON()) });
     }
   );
