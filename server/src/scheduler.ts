@@ -1,6 +1,6 @@
 import { ScheduledMessage } from "./models/ScheduledMessage.js";
 import { canPostToChannel, Channel } from "./models/Channel.js";
-import { deliverMessage } from "./deliver.js";
+import { sendMessage } from "./services/messageService.js";
 import { retryPendingAzureDevOpsEvents } from "./azureDevOps.js";
 import { notifyAllureReports } from "./routes/allure.js";
 
@@ -34,7 +34,7 @@ async function dispatchDue() {
       continue;
     }
     try {
-      await deliverMessage({
+      await sendMessage({
         channel,
         authorId: sm.author,
         body: sm.body,

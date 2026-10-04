@@ -7,13 +7,13 @@ import { signToken, signApiToken } from "../auth.js";
 import { setFileCategory, FILE_CATEGORY } from "../storage.js";
 import { emitAll, syncUserSockets } from "../realtime.js";
 import { passwordProblem } from "../password.js";
-import { ensureDmChannel } from "../lib/dms.js";
 import { aliasesByUserId } from "../lib/userAliases.js";
-import { ensureDmChannel, ensureSelfDmChannel } from "../lib/dms.js";
-import { deliverMessage, sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError } from "../deliver.js";
+import { sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError } from "../deliver.js";
 import { cardError, sanitizeCard } from "../lib/messageCard.js";
 import { ThreadFollow } from "../models/ThreadFollow.js";
 import { findUserById, findUserByUsername, listDirectoryUsers, userExists } from "../services/userDirectoryService.js";
+import { ensureDmChannel, ensureSelfDmChannel } from "../services/conversationService.js";
+import { sendMessage } from "../services/messageService.js";
 
 export const usersRouter = Router();
 usersRouter.use(requireAuth);
@@ -137,16 +137,7 @@ usersRouter.post("/:username/messages", async (req, res) => {
     ? req.body.parentId
     : null;
   const idempotencyKey = String(req.header("Idempotency-Key") || req.body?.idempotencyKey || "").trim();
-  if (idempotencyKey) {
-    const existing = await Message.findOne({
-      channel: channel._id,
-      author: req.user._id,
-      idempotencyKey: idempotencyKey.slice(0, 128),
-    }).populate("author");
-    if (existing) return res.json({ message: existing.toPublicJSON(), channel: channel.toPublicJSON(), idempotent: true });
-  }
-
-  const message = await deliverMessage({
+  const result = await sendMessage({
     channel,
     authorId: req.user._id,
     body: text,
@@ -154,9 +145,15 @@ usersRouter.post("/:username/messages", async (req, res) => {
     attachments,
     survey,
     card,
-    idempotencyKey,
+    idempotencyKey: idempotencyKey || null,
   });
-  res.status(201).json({ message, channel: channel.toPublicJSON(), withUser: recipient.toPublicJSON(), isSelf });
+  res.status(result.idempotent ? 200 : 201).json({
+    message: result.message,
+    channel: channel.toPublicJSON(),
+    withUser: recipient.toPublicJSON(),
+    isSelf,
+    ...(result.idempotent ? { idempotent: true } : {}),
+  });
 });
 
 // Resolve a directory entry for message authors that arrived before the

@@ -18,6 +18,7 @@ export async function sendMessage({
   survey = null,
   retro = null,
   card = null,
+  passwordHelpRequest = null,
 }) {
   if (idempotencyKey) {
     const existing = await Message.findOne({
@@ -39,6 +40,7 @@ export async function sendMessage({
     survey,
     retro,
     card,
+    passwordHelpRequest,
   });
   return { message };
 }

@@ -1,8 +1,58 @@
+import { createHash } from "node:crypto";
 import { Channel } from "../models/Channel.js";
 import { Message } from "../models/Message.js";
 import { Read } from "../models/Read.js";
 
 export type ConversationActor = string | { toString(): string };
+
+export function dmName(a: ConversationActor | ConversationActor[], b?: ConversationActor) {
+  const ids = (Array.isArray(a) ? a : [a, b]).map(String).sort();
+  const signature = ids.join("-");
+  const readableName = `dm-${signature}`;
+  if (readableName.length <= 64) return readableName;
+  return `dm-${createHash("sha256").update(signature).digest("hex").slice(0, 60)}`;
+}
+
+export async function ensureGroupDmChannel(currentUserId: ConversationActor, otherUserIds: ConversationActor[]) {
+  const memberIds = [...new Set([currentUserId, ...otherUserIds].map(String))];
+  const name = dmName(memberIds);
+  const candidates = await Channel.find({ type: "dm", members: { $all: memberIds } });
+  const memberSet = new Set(memberIds);
+  const existing = candidates.find(
+    (candidate) => candidate.members.length === memberSet.size
+      && candidate.members.every((member) => memberSet.has(String(member)))
+  );
+  if (existing) {
+    return Channel.findOneAndUpdate(
+      { _id: existing._id },
+      { $pull: { hiddenFor: currentUserId } },
+      { new: true }
+    );
+  }
+  return Channel.create({ name, type: "dm", members: memberIds, createdBy: currentUserId });
+}
+
+export function ensureDmChannel(currentUserId: ConversationActor, otherUserId: ConversationActor) {
+  const name = dmName(currentUserId, otherUserId);
+  return Channel.findOneAndUpdate(
+    { name },
+    {
+      $setOnInsert: { name, type: "dm", members: [currentUserId, otherUserId], createdBy: currentUserId },
+      $pull: { hiddenFor: currentUserId },
+    },
+    { new: true, upsert: true, setDefaultsOnInsert: false }
+  );
+}
+
+export async function ensureSelfDmChannel(userId: ConversationActor) {
+  const name = `dm-self-${userId}`;
+  const channel = await Channel.findOne({ name });
+  if (channel) {
+    await Channel.updateOne({ _id: channel._id }, { $pull: { hiddenFor: userId } });
+    return Channel.findById(channel._id);
+  }
+  return Channel.create({ name, type: "dm", members: [userId], createdBy: userId });
+}
 
 export async function listDmConversations({ userId, vips = [], includeMetadata = false }: {
   userId: ConversationActor;

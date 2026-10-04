@@ -2,19 +2,15 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
 import { canParticipateInChannel, canPostToChannel, isChannelManager } from "./models/Channel.js";
-import { deliverMessage, sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, sanitizeRetro, retroError, updateRetro } from "./deliver.js";
+import { sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, sanitizeRetro, retroError, updateRetro } from "./deliver.js";
 import { sanitizeCard, cardError } from "./lib/messageCard.js";
 import { normalizeChannelName } from "./automation.js";
 import { emitToChannel, joinUserToChannel } from "./realtime.js";
-import { ensureDmChannel, ensureGroupDmChannel, ensureSelfDmChannel } from "./lib/dms.js";
 import { deleteMessage, editMessage, reactToMessage, toggleMessagePin, voteInSurvey } from "./services/messageActionService.js";
 import { findMessageInChannel, getThreadMessages, listPinnedMessages } from "./services/messageQueryService.js";
 import { findSearchableChannels, searchMessages } from "./services/messageSearchService.js";
 import { queryChannelHistory } from "./services/messageHistoryService.js";
 import { isValidChannelName } from "./lib/channelName.js";
-import { putObject } from "./storage.js";
-import { fileTypeFromBuffer } from "file-type";
-import { config } from "./config.js";
 import {
   addChannelMember,
   archiveChannel,
@@ -30,9 +26,10 @@ import {
 import { sendMessage } from "./services/messageService.js";
 import { markRead, setThreadFollow, toggleSavedMessage } from "./services/userStateService.js";
 import { listSavedMessages } from "./services/savedMessageService.js";
-import { listDmConversations } from "./services/conversationService.js";
+import { ensureDmChannel, ensureGroupDmChannel, ensureSelfDmChannel, listDmConversations } from "./services/conversationService.js";
 import { findUserByIdOrUsername, listDirectoryUsers } from "./services/userDirectoryService.js";
 import { isValidObjectId, validObjectId } from "./lib/objectId.js";
+import { storeBase64Attachment } from "./services/attachmentService.js";
 import {
   cancelScheduledMessage,
   createScheduledMessage,
@@ -60,17 +57,6 @@ async function visibleMessage(channelKey, messageId, userId) {
   if (!channel) return null;
   const message = await findMessageInChannel({ messageId, channelId: channel._id });
   return message ? { channel, message } : null;
-}
-
-async function uploadAttachment({ data, name, contentType }) {
-  const buffer = Buffer.from(String(data || ""), "base64");
-  if (!buffer.length) return { error: "File data is empty or invalid base64" };
-  if (buffer.length > config.maxUploadBytes) return { error: "File exceeds Echo's upload size limit" };
-  const detected = await fileTypeFromBuffer(buffer);
-  const mime = detected?.mime || String(contentType || "application/octet-stream");
-  if (["image/svg+xml", "text/html", "text/javascript", "application/javascript"].includes(mime)) return { error: "This file type is not allowed" };
-  const key = await putObject({ buffer, name: String(name || "file").slice(0, 255), contentType: mime });
-  return { key, name: String(name || "file").slice(0, 255), size: buffer.length, contentType: mime, isImage: /^image\//.test(mime) };
 }
 
 function publicMessage(message) {
@@ -378,7 +364,7 @@ function registerTools(server, user) {
       annotations: { readOnlyHint: false, openWorldHint: false },
     },
     async (input) => {
-      const result = await uploadAttachment(input);
+      const result = await storeBase64Attachment(input);
       return result.error ? toolError(result.error) : textResult({ attachment: result });
     }
   );

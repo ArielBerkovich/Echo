@@ -7,12 +7,13 @@ import { User } from "./models/User.js";
 import { canParticipateInChannel, canPostToChannel, Channel } from "./models/Channel.js";
 import { Message } from "./models/Message.js";
 import { setIO } from "./realtime.js";
-import { deliverMessage, sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, sanitizeRetro, retroError, updateRetro } from "./deliver.js";
+import { sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, sanitizeRetro, retroError, updateRetro } from "./deliver.js";
 import { cardError, sanitizeCard } from "./lib/messageCard.js";
 import { buildMessageActivityMetadata } from "./lib/messageActivity.js";
 import { roomFor, userRoom } from "./lib/rooms.js";
 import { activeConnections, recordSocketError } from "./metrics.js";
 import { deleteMessage, editMessage, reactToMessage, toggleMessagePin, voteInSurvey } from "./services/messageActionService.js";
+import { sendMessage } from "./services/messageService.js";
 
 // Wire up the real-time messaging layer on top of the HTTP server.
 export function attachSocket(httpServer) {
@@ -213,7 +214,7 @@ export function attachSocket(httpServer) {
           return ackError(ack, "message_send", "only channel managers can post in this read-only channel");
         }
 
-        const payload = await deliverMessage({
+        const result = await sendMessage({
           channel,
           authorId: socket.user._id,
           body: text,
@@ -224,7 +225,7 @@ export function attachSocket(httpServer) {
           retro: normalizedRetro,
           card: normalizedCard,
         });
-        ack?.({ ok: true, message: payload });
+        ack?.({ ok: true, message: result.message });
       } catch (err) {
         ackError(ack, "message_send", err.message || "could not send message");
       }

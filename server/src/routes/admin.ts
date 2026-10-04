@@ -7,7 +7,7 @@ import { Message } from "../models/Message.js";
 import { Channel } from "../models/Channel.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { requireAdmin } from "../middleware/requireAdmin.js";
-import { deliverMessage } from "../deliver.js";
+import { sendMessage } from "../services/messageService.js";
 import { emitToChannel } from "../realtime.js";
 
 export const adminRouter = Router();
@@ -91,7 +91,7 @@ adminRouter.post("/password-help/:messageId/issue", async (req, res) => {
     }
 
     const tempPassword = await issueOneTimePassword(target);
-    const reply = await deliverMessage({
+    const { message: reply } = await sendMessage({
       channel,
       authorId: req.user._id,
       body:
