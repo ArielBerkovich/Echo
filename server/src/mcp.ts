@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
-import { Channel, canPostToChannel, isChannelManager } from "./models/Channel.js";
+import { canParticipateInChannel, Channel, canPostToChannel, isChannelManager } from "./models/Channel.js";
 import { Message } from "./models/Message.js";
 import { User } from "./models/User.js";
 import { Read } from "./models/Read.js";
@@ -493,6 +493,7 @@ function registerTools(server, user) {
     async ({ channel: channelKey, body, parentId, broadcastToChannel, idempotencyKey, attachments, survey: rawSurvey, retro: rawRetro, card: rawCard }) => {
       const channel = await findVisibleChannel(channelKey, userId);
       if (!channel) return toolError("Channel not found or access denied");
+      if (!canParticipateInChannel(channel, userId)) return toolError("Join the channel to participate");
       if (!canPostToChannel(channel, userId)) return toolError("Only channel managers can post in this channel");
       if (parentId && !mongoose.isValidObjectId(parentId)) return toolError("Invalid parent message id");
       const attachmentError = attachmentLimitError(attachments);
@@ -606,6 +607,7 @@ function registerTools(server, user) {
     async ({ channel: channelKey, messageId, emoji, present }) => {
       const found = await visibleMessage(channelKey, messageId, userId);
       if (!found) return toolError("Message not found or access denied");
+      if (!canParticipateInChannel(found.channel, userId)) return toolError("Join the channel to participate");
       const result = await applyReaction({ messageId: found.message._id, userId, emoji: emoji.trim(), present });
       const reactions = reactionSummary(result.message);
       emitToChannel(found.channel._id.toString(), "message:reaction", { messageId: messageId.toString(), reactions });
@@ -645,6 +647,7 @@ function registerTools(server, user) {
     async ({ channel: channelKey, messageId, pinned }) => {
       const found = await visibleMessage(channelKey, messageId, userId);
       if (!found) return toolError("Message not found or access denied");
+      if (!canParticipateInChannel(found.channel, userId)) return toolError("Join the channel to participate");
       const next = pinned === undefined ? !found.message.pinnedAt : pinned;
       found.message.pinnedAt = next ? new Date() : null;
       found.message.pinnedBy = next ? userId : null;
@@ -717,6 +720,7 @@ function registerTools(server, user) {
     async ({ channel: channelKey, thread, following }) => {
       const found = await visibleMessage(channelKey, thread, userId);
       if (!found || found.message.parentId) return toolError("Thread not found or access denied");
+      if (!canParticipateInChannel(found.channel, userId)) return toolError("Join the channel to participate");
       if (following === null) await ThreadFollow.deleteOne({ user: userId, thread: found.message._id });
       else await ThreadFollow.updateOne({ user: userId, thread: found.message._id }, { $set: { following }, $setOnInsert: { channel: found.channel._id } }, { upsert: true });
       return textResult({ threadId: found.message._id.toString(), following: following === true, muted: following === false });
@@ -734,6 +738,7 @@ function registerTools(server, user) {
     async ({ channel: channelKey, messageId, body }) => {
       const found = await visibleMessage(channelKey, messageId, userId);
       if (!found) return toolError("Message not found or access denied");
+      if (!canParticipateInChannel(found.channel, userId)) return toolError("Join the channel to participate");
       if (!found.message.author._id.equals(userId)) return toolError("You can only edit your own messages");
       found.message.body = body.trim();
       found.message.editedAt = new Date();
@@ -754,6 +759,7 @@ function registerTools(server, user) {
     async ({ channel: channelKey, messageId }) => {
       const found = await visibleMessage(channelKey, messageId, userId);
       if (!found) return toolError("Message not found or access denied");
+      if (!canParticipateInChannel(found.channel, userId)) return toolError("Join the channel to participate");
       if (!found.message.author._id.equals(userId)) return toolError("You can only delete your own messages");
       found.message.body = "[deleted]";
       found.message.attachments = [];
@@ -775,6 +781,7 @@ function registerTools(server, user) {
     async ({ channel: channelKey, messageId, optionIds }) => {
       const found = await visibleMessage(channelKey, messageId, userId);
       if (!found || !found.message.survey) return toolError("Survey not found or access denied");
+      if (!canParticipateInChannel(found.channel, userId)) return toolError("Join the channel to participate");
       try {
         const updated = await (await import("./deliver.js")).applySurveyVote(found.message, userId, optionIds);
         const survey = updated.toPublicJSON().survey;
@@ -797,6 +804,7 @@ function registerTools(server, user) {
     async ({ channel: channelKey, messageId, action, text: itemText, column, itemId, link }) => {
       const found = await visibleMessage(channelKey, messageId, userId);
       if (!found || !found.message.retro) return toolError("Retrospective not found or access denied");
+      if (!canParticipateInChannel(found.channel, userId)) return toolError("Join the channel to participate");
       try {
         const updated = await updateRetro(found.message, userId, { action, text: itemText, column, itemId, link });
         emitToChannel(found.channel._id.toString(), "message:update", publicMessage(updated));
@@ -818,6 +826,7 @@ function registerTools(server, user) {
     async ({ channel: channelKey, body, scheduledFor, parentId, attachments }) => {
       const channel = await findVisibleChannel(channelKey, userId);
       if (!channel) return toolError("Channel not found or access denied");
+      if (!canParticipateInChannel(channel, userId)) return toolError("Join the channel to participate");
       if (!canPostToChannel(channel, userId)) return toolError("Only channel managers can post in this channel");
       const when = new Date(scheduledFor);
       if (Number.isNaN(when.getTime()) || when <= new Date()) return toolError("scheduledFor must be a future time");

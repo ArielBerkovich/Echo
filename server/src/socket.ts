@@ -4,7 +4,7 @@ import { createAdapter } from "@socket.io/mongo-adapter";
 import { verifyToken } from "./auth.js";
 import { config } from "./config.js";
 import { User } from "./models/User.js";
-import { canPostToChannel, Channel } from "./models/Channel.js";
+import { canParticipateInChannel, canPostToChannel, Channel } from "./models/Channel.js";
 import { Message } from "./models/Message.js";
 import { ActivityEvent } from "./models/ActivityEvent.js";
 import { setIO } from "./realtime.js";
@@ -175,10 +175,7 @@ export function attachSocket(httpServer) {
         const message = await Message.findById(messageId);
         if (!message) return ackError(ack, "reaction", "message not found");
         const channel = await Channel.findById(message.channel);
-        if (
-          !channel ||
-          (channel.type !== "public" && !channel.members.some((m) => m.equals(socket.user._id)))
-        ) {
+        if (!channel || !canParticipateInChannel(channel, socket.user._id)) {
           return ackError(ack, "reaction", "access denied");
         }
 
@@ -227,10 +224,7 @@ export function attachSocket(httpServer) {
 
         const channel = await Channel.findById(channelId);
         if (!channel) return ackError(ack, "message_send", "channel not found");
-        if (
-          channel.type !== "public" &&
-          !channel.members.some((m) => m.equals(socket.user._id))
-        ) {
+        if (!canParticipateInChannel(channel, socket.user._id)) {
           return ackError(ack, "message_send", "access denied");
         }
         if (!canPostToChannel(channel, socket.user._id)) {
@@ -259,7 +253,7 @@ export function attachSocket(httpServer) {
         const message = await Message.findById(messageId);
         if (!message?.survey) return ackError(ack, "survey_vote", "survey not found");
         const channel = await Channel.findById(message.channel);
-        if (!channel || !canAccess(channel, socket.user._id)) return ackError(ack, "survey_vote", "access denied");
+        if (!channel || !canParticipateInChannel(channel, socket.user._id)) return ackError(ack, "survey_vote", "join the channel to participate");
         const updated = await applySurveyVote(message, socket.user._id, optionIds);
         const survey = updated.toPublicJSON().survey;
         io.to(roomFor(message.channel.toString())).emit("message:survey", { messageId: message.id, survey });
@@ -272,7 +266,7 @@ export function attachSocket(httpServer) {
         const message = await Message.findById(messageId);
         if (!message?.retro) return ackError(ack, "retro_update", "retro board not found");
         const channel = await Channel.findById(message.channel);
-        if (!channel || !canAccess(channel, socket.user._id)) return ackError(ack, "retro_update", "access denied");
+        if (!channel || !canParticipateInChannel(channel, socket.user._id)) return ackError(ack, "retro_update", "join the channel to participate");
         const updated = await updateRetro(message, socket.user._id, change);
         const retro = updated.toPublicJSON().retro;
         io.to(roomFor(message.channel.toString())).emit("message:retro", { messageId: message.id, retro });
@@ -299,7 +293,7 @@ export function attachSocket(httpServer) {
           return ackError(ack, "message_edit", "you can only edit your own messages");
         }
         const editChannel = await Channel.findById(message.channel);
-        if (!editChannel || !canAccess(editChannel, socket.user._id)) {
+        if (!editChannel || !canParticipateInChannel(editChannel, socket.user._id)) {
           return ackError(ack, "message_edit", "access denied");
         }
         if (!canPostToChannel(editChannel, socket.user._id)) {
@@ -339,7 +333,7 @@ export function attachSocket(httpServer) {
           return ackError(ack, "message_delete", "you can only delete your own messages");
         }
         const deleteChannel = await Channel.findById(message.channel);
-        if (!deleteChannel || !canAccess(deleteChannel, socket.user._id)) {
+        if (!deleteChannel || !canParticipateInChannel(deleteChannel, socket.user._id)) {
           return ackError(ack, "message_delete", "access denied");
         }
 
@@ -381,7 +375,7 @@ export function attachSocket(httpServer) {
         if (!message) return ackError(ack, "message_pin", "message not found");
         if (message.kind === "system") return ackError(ack, "message_pin", "system messages cannot be pinned");
         const channel = await Channel.findById(message.channel);
-        if (!channel || !canAccess(channel, socket.user._id)) {
+        if (!channel || !canParticipateInChannel(channel, socket.user._id)) {
           return ackError(ack, "message_pin", "access denied");
         }
 
@@ -420,7 +414,7 @@ export function attachSocket(httpServer) {
 
         const target = await Channel.findById(channelId);
         if (!target) return ackError(ack, "message_forward", "destination not found");
-        if (!canAccess(target, socket.user._id)) {
+        if (!canParticipateInChannel(target, socket.user._id)) {
           return ackError(ack, "message_forward", "access denied to destination");
         }
         if (!canPostToChannel(target, socket.user._id)) {

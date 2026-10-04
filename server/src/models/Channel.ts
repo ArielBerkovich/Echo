@@ -74,4 +74,15 @@ export function canPostToChannel(channel, userId) {
   return !channel.readOnly || isChannelManager(channel, userId);
 }
 
+export function isChannelMember(channel, userId) {
+  const id = userId?.toString();
+  return !!id && channel.members.some((memberId) => memberId.toString() === id);
+}
+
+// Public channels can be previewed by non-members, but participation always
+// requires membership. Keep this separate from public-channel visibility.
+export function canParticipateInChannel(channel, userId) {
+  return channel.type === "dm" || isChannelMember(channel, userId);
+}
+
 export const Channel = mongoose.model("Channel", channelSchema);

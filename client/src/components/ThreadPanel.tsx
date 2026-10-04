@@ -30,6 +30,7 @@ export default function ThreadPanel({
   onForward,
   onTogglePin,
   canPin = true,
+  canInteract = true,
   savedIds,
   onToggleSave,
   onOpenProfile,
@@ -392,7 +393,7 @@ export default function ThreadPanel({
           <span className="thread-title">{t("thread")}</span>
         </div>
         <div className="thread-header-actions">
-          {!rootDeleted && <button
+          {!rootDeleted && canInteract && <button
             type="button"
             className={`thread-follow-toggle${following || muted ? " is-following" : ""}`}
             data-testid="thread-follow-toggle"
@@ -451,6 +452,7 @@ export default function ThreadPanel({
                   openReact(m.id, e);
                 }}
                 onToggleReaction={(emoji) => toggleReaction(m.id, emoji)}
+                canInteract={canInteract}
                 onOpenThread={() => {}}
                 onViewInChannel={() => {
                   onClose?.();

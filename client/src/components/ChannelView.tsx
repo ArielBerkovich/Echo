@@ -118,7 +118,8 @@ const ChannelView = forwardRef(function ChannelView({
   const { t } = useI18n();
   const queryClient = useQueryClient();
   const hasUsableCache = cachedMessages !== null && !hasUnread;
-  const canPost = channel.type === "dm" || !channel.readOnly || channel.createdBy === user.id || (channel.managers || []).includes(user.id);
+  const isMember = channel.type === "dm" || (channel.members || []).includes(user.id);
+  const canPost = isMember && (channel.type === "dm" || !channel.readOnly || channel.createdBy === user.id || (channel.managers || []).includes(user.id));
   const [messages, setMessages] = useState(() => hasUsableCache ? cachedMessages : []);
   const [error, setError] = useState(null);
   const [thread, setThread] = useState(null); // open thread root message, or null
@@ -1039,7 +1040,6 @@ const ChannelView = forwardRef(function ChannelView({
   const dmLabel = channel.dmName || (dmParticipants.length ? dmParticipants.map((person) => person.displayName).join(", ") : dmAvatarName);
   const dmDisplayLabel = truncateDmTitle(dmLabel);
   const dmAvatar = dmUser?.avatarUrl || null;
-  const isMember = isDm || (channel.members || []).includes(user.id);
   const isGroupDm = isDm && ((channel.members || []).length > 2 || dmParticipants.length > 1);
 
   useEffect(() => {
@@ -1323,6 +1323,7 @@ const ChannelView = forwardRef(function ChannelView({
                       openReact(m.id, e);
                     }}
                     onToggleReaction={(emoji) => toggleReaction(m.id, emoji)}
+                    canInteract={isMember}
                     onOpenThread={() => {
                       setActionsFor(null);
                       setShowDetails(false);
@@ -1354,7 +1355,7 @@ const ChannelView = forwardRef(function ChannelView({
                     onTogglePin={() => togglePin(m)}
                     onIssuePasswordHelp={() => issuePasswordHelp(m.id)}
                     onToast={onToast}
-                    canPin={!isDm}
+                    canPin={!isDm && isMember}
                     canQuote={isDm}
                   />
                 </Fragment>
@@ -1465,7 +1466,8 @@ const ChannelView = forwardRef(function ChannelView({
             onJumpToMessage={onJumpToMessage}
             onForward={(m) => setForwarding(m)}
             onTogglePin={togglePin}
-            canPin={!isDm}
+            canPin={!isDm && isMember}
+            canInteract={isMember}
             savedIds={savedIds}
             onToggleSave={onToggleSave}
             onOpenProfile={onOpenProfile}
@@ -1501,6 +1503,7 @@ const ChannelView = forwardRef(function ChannelView({
           renderMarkdown={renderMarkdown}
           emojiMap={emojiMap}
           onUnpin={(m) => togglePin(m)}
+          canUnpin={!isDm && isMember}
           onClose={() => setShowPinned(false)}
         />
       ) : showFiles ? (
@@ -1618,7 +1621,7 @@ function ChannelSetupActions({ channel, onAddPeople, onOpenDetails, inline = fal
   );
 }
 
-function PinnedPanel({ messages, renderMarkdown, emojiMap, onUnpin, onClose }) {
+function PinnedPanel({ messages, renderMarkdown, emojiMap, onUnpin, canUnpin = true, onClose }) {
   const { t } = useI18n();
   return (
     <aside id="pinned-panel" className="side-panel pinned-panel" data-testid="pinned-panel">
@@ -1639,9 +1642,9 @@ function PinnedPanel({ messages, renderMarkdown, emojiMap, onUnpin, onClose }) {
                 className="pinned-item-body markdown"
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(m.body || "", { mentionedChannels: m.mentionedChannels }) }}
               />
-              <button className="pinned-unpin" data-testid={`pinned-${m.id}-unpin`} onClick={() => onUnpin(m)}>
-                {t("unpinMessage")}
-              </button>
+              {canUnpin && <button className="pinned-unpin" data-testid={`pinned-${m.id}-unpin`} onClick={() => onUnpin(m)}>
+                  {t("unpinMessage")}
+                </button>}
             </div>
           ))
         )}
