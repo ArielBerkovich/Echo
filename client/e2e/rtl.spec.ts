@@ -1033,6 +1033,10 @@ test("places the RTL scroll-to-latest control on the left", async ({ page }) => 
     method: "POST",
     body: { name: channelName, type: "public" },
   });
+  await requestAsToken(page, fixture.alice.token, `/channels/${created.channel.id}/members`, {
+    method: "POST",
+    body: { userId: fixture.bob.id },
+  });
   for (let index = 0; index < 28; index += 1) {
     await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
       method: "POST",
