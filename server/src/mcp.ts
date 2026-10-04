@@ -5,12 +5,10 @@ import { z } from "zod";
 import { canParticipateInChannel, Channel, canPostToChannel, isChannelManager } from "./models/Channel.js";
 import { Message } from "./models/Message.js";
 import { User } from "./models/User.js";
-import { ActivityEvent } from "./models/ActivityEvent.js";
-import { CustomEmoji } from "./models/CustomEmoji.js";
 import { deliverMessage, sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, sanitizeRetro, retroError, updateRetro } from "./deliver.js";
 import { sanitizeCard, cardError } from "./lib/messageCard.js";
 import { normalizeChannelName } from "./automation.js";
-import { emitAll, emitToChannel, joinUserToChannel, removeUserFromChannel } from "./realtime.js";
+import { emitToChannel, joinUserToChannel } from "./realtime.js";
 import { ensureDmChannel, ensureGroupDmChannel, ensureSelfDmChannel } from "./lib/dms.js";
 import { deleteMessage, editMessage, reactToMessage, toggleMessagePin, voteInSurvey } from "./services/messageActionService.js";
 import { isValidChannelName } from "./lib/channelName.js";
@@ -19,12 +17,12 @@ import { fileTypeFromBuffer } from "file-type";
 import { config } from "./config.js";
 import {
   addChannelMember,
+  archiveChannel,
   createChannel,
   findVisibleChannel,
   joinChannel,
   promoteChannelManager,
   removeChannelMember,
-  resolveChannel,
   updateChannel,
   leaveChannel,
 } from "./services/channelService.js";
@@ -148,17 +146,13 @@ function registerTools(server, user) {
       annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     },
     async ({ channel: channelKey }) => {
-      const channel = await resolveChannel(channelKey);
-      if (!channel || channel.isArchived || channel.type === "dm") return toolError("Channel not found or cannot be archived");
-      if (!channel.createdBy.equals(userId)) return toolError("Only the channel creator can archive it");
-      if (channel.members.some((id) => !id.equals(userId))) return toolError("Remove all other members before archiving the channel");
-      channel.isArchived = true;
-      channel.members = [];
-      channel.managers = [];
-      await channel.save();
-      removeUserFromChannel(userId.toString(), channel._id.toString());
-      emitAll("channel:catalog", { channel: channel.toPublicJSON() });
-      return textResult({ ok: true, channel: channel.toPublicJSON() });
+      const result = await archiveChannel(channelKey, userId);
+      if (result.error) {
+        if (result.error === "only the channel creator can delete it") return toolError("Only the channel creator can archive it");
+        if (result.error === "remove all other members before deleting the channel") return toolError("Remove all other members before archiving the channel");
+        return toolError("Channel not found or cannot be archived");
+      }
+      return textResult({ ok: true, channel: result.channel });
     }
   );
 
