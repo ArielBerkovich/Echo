@@ -75,6 +75,13 @@ test("public channel previews are read-only until the user joins", async ({ page
     await expect(bobPage.getByTestId("composer-editor")).toHaveCount(0);
     await expect(bobPage.getByTestId(`message-${root.id}`)).toContainText(`Preview root ${suffix}`);
 
+    const channelDetails = await api(bobPage, bobAuth.token, `/channels/${channel.id}`);
+    const channelMembers = (await channelDetails.json()).members;
+    await bobPage.getByTestId("channel-members").click();
+    await expect(bobPage.getByTestId("members-panel")).toBeVisible();
+    await expect(bobPage.getByTestId("members-panel")).toContainText(channelMembers[0].displayName);
+    await bobPage.getByRole("button", { name: "Close members" }).click();
+
     await bobPage.getByTestId("channel-pinned").click();
     await expect(bobPage.getByTestId("pinned-panel")).toBeVisible();
     await expect(bobPage.getByTestId(`pinned-${root.id}-unpin`)).toHaveCount(0);

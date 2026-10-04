@@ -27,8 +27,21 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
   const [listScrollTop, setListScrollTop] = useState(0);
   const [listHeight, setListHeight] = useState(MEMBER_LIST_HEIGHT);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [loadedMemberUsers, setLoadedMemberUsers] = useState([]);
   const searchRef = useRef(null);
   const listRef = useRef(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.getChannel(channel.id)
+      .then(({ members: channelMembers = [] }) => {
+        if (!cancelled) setLoadedMemberUsers(channelMembers);
+      })
+      .catch(() => {
+        if (!cancelled) setLoadedMemberUsers([]);
+      });
+    return () => { cancelled = true; };
+  }, [channel.id]);
 
   useEffect(() => {
     function onKeyDown(event) {
@@ -38,19 +51,25 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
 
+  const loadedMemberIds = loadedMemberUsers.map((member) => member.id);
   const memberIds = channel.members?.length
     ? channel.members
-    : (channel.participants || []).map((member) => member.id);
+    : loadedMemberIds.length
+      ? loadedMemberIds
+      : (channel.participants || []).map((member) => member.id);
   const memberIdSet = useMemo(() => new Set(memberIds), [memberIds]);
   const managerIdSet = useMemo(() => new Set(channel.managers || []), [channel.managers]);
   const members = useMemo(() => {
     const byId = new Map(users.map((user) => [user.id, user]));
-    const participantById = new Map((channel.participants || []).map((user) => [user.id, user]));
+    const participantById = new Map([
+      ...loadedMemberUsers,
+      ...(channel.participants || []),
+    ].map((user) => [user.id, user]));
     return memberIds
       .map((id) => byId.get(id) || participantById.get(id))
       .filter(Boolean)
       .sort((a, b) => a.displayName.localeCompare(b.displayName));
-  }, [channel.participants, memberIds, users]);
+  }, [channel.participants, loadedMemberUsers, memberIds, users]);
   const normalizedQuery = query.trim().toLowerCase();
   const shownMembers = useMemo(() => normalizedQuery
     ? members.filter(
