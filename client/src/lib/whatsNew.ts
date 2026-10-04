@@ -17,7 +17,7 @@ const RELEASES: Record<string, WhatsNewRelease> = {
   "0.43.0": {
     id: "0.43.0",
     title: "What's new in 0.43.0",
-    summary: "MCP integration and flexible conversation notifications.",
+    summary: "MCP integration, conversation notifications, and image editing.",
     items: [
       {
         title: "Echo MCP integration",
@@ -27,6 +27,11 @@ const RELEASES: Record<string, WhatsNewRelease> = {
       {
         title: "Conversation notification controls",
         description: "Follow, notify, or mute conversations and threads.",
+        category: "New",
+      },
+      {
+        title: "Image editing",
+        description: "Crop and annotate images before sending.",
         category: "New",
       },
     ],

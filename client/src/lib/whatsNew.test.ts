@@ -34,7 +34,7 @@ describe("What's new release content", () => {
     assert.equal(getWhatsNewRelease("0.43.0")?.id, "0.43.0");
     assert.deepEqual(
       getWhatsNewRelease("0.43.0")?.items.map(({ title }) => title),
-      ["Echo MCP integration", "Conversation notification controls"],
+      ["Echo MCP integration", "Conversation notification controls", "Image editing"],
     );
     assert.equal(getWhatsNewRelease("0.42.0")?.id, "0.42.0");
     assert.deepEqual(
