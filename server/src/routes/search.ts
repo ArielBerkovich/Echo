@@ -1,17 +1,12 @@
 import { Router } from "express";
-import { Channel } from "../models/Channel.js";
-import { Message } from "../models/Message.js";
 import { User } from "../models/User.js";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { escapeSearchRegex, findSearchableChannels, searchMessages } from "../services/messageSearchService.js";
 
 export const searchRouter = Router();
 searchRouter.use(requireAuth);
 
 const PAGE_SIZE = 20;
-
-function escapeRegex(s) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 // Pull `in:<channel>`, `from:<@user>` and `has:<file|image|link>` filters out
 // of the raw query, returning them plus the leftover free text.
@@ -56,56 +51,38 @@ searchRouter.get("/messages", async (req, res) => {
   const page = Math.max(0, parseInt(req.query.page, 10) || 0);
 
   // Channels this user is allowed to search within (public + their own).
-  const visible = await Channel.find(
-    { $or: [{ type: "public" }, { members: req.user._id }] },
-    { _id: 1, name: 1, type: 1 }
-  );
+  const visible = await findSearchableChannels({ userId: req.user._id });
   const chanMap = new Map(visible.map((c) => [c._id.toString(), c]));
-
-  const filter = {
-    channel: { $in: visible.map((c) => c._id) },
-    kind: { $ne: "system" },
-  };
+  let channelIds = visible.map((c) => c._id);
+  let authorId;
 
   // in:<channel> — restrict to a single channel the user can see.
   if (inName) {
     const ch = visible.find((c) => (c.name || "").toLowerCase() === inName.toLowerCase());
     if (!ch) return res.json(empty); // unknown / inaccessible channel → no results
-    filter.channel = ch._id;
+    channelIds = [ch._id];
   }
 
   // from:<@user> — restrict to one author.
   if (fromName) {
     const author = await User.findOne({
-      username: new RegExp(`^${escapeRegex(fromName)}$`, "i"),
+      username: new RegExp(`^${escapeSearchRegex(fromName)}$`, "i"),
     });
     if (!author) return res.json(empty);
-    filter.author = author._id;
+    authorId = author._id;
   }
 
   // has:<file|image|link> — restrict to messages carrying attachments / links.
-  if (has === "file") filter["attachments.0"] = { $exists: true };
-  else if (has === "image") filter.attachments = { $elemMatch: { isImage: true } };
-  else if (has === "link") filter.body = { $regex: /https?:\/\//i };
-
-  // Free text: case-insensitive "contains" match. Each whitespace-separated
-  // term must appear as a substring of the body (so "heyy" finds "heyyy", and
-  // "foo bar" finds messages containing both). This is the intuitive chat-search
-  // behaviour — MongoDB's $text only matched whole, stemmed words.
-  if (text) {
-    filter.$and = text
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 10)
-      .map((t) => ({ body: { $regex: escapeRegex(t), $options: "i" } }));
-  }
-
   // Fetch one extra to know whether another page exists, without a count query.
-  const docs = await Message.find(filter)
-    .sort({ createdAt: -1 })
-    .skip(page * PAGE_SIZE)
-    .limit(PAGE_SIZE + 1)
-    .populate("author");
+  const terms = text ? text.split(/\s+/).filter(Boolean) : [];
+  const docs = await searchMessages({
+    channelIds,
+    terms,
+    authorId,
+    has,
+    skip: page * PAGE_SIZE,
+    limit: PAGE_SIZE + 1,
+  });
 
   const hasMore = docs.length > PAGE_SIZE;
   const results = docs.slice(0, PAGE_SIZE).map((m) => {

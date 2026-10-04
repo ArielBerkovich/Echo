@@ -12,6 +12,7 @@ import { emitToChannel, joinUserToChannel } from "./realtime.js";
 import { ensureDmChannel, ensureGroupDmChannel, ensureSelfDmChannel } from "./lib/dms.js";
 import { deleteMessage, editMessage, reactToMessage, toggleMessagePin, voteInSurvey } from "./services/messageActionService.js";
 import { getThreadMessages, listPinnedMessages } from "./services/messageQueryService.js";
+import { findSearchableChannels, searchMessages } from "./services/messageSearchService.js";
 import { isValidChannelName } from "./lib/channelName.js";
 import { putObject } from "./storage.js";
 import { fileTypeFromBuffer } from "file-type";
@@ -218,10 +219,7 @@ function registerTools(server, user) {
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
     async ({ query, channel: channelKey, limit }) => {
-      const visibleChannels = await Channel.find({
-        isArchived: false,
-        $or: [{ type: "public" }, { members: userId }],
-      }, { _id: 1, name: 1, type: 1 });
+      const visibleChannels = await findSearchableChannels({ userId, excludeArchived: true });
       let channels = visibleChannels;
       if (channelKey) {
         const requested = visibleChannels.find((item) => item.name === normalizeChannelName(channelKey));
@@ -229,12 +227,7 @@ function registerTools(server, user) {
         channels = [requested];
       }
       const terms = query.trim().split(/\s+/).filter(Boolean).slice(0, 10);
-      const filter = {
-        channel: { $in: channels.map((item) => item._id) },
-        kind: { $ne: "system" },
-        $and: terms.map((term) => ({ body: { $regex: term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" } })),
-      };
-      const docs = await Message.find(filter).sort({ createdAt: -1 }).limit(limit).populate("author");
+      const docs = await searchMessages({ channelIds: channels.map((item) => item._id), terms, limit });
       const channelNames = new Map(channels.map((item) => [item._id.toString(), item.name]));
       return textResult({
         query,
