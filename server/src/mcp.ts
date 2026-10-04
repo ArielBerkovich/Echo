@@ -31,6 +31,7 @@ import {
 } from "./services/channelService.js";
 import { sendMessage } from "./services/messageService.js";
 import { markRead, setThreadFollow, toggleSavedMessage } from "./services/userStateService.js";
+import { listSavedMessages } from "./services/savedMessageService.js";
 import {
   cancelScheduledMessage,
   createScheduledMessage,
@@ -479,13 +480,9 @@ function registerTools(server, user) {
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
     async ({ limit }) => {
-      const me = await User.findById(userId);
-      const ids = (me.savedMessages || []).slice().reverse();
-      const messages = await Message.find({ _id: { $in: ids } }).populate("author");
-      const visibleResults = await Promise.all(messages.map(async (message) => ({ message, channel: await findVisibleChannel(message.channel.toString(), userId) })));
-      const visible = visibleResults.filter((item) => item.channel).map((item) => item.message);
-      const byId = new Map(visible.map((message) => [message._id.toString(), message]));
-      return textResult({ messages: ids.map((id) => byId.get(id.toString())).filter(Boolean).slice(0, limit).map(publicMessage) });
+      const result = await listSavedMessages({ userId, limit, excludeArchived: true });
+      if (!result) return toolError("User not found");
+      return textResult({ messages: result.messages.map(publicMessage) });
     }
   );
 
