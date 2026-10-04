@@ -20,6 +20,18 @@ import { isValidChannelName } from "./lib/channelName.js";
 import { putObject } from "./storage.js";
 import { fileTypeFromBuffer } from "file-type";
 import { config } from "./config.js";
+import {
+  addChannelMember,
+  createChannel,
+  findVisibleChannel,
+  joinChannel,
+  promoteChannelManager,
+  removeChannelMember,
+  resolveChannel,
+  updateChannel,
+  leaveChannel,
+} from "./services/channelService.js";
+import { sendMessage } from "./services/messageService.js";
 
 const MAX_RESULTS = 50;
 
@@ -36,114 +48,6 @@ function toolError(message) {
   };
 }
 
-function canAccess(channel, userId) {
-  return channel.type === "public" || channel.members.some((member) => member.equals(userId));
-}
-
-async function findVisibleChannel(channelKey, userId) {
-  const key = String(channelKey || "").trim();
-  const channel = mongoose.isValidObjectId(key)
-    ? await Channel.findById(key)
-    : await Channel.findOne({ name: normalizeChannelName(key) });
-  if (!channel || channel.isArchived || !canAccess(channel, userId)) return null;
-  return channel;
-}
-
-async function joinPublicChannel(channelKey, userId) {
-  const key = String(channelKey || "").trim();
-  const channel = mongoose.isValidObjectId(key)
-    ? await Channel.findById(key)
-    : await Channel.findOne({ name: normalizeChannelName(key) });
-  if (!channel || channel.isArchived) return { error: "Channel not found" };
-  if (channel.type !== "public") return { error: "Private channels are invite-only" };
-
-  const already = channel.members.some((memberId) => memberId.equals(userId));
-  if (!already) {
-    await Channel.updateOne({ _id: channel._id }, { $addToSet: { members: userId } });
-    await Read.updateOne(
-      { user: userId, channel: channel._id, thread: null },
-      { $set: { lastReadAt: new Date() } },
-      { upsert: true }
-    );
-    joinUserToChannel(userId.toString(), channel._id.toString());
-    const systemMessage = await Message.create({ channel: channel._id, author: userId, body: "joined", kind: "system" });
-    await systemMessage.populate("author");
-    emitToChannel(channel._id.toString(), "message:new", {
-      ...systemMessage.toPublicJSON(),
-      replyCount: 0,
-      lastReplyAt: null,
-    });
-  }
-
-  const updated = await Channel.findById(channel._id);
-  const payload = updated.toPublicJSON();
-  if (!already) {
-    emitToChannel(channel._id.toString(), "channel:update", { channel: payload });
-    emitAll("channel:catalog", { channel: payload });
-  }
-  return { channel: payload, joined: !already };
-}
-
-async function leaveChannel(channelKey, userId, managerId) {
-  const key = String(channelKey || "").trim();
-  const channel = mongoose.isValidObjectId(key)
-    ? await Channel.findById(key)
-    : await Channel.findOne({ name: normalizeChannelName(key) });
-  if (!channel || channel.isArchived) return { error: "Channel not found" };
-  if (channel.type === "dm") return { error: "Cannot leave a direct message" };
-  if (!channel.members.some((memberId) => memberId.equals(userId))) {
-    return { error: "You are not a member of this channel" };
-  }
-  if ((channel.name || "").toLowerCase() === "general") {
-    return { error: "#general is the default channel and cannot be left" };
-  }
-
-  const remainingMembers = channel.members.filter((memberId) => !memberId.equals(userId));
-  const isCreator = channel.createdBy.equals(userId);
-  const hasRemainingManager = (channel.managers || []).some(
-    (manager) => remainingMembers.some((memberId) => memberId.equals(manager))
-  );
-  let transferredTo = null;
-  if (isCreator && remainingMembers.length > 0 && !hasRemainingManager) {
-    if (!mongoose.isValidObjectId(managerId)) return { error: "Choose a manager before leaving" };
-    if (!remainingMembers.some((memberId) => memberId.equals(managerId))) {
-      return { error: "Manager must be a member of the channel" };
-    }
-    channel.managers = [...new Set([...(channel.managers || []).map(String), String(managerId)])];
-    transferredTo = String(managerId);
-  }
-  if (isCreator && remainingMembers.length === 0) {
-    return { error: "Empty channels must be deleted instead" };
-  }
-
-  if (channel.type === "private") {
-    const messages = await Message.find({ channel: channel._id }, { _id: 1 }).lean();
-    if (messages.length) {
-      await User.updateOne(
-        { _id: userId },
-        { $pull: { savedMessages: { $in: messages.map((message) => message._id) } } }
-      );
-    }
-  }
-  await User.updateOne({ _id: userId }, { $pull: { starredChannels: channel._id } });
-  await ActivityEvent.deleteMany({ recipient: userId, channel: channel._id, type: { $ne: "channel_remove" } }).catch(() => {});
-  channel.members = remainingMembers;
-  channel.managers = (channel.managers || []).filter((manager) => !manager.equals(userId));
-  await channel.save();
-
-  const payload = channel.toPublicJSON();
-  emitToChannel(channel._id.toString(), "channel:update", { channel: payload });
-  removeUserFromChannel(userId.toString(), channel._id.toString());
-  return { channel: payload, left: true, ...(transferredTo ? { managerTransferredTo: transferredTo } : {}) };
-}
-
-async function resolveChannel(channelKey) {
-  const key = String(channelKey || "").trim();
-  return mongoose.isValidObjectId(key)
-    ? Channel.findById(key)
-    : Channel.findOne({ name: normalizeChannelName(key) });
-}
-
 async function visibleMessage(channelKey, messageId, userId) {
   if (!mongoose.isValidObjectId(messageId)) return null;
   const channel = await findVisibleChannel(channelKey, userId);
@@ -154,26 +58,6 @@ async function visibleMessage(channelKey, messageId, userId) {
 
 function validObjectId(value) {
   return mongoose.isValidObjectId(value) ? new mongoose.Types.ObjectId(value) : null;
-}
-
-async function createChannel({ name, type, topic, description, readOnly, userId }) {
-  const normalized = String(name || "").trim().toLowerCase();
-  const visibility = type === "private" ? "private" : "public";
-  if (!isValidChannelName(normalized) || normalized === "general") return { error: "Invalid or reserved channel name" };
-  if (await Channel.exists({ name: normalized })) return { error: "Channel name already exists" };
-  const channel = await Channel.create({
-    name: normalized,
-    type: visibility,
-    topic: String(topic || "").trim().slice(0, 250),
-    description: String(description || "").trim().slice(0, 2000),
-    members: [userId],
-    createdBy: userId,
-    managers: [userId],
-    readOnly: !!readOnly,
-  });
-  joinUserToChannel(userId.toString(), channel._id.toString());
-  emitAll("channel:catalog", { channel: channel.toPublicJSON() });
-  return { channel: channel.toPublicJSON() };
 }
 
 async function uploadAttachment({ data, name, contentType }) {
@@ -247,31 +131,8 @@ function registerTools(server, user) {
       annotations: { readOnlyHint: false, openWorldHint: false },
     },
     async ({ channel: channelKey, name, type, topic, description, readOnly }) => {
-      const channel = await resolveChannel(channelKey);
-      if (!channel || channel.isArchived || channel.type === "dm") return toolError("Channel not found or cannot be updated");
-      const manager = isChannelManager(channel, userId);
-      const member = channel.members.some((id) => id.equals(userId));
-      if ((name !== undefined || type !== undefined || readOnly !== undefined) && !manager) return toolError("Only the channel creator or a manager can change these settings");
-      if ((topic !== undefined || description !== undefined) && !member) return toolError("Join the channel to edit its details");
-      if (name !== undefined) {
-        const normalized = String(name).trim().toLowerCase();
-        if (channel.name === "general" || normalized === "general" || !isValidChannelName(normalized)) return toolError("Invalid or reserved channel name");
-        if (await Channel.exists({ name: normalized, _id: { $ne: channel._id } })) return toolError("Channel name already exists");
-        channel.name = normalized;
-      }
-      if (type !== undefined) {
-        if (channel.type === "public" && type === "private") return toolError("Public channels cannot be made private");
-        if (!channel.createdBy.equals(userId)) return toolError("Only the channel creator can change visibility");
-        channel.type = type;
-      }
-      if (topic !== undefined) channel.topic = String(topic).trim();
-      if (description !== undefined) channel.description = String(description).trim();
-      if (readOnly !== undefined) channel.readOnly = readOnly;
-      await channel.save();
-      const payload = channel.toPublicJSON();
-      emitToChannel(channel._id.toString(), "channel:update", { channel: payload });
-      emitAll("channel:catalog", { channel: payload });
-      return textResult({ channel: payload });
+      const result = await updateChannel(channelKey, userId, { name, type, topic, description, readOnly });
+      return result.error ? toolError(result.error) : textResult(result);
     }
   );
 
@@ -307,23 +168,10 @@ function registerTools(server, user) {
       annotations: { readOnlyHint: false, openWorldHint: false },
     },
     async ({ channel: channelKey, user: userKey }) => {
-      const channel = await resolveChannel(channelKey);
-      if (!channel || channel.isArchived || channel.type === "dm") return toolError("Channel not found or cannot add members");
-      const target = validObjectId(userKey) ? await User.findById(userKey) : await User.findOne({ username: String(userKey).toLowerCase() });
-      if (!target) return toolError("User not found");
-      const requesterMember = channel.members.some((id) => id.equals(userId));
-      if (channel.type === "private" && !requesterMember) return toolError("Join the private channel before adding others");
-      if (channel.name === "general" && target._id.equals(userId)) return textResult({ channel: channel.toPublicJSON(), added: false });
-      const already = channel.members.some((id) => id.equals(target._id));
-      if (!already) {
-        channel.members.push(target._id);
-        await channel.save();
-        await Read.updateOne({ user: target._id, channel: channel._id, thread: null }, { $set: { lastReadAt: new Date() } }, { upsert: true });
-        joinUserToChannel(target._id.toString(), channel._id.toString());
-        emitToChannel(channel._id.toString(), "channel:update", { channel: channel.toPublicJSON() });
-        emitAll("channel:catalog", { channel: channel.toPublicJSON() });
-      }
-      return textResult({ channel: channel.toPublicJSON(), added: !already, user: target.toPublicJSON() });
+      const targetId = validObjectId(userKey) || (await User.findOne({ username: String(userKey).toLowerCase() }))?._id;
+      if (!targetId) return toolError("User not found");
+      const result = await addChannelMember(channelKey, userId, targetId);
+      return result.error ? toolError(result.error) : textResult(result);
     }
   );
 
@@ -336,19 +184,10 @@ function registerTools(server, user) {
       annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
     },
     async ({ channel: channelKey, user: userKey }) => {
-      const channel = await resolveChannel(channelKey);
-      if (!channel || channel.isArchived || channel.type === "dm") return toolError("Channel not found or cannot remove members");
-      if (!isChannelManager(channel, userId)) return toolError("Only the channel creator or a manager can remove members");
-      const target = validObjectId(userKey) ? await User.findById(userKey) : await User.findOne({ username: String(userKey).toLowerCase() });
-      if (!target || !channel.members.some((id) => id.equals(target._id))) return toolError("Member not found in channel");
-      if (target._id.equals(channel.createdBy)) return toolError("The channel creator cannot be removed");
-      channel.members = channel.members.filter((id) => !id.equals(target._id));
-      channel.managers = (channel.managers || []).filter((id) => !id.equals(target._id));
-      await channel.save();
-      removeUserFromChannel(target._id.toString(), channel._id.toString());
-      emitToChannel(channel._id.toString(), "channel:update", { channel: channel.toPublicJSON() });
-      emitAll("channel:catalog", { channel: channel.toPublicJSON() });
-      return textResult({ channel: channel.toPublicJSON(), removed: true, user: target.toPublicJSON() });
+      const targetId = validObjectId(userKey) || (await User.findOne({ username: String(userKey).toLowerCase() }))?._id;
+      if (!targetId) return toolError("Member not found in channel");
+      const result = await removeChannelMember(channelKey, userId, targetId);
+      return result.error ? toolError(result.error) : textResult(result);
     }
   );
 
@@ -361,15 +200,10 @@ function registerTools(server, user) {
       annotations: { readOnlyHint: false, openWorldHint: false },
     },
     async ({ channel: channelKey, user: userKey }) => {
-      const channel = await resolveChannel(channelKey);
-      if (!channel || channel.isArchived || channel.type === "dm") return toolError("Channel not found or cannot manage");
-      if (!isChannelManager(channel, userId)) return toolError("Only the channel creator or a manager can promote managers");
-      const target = validObjectId(userKey) ? await User.findById(userKey) : await User.findOne({ username: String(userKey).toLowerCase() });
-      if (!target || !channel.members.some((id) => id.equals(target._id))) return toolError("Manager must be a channel member");
-      if (!channel.managers.some((id) => id.equals(target._id))) channel.managers.push(target._id);
-      await channel.save();
-      emitToChannel(channel._id.toString(), "channel:update", { channel: channel.toPublicJSON() });
-      return textResult({ channel: channel.toPublicJSON(), promoted: true });
+      const targetId = validObjectId(userKey) || (await User.findOne({ username: String(userKey).toLowerCase() }))?._id;
+      if (!targetId) return toolError("Manager must be a channel member");
+      const result = await promoteChannelManager(channelKey, userId, targetId);
+      return result.error ? toolError(result.error) : textResult(result);
     }
   );
 
@@ -423,7 +257,7 @@ function registerTools(server, user) {
       annotations: { readOnlyHint: false, openWorldHint: false },
     },
     async ({ channel: channelKey }) => {
-      const result = await joinPublicChannel(channelKey, userId);
+      const result = await joinChannel(channelKey, userId);
       if (result.error) return toolError(result.error);
       return textResult(result);
     }
@@ -506,11 +340,7 @@ function registerTools(server, user) {
       const retro = sanitizeRetro(rawRetro);
       const files = sanitizeAttachments(attachments);
       if (!String(body || "").trim() && !files.length && !survey && !retro && !card) return toolError("Message needs text, an attachment, or structured content");
-      if (idempotencyKey) {
-        const existing = await Message.findOne({ channel: channel._id, author: userId, idempotencyKey }).populate("author");
-        if (existing) return textResult({ message: publicMessage(existing), idempotent: true });
-      }
-      const message = await deliverMessage({
+      const result = await sendMessage({
         channel,
         authorId: userId,
         body: String(body || "").trim(),
@@ -522,7 +352,7 @@ function registerTools(server, user) {
         retro,
         card,
       });
-      return textResult({ message });
+      return textResult(result);
     }
   );
 
