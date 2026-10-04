@@ -67,6 +67,11 @@ describe("workspace routes", () => {
     assert.equal(workspacePath({ view: "settings", settingsTab: "preferences" }), "/settings/preferences");
   });
 
+  it("preserves the MCP settings tab on refresh", () => {
+    assert.equal(parseWorkspacePath("/settings/mcp").settingsTab, "mcp");
+    assert.equal(workspacePath({ view: "settings", settingsTab: "mcp" }), "/settings/mcp");
+  });
+
   it("recognizes only same-origin Echo message links", () => {
     assert.equal(isEchoMessageLink("/channels/channel-id?message=message-id", "https://echo.test"), true);
     assert.equal(isEchoMessageLink("https://echo.test/dms/dm-id?message=message-id", "https://echo.test"), true);

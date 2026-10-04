@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Building2Icon, CheckIcon, ChevronDownIcon, Code2Icon, DownloadIcon, GitPullRequestIcon, KeyboardIcon, PaletteIcon, SlidersHorizontalIcon, UserRoundIcon, WebhookIcon } from "lucide-react";
+import { Building2Icon, CheckIcon, ChevronDownIcon, Code2Icon, DownloadIcon, GitPullRequestIcon, KeyboardIcon, PaletteIcon, PlugZapIcon, SlidersHorizontalIcon, UserRoundIcon, WebhookIcon } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { api, getBackendUrl } from "../api.js";
@@ -35,6 +35,7 @@ const SETTINGS_TABS = [
   { id: "desktop", label: "Desktop", Icon: DownloadIcon },
   { id: "shortcuts", label: "Keyboard shortcuts", Icon: KeyboardIcon },
   { id: "api", label: "API", Icon: Code2Icon },
+  { id: "mcp", label: "MCP", Icon: PlugZapIcon },
   { id: "webhooks", label: "Webhooks", Icon: WebhookIcon },
 ];
 
@@ -307,6 +308,7 @@ export default function SettingsModal({
     desktop: t("desktop"),
     shortcuts: t("shortcuts"),
     api: t("api"),
+    mcp: t("mcp"),
     webhooks: t("webhooks"),
   };
 
@@ -985,6 +987,8 @@ export default function SettingsModal({
 
           {activeTab === "api" && <ApiDocsPage embedded />}
 
+          {activeTab === "mcp" && <McpSettings />}
+
           {activeTab === "desktop" && <DesktopDownloads downloads={desktopDownloads} error={desktopDownloadsError} />}
 
           {activeTab === "shortcuts" && (
@@ -1044,6 +1048,190 @@ function DesktopDownloads({ downloads, error }) {
         })}
       </div>
       {downloads.version && <p className="settings-hint">{t("packageVersion").replace("{version}", downloads.version)}</p>}
+    </section>
+  );
+}
+
+const MCP_PLATFORMS = [
+  { id: "linux", label: "Linux" },
+  { id: "macos", label: "macOS" },
+  { id: "windows", label: "Windows" },
+];
+
+function mcpTokenSetup(platform, token) {
+  const exportLine = `export ECHO_API_TOKEN="${token}"`;
+  if (platform === "windows") {
+    return `[Environment]::SetEnvironmentVariable("ECHO_API_TOKEN", "${token}", "User")
+$env:ECHO_API_TOKEN = "${token}"`;
+  }
+  const shellProfile = platform === "macos" ? "~/.zshrc" : "~/.bashrc";
+  return `grep -qxF '${exportLine}' ${shellProfile} 2>/dev/null || printf '\\n${exportLine}\\n' >> ${shellProfile}
+source ${shellProfile}`;
+}
+
+function mcpInstallScript(clientId, platform, origin, token) {
+  const tokenSetup = mcpTokenSetup(platform, token);
+  if (clientId === "codex") {
+    return platform === "windows"
+      ? `${tokenSetup}\ncodex mcp add echo --url ${origin}/mcp --bearer-token-env-var ECHO_API_TOKEN\ncodex mcp list`
+      : `${tokenSetup}\ncodex mcp add echo \\
+  --url ${origin}/mcp \\
+  --bearer-token-env-var ECHO_API_TOKEN
+codex mcp list`;
+  }
+  const command = clientId === "claude"
+    ? `claude mcp add --transport http echo ${origin}/mcp --header "Authorization: Bearer ${token}"`
+    : clientId === "opencode"
+      ? `opencode mcp add echo --url ${origin}/mcp --header "Authorization=Bearer ${token}"`
+      : `kilo mcp add echo --url ${origin}/mcp --header "Authorization=Bearer ${token}"`;
+  return `${tokenSetup}\n${command}\n${clientId} mcp list`;
+}
+
+const MCP_GUIDES = [
+  {
+    id: "codex",
+    name: "Codex",
+    description: "Add Echo to Codex CLI or the Codex IDE extension.",
+  },
+  {
+    id: "claude",
+    name: "Claude Code",
+    description: "Register Echo as a remote HTTP server in Claude Code.",
+  },
+  {
+    id: "opencode",
+    name: "OpenCode",
+    description: "Add Echo to your project or global OpenCode configuration.",
+  },
+  {
+    id: "kilo",
+    name: "Kilo Code",
+    description: "Add Echo to Kilo’s global or project-level JSONC configuration.",
+  },
+];
+
+function McpSettings() {
+  const { t } = useI18n();
+  const [selectedClient, setSelectedClient] = useState("codex");
+  const [selectedPlatform, setSelectedPlatform] = useState("linux");
+  const [token, setToken] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const [copied, setCopied] = useState(null);
+  const origin = backendOrigin();
+  const mcpUrl = `${origin}/mcp`;
+
+  async function generate() {
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await api.getApiToken();
+      setToken(result.token);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function copy(text, key) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(key);
+      setTimeout(() => setCopied((current) => current === key ? null : current), 1500);
+    } catch {
+      setError("Clipboard access is unavailable. Select and copy the text manually.");
+    }
+  }
+
+  return (
+    <section className="settings-section mcp-settings" data-testid="mcp-settings">
+      <div className="mcp-settings-heading">
+        <div>
+          <h3>{t("mcpTitle")}</h3>
+          <p className="settings-hint">{t("mcpDescription")}</p>
+        </div>
+        <span className="mcp-endpoint-badge"><span aria-hidden="true" /> Streamable HTTP</span>
+      </div>
+      <div className="mcp-token-panel">
+        <div>
+          <h4>{t("mcpAuthentication")}</h4>
+          <p>{t("mcpAuthenticationHint")}</p>
+        </div>
+        {token ? (
+          <div className="token-box mcp-token-box">
+            <code className="token-value">{token}</code>
+            <button type="button" className="btn-secondary" onClick={() => copy(token, "token")}>
+              {copied === "token" ? t("copied") : t("copy")}
+            </button>
+          </div>
+        ) : (
+          <button type="button" className="btn-primary" disabled={busy} onClick={generate}>
+            {busy ? t("generating") : t("generateApiToken")}
+          </button>
+        )}
+      </div>
+      {error && <div className="error" role="alert">{error}</div>}
+      {token ? <>
+        <div className="mcp-client-tabs" role="tablist" aria-label="MCP client setup">
+          {MCP_GUIDES.map((guide) => (
+            <button
+              type="button"
+              role="tab"
+              aria-selected={selectedClient === guide.id}
+              aria-controls={`mcp-panel-${guide.id}`}
+              id={`mcp-tab-${guide.id}`}
+              className={`mcp-client-tab${selectedClient === guide.id ? " is-active" : ""}`}
+              key={guide.id}
+              onClick={() => setSelectedClient(guide.id)}
+            >
+              {guide.name}
+            </button>
+          ))}
+        </div>
+        {MCP_GUIDES.map((guide) => {
+          if (selectedClient !== guide.id) return null;
+          const install = mcpInstallScript(guide.id, selectedPlatform, origin, token);
+          return (
+            <article className="mcp-client-card" key={guide.id} role="tabpanel" id={`mcp-panel-${guide.id}`} aria-labelledby={`mcp-tab-${guide.id}`}>
+              <div className="mcp-client-card-heading">
+                <div>
+                  <h4>{guide.name}</h4>
+                  <p>{guide.description}</p>
+                </div>
+              </div>
+              <div className="mcp-platform-tabs" role="tablist" aria-label="Operating system">
+                {MCP_PLATFORMS.map((platform) => (
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={selectedPlatform === platform.id}
+                    className={`mcp-platform-tab${selectedPlatform === platform.id ? " is-active" : ""}`}
+                    key={platform.id}
+                    onClick={() => setSelectedPlatform(platform.id)}
+                  >
+                    {platform.label}
+                  </button>
+                ))}
+              </div>
+              <div className="mcp-code-section">
+                <div className="mcp-code-heading">
+                  <span>{t("mcpInstallScript")}</span>
+                </div>
+                <pre><code>{install}</code></pre>
+                <div className="mcp-code-actions">
+                  <button type="button" className="mcp-copy-button" onClick={() => copy(install, `install-${guide.id}`)}>
+                    {copied === `install-${guide.id}` ? t("copied") : t("copySetup")}
+                  </button>
+                </div>
+              </div>
+            </article>
+          );
+        })}
+      </> : <div className="mcp-setup-required">
+        <strong>{t("mcpSetupRequired")}</strong>
+        <span>{t("mcpSetupRequiredHint")}</span>
+      </div>}
     </section>
   );
 }

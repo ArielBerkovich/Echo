@@ -28,6 +28,10 @@ export default defineConfig({
         changeOrigin: true,
         ws: true,
       },
+      "/mcp": {
+        target: process.env.ECHO_API_PROXY_TARGET || "http://localhost:4000",
+        changeOrigin: true,
+      },
     },
   },
 });

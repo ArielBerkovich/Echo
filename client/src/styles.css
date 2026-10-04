@@ -6863,6 +6863,11 @@ html[data-interface-direction="rtl"] .message .msg-menu {
 .settings-content-api {
   display: block;
 }
+.settings-content-mcp {
+  display: block;
+  min-width: 0;
+  overflow-x: hidden;
+}
 .settings-content-api .api-embedded,
 .settings-content-api .api-inner {
   height: 100%;
@@ -6879,6 +6884,259 @@ html[data-interface-direction="rtl"] .message .msg-menu {
 .settings-content-api .api-groups .settings-section {
   background: transparent;
   box-shadow: none;
+}
+.mcp-settings {
+  width: min(920px, 100%);
+  min-width: 0;
+  box-sizing: border-box;
+  display: grid;
+  gap: 18px;
+}
+.mcp-settings-heading,
+.mcp-client-card-heading,
+.mcp-token-panel,
+.mcp-endpoint-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.mcp-settings-heading h3,
+.mcp-client-card h4,
+.mcp-token-panel h4 {
+  margin: 0 0 6px;
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  text-transform: none;
+}
+.mcp-settings-heading .settings-hint,
+.mcp-client-card p,
+.mcp-token-panel p {
+  max-width: 680px;
+  margin: 0;
+  line-height: 1.55;
+}
+.mcp-endpoint-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  padding: 6px 9px;
+  border: 1px solid color-mix(in srgb, var(--active-bg) 25%, var(--border));
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.mcp-endpoint-badge span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green-600, #16a34a);
+}
+.mcp-endpoint-card,
+.mcp-token-panel,
+.mcp-security-note,
+.mcp-client-card {
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-2) 72%, var(--surface));
+}
+.mcp-endpoint-card {
+  align-items: center;
+}
+.mcp-label {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.mcp-endpoint-card code {
+  color: var(--text);
+  font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+  overflow-wrap: anywhere;
+}
+.mcp-token-panel {
+  align-items: center;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 8%, var(--surface-2)), var(--surface-2));
+}
+.mcp-token-box {
+  width: min(430px, 100%);
+  margin: 0;
+}
+.mcp-security-note {
+  display: grid;
+  gap: 3px;
+  border-color: color-mix(in srgb, var(--accent) 25%, var(--border));
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.mcp-security-note strong {
+  color: var(--text);
+}
+.mcp-client-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface-2);
+}
+.mcp-setup-required {
+  display: grid;
+  gap: 5px;
+  padding: 18px 16px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 38%, var(--border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.mcp-setup-required strong {
+  color: var(--text);
+  font-size: 13px;
+}
+.mcp-client-tab {
+  min-height: 40px;
+  flex: 1 0 auto;
+  padding: 8px 13px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.mcp-client-tab:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+.mcp-client-tab.is-active {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+.mcp-platform-tabs {
+  display: flex;
+  gap: 4px;
+  align-self: flex-start;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-2);
+}
+.mcp-platform-tab {
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.mcp-platform-tab:hover {
+  color: var(--text);
+}
+.mcp-platform-tab.is-active {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+.mcp-client-tabs + .mcp-client-card {
+  margin-top: -8px;
+}
+.mcp-client-card-heading {
+  align-items: center;
+}
+.mcp-client-card-heading p {
+  font-size: 12px;
+}
+.mcp-client-card pre {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  max-height: 250px;
+  margin: 12px 0 0;
+  padding: 13px 14px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre;
+}
+.mcp-code-section + .mcp-code-section {
+  margin-top: 14px;
+}
+.mcp-code-section {
+  margin-top: 12px;
+}
+.mcp-code-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.mcp-code-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 9px;
+}
+.mcp-copy-button {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: normal;
+  text-transform: none;
+  cursor: pointer;
+}
+.mcp-copy-button:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+.mcp-client-card pre code {
+  font: inherit;
+}
+@media (max-width: 640px) {
+  .mcp-settings-heading,
+  .mcp-token-panel,
+  .mcp-client-card-heading {
+    display: grid;
+  }
+  .mcp-endpoint-card {
+    align-items: flex-start;
+    display: grid;
+  }
+  .mcp-token-box {
+    width: 100%;
+  }
 }
 .settings-content-desktop {
   grid-template-columns: minmax(0, 720px);
