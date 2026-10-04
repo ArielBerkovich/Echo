@@ -13,6 +13,7 @@ import { ensureDmChannel, ensureGroupDmChannel, ensureSelfDmChannel } from "./li
 import { deleteMessage, editMessage, reactToMessage, toggleMessagePin, voteInSurvey } from "./services/messageActionService.js";
 import { getThreadMessages, listPinnedMessages } from "./services/messageQueryService.js";
 import { findSearchableChannels, searchMessages } from "./services/messageSearchService.js";
+import { queryChannelHistory } from "./services/messageHistoryService.js";
 import { isValidChannelName } from "./lib/channelName.js";
 import { putObject } from "./storage.js";
 import { fileTypeFromBuffer } from "file-type";
@@ -287,13 +288,15 @@ function registerTools(server, user) {
     async ({ channel: channelKey, limit, before }) => {
       const channel = await findVisibleChannel(channelKey, userId);
       if (!channel) return toolError("Channel not found or access denied");
-      const query = {
-        channel: channel._id,
-        parentId: null,
-        ...(before ? { createdAt: { $lt: new Date(before) } } : {}),
-      };
-      const messages = await Message.find(query).sort({ createdAt: -1 }).limit(limit).populate("author");
-      return textResult({ channel: channel.toPublicJSON(), messages: messages.reverse().map(publicMessage) });
+      const history = await queryChannelHistory({
+        channelId: channel._id,
+        limit,
+        before: before ? new Date(before) : undefined,
+        includeBroadcastReplies: false,
+        includeReplyStats: false,
+      });
+      if (!history) return toolError("Channel not found or access denied");
+      return textResult({ channel: channel.toPublicJSON(), messages: history.docs.reverse().map(publicMessage) });
     }
   );
 
