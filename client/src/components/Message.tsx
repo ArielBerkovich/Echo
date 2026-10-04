@@ -830,7 +830,7 @@ function Message({
                 <PinIcon /> {m.pinnedAt ? t("unpinMessage") : t("pinMessage")}
               </button>
             )}
-            {isMine && (
+            {isMine && canInteract && (
               <>
                 {canEdit && (
                   <button type="button" role="menuitem" data-testid={`message-${mid}-edit`} onClick={() => { onStartEdit(); onCloseMenu(); }}>
