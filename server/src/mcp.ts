@@ -15,7 +15,7 @@ import { sanitizeCard, cardError } from "./lib/messageCard.js";
 import { normalizeChannelName } from "./automation.js";
 import { emitAll, emitToChannel, joinUserToChannel, removeUserFromChannel } from "./realtime.js";
 import { ensureDmChannel, ensureGroupDmChannel, ensureSelfDmChannel } from "./lib/dms.js";
-import { applyReaction, reactionSummary } from "./lib/reactions.js";
+import { reactToMessage, voteInSurvey } from "./services/messageActionService.js";
 import { isValidChannelName } from "./lib/channelName.js";
 import { putObject } from "./storage.js";
 import { fileTypeFromBuffer } from "file-type";
@@ -438,10 +438,8 @@ function registerTools(server, user) {
       const found = await visibleMessage(channelKey, messageId, userId);
       if (!found) return toolError("Message not found or access denied");
       if (!canParticipateInChannel(found.channel, userId)) return toolError("Join the channel to participate");
-      const result = await applyReaction({ messageId: found.message._id, userId, emoji: emoji.trim(), present });
-      const reactions = reactionSummary(result.message);
-      emitToChannel(found.channel._id.toString(), "message:reaction", { messageId: messageId.toString(), reactions });
-      return textResult({ messageId: messageId.toString(), reactions, added: result.added, changed: result.changed });
+      const result = await reactToMessage({ channel: found.channel, message: found.message, userId, emoji: emoji.trim(), present });
+      return textResult({ messageId: messageId.toString(), reactions: result.reactions, added: result.added, changed: result.changed, present: result.present });
     }
   );
 
@@ -613,10 +611,8 @@ function registerTools(server, user) {
       if (!found || !found.message.survey) return toolError("Survey not found or access denied");
       if (!canParticipateInChannel(found.channel, userId)) return toolError("Join the channel to participate");
       try {
-        const updated = await (await import("./deliver.js")).applySurveyVote(found.message, userId, optionIds);
-        const survey = updated.toPublicJSON().survey;
-        emitToChannel(found.channel._id.toString(), "message:survey", { messageId: messageId.toString(), survey });
-        return textResult({ messageId: messageId.toString(), survey });
+        const result = await voteInSurvey({ channel: found.channel, message: found.message, userId, optionIds });
+        return textResult({ messageId: messageId.toString(), survey: result.survey });
       } catch (error) {
         return toolError(error.message);
       }

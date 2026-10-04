@@ -6,14 +6,13 @@ import { config } from "./config.js";
 import { User } from "./models/User.js";
 import { canParticipateInChannel, canPostToChannel, Channel } from "./models/Channel.js";
 import { Message } from "./models/Message.js";
-import { ActivityEvent } from "./models/ActivityEvent.js";
 import { setIO } from "./realtime.js";
-import { deliverMessage, sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, applySurveyVote, sanitizeRetro, retroError, updateRetro } from "./deliver.js";
+import { deliverMessage, sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, sanitizeRetro, retroError, updateRetro } from "./deliver.js";
 import { cardError, sanitizeCard } from "./lib/messageCard.js";
 import { buildMessageActivityMetadata } from "./lib/messageActivity.js";
 import { roomFor, userRoom } from "./lib/rooms.js";
 import { activeConnections, recordSocketError } from "./metrics.js";
-import { applyReaction, reactionSummary } from "./lib/reactions.js";
+import { reactToMessage, voteInSurvey } from "./services/messageActionService.js";
 
 // Wire up the real-time messaging layer on top of the HTTP server.
 export function attachSocket(httpServer) {
@@ -180,25 +179,8 @@ export function attachSocket(httpServer) {
         }
 
         const uid = socket.user._id;
-        const result = await applyReaction({ messageId, userId: uid, emoji, present });
-        const updatedMessage = result.message;
-
-        // Reacting to someone else's message is activity for its author.
-        if (result.added && updatedMessage.kind !== "system" && !updatedMessage.author.equals(uid)) {
-          await ActivityEvent.updateOne(
-            { recipient: updatedMessage.author, actor: uid, message: updatedMessage._id, emoji },
-            { $set: { channel: updatedMessage.channel, createdAt: new Date() } },
-            { upsert: true }
-          ).catch(() => {});
-          io.to(userRoom(updatedMessage.author.toString())).emit("activity:bump");
-        }
-
-        const reactions = reactionSummary(updatedMessage);
-        io.to(roomFor(updatedMessage.channel.toString())).emit("message:reaction", {
-          messageId: updatedMessage._id.toString(),
-          reactions,
-        });
-        ack?.({ ok: true, reactions, added: result.added, changed: result.changed, present: reactions.some((r) => r.emoji === emoji && r.users.includes(uid.toString())) });
+        const result = await reactToMessage({ channel, message, userId: uid, emoji, present });
+        ack?.({ ok: true, reactions: result.reactions, added: result.added, changed: result.changed, present: result.present });
       } catch (err) {
         ackError(ack, "reaction", err.message || "could not react");
       }
@@ -254,10 +236,8 @@ export function attachSocket(httpServer) {
         if (!message?.survey) return ackError(ack, "survey_vote", "survey not found");
         const channel = await Channel.findById(message.channel);
         if (!channel || !canParticipateInChannel(channel, socket.user._id)) return ackError(ack, "survey_vote", "join the channel to participate");
-        const updated = await applySurveyVote(message, socket.user._id, optionIds);
-        const survey = updated.toPublicJSON().survey;
-        io.to(roomFor(message.channel.toString())).emit("message:survey", { messageId: message.id, survey });
-        ack?.({ ok: true, survey });
+        const result = await voteInSurvey({ channel, message, userId: socket.user._id, optionIds });
+        ack?.({ ok: true, survey: result.survey });
       } catch (err) { ackError(ack, "survey_vote", err.message || "could not vote"); }
     });
 

@@ -11,14 +11,14 @@ import {
   joinUserToChannel,
   removeUserFromChannel,
 } from "../realtime.js";
-import { deliverMessage, sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, applySurveyVote, sanitizeRetro, retroError } from "../deliver.js";
+import { deliverMessage, sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, sanitizeRetro, retroError } from "../deliver.js";
 import { cardError, sanitizeCard } from "../lib/messageCard.js";
 import { normalizeChannelName } from "../automation.js";
 import { ActivityEvent } from "../models/ActivityEvent.js";
 import { isValidChannelName } from "../lib/channelName.js";
 import { CustomEmoji } from "../models/CustomEmoji.js";
-import { applyReaction, reactionSummary } from "../lib/reactions.js";
 import { ThreadFollow } from "../models/ThreadFollow.js";
+import { reactToMessage, voteInSurvey } from "../services/messageActionService.js";
 import {
   addChannelMember,
   createChannel,
@@ -803,10 +803,8 @@ channelsRouter.post("/:id/messages/:messageId/survey-vote", async (req, res) => 
     return res.status(403).json({ error: "access denied" });
   }
   try {
-    const updated = await applySurveyVote(message, req.user._id, req.body?.optionIds);
-    const survey = updated.toPublicJSON().survey;
-    emitToChannel(channel._id.toString(), "message:survey", { messageId: message._id.toString(), survey });
-    res.json({ survey });
+    const result = await voteInSurvey({ channel, message, userId: req.user._id, optionIds: req.body?.optionIds });
+    res.json({ survey: result.survey });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -854,27 +852,12 @@ channelsRouter.post(["/:id/messages/:messageId/reactions", "/:id/messages/:messa
   }
 
   const userId = req.user._id;
-  const { message: updatedMessage, changed, added } = await applyReaction({
-    messageId: message._id,
+  const result = await reactToMessage({
+    channel,
+    message,
     userId,
     emoji,
     present: Object.prototype.hasOwnProperty.call(req.body || {}, "present") ? req.body.present : undefined,
   });
-
-  if (added && updatedMessage.kind !== "system" && !updatedMessage.author.equals(userId)) {
-    await ActivityEvent.updateOne(
-      { recipient: updatedMessage.author, actor: userId, message: updatedMessage._id, emoji },
-      { $set: { channel: updatedMessage.channel, createdAt: new Date() } },
-      { upsert: true }
-    ).catch(() => {});
-    emitToUser(updatedMessage.author.toString(), "activity:bump");
-  }
-
-  const reactions = reactionSummary(updatedMessage);
-  emitToChannel(channel._id.toString(), "message:reaction", {
-    messageId: message._id.toString(),
-    reactions,
-  });
-  const present = reactions.some((reaction) => reaction.emoji === emoji && reaction.users.includes(userId.toString()));
-  res.json({ messageId: updatedMessage._id.toString(), reactions, added, present, changed });
+  res.json({ messageId: result.message._id.toString(), reactions: result.reactions, added: result.added, present: result.present, changed: result.changed });
 });
