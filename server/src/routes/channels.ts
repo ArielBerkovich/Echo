@@ -19,6 +19,7 @@ import { isValidChannelName } from "../lib/channelName.js";
 import { CustomEmoji } from "../models/CustomEmoji.js";
 import { reactToMessage, voteInSurvey } from "../services/messageActionService.js";
 import { getThreadMessages, listPinnedMessages } from "../services/messageQueryService.js";
+import { queryChannelHistory } from "../services/messageHistoryService.js";
 import { getThreadFollow, markRead, setThreadFollow } from "../services/userStateService.js";
 import {
   addChannelMember,
@@ -548,60 +549,19 @@ channelsRouter.get("/:id/messages", async (req, res) => {
     return res.status(403).json({ error: "access denied" });
   }
 
-  const base = {
-    channel: channel._id,
-    $or: [{ parentId: null }, { parentId: { $ne: null }, broadcastToChannel: true }],
-  }; // top-level messages plus explicitly broadcast thread replies
-  if (req.query.forwardNote) base.forwardNote = String(req.query.forwardNote);
+  const before = req.query.before ? new Date(String(req.query.before)) : undefined;
+  const history = await queryChannelHistory({
+    channelId: channel._id,
+    limit: config.messagePageSize,
+    before: before && !Number.isNaN(before.getTime()) ? before : undefined,
+    around: req.query.around && mongoose.isValidObjectId(req.query.around) ? req.query.around : undefined,
+    forwardNote: req.query.forwardNote ? String(req.query.forwardNote) : undefined,
+  });
+  if (!history) return res.status(404).json({ error: "message not found" });
 
-  // `docs` is built newest-first here; the mapping below reverses it to
+  // `docs` is newest-first here; the mapping below reverses it to
   // chronological order (oldest at top) for rendering.
-  let docs;
-  if (req.query.around && mongoose.isValidObjectId(req.query.around)) {
-    // Load a window centered on a specific message (used when jumping to a
-    // search result that may be far back in history): half a page of
-    // older-or-equal messages and half a page of newer ones around the target.
-    const target = await Message.findOne({ _id: req.query.around, ...base });
-    if (!target) return res.status(404).json({ error: "message not found" });
-    const half = Math.floor(config.messagePageSize / 2);
-    const [olderOrEqual, newer] = await Promise.all([
-      Message.find({ ...base, createdAt: { $lte: target.createdAt } })
-        .sort({ createdAt: -1 })
-        .limit(half + 1)
-        .populate("author"),
-      Message.find({ ...base, createdAt: { $gt: target.createdAt } })
-        .sort({ createdAt: -1 })
-        .limit(half)
-        .populate("author"),
-    ]);
-    docs = [...newer, ...olderOrEqual]; // newest-first, target included
-  } else {
-    const query = { ...base };
-    if (req.query.before) {
-      const before = new Date(String(req.query.before));
-      if (!Number.isNaN(before.getTime())) query.createdAt = { $lt: before };
-    }
-    docs = await Message.find(query)
-      .sort({ createdAt: -1 })
-      .limit(config.messagePageSize)
-      .populate("author");
-  }
-
-  // Reply stats for these roots, in one aggregation.
-  const ids = docs.map((d) => d._id);
-  const stats = await Message.aggregate([
-    { $match: { parentId: { $in: ids } } },
-    { $sort: { createdAt: -1 } },
-    {
-      $group: {
-        _id: "$parentId",
-        count: { $sum: 1 },
-        lastReplyAt: { $max: "$createdAt" },
-        replyParticipantIds: { $push: "$author" },
-      },
-    },
-  ]);
-  const statMap = new Map(stats.map((s) => [s._id.toString(), s]));
+  const { docs, statMap } = history;
 
   const messages = docs.reverse().map((m) => {
     const s = statMap.get(m._id.toString());
