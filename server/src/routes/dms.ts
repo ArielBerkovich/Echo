@@ -7,6 +7,7 @@ import { Read } from "../models/Read.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { ensureDmChannel, ensureGroupDmChannel, ensureSelfDmChannel } from "../lib/dms.js";
 import { isValidChannelName } from "../lib/channelName.js";
+import { listDmConversations } from "../services/conversationService.js";
 
 export const dmsRouter = Router();
 dmsRouter.use(requireAuth);
@@ -14,62 +15,8 @@ const MAX_GROUP_DM_MEMBERS = 10;
 
 // GET /api/dms — the user's visible DM conversations, most-recent first.
 dmsRouter.get("/", async (req, res) => {
-  const dms = await Channel.find({
-    type: "dm",
-    members: req.user._id,
-    // VIP conversations stay visible even if they were hidden before the
-    // user was marked VIP.
-    $or: [
-      { hiddenFor: { $ne: req.user._id } },
-      { members: { $in: req.user.vips || [] } },
-    ],
-  }).populate("members");
-
-  const ids = dms.map((c) => c._id);
-  const reads = await Read.find({ user: req.user._id, channel: { $in: ids }, thread: null });
-  const readMap = new Map(reads.map((r) => [r.channel.toString(), r.lastReadAt]));
-
-  // Last message per DM and unread-per-DM, each in a single aggregation
-  // (instead of two queries per conversation).
-  const [lasts, counts] = ids.length
-    ? await Promise.all([
-        Message.aggregate([
-          { $match: { channel: { $in: ids } } },
-          { $sort: { createdAt: -1 } },
-          { $group: { _id: "$channel", body: { $first: "$body" }, createdAt: { $first: "$createdAt" }, author: { $first: "$author" } } },
-        ]),
-        Message.aggregate([
-          { $match: { $or: ids.map((id) => ({ channel: id, author: { $ne: req.user._id }, createdAt: { $gt: readMap.get(id.toString()) || new Date(0) } })) } },
-          { $group: { _id: "$channel", unread: { $sum: 1 } } },
-        ]),
-      ])
-    : [[], []];
-  const lastMap = new Map(lasts.map((l) => [l._id.toString(), l]));
-  const countMap = new Map(counts.map((c) => [c._id.toString(), c.unread]));
-
-  const conversations = dms.map((c) => {
-    const isSelf = c.name?.startsWith("dm-self-");
-    const participants = c.members.filter((m) => !m._id.equals(req.user._id));
-    const other = isSelf ? c.members[0] : (participants[0] || c.members[0]);
-    const last = lastMap.get(c._id.toString());
-    return {
-      id: c._id.toString(),
-      name: c.name,
-      memberCount: c.members.length,
-      createdBy: c.createdBy?.toString() || null,
-      withUser: other.toPublicJSON(),
-      participants: c.members.map((member) => member.toPublicJSON()),
-      isGroup: !isSelf && participants.length > 1,
-      isSelf,
-      lastAt: last?.createdAt || c.createdAt,
-      lastBody: last?.body || null,
-      lastFromMe: last ? String(last.author) === String(req.user._id) : false,
-      unread: countMap.get(c._id.toString()) || 0,
-    };
-  });
-
-  conversations.sort((a, b) => new Date(b.lastAt) - new Date(a.lastAt));
-  res.json({ conversations });
+  const result = await listDmConversations({ userId: req.user._id, vips: req.user.vips || [], includeMetadata: true });
+  res.json({ conversations: result.conversations });
 });
 
 function isGroupDm(channel) {

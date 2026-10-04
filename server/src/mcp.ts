@@ -32,6 +32,7 @@ import {
 import { sendMessage } from "./services/messageService.js";
 import { markRead, setThreadFollow, toggleSavedMessage } from "./services/userStateService.js";
 import { listSavedMessages } from "./services/savedMessageService.js";
+import { listDmConversations } from "./services/conversationService.js";
 import {
   cancelScheduledMessage,
   createScheduledMessage,
@@ -398,7 +399,7 @@ function registerTools(server, user) {
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
     async () => {
-      const channels = await Channel.find({ type: "dm", members: userId }).sort({ updatedAt: -1 });
+      const { channels } = await listDmConversations({ userId });
       return textResult({ channels: channels.map((channel) => channel.toPublicJSON()) });
     }
   );
