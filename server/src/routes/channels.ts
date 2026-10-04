@@ -1,6 +1,6 @@
 import { Router } from "express";
 import mongoose from "mongoose";
-import { canParticipateInChannel, canPostToChannel, Channel, isChannelManager } from "../models/Channel.js";
+import { canParticipateInChannel, Channel, isChannelManager } from "../models/Channel.js";
 import { Message } from "../models/Message.js";
 import { User } from "../models/User.js";
 import { Read } from "../models/Read.js";
@@ -11,8 +11,8 @@ import {
   joinUserToChannel,
   removeUserFromChannel,
 } from "../realtime.js";
-import { sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, sanitizeRetro, retroError } from "../deliver.js";
-import { cardError, sanitizeCard } from "../lib/messageCard.js";
+import { attachmentLimitError, surveyError, retroError } from "../deliver.js";
+import { cardError } from "../lib/messageCard.js";
 import { normalizeChannelName } from "../automation.js";
 import { ActivityEvent } from "../models/ActivityEvent.js";
 import { isValidChannelName } from "../lib/channelName.js";
@@ -31,6 +31,7 @@ import {
   removeChannelMember,
 } from "../services/channelService.js";
 import { sendMessage } from "../services/messageService.js";
+import { messagePermission, normalizeMessageContent } from "../services/messagePolicyService.js";
 
 // Whitelist attachment fields (keys produced by /api/uploads). Mirrors the
 // socket sender so the REST and realtime paths behave identically.
@@ -655,17 +656,24 @@ channelsRouter.get("/:id/files", async (req, res) => {
 // POST /api/channels/:id/messages — send a message (REST equivalent of the
 // `message:send` socket event). Body: { body, parentId?, broadcastToChannel?, attachments? }.
 channelsRouter.post("/:id/messages", async (req, res) => {
-  const text = String(req.body?.body || "").trim();
-  const survey = sanitizeSurvey(req.body?.survey);
-  const retro = sanitizeRetro(req.body?.retro);
-  const card = sanitizeCard(req.body?.card);
+  const normalized = normalizeMessageContent({
+    body: req.body?.body,
+    attachments: req.body?.attachments,
+    survey: req.body?.survey,
+    retro: req.body?.retro,
+    card: req.body?.card,
+  });
+  const text = normalized.body;
+  const survey = normalized.survey;
+  const retro = normalized.retro;
+  const card = normalized.card;
   const invalidCard = cardError(req.body?.card);
   if (surveyError(req.body?.survey)) return res.status(400).json({ error: surveyError(req.body?.survey) });
   if (retroError(req.body?.retro)) return res.status(400).json({ error: retroError(req.body?.retro) });
   if (invalidCard) return res.status(400).json({ error: invalidCard });
   const attachmentError = attachmentLimitError(req.body?.attachments);
   if (attachmentError) return res.status(400).json({ error: attachmentError });
-  const files = sanitizeAttachments(req.body?.attachments);
+  const files = normalized.attachments;
   if (!text && files.length === 0 && !survey && !retro && !card) {
     return res.status(400).json({ error: "message needs text, an attachment, or a card" });
   }
@@ -677,10 +685,11 @@ channelsRouter.post("/:id/messages", async (req, res) => {
   if (channel.type !== "public" && !channel.members.some((m) => m.equals(req.user._id))) {
     return res.status(403).json({ error: "access denied" });
   }
-  if (!canParticipateInChannel(channel, req.user._id)) {
+  const permission = messagePermission(channel, req.user._id);
+  if (permission === "join") {
     return res.status(403).json({ error: "join the channel to participate" });
   }
-  if (!canPostToChannel(channel, req.user._id)) {
+  if (permission === "manager") {
     return res.status(403).json({ error: "only channel managers can post in this read-only channel" });
   }
   const parentId =

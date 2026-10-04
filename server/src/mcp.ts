@@ -1,9 +1,9 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
-import { canParticipateInChannel, canPostToChannel, isChannelManager } from "./models/Channel.js";
-import { sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, sanitizeRetro, retroError, updateRetro } from "./deliver.js";
-import { sanitizeCard, cardError } from "./lib/messageCard.js";
+import { canParticipateInChannel, isChannelManager } from "./models/Channel.js";
+import { sanitizeAttachments, attachmentLimitError, surveyError, retroError, updateRetro } from "./deliver.js";
+import { cardError } from "./lib/messageCard.js";
 import { normalizeChannelName } from "./automation.js";
 import { emitToChannel, joinUserToChannel } from "./realtime.js";
 import { deleteMessage, editMessage, reactToMessage, toggleMessagePin, voteInSurvey } from "./services/messageActionService.js";
@@ -24,6 +24,7 @@ import {
   listVisibleChannels,
 } from "./services/channelService.js";
 import { sendMessage } from "./services/messageService.js";
+import { messagePermission, normalizeMessageContent } from "./services/messagePolicyService.js";
 import { markRead, setThreadFollow, toggleSavedMessage } from "./services/userStateService.js";
 import { listSavedMessages } from "./services/savedMessageService.js";
 import { ensureDmChannel, ensureGroupDmChannel, ensureSelfDmChannel, listDmConversations } from "./services/conversationService.js";
@@ -302,30 +303,29 @@ function registerTools(server, user) {
     async ({ channel: channelKey, body, parentId, broadcastToChannel, idempotencyKey, attachments, survey: rawSurvey, retro: rawRetro, card: rawCard }) => {
       const channel = await findVisibleChannel(channelKey, userId);
       if (!channel) return toolError("Channel not found or access denied");
-      if (!canParticipateInChannel(channel, userId)) return toolError("Join the channel to participate");
-      if (!canPostToChannel(channel, userId)) return toolError("Only channel managers can post in this channel");
+      const permission = messagePermission(channel, userId);
+      if (permission === "join") return toolError("Join the channel to participate");
+      if (permission === "manager") return toolError("Only channel managers can post in this channel");
       if (parentId && !isValidObjectId(parentId)) return toolError("Invalid parent message id");
       const attachmentError = attachmentLimitError(attachments);
       if (attachmentError) return toolError(attachmentError);
       if (surveyError(rawSurvey)) return toolError(surveyError(rawSurvey));
       if (retroError(rawRetro)) return toolError(retroError(rawRetro));
-      const card = sanitizeCard(rawCard);
       if (cardError(rawCard)) return toolError(cardError(rawCard));
-      const survey = sanitizeSurvey(rawSurvey);
-      const retro = sanitizeRetro(rawRetro);
-      const files = sanitizeAttachments(attachments);
+      const normalizedContent = normalizeMessageContent({ body, attachments, survey: rawSurvey, retro: rawRetro, card: rawCard });
+      const files = normalizedContent.attachments;
       if (!String(body || "").trim() && !files.length && !survey && !retro && !card) return toolError("Message needs text, an attachment, or structured content");
       const result = await sendMessage({
         channel,
         authorId: userId,
-        body: String(body || "").trim(),
+        body: normalizedContent.body,
         parentId: parentId || null,
         broadcastToChannel,
         idempotencyKey: idempotencyKey || null,
         attachments: files,
-        survey,
-        retro,
-        card,
+        survey: normalizedContent.survey,
+        retro: normalizedContent.retro,
+        card: normalizedContent.card,
       });
       return textResult(result);
     }
@@ -606,8 +606,9 @@ function registerTools(server, user) {
     async ({ channel: channelKey, body, scheduledFor, parentId, attachments }) => {
       const channel = await findVisibleChannel(channelKey, userId);
       if (!channel) return toolError("Channel not found or access denied");
-      if (!canParticipateInChannel(channel, userId)) return toolError("Join the channel to participate");
-      if (!canPostToChannel(channel, userId)) return toolError("Only channel managers can post in this channel");
+      const permission = messagePermission(channel, userId);
+      if (permission === "join") return toolError("Join the channel to participate");
+      if (permission === "manager") return toolError("Only channel managers can post in this channel");
       const when = new Date(scheduledFor);
       if (Number.isNaN(when.getTime()) || when <= new Date()) return toolError("scheduledFor must be a future time");
       const files = sanitizeAttachments(attachments);

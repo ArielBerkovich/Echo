@@ -7,13 +7,14 @@ import { User } from "./models/User.js";
 import { canParticipateInChannel, canPostToChannel, Channel } from "./models/Channel.js";
 import { Message } from "./models/Message.js";
 import { setIO } from "./realtime.js";
-import { sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, sanitizeRetro, retroError, updateRetro } from "./deliver.js";
-import { cardError, sanitizeCard } from "./lib/messageCard.js";
+import { sanitizeAttachments, attachmentLimitError, surveyError, retroError, updateRetro } from "./deliver.js";
+import { cardError } from "./lib/messageCard.js";
 import { buildMessageActivityMetadata } from "./lib/messageActivity.js";
 import { roomFor, userRoom } from "./lib/rooms.js";
 import { activeConnections, recordSocketError } from "./metrics.js";
 import { deleteMessage, editMessage, reactToMessage, toggleMessagePin, voteInSurvey } from "./services/messageActionService.js";
 import { sendMessage } from "./services/messageService.js";
+import { messagePermission, normalizeMessageContent } from "./services/messagePolicyService.js";
 
 // Wire up the real-time messaging layer on top of the HTTP server.
 export function attachSocket(httpServer) {
@@ -193,10 +194,11 @@ export function attachSocket(httpServer) {
         const text = String(body || "").trim();
         const attachmentError = attachmentLimitError(attachments);
         if (attachmentError) return ackError(ack, "message_send", attachmentError);
-        const files = sanitizeAttachments(attachments);
-        const normalizedSurvey = sanitizeSurvey(survey);
-        const normalizedRetro = sanitizeRetro(retro);
-        const normalizedCard = sanitizeCard(card);
+        const normalizedContent = normalizeMessageContent({ body: text, attachments, survey, retro, card });
+        const files = normalizedContent.attachments;
+        const normalizedSurvey = normalizedContent.survey;
+        const normalizedRetro = normalizedContent.retro;
+        const normalizedCard = normalizedContent.card;
         const invalidCard = cardError(card);
         if (surveyError(survey)) return ackError(ack, "message_send", surveyError(survey));
         if (retroError(retro)) return ackError(ack, "message_send", retroError(retro));
@@ -207,10 +209,11 @@ export function attachSocket(httpServer) {
 
         const channel = await Channel.findById(channelId);
         if (!channel) return ackError(ack, "message_send", "channel not found");
-        if (!canParticipateInChannel(channel, socket.user._id)) {
+        const permission = messagePermission(channel, socket.user._id);
+        if (permission === "join") {
           return ackError(ack, "message_send", "access denied");
         }
-        if (!canPostToChannel(channel, socket.user._id)) {
+        if (permission === "manager") {
           return ackError(ack, "message_send", "only channel managers can post in this read-only channel");
         }
 
@@ -274,7 +277,7 @@ export function attachSocket(httpServer) {
           return ackError(ack, "message_edit", "you can only edit your own messages");
         }
         const editChannel = await Channel.findById(message.channel);
-        if (!editChannel || !canParticipateInChannel(editChannel, socket.user._id)) {
+        if (!editChannel || messagePermission(editChannel, socket.user._id, { requirePost: false }) === "join") {
           return ackError(ack, "message_edit", "access denied");
         }
         if (!canPostToChannel(editChannel, socket.user._id)) {
