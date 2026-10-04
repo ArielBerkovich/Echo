@@ -78,6 +78,12 @@ describe("Hebrew starred navigation translation", () => {
   });
 });
 
+describe("Hebrew permission error translation", () => {
+  it("translates the generic forbidden-action message", () => {
+    assert.equal(translations.he.permissionDenied, "אין לך הרשאה לבצע פעולה זו.");
+  });
+});
+
 describe("Hebrew user profile translations", () => {
   it("uses gender-neutral presence labels and translates the message action", () => {
     assert.equal(translations.he.online, "אונליין");

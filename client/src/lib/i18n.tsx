@@ -238,6 +238,7 @@ export const translations = {
     noMessagesYet: "No messages yet",
     directMessageHistoryStart: "This is the start of your direct message history. Say hello! 👋",
     noMatches: "No matches.",
+    permissionDenied: "You don't have permission to do that.",
     noConversationsYet: "No conversations yet. Compose a new message.",
     noMatchingChannels: "No matching channels.",
     noChannelsYet: "No channels yet.",
@@ -964,6 +965,7 @@ export const translations = {
     noMessagesYet: "אין הודעות עדיין",
     directMessageHistoryStart: "כאן מתחילה השיחה. אפשר להגיד שלום 👋",
     noMatches: "לא נמצאו התאמות.",
+    permissionDenied: "אין לך הרשאה לבצע פעולה זו.",
     noConversationsYet: "אין שיחות עדיין. אפשר להתחיל בהודעה חדשה.",
     noMatchingChannels: "לא נמצאו ערוצים תואמים.",
     noChannelsYet: "אין ערוצים עדיין.",
@@ -1687,6 +1689,7 @@ const ERROR_TRANSLATIONS: Record<string, TranslationKey> = {
   "Password must include a lowercase letter": "passwordLowercaseError",
   "Password must include an uppercase letter": "passwordUppercaseError",
   "Password must include a number": "passwordNumberError",
+  "You don't have permission to do that.": "permissionDenied",
 };
 
 /** Translate known validation/API errors while preserving unknown server errors. */
