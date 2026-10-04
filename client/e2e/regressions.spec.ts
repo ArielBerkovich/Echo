@@ -29,6 +29,10 @@ async function createScrollableChannel(page, prefix) {
     method: "POST",
     body: { name: channelName, type: "public" },
   });
+  await requestAsToken(page, fixture.alice.token, `/channels/${created.channel.id}/members`, {
+    method: "POST",
+    body: { userId: fixture.bob.id },
+  });
   for (let index = 0; index < 28; index += 1) {
     await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
       method: "POST",
@@ -863,6 +867,10 @@ test("scrolls to the bottom after sending while reading older messages", async (
   const created = await requestAsToken(page, fixture.alice.token, "/channels", {
     method: "POST",
     body: { name: channelName, type: "public" },
+  });
+  await requestAsToken(page, fixture.alice.token, `/channels/${created.channel.id}/members`, {
+    method: "POST",
+    body: { userId: fixture.bob.id },
   });
   for (let i = 0; i < 28; i += 1) {
     await requestAsToken(page, fixture.bob.token, "/messages/upsert", {

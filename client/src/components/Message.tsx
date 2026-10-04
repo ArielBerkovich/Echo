@@ -94,6 +94,7 @@ function Message({
   onToast,
   canPin = true,
   canQuote = false,
+  canInteract = true,
 }) {
   const { t, language } = useI18n();
   const direction = languageDirection(language);
@@ -559,7 +560,7 @@ function Message({
                     const count = option.voteCount ?? option.votes?.length ?? 0;
                     const percentage = totalVotes ? Math.round((count / totalVotes) * 100) : 0;
                     return (
-                      <button type="button" key={option.id} className={`survey-option${selected ? " selected" : ""}`} data-testid={`survey-option-${option.id}`} aria-pressed={selected} disabled={surveyVoting} onClick={() => voteSurvey(option.id)}>
+                      <button type="button" key={option.id} className={`survey-option${selected ? " selected" : ""}`} data-testid={`survey-option-${option.id}`} aria-pressed={selected} disabled={surveyVoting || !canInteract} onClick={() => canInteract && voteSurvey(option.id)}>
                         <span className="survey-option-progress" style={{ width: `${percentage}%` }} aria-hidden="true" />
                         <span className="survey-option-content">
                           <span className="survey-option-check">{selected && <Check size={14} strokeWidth={3} />}</span>
@@ -621,7 +622,8 @@ function Message({
                       data-testid={`message-${mid}-reaction-${String(r.emoji).replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`}
                       aria-label={`${tip}. ${mine ? "Remove" : "Add"} this reaction`}
                       aria-pressed={mine}
-                      onClick={() => onToggleReaction(r.emoji)}
+                      disabled={!canInteract}
+                      onClick={() => canInteract && onToggleReaction?.(r.emoji)}
                       data-tip={tip}
                     >
                       <span className="reaction-emoji">
@@ -631,7 +633,7 @@ function Message({
                     </button>
                   );
                 })}
-                <button
+                {canInteract && <button
                   type="button"
                   className="reaction add react-toggle"
                   data-testid={`message-${mid}-add-reaction`}
@@ -640,7 +642,7 @@ function Message({
                   onClick={onReact}
                 >
                   <EmojiAddIcon />
-                </button>
+                </button>}
               </div>
             )}
 
@@ -697,7 +699,7 @@ function Message({
             deactivateMessage(event);
           }}
         >
-          <button
+          {canInteract && <button
             className="react-toggle"
             data-testid={`message-${mid}-add-reaction-action`}
             aria-label={t("addReaction")}
@@ -710,7 +712,7 @@ function Message({
             }}
           >
             <EmojiAddIcon />
-          </button>
+          </button>}
           {!inThread && (
             <button data-testid={`message-${mid}-reply`} aria-label={t("replyInThread")} title={t("replyInThread")} onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onOpenThread}>
               <ReplyIcon />
@@ -828,7 +830,7 @@ function Message({
                 <PinIcon /> {m.pinnedAt ? t("unpinMessage") : t("pinMessage")}
               </button>
             )}
-            {isMine && (
+            {isMine && canInteract && (
               <>
                 {canEdit && (
                   <button type="button" role="menuitem" data-testid={`message-${mid}-edit`} onClick={() => { onStartEdit(); onCloseMenu(); }}>

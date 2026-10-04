@@ -1,6 +1,6 @@
 import { Router } from "express";
 import mongoose from "mongoose";
-import { canPostToChannel, Channel, isChannelManager } from "../models/Channel.js";
+import { canParticipateInChannel, canPostToChannel, Channel, isChannelManager } from "../models/Channel.js";
 import { Message } from "../models/Message.js";
 import { User } from "../models/User.js";
 import { Read } from "../models/Read.js";
@@ -88,7 +88,7 @@ channelsRouter.get("/:channelId/threads/:threadId/follow", async (req, res) => {
   if (!mongoose.isValidObjectId(channelId) || !mongoose.isValidObjectId(threadId)) return res.status(404).json({ error: "thread not found" });
   const channel = await Channel.findById(channelId).select("members type");
   const root = await Message.findOne({ _id: threadId, channel: channelId, parentId: null }).select("_id");
-  if (!channel || !root || (channel.type !== "public" && !channel.members.some((member) => member.equals(req.user._id)))) return res.status(404).json({ error: "thread not found" });
+  if (!channel || !root || !canParticipateInChannel(channel, req.user._id)) return res.status(404).json({ error: "thread not found" });
   const preference = await ThreadFollow.findOne({ user: req.user._id, thread: root._id }).select("following").lean();
   res.json({
     threadId: root._id.toString(),
@@ -104,7 +104,7 @@ channelsRouter.put("/:channelId/threads/:threadId/follow", async (req, res) => {
   }
   const channel = await Channel.findById(channelId).select("members type");
   const root = await Message.findOne({ _id: threadId, channel: channelId, parentId: null }).select("_id");
-  if (!channel || !root || (channel.type !== "public" && !channel.members.some((member) => member.equals(req.user._id)))) {
+  if (!channel || !root || !canParticipateInChannel(channel, req.user._id)) {
     return res.status(404).json({ error: "thread not found" });
   }
   const following = req.body?.following;
@@ -996,6 +996,9 @@ channelsRouter.post("/:id/messages", async (req, res) => {
   if (channel.type !== "public" && !channel.members.some((m) => m.equals(req.user._id))) {
     return res.status(403).json({ error: "access denied" });
   }
+  if (!canParticipateInChannel(channel, req.user._id)) {
+    return res.status(403).json({ error: "join the channel to participate" });
+  }
   if (!canPostToChannel(channel, req.user._id)) {
     return res.status(403).json({ error: "only channel managers can post in this read-only channel" });
   }
@@ -1038,7 +1041,7 @@ channelsRouter.post("/:id/messages/:messageId/survey-vote", async (req, res) => 
   if (!channel || !message || String(message.channel) !== String(channel._id) || !message.survey) {
     return res.status(404).json({ error: "survey not found" });
   }
-  if (channel.type !== "public" && !channel.members.some((m) => m.equals(req.user._id))) {
+  if (!canParticipateInChannel(channel, req.user._id)) {
     return res.status(403).json({ error: "access denied" });
   }
   try {
@@ -1088,7 +1091,7 @@ channelsRouter.post(["/:id/messages/:messageId/reactions", "/:id/messages/:messa
   if (!channel || channel.isArchived || !message) {
     return res.status(404).json({ error: "message not found" });
   }
-  if (channel.type !== "public" && !channel.members.some((memberId) => memberId.equals(req.user._id))) {
+  if (!canParticipateInChannel(channel, req.user._id)) {
     return res.status(403).json({ error: "access denied" });
   }
 

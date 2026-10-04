@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { requestAsToken, seedWorkspaceFixture } from "./helpers.js";
+import { registerUser, requestAsToken, seedWorkspaceFixture, uniqueSuffix } from "./helpers.js";
 
 let fixture: Awaited<ReturnType<typeof seedWorkspaceFixture>>;
 
@@ -53,6 +53,10 @@ test.describe("post-login forms are keyboard operable", () => {
   });
 
   test("edits channel details, opens Add People, searches, and cancels with Escape", async ({ page }) => {
+    const outsider = await registerUser(page, {
+      username: `keyboard.outsider${uniqueSuffix("user").replace(/[^a-z0-9]/gi, "").slice(-12)}`,
+      displayName: "Keyboard Outsider",
+    });
     await page.goto(`/channels/${encodeURIComponent(fixture.projectChannel.name)}`);
     await pressEnter(page.getByTestId("channel-title"));
 
@@ -73,8 +77,8 @@ test.describe("post-login forms are keyboard operable", () => {
     await expect(addPeople).toBeVisible();
     const peopleSearch = page.getByTestId("add-people-search");
     await expect(peopleSearch).toBeFocused();
-    await peopleSearch.pressSequentially(fixture.bob.username);
-    await expect(addPeople).toContainText(fixture.bob.displayName);
+    await peopleSearch.pressSequentially(outsider.user.username);
+    await expect(addPeople).toContainText(outsider.user.displayName);
     await peopleSearch.press("Escape");
     await expect(addPeople).toBeHidden();
 

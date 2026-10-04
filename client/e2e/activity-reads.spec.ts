@@ -9,6 +9,10 @@ test.beforeEach(async ({ page }) => {
   channel = (await requestAsToken(page, fixture.alice.token, "/channels", {
     method: "POST", body: { name: uniqueSuffix("activity-read"), type: "public" },
   })).channel;
+  await requestAsToken(page, fixture.alice.token, `/channels/${channel.id}/members`, {
+    method: "POST",
+    body: { userId: fixture.bob.id },
+  });
 });
 async function message(page, body = `Hello @${fixture.alice.username}`, parentId = null) {
   return (await requestAsToken(page, fixture.bob.token, "/messages/upsert", {

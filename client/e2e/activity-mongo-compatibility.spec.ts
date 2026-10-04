@@ -10,6 +10,10 @@ test("legacy Mongo documents retain read and unread states after upgrading", asy
   const channel = (await requestAsToken(page, fixture.alice.token, "/channels", {
     method: "POST", body: { name: uniqueSuffix("legacy-activity"), type: "public" },
   })).channel;
+  await requestAsToken(page, fixture.alice.token, `/channels/${channel.id}/members`, {
+    method: "POST",
+    body: { userId: fixture.bob.id },
+  });
   const messages = [];
   for (let i = 0; i < 4; i++) {
     messages.push((await requestAsToken(page, fixture.bob.token, "/messages/upsert", {

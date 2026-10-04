@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import mongoose from "mongoose";
 
-import { canPostToChannel, Channel, isChannelManager } from "./Channel.js";
+import { canParticipateInChannel, canPostToChannel, Channel, isChannelMember, isChannelManager } from "./Channel.js";
 
 describe("Channel posting permissions", () => {
   it("allows everyone in normal channels and only managers in read-only channels", () => {
@@ -54,6 +54,17 @@ describe("Channel.toPublicJSON", () => {
     assert.equal(json.createdBy, createdBy.toString());
     assert.equal(json.readOnly, false);
     assert.equal(json.isArchived, true);
+  });
+
+  it("separates public visibility from participation", () => {
+    const member = new mongoose.Types.ObjectId();
+    const visitor = new mongoose.Types.ObjectId();
+    const channel = { type: "public", members: [member] };
+
+    assert.equal(isChannelMember(channel, member), true);
+    assert.equal(isChannelMember(channel, visitor), false);
+    assert.equal(canParticipateInChannel(channel, member), true);
+    assert.equal(canParticipateInChannel(channel, visitor), false);
   });
 
   it("normalizes empty topic and description", () => {

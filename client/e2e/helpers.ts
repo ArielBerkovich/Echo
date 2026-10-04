@@ -225,6 +225,10 @@ export async function seedWorkspaceFixture(page) {
           method: "POST",
           body: { name: projectChannelName, type: "public" },
         })).channel;
+    await requestAsToken(page, aliceAuth.token, `/channels/${projectChannel.id}/members`, {
+      method: "POST",
+      body: { userId: bobAuth.user.id },
+    });
     const general = await requestAsToken(page, aliceAuth.token, "/channels/by-name/general");
     await requestAsToken(page, aliceAuth.token, `/channels/${projectChannel.id}`, {
       method: "PATCH",
