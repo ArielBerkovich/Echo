@@ -1,12 +1,12 @@
 import { Router } from "express";
 import multer from "multer";
-import { fileTypeFromBuffer } from "file-type";
 import { config } from "../config.js";
 import { requireAuth } from "../middleware/requireAuth.js";
-import { putObject, getObject } from "../storage.js";
+import { getObject } from "../storage.js";
 import { decodeMultipartFilename } from "../lib/filenames.js";
 import { Message } from "../models/Message.js";
 import { Channel } from "../models/Channel.js";
+import { isImageContentType, storeAttachment } from "../services/attachmentService.js";
 
 export const uploadsRouter = Router();
 
@@ -20,19 +20,6 @@ const upload = multer({
 const KEY_RE = /^[a-z0-9-]+\.[a-z0-9]+$/i;
 
 // SVG can contain scripts — never serve it as an image.
-const BLOCKED_MIME = new Set(["image/svg+xml", "text/html", "text/javascript", "application/javascript"]);
-
-function isImage(contentType) {
-  return /^image\//.test(contentType || "") && !BLOCKED_MIME.has(contentType);
-}
-
-async function safeContentType(buffer, declaredMime) {
-  const detected = await fileTypeFromBuffer(buffer);
-  const mime = detected?.mime ?? declaredMime ?? "application/octet-stream";
-  if (BLOCKED_MIME.has(mime)) return "application/octet-stream";
-  return mime;
-}
-
 // POST /api/uploads — multipart "files"; stores each and returns metadata.
 uploadsRouter.post("/", requireAuth, upload.array("files"), async (req, res) => {
   const files = req.files || [];
@@ -42,15 +29,14 @@ uploadsRouter.post("/", requireAuth, upload.array("files"), async (req, res) => 
     const attachments = await Promise.all(
       files.map(async (f) => {
         const name = decodeMultipartFilename(f.originalname);
-        const contentType = await safeContentType(f.buffer, f.mimetype);
-        const key = await putObject({ buffer: f.buffer, name, contentType });
+        const stored = await storeAttachment({ buffer: f.buffer, name, declaredContentType: f.mimetype });
         return {
-          key,
+          key: stored.key,
           name,
           size: f.size,
-          contentType,
-          isImage: isImage(contentType),
-          url: `/api/files/${key}`,
+          contentType: stored.contentType,
+          isImage: isImageContentType(stored.contentType),
+          url: `/api/files/${stored.key}`,
         };
       })
     );

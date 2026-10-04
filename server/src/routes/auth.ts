@@ -7,8 +7,8 @@ import { Channel } from "../models/Channel.js";
 import { signToken } from "../auth.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { emitAll } from "../realtime.js";
-import { deliverMessage } from "../deliver.js";
-import { ensureDmChannel } from "../lib/dms.js";
+import { ensureDmChannel } from "../services/conversationService.js";
+import { sendMessage } from "../services/messageService.js";
 import { passwordProblem } from "../password.js";
 import { usernameCandidate, usernameFromName } from "../lib/usernames.js";
 import { config } from "../config.js";
@@ -335,7 +335,7 @@ authRouter.post("/forgot-password", passwordHelpRateLimit, async (req, res) => {
         await Promise.all(
           admins.map(async (admin) => {
             const channel = await ensureDmChannel(system._id, admin._id);
-            await deliverMessage({
+            await sendMessage({
               channel,
               authorId: system._id,
               body:

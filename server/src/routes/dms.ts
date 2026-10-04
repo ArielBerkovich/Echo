@@ -5,9 +5,8 @@ import { User } from "../models/User.js";
 import { Message } from "../models/Message.js";
 import { Read } from "../models/Read.js";
 import { requireAuth } from "../middleware/requireAuth.js";
-import { ensureDmChannel, ensureGroupDmChannel, ensureSelfDmChannel } from "../lib/dms.js";
 import { isValidChannelName } from "../lib/channelName.js";
-import { listDmConversations } from "../services/conversationService.js";
+import { ensureDmChannel, ensureGroupDmChannel, ensureSelfDmChannel, listDmConversations } from "../services/conversationService.js";
 
 export const dmsRouter = Router();
 dmsRouter.use(requireAuth);

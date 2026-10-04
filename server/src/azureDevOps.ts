@@ -3,8 +3,8 @@ import { AzureDevOpsEvent } from "./models/AzureDevOpsEvent.js";
 import { AzureDevOpsIntegration } from "./models/AzureDevOpsIntegration.js";
 import { Message } from "./models/Message.js";
 import { User } from "./models/User.js";
-import { ensureDmChannel } from "./lib/dms.js";
-import { deliverMessage } from "./deliver.js";
+import { ensureDmChannel } from "./services/conversationService.js";
+import { sendMessage } from "./services/messageService.js";
 import { emitToChannel } from "./realtime.js";
 
 const AZURE_USERNAME = "azure-bot";
@@ -509,7 +509,7 @@ export async function processAzureDevOpsEvent(integration, payload) {
           if (reservedRootEvent?.messageId) {
             root = reservedRootEvent;
           } else {
-            const rootMessage = await deliverMessage({
+            const { message: rootMessage } = await sendMessage({
               channel,
               authorId: azure._id,
               body: rootBody,
@@ -528,7 +528,7 @@ export async function processAzureDevOpsEvent(integration, payload) {
       await AzureDevOpsEvent.updateOne({ _id: event._id }, { $set: { pullRequestNumber: prNumber, recipient: recipient._id } });
       return deferAzureEvent(event, payload, "PR root message not found");
     }
-    const message = await deliverMessage({
+    const { message } = await sendMessage({
       channel,
       authorId: azure._id,
       body: messageBody(kind, value),
