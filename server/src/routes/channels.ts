@@ -19,6 +19,15 @@ import { isValidChannelName } from "../lib/channelName.js";
 import { CustomEmoji } from "../models/CustomEmoji.js";
 import { ThreadFollow } from "../models/ThreadFollow.js";
 import { reactToMessage, voteInSurvey } from "../services/messageActionService.js";
+import {
+  addChannelMember,
+  createChannel,
+  joinChannel,
+  leaveChannel,
+  promoteChannelManager,
+  removeChannelMember,
+} from "../services/channelService.js";
+import { sendMessage } from "../services/messageService.js";
 
 // Whitelist attachment fields (keys produced by /api/uploads). Mirrors the
 // socket sender so the REST and realtime paths behave identically.
@@ -32,29 +41,6 @@ async function logSystem(channelId, authorId, body) {
     lastReplyAt: null,
   });
   return msg;
-}
-
-// A newly added member should start with a clean channel timeline. Without a
-// read marker here, unread aggregation treats the channel's entire history as
-// unread, including @everyone broadcasts sent before the member joined.
-async function markChannelReadAtJoin(channelId, userId) {
-  await Read.updateOne(
-    { user: userId, channel: channelId, thread: null },
-    { $set: { lastReadAt: new Date() } },
-    { upsert: true }
-  );
-}
-
-async function clearChannelStar(user, channelId) {
-  const starredChannels = user.starredChannels || [];
-  if (!starredChannels.some((id) => id.equals(channelId))) return false;
-  user.starredChannels = starredChannels.filter((id) => !id.equals(channelId));
-  await user.save();
-  emitToUser(user._id.toString(), "starred:update", {
-    channelId: channelId.toString(),
-    starred: false,
-  });
-  return true;
 }
 
 // Attach an `unread` count (messages from others since the user last read) to
@@ -292,37 +278,9 @@ channelsRouter.post("/", async (req, res) => {
     return res.status(400).json({ error: "readOnly must be a boolean" });
   }
 
-  // Only the two supported visibilities; anything else is rejected.
-  const visibility = type === "private" ? "private" : "public";
-
-  const normalized = String(name).toLowerCase().trim();
-  if (!isValidChannelName(normalized)) {
-    return res.status(400).json({ error: "channel names cannot contain underscores, consecutive dashes, or start/end with a dash" });
-  }
-  const existing = await Channel.findOne({ name: normalized });
-  if (existing) return res.status(409).json({ error: "channel name already exists" });
-
-  try {
-    const channel = await Channel.create({
-      name: normalized,
-      type: visibility,
-      members: [req.user._id],
-      createdBy: req.user._id,
-      managers: [req.user._id],
-      readOnly,
-    });
-    await logSystem(channel._id, req.user._id, "created this channel");
-    joinUserToChannel(req.user._id.toString(), channel._id.toString());
-    if (channel.type === "public") {
-      emitAll("channel:catalog", { channel: channel.toPublicJSON() });
-    }
-    res.status(201).json({ channel: channel.toPublicJSON() });
-  } catch (err) {
-    if (err.name === "ValidationError") {
-      return res.status(400).json({ error: err.message });
-    }
-    throw err;
-  }
+  const result = await createChannel({ name, type: type === "private" ? "private" : "public", readOnly, userId: req.user._id });
+  if (result.error) return res.status(result.error === "Channel name already exists" ? 409 : 400).json({ error: result.error });
+  res.status(201).json(result);
 });
 
 // GET /api/channels/:id/name-availability — check a candidate name for a manager.
@@ -380,36 +338,9 @@ channelsRouter.post("/:id/join", async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) {
     return res.status(404).json({ error: "channel not found" });
   }
-  const channel = await Channel.findById(req.params.id);
-  if (!channel || channel.isArchived) {
-    return res.status(404).json({ error: "channel not found" });
-  }
-  const already = channel.members.some((m) => m.equals(req.user._id));
-  if (channel.type !== "public" && !already) {
-    return res.status(403).json({ error: "private channels are invite-only" });
-  }
-  // Join the realtime room before logging the membership event so the new
-  // member receives the system message immediately.
-  joinUserToChannel(req.user._id.toString(), channel._id.toString());
-  await Channel.updateOne(
-    { _id: channel._id },
-    { $addToSet: { members: req.user._id } }
-  );
-  if (!already) {
-    await logSystem(channel._id, req.user._id, "joined");
-    await markChannelReadAtJoin(channel._id, req.user._id);
-  }
-  const updated = await Channel.findById(channel._id);
-  const updatedPayload = updated.toPublicJSON();
-  if (!already) {
-    // Existing members may have the members panel open. Keep it in sync with
-    // self-service joins just as we do when someone uses "Add people".
-    emitToChannel(channel._id.toString(), "channel:update", { channel: updatedPayload });
-    if (channel.type === "public") {
-      emitAll("channel:catalog", { channel: updatedPayload });
-    }
-  }
-  res.json({ channel: updatedPayload });
+  const result = await joinChannel(req.params.id, req.user._id);
+  if (result.error) return res.status(result.error === "Private channels are invite-only" ? 403 : 404).json({ error: result.error });
+  res.json({ channel: result.channel });
 });
 
 // POST /api/channels/:id/members { userId } — add another user to a channel.
@@ -418,61 +349,12 @@ channelsRouter.post("/:id/members", async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id) || !mongoose.isValidObjectId(userId)) {
     return res.status(400).json({ error: "valid channel id and userId are required" });
   }
-  const channel = await Channel.findById(req.params.id);
-  if (!channel || channel.isArchived) {
-    return res.status(404).json({ error: "channel not found" });
+  const result = await addChannelMember(req.params.id, req.user._id, userId);
+  if (result.error) {
+    const status = result.error === "User not found" ? 404 : result.error.includes("join") ? 403 : result.error.includes("cannot") || result.error.includes("automatically") ? 400 : 404;
+    return res.status(status).json({ error: result.error });
   }
-  const isGroupDm = channel.type === "dm" && channel.members.length > 2;
-  if (channel.type === "dm" && !isGroupDm) {
-    return res.status(400).json({ error: "cannot add members to a direct message" });
-  }
-  if (isGroupDm && channel.members.length >= 10) {
-    return res.status(400).json({ error: "group DMs are limited to 10 people" });
-  }
-  // Everyone is automatically a member of #general, so there's no one to add.
-  if ((channel.name || "").toLowerCase() === "general") {
-    return res.status(400).json({ error: "everyone is automatically a member of #general" });
-  }
-  // Anyone may add to public channels; private channels are members-only.
-  const isMember = channel.members.some((m) => m.equals(req.user._id));
-  if ((channel.type === "private" || isGroupDm) && !isMember) {
-    return res.status(403).json({ error: "join the channel before adding others" });
-  }
-
-  const target = await User.findById(userId);
-  if (!target) return res.status(404).json({ error: "user not found" });
-
-  const alreadyMember = channel.members.some((m) => m.equals(target._id));
-  await Channel.updateOne({ _id: channel._id }, { $addToSet: { members: target._id } });
-  if (!alreadyMember) {
-    // Pull the new member's sockets into the channel room for live messages,
-    // and tell their client to add the channel to its sidebar right away.
-    joinUserToChannel(target._id.toString(), channel._id.toString());
-    emitToUser(target._id.toString(), "channel:added", { channelId: channel._id.toString() });
-    // Record activity ("X added you to #channel") for the added user — unless
-    // they added themselves. (message=channel satisfies the schema + makes the
-    // per-channel event unique.)
-    if (!target._id.equals(req.user._id)) {
-      await ActivityEvent.updateOne(
-        { recipient: target._id, actor: req.user._id, message: channel._id, emoji: "" },
-        { $set: { type: "channel_add", channel: channel._id, createdAt: new Date() } },
-        { upsert: true }
-      ).catch(() => {});
-      emitToUser(target._id.toString(), "activity:bump");
-    }
-    await logSystem(channel._id, target._id, "was added");
-    await markChannelReadAtJoin(channel._id, target._id);
-  }
-  const updated = await Channel.findById(channel._id);
-  const updatedPayload = updated.toPublicJSON();
-  // Keep open channel headers in sync when membership changes elsewhere. The
-  // existing members are already in this room; the newly added user was
-  // joined above before this event is emitted.
-  emitToChannel(channel._id.toString(), "channel:update", { channel: updatedPayload });
-  if (channel.type === "public") {
-    emitAll("channel:catalog", { channel: updatedPayload });
-  }
-  res.json({ channel: updatedPayload });
+  res.json({ channel: result.channel });
 });
 
 // POST /api/channels/:id/managers { userId } — promote a channel member.
@@ -481,29 +363,12 @@ channelsRouter.post("/:id/managers", async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id) || !mongoose.isValidObjectId(userId)) {
     return res.status(400).json({ error: "valid channel id and userId are required" });
   }
-  const channel = await Channel.findById(req.params.id);
-  if (!channel || channel.isArchived) return res.status(404).json({ error: "channel not found" });
-  if (channel.type === "dm") return res.status(400).json({ error: "direct messages do not have managers" });
-  if ((channel.name || "").toLowerCase() === "general") {
-    return res.status(400).json({ error: "#general does not have delegated managers" });
+  const result = await promoteChannelManager(req.params.id, req.user._id, userId);
+  if (result.error) {
+    const status = result.error.includes("Only") ? 403 : result.error.includes("not") ? 404 : 400;
+    return res.status(status).json({ error: result.error });
   }
-  const requesterIsManager = (channel.managers || []).some((memberId) => memberId.equals(req.user._id));
-  if (!channel.createdBy.equals(req.user._id) && !requesterIsManager) {
-    return res.status(403).json({ error: "only the channel creator or a manager can add managers" });
-  }
-  if (!channel.members.some((memberId) => memberId.equals(userId))) {
-    return res.status(400).json({ error: "managers must be members of the channel" });
-  }
-  if (channel.createdBy.equals(userId)) {
-    return res.status(400).json({ error: "the channel creator is already the owner" });
-  }
-
-  await Channel.updateOne({ _id: channel._id }, { $addToSet: { managers: userId } });
-  const updated = await Channel.findById(channel._id);
-  const updatedPayload = updated.toPublicJSON();
-  emitToChannel(channel._id.toString(), "channel:update", { channel: updatedPayload });
-  if (channel.type === "public") emitAll("channel:catalog", { channel: updatedPayload });
-  res.json({ channel: updatedPayload });
+  res.json({ channel: result.channel });
 });
 
 // DELETE /api/channels/:id/members/:userId — the channel creator removes
@@ -513,64 +378,12 @@ channelsRouter.delete("/:id/members/:userId", async (req, res) => {
   if (!mongoose.isValidObjectId(id) || !mongoose.isValidObjectId(userId)) {
     return res.status(400).json({ error: "valid channel id and userId are required" });
   }
-  const channel = await Channel.findById(id);
-  if (!channel || channel.isArchived) {
-    return res.status(404).json({ error: "channel not found" });
+  const result = await removeChannelMember(id, req.user._id, userId);
+  if (result.error) {
+    const status = result.error.includes("Only") ? 403 : result.error.includes("cannot") || result.error.includes("general") ? 400 : 404;
+    return res.status(status).json({ error: result.error });
   }
-  if (channel.type === "dm") {
-    return res.status(400).json({ error: "cannot remove members from a direct message" });
-  }
-  if ((channel.name || "").toLowerCase() === "general") {
-    return res.status(400).json({ error: "everyone is a member of #general" });
-  }
-  // The creator and delegated managers can remove others.
-  const isManager = (channel.managers || []).some((memberId) => memberId.equals(req.user._id));
-  if (!channel.createdBy.equals(req.user._id) && !isManager) {
-    return res.status(403).json({ error: "only the channel creator or a manager can remove members" });
-  }
-  // The creator can't remove themselves this way (they'd leave instead).
-  if (channel.createdBy.equals(userId)) {
-    return res.status(400).json({ error: "the creator can't be removed from the channel" });
-  }
-  const wasMember = channel.members.some((m) => m.equals(userId));
-  await Channel.updateOne({ _id: channel._id }, { $pull: { members: userId, managers: userId } });
-
-  const updated = await Channel.findById(channel._id);
-  // Clear the removed user's star before responding so the membership change
-  // cannot race the next /users/vips request. Realtime and activity updates
-  // remain non-critical bookkeeping and can finish after the response.
-  const removedUser = wasMember ? await User.findById(userId) : null;
-  if (removedUser) await clearChannelStar(removedUser, channel._id);
-  res.json({ channel: updated.toPublicJSON() });
-
-  if (!wasMember) return;
-
-  void (async () => {
-    try {
-      await ActivityEvent.deleteMany({
-        recipient: userId,
-        channel: channel._id,
-        type: { $ne: "channel_remove" },
-      });
-      removeUserFromChannel(userId, channel._id.toString());
-      emitToUser(userId, "channel:removed", { channelId: channel._id.toString() });
-      const systemMessage = await logSystem(channel._id, userId, "was removed from the channel");
-      await ActivityEvent.updateOne(
-        { recipient: userId, actor: req.user._id, message: systemMessage._id, emoji: "" },
-        {
-          $set: {
-            type: "channel_remove",
-            channel: channel._id,
-            createdAt: new Date(),
-          },
-        },
-        { upsert: true }
-      );
-      emitToUser(userId, "activity:bump");
-    } catch (error) {
-      console.warn("Could not finish channel member removal bookkeeping:", error.message);
-    }
-  })();
+  res.json({ channel: result.channel });
 });
 
 // POST /api/channels/:id/leave — remove the current user from a channel.
@@ -578,58 +391,12 @@ channelsRouter.post("/:id/leave", async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) {
     return res.status(404).json({ error: "channel not found" });
   }
-  const channel = await Channel.findById(req.params.id);
-  if (!channel) return res.status(404).json({ error: "channel not found" });
-  if (channel.type === "dm") {
-    return res.status(400).json({ error: "cannot leave a direct message" });
+  const result = await leaveChannel(req.params.id, req.user._id, req.body?.managerId);
+  if (result.error) {
+    const status = result.error.includes("member") ? 403 : result.error.includes("not found") ? 404 : 400;
+    return res.status(status).json({ error: result.error });
   }
-  if (!channel.members.some((memberId) => memberId.equals(req.user._id))) {
-    return res.status(403).json({ error: "you are not a member of this channel" });
-  }
-  // #general is the workspace's default channel — everyone stays in it.
-  if ((channel.name || "").toLowerCase() === "general") {
-    return res.status(400).json({ error: "#general is the default channel and can't be left" });
-  }
-  const isCreator = channel.createdBy.equals(req.user._id);
-  const remainingMembers = channel.members.filter((memberId) => !memberId.equals(req.user._id));
-  const hasRemainingManager = (channel.managers || []).some(
-    (managerId) => remainingMembers.some((memberId) => memberId.equals(managerId))
-  );
-  const managerId = req.body?.managerId;
-  if (isCreator && remainingMembers.length > 0 && !hasRemainingManager) {
-    if (!mongoose.isValidObjectId(managerId)) {
-      return res.status(400).json({ error: "choose a manager before leaving" });
-    }
-    if (!remainingMembers.some((memberId) => memberId.equals(managerId))) {
-      return res.status(400).json({ error: "manager must be a member of the channel" });
-    }
-    channel.managers = [...new Set([...(channel.managers || []).map(String), String(managerId)])];
-  }
-  if (isCreator && remainingMembers.length === 0) {
-    return res.status(400).json({ error: "empty channels must be deleted instead" });
-  }
-  if (channel.type === "private") {
-    const savedMessageIds = await Message.find({ channel: channel._id }, { _id: 1 }).lean();
-    if (savedMessageIds.length) {
-      await User.updateOne(
-        { _id: req.user._id },
-        { $pull: { savedMessages: { $in: savedMessageIds.map((message) => message._id) } } }
-      );
-    }
-  }
-  await clearChannelStar(req.user, channel._id);
-  channel.members = remainingMembers;
-  channel.managers = (channel.managers || []).filter((memberId) => String(memberId) !== String(req.user._id));
-  await ActivityEvent.deleteMany({
-    recipient: req.user._id,
-    channel: channel._id,
-    type: { $ne: "channel_remove" },
-  }).catch(() => {});
-  await channel.save();
-  const updated = channel.toPublicJSON();
-  emitToChannel(channel._id.toString(), "channel:update", { channel: updated });
-  removeUserFromChannel(req.user._id.toString(), channel._id.toString());
-  res.json({ channel: updated });
+  res.json({ channel: result.channel });
 });
 
 // DELETE /api/channels/:id — archive an empty channel owned by the creator.
@@ -1006,16 +773,7 @@ channelsRouter.post("/:id/messages", async (req, res) => {
     req.body?.parentId && mongoose.isValidObjectId(req.body.parentId) ? req.body.parentId : null;
 
   const idempotencyKey = String(req.header("Idempotency-Key") || req.body?.idempotencyKey || "").trim();
-  if (idempotencyKey) {
-    const existing = await Message.findOne({
-      channel: channel._id,
-      author: req.user._id,
-      idempotencyKey: idempotencyKey.slice(0, 128),
-    }).populate("author");
-    if (existing) return res.json({ message: existing.toPublicJSON(), idempotent: true });
-  }
-
-  const message = await deliverMessage({
+  const result = await sendMessage({
     channel,
     authorId: req.user._id,
     body: text,
@@ -1027,7 +785,7 @@ channelsRouter.post("/:id/messages", async (req, res) => {
     card,
     idempotencyKey: idempotencyKey || null,
   });
-  res.status(201).json({ message });
+  res.status(result.idempotent ? 200 : 201).json(result);
 });
 
 // POST /api/channels/:channelId/messages/:messageId/survey-vote — replace the

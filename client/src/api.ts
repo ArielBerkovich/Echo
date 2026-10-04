@@ -1,4 +1,5 @@
 import { readString, writeString } from "./lib/storage.js";
+import { translations } from "./lib/i18n.js";
 
 // Thin fetch wrapper that attaches the auth token and unwraps JSON / errors.
 const TOKEN_KEY = "echo.token";
@@ -100,7 +101,10 @@ function friendlyErrorMessage(status, serverMessage, path, errorLabel) {
       ? "That username or password doesn't look right."
       : "Your session may have expired. Please sign in again.";
   }
-  if (status === 403) return "You don't have permission to do that.";
+  if (status === 403) {
+    const language = readString("echo.language") === "he" ? "he" : "en";
+    return translations[language].permissionDenied;
+  }
   if (status === 404) return "We couldn't find what you were looking for.";
   if (status === 408 || status === 429) return "That took a little too long. Please try again.";
   return serverMessage || `${errorLabel} couldn't be completed. Please try again.`;
