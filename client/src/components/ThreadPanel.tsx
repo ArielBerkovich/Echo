@@ -568,7 +568,7 @@ export default function ThreadPanel({
           setEditing(null);
           setError(null);
         }}
-      /> : !rootDeleted && (
+      /> : !rootDeleted && canInteract && (
         <div className="channel-readonly-notice thread-readonly-notice" role="status">
           <strong>{t("managersOnly")}</strong>
           <span>{t("managersOnlyReplyHint")}</span>

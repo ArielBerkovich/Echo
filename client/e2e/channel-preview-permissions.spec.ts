@@ -83,6 +83,7 @@ test("public channel previews are read-only until the user joins", async ({ page
     await bobPage.getByTestId(`message-${root.id}-reply-count`).click();
     await expect(bobPage.getByTestId("thread-panel")).toBeVisible();
     await expect(bobPage.getByTestId("thread-panel").getByTestId("composer-editor")).toHaveCount(0);
+    await expect(bobPage.getByTestId("thread-panel").getByText("Managers only")).toHaveCount(0);
     await expect(bobPage.getByTestId("thread-follow-toggle")).toHaveCount(0);
     await expect(bobPage.getByTestId(`message-${root.id}-add-reaction-action`)).toHaveCount(0);
 
