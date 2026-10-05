@@ -130,7 +130,7 @@ test("inspects an English DM quote in the Hebrew interface", async ({ page }) =>
   const quote = page.getByTestId("composer-editor").locator("blockquote");
   await expect(quote).toBeVisible();
   await expect(page.getByTestId("composer-editor")).toHaveAttribute("data-quote-direction", "ltr");
-  await expect(quote).toContainText("Bob Builder said:");
+  await expect(quote).toContainText("מאת Bob Builder:");
   await expect(quote.locator(":scope > p")).toHaveCount(1);
   await expect.poll(() => quote.evaluate((element) => {
     const paragraph = element.querySelector("p");
@@ -174,7 +174,7 @@ test("keeps a quote from a Hebrew-named author on the RTL edge", async ({ page }
 
   const composer = page.getByTestId("composer-editor");
   const quote = composer.locator("blockquote");
-  await expect(quote).toContainText(`${authorName} said:`);
+  await expect(quote).toContainText(`מאת ${authorName}:`);
   await expect.poll(() => quote.evaluate((element) => ({
     direction: getComputedStyle(element).direction,
     borderLeft: getComputedStyle(element).borderLeftWidth,
@@ -1144,7 +1144,7 @@ test("keeps a multiline English quote reply outside the quote block", async ({ p
   await composer.press("Enter");
   await composer.pressSequentially("second English line");
 
-  const quote = page.locator("blockquote").filter({ hasText: "Bob Builder said:" });
+  const quote = page.locator("blockquote").filter({ hasText: "מאת Bob Builder:" });
   await expect(quote).toHaveCount(1);
   await expect(quote).not.toContainText("first English line");
   await expect(quote).not.toContainText("second English line");
