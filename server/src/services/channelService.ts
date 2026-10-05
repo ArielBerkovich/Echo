@@ -51,11 +51,11 @@ export async function resolveChannel(channelKey: string) {
     : Channel.findOne({ name: normalizeChannelName(key) });
 }
 
-export function listVisibleChannels(userId: ChannelActor, includeArchived = false) {
+export function listVisibleChannels(userId: ChannelActor, includeArchived = false, { skip = 0, limit } = {}) {
   return Channel.find({
     ...(includeArchived ? {} : { isArchived: false }),
     $or: [{ type: "public" }, { members: userId }],
-  }).sort({ name: 1 });
+  }).sort({ name: 1 }).skip(skip).limit(limit || 0);
 }
 
 export async function findVisibleChannel(channelKey: string, userId: ChannelActor) {

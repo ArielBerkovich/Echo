@@ -37,6 +37,38 @@ import {
 } from "./services/scheduledMessageService.js";
 
 const MAX_RESULTS = 50;
+const MAX_PAGE_SIZE = 100;
+
+// Channel.toPublicJSON() is intentionally rich for the UI, but its members
+// array can contain thousands of IDs. MCP callers need a channel reference and
+// count, not the full membership roster on every response.
+export function compactChannel(channel) {
+  const value = typeof channel?.toPublicJSON === "function" ? channel.toPublicJSON() : channel;
+  if (!value) return value;
+  const compact = {
+    id: value.id,
+    name: value.name,
+    type: value.type,
+    topic: value.topic || "",
+    description: value.description || "",
+    memberCount: value.memberCount ?? value.members?.length ?? 0,
+    createdBy: value.createdBy || null,
+    readOnly: !!value.readOnly,
+    createdAt: value.createdAt || null,
+    isArchived: !!value.isArchived,
+    external: value.external || null,
+  };
+  // DM membership is small and useful for identifying participants. Public
+  // and private channel rosters stay omitted because they can be huge.
+  if (value.type === "dm" && Array.isArray(value.members) && value.members.length <= 10) {
+    compact.members = value.members;
+  }
+  return compact;
+}
+
+function compactChannelResult(result) {
+  return result?.channel ? { ...result, channel: compactChannel(result.channel) } : result;
+}
 
 function textResult(value) {
   return {
@@ -63,6 +95,34 @@ function publicMessage(message) {
   return message.toPublicJSON();
 }
 
+export function compactMessage(message) {
+  const value = typeof message?.toPublicJSON === "function" ? message.toPublicJSON() : message;
+  const compact = {
+    id: value.id,
+    channelId: value.channelId,
+    body: value.body,
+    createdAt: value.createdAt,
+    author: value.author,
+  };
+  const optionalFields = [
+    "editedAt", "parentId", "externalKey", "automation", "passwordHelpRequest",
+    "attachments", "survey", "retro", "card", "forwardedFrom", "pinnedAt", "pinnedBy", "reactions",
+    "mentionedUserIds", "mentionedGroups", "mentionedChannels",
+  ];
+  for (const field of optionalFields) {
+    const fieldValue = value[field];
+    if (fieldValue === null || fieldValue === undefined) continue;
+    if (Array.isArray(fieldValue) && fieldValue.length === 0) continue;
+    if (fieldValue === "") continue;
+    compact[field] = fieldValue;
+  }
+  if (value.kind && value.kind !== "user") compact.kind = value.kind;
+  if (value.broadcastToChannel) compact.broadcastToChannel = true;
+  if (value.mentionsEveryone) compact.mentionsEveryone = true;
+  if (value.forwardNote) compact.forwardNote = value.forwardNote;
+  return compact;
+}
+
 function registerTools(server, user) {
   const userId = user._id;
 
@@ -70,13 +130,24 @@ function registerTools(server, user) {
     "echo_list_channels",
     {
       title: "List Echo channels",
-      description: "List public Echo channels and private channels the authenticated user belongs to.",
-      inputSchema: { includeArchived: z.boolean().optional().default(false) },
+      description: "List visible Echo channels in pages. Responses contain channel metadata and member counts, not full membership rosters.",
+      inputSchema: {
+        includeArchived: z.boolean().optional().default(false),
+        limit: z.number().int().min(1).max(MAX_PAGE_SIZE).optional().default(50),
+        offset: z.number().int().min(0).max(100000).optional().default(0),
+      },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    async ({ includeArchived }) => {
-      const channels = await listVisibleChannels(userId, includeArchived);
-      return textResult({ channels: channels.map((channel) => channel.toPublicJSON()) });
+    async ({ includeArchived, limit, offset }) => {
+      const channels = await listVisibleChannels(userId, includeArchived, { skip: offset, limit: limit + 1 });
+      const hasMore = channels.length > limit;
+      return textResult({
+        channels: channels.slice(0, limit).map(compactChannel),
+        offset,
+        limit,
+        hasMore,
+        nextOffset: hasMore ? offset + limit : null,
+      });
     }
   );
 
@@ -111,7 +182,7 @@ function registerTools(server, user) {
     },
     async (input) => {
       const result = await createChannel({ ...input, userId });
-      return result.error ? toolError(result.error) : textResult(result);
+      return result.error ? toolError(result.error) : textResult(compactChannelResult(result));
     }
   );
 
@@ -132,7 +203,7 @@ function registerTools(server, user) {
     },
     async ({ channel: channelKey, name, type, topic, description, readOnly }) => {
       const result = await updateChannel(channelKey, userId, { name, type, topic, description, readOnly });
-      return result.error ? toolError(result.error) : textResult(result);
+      return result.error ? toolError(result.error) : textResult(compactChannelResult(result));
     }
   );
 
@@ -151,7 +222,7 @@ function registerTools(server, user) {
         if (result.error === "remove all other members before deleting the channel") return toolError("Remove all other members before archiving the channel");
         return toolError("Channel not found or cannot be archived");
       }
-      return textResult({ ok: true, channel: result.channel });
+      return textResult({ ok: true, channel: compactChannel(result.channel) });
     }
   );
 
@@ -167,7 +238,7 @@ function registerTools(server, user) {
       const targetId = (await findUserByIdOrUsername(userKey))?._id;
       if (!targetId) return toolError("User not found");
       const result = await addChannelMember(channelKey, userId, targetId);
-      return result.error ? toolError(result.error) : textResult(result);
+      return result.error ? toolError(result.error) : textResult(compactChannelResult(result));
     }
   );
 
@@ -183,7 +254,7 @@ function registerTools(server, user) {
       const targetId = (await findUserByIdOrUsername(userKey))?._id;
       if (!targetId) return toolError("Member not found in channel");
       const result = await removeChannelMember(channelKey, userId, targetId);
-      return result.error ? toolError(result.error) : textResult(result);
+      return result.error ? toolError(result.error) : textResult(compactChannelResult(result));
     }
   );
 
@@ -199,7 +270,7 @@ function registerTools(server, user) {
       const targetId = (await findUserByIdOrUsername(userKey))?._id;
       if (!targetId) return toolError("Manager must be a channel member");
       const result = await promoteChannelManager(channelKey, userId, targetId);
-      return result.error ? toolError(result.error) : textResult(result);
+      return result.error ? toolError(result.error) : textResult(compactChannelResult(result));
     }
   );
 
@@ -212,10 +283,11 @@ function registerTools(server, user) {
         query: z.string().min(1).max(200),
         channel: z.string().max(64).optional(),
         limit: z.number().int().min(1).max(MAX_RESULTS).optional().default(20),
+        offset: z.number().int().min(0).max(100000).optional().default(0),
       },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    async ({ query, channel: channelKey, limit }) => {
+    async ({ query, channel: channelKey, limit, offset }) => {
       const visibleChannels = await findSearchableChannels({ userId, excludeArchived: true });
       let channels = visibleChannels;
       if (channelKey) {
@@ -224,14 +296,19 @@ function registerTools(server, user) {
         channels = [requested];
       }
       const terms = query.trim().split(/\s+/).filter(Boolean).slice(0, 10);
-      const docs = await searchMessages({ channelIds: channels.map((item) => item._id), terms, limit });
+      const docs = await searchMessages({ channelIds: channels.map((item) => item._id), terms, skip: offset, limit: limit + 1 });
       const channelNames = new Map(channels.map((item) => [item._id.toString(), item.name]));
+      const hasMore = docs.length > limit;
       return textResult({
         query,
-        results: docs.map((message) => ({
-          ...publicMessage(message),
+        results: docs.slice(0, limit).map((message) => ({
+          ...compactMessage(message),
           channelName: channelNames.get(message.channel.toString()) || null,
         })),
+        offset,
+        limit,
+        hasMore,
+        nextOffset: hasMore ? offset + limit : null,
       });
     }
   );
@@ -247,7 +324,7 @@ function registerTools(server, user) {
     async ({ channel: channelKey }) => {
       const result = await joinChannel(channelKey, userId);
       if (result.error) return toolError(result.error);
-      return textResult(result);
+      return textResult(compactChannelResult(result));
     }
   );
 
@@ -265,7 +342,7 @@ function registerTools(server, user) {
     async ({ channel: channelKey, managerId }) => {
       const result = await leaveChannel(channelKey, userId, managerId);
       if (result.error) return toolError(result.error);
-      return textResult(result);
+      return textResult(compactChannelResult(result));
     }
   );
 
@@ -292,7 +369,14 @@ function registerTools(server, user) {
         includeReplyStats: false,
       });
       if (!history) return toolError("Channel not found or access denied");
-      return textResult({ channel: channel.toPublicJSON(), messages: history.docs.reverse().map(publicMessage) });
+      const docs = history.docs.slice(0, limit);
+      const hasMore = history.docs.length > limit;
+      return textResult({
+        channel: compactChannel(channel),
+        messages: docs.reverse().map(compactMessage),
+        hasMore,
+        nextBefore: hasMore ? docs[0]?.createdAt || null : null,
+      });
     }
   );
 
@@ -366,7 +450,7 @@ function registerTools(server, user) {
         : targets.length === 1
           ? await ensureDmChannel(userId, targets[0])
           : await ensureGroupDmChannel(userId, targets);
-      return textResult({ channel: channel.toPublicJSON() });
+      return textResult({ channel: compactChannel(channel) });
     }
   );
 
@@ -388,13 +472,13 @@ function registerTools(server, user) {
     "echo_list_dms",
     {
       title: "List Echo direct messages",
-      description: "List direct-message and group-DM conversations visible to the authenticated user.",
+      description: "List direct-message and group-DM conversations visible to the authenticated user. Channel records are compact summaries.",
       inputSchema: {},
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
     async () => {
       const { channels } = await listDmConversations({ userId });
-      return textResult({ channels: channels.map((channel) => channel.toPublicJSON()) });
+      return textResult({ channels: channels.map(compactChannel) });
     }
   );
 
@@ -409,9 +493,15 @@ function registerTools(server, user) {
     async ({ channel: channelKey, messageId }) => {
       const found = await visibleMessage(channelKey, messageId, userId);
       if (!found) return toolError("Thread not found or access denied");
-      const thread = await getThreadMessages({ channelId: found.channel._id, messageId: found.message._id });
+      const thread = await getThreadMessages({ channelId: found.channel._id, messageId: found.message._id, limit: MAX_RESULTS + 1 });
       if (!thread) return toolError("Thread not found or access denied");
-      return textResult({ channel: found.channel.toPublicJSON(), root: publicMessage(thread.root), replies: thread.replies.map(publicMessage) });
+      const replies = thread.replies.slice(0, MAX_RESULTS);
+      return textResult({
+        channel: compactChannel(found.channel),
+        root: compactMessage(thread.root),
+        replies: replies.map(compactMessage),
+        hasMore: thread.replies.length > MAX_RESULTS,
+      });
     }
   );
 
@@ -477,7 +567,7 @@ function registerTools(server, user) {
     async ({ limit }) => {
       const result = await listSavedMessages({ userId, limit, excludeArchived: true });
       if (!result) return toolError("User not found");
-      return textResult({ messages: result.messages.map(publicMessage) });
+      return textResult({ messages: result.messages.map(compactMessage) });
     }
   );
 
@@ -492,8 +582,9 @@ function registerTools(server, user) {
     async ({ channel: channelKey }) => {
       const channel = await findVisibleChannel(channelKey, userId);
       if (!channel) return toolError("Channel not found or access denied");
-      const messages = await listPinnedMessages(channel._id);
-      return textResult({ channel: channel.toPublicJSON(), messages: messages.map(publicMessage) });
+      const messages = await listPinnedMessages(channel._id, MAX_RESULTS + 1);
+      const hasMore = messages.length > MAX_RESULTS;
+      return textResult({ channel: compactChannel(channel), messages: messages.slice(0, MAX_RESULTS).map(compactMessage), hasMore });
     }
   );
 
@@ -671,13 +762,23 @@ function registerTools(server, user) {
     "echo_list_users",
     {
       title: "List Echo users",
-      description: "List users in the Echo workspace.",
-      inputSchema: {},
+      description: "List Echo users in pages.",
+      inputSchema: {
+        limit: z.number().int().min(1).max(MAX_PAGE_SIZE).optional().default(50),
+        offset: z.number().int().min(0).max(100000).optional().default(0),
+      },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    async () => {
-      const users = await listDirectoryUsers({ limit: 500 });
-      return textResult({ users: users.map((item) => item.toPublicJSON()) });
+    async ({ limit, offset }) => {
+      const users = await listDirectoryUsers({ skip: offset, limit: limit + 1 });
+      const hasMore = users.length > limit;
+      return textResult({
+        users: users.slice(0, limit).map((item) => item.toPublicJSON()),
+        offset,
+        limit,
+        hasMore,
+        nextOffset: hasMore ? offset + limit : null,
+      });
     }
   );
 }
