@@ -72,17 +72,6 @@ function directionText(element) {
   return clone.textContent || "";
 }
 
-function quoteDirectionText(quote) {
-  const text = directionText(quote);
-  const firstText = quote?.querySelector("p")?.firstChild?.textContent || "";
-  const hebrewAttribution = /^מאת (.+):$/.exec(firstText);
-  // Keep an English author and body LTR instead of letting the generated
-  // Hebrew attribution "מאת" flip the whole quote.
-  return hebrewAttribution
-    ? `${hebrewAttribution[1]} ${text.slice(firstText.length)}`
-    : text;
-}
-
 function editorDirection(currentEditor) {
   let text = "";
   currentEditor.state.selection.$from.parent.descendants((node) => {
@@ -700,22 +689,16 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       // quote inside the RTL composer still positions its rule as RTL.
       const quotes = Array.from(currentEditor.view.dom.querySelectorAll("blockquote"));
       quotes.forEach((quote) => {
-        const quoteText = quoteDirectionText(quote);
+        const quoteText = directionText(quote);
         const direction = quoteContainerDirection(quoteText, fallback);
         if (quote.getAttribute("dir") !== direction) quote.setAttribute("dir", direction);
         if (quote.style.direction !== direction) quote.style.direction = direction;
-        const attribution = quote.querySelector("p");
-        if (attribution && /^מאת (.+):$/.test(attribution.firstChild?.textContent || "")) {
-          if (attribution.getAttribute("dir") !== direction) attribution.setAttribute("dir", direction);
-          if (direction === "ltr") attribution.style.textAlign = "left";
-          else attribution.style.removeProperty("text-align");
-        }
       });
       // Persist the quote-container direction on the editor root because
       // ProseMirror can replace child-node attributes during an update.
       const lastQuote = quotes.at(-1);
       if (lastQuote) {
-        currentEditor.view.dom.dataset.quoteDirection = quoteContainerDirection(quoteDirectionText(lastQuote), fallback);
+        currentEditor.view.dom.dataset.quoteDirection = quoteContainerDirection(directionText(lastQuote), fallback);
       } else {
         delete currentEditor.view.dom.dataset.quoteDirection;
       }
@@ -729,7 +712,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
         && !directionText(node).trim());
       if (quoteReply) {
         const direction = currentEditor.view.dom.dataset.quoteDirection
-          || firstStrongDirection(quoteDirectionText(quoteReply.previousElementSibling), fallback);
+          || firstStrongDirection(directionText(quoteReply.previousElementSibling), fallback);
         currentEditor.view.dom.dataset.quoteReplyDirection = direction;
       } else {
         delete currentEditor.view.dom.dataset.quoteReplyDirection;
