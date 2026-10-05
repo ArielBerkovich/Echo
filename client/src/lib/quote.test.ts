@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { buildQuoteMarkdown, neutralizeMentions } from "./quote.js";
+import { translations } from "./i18n.js";
 
 describe("neutralizeMentions", () => {
   it("breaks mention triggers without changing visible text", () => {
@@ -31,5 +32,14 @@ describe("buildQuoteMarkdown", () => {
         "",
       ].join("\n")
     );
+  });
+
+  it("uses a natural, gender-neutral Hebrew attribution in the Hebrew interface", () => {
+    const markdown = buildQuoteMarkdown({
+      author: { displayName: "דנה" },
+      body: "שלום @everyone",
+    }, translations.he.quoteAttribution);
+
+    assert.equal(markdown, "> מאת דנה:\n> שלום @\u2060everyone\n\n");
   });
 });
