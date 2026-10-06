@@ -9221,6 +9221,7 @@ html[dir="rtl"] .channel-details-person-handle {
   flex: 0 0 auto;
 }
 .presentation-preview {
+  position: relative;
   display: grid;
   min-height: 145px;
   place-items: center;
@@ -9228,6 +9229,9 @@ html[dir="rtl"] .channel-details-person-handle {
   background: #eef1f5;
   color: var(--muted);
   text-align: center;
+}
+.presentation-preview.is-clickable {
+  cursor: zoom-in;
 }
 .presentation-slide {
   width: 100%;
