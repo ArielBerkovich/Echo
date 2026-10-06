@@ -11951,7 +11951,7 @@ html[data-mode="dark"] .new-messages-button:hover {
   font-size: 11px;
 }
 .message .body {
-  font-size: 14.5px;
+  font-size: 16px;
   line-height: 1.5;
   color: #1e293b;
   word-break: break-word;
