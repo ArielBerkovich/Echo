@@ -10815,7 +10815,8 @@ html[dir="rtl"] .groups-create-modal .forward-destination-copy {
   .forward-note-field .composer-editor {
     min-height: 112px;
     max-height: 220px;
-    font-size: 17px;
+    font-size: 19px;
+    line-height: 1.55;
   }
 
   .forward-note-field .composer-actions {
@@ -10826,6 +10827,21 @@ html[dir="rtl"] .groups-create-modal .forward-destination-copy {
   .forward-source-card {
     padding: 18px 20px;
     border-radius: 14px;
+  }
+
+  .forward-note {
+    font-size: 18px;
+    line-height: 1.6;
+  }
+  .forwarded-label {
+    font-size: 15px;
+  }
+  .forwarded-card-origin {
+    font-size: 15px;
+  }
+  .forwarded-message-label {
+    font-size: 15px;
+    letter-spacing: 0.03em;
   }
 }
 /* Reaction pills */
