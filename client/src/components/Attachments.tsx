@@ -189,10 +189,10 @@ function Lightbox({ src, name, sender, onClose, inline = false }) {
               </button>
             </div>
             <span className="lightbox-toolbar-divider" aria-hidden="true" />
-            <button className="lb-tool" data-testid="lightbox-download" onClick={handleDownload} title="Download image" aria-label="Download image">
+            <button className="lb-tool" data-testid="lightbox-download" onClick={handleDownload} title={t("downloadImage")} aria-label={t("downloadImage")}>
               <DownloadIcon size={18} strokeWidth={2} />
             </button>
-            <button className="lb-tool lightbox-close" onClick={onClose} aria-label="Close image viewer" title="Close">
+            <button className="lb-tool lightbox-close" onClick={onClose} aria-label={t("closeImageViewer")} title={t("closeImageViewer")}>
               <XIcon size={19} strokeWidth={2.25} />
             </button>
           </div>
