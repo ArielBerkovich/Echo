@@ -15001,7 +15001,8 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   }
 
   .composer-editor {
-    font-size: 18px;
+    font-size: 19px;
+    line-height: 1.55;
   }
   .search-box-field input.search-input,
   .search-highlight {
@@ -15058,7 +15059,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     gap: 5px;
     padding-block: 10px;
     border-radius: 21px;
-    font-size: 12px;
+    font-size: 14px;
   }
   .rail-active-indicator {
     transition-duration: 420ms;
@@ -16845,7 +16846,12 @@ html[dir="rtl"] .channel-browser-members {
 
   .rail-item {
     min-height: 76px;
-    font-size: 13px;
+    font-size: 14px;
+  }
+
+  .composer-editor {
+    font-size: 20px;
+    line-height: 1.55;
   }
 
   .sidebar-search {
