@@ -13644,11 +13644,15 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
   }
 
   .new-message-search-selected {
+    height: auto !important;
+    flex: 0 0 auto;
     min-height: 54px;
     max-height: none;
     padding: 10px 0;
     gap: 10px;
-    overflow: visible;
+    overflow: visible !important;
+    align-items: flex-start;
+    align-content: flex-start;
   }
 
   .new-message-search-selected .new-message-recipient {
