@@ -47,6 +47,7 @@ const MIN_SCALE = 1;
 const MAX_SCALE = 4;
 
 function Lightbox({ src, name, sender, onClose, inline = false }) {
+  const { t } = useI18n();
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const dragging = useRef(false);
@@ -204,7 +205,6 @@ function Lightbox({ src, name, sender, onClose, inline = false }) {
 }
 
 function ImageAttachment({ a, onOpenLightbox, sender }) {
-  const { t } = useI18n();
   const src = useAuthUrl(a.url);
   const [open, setOpen] = useState(false);
   const [intrinsicSize, setIntrinsicSize] = useState(null);
