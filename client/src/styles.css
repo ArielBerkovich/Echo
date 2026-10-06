@@ -15032,6 +15032,22 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     font-size: 17px;
   }
 
+  .day-divider-label {
+    font-size: 15px;
+    padding: 5px 16px;
+  }
+  .system-msg {
+    padding-block: 6px;
+    font-size: 16px;
+  }
+  .system-time {
+    font-size: 13px;
+  }
+  .new-divider-label,
+  .older-loader {
+    font-size: 14px;
+  }
+
   /* Keep supporting conversation text readable alongside the enlarged
      message body on wide displays. */
   .pinned-item-meta,
