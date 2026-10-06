@@ -1287,18 +1287,18 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
         <div
           className={`composer-paste-prompt${pastePrompt.tooLarge ? " is-error" : ""}`}
           role="dialog"
-          aria-label="Paste options"
+          aria-label={t("pasteOptions")}
           data-testid="composer-paste-prompt"
         >
           <div className="composer-paste-content">
             <span className="composer-paste-icon" aria-hidden="true"><Paperclip size={18} strokeWidth={2} /></span>
             <div className="composer-paste-copy">
-              <strong>{pastePrompt.tooLarge ? "This paste can’t be attached." : pastePrompt.tooLong ? "Paste exceeds the message limit" : "Attach this paste as a file?"}</strong>
+              <strong>{pastePrompt.tooLarge ? t("pasteTooLargeTitle") : pastePrompt.tooLong ? t("pasteTooLongTitle") : t("attachPastePrompt")}</strong>
               {(pastePrompt.tooLarge || pastePrompt.tooLong) && (
                 <span>
                   {pastePrompt.tooLarge
-                    ? `${formatSize(pastePrompt.byteLength)} · Files are limited to 10 MB.`
-                    : `${pastePrompt.text.length.toLocaleString(interfaceLocale())} characters · Messages support up to ${MAX_MESSAGE_CHARACTERS.toLocaleString(interfaceLocale())}.`}
+                    ? `${formatSize(pastePrompt.byteLength)} · ${t("filesLimited")}`
+                    : `${pastePrompt.text.length.toLocaleString(interfaceLocale())} ${t("pasteCharacters")} · ${t("messagesSupportUpTo").replace("{count}", MAX_MESSAGE_CHARACTERS.toLocaleString(interfaceLocale()))}`}
                 </span>
               )}
             </div>
