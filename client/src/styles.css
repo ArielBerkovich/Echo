@@ -13528,8 +13528,11 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
   border: 0;
   background: transparent;
   box-shadow: none;
-  overflow-y: auto;
+  overflow-y: hidden;
   align-content: flex-start;
+}
+.new-message-search-selected.is-scrollable {
+  overflow-y: auto;
 }
 .new-message-add-input {
   flex: 1 1 110px;
@@ -13647,12 +13650,17 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
     height: auto !important;
     flex: 0 0 auto;
     min-height: 54px;
-    max-height: none;
+    max-height: 220px;
     padding: 10px 0;
     gap: 10px;
-    overflow: visible !important;
+    overflow-y: hidden !important;
+    overflow-x: visible;
     align-items: flex-start;
     align-content: flex-start;
+  }
+
+  .new-message-search-selected.is-scrollable {
+    overflow-y: auto !important;
   }
 
   .new-message-search-selected .new-message-recipient {

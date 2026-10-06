@@ -18,6 +18,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
   const [error, setError] = useState(null);
   const [focusComposerRequested, setFocusComposerRequested] = useState(false);
   const searchInputRef = useRef(null);
+  const selectedRecipientsRef = useRef(null);
   const composerRef = useRef(null);
   const prepareRequestRef = useRef(0);
   const draftChannel = {
@@ -41,6 +42,19 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
     });
     return () => cancelAnimationFrame(frame);
   }, [channel, focusComposerRequested, preparing]);
+
+  useEffect(() => {
+    const element = selectedRecipientsRef.current;
+    if (!element) return undefined;
+
+    const updateScrollState = () => {
+      element.classList.toggle("is-scrollable", element.scrollHeight > element.clientHeight + 1);
+    };
+    updateScrollState();
+    const observer = new ResizeObserver(updateScrollState);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [selected.length, query]);
 
   const matches = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -131,7 +145,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
         <div className="new-message-layout">
           <div className="new-message-picker">
             {selected.length ? (
-              <div className="new-message-search new-message-search-selected" data-testid="new-message-search">
+              <div ref={selectedRecipientsRef} className="new-message-search new-message-search-selected" data-testid="new-message-search">
                 {selected.map((user) => <span className="forward-chip new-message-recipient" data-testid="new-message-recipient" key={user.id}>
                   <span>{user.displayName}</span>
                   <button type="button" aria-label={`Remove ${user.displayName}`} onMouseDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); remove(user.id); }}>
