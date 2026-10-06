@@ -219,7 +219,7 @@ export default function ChannelBrowser({
                   type="button"
                   className="channel-browser-search-clear"
                   data-testid="channel-browser-search-clear"
-                  aria-label="Clear channel search"
+                  aria-label={t("clearChannelSearch")}
                   onClick={() => {
                     setQuery("");
                     setActionError("");

@@ -332,7 +332,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
             />
           </div>
 
-          <section className="forward-source-card" aria-label="Message being forwarded">
+          <section className="forward-source-card" aria-label={t("forwardedMessageLabel")}>
             <Message
               m={message}
               channelId={channelId}

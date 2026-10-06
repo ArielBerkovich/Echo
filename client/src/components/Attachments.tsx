@@ -449,7 +449,7 @@ function TextAttachment({ a }) {
   const preview = text?.slice(0, 1_600);
   const truncated = text != null && (!textComplete || text.length > 1_600);
   const language = languageForFilename(a.name);
-  const languageLabel = language === "plaintext" ? "Text" : language[0].toUpperCase() + language.slice(1);
+  const languageLabel = language === "plaintext" ? t("text") : language[0].toUpperCase() + language.slice(1);
   // Syntax highlighting is intentionally deferred until the full-screen
   // viewer is opened; attachment cards should stay cheap in long timelines.
   const highlightedText = open && text != null ? highlightFile(text, a.name) : null;

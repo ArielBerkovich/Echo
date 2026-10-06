@@ -102,7 +102,7 @@ function Message({
   const forwardedOrigin = m.forwardedFrom
     ? (m.forwardedFrom.channelType === "dm"
       ? t("inDirectMessage")
-      : t("inChannel").replace("{channel}", m.forwardedFrom.channelName || ""))
+      : t("inChannel").replace("{channel}", (m.forwardedFrom.channelName || "").replace(/^#/, "")))
     : "";
   // A forward is an immutable snapshot of the source message. Its sender may
   // delete their copy, but must not be able to alter the forwarded content.
