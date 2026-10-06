@@ -99,6 +99,11 @@ function Message({
   const { t, language } = useI18n();
   const direction = languageDirection(language);
   const isMine = m.author?.id === currentUserId;
+  const forwardedOrigin = m.forwardedFrom
+    ? (m.forwardedFrom.channelType === "dm"
+      ? t("inDirectMessage")
+      : t("inChannel").replace("{channel}", m.forwardedFrom.channelName || ""))
+    : "";
   // A forward is an immutable snapshot of the source message. Its sender may
   // delete their copy, but must not be able to alter the forwarded content.
   const canEdit = isMine && !m.forwardedFrom;
@@ -521,11 +526,11 @@ function Message({
               <div className="forwarded-label">
                 <ShareIcon />
                 <Avatar name={m.forwardedFrom.authorName || "unknown"} src={m.forwardedFrom.authorAvatarUrl || null} size={28} />
-                <span>
-                  <span className="forwarded-card-origin">
-                    <strong className="forwarded-original-author">{m.forwardedFrom.authorName}</strong> in {m.forwardedFrom.channelName}
+                  <span>
+                    <span className="forwarded-card-origin">
+                    <strong className="forwarded-original-author">{m.forwardedFrom.authorName}</strong> {forwardedOrigin}
+                    </span>
                   </span>
-                </span>
                 {m.forwardedFrom.messageId && (canJumpToForward?.(m.forwardedFrom) ? (
                   <button type="button" className="forwarded-link" onClick={(event) => { event.currentTarget.blur(); onJump?.(m.forwardedFrom); }}>
                     <span>{t("viewOriginal")}</span>
