@@ -9,10 +9,11 @@ export function findMessageInChannel({ channelId, messageId }: {
   return Message.findOne({ _id: messageId, channel: channelId }).populate("author");
 }
 
-export async function getThreadMessages({ channelId, messageId, resolveParent = true }: {
+export async function getThreadMessages({ channelId, messageId, resolveParent = true, limit = 50 }: {
   channelId: MessageQueryActor;
   messageId: MessageQueryActor;
   resolveParent?: boolean;
+  limit?: number;
 }) {
   const root = await Message.findOne({ _id: messageId, channel: channelId }).populate("author");
   if (!root) return null;
@@ -23,12 +24,14 @@ export async function getThreadMessages({ channelId, messageId, resolveParent = 
   if (!actualRoot) return null;
   const replies = await Message.find({ channel: channelId, parentId: threadRootId })
     .sort({ createdAt: 1 })
+    .limit(limit)
     .populate("author");
   return { root: actualRoot, replies };
 }
 
-export async function listPinnedMessages(channelId: MessageQueryActor) {
+export function listPinnedMessages(channelId: MessageQueryActor, limit = 50) {
   return Message.find({ channel: channelId, pinnedAt: { $ne: null } })
     .sort({ pinnedAt: 1 })
+    .limit(limit)
     .populate("author");
 }
