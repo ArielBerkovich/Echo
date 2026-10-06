@@ -800,7 +800,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   function handlePaste(e) {
     if (pastePrompt) {
       e.preventDefault();
-      setPasteBlockedNotice("Choose an option for the current paste before pasting more content.");
+      setPasteBlockedNotice(t("pasteBlockedBeforeMore"));
       return;
     }
     const images = Array.from(e.clipboardData?.items || [])
@@ -954,7 +954,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     if (e.key === "Enter" && editor) {
       if (pastePrompt) {
         e.preventDefault();
-        setPasteBlockedNotice("Choose an option above before sending this message.");
+        setPasteBlockedNotice(t("pasteBlockedBeforeSend"));
         return;
       }
       if (editor.isActive("codeBlock")) {
@@ -1172,7 +1172,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     }
     if (!showSend) return;
     if (pastePrompt) {
-      setPasteBlockedNotice("Choose an option above before sending this message.");
+      setPasteBlockedNotice(t("pasteBlockedBeforeSend"));
       return;
     }
     const hasContent = hasSendableContent(editor);
