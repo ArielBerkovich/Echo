@@ -178,12 +178,12 @@ function Lightbox({ src, name, sender, onClose, inline = false }) {
             </div>
           </div>
           <div className="lightbox-toolbar-actions">
-            <div className="lb-zoom-control" aria-label="Zoom controls">
-              <button className="lb-tool" onClick={() => changeScale(scale - 0.5)} disabled={scale <= MIN_SCALE} title="Zoom out" aria-label="Zoom out">
+            <div className="lb-zoom-control" aria-label={t("zoomControls")}>
+              <button className="lb-tool" onClick={() => changeScale(scale - 0.5)} disabled={scale <= MIN_SCALE} title={t("zoomOut")} aria-label={t("zoomOut")}>
                 <ZoomOutIcon size={17} strokeWidth={2} />
               </button>
               <span className="lb-zoom-label" data-testid="lightbox-zoom-label" aria-live="polite">{Math.round(scale * 100)}%</span>
-              <button className="lb-tool" onClick={() => changeScale(scale + 0.5)} disabled={scale >= MAX_SCALE} title="Zoom in" aria-label="Zoom in">
+              <button className="lb-tool" onClick={() => changeScale(scale + 0.5)} disabled={scale >= MAX_SCALE} title={t("zoomIn")} aria-label={t("zoomIn")}>
                 <ZoomInIcon size={17} strokeWidth={2} />
               </button>
             </div>
@@ -204,6 +204,7 @@ function Lightbox({ src, name, sender, onClose, inline = false }) {
 }
 
 function ImageAttachment({ a, onOpenLightbox, sender }) {
+  const { t } = useI18n();
   const src = useAuthUrl(a.url);
   const [open, setOpen] = useState(false);
   const [intrinsicSize, setIntrinsicSize] = useState(null);
