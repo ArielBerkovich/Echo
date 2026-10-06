@@ -57,7 +57,12 @@ export default function CreateChannelModal({ onCreate, onClose }) {
   });
 
   return (
-    <Modal title={t("createChannelDialogTitle")} onClose={onClose} onOpenAutoFocus={focusNameOnOpen}>
+    <Modal
+      title={t("createChannelDialogTitle")}
+      className="create-channel-modal"
+      onClose={onClose}
+      onOpenAutoFocus={focusNameOnOpen}
+    >
       <form data-testid="create-channel-modal" onSubmit={submit}>
         <label className="field">
           <span className="field-label">{t("channelName")}</span>

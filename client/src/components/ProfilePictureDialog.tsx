@@ -4,7 +4,8 @@ import Modal, { ModalActions } from "./Modal.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
 import { useI18n } from "../lib/i18n.js";
 
-const PREVIEW_SIZE = 280;
+const DEFAULT_PREVIEW_SIZE = 280;
+const LARGE_PREVIEW_SIZE = 420;
 const OUTPUT_SIZE = 512;
 
 function clamp(value, min, max) {
@@ -22,8 +23,20 @@ export default function ProfilePictureDialog({ file = null, currentSrc = null, o
   const [dragging, setDragging] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [previewSize, setPreviewSize] = useState(() => (
+    window.matchMedia("(min-width: 1600px) and (min-height: 900px)").matches
+      ? LARGE_PREVIEW_SIZE
+      : DEFAULT_PREVIEW_SIZE
+  ));
   const currentImageUrl = useAuthUrl(currentSrc);
   const sourceUrl = file ? imageUrl : currentImageUrl;
+
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 1600px) and (min-height: 900px)");
+    const updatePreviewSize = () => setPreviewSize(media.matches ? LARGE_PREVIEW_SIZE : DEFAULT_PREVIEW_SIZE);
+    media.addEventListener?.("change", updatePreviewSize);
+    return () => media.removeEventListener?.("change", updatePreviewSize);
+  }, []);
 
   function importFile(event) {
     const nextFile = event.target.files?.[0];
@@ -43,19 +56,19 @@ export default function ProfilePictureDialog({ file = null, currentSrc = null, o
   }, [file]);
 
   const baseScale = imageSize
-    ? Math.min(PREVIEW_SIZE / imageSize.width, PREVIEW_SIZE / imageSize.height)
+    ? Math.min(previewSize / imageSize.width, previewSize / imageSize.height)
     : 1;
   const scale = imageSize
     ? baseScale * zoom
     : 1;
-  const displayWidth = (imageSize?.width || PREVIEW_SIZE) * scale;
-  const displayHeight = (imageSize?.height || PREVIEW_SIZE) * scale;
+  const displayWidth = (imageSize?.width || previewSize) * scale;
+  const displayHeight = (imageSize?.height || previewSize) * scale;
   const hasCropChanges = zoom !== 1 || offset.x !== 0 || offset.y !== 0;
   const canSave = !!imageSize && (file || hasCropChanges) && !saving;
 
   function limitOffset(next, nextScale = scale) {
-    const maxX = Math.max(0, (imageSize.width * nextScale - PREVIEW_SIZE) / 2);
-    const maxY = Math.max(0, (imageSize.height * nextScale - PREVIEW_SIZE) / 2);
+    const maxX = Math.max(0, (imageSize.width * nextScale - previewSize) / 2);
+    const maxY = Math.max(0, (imageSize.height * nextScale - previewSize) / 2);
     return {
       x: clamp(next.x, -maxX, maxX),
       y: clamp(next.y, -maxY, maxY),
@@ -129,7 +142,7 @@ export default function ProfilePictureDialog({ file = null, currentSrc = null, o
       const context = canvas.getContext("2d");
       context.fillStyle = "#111827";
       context.fillRect(0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
-      const outputScale = OUTPUT_SIZE / PREVIEW_SIZE;
+      const outputScale = OUTPUT_SIZE / previewSize;
       const outputWidth = displayWidth * outputScale;
       const outputHeight = displayHeight * outputScale;
       context.drawImage(
@@ -150,7 +163,13 @@ export default function ProfilePictureDialog({ file = null, currentSrc = null, o
   }
 
   return (
-    <Modal title={t("updateProfilePicture")} onClose={onClose} closeDisabled={saving} testId="profile-picture-dialog">
+    <Modal
+      title={t("updateProfilePicture")}
+      className="profile-picture-modal"
+      onClose={onClose}
+      closeDisabled={saving}
+      testId="profile-picture-dialog"
+    >
       <input ref={fileRef} type="file" accept="image/*" hidden data-testid="profile-picture-import-input" onChange={importFile} />
       <div
         className={`profile-picture-crop${dragging ? " dragging" : ""}`}

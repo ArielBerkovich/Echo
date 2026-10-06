@@ -211,6 +211,7 @@ export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroup
           message={t("signOutMessage")}
           confirmLabel={t("signOut")}
           danger
+          className="sign-out-confirm-modal"
           onCancel={() => setLogoutConfirmOpen(false)}
           onConfirm={() => {
             setLogoutConfirmOpen(false);
