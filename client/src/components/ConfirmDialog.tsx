@@ -10,12 +10,13 @@ export default function ConfirmDialog({
   confirmLabel,
   cancelLabel,
   danger = false,
+  className = "",
   onConfirm,
   onCancel,
 }) {
   const { t } = useI18n();
   return (
-    <Modal title={title} className="confirm-modal" onClose={onCancel}>
+    <Modal title={title} className={`confirm-modal${className ? ` ${className}` : ""}`} onClose={onCancel}>
       {message && <p className="settings-hint">{message}</p>}
       <ModalActions>
         <Button variant="secondary" onClick={onCancel}>

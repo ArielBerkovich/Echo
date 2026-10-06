@@ -574,7 +574,7 @@ const ChannelView = forwardRef(function ChannelView({
     window.requestAnimationFrame(() => {
       api.getFiles(channel.id)
         .then(({ files }) => setFiles(files || []))
-        .catch((error) => setFilesError(error.message || "Couldn't load files."))
+        .catch((error) => setFilesError(error.message || t("couldNotLoadFiles")))
         .finally(() => setFilesLoading(false));
     });
   }
@@ -971,7 +971,7 @@ const ChannelView = forwardRef(function ChannelView({
         .getMessages(channel.id, { around: jumpMessageId })
         .then(({ messages: windowed }) => {
           if (!windowed.some((message) => message.id === jumpMessageId)) {
-            setError("Couldn't locate that message.");
+            setError(t("couldNotLocateMessage"));
             onJumpConsumed?.();
             jumpingRef.current = false;
             return;
@@ -980,7 +980,7 @@ const ChannelView = forwardRef(function ChannelView({
           onCacheMessages?.(channel.id, windowed);
         })
         .catch(() => {
-          setError("Couldn't load that message.");
+          setError(t("couldNotLoadMessage"));
           onJumpConsumed?.();
           jumpingRef.current = false;
         });
@@ -999,7 +999,7 @@ const ChannelView = forwardRef(function ChannelView({
           onJumpConsumed?.();
           settleJump();
         } else {
-          setError("Couldn't locate that message.");
+          setError(t("couldNotLocateMessage"));
           onJumpConsumed?.();
           jumpingRef.current = false;
         }
@@ -1375,7 +1375,7 @@ const ChannelView = forwardRef(function ChannelView({
             aria-label={newMessageCount > 0
               ? `Scroll to latest, ${newMessageCount} new ${newMessageCount === 1 ? "message" : "messages"}`
               : "Scroll to latest message"}
-            title={newMessageCount > 0 ? "View new messages" : "Jump to latest"}
+            title={newMessageCount > 0 ? t("viewNewMessages") : t("jumpToLatest")}
           >
             {newMessageCount > 0 && (
               <span className="new-messages-count" data-testid="new-messages-count" aria-hidden="true">
@@ -1575,9 +1575,9 @@ const ChannelView = forwardRef(function ChannelView({
 
       {confirmDelete && (
         <ConfirmDialog
-          title="Delete message?"
-          message="This message will be permanently removed. This can't be undone."
-          confirmLabel="Delete"
+          title={t("deleteMessageQuestion")}
+          message={t("deleteMessageConfirm")}
+          confirmLabel={t("delete")}
           danger
           onConfirm={confirmDeleteMessage}
           onCancel={() => setConfirmDelete(null)}

@@ -65,10 +65,11 @@ function Preview({ body, customEmojis }) {
 
 // An avatar with a presence dot in the corner (green = online, grey = offline).
 function PresenceAvatar({ name, src, size, online, showPresence = true }) {
+  const { t } = useI18n();
   return (
     <span className="avatar-wrap">
       <Avatar name={name} src={src} size={size} />
-      {showPresence && <span className={`presence-dot ${online ? "online" : "offline"}`} title={online ? "Online" : "Offline"} />}
+      {showPresence && <span className={`presence-dot ${online ? "online" : "offline"}`} title={online ? t("online") : t("offline")} />}
     </span>
   );
 }

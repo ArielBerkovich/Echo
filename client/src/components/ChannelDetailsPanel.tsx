@@ -180,11 +180,11 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
             </div>
           </div>
           <Dialog.Close asChild>
-            <CloseButton size="sm" label="Close channel details" />
+            <CloseButton size="sm" label={t("closeChannelDetails")} />
           </Dialog.Close>
         </header>
 
-        <nav className="channel-details-tabs" role="tablist" aria-label="Channel details sections">
+        <nav className="channel-details-tabs" role="tablist" aria-label={t("channelDetailsSections")}>
           {tabs.map(([tab, label]) => (
             <button
               type="button"
@@ -334,7 +334,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
               />
             </InputShell>
 
-            <div className="channel-details-managers" data-testid="channel-details-managers" aria-label="Channel managers">
+            <div className="channel-details-managers" data-testid="channel-details-managers" aria-label={t("channelManagers")}>
               <span className="channel-details-managers-label">{t("managers")}</span>
               {managerMembers.length > 0 ? (
                 managerMembers.map((manager) => (

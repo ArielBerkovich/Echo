@@ -81,7 +81,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
       id: channel.id,
       kind: "channel",
       label: channel.name,
-      handle: channel.type === "private" ? "Private channel" : "Public channel",
+      handle: channel.type === "private" ? t("privateChannel") : t("mentionPublicChannel"),
       icon: channel.type === "private" ? "🔒" : "#",
       }));
     const dmItems = uniqueById(dms)
@@ -106,7 +106,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
       .map((user) => ({
         id: user.id,
         kind: "user",
-        label: user.displayName || user.username || "Person",
+        label: user.displayName || user.username || t("person"),
         handle: `@${user.username}`,
         avatarUrl: user.avatarUrl || null,
         username: user.username,
@@ -199,7 +199,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
       onClose();
     } catch (err) {
       setStatus("error");
-      setError(err?.message || "Could not forward message");
+      setError(err?.message || t("couldNotForwardMessage"));
     }
   }
 
@@ -332,7 +332,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
             />
           </div>
 
-          <section className="forward-source-card" aria-label="Message being forwarded">
+          <section className="forward-source-card" aria-label={t("forwardedMessageLabel")}>
             <Message
               m={message}
               channelId={channelId}

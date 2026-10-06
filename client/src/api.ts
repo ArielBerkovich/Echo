@@ -87,11 +87,12 @@ function unreachableError() {
 }
 
 function friendlyErrorMessage(status, serverMessage, path, errorLabel) {
+  const language = readString("echo.language") === "he" ? "he" : "en";
   if (status >= 500) {
     if (path === "/auth/login") return "We couldn't sign you in right now. Please try again in a moment.";
     if (path === "/auth/register") return "We couldn't create your account right now. Please try again in a moment.";
     if (path.startsWith("/integrations/allure")) return serverMessage || "Allure could not be reached. Check the service URL and credentials.";
-    return "Something went wrong on our end. Please try again in a moment.";
+    return translations[language].genericError;
   }
   if (status === 401) {
     if (path.startsWith("/auth/migration")) {
@@ -102,7 +103,6 @@ function friendlyErrorMessage(status, serverMessage, path, errorLabel) {
       : "Your session may have expired. Please sign in again.";
   }
   if (status === 403) {
-    const language = readString("echo.language") === "he" ? "he" : "en";
     return translations[language].permissionDenied;
   }
   if (status === 404) return "We couldn't find what you were looking for.";
