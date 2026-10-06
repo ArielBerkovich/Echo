@@ -167,21 +167,6 @@ function registerTools(server, user) {
   );
 
   server.registerTool(
-    "echo_get_channel_id",
-    {
-      title: "Get an Echo channel ID",
-      description: "Get the ID of a visible Echo channel by its name or existing ID.",
-      inputSchema: { channel: z.string().min(1).max(64) },
-      annotations: { readOnlyHint: true, openWorldHint: false },
-    },
-    async ({ channel: channelKey }) => {
-      const channel = await findVisibleChannel(channelKey, userId);
-      if (!channel) return toolError("Channel not found or access denied");
-      return textResult({ channelId: channel._id.toString() });
-    }
-  );
-
-  server.registerTool(
     "echo_create_channel",
     {
       title: "Create an Echo channel",
