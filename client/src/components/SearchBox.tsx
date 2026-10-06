@@ -677,7 +677,7 @@ const SearchBox = forwardRef(function SearchBox(
                 <>
                   <div className="search-hint" data-testid="search-hint">
                     {t("searchHint")} <code>in:channel</code>,{" "}
-                    <code>from:@user</code>, and <code>has:file</code>.
+                    <code>from:@user</code>, {t("and")} <code>has:file</code>.
                   </div>
                   {matchingQuickActions.length > 0 && (
                     <>

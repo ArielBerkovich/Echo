@@ -106,7 +106,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
       .map((user) => ({
         id: user.id,
         kind: "user",
-        label: user.displayName || user.username || "Person",
+        label: user.displayName || user.username || t("person"),
         handle: `@${user.username}`,
         avatarUrl: user.avatarUrl || null,
         username: user.username,
@@ -199,7 +199,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
       onClose();
     } catch (err) {
       setStatus("error");
-      setError(err?.message || "Could not forward message");
+      setError(err?.message || t("couldNotForwardMessage"));
     }
   }
 

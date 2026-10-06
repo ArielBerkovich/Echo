@@ -803,7 +803,7 @@ export default function App() {
     let cancelled = false;
     setProfileUser(null);
     applyRouteLocation(currentRoute(location), channels, dms).catch(() => {
-      if (!cancelled) setToast("That Echo location is no longer available.");
+      if (!cancelled) setToast(t("locationUnavailable"));
     });
     return () => void (cancelled = true);
   }, [location.key]);
@@ -1151,7 +1151,7 @@ export default function App() {
       if (picked?.type === "public") cacheCatalogChannels([picked]);
     }
     if (picked) handlePickChannel(picked);
-    else setToast("That channel is no longer available.");
+    else setToast(t("channelUnavailable"));
   }
 
   async function handleJoinChannel(channel) {
@@ -1179,7 +1179,7 @@ export default function App() {
   function handlePickDm(picked) {
     const conversation = dms.find((candidate) => candidate.id === picked.id);
     if (!conversation) {
-      setToast("That conversation is no longer available.");
+      setToast(t("conversationUnavailable"));
       return;
     }
     markNavDuringRestore();
@@ -1258,7 +1258,7 @@ export default function App() {
         opened = true;
       }
     }
-    if (!opened) setToast("You don't have access to that conversation.");
+    if (!opened) setToast(t("conversationAccessDenied"));
 
     if (opened && threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
     if (opened && messageId && !threadId) setJumpMessageId(messageId);
@@ -1328,13 +1328,13 @@ export default function App() {
           if (threadId) setOpenThreadReq({ channelId, rootId: threadId, messageId });
           return;
         }
-        setToast("You don't have access to that conversation.");
+        setToast(t("conversationAccessDenied"));
         return;
       }
 
       if (channelType === "dm") {
         const conv = dms.find((d) => d.id === channelId);
-        if (!conv) return setToast("This was forwarded from a direct message you're not part of.");
+        if (!conv) return setToast(t("forwardedDirectMessageUnavailable"));
         const activeDm = activeDmFromConversation(conv);
         setActiveChannel(activeDm);
         setView("dms", activeDm, { messageId, threadId });
@@ -1346,7 +1346,7 @@ export default function App() {
       // Public channels are browsable; private channels only if you're a member.
       const channel = resolveJumpChannel({ channelId, channelType, channelName });
       if (!channel) {
-        return setToast("You don't have access to the channel this message was forwarded from.");
+        return setToast(t("forwardedChannelAccessDenied"));
       }
       setActiveChannel(channel);
       setView("home", channel, { messageId, threadId });

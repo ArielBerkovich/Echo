@@ -1668,7 +1668,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                   <span className="pending-file-meta">{formatSize(a.size)}</span>
                 </div>
               )}
-              <button type="button" className="chip-remove pending-remove" title="Remove" onClick={() => removePending(a.key)}>
+              <button type="button" className="chip-remove pending-remove" title={t("remove")} onClick={() => removePending(a.key)}>
                 <X size={13} strokeWidth={2.4} aria-hidden="true" />
               </button>
             </div>
@@ -1857,7 +1857,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
             onMouseDown={keepFocus}
             disabled={sendDisabled || ((!canSend && pending.length === 0 && !pastePrompt) && !allowEmptySend) || uploading}
             aria-label={sendAriaLabel || (editing ? t("saveEdit") : t("sendMessage"))}
-            title={pastePrompt ? "Choose how to handle the pasted content first" : sendTitle || (editing ? t("saveEdit") : t("sendMessage"))}
+            title={pastePrompt ? t("pasteHandlingHint") : sendTitle || (editing ? t("saveEdit") : t("sendMessage"))}
           >
             <SendIcon />
           </button>}

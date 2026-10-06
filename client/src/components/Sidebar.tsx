@@ -68,7 +68,7 @@ function PresenceAvatar({ name, src, size, online, showPresence = true }) {
   return (
     <span className="avatar-wrap">
       <Avatar name={name} src={src} size={size} />
-      {showPresence && <span className={`presence-dot ${online ? "online" : "offline"}`} title={online ? "Online" : "Offline"} />}
+      {showPresence && <span className={`presence-dot ${online ? "online" : "offline"}`} title={online ? t("online") : t("offline")} />}
     </span>
   );
 }

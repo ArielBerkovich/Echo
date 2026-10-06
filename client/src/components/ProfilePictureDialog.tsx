@@ -153,11 +153,11 @@ export default function ProfilePictureDialog({ file = null, currentSrc = null, o
         outputHeight
       );
       const cropped = await new Promise((resolve, reject) => {
-        canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Could not crop image"))), "image/jpeg", 0.9);
+        canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error(t("cropImageFailed")))), "image/jpeg", 0.9);
       });
       await onSave(new File([cropped], "profile-picture.jpg", { type: "image/jpeg" }));
     } catch (saveError) {
-      setError(saveError.message || "Could not save profile picture");
+      setError(saveError.message || t("saveProfilePictureFailed"));
       setSaving(false);
     }
   }

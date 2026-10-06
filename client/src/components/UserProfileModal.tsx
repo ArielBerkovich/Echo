@@ -25,7 +25,7 @@ export default function UserProfileModal({ user, currentUserId, online, isStarre
         <Avatar name={user.displayName} src={user.avatarUrl} size={96} />
         <div className="profile-name" dir="auto">{user.displayName}</div>
         <div className="profile-handle">@{user.username}</div>
-        {isDirectoryOnly ? <div className="profile-directory-source">Managed in RHSSO</div> : !(["azure", "system"].includes(user.username)) && (
+        {isDirectoryOnly ? <div className="profile-directory-source">{t("managedInRhssO")}</div> : !(["azure", "system"].includes(user.username)) && (
           <div className={`profile-presence ${online ? "online" : ""}`} data-testid="profile-presence">
             <span className="profile-dot" />
             {online ? t("online") : t("offline")}

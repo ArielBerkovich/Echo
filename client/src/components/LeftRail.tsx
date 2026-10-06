@@ -166,7 +166,7 @@ export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroup
           >
             <span className="avatar-wrap rail-account-avatar">
               <Avatar name={user.displayName} src={user.avatarUrl} size={48} />
-              <span className="presence-dot online" title="Active" aria-label="Active" />
+              <span className="presence-dot online" title={t("active")} aria-label={t("active")} />
             </span>
           </button>
           <button

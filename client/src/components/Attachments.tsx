@@ -172,9 +172,9 @@ function Lightbox({ src, name, sender, onClose, inline = false }) {
         </div>
         <div className="lightbox-toolbar" onClick={(e) => e.stopPropagation()}>
           <div className="lightbox-sender">
-            <Avatar name={sender?.displayName || "Unknown sender"} src={sender?.avatarUrl} size={32} />
+            <Avatar name={sender?.displayName || t("unknownSender")} src={sender?.avatarUrl} size={32} />
             <div className="lightbox-sender-copy">
-              <strong>{sender?.displayName || "Unknown sender"}</strong>
+              <strong>{sender?.displayName || t("unknownSender")}</strong>
               <span className="lightbox-title">{name}</span>
             </div>
           </div>
@@ -530,8 +530,8 @@ function TextAttachment({ a }) {
                   className="text-viewer-download"
                   data-testid="text-viewer-download"
                   onClick={download}
-                  title="Download file"
-                  aria-label="Download file"
+                  title={t("downloadFile")}
+                  aria-label={t("downloadFile")}
                 >
                   <DownloadIcon size={18} strokeWidth={2} aria-hidden="true" />
                 </button>

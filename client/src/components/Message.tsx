@@ -332,7 +332,7 @@ function Message({
       api.listGroups().then(({ groups = [] }) => {
         const exists = groups.some((group) => String(group.id) === String(groupRef.id));
         if (!exists) {
-          onToast?.({ message: "This group is no longer available. It may have been deleted.", tone: "error" });
+          onToast?.({ message: t("groupUnavailableError"), tone: "error" });
           return;
         }
         onOpenGroup?.(groupRef);
@@ -424,7 +424,7 @@ function Message({
       data-mid={m.id}
       data-testid={`message-${mid}`}
       tabIndex={0}
-      aria-label={`Message from ${m.author?.displayName || "unknown sender"}`}
+              aria-label={`${t("messageFrom")} ${m.author?.displayName || t("unknownSender")}`}
       onFocus={activateMessage}
       onKeyDown={(event) => {
         if (event.currentTarget !== event.target || event.key !== "Enter" || !actionsVisible) return;
@@ -456,7 +456,7 @@ function Message({
             type="button"
             className="avatar-btn"
             data-testid={`message-${mid}-avatar`}
-            title="View profile"
+            title={t("viewProfile")}
             onClick={() => m.author?.id && onOpenProfile?.(m.author.id)}
           >
             <Avatar name={author?.displayName || "?"} src={author?.avatarUrl} size={36} />
@@ -615,7 +615,7 @@ function Message({
         {(m.reactions?.length > 0 || (!inThread && m.replyCount > 0)) && (
           <div className="message-engagement">
             {m.reactions?.length > 0 && (
-              <div className="reactions" aria-label="Message reactions">
+              <div className="reactions" aria-label={t("messageReactions")}>
                 {m.reactions.map((r) => {
                   const mine = r.users.includes(currentUserId);
                   const tip = reactionTip(r.users, usersById, currentUserId, r.emoji, t);
@@ -625,7 +625,7 @@ function Message({
                       key={r.emoji}
                       className={`reaction ${mine ? "mine" : ""}`}
                       data-testid={`message-${mid}-reaction-${String(r.emoji).replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`}
-                      aria-label={`${tip}. ${mine ? "Remove" : "Add"} this reaction`}
+                      aria-label={`${tip}. ${mine ? t("remove") : t("add")} this reaction`}
                       aria-pressed={mine}
                       disabled={!canInteract}
                       onClick={() => canInteract && onToggleReaction?.(r.emoji)}
