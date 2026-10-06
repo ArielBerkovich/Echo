@@ -6,6 +6,7 @@ import { notificationPreview, notificationsActive, showNotification } from "./no
 import { playIncomingMessageSound } from "./messageSounds.js";
 import { queryKeys } from "./queryClient.js";
 import { appendReplyParticipant } from "./replyParticipants.js";
+import { useI18n } from "./i18n.js";
 
 // Owns the real-time layer: socket listeners (message:new, activity:bump,
 // reconnect, emoji:new, user:new, presence), the live Activity-badge counts,
@@ -33,6 +34,7 @@ export function useRealtime({
   onAuthInvalid,
 }) {
   const queryClient = useQueryClient();
+  const { t } = useI18n();
   // Activity badge counts follow server acknowledgments of visible sources.
   const [activityUnread, setActivityUnread] = useState({});
   const [activityThreadUnread, setActivityThreadUnread] = useState({});
@@ -391,12 +393,12 @@ export function useRealtime({
       if (!mine && msg.kind !== "system" && shouldNotify && notificationsActive()) {
         const focusedHere = !!active && msg.channelId === active.id && document.hasFocus();
         if (!focusedHere) {
-          const sender = msg.author?.displayName || "Someone";
-          const preview = notificationPreview(msg.body) || "Sent an attachment";
+          const sender = msg.author?.displayName || t("unknownSender");
+          const preview = notificationPreview(msg.body) || t("sentAttachment");
           if (inDms) {
             const dm = dmsRef.current.find((d) => d.id === msg.channelId);
             const starred = dm && starredRef.current.has(dm.withUser.id);
-            notificationShown = showNotification(starred ? `⭐ ${sender} · Starred message` : `Message from ${sender}`, {
+            notificationShown = showNotification(starred ? `⭐ ${sender} · ${t("starredMessage")}` : `${t("messageFrom")} ${sender}`, {
               body: preview,
               tag: msg.channelId,
               onClick: () => {
@@ -410,7 +412,7 @@ export function useRealtime({
             }) || notificationShown;
           } else if (inChannels) {
             const ch = channelsRef.current.find((c) => c.id === msg.channelId);
-            notificationShown = showNotification(`Mention from ${sender}`, {
+            notificationShown = showNotification(`${t("mentionFrom")} ${sender}`, {
               body: `${ch?.name ? `#${ch.name} · ` : ""}${preview}`,
               tag: msg.channelId,
               onClick: () => {
@@ -459,7 +461,7 @@ export function useRealtime({
       socket.off("activity:bump", onActivityBump);
       socket.off("channel:catalog", onActivityBump);
     };
-  }, [user]);
+  }, [user, t]);
 
   const activityBadge =
     Object.values(activityUnread).reduce((s, n) => s + n, 0) +

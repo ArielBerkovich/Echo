@@ -86,7 +86,11 @@ export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
   }
 
   return (
-    <Modal title={isGroupDm ? t("addPeopleToGroupConversation") : t("addPeopleToChannel").replace("{channel}", `${channel.type === "private" ? "🔒" : "#"} ${channel.name}`)} onClose={onClose}>
+    <Modal
+      title={isGroupDm ? t("addPeopleToGroupConversation") : t("addPeopleToChannel").replace("{channel}", `${channel.type === "private" ? "🔒" : "#"} ${channel.name}`)}
+      className="add-people-modal"
+      onClose={onClose}
+    >
       <div data-testid="add-people-modal">
         {isGroupDm && memberIds.size >= 10 ? (
           <div className="people-empty">{t("groupConversationLimit")}</div>

@@ -238,7 +238,7 @@ html[data-mode="dark"] {
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 10px 28px rgba(0, 0, 0, 0.55);
   --shadow-lg: 0 24px 56px rgba(0, 0, 0, 0.6);
-  --lightbox-bg: #242424;
+  --lightbox-bg: #30343d;
   --lightbox-shadow: 0 18px 52px rgba(0, 0, 0, 0.55);
 }
 
@@ -805,7 +805,7 @@ input {
   border: 1.5px solid var(--border);
   background: var(--surface);
   color: var(--text);
-  font-size: 14px;
+  font-size: 16px;
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 input:focus {
@@ -2014,6 +2014,51 @@ html[dir="rtl"] .retro-item-link {
   border: 1px solid #fecdd3;
   font-weight: 600;
 }
+@media (min-width: 1600px) and (min-height: 900px) {
+  .modal.backend-connection-modal {
+    width: min(680px, calc(100vw - 64px));
+    max-width: 680px;
+    padding: 44px;
+    border-radius: 20px;
+  }
+
+  .backend-connection-modal .modal-header {
+    margin-bottom: 28px;
+  }
+
+  .backend-connection-modal .modal-header h2 {
+    font-size: 28px;
+  }
+
+  .backend-connection-modal > p {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  .backend-connection-modal .backend-connection-field {
+    gap: 10px;
+    margin: 24px 0 18px;
+    font-size: 15px;
+  }
+
+  .backend-connection-modal .backend-connection-field .settings-input {
+    min-height: 60px;
+    padding-inline: 18px;
+    font-size: 17px;
+  }
+
+  .backend-connection-modal .modal-actions {
+    margin-top: 30px;
+    gap: 12px;
+  }
+
+  .backend-connection-modal .modal-actions > button {
+    min-height: 48px;
+    padding-inline: 22px;
+    font-size: 15px;
+  }
+}
 html[data-mode="dark"] .backend-connection-error {
   color: #ffe4e6;
   background: #4c0519;
@@ -2292,6 +2337,131 @@ html[data-mode="dark"] .backend-connection-error {
   max-width: 420px;
 }
 
+/* Give the sign-out confirmation more breathing room on large screens while
+   keeping the shared confirmation layout unchanged elsewhere. */
+@media (min-width: 1600px) and (min-height: 900px) {
+  .modal.sign-out-confirm-modal {
+    width: min(600px, calc(100vw - 64px));
+    max-width: 600px;
+    padding: 40px;
+    border-radius: 20px;
+  }
+
+  .sign-out-confirm-modal .modal-header {
+    margin-bottom: 28px;
+  }
+
+  .sign-out-confirm-modal .modal-header h2 {
+    font-size: 26px;
+  }
+
+  .sign-out-confirm-modal .settings-hint {
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.6;
+  }
+
+  .sign-out-confirm-modal .modal-actions {
+    margin-top: 30px;
+    gap: 12px;
+  }
+
+  .sign-out-confirm-modal .modal-actions > button {
+    min-height: 48px;
+    padding-inline: 22px;
+    font-size: 15px;
+  }
+}
+
+/* Give the Create channel flow more room on large screens while preserving
+   its familiar vertical name -> visibility -> options layout. */
+@media (min-width: 1600px) and (min-height: 900px) {
+  .modal.create-channel-modal {
+    width: min(860px, calc(100vw - 64px));
+    max-width: 860px;
+    padding: 48px;
+    border-radius: 20px;
+  }
+
+  .create-channel-modal .modal-header {
+    margin-bottom: 28px;
+  }
+
+  .create-channel-modal .modal-header h2 {
+    font-size: 28px;
+  }
+
+  .create-channel-modal .field {
+    margin-bottom: 24px;
+  }
+
+  .create-channel-modal .field-label {
+    margin-bottom: 9px;
+    font-size: 15px;
+  }
+
+  .create-channel-modal .name-input {
+    min-height: 60px;
+    padding-inline: 18px;
+    border-radius: 12px;
+  }
+
+  .create-channel-modal .name-input input {
+    padding-block: 17px;
+    font-size: 17px;
+  }
+
+  .create-channel-modal .visibility {
+    gap: 12px;
+  }
+
+  .create-channel-modal .visibility-option {
+    gap: 14px;
+    padding: 20px;
+    border-radius: 16px;
+  }
+
+  .create-channel-modal .vo-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 11px;
+  }
+
+  .create-channel-modal .vo-title {
+    font-size: 17px;
+  }
+
+  .create-channel-modal .vo-desc {
+    margin-top: 5px;
+    font-size: 15px;
+  }
+
+  .create-channel-modal .vo-check {
+    width: 26px;
+    height: 26px;
+  }
+
+  .create-channel-modal .channel-advanced-panel {
+    gap: 12px;
+    padding-bottom: 18px;
+  }
+
+  .create-channel-modal .channel-advanced-hint {
+    font-size: 12px;
+  }
+
+  .create-channel-modal .modal-actions {
+    margin-top: 28px;
+    gap: 12px;
+  }
+
+  .create-channel-modal .modal-actions > button {
+    min-height: 48px;
+    padding-inline: 22px;
+    font-size: 15px;
+  }
+}
+
 /* Clickable author name + avatar (open profile) */
 .avatar-btn {
   background: none;
@@ -2432,6 +2602,65 @@ html[data-mode="dark"] .backend-connection-error {
   background: color-mix(in srgb, var(--accent) 10%, var(--surface-2));
   transform: translateY(-2px) rotate(-4deg);
   box-shadow: 0 5px 12px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+@media (min-width: 1600px) and (min-height: 900px) {
+  .modal.profile-modal {
+    width: min(720px, calc(100vw - 64px));
+    max-width: 720px;
+    padding: 36px;
+    border-radius: 22px;
+  }
+
+  .profile-modal .profile-close {
+    top: 18px;
+    right: 18px;
+  }
+
+  .profile-modal .profile-head {
+    gap: 8px;
+    padding: 10px 0 6px;
+  }
+
+  .profile-modal .profile-head > .avatar {
+    width: 144px !important;
+    height: 144px !important;
+    font-size: 58px !important;
+  }
+
+  .profile-modal .profile-name {
+    margin-top: 12px;
+    font-size: 30px;
+  }
+
+  .profile-modal .profile-handle {
+    font-size: 21px;
+  }
+
+  .profile-modal .profile-presence,
+  .profile-modal .profile-directory-source {
+    font-size: 19px;
+  }
+
+  .profile-modal .profile-actions {
+    gap: 15px;
+    margin-top: 27px;
+  }
+
+  .profile-modal .profile-message,
+  .profile-modal .profile-starred {
+    min-height: 69px;
+  }
+
+  .profile-modal .profile-message {
+    margin-top: 0;
+    font-size: 18px;
+  }
+
+  .profile-modal .profile-starred {
+    width: 69px;
+    height: 69px;
+  }
 }
 .profile-starred.active {
   border-color: var(--beam);
@@ -3051,6 +3280,44 @@ html[data-mode="dark"] .backend-connection-error {
   font-size: 12px;
   font-weight: 650;
 }
+@media (min-width: 1600px) and (min-height: 900px) {
+  .modal.display-name-modal {
+    width: min(680px, calc(100vw - 64px));
+    max-width: 680px;
+    padding: 48px;
+    border-radius: 20px;
+  }
+
+  .display-name-modal .modal-header {
+    margin-bottom: 28px;
+  }
+
+  .display-name-modal .modal-header h2 {
+    font-size: 28px;
+  }
+
+  .display-name-modal .display-name-dialog-field {
+    gap: 10px;
+    font-size: 15px;
+  }
+
+  .display-name-modal .settings-input {
+    min-height: 64px;
+    padding-inline: 20px;
+    font-size: 18px;
+  }
+
+  .display-name-modal .modal-actions {
+    margin-top: 30px;
+    gap: 12px;
+  }
+
+  .display-name-modal .modal-actions > button {
+    min-height: 48px;
+    padding-inline: 22px;
+    font-size: 15px;
+  }
+}
 .rail-account .presence-dot {
   right: -1px;
   bottom: -1px;
@@ -3402,6 +3669,46 @@ html[data-mode="dark"] .backend-connection-error {
 }
 .link-field .settings-input {
   width: 100%;
+}
+
+@media (min-width: 1600px) and (min-height: 900px) {
+  .modal.link-modal {
+    width: min(640px, calc(100vw - 64px));
+    max-width: 640px;
+    padding: 40px;
+    border-radius: 20px;
+  }
+
+  .link-modal .modal-header {
+    margin-bottom: 28px;
+  }
+
+  .link-modal .modal-header h2 {
+    font-size: 28px;
+  }
+
+  .link-modal .link-field {
+    gap: 10px;
+    margin: 20px 0;
+    font-size: 15px;
+  }
+
+  .link-modal .link-field .settings-input {
+    min-height: 60px;
+    padding-inline: 18px;
+    font-size: 17px;
+  }
+
+  .link-modal .modal-actions {
+    margin-top: 30px;
+    gap: 12px;
+  }
+
+  .link-modal .modal-actions > button {
+    min-height: 48px;
+    padding-inline: 22px;
+    font-size: 15px;
+  }
 }
 
 /* "Add to channel?" prompt when mentioning non-members */
@@ -6853,6 +7160,75 @@ html[data-interface-direction="rtl"] .message .msg-menu {
   gap: 8px;
   margin: 12px auto 0;
 }
+
+/* Give the Update profile picture flow more room on large screens while
+   preserving its existing crop -> zoom -> actions layout. */
+@media (min-width: 1600px) and (min-height: 900px) {
+  .modal.profile-picture-modal {
+    width: min(680px, calc(100vw - 64px));
+    max-width: 680px;
+    padding: 40px;
+    border-radius: 20px;
+  }
+
+  .profile-picture-modal .modal-header {
+    margin-bottom: 28px;
+  }
+
+  .profile-picture-modal .modal-header h2 {
+    font-size: 26px;
+  }
+
+  .profile-picture-modal .profile-picture-crop {
+    width: 420px;
+    height: 420px;
+    border-radius: 14px;
+  }
+
+  .profile-picture-modal .profile-picture-crop-frame {
+    border-radius: 14px;
+  }
+
+  .profile-picture-modal .profile-picture-import-button {
+    min-height: 48px;
+    margin-top: 20px;
+    padding-inline: 20px;
+    font-size: 15px;
+  }
+
+  .profile-picture-modal .profile-picture-zoom {
+    gap: 14px;
+    margin-top: 20px;
+    font-size: 14px;
+  }
+
+  .profile-picture-modal .profile-picture-zoom input {
+    height: 24px;
+  }
+
+  .profile-picture-modal .profile-picture-zoom input::-webkit-slider-thumb {
+    width: 20px;
+    height: 20px;
+    margin-top: -8px;
+  }
+
+  .profile-picture-modal .profile-picture-zoom input::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+  }
+
+  .profile-picture-modal .modal-actions {
+    margin-top: 28px;
+    gap: 12px;
+  }
+
+  .profile-picture-modal .modal-actions > button {
+    min-height: 48px;
+    padding-inline: 22px;
+    font-size: 15px;
+  }
+}
+
 .settings-content-account > .settings-section {
   width: 100%;
 }
@@ -8195,6 +8571,123 @@ html[dir="rtl"] .channel-details-person-handle {
   margin-left: auto;
 }
 
+/* Give Channel details more room on large screens while preserving its
+   existing header -> tabs -> scrollable content layout. */
+@media (min-width: 1600px) and (min-height: 900px) {
+  .modal.channel-details-dialog {
+    width: min(820px, calc(100vw - 64px));
+    height: min(780px, calc(100vh - 64px));
+    max-height: min(780px, calc(100vh - 64px));
+    border-radius: 24px;
+  }
+
+  .channel-details-header {
+    gap: 24px;
+    padding: 32px 28px 28px 36px;
+  }
+
+  .channel-details-heading {
+    gap: 16px;
+  }
+
+  .channel-details-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 14px;
+  }
+
+  .channel-details-eyebrow {
+    margin-bottom: 5px;
+    font-size: 12px;
+  }
+
+  .channel-details-heading h2 {
+    font-size: 28px;
+  }
+
+  .channel-details-meta {
+    margin-top: 7px;
+    font-size: 15px;
+  }
+
+  .channel-details-tabs {
+    gap: 8px;
+    padding-inline: 36px;
+  }
+
+  .channel-details-tab {
+    height: 50px;
+    gap: 8px;
+    font-size: 15px;
+  }
+
+  .channel-details-content {
+    padding: 30px 36px 36px;
+  }
+
+  .channel-details-overview-title,
+  .channel-details-section-title,
+  .channel-details-actions-section .channel-details-section-title,
+  .channel-details-posting-section .channel-details-section-title {
+    font-size: 16px;
+  }
+
+  .channel-details-fields {
+    gap: 14px;
+  }
+
+  .channel-details-field {
+    padding: 18px 20px;
+    border-radius: 14px;
+  }
+
+  .channel-details-value {
+    font-size: 16px;
+  }
+
+  .channel-details-section-hint {
+    font-size: 14px;
+  }
+
+  .channel-details-action {
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: 11px;
+  }
+
+  .channel-details-action strong {
+    font-size: 14px;
+  }
+
+  .channel-details-action small {
+    font-size: 13px;
+  }
+
+  .channel-details-person {
+    gap: 14px;
+    padding: 10px 12px;
+    border-radius: 11px;
+  }
+
+  .channel-details-person-name {
+    font-size: 15px;
+  }
+
+  .channel-details-person-handle {
+    font-size: 13px;
+  }
+
+  .channel-details-created {
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .channel-details-created-name,
+  .channel-details-created-date {
+    font-size: 15px;
+  }
+}
+
 /* ---- Custom emoji (uploaded images / GIFs as :shortcodes:) ---- */
 .custom-emoji {
   display: inline-block;
@@ -8305,6 +8798,73 @@ html[dir="rtl"] .channel-details-person-handle {
 }
 .emoji-name-hint .bad {
   color: var(--danger);
+}
+
+@media (min-width: 1600px) and (min-height: 900px) {
+  .modal.add-emoji-modal {
+    width: min(700px, calc(100vw - 64px));
+    max-width: 700px;
+    padding: 44px;
+    border-radius: 20px;
+  }
+
+  .add-emoji-modal .modal-header {
+    margin-bottom: 28px;
+  }
+
+  .add-emoji-modal .modal-header h2 {
+    font-size: 28px;
+  }
+
+  .add-emoji-modal .emoji-form-row {
+    gap: 24px;
+    margin-top: 8px;
+  }
+
+  .add-emoji-modal .emoji-drop {
+    width: 160px;
+    height: 160px;
+    border-radius: 16px;
+  }
+
+  .add-emoji-modal .emoji-drop-hint {
+    padding-inline: 14px;
+    font-size: 14px;
+  }
+
+  .add-emoji-modal .emoji-name-label {
+    margin-bottom: 10px;
+    font-size: 15px;
+  }
+
+  .add-emoji-modal .emoji-name-input {
+    min-height: 60px;
+    gap: 6px;
+    padding-inline: 16px;
+    border-radius: 12px;
+  }
+
+  .add-emoji-modal .emoji-name-input input {
+    padding-block: 17px;
+    font-size: 17px;
+  }
+
+  .add-emoji-modal .emoji-name-hint {
+    margin-top: 9px;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .add-emoji-modal .modal-actions {
+    margin-top: 30px;
+    gap: 12px;
+  }
+
+  .add-emoji-modal .modal-actions > button {
+    min-height: 48px;
+    padding-inline: 22px;
+    font-size: 15px;
+  }
 }
 
 /* ---- Message attachments (rendered images + file chips) ---- */
@@ -8653,7 +9213,13 @@ html[dir="rtl"] .channel-details-person-handle {
 }
 .presentation-head { border-bottom: 1px solid var(--border); }
 .presentation-head .att-file-info { min-width: 0; }
-.presentation-head .att-text-action:first-of-type { margin-left: auto; }
+.presentation-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-inline-start: auto;
+  flex: 0 0 auto;
+}
 .presentation-preview {
   display: grid;
   min-height: 145px;
@@ -8666,11 +9232,10 @@ html[dir="rtl"] .channel-details-person-handle {
 .presentation-slide {
   width: 100%;
   overflow: hidden;
-  aspect-ratio: 16 / 9;
   box-shadow: 0 2px 8px rgba(15, 39, 72, 0.16);
-  background: #fff;
+  background: transparent;
 }
-.presentation-slide svg { display: block; width: 100%; height: 100%; }
+.presentation-slide svg { display: block; width: 100%; height: auto; }
 .presentation-footer {
   justify-content: center;
   border-top: 1px solid var(--border);
@@ -8693,27 +9258,54 @@ html[dir="rtl"] .channel-details-person-handle {
   position: fixed;
   z-index: 1000;
   inset: 0;
-  display: grid;
-  place-items: center;
-  background: rgba(8, 17, 31, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 0;
+  background: var(--lightbox-bg);
 }
 .presentation-viewer {
+  position: relative;
   display: flex;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   flex-direction: column;
   overflow: hidden;
-  background: var(--surface);
+  background: var(--lightbox-bg);
 }
 .presentation-viewer-head,
 .presentation-viewer-actions,
 .presentation-viewer-body { display: flex; align-items: center; }
-.presentation-viewer-head { justify-content: space-between; gap: 16px; padding: 12px 16px; }
-.presentation-viewer-actions { gap: 14px; color: var(--muted); font-size: 0.85rem; }
-.presentation-viewer-actions button { font-size: 1rem; }
-.presentation-viewer-body { justify-content: space-between; gap: 24px; min-height: 0; padding: 24px; background: #eef1f5; }
-.presentation-viewer-body .presentation-slide { max-height: calc(100vh - 130px); max-width: calc(100vw - 180px); width: min(1200px, calc(100vw - 180px)); height: auto; }
+.presentation-viewer-head {
+  position: relative;
+  z-index: 1;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--lightbox-border);
+  background: var(--lightbox-bar);
+  color: var(--lightbox-fg);
+}
+.presentation-viewer-actions { gap: 14px; color: var(--lightbox-muted); font-size: 0.85rem; }
+.presentation-viewer-actions button { color: var(--lightbox-fg); font-size: 1rem; }
+.presentation-viewer-body {
+  position: absolute;
+  inset: 58px 0 0;
+  justify-content: center;
+  min-height: 0;
+  padding: 24px;
+  background: var(--lightbox-bg);
+}
+.presentation-viewer-body .presentation-slide {
+  max-height: calc(100vh - 130px);
+  max-width: calc(100% - 160px);
+  width: min(1200px, 100%);
+  height: auto;
+}
 .presentation-viewer-nav {
+  position: absolute;
+  top: 50%;
   display: grid;
   width: 52px;
   height: 76px;
@@ -8724,9 +9316,16 @@ html[dir="rtl"] .channel-details-person-handle {
   background: var(--surface);
   box-shadow: 0 4px 14px rgba(15, 39, 72, 0.18);
   font-size: 2.5rem;
+  transform: translateY(-50%);
 }
+.presentation-viewer-nav:first-child { inset-inline-start: 24px; }
+.presentation-viewer-nav:last-child { inset-inline-end: 24px; }
 .presentation-viewer-nav:not(:disabled):hover,
 .presentation-viewer-nav:not(:disabled):focus-visible { background: var(--active-soft); }
+
+@media (max-width: 760px) {
+  .presentation-viewer-body { inset: 52px 0 0; }
+}
 
 .text-viewer-backdrop {
   position: fixed;
@@ -10158,6 +10757,132 @@ html[dir="rtl"] .groups-create-modal .forward-destination-copy {
 .forwarded-message-label {
   margin-top: 8px;
 }
+
+/* Scale the forward dialog up on large screens without changing its
+   recipient -> note -> source-message flow. */
+@media (min-width: 1600px) and (min-height: 900px) {
+  .modal.forward-modal {
+    width: min(860px, calc(100vw - 64px));
+    max-width: 860px;
+    max-height: calc(100vh - 48px);
+    border-radius: 20px;
+  }
+
+  .forward-modal .modal-header {
+    padding: 28px 32px 12px;
+  }
+
+  .forward-modal .modal-header h2 {
+    font-size: 26px;
+  }
+
+  .forward-modal .forward-close {
+    top: 22px;
+    right: 24px;
+    width: 38px;
+    height: 38px;
+  }
+
+  .forward-content {
+    gap: 24px;
+    padding: 12px 32px 32px;
+  }
+
+  .forward-selected-chips {
+    max-height: 100px;
+    margin-bottom: 12px;
+    gap: 8px;
+  }
+
+  .forward-chip {
+    padding: 6px 8px 6px 12px;
+    font-size: 13px;
+  }
+
+  .forward-destination-search {
+    min-height: 54px;
+    padding: 14px 18px;
+    font-size: 16px;
+  }
+
+  .forward-destination-list {
+    max-height: 300px;
+    padding: 7px;
+  }
+
+  .forward-destination-row {
+    gap: 14px;
+    min-height: 60px;
+    padding: 11px 12px;
+    border-radius: 11px;
+  }
+
+  .forward-destination-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    font-size: 19px;
+  }
+
+  .forward-destination-copy strong {
+    font-size: 15px;
+  }
+
+  .forward-destination-copy small {
+    font-size: 13px;
+  }
+
+  .forward-selection-indicator {
+    width: 26px;
+    height: 26px;
+  }
+
+  .forward-note-field .composer {
+    border-radius: 14px;
+  }
+
+  .forward-note-field .composer-toolbar {
+    height: 58px;
+    padding: 10px 14px;
+    border-radius: 13px 13px 0 0;
+  }
+
+  .forward-note-field .composer-input {
+    padding: 22px;
+  }
+
+  .forward-note-field .composer-editor {
+    min-height: 112px;
+    max-height: 220px;
+    font-size: 19px;
+    line-height: 1.55;
+  }
+
+  .forward-note-field .composer-actions {
+    min-height: 46px;
+    padding: 12px 14px 16px;
+  }
+
+  .forward-source-card {
+    padding: 18px 20px;
+    border-radius: 14px;
+  }
+
+  .forward-note {
+    font-size: 18px;
+    line-height: 1.6;
+  }
+  .forwarded-label {
+    font-size: 15px;
+  }
+  .forwarded-card-origin {
+    font-size: 15px;
+  }
+  .forwarded-message-label {
+    font-size: 15px;
+    letter-spacing: 0.03em;
+  }
+}
 /* Reaction pills */
 .reactions {
   display: flex;
@@ -10325,6 +11050,80 @@ html[dir="rtl"] .groups-create-modal .forward-destination-copy {
   margin-top: 18px;
   border-top: 0;
   padding-top: 0;
+}
+
+/* Give the Create survey form more room on large screens while preserving
+   its existing question -> options -> settings layout. */
+@media (min-width: 1600px) and (min-height: 900px) {
+  .modal.survey-modal:not(.retro-create-modal) {
+    width: min(780px, calc(100vw - 64px));
+    max-width: 780px;
+    max-height: min(900px, calc(100vh - 64px));
+    padding: 40px;
+    border-radius: 20px;
+  }
+
+  .survey-modal:not(.retro-create-modal) .modal-header {
+    margin-bottom: 28px;
+  }
+
+  .survey-modal:not(.retro-create-modal) .modal-header h2 {
+    font-size: 26px;
+  }
+
+  .survey-modal:not(.retro-create-modal) .schedule-custom-field {
+    gap: 10px;
+    font-size: 13px;
+  }
+
+  .survey-modal:not(.retro-create-modal) .schedule-custom-field + .schedule-custom-field {
+    margin-top: 24px;
+  }
+
+  .survey-modal:not(.retro-create-modal) .settings-input {
+    min-height: 56px;
+    padding-inline: 18px;
+    font-size: 16px;
+  }
+
+  .survey-modal:not(.retro-create-modal) .survey-options-list {
+    max-height: min(560px, calc(100vh - 470px));
+    gap: 10px;
+    padding-block: 4px;
+  }
+
+  .survey-modal:not(.retro-create-modal) .survey-option-entry {
+    gap: 6px;
+  }
+
+  .survey-modal:not(.retro-create-modal) .survey-option-warning {
+    font-size: 13px;
+  }
+
+  .survey-modal:not(.retro-create-modal) .survey-add-option {
+    min-height: 44px;
+    margin-top: 10px;
+    padding-inline: 18px;
+    font-size: 15px;
+  }
+
+  .survey-modal:not(.retro-create-modal) .survey-multiple-toggle {
+    gap: 12px;
+    min-height: 42px;
+    margin-top: 22px;
+    font-size: 15px;
+  }
+
+  .survey-modal:not(.retro-create-modal) .modal-actions {
+    margin-top: 30px;
+    gap: 12px;
+  }
+
+  .survey-modal:not(.retro-create-modal) .modal-actions > button {
+    min-height: 48px;
+    padding-inline: 22px;
+    font-size: 15px;
+  }
 }
 .survey-multiple-toggle {
   position: relative;
@@ -11207,7 +12006,7 @@ html[data-mode="dark"] .new-messages-button:hover {
   font-size: 11px;
 }
 .message .body {
-  font-size: 14.5px;
+  font-size: 16px;
   line-height: 1.5;
   color: #1e293b;
   word-break: break-word;
@@ -12068,6 +12867,72 @@ html[data-interface-direction="rtl"] .scheduled-banner-copy {
   font-weight: 700;
 }
 
+@media (min-width: 1600px) and (min-height: 900px) {
+  .modal-backdrop.schedule-modal-backdrop .schedule-modal,
+  .modal-backdrop:has(.schedule-modal) .schedule-modal {
+    width: min(640px, calc(100vw - 64px));
+    max-width: 640px;
+    padding: 40px;
+    border-radius: 20px;
+  }
+
+  .schedule-modal .modal-header {
+    margin-bottom: 28px;
+  }
+
+  .schedule-modal .modal-header h2 {
+    font-size: 28px;
+  }
+
+  .schedule-modal > .settings-hint {
+    margin-bottom: 22px;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  .schedule-modal .schedule-presets {
+    gap: 10px;
+    margin: 18px 0 16px;
+  }
+
+  .schedule-modal .schedule-presets button {
+    min-height: 44px;
+    padding-inline: 16px;
+    font-size: 15px;
+  }
+
+  .schedule-modal .schedule-custom-field {
+    gap: 10px;
+    margin-top: 18px;
+    font-size: 14px;
+  }
+
+  .schedule-modal .schedule-input {
+    min-height: 60px;
+    padding-inline: 18px;
+    font-size: 17px;
+  }
+
+  .schedule-modal .schedule-preview-time {
+    gap: 16px;
+    margin-top: 18px;
+    padding: 14px 16px;
+    border-radius: 11px;
+    font-size: 15px;
+  }
+
+  .schedule-modal .modal-actions {
+    margin-top: 30px;
+    gap: 12px;
+  }
+
+  .schedule-modal .modal-actions > button {
+    min-height: 48px;
+    padding-inline: 22px;
+    font-size: 15px;
+  }
+}
+
 /* Manage-scheduled list */
 .modal.scheduled-modal {
   width: min(560px, calc(100vw - 40px));
@@ -12509,6 +13374,67 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
   padding: 16px 4px;
   text-align: center;
 }
+
+/* Give the Add people dialog more room on large screens while preserving its
+   existing search -> people list -> done layout. */
+@media (min-width: 1600px) and (min-height: 900px) {
+  .modal.add-people-modal {
+    width: min(720px, calc(100vw - 64px));
+    max-width: 720px;
+    padding: 40px;
+    border-radius: 20px;
+  }
+
+  .add-people-modal .modal-header {
+    margin-bottom: 28px;
+  }
+
+  .add-people-modal .modal-header h2 {
+    font-size: 26px;
+  }
+
+  .add-people-modal .people-filter {
+    min-height: 54px;
+    margin-bottom: 16px;
+    padding-inline: 18px;
+    font-size: 16px;
+  }
+
+  .add-people-modal .people-list {
+    max-height: 420px;
+    margin: -4px 0 8px;
+  }
+
+  .add-people-modal .person-row {
+    gap: 14px;
+    padding: 10px 8px;
+  }
+
+  .add-people-modal .person-name {
+    font-size: 16px;
+  }
+
+  .add-people-modal .person-handle {
+    font-size: 14px;
+  }
+
+  .add-people-modal .person-row .btn-secondary {
+    min-width: 82px;
+    min-height: 44px;
+    padding-inline: 18px;
+    font-size: 15px;
+  }
+
+  .add-people-modal .modal-actions {
+    margin-top: 28px;
+  }
+
+  .add-people-modal .modal-actions > button {
+    min-height: 48px;
+    padding-inline: 22px;
+    font-size: 15px;
+  }
+}
 .people-results-hint {
   color: var(--muted);
   padding: 10px 4px 6px;
@@ -12657,8 +13583,11 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
   border: 0;
   background: transparent;
   box-shadow: none;
-  overflow-y: auto;
+  overflow-y: hidden;
   align-content: flex-start;
+}
+.new-message-search-selected.is-scrollable {
+  overflow-y: auto;
 }
 .new-message-add-input {
   flex: 1 1 110px;
@@ -12725,6 +13654,122 @@ html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
 
 @media (max-width: 700px) {
   .new-message-modal { width: min(520px, calc(100vw - 40px)); }
+}
+
+/* Give the New message flow more room on large screens while preserving its
+   familiar vertical picker-then-composer layout. */
+@media (min-width: 1600px) and (min-height: 900px) {
+  .modal.new-message-modal {
+    width: min(900px, calc(100vw - 64px));
+    max-width: 900px;
+    max-height: calc(100vh - 48px);
+    padding: 40px;
+    border-radius: 20px;
+    overflow-y: auto;
+  }
+
+  .new-message-modal .modal-header {
+    margin-bottom: 28px;
+  }
+
+  .new-message-modal .modal-header h2 {
+    font-size: 26px;
+  }
+
+  .new-message-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .new-message-picker {
+    min-height: 0;
+    padding-inline-end: 0;
+    border-inline-end: 0;
+  }
+
+  .new-message-search {
+    height: 54px;
+    padding-inline: 18px;
+    border-radius: 12px;
+  }
+
+  .new-message-search .new-message-search-input,
+  .new-message-search .new-message-search-input:focus,
+  .new-message-search .new-message-search-input:focus-visible {
+    padding-block: 16px;
+    font-size: 16px;
+  }
+
+  .new-message-search-selected {
+    height: auto !important;
+    flex: 0 0 auto;
+    min-height: 54px;
+    max-height: 220px;
+    padding: 10px 0;
+    gap: 10px;
+    overflow-y: hidden !important;
+    overflow-x: visible;
+    align-items: flex-start;
+    align-content: flex-start;
+  }
+
+  .new-message-search-selected.is-scrollable {
+    overflow-y: auto !important;
+  }
+
+  .new-message-search-selected .new-message-recipient {
+    min-height: 40px;
+    padding: 8px 38px 8px 14px;
+    font-size: 16px;
+    line-height: 1.35;
+  }
+
+  .new-message-people {
+    max-height: 320px;
+    margin: 16px 0 0;
+  }
+
+  .new-message-person {
+    gap: 14px;
+    padding: 13px 12px;
+    border-radius: 12px;
+  }
+
+  .new-message-person .person-name {
+    font-size: 16px;
+  }
+
+  .new-message-person .person-handle {
+    font-size: 14px;
+  }
+
+  .new-message-compose {
+    min-width: 0;
+  }
+
+  .new-message-compose .composer {
+    border-radius: 14px;
+  }
+
+  .new-message-compose .composer-toolbar {
+    height: 58px;
+    padding: 10px 14px;
+    border-radius: 13px 13px 0 0;
+  }
+
+  .new-message-compose .composer-input {
+    padding: 22px 22px;
+  }
+
+  .new-message-compose .composer-editor {
+    min-height: 112px;
+    font-size: 17px;
+  }
+
+  .new-message-compose .composer-actions {
+    padding: 12px 14px 16px;
+  }
 }
 
 /* Markdown rendering inside messages */
@@ -13997,11 +15042,11 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   }
 
   .channel-item {
-    font-size: 17px;
+    font-size: 18px;
     padding-block: 12px;
   }
   .dm-rich .dm-name {
-    font-size: 16px;
+    font-size: 18px;
   }
   .dm-rich .dm-preview {
     font-size: 15px;
@@ -14015,7 +15060,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   }
   .channel-header .ch-topic,
   .channel-header .ch-meta {
-    font-size: 15px;
+    font-size: 17px;
   }
   .header-action {
     font-size: 15px;
@@ -14025,13 +15070,45 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   .details-body {
     font-size: 17px;
   }
+
+  .day-divider-label {
+    font-size: 15px;
+    padding: 5px 16px;
+  }
+  .system-msg {
+    padding-block: 6px;
+    font-size: 16px;
+  }
+  .system-time {
+    font-size: 13px;
+  }
+  .new-divider-label,
+  .older-loader {
+    font-size: 14px;
+  }
+
+  /* Keep supporting conversation text readable alongside the enlarged
+     message body on wide displays. */
+  .pinned-item-meta,
+  .pinned-unpin {
+    font-size: 16px;
+  }
+  .pinned-item-body {
+    font-size: 18px;
+    line-height: 1.5;
+  }
+  .pinned-indicator,
+  .thread-divider {
+    font-size: 14px;
+  }
   .thread-header,
   .panel-header {
     font-size: 19px;
   }
 
   .composer-editor {
-    font-size: 18px;
+    font-size: 19px;
+    line-height: 1.55;
   }
   .search-box-field input.search-input,
   .search-highlight {
@@ -14088,7 +15165,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     gap: 5px;
     padding-block: 10px;
     border-radius: 21px;
-    font-size: 12px;
+    font-size: 14px;
   }
   .rail-active-indicator {
     transition-duration: 420ms;
@@ -15629,6 +16706,63 @@ html[dir="rtl"] .channel-browser-members {
 .retro-column-header-actions .retro-column-submit:hover:not(:disabled) { background: var(--retro-tone); color: #fff; }
 .modal.retro-idea-modal { max-height: calc(100vh - 32px); overflow-y: auto; }
 .retro-idea-modal .composer-toolbar { height: 45px; }
+
+/* Give the Create retrospective form more room on large screens while
+   preserving its existing title -> board name -> actions layout. */
+@media (min-width: 1600px) and (min-height: 900px) {
+  .modal.retro-create-modal {
+    width: min(720px, calc(100vw - 64px));
+    max-width: 720px;
+    padding: 44px;
+    border-radius: 22px;
+  }
+
+  .retro-create-modal .modal-header {
+    margin-bottom: 22px;
+  }
+
+  .retro-create-modal .modal-header h2 {
+    gap: 12px;
+    font-size: 30px;
+  }
+
+  .retro-create-modal .retro-create-title-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+  }
+
+  .retro-create-modal > .settings-hint {
+    margin-bottom: 28px;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  .retro-create-modal .survey-question-field {
+    gap: 10px;
+  }
+
+  .retro-create-modal .survey-question-field > span {
+    font-size: 14px;
+  }
+
+  .retro-create-modal .survey-question-field .settings-input {
+    min-height: 60px;
+    padding-inline: 18px;
+    font-size: 17px;
+  }
+
+  .retro-create-modal .modal-actions {
+    margin-top: 32px;
+    gap: 12px;
+  }
+
+  .retro-create-modal .modal-actions button {
+    min-height: 48px;
+    padding-inline: 22px;
+    font-size: 15px;
+  }
+}
 .retro-idea-modal .composer-input { padding: 7px 10px; }
 .retro-idea-modal .composer-editor { min-height: 54px; max-height: 150px; font-size: 14px; }
 .retro-idea-modal .retro-modal-link { display: grid; gap: 7px; margin: 0 0 14px; padding: 0; border: 0; border-radius: 0; color: var(--muted); background: transparent; font-size: 12px; font-weight: 700; }
@@ -15818,7 +16952,12 @@ html[dir="rtl"] .channel-browser-members {
 
   .rail-item {
     min-height: 76px;
-    font-size: 13px;
+    font-size: 14px;
+  }
+
+  .composer-editor {
+    font-size: 20px;
+    line-height: 1.55;
   }
 
   .sidebar-search {
@@ -15883,4 +17022,253 @@ html[data-theme="calm"] .channel-list {
 }
 html[data-theme="calm"] .channel-list::-webkit-scrollbar-track {
   background: #1f252b;
+}
+
+@media (min-width: 1600px) and (min-height: 900px) {
+  .modal.manager-modal {
+    width: min(760px, calc(100vw - 64px));
+    max-width: 760px;
+    padding: 44px;
+    border-radius: 20px;
+  }
+
+  .manager-modal .modal-header {
+    margin-bottom: 28px;
+  }
+
+  .manager-modal .modal-header h2 {
+    font-size: 28px;
+  }
+
+  .manager-modal .manager-modal-hint,
+  .manager-modal .leave-saved-warning {
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  .manager-modal .manager-modal-hint {
+    margin-bottom: 22px;
+  }
+
+  .manager-modal .leave-saved-warning {
+    margin: 0 0 22px;
+  }
+
+  .manager-modal .manager-select-field {
+    gap: 10px;
+  }
+
+  .manager-modal .manager-select-field > span {
+    font-size: 14px;
+  }
+
+  .manager-modal .people-filter {
+    min-height: 58px;
+    padding-inline: 18px;
+    font-size: 16px;
+  }
+
+  .manager-modal .manager-picker-list {
+    max-height: 360px;
+    margin-top: 16px;
+    border-radius: 12px;
+  }
+
+  .manager-modal .manager-candidate {
+    gap: 14px;
+    padding: 12px 14px;
+  }
+
+  .manager-modal .manager-candidate .person-name {
+    font-size: 16px;
+  }
+
+  .manager-modal .manager-candidate .person-handle {
+    font-size: 14px;
+  }
+
+  .manager-modal .manager-selected-check {
+    width: 26px;
+    height: 26px;
+  }
+
+  .manager-modal .modal-actions {
+    margin-top: 30px;
+    gap: 12px;
+  }
+
+  .manager-modal .modal-actions > button {
+    min-height: 48px;
+    padding-inline: 22px;
+    font-size: 15px;
+  }
+}
+
+@media (min-width: 1600px) and (min-height: 900px) {
+  .modal.confirm-modal:not(.sign-out-confirm-modal) {
+    width: min(600px, calc(100vw - 64px));
+    max-width: 600px;
+    padding: 40px;
+    border-radius: 20px;
+  }
+
+  .confirm-modal:not(.sign-out-confirm-modal) .modal-header {
+    margin-bottom: 28px;
+  }
+
+  .confirm-modal:not(.sign-out-confirm-modal) .modal-header h2 {
+    font-size: 26px;
+  }
+
+  .confirm-modal:not(.sign-out-confirm-modal) .settings-hint {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  .confirm-modal:not(.sign-out-confirm-modal) .modal-actions {
+    margin-top: 30px;
+    gap: 12px;
+  }
+
+  .confirm-modal:not(.sign-out-confirm-modal) .modal-actions > button {
+    min-height: 48px;
+    padding-inline: 22px;
+    font-size: 15px;
+  }
+}
+
+@media (min-width: 1600px) and (min-height: 900px) {
+  .modal.groups-create-modal {
+    width: min(760px, calc(100vw - 64px));
+    max-width: 760px;
+    padding: 44px;
+    border-radius: 20px;
+  }
+
+  .groups-create-modal .modal-header {
+    margin-bottom: 28px;
+  }
+
+  .groups-create-modal .modal-header h2 {
+    font-size: 28px;
+  }
+
+  .groups-create-modal .groups-create-form {
+    gap: 20px;
+  }
+
+  .groups-create-modal .groups-create-form > label {
+    gap: 10px;
+    font-size: 15px;
+  }
+
+  .groups-create-modal .groups-create-form > label > .groups-field-label {
+    font-size: 15px;
+  }
+
+  .groups-create-modal .groups-create-form input,
+  .groups-create-modal .groups-create-form textarea {
+    min-height: 56px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    font-size: 16px;
+  }
+
+  .groups-create-modal .groups-create-form textarea {
+    min-height: 112px;
+    max-height: 180px;
+  }
+
+  .groups-create-modal .groups-member-picker .forward-destination-search {
+    min-height: 56px;
+    padding-inline: 18px;
+    font-size: 16px;
+  }
+
+  .groups-create-modal .groups-member-results {
+    max-height: 320px;
+  }
+
+  .groups-create-modal .forward-destination-row {
+    gap: 14px;
+    min-height: 64px;
+    padding: 12px 14px;
+    border-radius: 12px;
+  }
+
+  .groups-create-modal .forward-destination-copy strong {
+    font-size: 16px;
+  }
+
+  .groups-create-modal .forward-destination-copy small {
+    font-size: 14px;
+  }
+
+  .groups-create-modal .modal-actions {
+    margin-top: 30px;
+    gap: 12px;
+  }
+
+  .groups-create-modal .modal-actions > button {
+    min-height: 48px;
+    padding-inline: 22px;
+    font-size: 15px;
+  }
+}
+
+@media (min-width: 1600px) and (min-height: 900px) {
+  .modal.groups-picker-modal {
+    width: min(700px, calc(100vw - 64px));
+    max-width: 700px;
+    padding: 40px;
+    border-radius: 20px;
+  }
+
+  .groups-picker-modal .modal-header {
+    margin-bottom: 28px;
+  }
+
+  .groups-picker-modal .modal-header h2 {
+    font-size: 28px;
+  }
+
+  .groups-picker-modal .groups-dialog-intro {
+    margin: -4px 0 20px;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .groups-picker-modal .people-filter {
+    min-height: 56px;
+    margin-bottom: 16px;
+    padding-inline: 18px;
+    font-size: 16px;
+  }
+
+  .groups-picker-modal .groups-picker-list {
+    max-height: 420px;
+    margin-top: 12px;
+  }
+
+  .groups-picker-modal .groups-picker-row {
+    gap: 14px;
+    min-height: 64px;
+    padding: 10px 8px;
+  }
+
+  .groups-picker-modal .person-name {
+    font-size: 16px;
+  }
+
+  .groups-picker-modal .person-handle {
+    font-size: 14px;
+  }
+
+  .groups-picker-modal .groups-picker-row .btn-secondary {
+    min-width: 82px;
+    min-height: 44px;
+    padding-inline: 18px;
+    font-size: 15px;
+  }
 }

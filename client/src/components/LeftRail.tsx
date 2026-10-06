@@ -166,7 +166,7 @@ export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroup
           >
             <span className="avatar-wrap rail-account-avatar">
               <Avatar name={user.displayName} src={user.avatarUrl} size={48} />
-              <span className="presence-dot online" title="Active" aria-label="Active" />
+              <span className="presence-dot online" title={t("active")} aria-label={t("active")} />
             </span>
           </button>
           <button
@@ -211,6 +211,7 @@ export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroup
           message={t("signOutMessage")}
           confirmLabel={t("signOut")}
           danger
+          className="sign-out-confirm-modal"
           onCancel={() => setLogoutConfirmOpen(false)}
           onConfirm={() => {
             setLogoutConfirmOpen(false);

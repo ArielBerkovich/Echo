@@ -501,7 +501,7 @@ export default function ThreadPanel({
             data-testid="thread-new-messages-button"
             onClick={scrollToNewMessages}
             aria-label={`Scroll to latest, ${newMessageCount} new ${newMessageCount === 1 ? "message" : "messages"}`}
-            title="View new messages"
+            title={t("viewNewMessages")}
           >
             <span className="new-messages-count" aria-hidden="true">
               {newMessageCount > 99 ? "99+" : newMessageCount}
@@ -577,9 +577,9 @@ export default function ThreadPanel({
 
       {confirmDelete && (
         <ConfirmDialog
-          title="Delete message?"
-          message="This message will be permanently removed. This can't be undone."
-          confirmLabel="Delete"
+          title={t("deleteMessageQuestion")}
+          message={t("deleteMessageConfirm")}
+          confirmLabel={t("delete")}
           danger
           onConfirm={confirmDeleteMessage}
           onCancel={() => setConfirmDelete(null)}

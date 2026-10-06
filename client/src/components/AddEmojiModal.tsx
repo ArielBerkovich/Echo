@@ -75,7 +75,7 @@ export default function AddEmojiModal({ existing = [], onCreated, onClose }) {
   });
 
   return (
-    <Modal title={t("addCustomEmoji")} onClose={onClose}>
+    <Modal title={t("addCustomEmoji")} className="add-emoji-modal" onClose={onClose}>
       <form data-testid="add-emoji-modal" onSubmit={submit}>
         <div className="emoji-form-row">
           <label className="emoji-drop">

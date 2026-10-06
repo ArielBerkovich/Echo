@@ -55,6 +55,7 @@ export default function SavedFeed({ user, users = [], customEmojis = [], onJump,
       <FeedContent
         loading={loading}
         items={items}
+        loadingLabel={t("loading")}
         emptyTitle={t("nothingSavedYet")}
         emptyMessage={t("saveForLaterHint")}
       >

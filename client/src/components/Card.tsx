@@ -3,6 +3,7 @@ import {
   Construction, FileText, FlaskConical, RefreshCw, Sparkles, Zap,
 } from "lucide-react";
 import { formatDateTime } from "../lib/time.js";
+import { useI18n } from "../lib/i18n.js";
 import Avatar from "./Avatar.js";
 
 const TYPE_ICONS = new Map([
@@ -63,6 +64,7 @@ function CardAttribute({ item, person }) {
 }
 
 export default function Card({ card, usersById }) {
+  const { t } = useI18n();
   if (!card?.title || !card?.url) return null;
   const attributes = Array.isArray(card.attributes)
     ? card.attributes.filter((item) => item?.label && item?.value)
@@ -81,7 +83,7 @@ export default function Card({ card, usersById }) {
       href={card.url}
       target="_blank"
       rel="noopener noreferrer"
-      title="Open card"
+      title={t("openCard")}
       aria-label={`Open ${card.eyebrow ? `${card.eyebrow}: ` : ""}${card.title}`}
     >
       {(card.eyebrow || timestamp) && (

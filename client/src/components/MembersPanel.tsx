@@ -204,7 +204,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
 
       <div className="members-panel-body">
         {isGroupDm && canManageGroupDm && (
-          <section className="group-dm-management" aria-label="Group DM actions">
+          <section className="group-dm-management" aria-label={t("groupDmActions")}>
             {editName ? (
               <div className="group-dm-name-editor">
                 <input

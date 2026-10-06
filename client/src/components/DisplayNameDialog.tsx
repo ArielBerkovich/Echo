@@ -27,7 +27,13 @@ export default function DisplayNameDialog({ value, onSave, onClose }) {
   }
 
   return (
-    <Modal title={t("updateDisplayName")} onClose={onClose} closeDisabled={saving} testId="display-name-dialog">
+    <Modal
+      title={t("updateDisplayName")}
+      className="display-name-modal"
+      onClose={onClose}
+      closeDisabled={saving}
+      testId="display-name-dialog"
+    >
       <label className="display-name-dialog-field">
         <span>{t("displayName")}</span>
         <input

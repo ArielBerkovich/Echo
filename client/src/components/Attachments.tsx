@@ -47,6 +47,7 @@ const MIN_SCALE = 1;
 const MAX_SCALE = 4;
 
 function Lightbox({ src, name, sender, onClose, inline = false }) {
+  const { t } = useI18n();
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const dragging = useRef(false);
@@ -171,27 +172,27 @@ function Lightbox({ src, name, sender, onClose, inline = false }) {
         </div>
         <div className="lightbox-toolbar" onClick={(e) => e.stopPropagation()}>
           <div className="lightbox-sender">
-            <Avatar name={sender?.displayName || "Unknown sender"} src={sender?.avatarUrl} size={32} />
+            <Avatar name={sender?.displayName || t("unknownSender")} src={sender?.avatarUrl} size={32} />
             <div className="lightbox-sender-copy">
-              <strong>{sender?.displayName || "Unknown sender"}</strong>
+              <strong>{sender?.displayName || t("unknownSender")}</strong>
               <span className="lightbox-title">{name}</span>
             </div>
           </div>
           <div className="lightbox-toolbar-actions">
-            <div className="lb-zoom-control" aria-label="Zoom controls">
-              <button className="lb-tool" onClick={() => changeScale(scale - 0.5)} disabled={scale <= MIN_SCALE} title="Zoom out" aria-label="Zoom out">
+            <div className="lb-zoom-control" aria-label={t("zoomControls")}>
+              <button className="lb-tool" onClick={() => changeScale(scale - 0.5)} disabled={scale <= MIN_SCALE} title={t("zoomOut")} aria-label={t("zoomOut")}>
                 <ZoomOutIcon size={17} strokeWidth={2} />
               </button>
               <span className="lb-zoom-label" data-testid="lightbox-zoom-label" aria-live="polite">{Math.round(scale * 100)}%</span>
-              <button className="lb-tool" onClick={() => changeScale(scale + 0.5)} disabled={scale >= MAX_SCALE} title="Zoom in" aria-label="Zoom in">
+              <button className="lb-tool" onClick={() => changeScale(scale + 0.5)} disabled={scale >= MAX_SCALE} title={t("zoomIn")} aria-label={t("zoomIn")}>
                 <ZoomInIcon size={17} strokeWidth={2} />
               </button>
             </div>
             <span className="lightbox-toolbar-divider" aria-hidden="true" />
-            <button className="lb-tool" data-testid="lightbox-download" onClick={handleDownload} title="Download image" aria-label="Download image">
+            <button className="lb-tool" data-testid="lightbox-download" onClick={handleDownload} title={t("downloadImage")} aria-label={t("downloadImage")}>
               <DownloadIcon size={18} strokeWidth={2} />
             </button>
-            <button className="lb-tool lightbox-close" onClick={onClose} aria-label="Close image viewer" title="Close">
+            <button className="lb-tool lightbox-close" onClick={onClose} aria-label={t("closeImageViewer")} title={t("closeImageViewer")}>
               <XIcon size={19} strokeWidth={2.25} />
             </button>
           </div>
@@ -285,7 +286,8 @@ function FileAttachment({ a }) {
 }
 
 function PresentationAttachment({ a }) {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
+  const isRtl = language === "he";
   const src = useAuthUrl(a.url);
   const [presentation, setPresentation] = useState(null);
   const [slideIndex, setSlideIndex] = useState(0);
@@ -345,7 +347,7 @@ function PresentationAttachment({ a }) {
     Math.max((presentation?.parsed.slides.length || 1) - 1, 0)
   ));
 
-  const slideView = svg ? <div className="presentation-slide" dangerouslySetInnerHTML={{ __html: svg }} /> : null;
+  const slideView = svg ? <div className="presentation-slide" onClick={(event) => event.stopPropagation()} dangerouslySetInnerHTML={{ __html: svg }} /> : null;
   return (
     <>
       <div className="presentation-attachment" data-testid={`presentation-attachment-${a.key}`}>
@@ -355,12 +357,14 @@ function PresentationAttachment({ a }) {
             <span className="att-file-name">{a.name}</span>
             <span className="att-file-meta">PowerPoint · {formatSize(a.size)}</span>
           </span>
-          <button type="button" className="att-text-action" onClick={download} disabled={!src} title="Download presentation" aria-label="Download presentation">
-            <DownloadIcon size={17} strokeWidth={2} />
-          </button>
-          <button type="button" className="att-text-action" onClick={() => setOpen(true)} disabled={!presentation} title="Open presentation" aria-label={`Open presentation ${a.name}`}>
-            <ExpandIcon size={16} strokeWidth={2} />
-          </button>
+          <div className="presentation-actions">
+            <button type="button" className="att-text-action" onClick={download} disabled={!src} title={t("downloadPresentation")} aria-label={t("downloadPresentation")}>
+              <DownloadIcon size={17} strokeWidth={2} />
+            </button>
+            <button type="button" className="att-text-action" onClick={() => setOpen(true)} disabled={!presentation} title={t("openPresentation")} aria-label={t("openPresentation")}>
+              <ExpandIcon size={16} strokeWidth={2} />
+            </button>
+          </div>
         </div>
         <div className="presentation-preview">
           {error ? <span>{t("previewUnavailable")}</span> : svg ? slideView : <span>{t("preparingPreview")}</span>}
@@ -368,19 +372,23 @@ function PresentationAttachment({ a }) {
       </div>
       {open && createPortal(
         <div className="presentation-viewer-backdrop" role="dialog" aria-modal="true" aria-label={`Preview ${a.name}`} onClick={() => setOpen(false)}>
-          <div className="presentation-viewer" onClick={(event) => event.stopPropagation()}>
-            <div className="presentation-viewer-head">
+          <div className="presentation-viewer">
+            <div className="presentation-viewer-head" onClick={(event) => event.stopPropagation()}>
               <strong>{a.name}</strong>
               <div className="presentation-viewer-actions">
-                <span aria-live="polite">Slide {slideIndex + 1} of {presentation?.parsed.slides.length || 0}</span>
-                <button type="button" onClick={download} title="Download presentation" aria-label="Download presentation"><DownloadIcon size={18} /></button>
+                <span aria-live="polite">
+                  {t("slideCounter")
+                    .replace("{current}", String(slideIndex + 1))
+                    .replace("{total}", String(presentation?.parsed.slides.length || 0))}
+                </span>
+                <button type="button" onClick={download} title={t("downloadPresentation")} aria-label={t("downloadPresentation")}><DownloadIcon size={18} /></button>
                 <button type="button" onClick={() => setOpen(false)} title={t("closePresentation")} aria-label={t("closePresentation")}><XIcon size={18} /></button>
               </div>
             </div>
             <div className="presentation-viewer-body">
-              <button type="button" className="presentation-viewer-nav" onClick={() => changeSlide(-1)} disabled={slideIndex === 0} title="Previous slide" aria-label="Previous slide"><ChevronLeft size={32} strokeWidth={2.25} /></button>
+              <button type="button" className="presentation-viewer-nav" onClick={(event) => { event.stopPropagation(); changeSlide(-1); }} disabled={slideIndex === 0} title={t("previousSlide")} aria-label={t("previousSlide")}>{isRtl ? <ChevronRight size={32} strokeWidth={2.25} /> : <ChevronLeft size={32} strokeWidth={2.25} />}</button>
               {slideView}
-              <button type="button" className="presentation-viewer-nav" onClick={() => changeSlide(1)} disabled={!presentation || slideIndex >= presentation.parsed.slides.length - 1} title={t("nextSlide")} aria-label={t("nextSlide")}><ChevronRight size={32} strokeWidth={2.25} /></button>
+              <button type="button" className="presentation-viewer-nav" onClick={(event) => { event.stopPropagation(); changeSlide(1); }} disabled={!presentation || slideIndex >= presentation.parsed.slides.length - 1} title={t("nextSlide")} aria-label={t("nextSlide")}>{isRtl ? <ChevronLeft size={32} strokeWidth={2.25} /> : <ChevronRight size={32} strokeWidth={2.25} />}</button>
             </div>
           </div>
         </div>,
@@ -441,7 +449,7 @@ function TextAttachment({ a }) {
   const preview = text?.slice(0, 1_600);
   const truncated = text != null && (!textComplete || text.length > 1_600);
   const language = languageForFilename(a.name);
-  const languageLabel = language === "plaintext" ? "Text" : language[0].toUpperCase() + language.slice(1);
+  const languageLabel = language === "plaintext" ? t("text") : language[0].toUpperCase() + language.slice(1);
   // Syntax highlighting is intentionally deferred until the full-screen
   // viewer is opened; attachment cards should stay cheap in long timelines.
   const highlightedText = open && text != null ? highlightFile(text, a.name) : null;
@@ -479,8 +487,8 @@ function TextAttachment({ a }) {
           type="button"
           className="att-text-action att-text-download"
           onClick={download}
-          title="Download file"
-          aria-label="Download file"
+          title={t("downloadFile")}
+          aria-label={t("downloadFile")}
         >
           <DownloadIcon size={17} strokeWidth={2} />
         </button>
@@ -488,16 +496,16 @@ function TextAttachment({ a }) {
           type="button"
           className="att-text-action att-text-open att-text-header-open"
           onClick={() => setOpen(true)}
-          title="Open full-screen preview"
-          aria-label={`Open full-screen preview of ${a.name}`}
+          title={t("openFullScreenPreview")}
+          aria-label={`${t("openFullScreenPreview")} of ${a.name}`}
         >
           <ExpandIcon size={16} strokeWidth={2} aria-hidden="true" />
         </button>
       </div>
-      {expanded && <pre className="att-text-preview">{preview ?? (failed ? "Preview unavailable" : "Loading preview…")}{truncated ? "\n…" : ""}</pre>}
+      {expanded && <pre className="att-text-preview">{preview ?? (failed ? t("previewUnavailable") : t("loadingPreview"))}{truncated ? "\n…" : ""}</pre>}
       {expanded && text != null && (
         <div className="att-text-footer">
-          <span className="att-text-limit">{truncated ? "Preview truncated" : "Text preview"}</span>
+          <span className="att-text-limit">{truncated ? t("previewTruncated") : t("textPreview")}</span>
         </div>
       )}
       </div>
@@ -522,12 +530,12 @@ function TextAttachment({ a }) {
                   className="text-viewer-download"
                   data-testid="text-viewer-download"
                   onClick={download}
-                  title="Download file"
-                  aria-label="Download file"
+                  title={t("downloadFile")}
+                  aria-label={t("downloadFile")}
                 >
                   <DownloadIcon size={18} strokeWidth={2} aria-hidden="true" />
                 </button>
-                <button className="text-viewer-close" type="button" onClick={() => setOpen(false)} aria-label="Close preview" title="Close preview">
+                <button className="text-viewer-close" type="button" onClick={() => setOpen(false)} aria-label={t("closePreview")} title={t("closePreview")}>
                   <XIcon size={18} strokeWidth={2} aria-hidden="true" />
                 </button>
               </div>

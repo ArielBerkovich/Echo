@@ -800,7 +800,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   function handlePaste(e) {
     if (pastePrompt) {
       e.preventDefault();
-      setPasteBlockedNotice("Choose an option for the current paste before pasting more content.");
+      setPasteBlockedNotice(t("pasteBlockedBeforeMore"));
       return;
     }
     const images = Array.from(e.clipboardData?.items || [])
@@ -954,7 +954,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     if (e.key === "Enter" && editor) {
       if (pastePrompt) {
         e.preventDefault();
-        setPasteBlockedNotice("Choose an option above before sending this message.");
+        setPasteBlockedNotice(t("pasteBlockedBeforeSend"));
         return;
       }
       if (editor.isActive("codeBlock")) {
@@ -1172,7 +1172,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     }
     if (!showSend) return;
     if (pastePrompt) {
-      setPasteBlockedNotice("Choose an option above before sending this message.");
+      setPasteBlockedNotice(t("pasteBlockedBeforeSend"));
       return;
     }
     const hasContent = hasSendableContent(editor);
@@ -1287,18 +1287,18 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
         <div
           className={`composer-paste-prompt${pastePrompt.tooLarge ? " is-error" : ""}`}
           role="dialog"
-          aria-label="Paste options"
+          aria-label={t("pasteOptions")}
           data-testid="composer-paste-prompt"
         >
           <div className="composer-paste-content">
             <span className="composer-paste-icon" aria-hidden="true"><Paperclip size={18} strokeWidth={2} /></span>
             <div className="composer-paste-copy">
-              <strong>{pastePrompt.tooLarge ? "This paste can’t be attached." : pastePrompt.tooLong ? "Paste exceeds the message limit" : "Attach this paste as a file?"}</strong>
+              <strong>{pastePrompt.tooLarge ? t("pasteTooLargeTitle") : pastePrompt.tooLong ? t("pasteTooLongTitle") : t("attachPastePrompt")}</strong>
               {(pastePrompt.tooLarge || pastePrompt.tooLong) && (
                 <span>
                   {pastePrompt.tooLarge
-                    ? `${formatSize(pastePrompt.byteLength)} · Files are limited to 10 MB.`
-                    : `${pastePrompt.text.length.toLocaleString(interfaceLocale())} characters · Messages support up to ${MAX_MESSAGE_CHARACTERS.toLocaleString(interfaceLocale())}.`}
+                    ? `${formatSize(pastePrompt.byteLength)} · ${t("filesLimited")}`
+                    : `${pastePrompt.text.length.toLocaleString(interfaceLocale())} ${t("pasteCharacters")} · ${t("messagesSupportUpTo").replace("{count}", MAX_MESSAGE_CHARACTERS.toLocaleString(interfaceLocale()))}`}
                 </span>
               )}
             </div>
@@ -1559,7 +1559,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
             <input
               className="settings-input"
               value={linkDraft.text}
-              placeholder="Link text (optional)"
+              placeholder={t("linkTextOptional")}
               onChange={(e) => setLinkDraft((d) => ({ ...d, text: e.target.value }))}
             />
           </label>
@@ -1599,7 +1599,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
             className={`mention-popup ${mentionQueryIsRtl ? "mention-popup-rtl" : "mention-popup-ltr"}`}
             style={mentionPopupPosition}
           >
-            <div className="mention-popup-head">{mention.trigger === "#" ? "Public channels" : "People and groups"}</div>
+            <div className="mention-popup-head">{mention.trigger === "#" ? t("mentionPublicChannels") : t("mentionPeopleAndGroups")}</div>
             <div className="mention-popup-results">
             {suggestions.map((u, idx) => (
               <button
@@ -1627,7 +1627,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                     className="mi-handle"
                     dir={u.channelTag || (!u.broadcast && !u.groupMention) ? "ltr" : "auto"}
                   >
-                    {u.channelTag ? "Public channel" : u.broadcast ? u.displayName : u.groupMention ? u.path : `@${u.username}`}
+                    {u.channelTag ? t("mentionPublicChannel") : u.broadcast ? u.displayName : u.groupMention ? u.path : `@${u.username}`}
                   </span>
                 </span>
               </button>
@@ -1668,7 +1668,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                   <span className="pending-file-meta">{formatSize(a.size)}</span>
                 </div>
               )}
-              <button type="button" className="chip-remove pending-remove" title="Remove" onClick={() => removePending(a.key)}>
+              <button type="button" className="chip-remove pending-remove" title={t("remove")} onClick={() => removePending(a.key)}>
                 <X size={13} strokeWidth={2.4} aria-hidden="true" />
               </button>
             </div>
@@ -1768,7 +1768,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
               {moreActionsOpen && (
                 <>
                   <div className="menu-overlay" onClick={() => setMoreActionsOpen(false)} />
-                  <div className="composer-more-popover" role="menu" aria-label="More message actions">
+                  <div className="composer-more-popover" role="menu" aria-label={t("moreMessageActions")}>
                   {showAttachments && (
                     <button
                       type="button"
@@ -1857,7 +1857,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
             onMouseDown={keepFocus}
             disabled={sendDisabled || ((!canSend && pending.length === 0 && !pastePrompt) && !allowEmptySend) || uploading}
             aria-label={sendAriaLabel || (editing ? t("saveEdit") : t("sendMessage"))}
-            title={pastePrompt ? "Choose how to handle the pasted content first" : sendTitle || (editing ? t("saveEdit") : t("sendMessage"))}
+            title={pastePrompt ? t("pasteHandlingHint") : sendTitle || (editing ? t("saveEdit") : t("sendMessage"))}
           >
             <SendIcon />
           </button>}

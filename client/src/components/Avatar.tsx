@@ -1,4 +1,5 @@
 import { useAuthUrl } from "../lib/useAuthUrl.js";
+import { useI18n } from "../lib/i18n.js";
 import { UserRound, UsersRoundIcon } from "lucide-react";
 
 // Deterministic colored avatar built from a person's initials.
@@ -54,11 +55,12 @@ export default function Avatar({ name = "?", size = 36, src = null, initialsOnly
 }
 
 export function GroupAvatar({ size = 36 }) {
+  const { t } = useI18n();
   return (
     <span
       className="avatar group-avatar"
       style={{ width: size, height: size }}
-      aria-label="Group conversation"
+      aria-label={t("groupConversation")}
     >
       <UsersRoundIcon size={size * 0.52} strokeWidth={1.9} aria-hidden="true" />
     </span>
