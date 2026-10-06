@@ -1559,7 +1559,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
             <input
               className="settings-input"
               value={linkDraft.text}
-              placeholder="Link text (optional)"
+              placeholder={t("linkTextOptional")}
               onChange={(e) => setLinkDraft((d) => ({ ...d, text: e.target.value }))}
             />
           </label>
@@ -1599,7 +1599,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
             className={`mention-popup ${mentionQueryIsRtl ? "mention-popup-rtl" : "mention-popup-ltr"}`}
             style={mentionPopupPosition}
           >
-            <div className="mention-popup-head">{mention.trigger === "#" ? "Public channels" : "People and groups"}</div>
+            <div className="mention-popup-head">{mention.trigger === "#" ? t("mentionPublicChannels") : t("mentionPeopleAndGroups")}</div>
             <div className="mention-popup-results">
             {suggestions.map((u, idx) => (
               <button
@@ -1627,7 +1627,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                     className="mi-handle"
                     dir={u.channelTag || (!u.broadcast && !u.groupMention) ? "ltr" : "auto"}
                   >
-                    {u.channelTag ? "Public channel" : u.broadcast ? u.displayName : u.groupMention ? u.path : `@${u.username}`}
+                    {u.channelTag ? t("mentionPublicChannel") : u.broadcast ? u.displayName : u.groupMention ? u.path : `@${u.username}`}
                   </span>
                 </span>
               </button>

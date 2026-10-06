@@ -81,7 +81,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
       id: channel.id,
       kind: "channel",
       label: channel.name,
-      handle: channel.type === "private" ? "Private channel" : "Public channel",
+      handle: channel.type === "private" ? t("privateChannel") : t("mentionPublicChannel"),
       icon: channel.type === "private" ? "🔒" : "#",
       }));
     const dmItems = uniqueById(dms)

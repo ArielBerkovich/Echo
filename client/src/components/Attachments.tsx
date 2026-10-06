@@ -286,7 +286,8 @@ function FileAttachment({ a }) {
 }
 
 function PresentationAttachment({ a }) {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
+  const isRtl = language === "he";
   const src = useAuthUrl(a.url);
   const [presentation, setPresentation] = useState(null);
   const [slideIndex, setSlideIndex] = useState(0);
@@ -346,7 +347,7 @@ function PresentationAttachment({ a }) {
     Math.max((presentation?.parsed.slides.length || 1) - 1, 0)
   ));
 
-  const slideView = svg ? <div className="presentation-slide" dangerouslySetInnerHTML={{ __html: svg }} /> : null;
+  const slideView = svg ? <div className="presentation-slide" onClick={(event) => event.stopPropagation()} dangerouslySetInnerHTML={{ __html: svg }} /> : null;
   return (
     <>
       <div className="presentation-attachment" data-testid={`presentation-attachment-${a.key}`}>
@@ -356,12 +357,14 @@ function PresentationAttachment({ a }) {
             <span className="att-file-name">{a.name}</span>
             <span className="att-file-meta">PowerPoint · {formatSize(a.size)}</span>
           </span>
-          <button type="button" className="att-text-action" onClick={download} disabled={!src} title="Download presentation" aria-label="Download presentation">
-            <DownloadIcon size={17} strokeWidth={2} />
-          </button>
-          <button type="button" className="att-text-action" onClick={() => setOpen(true)} disabled={!presentation} title="Open presentation" aria-label={`Open presentation ${a.name}`}>
-            <ExpandIcon size={16} strokeWidth={2} />
-          </button>
+          <div className="presentation-actions">
+            <button type="button" className="att-text-action" onClick={download} disabled={!src} title={t("downloadPresentation")} aria-label={t("downloadPresentation")}>
+              <DownloadIcon size={17} strokeWidth={2} />
+            </button>
+            <button type="button" className="att-text-action" onClick={() => setOpen(true)} disabled={!presentation} title={t("openPresentation")} aria-label={t("openPresentation")}>
+              <ExpandIcon size={16} strokeWidth={2} />
+            </button>
+          </div>
         </div>
         <div className="presentation-preview">
           {error ? <span>{t("previewUnavailable")}</span> : svg ? slideView : <span>{t("preparingPreview")}</span>}
@@ -369,19 +372,23 @@ function PresentationAttachment({ a }) {
       </div>
       {open && createPortal(
         <div className="presentation-viewer-backdrop" role="dialog" aria-modal="true" aria-label={`Preview ${a.name}`} onClick={() => setOpen(false)}>
-          <div className="presentation-viewer" onClick={(event) => event.stopPropagation()}>
-            <div className="presentation-viewer-head">
+          <div className="presentation-viewer">
+            <div className="presentation-viewer-head" onClick={(event) => event.stopPropagation()}>
               <strong>{a.name}</strong>
               <div className="presentation-viewer-actions">
-                <span aria-live="polite">Slide {slideIndex + 1} of {presentation?.parsed.slides.length || 0}</span>
-                <button type="button" onClick={download} title="Download presentation" aria-label="Download presentation"><DownloadIcon size={18} /></button>
+                <span aria-live="polite">
+                  {t("slideCounter")
+                    .replace("{current}", String(slideIndex + 1))
+                    .replace("{total}", String(presentation?.parsed.slides.length || 0))}
+                </span>
+                <button type="button" onClick={download} title={t("downloadPresentation")} aria-label={t("downloadPresentation")}><DownloadIcon size={18} /></button>
                 <button type="button" onClick={() => setOpen(false)} title={t("closePresentation")} aria-label={t("closePresentation")}><XIcon size={18} /></button>
               </div>
             </div>
             <div className="presentation-viewer-body">
-              <button type="button" className="presentation-viewer-nav" onClick={() => changeSlide(-1)} disabled={slideIndex === 0} title="Previous slide" aria-label="Previous slide"><ChevronLeft size={32} strokeWidth={2.25} /></button>
+              <button type="button" className="presentation-viewer-nav" onClick={(event) => { event.stopPropagation(); changeSlide(-1); }} disabled={slideIndex === 0} title={t("previousSlide")} aria-label={t("previousSlide")}>{isRtl ? <ChevronRight size={32} strokeWidth={2.25} /> : <ChevronLeft size={32} strokeWidth={2.25} />}</button>
               {slideView}
-              <button type="button" className="presentation-viewer-nav" onClick={() => changeSlide(1)} disabled={!presentation || slideIndex >= presentation.parsed.slides.length - 1} title={t("nextSlide")} aria-label={t("nextSlide")}><ChevronRight size={32} strokeWidth={2.25} /></button>
+              <button type="button" className="presentation-viewer-nav" onClick={(event) => { event.stopPropagation(); changeSlide(1); }} disabled={!presentation || slideIndex >= presentation.parsed.slides.length - 1} title={t("nextSlide")} aria-label={t("nextSlide")}>{isRtl ? <ChevronLeft size={32} strokeWidth={2.25} /> : <ChevronRight size={32} strokeWidth={2.25} />}</button>
             </div>
           </div>
         </div>,
@@ -480,8 +487,8 @@ function TextAttachment({ a }) {
           type="button"
           className="att-text-action att-text-download"
           onClick={download}
-          title="Download file"
-          aria-label="Download file"
+          title={t("downloadFile")}
+          aria-label={t("downloadFile")}
         >
           <DownloadIcon size={17} strokeWidth={2} />
         </button>
@@ -489,16 +496,16 @@ function TextAttachment({ a }) {
           type="button"
           className="att-text-action att-text-open att-text-header-open"
           onClick={() => setOpen(true)}
-          title="Open full-screen preview"
-          aria-label={`Open full-screen preview of ${a.name}`}
+          title={t("openFullScreenPreview")}
+          aria-label={`${t("openFullScreenPreview")} of ${a.name}`}
         >
           <ExpandIcon size={16} strokeWidth={2} aria-hidden="true" />
         </button>
       </div>
-      {expanded && <pre className="att-text-preview">{preview ?? (failed ? "Preview unavailable" : "Loading preview…")}{truncated ? "\n…" : ""}</pre>}
+      {expanded && <pre className="att-text-preview">{preview ?? (failed ? t("previewUnavailable") : t("loadingPreview"))}{truncated ? "\n…" : ""}</pre>}
       {expanded && text != null && (
         <div className="att-text-footer">
-          <span className="att-text-limit">{truncated ? "Preview truncated" : "Text preview"}</span>
+          <span className="att-text-limit">{truncated ? t("previewTruncated") : t("textPreview")}</span>
         </div>
       )}
       </div>
@@ -528,7 +535,7 @@ function TextAttachment({ a }) {
                 >
                   <DownloadIcon size={18} strokeWidth={2} aria-hidden="true" />
                 </button>
-                <button className="text-viewer-close" type="button" onClick={() => setOpen(false)} aria-label="Close preview" title="Close preview">
+                <button className="text-viewer-close" type="button" onClick={() => setOpen(false)} aria-label={t("closePreview")} title={t("closePreview")}>
                   <XIcon size={18} strokeWidth={2} aria-hidden="true" />
                 </button>
               </div>

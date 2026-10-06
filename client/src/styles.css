@@ -238,7 +238,7 @@ html[data-mode="dark"] {
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 10px 28px rgba(0, 0, 0, 0.55);
   --shadow-lg: 0 24px 56px rgba(0, 0, 0, 0.6);
-  --lightbox-bg: #242424;
+  --lightbox-bg: #30343d;
   --lightbox-shadow: 0 18px 52px rgba(0, 0, 0, 0.55);
 }
 
@@ -9213,7 +9213,13 @@ html[dir="rtl"] .channel-details-person-handle {
 }
 .presentation-head { border-bottom: 1px solid var(--border); }
 .presentation-head .att-file-info { min-width: 0; }
-.presentation-head .att-text-action:first-of-type { margin-left: auto; }
+.presentation-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-inline-start: auto;
+  flex: 0 0 auto;
+}
 .presentation-preview {
   display: grid;
   min-height: 145px;
@@ -9226,11 +9232,10 @@ html[dir="rtl"] .channel-details-person-handle {
 .presentation-slide {
   width: 100%;
   overflow: hidden;
-  aspect-ratio: 16 / 9;
   box-shadow: 0 2px 8px rgba(15, 39, 72, 0.16);
-  background: #fff;
+  background: transparent;
 }
-.presentation-slide svg { display: block; width: 100%; height: 100%; }
+.presentation-slide svg { display: block; width: 100%; height: auto; }
 .presentation-footer {
   justify-content: center;
   border-top: 1px solid var(--border);
@@ -9253,27 +9258,54 @@ html[dir="rtl"] .channel-details-person-handle {
   position: fixed;
   z-index: 1000;
   inset: 0;
-  display: grid;
-  place-items: center;
-  background: rgba(8, 17, 31, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 0;
+  background: var(--lightbox-bg);
 }
 .presentation-viewer {
+  position: relative;
   display: flex;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   flex-direction: column;
   overflow: hidden;
-  background: var(--surface);
+  background: var(--lightbox-bg);
 }
 .presentation-viewer-head,
 .presentation-viewer-actions,
 .presentation-viewer-body { display: flex; align-items: center; }
-.presentation-viewer-head { justify-content: space-between; gap: 16px; padding: 12px 16px; }
-.presentation-viewer-actions { gap: 14px; color: var(--muted); font-size: 0.85rem; }
-.presentation-viewer-actions button { font-size: 1rem; }
-.presentation-viewer-body { justify-content: space-between; gap: 24px; min-height: 0; padding: 24px; background: #eef1f5; }
-.presentation-viewer-body .presentation-slide { max-height: calc(100vh - 130px); max-width: calc(100vw - 180px); width: min(1200px, calc(100vw - 180px)); height: auto; }
+.presentation-viewer-head {
+  position: relative;
+  z-index: 1;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--lightbox-border);
+  background: var(--lightbox-bar);
+  color: var(--lightbox-fg);
+}
+.presentation-viewer-actions { gap: 14px; color: var(--lightbox-muted); font-size: 0.85rem; }
+.presentation-viewer-actions button { color: var(--lightbox-fg); font-size: 1rem; }
+.presentation-viewer-body {
+  position: absolute;
+  inset: 58px 0 0;
+  justify-content: center;
+  min-height: 0;
+  padding: 24px;
+  background: var(--lightbox-bg);
+}
+.presentation-viewer-body .presentation-slide {
+  max-height: calc(100vh - 130px);
+  max-width: calc(100% - 160px);
+  width: min(1200px, 100%);
+  height: auto;
+}
 .presentation-viewer-nav {
+  position: absolute;
+  top: 50%;
   display: grid;
   width: 52px;
   height: 76px;
@@ -9284,9 +9316,16 @@ html[dir="rtl"] .channel-details-person-handle {
   background: var(--surface);
   box-shadow: 0 4px 14px rgba(15, 39, 72, 0.18);
   font-size: 2.5rem;
+  transform: translateY(-50%);
 }
+.presentation-viewer-nav:first-child { inset-inline-start: 24px; }
+.presentation-viewer-nav:last-child { inset-inline-end: 24px; }
 .presentation-viewer-nav:not(:disabled):hover,
 .presentation-viewer-nav:not(:disabled):focus-visible { background: var(--active-soft); }
+
+@media (max-width: 760px) {
+  .presentation-viewer-body { inset: 52px 0 0; }
+}
 
 .text-viewer-backdrop {
   position: fixed;
