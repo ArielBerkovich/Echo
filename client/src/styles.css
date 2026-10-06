@@ -14985,7 +14985,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   }
   .channel-header .ch-topic,
   .channel-header .ch-meta {
-    font-size: 16px;
+    font-size: 17px;
   }
   .header-action {
     font-size: 15px;
@@ -15000,15 +15000,15 @@ html[data-mode="dark"] .hljs-class .hljs-title {
      message body on wide displays. */
   .pinned-item-meta,
   .pinned-unpin {
-    font-size: 14px;
+    font-size: 16px;
   }
   .pinned-item-body {
-    font-size: 16px;
+    font-size: 18px;
     line-height: 1.5;
   }
   .pinned-indicator,
   .thread-divider {
-    font-size: 13px;
+    font-size: 14px;
   }
   .thread-header,
   .panel-header {
