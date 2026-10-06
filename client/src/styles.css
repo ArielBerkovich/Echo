@@ -14985,7 +14985,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   }
   .channel-header .ch-topic,
   .channel-header .ch-meta {
-    font-size: 15px;
+    font-size: 16px;
   }
   .header-action {
     font-size: 15px;
@@ -14994,6 +14994,21 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   .thread-body,
   .details-body {
     font-size: 17px;
+  }
+
+  /* Keep supporting conversation text readable alongside the enlarged
+     message body on wide displays. */
+  .pinned-item-meta,
+  .pinned-unpin {
+    font-size: 14px;
+  }
+  .pinned-item-body {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  .pinned-indicator,
+  .thread-divider {
+    font-size: 13px;
   }
   .thread-header,
   .panel-header {
