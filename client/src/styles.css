@@ -9221,6 +9221,7 @@ html[dir="rtl"] .channel-details-person-handle {
   flex: 0 0 auto;
 }
 .presentation-preview {
+  position: relative;
   display: grid;
   min-height: 145px;
   place-items: center;
@@ -9228,6 +9229,9 @@ html[dir="rtl"] .channel-details-person-handle {
   background: #eef1f5;
   color: var(--muted);
   text-align: center;
+}
+.presentation-preview.is-clickable {
+  cursor: zoom-in;
 }
 .presentation-slide {
   width: 100%;
@@ -13204,6 +13208,138 @@ html[data-interface-direction="rtl"] .scheduled-banner-copy {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+}
+
+/* Give the already-scheduled messages form more room on large screens while
+   keeping its existing list-and-edit layout intact. */
+@media (min-width: 1600px) and (min-height: 900px) {
+  .modal.scheduled-modal {
+    width: min(820px, calc(100vw - 64px));
+    max-width: 820px;
+    padding: 44px;
+    border-radius: 20px;
+  }
+
+  .scheduled-modal-intro {
+    gap: 14px;
+    margin: -6px 0 22px;
+    padding: 16px 18px;
+    border-radius: 14px;
+  }
+
+  .scheduled-modal-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 11px;
+  }
+
+  .scheduled-modal-intro div {
+    gap: 4px;
+  }
+
+  .scheduled-modal-intro strong {
+    font-size: 16px;
+  }
+
+  .scheduled-modal-eyebrow {
+    font-size: 11px !important;
+  }
+
+  .scheduled-modal-intro span:not(.scheduled-modal-count) {
+    font-size: 13.5px;
+    line-height: 1.45;
+  }
+
+  .scheduled-list {
+    gap: 14px;
+    max-height: min(600px, 58vh);
+  }
+
+  .scheduled-item {
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+    gap: 16px;
+    padding: 16px;
+    border-radius: 15px;
+  }
+
+  .scheduled-item-marker {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+  }
+
+  .scheduled-when {
+    gap: 8px;
+    margin-bottom: 5px;
+    font-size: 13.5px;
+  }
+
+  .scheduled-next-label {
+    padding: 3px 7px;
+    font-size: 10px;
+  }
+
+  .scheduled-preview {
+    font-size: 15px;
+    line-height: 1.45;
+  }
+
+  .scheduled-attachments {
+    margin-top: 9px;
+    padding: 3px 8px;
+    font-size: 12px;
+  }
+
+  .scheduled-actions {
+    gap: 10px;
+  }
+
+  .scheduled-edit-btn,
+  .scheduled-actions .link-danger {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .scheduled-undo {
+    gap: 14px;
+    margin-top: 16px;
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+
+  .scheduled-edit {
+    gap: 10px;
+  }
+
+  .scheduled-edit-heading {
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+
+  .scheduled-edit-heading strong {
+    font-size: 15px;
+  }
+
+  .scheduled-edit-heading span {
+    font-size: 13px;
+  }
+
+  .scheduled-edit textarea.settings-input {
+    min-height: 56px;
+    padding: 12px 14px;
+    font-size: 15px;
+  }
+
+  .scheduled-edit input.settings-input {
+    min-height: 50px;
+    padding-inline: 14px;
+    font-size: 15px;
+  }
+
+  .scheduled-edit-actions {
+    gap: 10px;
+    margin-top: 4px;
+  }
 }
 
 @media (max-width: 560px) {

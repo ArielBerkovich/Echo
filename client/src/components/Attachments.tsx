@@ -347,7 +347,7 @@ function PresentationAttachment({ a }) {
     Math.max((presentation?.parsed.slides.length || 1) - 1, 0)
   ));
 
-  const slideView = svg ? <div className="presentation-slide" onClick={(event) => event.stopPropagation()} dangerouslySetInnerHTML={{ __html: svg }} /> : null;
+  const slideView = svg ? <div className="presentation-slide" onClick={(event) => { event.stopPropagation(); if (!open) setOpen(true); }} dangerouslySetInnerHTML={{ __html: svg }} /> : null;
   return (
     <>
       <div className="presentation-attachment" data-testid={`presentation-attachment-${a.key}`}>
@@ -366,7 +366,20 @@ function PresentationAttachment({ a }) {
             </button>
           </div>
         </div>
-        <div className="presentation-preview">
+        <div
+          className={`presentation-preview${presentation ? " is-clickable" : ""}`}
+          role="button"
+          tabIndex={presentation ? 0 : -1}
+          aria-label={presentation ? t("openPresentation") : undefined}
+          title={presentation ? t("openPresentation") : undefined}
+          onClick={() => presentation && setOpen(true)}
+          onKeyDown={(event) => {
+            if (presentation && (event.key === "Enter" || event.key === " ")) {
+              event.preventDefault();
+              setOpen(true);
+            }
+          }}
+        >
           {error ? <span>{t("previewUnavailable")}</span> : svg ? slideView : <span>{t("preparingPreview")}</span>}
         </div>
       </div>
