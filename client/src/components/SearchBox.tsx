@@ -23,6 +23,7 @@ import { Input } from "./Input.js";
 import { peopleSearchSuggestions } from "../lib/mentions.js";
 import { useI18n } from "../lib/i18n.js";
 import { formatKeyboardShortcut } from "../lib/keyboardShortcuts.js";
+import { languageDirection } from "../lib/languages.js";
 
 const QUICK_ACTIONS = [
   { id: "new-message", label: "New message", keywords: ["new", "message", "dm"], shortcut: "⌘/Ctrl+⇧M", Icon: MessageSquarePlusIcon },
@@ -121,7 +122,7 @@ const SearchBox = forwardRef(function SearchBox(
   },
   ref
 ) {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const quickActions = useMemo(() => QUICK_ACTIONS.map((action) => ({
     ...action,
     label: ({
@@ -148,6 +149,7 @@ const SearchBox = forwardRef(function SearchBox(
   const highlightRef = useRef(null);
   const navItemRefs = useRef([]);
   const previousConversationIdRef = useRef(activeConversationId);
+  const searchDirection = query ? "auto" : languageDirection(language);
 
   const memberOf = useMemo(
     () => (myChannelIds instanceof Set ? myChannelIds : new Set(myChannelIds || [])),
@@ -592,7 +594,7 @@ const SearchBox = forwardRef(function SearchBox(
               {quickSwitcherOpen ? t("searchCommands") : peoplePicker ? t("findSomeoneToMessage") : t("searchMessagesPeopleAndChannels")}
             </span>
           )}
-          <div className="search-highlight" ref={highlightRef} aria-hidden="true" dir="auto">
+          <div className="search-highlight" ref={highlightRef} aria-hidden="true" dir={searchDirection}>
             {renderHighlighted(query)}
           </div>
           <Input
@@ -612,7 +614,7 @@ const SearchBox = forwardRef(function SearchBox(
             }}
             onKeyDown={onKeyDown}
             placeholder=""
-            dir="auto"
+            dir={searchDirection}
             />
           </div>
           {!query && !peoplePicker && !quickSwitcherOpen && (

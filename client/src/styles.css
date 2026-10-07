@@ -2059,6 +2059,7 @@ html[dir="rtl"] .retro-item-link {
     font-size: 15px;
   }
 }
+
 html[data-mode="dark"] .backend-connection-error {
   color: #ffe4e6;
   background: #4c0519;
@@ -4127,13 +4128,19 @@ html[data-mode="dark"] .sidebar {
 /* DMs view: "Find a DM" + rich conversation rows */
 .dm-find {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 6px;
   margin-top: 10px;
   padding: 0 12px 10px;
 }
 .sidebar:not(.dms-view) > .dm-find {
   margin-top: 10px;
+}
+.sidebar-filter-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 .dm-find input {
   flex: 1;
@@ -4155,6 +4162,44 @@ html[data-mode="dark"] .sidebar {
 }
 .dm-find .start-conversation {
   flex: none;
+}
+.sidebar-filter-modes {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.06);
+}
+.sidebar-filter-mode {
+  flex: 1;
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--on-navy-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.sidebar-filter-mode:hover,
+.sidebar-filter-mode.active {
+  background: var(--active-bg);
+  border-color: transparent;
+  color: #fff;
+}
+.sidebar-filter-mode:focus-visible {
+  outline: 2px solid var(--active-ring);
+  outline-offset: 2px;
 }
 .sidebar-actions {
   position: relative;

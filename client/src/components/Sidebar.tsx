@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronDownIcon, HashIcon, ListFilterIcon, LockKeyholeIcon, MessageCircleIcon, SquarePenIcon, StarIcon } from "lucide-react";
+import { ChevronDownIcon, HashIcon, ListFilterIcon, LockKeyholeIcon, MailOpenIcon, MessageCircleIcon, SquarePenIcon, StarIcon } from "lucide-react";
 import Avatar, { GroupAvatar } from "./Avatar.js";
 import { relativeTime } from "../lib/time.js";
 import { useAuthUrls } from "../lib/useAuthUrl.js";
@@ -129,6 +129,7 @@ export default function Sidebar({
   const [starredCollapsed, setStarredCollapsed] = useState(false); // Starred section collapsed?
   const [dmCollapsed, setDmCollapsed] = useState(false); // DMs section collapsed?
   const [filterOpen, setFilterOpen] = useState(dmsOnly);
+  const [unreadOnly, setUnreadOnly] = useState(false);
   const emojiUrls = useMemo(() => customEmojis.map((emoji) => emoji.url), [customEmojis]);
   const authUrls = useAuthUrls(emojiUrls);
   const previewEmojis = customEmojis
@@ -142,13 +143,16 @@ export default function Sidebar({
   const showDms = !dmCollapsed || !!f;
   const shownChannels = channels
     .filter((c) => !hiddenSet.has(c.id))
+    .filter((c) => !unreadOnly || c.unread > 0)
     .filter((c) => !f || c.name.toLowerCase().includes(f));
   const dmPeople = (conversation) => conversation.participants?.filter((person) => person.id !== user.id) || [conversation.withUser];
   const dmLabel = (conversation) => {
     if (conversation.isGroup && conversation.name && !conversation.name.startsWith("dm-")) return conversation.name;
     return dmPeople(conversation).map((person) => person.displayName).join(", ");
   };
-  const shownDms = dms.filter((c) => !f || dmLabel(c).toLowerCase().includes(f));
+  const shownDms = dms
+    .filter((c) => !unreadOnly || c.unread > 0)
+    .filter((c) => !f || dmLabel(c).toLowerCase().includes(f));
   // Starred DMs get their own section; the rest stay under "Direct Messages".
   const starredDms = shownDms.filter((c) => {
     const people = dmPeople(c);
@@ -247,15 +251,18 @@ export default function Sidebar({
           <div className="sidebar-actions" role="group" aria-label={t("sidebarActions")}>
             <button
               type="button"
-              className={`add-channel filter-button ${filterOpen ? "active" : ""}`}
+              className={`add-channel filter-button ${filterOpen || unreadOnly ? "active" : ""}`}
               data-testid="sidebar-filter-toggle"
               onClick={() => {
                 setFilterOpen((open) => !open);
-                if (filterOpen) setFilter("");
+                if (filterOpen) {
+                  setFilter("");
+                  setUnreadOnly(false);
+                }
               }}
-              title={filterOpen ? t("closeFilter") : t("filter")}
-              aria-label={filterOpen ? t("closeFilter") : t("filterChannelsAndDms")}
-              aria-pressed={filterOpen}
+              title={filterOpen || unreadOnly ? t("closeFilter") : t("filter")}
+              aria-label={filterOpen || unreadOnly ? t("closeFilter") : t("filterChannelsAndDms")}
+              aria-pressed={filterOpen || unreadOnly}
             >
               <ListFilterIcon size={14} strokeWidth={1.9} aria-hidden="true" />
             </button>
@@ -271,14 +278,41 @@ export default function Sidebar({
       )}
       {(dmsOnly || filterOpen) && (
         <div className="dm-find">
-          <input
-            data-testid="sidebar-filter"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            placeholder={dmsOnly ? t("findADm") : t("filterChannelsAndDms")}
-            autoFocus={!dmsOnly}
-          />
-          {dmsOnly && <StartConversationButton onClick={onStartConversation} />}
+          <div className="sidebar-filter-row">
+            <input
+              data-testid="sidebar-filter"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              placeholder={dmsOnly ? t("findADm") : t("filterChannelsAndDms")}
+              autoFocus={!dmsOnly}
+            />
+            {dmsOnly && <StartConversationButton onClick={onStartConversation} />}
+          </div>
+          {!dmsOnly && (
+            <div className="sidebar-filter-modes" role="group" aria-label={t("conversationFilterMode")}>
+              <button
+                type="button"
+                className={`sidebar-filter-mode ${!unreadOnly ? "active" : ""}`}
+                data-testid="sidebar-filter-all"
+                onClick={() => setUnreadOnly(false)}
+                aria-label={t("showAllConversations")}
+                aria-pressed={!unreadOnly}
+              >
+                {t("allConversations")}
+              </button>
+              <button
+                type="button"
+                className={`sidebar-filter-mode ${unreadOnly ? "active" : ""}`}
+                data-testid="sidebar-unread-toggle"
+                onClick={() => setUnreadOnly(true)}
+                aria-label={t("showUnreadConversations")}
+                aria-pressed={unreadOnly}
+              >
+                <MailOpenIcon size={14} strokeWidth={1.9} aria-hidden="true" />
+                <span>{t("unreadOnly")}</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -368,7 +402,9 @@ export default function Sidebar({
               </button>
             ))}
           {showChannels && shownChannels.length === 0 && (
-            <div className="dm-empty">{filter ? t("noMatchingChannels") : t("noChannelsYet")}</div>
+            <div className="dm-empty">
+              {unreadOnly ? t("noUnreadChannels") : filter ? t("noMatchingChannels") : t("noChannelsYet")}
+            </div>
           )}
           <div className="section-label dm-label section-toggle" data-testid="home-dm-section">
             <button
@@ -385,7 +421,9 @@ export default function Sidebar({
           </div>
           {showDms && regularDms.map(renderDmRow)}
           {showDms && regularDms.length === 0 && (
-            <div className="dm-empty">{filter ? t("noMatchingDms") : t("composeToStartConversation")}</div>
+            <div className="dm-empty">
+              {unreadOnly ? t("noUnreadDms") : filter ? t("noMatchingDms") : t("composeToStartConversation")}
+            </div>
           )}
         </div>
       )}

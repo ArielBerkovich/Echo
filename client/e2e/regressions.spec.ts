@@ -143,6 +143,26 @@ test("opens the Home filter below the sidebar tools", async ({ page }) => {
   expect(sidebarFilter.y).toBeGreaterThanOrEqual(tools.y + tools.height);
 });
 
+test("filters Home to unread conversations", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/");
+
+  const unreadToggle = page.getByTestId("sidebar-unread-toggle");
+  await page.getByTestId("sidebar-filter-toggle").click();
+  await expect(unreadToggle).toHaveAttribute("aria-pressed", "false");
+
+  await unreadToggle.click();
+  await expect(unreadToggle).toHaveAttribute("aria-pressed", "true");
+
+  const rows = page.locator(".channel-list .channel-item");
+  await expect(rows).not.toHaveCount(0);
+  await expect.poll(async () => rows.evaluateAll((items) => items.every((item) => item.classList.contains("unread")))).toBe(true);
+
+  await page.getByTestId("sidebar-filter-all").click();
+  await expect(unreadToggle).toHaveAttribute("aria-pressed", "false");
+  await expect(page.getByTestId(`channel-row-${fixture.projectChannel.name}`)).toBeVisible();
+});
+
 test("opens regular search with the current channel scope", async ({ page }) => {
   await page.goto(`/channels/${fixture.projectChannel.name}`);
   await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
