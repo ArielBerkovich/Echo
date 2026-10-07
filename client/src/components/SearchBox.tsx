@@ -509,7 +509,7 @@ const SearchBox = forwardRef(function SearchBox(
         <span className="search-hash">
           {c.type === "private" ? <LockKeyholeIcon size={12} strokeWidth={2} aria-hidden="true" /> : "#"}
         </span>
-        <span className="search-name">{c.name}</span>
+        <span className="search-name"><bdi dir="auto">{c.name}</bdi></span>
         {joined ? (
           kind !== "filter" && <span className="search-kind">{t("channel")}</span>
         ) : (
@@ -530,7 +530,7 @@ const SearchBox = forwardRef(function SearchBox(
       onClick={() => (kind === "filter" ? applyFilter(u) : pickUser(u))}
     >
       <Avatar name={u.displayName} src={u.avatarUrl} size={24} />
-      <span className="search-name">{u.displayName}</span>
+      <span className="search-name"><bdi dir="auto">{u.displayName}</bdi></span>
       <bdi className="search-handle" dir="ltr">@{u.username}</bdi>
     </button>
   );
@@ -704,7 +704,7 @@ const SearchBox = forwardRef(function SearchBox(
                               onClick={() => pickDm(r)}
                             >
                               <GroupAvatar size={24} />
-                              <span className="search-name">{r.displayName}</span>
+                              <span className="search-name"><bdi dir="auto">{r.displayName}</bdi></span>
                               <span className="search-kind">{t("groupDm")}</span>
                             </button>
                           )
@@ -723,7 +723,7 @@ const SearchBox = forwardRef(function SearchBox(
                               src={users.find((x) => x.id === r.id)?.avatarUrl}
                               size={24}
                             />
-                            <span className="search-name">{r.displayName}</span>
+                            <span className="search-name"><bdi dir="auto">{r.displayName}</bdi></span>
                             <span className="search-kind">DM</span>
                           </button>
                         )
@@ -742,7 +742,7 @@ const SearchBox = forwardRef(function SearchBox(
                     onClick={submitMessageSearch}
                   >
                     <SearchIcon size={15} strokeWidth={1.8} />
-                    <span className="search-name">{t("searchMessagesFor")} “{query.trim()}”</span>
+                    <span className="search-name">{t("searchMessagesFor")} “<bdi dir="auto">{query.trim()}</bdi>”</span>
                     <span className="search-kind">Enter ↵</span>
                   </button>
                   {matchingQuickActions.length > 0 && (
