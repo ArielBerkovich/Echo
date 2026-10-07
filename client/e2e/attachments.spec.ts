@@ -86,6 +86,8 @@ test("translates image editor controls into Hebrew", async ({ page }) => {
   await expect(dialog.getByRole("button", { name: "עט" })).toBeVisible();
   await expect(dialog.getByRole("button", { name: "ביטול הפעולה" })).toBeDisabled();
   await expect(dialog.getByRole("button", { name: "ביצוע מחדש" })).toBeDisabled();
+  await expect.poll(() => dialog.getByRole("button", { name: "ביטול הפעולה" }).locator("svg").evaluate((element) => getComputedStyle(element).transform)).toBe("matrix(-1, 0, 0, 1, 0, 0)");
+  await expect.poll(() => dialog.getByRole("button", { name: "ביצוע מחדש" }).locator("svg").evaluate((element) => getComputedStyle(element).transform)).toBe("matrix(-1, 0, 0, 1, 0, 0)");
   await dialog.getByRole("button", { name: "ביטול", exact: true }).click();
 });
 

@@ -9640,6 +9640,8 @@ html[dir="rtl"] .channel-details-person-handle {
 }
 .image-editor-close { width: 38px; height: 38px; }
 .image-editor-nav { width: 34px; height: 34px; }
+html[dir="rtl"] .image-editor-undo svg,
+html[dir="rtl"] .image-editor-redo svg { transform: scaleX(-1); }
 .image-editor-close:hover,
 .image-editor-tool:hover,
 .image-editor-nav:hover { border-color: color-mix(in srgb, var(--accent) 42%, var(--border)); color: var(--accent); background: var(--active-soft); }
