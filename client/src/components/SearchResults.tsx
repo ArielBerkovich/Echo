@@ -97,6 +97,8 @@ export default function SearchResults({ query, onJump, onClose }) {
         group = {
           key,
           label: result.channelType === "dm" ? t("directMessage") : `#${result.channelName || t("unknown")}`,
+          isChannel: result.channelType !== "dm",
+          channelName: result.channelName || t("unknown"),
           results: [],
         };
         byConversation.set(key, group);
@@ -181,7 +183,9 @@ export default function SearchResults({ query, onJump, onClose }) {
             <>
               {groupedResults.map((group) => (
                 <section className="search-result-group" key={group.key} aria-label={group.label}>
-                  <div className="search-result-group-title">{group.label}</div>
+                  <div className="search-result-group-title">
+                    {group.isChannel ? <bdi dir="ltr">#{group.channelName}</bdi> : group.label}
+                  </div>
                   {group.results.map((r) => {
                     const index = resultIndex.get(r.id);
                     return (
