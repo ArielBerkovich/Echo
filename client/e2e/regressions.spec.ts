@@ -143,8 +143,41 @@ test("opens the Home filter below the sidebar tools", async ({ page }) => {
   expect(sidebarFilter.y).toBeGreaterThanOrEqual(tools.y + tools.height);
 });
 
-test("filters Home to unread conversations", async ({ page }) => {
+test("combines the Home unread filter with text search", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
+
+  // Start from a deterministic read state, then create unread activity in a
+  // channel, another channel, and the DM so the two filter dimensions can be
+  // asserted independently.
+  for (const channelId of [fixture.generalChannel.id, fixture.projectChannel.id, fixture.dmChannel.id]) {
+    await requestAsToken(page, fixture.alice.token, `/channels/${channelId}/read`, { method: "POST" });
+  }
+  const textFilter = fixture.projectChannel.name;
+  await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body: `General unread ${fixture.suffix}`,
+      externalKey: `unread-general-${fixture.suffix}`,
+    },
+  });
+  await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.projectChannel.id,
+      body: `Project unread ${fixture.suffix}`,
+      externalKey: `unread-project-${fixture.suffix}`,
+    },
+  });
+  await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.dmChannel.id,
+      body: `DM unread ${fixture.suffix}`,
+      externalKey: `unread-dm-${fixture.suffix}`,
+    },
+  });
+
   await page.goto("/");
 
   const unreadToggle = page.getByTestId("sidebar-unread-toggle");
@@ -154,13 +187,21 @@ test("filters Home to unread conversations", async ({ page }) => {
   await unreadToggle.click();
   await expect(unreadToggle).toHaveAttribute("aria-pressed", "true");
 
-  const rows = page.locator(".channel-list .channel-item");
-  await expect(rows).not.toHaveCount(0);
-  await expect.poll(async () => rows.evaluateAll((items) => items.every((item) => item.classList.contains("unread")))).toBe(true);
+  await expect(page.getByTestId(`channel-row-${fixture.generalChannel.name}`)).toBeVisible();
+  await expect(page.getByTestId(`channel-row-${fixture.projectChannel.name}`)).toBeVisible();
+  await expect(page.getByTestId(`dm-row-${slug(fixture.bob.displayName)}`)).toBeVisible();
+
+  await page.getByTestId("sidebar-filter").fill(textFilter);
+  await expect(page.getByTestId(`channel-row-${fixture.projectChannel.name}`)).toBeVisible();
+  await expect(page.getByTestId(`channel-row-${fixture.generalChannel.name}`)).toHaveCount(0);
+  await expect(page.getByTestId(`dm-row-${slug(fixture.bob.displayName)}`)).toHaveCount(0);
 
   await page.getByTestId("sidebar-filter-all").click();
   await expect(unreadToggle).toHaveAttribute("aria-pressed", "false");
+  await page.getByTestId("sidebar-filter").fill("");
   await expect(page.getByTestId(`channel-row-${fixture.projectChannel.name}`)).toBeVisible();
+  await expect(page.getByTestId(`channel-row-${fixture.generalChannel.name}`)).toBeVisible();
+  await expect(page.getByTestId(`dm-row-${slug(fixture.bob.displayName)}`)).toBeVisible();
 });
 
 test("opens regular search with the current channel scope", async ({ page }) => {
@@ -184,6 +225,35 @@ test("clears an unsubmitted channel search when navigating away", async ({ page 
   await page.getByTestId(`channel-row-${fixture.generalChannel.name}`).click();
   await expect(page.getByTestId("channel-title")).toContainText(fixture.generalChannel.name);
   await expect(page.getByTestId("search-input")).toHaveValue("");
+});
+
+test("keeps channel hashes before names in English and Hebrew search results", async ({ page }) => {
+  const query = `search-direction-${fixture.suffix}`;
+  await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
+    method: "POST",
+    body: {
+      channelId: fixture.generalChannel.id,
+      body: `${query} result`,
+      externalKey: `search-direction-${fixture.suffix}`,
+    },
+  });
+
+  await page.goto("/");
+  for (const language of ["en", "he"]) {
+    await page.evaluate((nextLanguage) => localStorage.setItem("echo.language", nextLanguage), language);
+    await page.goto("/");
+    await page.getByTestId("search-input").fill(query);
+    await page.getByTestId("search-input").press("Enter");
+
+    const groupTitle = page.locator(".search-result-group-title").first();
+    const where = page.locator(".activity-where").first();
+    await expect(groupTitle).toHaveText("#general");
+    await expect.poll(() => where.textContent().then((text) => text?.replace(/[\u2066-\u2069]/g, ""))).toBe(
+      language === "en" ? "in #general" : "ב־#general"
+    );
+    await expect(groupTitle).not.toContainText("general#");
+    await expect.poll(() => where.textContent().then((text) => text?.replace(/[\u2066-\u2069]/g, ""))).not.toContain("general#");
+  }
 });
 
 test("aligns Hebrew in the composer and sent message", async ({ page }) => {
