@@ -698,6 +698,17 @@ test("keeps the Hebrew forward-note placeholder RTL", async ({ page }) => {
   }))).toEqual({ direction: "rtl", textAlign: "right", float: "right" });
 });
 
+test("uses the Hebrew in preposition in the channel composer placeholder", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("echo.language", "he"));
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+
+  await expect(page.getByTestId("composer-editor")).toHaveAttribute(
+    "data-placeholder",
+    `שליחת הודעה ב־\u2066#${fixture.projectChannel.name}\u2069`
+  );
+});
+
 test("keeps the channel hash before its name in Hebrew forward results", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => localStorage.setItem("echo.language", "he"));

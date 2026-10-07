@@ -359,10 +359,10 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   const dmPlaceholder = t("messageToPerson").replace("{name}", `\u2068${channel.dmName}\u2069`);
   const placeholder = customPlaceholder || (isThread
     ? t("replyToThread")
-    : isDm
+      : isDm
       ? isGroupDm ? `${t("message")}…` : dmPlaceholder
       : direction === "rtl"
-        ? `${t("message")} \u2066#${channel.name}\u2069`
+        ? `${t("message")} ב־\u2066#${channel.name}\u2069`
         : `${t("message")} #${channel.name}`);
 
   // Groups are loaded only for the mention picker and only once per composer
