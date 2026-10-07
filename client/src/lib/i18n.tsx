@@ -1020,7 +1020,7 @@ export const translations = {
     mcpTitle: "חיבור Echo ללקוח AI",
     mcpDescription: "השתמשו בשרת ה־MCP המאומת של Echo כדי לאפשר לעוזר הקוד לחפש, לקרוא ולעבוד עם סביבת העבודה שלכם.",
     mcpAuthentication: "אימות",
-    mcpAuthenticationHint: "צרו אסימון API של Echo ושמרו אותו בסודות של הלקוח או במשתנה סביבה.",
+    mcpAuthenticationHint: "צרו אסימון API של Echo ושמרו אותו באופן מאובטח ביישום הלקוח או במשתנה סביבה.",
     copySetup: "העתקת הגדרה",
     mcpInstallScript: "סקריפט התקנה",
     mcpSetupRequired: "צרו אסימון כדי להמשיך",

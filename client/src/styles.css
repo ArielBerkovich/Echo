@@ -7455,6 +7455,7 @@ html[data-interface-direction="rtl"] .message .msg-menu {
 }
 .mcp-platform-tabs {
   display: flex;
+  direction: ltr;
   gap: 4px;
   align-self: flex-start;
   padding: 3px;
@@ -7485,6 +7486,7 @@ html[data-interface-direction="rtl"] .message .msg-menu {
 }
 .mcp-client-card-heading {
   align-items: center;
+  text-align: left;
 }
 .mcp-client-card-heading p {
   font-size: 12px;
@@ -7502,6 +7504,8 @@ html[data-interface-direction="rtl"] .message .msg-menu {
   background: var(--surface);
   color: var(--text);
   font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
+  direction: ltr;
+  text-align: left;
   white-space: pre;
 }
 .mcp-code-section + .mcp-code-section {

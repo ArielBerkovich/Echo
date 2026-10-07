@@ -1194,13 +1194,13 @@ function McpSettings() {
           const install = mcpInstallScript(guide.id, selectedPlatform, origin, token);
           return (
             <article className="mcp-client-card" key={guide.id} role="tabpanel" id={`mcp-panel-${guide.id}`} aria-labelledby={`mcp-tab-${guide.id}`}>
-              <div className="mcp-client-card-heading">
+              <div className="mcp-client-card-heading" dir="ltr">
                 <div>
                   <h4>{guide.name}</h4>
                   <p>{guide.description}</p>
                 </div>
               </div>
-              <div className="mcp-platform-tabs" role="tablist" aria-label="Operating system">
+              <div className="mcp-platform-tabs" role="tablist" aria-label="Operating system" dir="ltr">
                 {MCP_PLATFORMS.map((platform) => (
                   <button
                     type="button"
@@ -1218,7 +1218,7 @@ function McpSettings() {
                 <div className="mcp-code-heading">
                   <span>{t("mcpInstallScript")}</span>
                 </div>
-                <pre><code>{install}</code></pre>
+                <pre dir="ltr"><code>{install}</code></pre>
                 <div className="mcp-code-actions">
                   <button type="button" className="mcp-copy-button" onClick={() => copy(install, `install-${guide.id}`)}>
                     {copied === `install-${guide.id}` ? t("copied") : t("copySetup")}

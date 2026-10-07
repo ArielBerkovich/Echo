@@ -210,6 +210,32 @@ test("configures one personal mention webhook from Settings", async ({ page }) =
   expect(bobView.webhook).toBeNull();
 });
 
+test("keeps Hebrew MCP installation scripts left-to-right", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("echo.language", "he"));
+  await page.goto("/");
+  await page.getByTestId("rail-settings").click();
+  await expect(page.getByTestId("settings-page")).toBeVisible();
+  await page.getByRole("button", { name: "MCP", exact: true }).click();
+
+  const mcp = page.getByTestId("mcp-settings");
+  await mcp.getByRole("button", { name: "יצירת אסימון API" }).click();
+  const clientHeading = mcp.locator(".mcp-client-card-heading");
+  await expect(clientHeading).toHaveAttribute("dir", "ltr");
+  await expect.poll(() => clientHeading.evaluate((element) => ({
+    direction: getComputedStyle(element).direction,
+    textAlign: getComputedStyle(element).textAlign,
+  }))).toEqual({ direction: "ltr", textAlign: "left" });
+  const platforms = mcp.locator(".mcp-platform-tabs");
+  await expect(platforms).toHaveAttribute("dir", "ltr");
+  await expect(platforms.getByRole("tab")).toHaveText(["Linux", "macOS", "Windows"]);
+  const script = mcp.locator(".mcp-client-card pre");
+  await expect(script).toHaveAttribute("dir", "ltr");
+  await expect.poll(() => script.evaluate((element) => ({
+    direction: getComputedStyle(element).direction,
+    textAlign: getComputedStyle(element).textAlign,
+  }))).toEqual({ direction: "ltr", textAlign: "left" });
+});
+
 test("creates, delivers through, lists, and revokes an incoming webhook", async ({ page }) => {
   await page.goto("/");
   await channelRow(page, "general").click();
