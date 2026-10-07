@@ -174,7 +174,7 @@ export default function SearchResults({ query, onJump, onClose }) {
           ) : results.length === 0 ? (
             <div className="empty-state">
               <h3>{t("noMessagesFound")}</h3>
-              <p>{t("searchNoMatch").replace("{query}", query)}</p>
+              <p>{t("searchNoMatch").replace("{query}", `\u2068${query}\u2069`)}</p>
               <p className="search-empty-hint">{t("searchSyntaxHint")} <code>in:channel</code>, <code>from:@user</code>, {t("or")} <code>has:file</code>.</p>
             </div>
           ) : (
@@ -201,7 +201,7 @@ export default function SearchResults({ query, onJump, onClose }) {
                           <div className="meta">
                             <span className="author">{r.author?.displayName || t("unknown")}</span>
                             <span className="activity-where">
-                              {r.channelType === "dm" ? t("searchInDirectMessage") : t("searchInChannel").replace("{channel}", `#${r.channelName}`)}
+                              {r.channelType === "dm" ? t("searchInDirectMessage") : t("searchInChannel").replace("{channel}", `\u2066${r.channelName}\u2069`)}
                               {r.parentId ? ` · ${t("inThread")}` : ""}
                             </span>
                             <span className="time">{formatDateTime(r.createdAt)}</span>
