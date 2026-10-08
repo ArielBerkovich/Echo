@@ -77,6 +77,62 @@ test("isolates a Hebrew DM name in the English interface", async ({ page }) => {
   await expect.poll(() => isolatedName.evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
 });
 
+test("isolates mixed-direction names in live search suggestions", async ({ page }) => {
+  const hebrewName = "שם לדוגמה'";
+  const englishName = "English Name'";
+  const searchUser = page.getByTestId(`search-user-${slug(fixture.bob.username)}`);
+
+  changedBobDisplayName = true;
+  await page.addInitScript(() => localStorage.setItem("echo.language", "en"));
+  await requestAsToken(page, fixture.bob.token, "/users/me", {
+    method: "PATCH",
+    body: { displayName: hebrewName },
+  });
+  await page.goto("/");
+  await page.getByTestId("search-input").fill(fixture.bob.username);
+
+  const hebrewSuggestion = searchUser.locator(".search-name bdi");
+  await expect(hebrewSuggestion).toHaveText(hebrewName);
+  await expect(hebrewSuggestion).toHaveAttribute("dir", "auto");
+  await expect.poll(() => hebrewSuggestion.evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
+
+  await page.evaluate(() => localStorage.setItem("echo.language", "he"));
+  await requestAsToken(page, fixture.bob.token, "/users/me", {
+    method: "PATCH",
+    body: { displayName: englishName },
+  });
+  await page.goto("/");
+  await page.getByTestId("search-input").fill(fixture.bob.username);
+
+  const englishSuggestion = searchUser.locator(".search-name bdi");
+  await expect(englishSuggestion).toHaveText(englishName);
+  await expect(englishSuggestion).toHaveAttribute("dir", "auto");
+  await expect.poll(() => englishSuggestion.evaluate((element) => getComputedStyle(element).direction)).toBe("ltr");
+});
+
+test("updates the display-name input direction for Hebrew and English names", async ({ page }) => {
+  const hebrewName = "שם לדוגמה'";
+  const englishName = "English Name'";
+
+  await page.goto("/");
+  try {
+    await page.getByRole("button", { name: "Update display name", exact: true }).click();
+    const input = page.getByTestId("display-name-dialog-input");
+    await expect(input).toHaveAttribute("dir", "auto");
+
+    await input.fill(hebrewName);
+    await expect.poll(() => input.evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
+
+    await input.fill(englishName);
+    await expect.poll(() => input.evaluate((element) => getComputedStyle(element).direction)).toBe("ltr");
+  } finally {
+    await requestAsToken(page, fixture.alice.token, "/users/me", {
+      method: "PATCH",
+      body: { displayName: fixture.alice.displayName },
+    });
+  }
+});
+
 test("migrates the legacy automatic direction preference to LTR", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem("echo.interfaceDirection", "rtl");
@@ -640,6 +696,17 @@ test("keeps the Hebrew forward-note placeholder RTL", async ({ page }) => {
     textAlign: getComputedStyle(element, "::before").textAlign,
     float: getComputedStyle(element, "::before").float,
   }))).toEqual({ direction: "rtl", textAlign: "right", float: "right" });
+});
+
+test("uses the Hebrew in preposition in the channel composer placeholder", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("echo.language", "he"));
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+
+  await expect(page.getByTestId("composer-editor")).toHaveAttribute(
+    "data-placeholder",
+    `שליחת הודעה ב־\u2066#${fixture.projectChannel.name}\u2069`
+  );
 });
 
 test("keeps the channel hash before its name in Hebrew forward results", async ({ page }) => {

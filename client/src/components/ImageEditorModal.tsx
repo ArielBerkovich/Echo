@@ -329,8 +329,8 @@ function ImageEditorModal({ attachment, onClose, onSave }: {
         <header className="custom-image-editor-header">
           <button type="button" className="image-editor-close" onClick={onClose} aria-label={t("cancel")} title={t("cancel")}><X size={21} /></button>
           <div className="image-editor-history">
-            <button type="button" className="image-editor-nav" onClick={undo} disabled={historyState.index <= 0} aria-label={t("undo")} title={t("undo")}><Undo2 size={18} /></button>
-            <button type="button" className="image-editor-nav" onClick={redo} disabled={historyState.index < 0 || historyState.index >= historyState.length - 1} aria-label={t("redo")} title={t("redo")}><Redo2 size={18} /></button>
+            <button type="button" className="image-editor-nav image-editor-undo" onClick={undo} disabled={historyState.index <= 0} aria-label={t("undo")} title={t("undo")}><Undo2 size={18} /></button>
+            <button type="button" className="image-editor-nav image-editor-redo" onClick={redo} disabled={historyState.index < 0 || historyState.index >= historyState.length - 1} aria-label={t("redo")} title={t("redo")}><Redo2 size={18} /></button>
           </div>
           <strong>{t("editImage")}</strong>
           <button type="button" className="image-editor-save" onClick={save} disabled={!ready || saving}>{saving ? t("loading") : t("save")} <Save size={16} /></button>

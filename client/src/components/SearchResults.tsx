@@ -97,6 +97,8 @@ export default function SearchResults({ query, onJump, onClose }) {
         group = {
           key,
           label: result.channelType === "dm" ? t("directMessage") : `#${result.channelName || t("unknown")}`,
+          isChannel: result.channelType !== "dm",
+          channelName: result.channelName || t("unknown"),
           results: [],
         };
         byConversation.set(key, group);
@@ -174,14 +176,16 @@ export default function SearchResults({ query, onJump, onClose }) {
           ) : results.length === 0 ? (
             <div className="empty-state">
               <h3>{t("noMessagesFound")}</h3>
-              <p>{t("searchNoMatch").replace("{query}", query)}</p>
+              <p>{t("searchNoMatch").replace("{query}", `\u2068${query}\u2069`)}</p>
               <p className="search-empty-hint">{t("searchSyntaxHint")} <code>in:channel</code>, <code>from:@user</code>, {t("or")} <code>has:file</code>.</p>
             </div>
           ) : (
             <>
               {groupedResults.map((group) => (
                 <section className="search-result-group" key={group.key} aria-label={group.label}>
-                  <div className="search-result-group-title">{group.label}</div>
+                  <div className="search-result-group-title">
+                    {group.isChannel ? <bdi dir="ltr">#{group.channelName}</bdi> : group.label}
+                  </div>
                   {group.results.map((r) => {
                     const index = resultIndex.get(r.id);
                     return (
@@ -201,7 +205,7 @@ export default function SearchResults({ query, onJump, onClose }) {
                           <div className="meta">
                             <span className="author">{r.author?.displayName || t("unknown")}</span>
                             <span className="activity-where">
-                              {r.channelType === "dm" ? t("searchInDirectMessage") : t("searchInChannel").replace("{channel}", `#${r.channelName}`)}
+                              {r.channelType === "dm" ? t("searchInDirectMessage") : t("searchInChannel").replace("{channel}", `\u2066${r.channelName}\u2069`)}
                               {r.parentId ? ` · ${t("inThread")}` : ""}
                             </span>
                             <span className="time">{formatDateTime(r.createdAt)}</span>

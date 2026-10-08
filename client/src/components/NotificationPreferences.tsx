@@ -40,11 +40,16 @@ export function NotificationDefaults() {
         <ChevronDownIcon size={15} aria-hidden="true" />
       </button>
       <div id="notification-exception-list" className="notification-exception-list" hidden={!expanded}>
-        {entries.map(([id, rule]) => <div className="notification-exception" key={id}>
-          <span>{query.data.labels?.[id] || t("conversationNotifications")}</span>
-          <span>{rule === "mute" ? t("muteConversation") : rule === "all" ? t("notifyAllMessages") : t("notifyMentionsOnly")}</span>
-          <button type="button" onClick={() => api.updateNotificationSettings({ conversationId: id, rule: "default" }).then((next) => client.setQueryData(queryKeys.notificationSettings, next)).catch(() => {})}>{t("resetToDefault")}</button>
-        </div>)}
+        {entries.map(([id, rule]) => {
+          const label = query.data.labels?.[id] || t("conversationNotifications");
+          return (
+            <div className="notification-exception" key={id}>
+              <span>{label.startsWith("#") ? <bdi dir="ltr">{label}</bdi> : label}</span>
+              <span>{rule === "mute" ? t("muteConversation") : rule === "all" ? t("notifyAllMessages") : t("notifyMentionsOnly")}</span>
+              <button type="button" onClick={() => api.updateNotificationSettings({ conversationId: id, rule: "default" }).then((next) => client.setQueryData(queryKeys.notificationSettings, next)).catch(() => {})}>{t("resetToDefault")}</button>
+            </div>
+          );
+        })}
       </div>
     </section>}
   </div>;

@@ -41,6 +41,7 @@ export default function DisplayNameDialog({ value, onSave, onClose }) {
           data-testid="display-name-dialog-input"
           value={displayName}
           maxLength={MAX_DISPLAY_NAME_LENGTH}
+          dir="auto"
           autoFocus
           onChange={(event) => setDisplayName(event.target.value)}
           onKeyDown={(event) => event.key === "Enter" && save()}
