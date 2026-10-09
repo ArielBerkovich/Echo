@@ -4951,6 +4951,19 @@ html[data-mode="dark"] .search-highlight .kw-has .kw-label { color: #fcd34d; }
   animation: fadeInUp 0.14s ease both;
 }
 
+/* The workspace search preview sits above the conversation pane in the
+   navigation layer, so keep its palette aligned with chat in every theme. */
+.workspace-search .search-dropdown {
+  --surface: var(--conversation-surface);
+  --surface-2: var(--conversation-surface-2);
+  --border: var(--conversation-border);
+  --text: var(--conversation-text);
+  --muted: var(--conversation-muted);
+  --accent: var(--conversation-accent);
+  --active-bg: var(--conversation-active-bg);
+  --active-soft: color-mix(in srgb, var(--active-bg) 11%, var(--surface));
+}
+
 /* Add-people filter input */
 .people-filter {
   margin-bottom: 10px;

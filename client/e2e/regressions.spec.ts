@@ -725,6 +725,15 @@ test("keeps channel and user details dialogs on the neutral chat palette", async
   };
   expect(await moreActionBackground("dracula")).toBe(await moreActionBackground("nord"));
 
+  await page.getByTestId("search-input").fill("chat preview");
+  const searchPreview = page.locator(".workspace-search .search-dropdown");
+  await expect(searchPreview).toBeVisible();
+  const searchPreviewBackground = async (theme) => {
+    await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, theme);
+    return searchPreview.evaluate((element) => getComputedStyle(element).backgroundColor);
+  };
+  expect(await searchPreviewBackground("dracula")).toBe(await searchPreviewBackground("nord"));
+
   await page.goto(`/dms/${fixture.dmChannel.id}`);
   await page.getByTestId(`message-${fixture.messages.dmMessage.id}-avatar`).click();
   const profile = page.getByTestId("profile-modal");
