@@ -180,6 +180,10 @@ html[dir="rtl"] .api-note {
   --surface: #ffffff;
   --surface-2: #eef3fb;
   --border: #e3e9f2;
+  /* Keep long-form conversation reading neutral across accent themes. */
+  --conversation-bg: #f7f6f2;
+  --conversation-surface: #fffdfa;
+  --conversation-border: #e7e4df;
 
   /* Text */
   --text: #0f1f3a;
@@ -230,6 +234,9 @@ html[data-mode="dark"] {
   --surface: #101726;
   --surface-2: #1a2236;
   --border: #232c40;
+  --conversation-bg: #1a1d21;
+  --conversation-surface: #222529;
+  --conversation-border: #35383c;
   --text: #eaeffb;
   --muted: #8a99b6;
   --code-bg: #060b16;
@@ -455,18 +462,6 @@ html[data-theme="calm"][data-mode="light"] .workspace-search .search-highlight .
 html[data-theme="calm"][data-mode="light"] .workspace-search .search-highlight .kw-has .kw-label {
   color: #92400e;
 }
-html[data-theme="calm"][data-mode="light"] .messages {
-  background: var(--bg);
-}
-html[data-theme="calm"][data-mode="light"] .chat-pane,
-html[data-theme="calm"][data-mode="light"] .channel-view {
-  background: var(--bg);
-}
-html[data-theme="calm"][data-mode="light"] .channel-header {
-  background: var(--bg);
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
-  box-shadow: none;
-}
 html[data-theme="calm"][data-mode="light"] .message:hover,
 html[data-theme="calm"][data-mode="light"] .message.menu-open,
 html[data-theme="calm"][data-mode="light"] .message.actions-hovered,
@@ -479,9 +474,6 @@ html[data-theme="calm"][data-mode="light"][data-interface-direction="rtl"] .mess
 html[data-theme="calm"][data-mode="light"][data-interface-direction="rtl"] .message.actions-hovered,
 html[data-theme="calm"][data-mode="light"][data-interface-direction="rtl"] .message.reaction-open {
   box-shadow: none;
-}
-html[data-theme="calm"][data-mode="light"] .composer {
-  background: #ffffff;
 }
 html[data-theme="calm"] .workspace-sidebar,
 html[data-theme="calm"] .workspace-sidebar .sidebar {
@@ -506,20 +498,6 @@ html[data-theme="calm"][data-mode="dark"] {
   --code-bg: #1f252b;
   --code-text: #e5ebf0;
   --code-border: #3a424b;
-}
-html[data-theme="calm"][data-mode="dark"] .messages {
-  background: var(--bg);
-}
-html[data-theme="calm"][data-mode="dark"] .chat-pane {
-  background: var(--bg);
-}
-html[data-theme="calm"][data-mode="dark"] .channel-view {
-  background: var(--bg);
-}
-html[data-theme="calm"][data-mode="dark"] .channel-header {
-  background: #1f252b;
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
-  box-shadow: none;
 }
 
 /* Dracula — purple / pink; signature surfaces in dark mode. */
@@ -645,14 +623,14 @@ html[data-mode="dark"] .search-result .body {
   color: var(--text);
 }
 html[data-mode="dark"] .chat-pane {
-  border-color: rgba(255, 255, 255, 0.06);
+  border-color: var(--conversation-border);
   box-shadow: none;
 }
 
 /* Send box (composer) in dark mode — dark surfaces with clearly legible text. */
 html[data-mode="dark"] .composer {
-  background: var(--surface-2);
-  border-color: var(--border);
+  background: var(--conversation-surface);
+  border-color: var(--conversation-border);
 }
 html[data-mode="dark"] .composer:focus-within {
   border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
@@ -4620,7 +4598,7 @@ html[dir="rtl"] .channel-details-section-hint {
   border: 0;
   border-radius: 0;
   overflow: hidden;
-  background: var(--surface);
+  background: var(--conversation-bg);
   box-shadow: none;
 }
 .pane-search {
@@ -4876,7 +4854,7 @@ html[data-mode="dark"] .search-highlight .kw-has .kw-label { color: #fcd34d; }
   flex: 1;
   display: flex;
   flex-direction: row;
-  background: var(--surface);
+  background: var(--conversation-bg);
   min-width: 0;
   min-height: 0;
 }
@@ -4933,6 +4911,9 @@ html[data-mode="dark"] .search-highlight .kw-has .kw-label { color: #fcd34d; }
   flex-direction: column;
   min-height: 0;
   background: var(--surface);
+}
+.thread-panel {
+  background: var(--conversation-bg);
 }
 /* Keep the large-screen side panels consistent with the expanded thread
    surface. Channel details is a modal and keeps its own sizing. */
@@ -5458,6 +5439,7 @@ html[dir="rtl"] .members-panel-person-copy .channel-details-person-handle {
   flex: none;
   padding: 14px 16px;
   border-bottom: 0;
+  background: var(--conversation-bg);
   font-weight: 800;
 }
 .thread-heading {
@@ -11440,16 +11422,16 @@ html[dir="rtl"] .groups-create-modal .forward-destination-copy {
   height: 64px;
   flex: none;
   padding: 14px 24px;
-  border-bottom: 0;
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  border-bottom: 1px solid var(--conversation-border);
+  background: var(--conversation-bg);
+  box-shadow: none;
   backdrop-filter: saturate(1.1);
   z-index: 1;
   min-width: 0;
 }
 html[data-mode="dark"] .channel-header {
-  background: color-mix(in srgb, var(--surface) 72%, transparent);
-  border-bottom-color: rgba(255, 255, 255, 0.06);
+  background: var(--conversation-bg);
+  border-bottom-color: var(--conversation-border);
 }
 .channel-header[data-testid="activity-header"],
 .channel-header[data-testid="saved-header"],
@@ -11731,7 +11713,7 @@ html[dir="rtl"] .conversation-notification-menu { right: auto; left: 0; }
   display: flex;
   flex-direction: column;
   gap: 4px;
-  background: linear-gradient(180deg, var(--bg), var(--surface) 120px);
+  background: var(--conversation-bg);
 }
 .messages-inner {
   width: calc(100% + (2 * var(--messages-gutter)));
@@ -12273,9 +12255,9 @@ html[data-interface-direction="ltr"] .composer-user-mention {
 .composer {
   position: relative;
   margin: 4px 20px 22px;
-  border: 1px solid rgba(29, 28, 29, 0.18);
+  border: 1px solid var(--conversation-border);
   border-radius: 12px;
-  background: #fff;
+  background: var(--conversation-surface);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
@@ -12367,8 +12349,8 @@ html[data-interface-direction="ltr"] .composer-user-mention {
   box-sizing: border-box;
   flex-wrap: nowrap;
   height: 45px;
-  background: #f8f8f8;
-  border-bottom: 1px solid #ececec;
+  background: color-mix(in srgb, var(--conversation-bg) 58%, var(--conversation-surface));
+  border-bottom: 1px solid var(--conversation-border);
   border-radius: 11px 11px 0 0;
 }
 .composer.is-editing .composer-toolbar {
@@ -16728,7 +16710,7 @@ html[dir="rtl"] .channel-browser-members {
     min-height: 68px;
     height: auto;
     padding: 12px 14px 12px 16px;
-    background: var(--surface-2);
+    background: var(--conversation-bg);
   }
 
   .thread-heading {
@@ -17207,15 +17189,11 @@ html[dir="rtl"] .channel-browser-members {
   }
 }
 
-/* Calm Harbor keeps navigation and conversation on one neutral charcoal
-   surface; the rail remains the only colored navigation treatment. */
+/* Calm Harbor keeps neutral navigation; the conversation canvas is shared by
+   all themes and follows the active light/dark mode. */
 html[data-theme="calm"][data-mode="dark"] .workspace-sidebar,
-html[data-theme="calm"][data-mode="dark"] .workspace-sidebar .sidebar,
-html[data-theme="calm"][data-mode="dark"] .channel-view,
-html[data-theme="calm"][data-mode="dark"] .chat-pane,
-html[data-theme="calm"][data-mode="dark"] .messages {
-  background: #1f252b !important;
-  background-image: none !important;
+html[data-theme="calm"][data-mode="dark"] .workspace-sidebar .sidebar {
+  background: #1f252b;
 }
 html[data-theme="calm"] .channel-list {
   scrollbar-color: var(--muted) #1f252b;
