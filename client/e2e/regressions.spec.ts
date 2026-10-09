@@ -1168,8 +1168,17 @@ test("threads offer new replies while scrolled up and follow your own reply", as
 });
 
 test("deleting a thread root removes it from chat and marks it deleted in the open thread", async ({ page }) => {
-  const rootId = fixture.messages.threadRoot.id;
-  const replyId = fixture.messages.threadReply.id;
+  const token = uniqueSuffix("delete-thread");
+  const { message: root } = await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
+    method: "POST",
+    body: { channelId: fixture.projectChannel.id, body: `Deletable thread root ${token}` },
+  });
+  const { message: reply } = await requestAsToken(page, fixture.bob.token, "/messages/upsert", {
+    method: "POST",
+    body: { channelId: fixture.projectChannel.id, parentId: root.id, body: `Deletable thread reply ${token}` },
+  });
+  const rootId = root.id;
+  const replyId = reply.id;
   await page.goto(`/channels/${fixture.projectChannel.id}`);
   await page.getByTestId(`message-${rootId}-reply-count`).click();
 
