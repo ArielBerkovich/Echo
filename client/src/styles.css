@@ -400,7 +400,9 @@ html[data-mode="dark"] {
 .modal.manager-modal,
 .modal.leave-channel-confirm-modal,
 .modal.create-channel-modal,
-.modal.add-people-modal {
+.modal.add-people-modal,
+.modal.groups-picker-modal,
+.modal.leave-group-confirm-modal {
   --bg: var(--conversation-bg);
   --surface: var(--conversation-surface);
   --surface-2: var(--conversation-surface-2);
