@@ -9777,6 +9777,18 @@ html[dir="rtl"] .channel-details-person-handle {
   direction: inherit;
 }
 .custom-image-editor {
+  --bg: var(--conversation-bg);
+  --surface: var(--conversation-surface);
+  --surface-2: var(--conversation-surface-2);
+  --border: var(--conversation-border);
+  --text: var(--conversation-text);
+  --muted: var(--conversation-muted);
+  --accent: var(--conversation-accent);
+  --active-bg: var(--conversation-active-bg);
+  --active-fg: var(--conversation-active-fg);
+  --active-soft: color-mix(in srgb, var(--active-bg) 11%, var(--surface));
+  --link-hover: var(--conversation-link-hover);
+  --image-editor-canvas-bg: color-mix(in srgb, var(--surface-2) 88%, var(--text) 12%);
   display: flex;
   width: min(1320px, 100%);
   height: min(860px, 100%);
