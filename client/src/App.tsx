@@ -11,6 +11,7 @@ import WorkspaceNavigation from "./components/WorkspaceNavigation.js";
 import WorkspaceOverlays from "./components/WorkspaceOverlays.js";
 import WorkspaceContent from "./components/WorkspaceContent.js";
 import SessionExpiredDialog from "./components/SessionExpiredDialog.js";
+import AnimatedLoadingLabel from "./components/AnimatedLoadingLabel.jsx";
 import { readJson, readString, writeJson, writeString } from "./lib/storage.js";
 import { notifyPermission, notifySupported, requestNotifyPermission, setNotifyPref } from "./lib/notify.js";
 import { BUILT_IN_GIT_EMOJIS } from "./lib/gitEmojis.js";
@@ -1500,8 +1501,7 @@ export default function App() {
     return (
       <>
         <div className="centered startup-loading" role="status" aria-label={loadingLabel}>
-          <span>{loadingLabel.replace(/[.…]+$/, "")}</span>
-          <span className="loading-dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span>
+          <AnimatedLoadingLabel label={loadingLabel} />
         </div>
         {showSessionExpiredDialog ? <SessionExpiredDialog onSignOut={handleLogout} /> : null}
       </>

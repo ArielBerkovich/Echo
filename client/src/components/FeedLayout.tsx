@@ -1,4 +1,5 @@
 import { memo } from "react";
+import AnimatedLoadingLabel from "./AnimatedLoadingLabel.jsx";
 
 export function FeedLayout({ title, subtitle, testId, actions, children }) {
   return (
@@ -18,7 +19,7 @@ export function FeedLayout({ title, subtitle, testId, actions, children }) {
 }
 
 export function FeedContent({ loading, loadingLabel = "Loading…", items, emptyTitle, emptyMessage, children }) {
-  if (loading) return <div className="empty-state"><p>{loadingLabel}</p></div>;
+  if (loading) return <div className="empty-state"><p role="status" aria-label={loadingLabel}><AnimatedLoadingLabel label={loadingLabel} /></p></div>;
   if (!items.length) {
     return (
       <div className="empty-state">

@@ -1,5 +1,6 @@
 import { lazy, Suspense, useRef } from "react";
 import { useI18n } from "../lib/i18n.js";
+import AnimatedLoadingLabel from "./AnimatedLoadingLabel.jsx";
 
 // Conversation history, feeds, and browse/search results pull in markdown,
 // sanitization, and message interaction code. Load each surface when selected
@@ -19,7 +20,7 @@ export default function WorkspaceContent({ isRestoringLocation = false, view, gr
   return (
     <div className="chat-pane">
       {isRestoringLocation ? (
-        <div className="empty-pane" data-testid="workspace-route-loading" role="status">{t("loading")}</div>
+        <div className="empty-pane" data-testid="workspace-route-loading" role="status" aria-label={t("loading")}><AnimatedLoadingLabel label={t("loading")} /></div>
       ) : (
         <ActiveWorkspaceView
           view={view}
@@ -88,5 +89,5 @@ function ActiveWorkspaceView({ view, groups, search, browse, feeds, conversation
     content = <ChannelView ref={channelViewRef} key={channel.id} channel={channel} {...props} />;
   }
 
-  return <Suspense fallback={<div className="empty-state"><p>{t("loading")}</p></div>}>{content}</Suspense>;
+  return <Suspense fallback={<div className="empty-state"><p role="status" aria-label={t("loading")}><AnimatedLoadingLabel label={t("loading")} /></p></div>}>{content}</Suspense>;
 }

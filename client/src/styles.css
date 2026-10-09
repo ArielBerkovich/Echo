@@ -979,6 +979,11 @@ input:focus {
 .startup-loading {
   gap: 2px;
 }
+.animated-loading-label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+}
 .loading-dots {
   display: inline-flex;
   min-width: 1.2em;
