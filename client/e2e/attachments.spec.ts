@@ -146,6 +146,13 @@ test("keeps code attachments compact until expanded and highlights them full-scr
   await card.getByRole("button", { name: "Open full-screen preview of preview.ts" }).click();
   const dialog = page.getByRole("dialog", { name: "Preview preview.ts" });
   await expect(dialog).toBeVisible();
+  const originalTheme = await page.evaluate(() => document.documentElement.dataset.theme);
+  const previewBackground = async (theme) => {
+    await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, theme);
+    return dialog.evaluate((element) => getComputedStyle(element).backgroundColor);
+  };
+  expect(await previewBackground("dracula")).toBe(await previewBackground("nord"));
+  await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, originalTheme);
   await expect(dialog.locator(".text-viewer-content")).toContainText("const greeting");
   await expect(dialog.locator(".text-viewer-content .hljs-keyword").first()).toBeVisible();
   await expect(dialog.getByRole("button", { name: "Download file" })).toBeVisible();

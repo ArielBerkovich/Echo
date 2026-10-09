@@ -256,11 +256,11 @@ html[dir="rtl"] .api-note {
 
   /* Image viewer neutrals stay independent of the selected Echo accent theme. */
   --lightbox-bg: #e5e5e5;
-  --lightbox-bar: var(--sidebar-bg);
-  --lightbox-border: color-mix(in srgb, var(--on-navy) 22%, transparent);
-  --lightbox-fg: var(--on-navy);
-  --lightbox-muted: var(--on-navy-muted);
-  --lightbox-hover: color-mix(in srgb, var(--accent) 22%, transparent);
+  --lightbox-bar: #23272e;
+  --lightbox-border: rgba(255, 255, 255, 0.14);
+  --lightbox-fg: #f1f3f5;
+  --lightbox-muted: #b5bbc3;
+  --lightbox-hover: rgba(255, 255, 255, 0.1);
   --lightbox-shadow: 0 16px 44px rgba(0, 0, 0, 0.18);
   --image-editor-canvas-bg: color-mix(in srgb, var(--surface-2) 88%, var(--text) 12%);
 }
@@ -314,6 +314,11 @@ html[data-mode="dark"] {
   --shadow-md: 0 10px 28px rgba(0, 0, 0, 0.55);
   --shadow-lg: 0 24px 56px rgba(0, 0, 0, 0.6);
   --lightbox-bg: #30343d;
+  --lightbox-bar: #23272e;
+  --lightbox-border: rgba(255, 255, 255, 0.14);
+  --lightbox-fg: #f1f3f5;
+  --lightbox-muted: #b5bbc3;
+  --lightbox-hover: rgba(255, 255, 255, 0.1);
   --lightbox-shadow: 0 18px 52px rgba(0, 0, 0, 0.55);
 }
 
@@ -9490,6 +9495,13 @@ html[dir="rtl"] .channel-details-person-handle {
   background: var(--lightbox-bg);
 }
 .presentation-viewer {
+  --surface: var(--conversation-surface);
+  --surface-2: var(--conversation-surface-2);
+  --border: var(--conversation-border);
+  --text: var(--conversation-text);
+  --muted: var(--conversation-muted);
+  --accent: var(--conversation-accent);
+  --active-soft: color-mix(in srgb, var(--conversation-active-bg) 11%, var(--surface));
   position: relative;
   display: flex;
   width: 100%;
@@ -9563,6 +9575,12 @@ html[dir="rtl"] .channel-details-person-handle {
   background: rgba(0, 0, 0, 0.65);
 }
 .text-viewer {
+  --surface: var(--conversation-surface);
+  --surface-2: var(--conversation-surface-2);
+  --border: var(--conversation-border);
+  --text: var(--conversation-text);
+  --muted: var(--conversation-muted);
+  --accent: var(--conversation-accent);
   display: flex;
   flex-direction: column;
   width: min(1100px, 100%);
