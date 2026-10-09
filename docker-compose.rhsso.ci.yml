@@ -2,8 +2,12 @@
 # Vite client running directly on the GitHub runner.
 services:
   mongo:
+    image: quay.io/mongodb/mongodb-community-server:7.0-ubi8
     ports:
       - "27017:27017"
+
+  mongo-init:
+    image: quay.io/mongodb/mongodb-community-server:7.0-ubi8
 
   minio:
     ports:
