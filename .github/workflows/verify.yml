@@ -204,7 +204,7 @@ jobs:
         run: |
           docker run -d --name echo-e2e-mongo \
             -p 27017:27017 \
-            mongo:7 mongod --replSet rs0 --bind_ip_all
+            public.ecr.aws/docker/library/mongo:7 mongod --replSet rs0 --bind_ip_all
 
           mongo_ready=false
           for i in $(seq 1 60); do
