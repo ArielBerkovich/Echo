@@ -397,7 +397,10 @@ html[data-mode="dark"] {
 .modal.forward-modal,
 .modal.profile-modal,
 .modal.channel-details-dialog,
-.modal.manager-modal {
+.modal.manager-modal,
+.modal.leave-channel-confirm-modal,
+.modal.create-channel-modal,
+.modal.add-people-modal {
   --bg: var(--conversation-bg);
   --surface: var(--conversation-surface);
   --surface-2: var(--conversation-surface-2);

@@ -917,6 +917,15 @@ test("removes a channel from the sidebar after leaving it", async ({ page }) => 
   const details = page.getByTestId("channel-details-dialog");
   await details.getByRole("tab", { name: "Actions" }).click();
   await details.getByTestId("channel-leave").click();
+  const leaveConfirmation = page.locator(".leave-channel-confirm-modal");
+  await expect(leaveConfirmation).toBeVisible();
+  const originalTheme = await page.evaluate(() => document.documentElement.dataset.theme);
+  const leaveConfirmationBackground = async (theme) => {
+    await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, theme);
+    return leaveConfirmation.evaluate((element) => getComputedStyle(element).backgroundColor);
+  };
+  expect(await leaveConfirmationBackground("dracula")).toBe(await leaveConfirmationBackground("nord"));
+  await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, originalTheme);
   await page.getByRole("button", { name: "Leave", exact: true }).click();
 
   await expect(row).toHaveCount(0);

@@ -93,6 +93,7 @@ export default function LeaveChannelDialog({ open, channel, users, currentUserId
       title={t(deletesChannel ? "deleteChannelQuestion" : "leaveChannelQuestion").replace("{channel}", `#${channel.name}`)}
       message={message}
       confirmLabel={t(deletesChannel ? "deleteChannel" : "leave")}
+    className="leave-channel-confirm-modal"
       danger
       onConfirm={() => {
         onClose();

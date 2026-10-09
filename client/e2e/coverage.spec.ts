@@ -47,12 +47,24 @@ function toLocalDatetimeInput(date, includeSeconds = false) {
   return includeSeconds ? `${value}:${pad(date.getSeconds())}` : value;
 }
 
+async function expectThemeIndependentBackground(page, locator) {
+  const originalTheme = await page.evaluate(() => document.documentElement.dataset.theme);
+  const readBackground = async (theme) => {
+    await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, theme);
+    return locator.evaluate((element) => getComputedStyle(element).backgroundColor);
+  };
+  const draculaBackground = await readBackground("dracula");
+  expect(await readBackground("nord")).toBe(draculaBackground);
+  await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, originalTheme);
+}
+
 test("manages channels, members, visibility, and leaving", async ({ page }) => {
   await page.goto("/");
 
   const channelName = `team-room-${fixture.suffix}`;
   await page.getByRole("button", { name: "Create channel" }).click();
   const createModal = page.locator(".modal").filter({ hasText: "Create a channel" });
+  await expectThemeIndependentBackground(page, createModal);
   await createModal.getByPlaceholder("e.g. marketing").fill(channelName);
   await createModal.getByText("Private", { exact: true }).click();
   await createModal.getByRole("button", { name: "Create" }).click();
@@ -86,6 +98,7 @@ test("manages channels, members, visibility, and leaving", async ({ page }) => {
   await details.getByRole("tab", { name: "Members" }).click();
   await details.getByRole("button", { name: "Add people" }).click();
   const addPeople = page.getByTestId("add-people-modal");
+  await expectThemeIndependentBackground(page, addPeople);
   await addPeople.getByPlaceholder("Search people").fill(fixture.bob.username);
   await addPeople.getByTestId(`add-people-add-${fixture.bob.username}`).click();
   await addPeople.getByTestId("add-people-done").click();
