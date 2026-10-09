@@ -335,6 +335,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
           title={t("removeMemberQuestion").replace("{name}", removeTarget.displayName)}
           message={t("removeMemberMessage").replace("{channel}", `#${channel.name}`)}
           confirmLabel={t("removeFromChannel")}
+          className="channel-member-remove-confirm-modal"
           danger
           closeDisabled={removing}
           onConfirm={confirmRemove}

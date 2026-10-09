@@ -396,18 +396,34 @@ html[data-mode="dark"] {
   --code-border: var(--theme-code-border);
 }
 
-/* These dialogs are overlays, not part of the conversation canvas, but their
-   palette still follows light/dark mode instead of the selected theme. */
+/* Chat dialogs and body-portaled chat popovers use the mode palette even
+   outside the conversation canvas or a modal's themed subtree. */
 .modal.new-message-modal,
 .modal.forward-modal,
 .modal.profile-modal,
 .modal.channel-details-dialog,
 .modal.manager-modal,
 .modal.leave-channel-confirm-modal,
+.modal.message-delete-confirm-modal,
+.modal.channel-member-remove-confirm-modal,
+.modal.retro-delete-confirm-modal,
 .modal.create-channel-modal,
 .modal.add-people-modal,
+.modal.add-emoji-modal,
+.modal.mention-add-modal,
+.modal.groups-create-modal,
 .modal.groups-picker-modal,
-.modal.leave-group-confirm-modal {
+.modal.leave-group-confirm-modal,
+.modal.schedule-modal,
+.modal.scheduled-modal,
+.modal.link-modal,
+.modal.survey-modal,
+.modal.retro-create-modal,
+.modal.retro-modal,
+.modal.retro-idea-modal,
+.mention-popup,
+.emoji-popup-wrap,
+.reaction-picker-quick {
   --bg: var(--conversation-bg);
   --surface: var(--conversation-surface);
   --surface-2: var(--conversation-surface-2);
@@ -13724,9 +13740,9 @@ html[data-interface-direction="rtl"] .scheduled-banner-copy {
   width: min(352px, calc(100vw - 16px));
   max-width: calc(100vw - 16px);
   height: 390px;
-  --rgb-background: 255, 255, 255;
-  --rgb-input: 248, 250, 252;
-  --rgb-color: 15, 31, 58;
+  --rgb-background: 255, 253, 250;
+  --rgb-input: 240, 239, 236;
+  --rgb-color: 39, 41, 45;
   --rgb-accent: 37, 99, 235;
   overscroll-behavior: contain;
   touch-action: pan-y;
@@ -13761,19 +13777,10 @@ html[data-interface-direction="rtl"] .scheduled-banner-copy {
   }
 }
 html[data-mode="dark"] .emoji-popup-wrap em-emoji-picker {
-  --rgb-background: 16, 23, 38;
-  --rgb-input: 26, 34, 54;
-  --rgb-color: 234, 239, 251;
-  --rgb-accent: 59, 130, 246;
-}
-html[data-theme="midnight"] .emoji-popup-wrap em-emoji-picker {
-  --rgb-accent: 139, 92, 246;
-}
-html[data-theme="dracula"] .emoji-popup-wrap em-emoji-picker {
-  --rgb-accent: 189, 147, 249;
-}
-html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
-  --rgb-accent: 194, 104, 42;
+  --rgb-background: 43, 48, 55;
+  --rgb-input: 48, 53, 60;
+  --rgb-color: 230, 232, 235;
+  --rgb-accent: 118, 183, 255;
 }
 
 /* Add-people modal list */

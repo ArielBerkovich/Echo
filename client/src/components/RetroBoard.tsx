@@ -419,6 +419,7 @@ export default function RetroBoard({
           title={t("deleteIdeaQuestion")}
           message={t("deleteIdeaMessage")}
           confirmLabel={t("deleteIdea")}
+          className="retro-delete-confirm-modal"
           danger
           onCancel={() => setDeleteItem(null)}
           onConfirm={() =>

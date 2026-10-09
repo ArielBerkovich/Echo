@@ -1578,6 +1578,7 @@ const ChannelView = forwardRef(function ChannelView({
           title={t("deleteMessageQuestion")}
           message={t("deleteMessageConfirm")}
           confirmLabel={t("delete")}
+          className="message-delete-confirm-modal"
           danger
           onConfirm={confirmDeleteMessage}
           onCancel={() => setConfirmDelete(null)}
