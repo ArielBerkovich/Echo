@@ -65,6 +65,13 @@ test("manages channels, members, visibility, and leaving", async ({ page }) => {
   await page.getByRole("button", { name: "Create channel" }).click();
   const createModal = page.locator(".modal").filter({ hasText: "Create a channel" });
   await expectThemeIndependentBackground(page, createModal);
+  const selectedChannelType = createModal.locator(".visibility-option.selected");
+  await expectThemeIndependentBackground(page, selectedChannelType);
+  const selectedTypeColors = await selectedChannelType.evaluate((element) => ({
+    background: getComputedStyle(element).backgroundColor,
+    accent: getComputedStyle(element).getPropertyValue("--accent").trim(),
+  }));
+  expect(selectedTypeColors.background).not.toBe(selectedTypeColors.accent);
   await createModal.getByPlaceholder("e.g. marketing").fill(channelName);
   await createModal.getByText("Private", { exact: true }).click();
   await createModal.getByRole("button", { name: "Create" }).click();

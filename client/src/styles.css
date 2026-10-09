@@ -2340,10 +2340,10 @@ html[data-mode="dark"] .backend-connection-error {
   outline-offset: 2px;
 }
 .visibility-option.selected {
-  border-color: var(--active-bg);
-  background: linear-gradient(135deg, var(--active-bg-2), var(--active-bg));
-  color: var(--active-fg);
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--active-bg) 28%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--border));
+  background: color-mix(in srgb, var(--accent) 11%, var(--surface));
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 8%, transparent);
 }
 .visibility-option input {
   position: absolute;
@@ -2368,8 +2368,8 @@ html[data-mode="dark"] .backend-connection-error {
   background: rgba(139, 92, 246, 0.12);
 }
 .visibility-option.selected .vo-icon {
-  color: var(--active-fg);
-  background: color-mix(in srgb, var(--active-fg) 16%, transparent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-2));
 }
 .vo-body {
   min-width: 0;
@@ -2389,12 +2389,12 @@ html[data-mode="dark"] .backend-connection-error {
   margin-top: 2px;
 }
 .visibility-option.selected .vo-desc {
-  color: var(--active-fg);
-  opacity: 0.9;
+  color: var(--muted);
+  opacity: 1;
 }
 .vo-check {
-  color: var(--active-bg);
-  background: var(--active-fg);
+  color: var(--conversation-active-fg);
+  background: var(--accent);
   border-radius: 999px;
   width: 22px;
   height: 22px;
