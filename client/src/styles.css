@@ -209,6 +209,7 @@ html[dir="rtl"] .api-note {
   --conversation-border: #e7e4df;
   --conversation-text: #27292d;
   --conversation-muted: #6d737b;
+  --conversation-icon: #59616b;
   --conversation-accent: #2563eb;
   --conversation-active-bg: #2563eb;
   --conversation-active-fg: #ffffff;
@@ -222,7 +223,7 @@ html[dir="rtl"] .api-note {
   --composer-border: #e7e4df;
   --composer-text: #292a2e;
   --composer-muted: #70757c;
-  --composer-control: #62676d;
+  --composer-control: var(--conversation-icon);
   --composer-control-hover: #e8e6e2;
   --composer-focus: #747b84;
   --composer-code-bg: #efeee9;
@@ -284,6 +285,7 @@ html[data-mode="dark"] {
   --conversation-border: #3c424a;
   --conversation-text: #e6e8eb;
   --conversation-muted: #c0c6cf;
+  --conversation-icon: #e0e4e9;
   --conversation-accent: #76b7ff;
   --conversation-active-bg: #3b82f6;
   --conversation-active-fg: #ffffff;
@@ -297,7 +299,7 @@ html[data-mode="dark"] {
   --composer-border: #3c424a;
   --composer-text: #e6e8eb;
   --composer-muted: #acb2ba;
-  --composer-control: #d0d5dc;
+  --composer-control: var(--conversation-icon);
   --composer-control-hover: #3a4048;
   --composer-focus: #a6aeb8;
   --composer-code-bg: #3a4048;
@@ -344,6 +346,14 @@ html[data-mode="dark"] {
   --tooltip-bg: var(--conversation-surface-2);
   --tooltip-fg: var(--conversation-text);
   --tooltip-border: color-mix(in srgb, var(--accent) 42%, var(--border));
+}
+
+/* Keep the quieter chat controls legible in both modes. */
+.msg-actions button,
+.reaction.add,
+.channel-header .header-action-icon,
+.channel-header .dm-starred-toggle:not(.active) {
+  color: var(--conversation-icon);
 }
 
 /* Settings lives inside .chat-pane but retains the selected theme palette. */
