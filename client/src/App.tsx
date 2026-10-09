@@ -1496,10 +1496,12 @@ export default function App() {
     activeChannel && activeUnreadCount === 0 ? scrollStates[activeChannel.id] || null : null;
 
   if (loading) {
+    const loadingLabel = startupUnavailable ? t("echoRestarting") : t("loading");
     return (
       <>
-        <div className="centered" role="status">
-          {startupUnavailable ? t("echoRestarting") : t("loading")}
+        <div className="centered startup-loading" role="status" aria-label={loadingLabel}>
+          <span>{loadingLabel.replace(/[.…]+$/, "")}</span>
+          <span className="loading-dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span>
         </div>
         {showSessionExpiredDialog ? <SessionExpiredDialog onSignOut={handleLogout} /> : null}
       </>

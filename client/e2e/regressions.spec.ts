@@ -212,6 +212,20 @@ test("combines the Home unread filter with text search", async ({ page }) => {
   await expect(page.getByTestId(`dm-row-${slug(fixture.bob.displayName)}`)).toBeVisible();
 });
 
+test("shows an all-caught-up state when no channels, DMs, or starred items are unread", async ({ page }) => {
+  for (const channelId of [fixture.generalChannel.id, fixture.projectChannel.id, fixture.dmChannel.id]) {
+    await requestAsToken(page, fixture.alice.token, `/channels/${channelId}/read`, { method: "POST" });
+  }
+
+  await page.goto("/");
+  await page.getByTestId("sidebar-filter-toggle").click();
+  await page.getByTestId("sidebar-unread-toggle").click();
+
+  await expect(page.getByTestId("unread-empty-state")).toContainText("You’re all caught up! No unread messages.");
+  await expect(page.getByTestId("channel-row-general")).toHaveCount(0);
+  await expect(page.getByTestId(`dm-row-${slug(fixture.bob.displayName)}`)).toHaveCount(0);
+});
+
 test("opens regular search with the current channel scope", async ({ page }) => {
   await page.goto(`/channels/${fixture.projectChannel.name}`);
   await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);

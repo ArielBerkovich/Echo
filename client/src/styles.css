@@ -976,6 +976,27 @@ input:focus {
   height: 100vh;
   color: var(--muted);
 }
+.startup-loading {
+  gap: 2px;
+}
+.loading-dots {
+  display: inline-flex;
+  min-width: 1.2em;
+  letter-spacing: 0.08em;
+}
+.loading-dots span {
+  opacity: 0.2;
+  animation: loading-dot-pulse 1.2s infinite ease-in-out;
+}
+.loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes loading-dot-pulse {
+  0%, 60%, 100% { opacity: 0.2; }
+  30% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .loading-dots span { animation: none; opacity: 1; }
+}
 
 .browser-warning {
   position: fixed;
@@ -4269,6 +4290,24 @@ html[data-mode="dark"] .sidebar {
   color: var(--on-navy-muted);
   font-size: 13px;
   padding: 4px 12px;
+}
+.sidebar-caught-up {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 112px;
+  margin: 12px;
+  padding: 16px;
+  border: 1px solid var(--sidebar-border, rgba(255, 255, 255, 0.1));
+  border-radius: 10px;
+  color: var(--on-navy-muted);
+  font-size: 13px;
+  text-align: center;
+}
+.sidebar-caught-up svg {
+  color: var(--on-navy-muted);
 }
 
 /* DMs view: "Find a DM" + rich conversation rows */
