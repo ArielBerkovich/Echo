@@ -396,7 +396,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
         "data-placeholder": placeholder,
         role: "textbox",
         "aria-multiline": "true",
-        dir: "auto",
+        dir: direction,
       },
       handleKeyDown: (_view, event) => {
         keyDownHandlerRef.current?.(event);
@@ -654,9 +654,9 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     if (draftReadyRef.current && !editing && key) writeString(key, draft.trim() ? draft : null);
   }
 
-  // Make each paragraph's base direction explicit. Relying on `dir="auto"`
-  // for the whole editor lets neutral characters such as @ and punctuation
-  // re-run bidi estimation as the user types, which can flip mixed text.
+  // Resolve the editor and each paragraph from message text instead of
+  // `dir="auto"`; boundary marks around mentions can bias browser direction
+  // estimation away from the first strong character the user typed.
   function syncParagraphDirections(currentEditor) {
     const applyDirections = () => {
       if (currentEditor.isDestroyed) return;
@@ -664,9 +664,13 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       // A paragraph containing only numbers/punctuation has no strong
       // character for `dir="auto"` to resolve. Give the editor the interface
       // fallback in that neutral-only state so it starts on the expected side.
-      const editorText = directionText(currentEditor.view.dom);
-      const hasStrongCharacter = RTL_TEXT_RE.test(editorText) || LTR_TEXT_RE.test(editorText);
-      currentEditor.view.dom.setAttribute("dir", hasStrongCharacter ? "auto" : fallback);
+      const editorText = directionText(currentEditor.view.dom)
+        .replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, "");
+      // An LRM/RLM inserted at a mention boundary can make `dir="auto"`
+      // resolve the whole editor from the interface direction instead of the
+      // actual message text. Resolve the first strong character ourselves so
+      // Hebrew after an English mention (and vice versa) keeps its direction.
+      currentEditor.view.dom.setAttribute("dir", firstStrongDirection(editorText, fallback));
       currentEditor.view.dom.querySelectorAll("p").forEach((paragraph) => {
         const paragraphText = directionText(paragraph);
         if (!paragraphText.replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, "").trim()) {

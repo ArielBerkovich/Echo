@@ -203,7 +203,7 @@ export default function SearchResults({ query, onJump, onClose }) {
                         <Avatar name={r.author?.displayName || "?"} src={r.author?.avatarUrl} size={36} />
                         <div className="content">
                           <div className="meta">
-                            <span className="author">{r.author?.displayName || t("unknown")}</span>
+                            <span className="author"><bdi dir="auto">{r.author?.displayName || t("unknown")}</bdi></span>
                             <span className="activity-where">
                               {r.channelType === "dm" ? t("searchInDirectMessage") : t("searchInChannel").replace("{channel}", `\u2066${r.channelName}\u2069`)}
                               {r.parentId ? ` · ${t("inThread")}` : ""}
