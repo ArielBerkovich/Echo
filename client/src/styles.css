@@ -261,7 +261,7 @@ html[data-mode="dark"] {
   --conversation-surface-2: #30353c;
   --conversation-border: #3c424a;
   --conversation-text: #e6e8eb;
-  --conversation-muted: #a5abb4;
+  --conversation-muted: #c0c6cf;
   --conversation-accent: #76b7ff;
   --conversation-active-bg: #3b82f6;
   --conversation-active-fg: #ffffff;
@@ -275,7 +275,7 @@ html[data-mode="dark"] {
   --composer-border: #3c424a;
   --composer-text: #e6e8eb;
   --composer-muted: #acb2ba;
-  --composer-control: #b8bec6;
+  --composer-control: #d0d5dc;
   --composer-control-hover: #3a4048;
   --composer-focus: #a6aeb8;
   --composer-code-bg: #3a4048;
