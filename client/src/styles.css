@@ -346,11 +346,8 @@ html[data-mode="dark"] {
   --tooltip-border: color-mix(in srgb, var(--accent) 42%, var(--border));
 }
 
-/* These full-page app surfaces live inside .chat-pane, but retain the
-   selected theme palette. */
-.settings-page,
-.channel-browser,
-.groups-panel {
+/* Settings lives inside .chat-pane but retains the selected theme palette. */
+.settings-page {
   --bg: var(--theme-bg);
   --surface: var(--theme-surface);
   --surface-2: var(--theme-surface-2);
