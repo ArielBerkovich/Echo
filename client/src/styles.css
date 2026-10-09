@@ -174,6 +174,28 @@ html[dir="rtl"] .api-note {
   --input-focus-border: color-mix(in srgb, var(--accent) 72%, var(--border));
   --input-focus-ring: color-mix(in srgb, var(--accent) 24%, transparent);
   --input-focus-shadow: 0 0 0 2px var(--input-focus-ring), 0 2px 5px color-mix(in srgb, var(--text) 7%, transparent);
+  /* Preserve the selected theme palette for app pages nested in the chat
+     workspace, whose conversation surface uses its own mode-only tokens. */
+  --theme-bg: var(--bg);
+  --theme-surface: var(--surface);
+  --theme-surface-2: var(--surface-2);
+  --theme-border: var(--border);
+  --theme-text: var(--text);
+  --theme-muted: var(--muted);
+  --theme-accent: var(--accent);
+  --theme-active-bg: var(--active-bg);
+  --theme-active-bg-2: var(--active-bg-2);
+  --theme-active-fg: var(--active-fg);
+  --theme-active-soft: var(--active-soft);
+  --theme-active-ring: var(--active-ring);
+  --theme-link-color: var(--link-color);
+  --theme-link-hover: var(--link-hover);
+  --theme-input-focus-border: var(--input-focus-border);
+  --theme-input-focus-ring: var(--input-focus-ring);
+  --theme-input-focus-shadow: var(--input-focus-shadow);
+  --theme-code-bg: var(--code-bg);
+  --theme-code-text: var(--code-text);
+  --theme-code-border: var(--code-border);
 
   /* Surfaces (bright) */
   --bg: #f5f8fd;
@@ -322,6 +344,59 @@ html[data-mode="dark"] {
   --tooltip-bg: var(--conversation-surface-2);
   --tooltip-fg: var(--conversation-text);
   --tooltip-border: color-mix(in srgb, var(--accent) 42%, var(--border));
+}
+
+/* These full-page app surfaces live inside .chat-pane, but retain the
+   selected theme palette. */
+.settings-page,
+.channel-browser,
+.groups-panel {
+  --bg: var(--theme-bg);
+  --surface: var(--theme-surface);
+  --surface-2: var(--theme-surface-2);
+  --border: var(--theme-border);
+  --text: var(--theme-text);
+  --muted: var(--theme-muted);
+  --accent: var(--theme-accent);
+  --active-bg: var(--theme-active-bg);
+  --active-bg-2: var(--theme-active-bg-2);
+  --active-fg: var(--theme-active-fg);
+  --active-soft: var(--theme-active-soft);
+  --active-ring: var(--theme-active-ring);
+  --link-color: var(--theme-link-color);
+  --link-hover: var(--theme-link-hover);
+  --input-focus-border: var(--theme-input-focus-border);
+  --input-focus-ring: var(--theme-input-focus-ring);
+  --input-focus-shadow: var(--theme-input-focus-shadow);
+  --code-bg: var(--theme-code-bg);
+  --code-text: var(--theme-code-text);
+  --code-border: var(--theme-code-border);
+}
+
+/* These dialogs are overlays, not part of the conversation canvas, but their
+   palette still follows light/dark mode instead of the selected theme. */
+.modal.new-message-modal,
+.modal.forward-modal {
+  --bg: var(--conversation-bg);
+  --surface: var(--conversation-surface);
+  --surface-2: var(--conversation-surface-2);
+  --border: var(--conversation-border);
+  --text: var(--conversation-text);
+  --muted: var(--conversation-muted);
+  --accent: var(--conversation-accent);
+  --active-bg: var(--conversation-active-bg);
+  --active-bg-2: color-mix(in srgb, var(--active-bg) 68%, #000);
+  --active-fg: var(--conversation-active-fg);
+  --active-soft: color-mix(in srgb, var(--active-bg) 11%, var(--surface));
+  --active-ring: color-mix(in srgb, var(--active-bg) 34%, transparent);
+  --link-color: var(--conversation-link);
+  --link-hover: var(--conversation-link-hover);
+  --input-focus-border: color-mix(in srgb, var(--accent) 72%, var(--border));
+  --input-focus-ring: color-mix(in srgb, var(--accent) 24%, transparent);
+  --input-focus-shadow: 0 0 0 2px var(--input-focus-ring), 0 2px 5px color-mix(in srgb, var(--text) 7%, transparent);
+  --code-bg: var(--conversation-code-bg);
+  --code-text: var(--conversation-code-text);
+  --code-border: var(--conversation-code-border);
 }
 
 .echo-tooltip {
