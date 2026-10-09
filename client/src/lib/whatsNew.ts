@@ -14,6 +14,18 @@ export type WhatsNewRelease = {
 // Keep release notes in the renderer so they work for air-gapped deployments
 // and always match the desktop binary that shipped them.
 const RELEASES: Record<string, WhatsNewRelease> = {
+  "0.45.0": {
+    id: "0.45.0",
+    title: "What's new in 0.45.0",
+    summary: "Find unread conversations faster.",
+    items: [
+      {
+        title: "Unread conversations",
+        description: "Filter the sidebar to show only channels and direct messages with unread messages.",
+        category: "New",
+      },
+    ],
+  },
   "0.44.0": {
     id: "0.44.0",
     title: "What's new in 0.44.0",
