@@ -12526,10 +12526,6 @@ html[dir="rtl"] .composer-more-popover .composer-more-action {
   direction: ltr !important;
   text-align: left !important;
 }
-.composer-editor[data-composer-direction="rtl"] > p:last-child {
-  direction: rtl !important;
-  text-align: right !important;
-}
 .composer-editor p:last-child {
   margin-bottom: 0;
 }
