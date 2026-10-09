@@ -709,7 +709,7 @@ test("keeps channel and user details dialogs on the neutral chat palette", async
   expect(await channelBackground("nord")).toBe(draculaBackground);
   await details.getByRole("button", { name: "Close channel details" }).click();
 
-  await page.addStyleTag({ content: ".message { transition: none !important; }" });
+  await page.addStyleTag({ content: ".message, .msg-actions button { transition: none !important; }" });
   const message = page.getByTestId(`message-${fixture.messages.threadRoot.id}`);
   await message.hover();
   const messageHoverBackground = async (theme) => {
@@ -717,6 +717,13 @@ test("keeps channel and user details dialogs on the neutral chat palette", async
     return message.evaluate((element) => getComputedStyle(element).backgroundColor);
   };
   expect(await messageHoverBackground("dracula")).toBe(await messageHoverBackground("nord"));
+  const moreAction = page.getByTestId(`message-${fixture.messages.threadRoot.id}-more`);
+  await moreAction.hover();
+  const moreActionBackground = async (theme) => {
+    await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, theme);
+    return moreAction.evaluate((element) => getComputedStyle(element).backgroundColor);
+  };
+  expect(await moreActionBackground("dracula")).toBe(await moreActionBackground("nord"));
 
   await page.goto(`/dms/${fixture.dmChannel.id}`);
   await page.getByTestId(`message-${fixture.messages.dmMessage.id}-avatar`).click();

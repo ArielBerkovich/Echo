@@ -356,6 +356,17 @@ html[data-mode="dark"] {
   color: var(--conversation-icon);
 }
 
+/* Message action buttons are portaled to body, outside the chat palette
+   scope, so give their toolbar the conversation colors explicitly. */
+.msg-actions {
+  --surface: var(--conversation-surface);
+  --surface-2: var(--conversation-surface-2);
+  --border: var(--conversation-border);
+  --text: var(--conversation-text);
+  --muted: var(--conversation-muted);
+  --accent: var(--conversation-accent);
+}
+
 /* Settings lives inside .chat-pane but retains the selected theme palette. */
 .settings-page {
   --bg: var(--theme-bg);
