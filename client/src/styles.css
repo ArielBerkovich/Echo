@@ -234,9 +234,9 @@ html[data-mode="dark"] {
   --surface: #101726;
   --surface-2: #1a2236;
   --border: #232c40;
-  --conversation-bg: #1a1d21;
-  --conversation-surface: #222529;
-  --conversation-border: #35383c;
+  --conversation-bg: #23272e;
+  --conversation-surface: #2b3037;
+  --conversation-border: #3c424a;
   --text: #eaeffb;
   --muted: #8a99b6;
   --code-bg: #060b16;

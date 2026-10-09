@@ -2,14 +2,8 @@
 # Vite client running directly on the GitHub runner.
 services:
   mongo:
-    # Pull the Docker Official Image from ECR Public to avoid Docker Hub's
-    # unauthenticated pull limits on GitHub-hosted runners.
-    image: public.ecr.aws/docker/library/mongo:7
     ports:
       - "27017:27017"
-
-  mongo-init:
-    image: public.ecr.aws/docker/library/mongo:7
 
   minio:
     ports:
