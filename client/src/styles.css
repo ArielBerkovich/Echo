@@ -383,7 +383,9 @@ html[data-mode="dark"] {
 /* These dialogs are overlays, not part of the conversation canvas, but their
    palette still follows light/dark mode instead of the selected theme. */
 .modal.new-message-modal,
-.modal.forward-modal {
+.modal.forward-modal,
+.modal.profile-modal,
+.modal.channel-details-dialog {
   --bg: var(--conversation-bg);
   --surface: var(--conversation-surface);
   --surface-2: var(--conversation-surface-2);
@@ -618,19 +620,6 @@ html[data-theme="calm"][data-mode="light"] .workspace-search .search-highlight .
 }
 html[data-theme="calm"][data-mode="light"] .workspace-search .search-highlight .kw-has .kw-label {
   color: #92400e;
-}
-html[data-theme="calm"][data-mode="light"] .message:hover,
-html[data-theme="calm"][data-mode="light"] .message.menu-open,
-html[data-theme="calm"][data-mode="light"] .message.actions-hovered,
-html[data-theme="calm"][data-mode="light"] .message.reaction-open {
-  background: color-mix(in srgb, var(--border) 50%, var(--surface-2)) !important;
-  box-shadow: none;
-}
-html[data-theme="calm"][data-mode="light"][data-interface-direction="rtl"] .message:hover,
-html[data-theme="calm"][data-mode="light"][data-interface-direction="rtl"] .message.menu-open,
-html[data-theme="calm"][data-mode="light"][data-interface-direction="rtl"] .message.actions-hovered,
-html[data-theme="calm"][data-mode="light"][data-interface-direction="rtl"] .message.reaction-open {
-  box-shadow: none;
 }
 html[data-theme="calm"] .workspace-sidebar,
 html[data-theme="calm"] .workspace-sidebar .sidebar {

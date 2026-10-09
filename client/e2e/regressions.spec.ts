@@ -692,6 +692,44 @@ test("adds a channel-message author to Starred without opening a DM first", asyn
   await requestAsToken(page, fixture.alice.token, `/users/${candidate.user.id}/vip`, { method: "POST" });
 });
 
+test("keeps channel and user details dialogs on the neutral chat palette", async ({ page }) => {
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await page.getByTestId("channel-title").click();
+  const details = page.getByTestId("channel-details-dialog");
+  await expect(details).toBeVisible();
+
+  const channelBackground = async (theme) => {
+    await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, theme);
+    return details.evaluate((element) => getComputedStyle(element).backgroundColor);
+  };
+  const chatSurface = () => page.locator(".chat-pane").evaluate((element) => getComputedStyle(element).getPropertyValue("--surface").trim());
+  const expectedSurface = await chatSurface();
+  const draculaBackground = await channelBackground("dracula");
+  expect(await details.evaluate((element) => getComputedStyle(element).getPropertyValue("--surface").trim())).toBe(expectedSurface);
+  expect(await channelBackground("nord")).toBe(draculaBackground);
+  await details.getByRole("button", { name: "Close channel details" }).click();
+
+  await page.addStyleTag({ content: ".message { transition: none !important; }" });
+  const message = page.getByTestId(`message-${fixture.messages.threadRoot.id}`);
+  await message.hover();
+  const messageHoverBackground = async (theme) => {
+    await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, theme);
+    return message.evaluate((element) => getComputedStyle(element).backgroundColor);
+  };
+  expect(await messageHoverBackground("dracula")).toBe(await messageHoverBackground("nord"));
+
+  await page.goto(`/dms/${fixture.dmChannel.id}`);
+  await page.getByTestId(`message-${fixture.messages.dmMessage.id}-avatar`).click();
+  const profile = page.getByTestId("profile-modal");
+  await expect(profile).toBeVisible();
+  const profileBackground = async (theme) => {
+    await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, theme);
+    return profile.evaluate((element) => getComputedStyle(element).backgroundColor);
+  };
+  expect(await profile.evaluate((element) => getComputedStyle(element).getPropertyValue("--surface").trim())).toBe(expectedSurface);
+  expect(await profileBackground("dracula")).toBe(await profileBackground("nord"));
+});
+
 test("opens people and channels searched from Activity and Saved", async ({ page }) => {
   await page.goto("/");
 
