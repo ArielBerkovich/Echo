@@ -75,6 +75,7 @@ test("manages channels, members, visibility, and leaving", async ({ page }) => {
   await expect(page.getByTestId("channel-title")).toContainText(channelName);
   await expect(page.getByTestId("empty-channel-add-people")).toBeVisible();
   await expect(page.getByTestId("empty-channel-details")).toBeVisible();
+  await expectThemeIndependentBackground(page, page.getByTestId("empty-channel-add-people"));
   await expect(page.getByTestId("channel-visibility")).toHaveCount(0);
   await expect(page.getByTestId("channel-leave")).toHaveCount(0);
 

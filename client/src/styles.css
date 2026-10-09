@@ -12105,15 +12105,15 @@ html[data-mode="dark"] .new-messages-button:hover {
   color: var(--accent);
 }
 .empty-state-action.primary {
-  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
-  background: var(--accent);
-  color: var(--active-fg);
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
+  background: var(--active-soft);
+  color: var(--accent);
 }
 .empty-state-action.primary:hover,
 .empty-state-action.primary:focus-visible {
-  border-color: var(--accent);
-  background: var(--active-bg);
-  color: var(--active-fg);
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+  color: var(--accent);
 }
 
 /* ---- Loading skeletons ---- */
