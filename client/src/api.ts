@@ -251,6 +251,7 @@ export const api = {
   updateAzureDevOpsIntegration: (id, payload) =>
     request(`/integrations/azure-devops/${encodeURIComponent(id)}`, { method: "PATCH", body: payload }),
   listUsers: () => request("/users"),
+  setUserDeprecated: (userId, deprecated) => request(`/admin/users/${encodeURIComponent(userId)}/deprecated`, { method: "PATCH", body: { deprecated } }),
   listGroups: () => request("/groups"),
   getGroup: (groupId, legacyId) => request(`/groups/${encodeURIComponent(legacyId || groupId)}`),
   createGroup: (payload) => request("/groups", { method: "POST", body: payload }),

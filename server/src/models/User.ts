@@ -32,6 +32,7 @@ const userSchema = new mongoose.Schema(
     avatarUrlOverride: { type: String, default: null },
     // The first registered user becomes the workspace admin.
     isAdmin: { type: Boolean, default: false },
+    deprecated: { type: Boolean, default: false },
     // Set when an admin issues a one-time password; the user must choose a new
     // password before they can use the app again.
     mustResetPassword: { type: Boolean, default: false },
@@ -68,6 +69,7 @@ userSchema.methods.toPublicJSON = function () {
     displayName: this.displayName,
     avatarUrl: this.avatarUrlOverride || (this.avatarKey ? `/api/files/${this.avatarKey}` : null),
     isAdmin: !!this.isAdmin,
+    deprecated: !!this.deprecated,
     // SSO credentials are managed by the identity provider, not Echo.
     canChangePassword: this.authOrigin !== "rhsso" && !this.rhssoSubject,
     mustResetPassword: !!this.mustResetPassword,
