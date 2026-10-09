@@ -16075,6 +16075,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 }
 .channel-browser {
   animation: paneIn 0.2s ease both;
+  background: var(--bg);
 }
 .channel-browser-header {
   gap: 10px;
