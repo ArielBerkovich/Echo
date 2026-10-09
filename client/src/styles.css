@@ -396,7 +396,8 @@ html[data-mode="dark"] {
 .modal.new-message-modal,
 .modal.forward-modal,
 .modal.profile-modal,
-.modal.channel-details-dialog {
+.modal.channel-details-dialog,
+.modal.manager-modal {
   --bg: var(--conversation-bg);
   --surface: var(--conversation-surface);
   --surface-2: var(--conversation-surface-2);

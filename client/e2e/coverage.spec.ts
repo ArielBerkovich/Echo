@@ -93,6 +93,13 @@ test("manages channels, members, visibility, and leaving", async ({ page }) => {
   await details.getByRole("tab", { name: "Actions" }).click();
   await details.getByRole("button", { name: "Leave channel" }).click();
   const managerModal = page.locator(".manager-modal");
+  const originalTheme = await page.evaluate(() => document.documentElement.dataset.theme);
+  const managerModalBackground = async (theme) => {
+    await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, theme);
+    return managerModal.evaluate((element) => getComputedStyle(element).backgroundColor);
+  };
+  expect(await managerModalBackground("dracula")).toBe(await managerModalBackground("nord"));
+  await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, originalTheme);
   await managerModal.getByTestId("leave-manager-search").fill(fixture.bob.username);
   await managerModal.locator(".manager-candidate").click();
   const leaveResponse = page.waitForResponse(
