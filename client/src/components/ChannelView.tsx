@@ -1249,7 +1249,7 @@ const ChannelView = forwardRef(function ChannelView({
               {isDm ? (
                 <>
                   {isGroupDm ? <GroupAvatar size={56} /> : <Avatar name={dmAvatarName} src={dmAvatar} size={56} />}
-                  <h3>{dmDisplayLabel}</h3>
+                  <h3><bdi dir="auto">{dmDisplayLabel}</bdi></h3>
                   <p>{t("directMessageHistoryStart")}</p>
                 </>
               ) : (

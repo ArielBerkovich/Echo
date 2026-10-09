@@ -75,6 +75,14 @@ async function createImageChannel(page, prefix) {
   return { attachment, channel, channelName, message };
 }
 
+async function selectInterfaceLanguage(page, language, direction) {
+  await page.getByTestId("rail-settings").click();
+  await expect(page.getByTestId("settings-page")).toBeVisible();
+  await page.getByRole("button", { name: /^(Preferences|העדפות)$/ }).click();
+  await page.getByTestId("settings-language").selectOption(language);
+  await expect(page.locator("html")).toHaveAttribute("data-interface-direction", direction);
+}
+
 test("shows a dot instead of a Home notification count", async ({ page }) => {
   await page.goto("/");
 
@@ -270,6 +278,108 @@ test("aligns Hebrew in the composer and sent message", async ({ page }) => {
   await expect(message).toBeVisible();
   await expect.poll(() => message.getByTestId("message-body").evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
   await expect.poll(() => message.getByTestId("message-body").evaluate((element) => getComputedStyle(element).textAlign)).toBe("start");
+});
+
+test("aligns Hebrew after a person mention in the English composer", async ({ page }) => {
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await expect(page.locator("html")).toHaveAttribute("data-interface-direction", "ltr");
+  const composer = page.getByTestId("composer-editor");
+  await composer.fill(`@${fixture.bob.username}`);
+  const suggestion = page.locator(".mention-item").filter({ hasText: fixture.bob.username });
+  await expect(suggestion).toBeVisible();
+  await suggestion.click();
+  await composer.pressSequentially(" שלום, זה טקסט בדיקה");
+
+  await expect.poll(() => composer.evaluate((element) => {
+    const paragraph = element.querySelector("p");
+    return paragraph ? getComputedStyle(paragraph).direction : null;
+  })).toBe("rtl");
+
+  await selectInterfaceLanguage(page, "he", "rtl");
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  const rtlComposer = page.getByTestId("composer-editor");
+  await rtlComposer.fill(`@${fixture.bob.username}`);
+  const rtlSuggestion = page.locator(".mention-item").filter({ hasText: fixture.bob.username });
+  await expect(rtlSuggestion).toBeVisible();
+  await rtlSuggestion.click();
+  await rtlComposer.pressSequentially(" English text after mention");
+  await expect.poll(() => rtlComposer.evaluate((element) => {
+    const paragraph = element.querySelector("p");
+    return paragraph ? getComputedStyle(paragraph).direction : null;
+  })).toBe("ltr");
+  await selectInterfaceLanguage(page, "en", "ltr");
+});
+
+test("isolates names with trailing apostrophes in empty DMs in either interface direction", async ({ page }) => {
+  const suffix = uniqueSuffix("dmname").replace(/[^a-z0-9]/gi, "").slice(-12);
+  const recipient = await registerUser(page, {
+    username: `recipient.user${suffix}`,
+    displayName: "Recipient",
+  });
+  await requestAsToken(page, recipient.token, "/users/me", {
+    method: "PATCH",
+    body: { displayName: "שם בעברית'" },
+  });
+  const { channel } = await requestAsToken(page, fixture.alice.token, "/dms", {
+    method: "POST",
+    body: { userId: recipient.user.id },
+  });
+
+  await page.addInitScript(() => localStorage.setItem("echo.language", "en"));
+  await page.goto(`/dms/${channel.id}`);
+  await expect(page.locator("html")).toHaveAttribute("data-interface-direction", "ltr");
+  const emptyStateName = page.locator(".empty-state h3 bdi[dir=auto]");
+  await expect(emptyStateName).toHaveText("שם בעברית'");
+  await expect.poll(() => emptyStateName.evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
+
+  await requestAsToken(page, recipient.token, "/users/me", {
+    method: "PATCH",
+    body: { displayName: "English Person'" },
+  });
+  await selectInterfaceLanguage(page, "he", "rtl");
+  await page.goto(`/dms/${channel.id}`);
+  await expect(emptyStateName).toHaveText("English Person'");
+  await expect.poll(() => emptyStateName.evaluate((element) => getComputedStyle(element).direction)).toBe("ltr");
+  await selectInterfaceLanguage(page, "en", "ltr");
+});
+
+test("isolates message search author names with trailing apostrophes in either interface direction", async ({ page }) => {
+  const suffix = uniqueSuffix("searchname").replace(/[^a-z0-9]/gi, "").slice(-12);
+  const author = await registerUser(page, {
+    username: `recipient.user${suffix}`,
+    displayName: "Recipient",
+  });
+  await requestAsToken(page, author.token, "/users/me", {
+    method: "PATCH",
+    body: { displayName: "שם בעברית'" },
+  });
+  const { channel } = await requestAsToken(page, fixture.alice.token, "/dms", {
+    method: "POST",
+    body: { userId: author.user.id },
+  });
+  const token = `authorname${suffix}`;
+  await requestAsToken(page, author.token, `/channels/${channel.id}/messages`, {
+    method: "POST",
+    body: { body: `Search author marker ${token}` },
+  });
+
+  await page.addInitScript(() => localStorage.setItem("echo.language", "en"));
+  const searchUrl = `/search?q=${encodeURIComponent(token)}`;
+  await page.goto(searchUrl);
+  await expect(page.locator("html")).toHaveAttribute("data-interface-direction", "ltr");
+  const authorName = page.getByTestId("search-result").filter({ hasText: token }).locator(".author bdi[dir=auto]");
+  await expect(authorName).toHaveText("שם בעברית'");
+  await expect.poll(() => authorName.evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
+
+  await requestAsToken(page, author.token, "/users/me", {
+    method: "PATCH",
+    body: { displayName: "English Person'" },
+  });
+  await selectInterfaceLanguage(page, "he", "rtl");
+  await page.goto(searchUrl);
+  await expect(authorName).toHaveText("English Person'");
+  await expect.poll(() => authorName.evaluate((element) => getComputedStyle(element).direction)).toBe("ltr");
+  await selectInterfaceLanguage(page, "en", "ltr");
 });
 
 test("uses the selected Hebrew language for the message layout", async ({ page }) => {
