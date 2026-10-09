@@ -11,6 +11,15 @@ async function loginWorkspaceAdmin(page) {
   return response.json();
 }
 
+async function dismissWalkthrough(page) {
+  const skipTour = page.getByRole("button", { name: "Skip tour" });
+  await skipTour.waitFor({ state: "visible", timeout: 2_000 }).catch(() => {});
+  if (await skipTour.isVisible().catch(() => false)) {
+    await skipTour.click();
+    await expect(page.locator(".wt-overlay")).toHaveCount(0);
+  }
+}
+
 test.describe("user deprecation", () => {
   test("admin can archive and restore a user, with search and realtime labels", async ({ browser, page }) => {
     const admin = await loginWorkspaceAdmin(page);
@@ -28,8 +37,10 @@ test.describe("user deprecation", () => {
       await seedToken(page, admin.token);
       await page.goto("/");
       await expect(page.getByTestId("composer-editor")).toBeVisible();
+      await dismissWalkthrough(page);
       await memberPage.goto("/");
       await expect(memberPage.getByTestId("composer-editor")).toBeVisible();
+      await dismissWalkthrough(memberPage);
 
       await page.getByTestId("rail-settings").click();
       await expect(page.getByTestId("admin-deprecation")).toBeVisible();
