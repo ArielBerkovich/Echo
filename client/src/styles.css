@@ -183,7 +183,29 @@ html[dir="rtl"] .api-note {
   /* Keep long-form conversation reading neutral across accent themes. */
   --conversation-bg: #f7f6f2;
   --conversation-surface: #fffdfa;
+  --conversation-surface-2: #f0efec;
   --conversation-border: #e7e4df;
+  --conversation-text: #27292d;
+  --conversation-muted: #6d737b;
+  --conversation-accent: #2563eb;
+  --conversation-active-bg: #2563eb;
+  --conversation-active-fg: #ffffff;
+  --conversation-link: #2563eb;
+  --conversation-link-hover: #1d4ed8;
+  --conversation-code-bg: #f0efec;
+  --conversation-code-text: #29313b;
+  --conversation-code-border: #ddd9d2;
+  --composer-bg: #fffdfa;
+  --composer-toolbar-bg: #f2f0ec;
+  --composer-border: #e7e4df;
+  --composer-text: #292a2e;
+  --composer-muted: #70757c;
+  --composer-control: #62676d;
+  --composer-control-hover: #e8e6e2;
+  --composer-focus: #747b84;
+  --composer-code-bg: #efeee9;
+  --composer-code-text: #9c3f60;
+  --composer-pre-bg: #f3f2ee;
 
   /* Text */
   --text: #0f1f3a;
@@ -236,7 +258,29 @@ html[data-mode="dark"] {
   --border: #232c40;
   --conversation-bg: #23272e;
   --conversation-surface: #2b3037;
+  --conversation-surface-2: #30353c;
   --conversation-border: #3c424a;
+  --conversation-text: #e6e8eb;
+  --conversation-muted: #a5abb4;
+  --conversation-accent: #76b7ff;
+  --conversation-active-bg: #3b82f6;
+  --conversation-active-fg: #ffffff;
+  --conversation-link: #76b7ff;
+  --conversation-link-hover: #9accff;
+  --conversation-code-bg: #1b1f24;
+  --conversation-code-text: #e6e8eb;
+  --conversation-code-border: #3c424a;
+  --composer-bg: #2b3037;
+  --composer-toolbar-bg: #30353c;
+  --composer-border: #3c424a;
+  --composer-text: #e6e8eb;
+  --composer-muted: #acb2ba;
+  --composer-control: #b8bec6;
+  --composer-control-hover: #3a4048;
+  --composer-focus: #a6aeb8;
+  --composer-code-bg: #3a4048;
+  --composer-code-text: #f0a3c0;
+  --composer-pre-bg: #262b31;
   --text: #eaeffb;
   --muted: #8a99b6;
   --code-bg: #060b16;
@@ -247,6 +291,37 @@ html[data-mode="dark"] {
   --shadow-lg: 0 24px 56px rgba(0, 0, 0, 0.6);
   --lightbox-bg: #30343d;
   --lightbox-shadow: 0 18px 52px rgba(0, 0, 0, 0.55);
+}
+
+/* The conversation canvas follows light/dark mode, independent of the
+   selected Echo theme. Scope the shared UI tokens here so message content,
+   headers, controls, search, and side panels all use the same mode palette. */
+.chat-pane,
+.channel-view,
+.thread-panel {
+  --bg: var(--conversation-bg);
+  --surface: var(--conversation-surface);
+  --surface-2: var(--conversation-surface-2);
+  --border: var(--conversation-border);
+  --text: var(--conversation-text);
+  --muted: var(--conversation-muted);
+  --accent: var(--conversation-accent);
+  --active-bg: var(--conversation-active-bg);
+  --active-bg-2: color-mix(in srgb, var(--active-bg) 68%, #000);
+  --active-fg: var(--conversation-active-fg);
+  --active-soft: color-mix(in srgb, var(--active-bg) 11%, var(--surface));
+  --active-ring: color-mix(in srgb, var(--active-bg) 34%, transparent);
+  --link-color: var(--conversation-link);
+  --link-hover: var(--conversation-link-hover);
+  --input-focus-border: color-mix(in srgb, var(--accent) 72%, var(--border));
+  --input-focus-ring: color-mix(in srgb, var(--accent) 24%, transparent);
+  --input-focus-shadow: 0 0 0 2px var(--input-focus-ring), 0 2px 5px color-mix(in srgb, var(--text) 7%, transparent);
+  --code-bg: var(--conversation-code-bg);
+  --code-text: var(--conversation-code-text);
+  --code-border: var(--conversation-code-border);
+  --tooltip-bg: var(--conversation-surface-2);
+  --tooltip-fg: var(--conversation-text);
+  --tooltip-border: color-mix(in srgb, var(--accent) 42%, var(--border));
 }
 
 .echo-tooltip {
@@ -629,53 +704,53 @@ html[data-mode="dark"] .chat-pane {
 
 /* Send box (composer) in dark mode — dark surfaces with clearly legible text. */
 html[data-mode="dark"] .composer {
-  background: var(--conversation-surface);
-  border-color: var(--conversation-border);
+  background: var(--composer-bg);
+  border-color: var(--composer-border);
 }
 html[data-mode="dark"] .composer:focus-within {
-  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 24%, transparent);
+  border-color: var(--composer-focus);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--composer-focus) 24%, transparent);
 }
 html[data-mode="dark"] .composer-toolbar {
-  background: rgba(255, 255, 255, 0.04);
-  border-bottom-color: var(--border);
+  background: var(--composer-toolbar-bg);
+  border-bottom-color: var(--composer-border);
 }
 html[data-mode="dark"] .composer-editor {
-  color: var(--text);
+  color: var(--composer-text);
 }
 html[data-mode="dark"] .editor-placeholder {
-  color: var(--muted);
+  color: var(--composer-muted);
 }
 html[data-mode="dark"] .composer .icon-btn {
-  color: #aab6cf;
+  color: var(--composer-control);
 }
 html[data-mode="dark"] .composer .icon-btn:hover,
 html[data-mode="dark"] .composer .icon-btn.active {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: var(--composer-control-hover);
+  color: var(--composer-text);
 }
 html[data-mode="dark"] .composer .icon-btn.plus {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--composer-control-hover);
 }
 html[data-mode="dark"] .composer .icon-btn.plus:hover {
-  background: rgba(255, 255, 255, 0.16);
+  background: color-mix(in srgb, var(--composer-control-hover) 72%, var(--composer-text));
 }
 html[data-mode="dark"] .composer .tb-sep {
-  background: var(--border);
+  background: var(--composer-border);
 }
 html[data-mode="dark"] .composer-editor code {
-  background: rgba(255, 255, 255, 0.08);
-  color: #f0a3c0;
+  background: var(--composer-code-bg);
+  color: var(--composer-code-text);
 }
 html[data-mode="dark"] .composer-editor pre {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: var(--border);
+  background: var(--composer-pre-bg);
+  border-color: var(--composer-border);
 }
 html[data-mode="dark"] .composer-editor pre code {
-  color: var(--text);
+  color: var(--composer-text);
 }
 html[data-mode="dark"] .composer-editor blockquote {
-  color: var(--muted);
+  color: var(--composer-muted);
 }
 
 /* Mention pills in dark mode — the light-theme text colours are too dark to
@@ -9462,9 +9537,9 @@ html[dir="rtl"] .channel-details-person-handle {
   justify-content: space-between;
   gap: 14px;
   padding: 10px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--composer-border);
   border-radius: 12px;
-  background: var(--surface);
+  background: var(--composer-bg);
   box-shadow: var(--shadow-md);
 }
 .composer-paste-content {
@@ -9481,8 +9556,8 @@ html[dir="rtl"] .channel-details-person-handle {
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
-  color: var(--accent);
+  background: var(--composer-control-hover);
+  color: var(--composer-control);
 }
 .composer-paste-prompt.is-error {
   border-color: color-mix(in srgb, var(--danger) 30%, var(--border));
@@ -9505,7 +9580,7 @@ html[dir="rtl"] .channel-details-person-handle {
   line-height: 1.35;
 }
 .composer-paste-copy span {
-  color: var(--muted);
+  color: var(--composer-muted);
 }
 .composer-paste-actions {
   display: flex;
@@ -9522,7 +9597,7 @@ html[dir="rtl"] .channel-details-person-handle {
 }
 .composer-paste-dismiss {
   background: transparent;
-  color: var(--muted);
+  color: var(--composer-muted);
 }
 .composer-paste-dismiss:hover,
 .composer-paste-dismiss:focus-visible {
@@ -9559,9 +9634,9 @@ html[dir="rtl"] .channel-details-person-handle {
 }
 .pending-att {
   position: relative;
-  border: 1px solid var(--border);
+  border: 1px solid var(--composer-border);
   border-radius: 10px;
-  background: var(--surface);
+  background: var(--composer-bg);
 }
 .pending-att.is-image img {
   display: block;
@@ -9586,7 +9661,8 @@ html[dir="rtl"] .channel-details-person-handle {
   cursor: pointer;
 }
 .pending-image-edit:hover,
-.pending-image-edit:focus-visible { background: var(--accent); }
+.pending-image-edit:hover,
+.pending-image-edit:focus-visible { background: var(--blue-500); }
 .custom-image-editor-shell {
   position: fixed;
   inset: 0;
@@ -10755,14 +10831,14 @@ html[dir="rtl"] .groups-create-modal .forward-destination-copy {
 }
 .forward-note-field .composer {
   margin: 0;
-  border-color: var(--border);
+  border-color: var(--composer-border);
   border-radius: 10px;
-  background: var(--surface-2);
+  background: var(--composer-bg);
   box-shadow: none;
 }
 .forward-note-field .composer-toolbar {
   padding: 3px 6px;
-  background: color-mix(in srgb, var(--surface) 70%, var(--surface-2));
+  background: var(--composer-toolbar-bg);
 }
 .forward-note-field .composer-toolbar .icon-btn {
   min-width: 30px;
@@ -12129,8 +12205,8 @@ html[data-mode="dark"] .new-messages-button:hover {
   unicode-bidi: isolate;
   padding: 1px 5px;
   border-radius: 5px;
-  background: color-mix(in srgb, var(--accent) 15%, transparent);
-  color: var(--accent);
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--blue-500);
   font-weight: 650;
   white-space: nowrap;
 }
@@ -12255,9 +12331,9 @@ html[data-interface-direction="ltr"] .composer-user-mention {
 .composer {
   position: relative;
   margin: 4px 20px 22px;
-  border: 1px solid var(--conversation-border);
+  border: 1px solid var(--composer-border);
   border-radius: 12px;
-  background: var(--conversation-surface);
+  background: var(--composer-bg);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
@@ -12269,8 +12345,8 @@ html[data-interface-direction="ltr"] .composer-user-mention {
   z-index: 1001;
 }
 .composer:focus-within {
-  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 24%, transparent);
+  border-color: var(--composer-focus);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--composer-focus) 24%, transparent);
 }
 .composer.dragging-files {
   border-color: var(--blue-500);
@@ -12284,7 +12360,7 @@ html[data-interface-direction="ltr"] .composer-user-mention {
   align-items: center;
   justify-content: center;
   border-radius: 11px;
-  background: color-mix(in srgb, var(--surface) 88%, var(--blue-500));
+  background: color-mix(in srgb, var(--composer-bg) 88%, var(--blue-500));
   color: var(--blue-500);
   font-size: 14px;
   font-weight: 750;
@@ -12296,7 +12372,7 @@ html[data-interface-direction="ltr"] .composer-user-mention {
   z-index: 1000;
   border: 3px dashed color-mix(in srgb, var(--blue-500) 72%, transparent);
   border-radius: 0;
-  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  background: color-mix(in srgb, var(--composer-bg) 82%, transparent);
   font-size: 18px;
 }
 .composer-editing {
@@ -12305,9 +12381,9 @@ html[data-interface-direction="ltr"] .composer-user-mention {
   justify-content: space-between;
   gap: 12px;
   padding: 9px 12px;
-  border-bottom: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
-  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
-  color: var(--text);
+  border-bottom: 1px solid var(--composer-border);
+  background: var(--composer-toolbar-bg);
+  color: var(--composer-text);
   font-size: 13px;
 }
 .composer.is-editing .composer-editing {
@@ -12322,7 +12398,7 @@ html[data-interface-direction="ltr"] .composer-user-mention {
   min-width: 0;
 }
 .composer-editing span {
-  color: var(--muted);
+  color: var(--composer-muted);
   font-size: 12px;
   white-space: nowrap;
 }
@@ -12332,13 +12408,13 @@ html[data-interface-direction="ltr"] .composer-user-mention {
   border: 0;
   border-radius: 5px;
   background: transparent;
-  color: var(--muted);
+  color: var(--composer-muted);
   font-size: 12px;
   cursor: pointer;
 }
 .composer-edit-cancel:hover {
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  color: var(--text);
+  background: var(--composer-control-hover);
+  color: var(--composer-text);
 }
 
 .composer-toolbar {
@@ -12349,8 +12425,8 @@ html[data-interface-direction="ltr"] .composer-user-mention {
   box-sizing: border-box;
   flex-wrap: nowrap;
   height: 45px;
-  background: color-mix(in srgb, var(--conversation-bg) 58%, var(--conversation-surface));
-  border-bottom: 1px solid var(--conversation-border);
+  background: var(--composer-toolbar-bg);
+  border-bottom: 1px solid var(--composer-border);
   border-radius: 11px 11px 0 0;
 }
 .composer.is-editing .composer-toolbar {
@@ -12402,6 +12478,20 @@ html[data-interface-direction="ltr"] .composer-user-mention {
 }
 .icon-btn.plus:hover { background: #e6e6e6; }
 
+.composer .icon-btn {
+  color: var(--composer-control);
+}
+.composer .icon-btn:hover,
+.composer .icon-btn.active,
+.composer .icon-btn.plus,
+.composer .icon-btn.plus:hover {
+  background: var(--composer-control-hover);
+  color: var(--composer-text);
+}
+.composer .tb-sep {
+  background: var(--composer-border);
+}
+
 .composer-more-actions {
   position: relative;
   display: inline-flex;
@@ -12423,9 +12513,9 @@ html[data-interface-direction="ltr"] .composer-user-mention {
   gap: 2px;
   min-width: 190px;
   padding: 6px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--composer-border);
   border-radius: 10px;
-  background: var(--surface);
+  background: var(--composer-bg);
   box-shadow: var(--shadow-md);
   animation: composer-actions-in 120ms ease-out both;
 }
@@ -12437,13 +12527,13 @@ html[data-interface-direction="ltr"] .composer-user-mention {
   width: 100%;
   min-width: 0;
   padding: 9px 10px;
-  color: var(--text);
+  color: var(--composer-text);
   font-size: 13px;
   text-align: left;
 }
 .composer-more-popover .composer-more-action:hover,
 .composer-more-popover .composer-more-action:focus-visible {
-  background: var(--surface-2);
+  background: var(--composer-control-hover);
 }
 /* The left action cluster becomes the physical right edge in RTL. Mirror the
    popover anchor so the panel grows into the composer instead of beyond it. */
@@ -12483,7 +12573,7 @@ html[dir="rtl"] .composer-more-popover .composer-more-action {
   font-family: inherit;
   font-size: 15px;
   line-height: 1.46;
-  color: #1d1c1d;
+  color: var(--composer-text);
   min-height: 22px;
   max-height: 280px;
   overflow-y: auto;
@@ -12518,7 +12608,7 @@ html[dir="rtl"] .composer-more-popover .composer-more-action {
 }
 .composer-editor p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
-  color: #8d8d8d;
+  color: var(--composer-muted);
   direction: ltr;
   text-align: left;
   unicode-bidi: isolate;
@@ -12534,16 +12624,16 @@ html[dir="rtl"] .composer-more-popover .composer-more-action {
   color: var(--link-color);
 }
 .composer-editor code {
-  background: #eef2f9;
-  color: #b4456f;
+  background: var(--composer-code-bg);
+  color: var(--composer-code-text);
   padding: 1px 5px;
   border-radius: 5px;
   font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
   font-size: 0.9em;
 }
 .composer-editor pre {
-  background: #f3f5f9;
-  border: 1px solid #e3e9f2;
+  background: var(--composer-pre-bg);
+  border: 1px solid var(--composer-border);
   padding: 8px 10px;
   border-radius: 8px;
   margin: 4px 0;
@@ -12551,7 +12641,7 @@ html[dir="rtl"] .composer-more-popover .composer-more-action {
 }
 .composer-editor pre code {
   background: none;
-  color: #1d1c1d;
+  color: var(--composer-text);
   padding: 0;
 }
 .composer-editor ul,
@@ -12589,7 +12679,7 @@ html[dir="rtl"] .composer-more-popover .composer-more-action {
   padding: 2px 0;
   padding-inline-start: 12px;
   border-inline-start: 3px solid var(--blue-400);
-  color: #475569;
+  color: var(--composer-muted);
 }
 /* Quote paragraphs decide their own base direction. This keeps an English
    quoted message readable inside a Hebrew composer and vice versa. */
@@ -12704,8 +12794,8 @@ html[data-interface-direction="rtl"] .composer-editor li > p {
   right: 0;
   margin-bottom: 8px;
   min-width: 210px;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--composer-bg);
+  border: 1px solid var(--composer-border);
   border-radius: 10px;
   box-shadow: var(--shadow-md);
   padding: 6px;
@@ -12718,7 +12808,7 @@ html[data-interface-direction="rtl"] .composer-editor li > p {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--muted);
+  color: var(--composer-muted);
   padding: 6px 10px 4px;
 }
 .send-menu button {
@@ -12732,19 +12822,19 @@ html[data-interface-direction="rtl"] .composer-editor li > p {
   padding: 9px 10px;
   border-radius: 7px;
   font-size: 14px;
-  color: var(--text);
+  color: var(--composer-text);
   cursor: pointer;
 }
 .send-menu-sub {
   font-size: 12px;
-  color: var(--muted);
+  color: var(--composer-muted);
   font-weight: 500;
 }
 .send-menu button:hover:not(:disabled) {
-  background: var(--surface-2);
+  background: var(--composer-control-hover);
 }
 .send-menu button:disabled {
-  color: var(--muted);
+  color: var(--composer-muted);
   opacity: 0.55;
   cursor: not-allowed;
 }
@@ -16954,6 +17044,11 @@ html[dir="rtl"] .channel-browser-members {
 .retro-modal .modal-header { border-bottom: 0; }
 .retro-modal { background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 3%, var(--surface)), var(--surface)); }.retro-modal .modal-header { padding-bottom: 14px; border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }.retro-modal .modal-header h2 { letter-spacing: -.025em; }.retro-intro { display: flex; align-items: center; justify-content: space-between; }.retro-columns { padding: 4px 3px 14px; }.retro-column { border: 1px solid color-mix(in srgb, var(--border) 75%, transparent); border-top: 4px solid var(--retro-tone); box-shadow: 0 3px 12px #0000000a; }.retro-column > header { letter-spacing: -.01em; }.retro-column-submit { margin-top: 12px; border: 1px dashed color-mix(in srgb, var(--accent) 38%, var(--border)); background: color-mix(in srgb, var(--surface) 70%, var(--accent)); }.retro-item { border-color: color-mix(in srgb, var(--border) 68%, transparent); transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease; }.retro-item:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--accent) 32%, var(--border)); box-shadow: 0 5px 14px #00000012; }.retro-idea-modal .composer { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }.retro-idea-modal .composer .composer-editor { min-height: 92px; }.retro-idea-modal .modal-actions { margin-top: 14px; }.retro-idea-modal .modal-actions .btn-primary:disabled { opacity: .45; cursor: not-allowed; }
 .retro-column > header > span { color: var(--retro-tone); }
+
+.retro-idea-modal .composer {
+  border-color: var(--composer-border);
+  background: var(--composer-bg);
+}
 
 /* Keep the board as the only scrolling surface so category headers can stay pinned. */
 .modal.retro-modal {
