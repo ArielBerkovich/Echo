@@ -38,7 +38,7 @@ function labelFor(destination) {
 
 function DestinationLabel({ destination }) {
   const label = labelFor(destination);
-  return destination.kind === "channel" ? <bdi dir="ltr">{label}</bdi> : label;
+  return destination.kind === "channel" ? <bdi dir="ltr">{label}</bdi> : <bdi dir="auto">{label}</bdi>;
 }
 
 function resultId(destination) {

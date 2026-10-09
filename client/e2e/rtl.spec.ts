@@ -110,6 +110,53 @@ test("isolates mixed-direction names in live search suggestions", async ({ page 
   await expect.poll(() => englishSuggestion.evaluate((element) => getComputedStyle(element).direction)).toBe("ltr");
 });
 
+test("isolates Hebrew names ending in an apostrophe in New Message and Forward", async ({ page }) => {
+  const hebrewName = "שם בעברית'";
+  changedBobDisplayName = true;
+  await requestAsToken(page, fixture.bob.token, "/users/me", {
+    method: "PATCH",
+    body: { displayName: hebrewName },
+  });
+  await page.addInitScript(() => localStorage.setItem("echo.language", "en"));
+
+  await page.goto("/");
+  await page.getByTestId("start-dm").click();
+  const newMessage = page.getByTestId("new-message-modal");
+  await newMessage.getByTestId("new-message-search-input").fill(fixture.bob.username);
+  const person = newMessage.getByTestId(`new-message-user-${fixture.bob.username}`);
+  const personName = person.locator(".person-name bdi[dir=auto]");
+  await expect(personName).toHaveText(hebrewName);
+  await expect.poll(() => personName.evaluate((element) => ({
+    direction: getComputedStyle(element).direction,
+    unicodeBidi: getComputedStyle(element).unicodeBidi,
+  }))).toEqual({ direction: "rtl", unicodeBidi: "isolate" });
+  await person.click();
+  const selectedName = newMessage.locator(".new-message-recipient bdi[dir=auto]");
+  await expect(selectedName).toHaveText(hebrewName);
+  await expect.poll(() => selectedName.evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
+
+  await page.keyboard.press("Escape");
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  const message = page.getByTestId(`message-${fixture.messages.threadRoot.id}`);
+  await expect(message).toBeVisible();
+  await message.hover();
+  await page.getByTestId(`message-${fixture.messages.threadRoot.id}-forward`).click({ force: true });
+
+  const forward = page.getByTestId("forward-modal");
+  await forward.getByTestId("forward-search").fill(hebrewName);
+  const result = forward.locator(".forward-destination-row").filter({ hasText: hebrewName }).first();
+  const resultName = result.locator(".forward-destination-copy strong bdi[dir=auto]");
+  await expect(resultName).toHaveText(hebrewName);
+  await expect.poll(() => resultName.evaluate((element) => ({
+    direction: getComputedStyle(element).direction,
+    unicodeBidi: getComputedStyle(element).unicodeBidi,
+  }))).toEqual({ direction: "rtl", unicodeBidi: "isolate" });
+  await result.click();
+  const selectedForwardName = forward.locator(".forward-chip bdi[dir=auto]");
+  await expect(selectedForwardName).toHaveText(hebrewName);
+  await expect.poll(() => selectedForwardName.evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
+});
+
 test("updates the display-name input direction for Hebrew and English names", async ({ page }) => {
   const hebrewName = "שם לדוגמה'";
   const englishName = "English Name'";
