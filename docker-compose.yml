@@ -67,6 +67,9 @@ services:
 
   server:
     image: arielber/echo-server:0.45.0
+    build:
+      context: .
+      dockerfile: server/Dockerfile
     # Keep this service scalable with `docker-compose up --scale server=3`.
     # A fixed container_name would prevent Compose from creating replicas.
     restart: unless-stopped

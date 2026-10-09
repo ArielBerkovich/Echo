@@ -693,7 +693,7 @@ export default function SettingsModal({
               <p className="settings-hint">{t("desktopNotificationsHint")}</p>
               <NotificationToggle />
             </section>
-            {!user.isAdmin ? (user.canChangePassword ? <ChangePassword /> : <SsoPasswordNotice />) : <AdminPasswordReset users={users} currentUserId={user.id} />}
+            {!user.isAdmin ? (user.canChangePassword ? <ChangePassword /> : <SsoPasswordNotice />) : <><AdminPasswordReset users={users} currentUserId={user.id} /><AdminUserDeprecation users={users} currentUserId={user.id} /></>}
           </>}
 
           {activeTab === "preferences" && <>
@@ -1380,6 +1380,48 @@ function ChangePassword() {
 
 // Admin-only: pick a user and issue them a one-time password. The admin shares
 // it; the user logs in with it and is forced to choose their own new password.
+function AdminUserDeprecation({ users, currentUserId }) {
+  const { t } = useI18n();
+  const [query, setQuery] = useState("");
+  const [busyId, setBusyId] = useState(null);
+  const [error, setError] = useState(null);
+  const [statusOverrides, setStatusOverrides] = useState({});
+  const normalizedQuery = query.trim().replace(/^@+/, "").toLowerCase();
+  const candidates = normalizedQuery
+    ? users.map((u) => statusOverrides[u.id] === undefined ? u : { ...u, deprecated: statusOverrides[u.id] })
+      .filter((u) => u.id !== currentUserId && !u.isAdmin &&
+        (u.displayName.toLowerCase().includes(normalizedQuery) || u.username.toLowerCase().includes(normalizedQuery))).slice(0, 8)
+    : [];
+
+  async function toggle(u) {
+    setBusyId(u.id);
+    setError(null);
+    try {
+      const { user: updated } = await api.setUserDeprecated(u.id, !u.deprecated);
+      setStatusOverrides((previous) => ({ ...previous, [u.id]: !!updated.deprecated }));
+    }
+    catch (err) { setError(translateError(err.message)); }
+    finally { setBusyId(null); }
+  }
+
+  return (
+    <section className="settings-section" data-testid="admin-deprecation">
+      <h3>{t("adminDeprecationTitle")}</h3>
+      <p className="settings-hint">{t("adminDeprecationDescription")}</p>
+      <input className="settings-input" data-testid="admin-deprecation-search" placeholder={t("findUserByName")} value={query} onChange={(event) => setQuery(event.target.value)} />
+      {candidates.length > 0 && <div className="admin-user-results">
+        {candidates.map((u) => <div key={u.id} className="search-row" data-testid={`admin-deprecation-user-${u.username}`}>
+          <Avatar name={u.displayName} src={u.avatarUrl} size={24} />
+          <span className="search-name"><span className="search-name-text">{u.displayName}</span>{u.deprecated && <span className="deprecated-label">{t("deprecatedLabel")}</span>}</span>
+          <bdi className="search-handle" dir="ltr">@{u.username}</bdi>
+          <button type="button" className="btn-secondary" disabled={busyId === u.id} onClick={() => toggle(u)}>{u.deprecated ? t("restoreUser") : t("deprecateUser")}</button>
+        </div>)}
+      </div>}
+      {error && <div className="error">{error}</div>}
+    </section>
+  );
+}
+
 function AdminPasswordReset({ users, currentUserId }) {
   const { t } = useI18n();
   const [query, setQuery] = useState("");

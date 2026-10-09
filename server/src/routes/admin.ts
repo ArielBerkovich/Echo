@@ -8,10 +8,25 @@ import { Channel } from "../models/Channel.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { requireAdmin } from "../middleware/requireAdmin.js";
 import { sendMessage } from "../services/messageService.js";
-import { emitToChannel } from "../realtime.js";
+import { emitToChannel, emitAll } from "../realtime.js";
 
 export const adminRouter = Router();
 adminRouter.use(requireAuth, requireAdmin);
+
+// PATCH /api/admin/users/:id/deprecated
+adminRouter.patch("/users/:id/deprecated", async (req, res) => {
+  const { id } = req.params;
+  if (!mongoose.isValidObjectId(id)) return res.status(404).json({ error: "user not found" });
+  const target = await User.findById(id);
+  if (!target || target.username === "system") return res.status(404).json({ error: "user not found" });
+  if (target.isAdmin) return res.status(403).json({ error: "admin users cannot be deprecated" });
+  if (typeof req.body?.deprecated !== "boolean") return res.status(400).json({ error: "deprecated must be a boolean" });
+  target.deprecated = req.body.deprecated;
+  await target.save();
+  const user = target.toPublicJSON();
+  emitAll("user:update", { user });
+  res.json({ user });
+});
 
 // A readable random one-time password (no easily-confused characters).
 function generateOtp(len = 12) {

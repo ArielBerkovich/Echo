@@ -530,7 +530,7 @@ const SearchBox = forwardRef(function SearchBox(
       onClick={() => (kind === "filter" ? applyFilter(u) : pickUser(u))}
     >
       <Avatar name={u.displayName} src={u.avatarUrl} size={24} />
-      <span className="search-name"><bdi dir="auto">{u.displayName}</bdi></span>
+      <span className="search-name"><span className="search-name-text"><bdi dir="auto">{u.displayName}</bdi></span>{u.deprecated && <span className="deprecated-label">{t("deprecatedLabel")}</span>}</span>
       <bdi className="search-handle" dir="ltr">@{u.username}</bdi>
     </button>
   );
@@ -723,7 +723,7 @@ const SearchBox = forwardRef(function SearchBox(
                               src={users.find((x) => x.id === r.id)?.avatarUrl}
                               size={24}
                             />
-                            <span className="search-name"><bdi dir="auto">{r.displayName}</bdi></span>
+                            <span className="search-name"><span className="search-name-text"><bdi dir="auto">{r.displayName}</bdi></span>{users.find((x) => x.id === r.id)?.deprecated && <span className="deprecated-label">{t("deprecatedLabel")}</span>}</span>
                             <span className="search-kind">DM</span>
                           </button>
                         )

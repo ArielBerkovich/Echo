@@ -4484,12 +4484,25 @@ html[dir="rtl"] .channel-details-section-hint {
   font-weight: 600;
 }
 .search-name {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25em;
   flex: 1;
   min-width: 0;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
+}
+.search-name-text {
+  min-width: 0;
+  overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.deprecated-label {
+  flex: none;
+  color: var(--muted);
+  font-weight: 500;
 }
 .search-handle,
 .search-kind {

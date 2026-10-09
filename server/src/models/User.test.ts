@@ -24,6 +24,7 @@ describe("User.toPublicJSON", () => {
     assert.deepEqual(Object.keys(json).sort(), [
       "avatarUrl",
       "canChangePassword",
+      "deprecated",
       "displayName",
       "id",
       "isAdmin",
@@ -35,6 +36,7 @@ describe("User.toPublicJSON", () => {
     assert.equal(json.avatarUrl, "/api/files/avatar.png");
     assert.equal(json.passwordHash, undefined);
     assert.equal(json.canChangePassword, true);
+    assert.equal(json.deprecated, false);
   });
 
   it("uses null avatar URLs and boolean defaults", () => {
@@ -45,6 +47,7 @@ describe("User.toPublicJSON", () => {
     assert.equal(json.isAdmin, false);
     assert.equal(json.mustResetPassword, false);
     assert.equal(json.onboarded, false);
+    assert.equal(json.deprecated, false);
     assert.equal(json.canChangePassword, true);
   });
 
@@ -59,6 +62,13 @@ describe("User.toPublicJSON", () => {
     });
 
     assert.equal(user.toPublicJSON().canChangePassword, false);
+  });
+
+  it("exposes a persisted deprecated status without changing the display name", () => {
+    const user = new User({ username: "former-member", displayName: "Former Member", passwordHash: "hash", deprecated: true });
+
+    assert.equal(user.toPublicJSON().deprecated, true);
+    assert.equal(user.toPublicJSON().displayName, "Former Member");
   });
 
   it("defaults channel stars independently from VIP users", () => {
