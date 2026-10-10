@@ -1,3 +1,4 @@
+import { summarizeThreadDiscussion } from "../services/threadSummaryService.js";
 import { Router } from "express";
 import mongoose from "mongoose";
 import { canParticipateInChannel, canPostToChannel, Channel, isChannelManager } from "../models/Channel.js";
@@ -600,6 +601,23 @@ channelsRouter.get("/:id/messages/:msgId/thread", async (req, res) => {
     parent: thread.root.toPublicJSON(),
     replies: thread.replies.map((reply) => reply.toPublicJSON()),
   });
+});
+
+channelsRouter.post("/:id/messages/:msgId/thread-summary", async (req, res) => {
+  if (!config.threadSummaries.enabled) return res.status(404).json({ error: "not found" });
+  if (!mongoose.isValidObjectId(req.params.id) || !mongoose.isValidObjectId(req.params.msgId)) return res.status(404).json({ error: "thread not found" });
+  try {
+    const channel = await Channel.findById(req.params.id);
+    if (!channel || channel.isArchived || !canParticipateInChannel(channel, req.user._id)) return res.status(404).json({ error: "thread not found" });
+    const thread = await getThreadMessages({ channelId: channel._id, messageId: req.params.msgId, resolveParent: false, limit: 1001 });
+    if (!thread || thread.root.parentId) return res.status(404).json({ error: "thread not found" });
+    if (thread.replies.length > 1000) return res.status(413).json({ error: "This thread is too long to summarize." });
+    res.json(await summarizeThreadDiscussion(thread, config.threadSummaries));
+  } catch (error) {
+    console.error("Thread summary request failed:", error.message);
+    const timeout = error.name === "TimeoutError";
+    res.status(error.status || (timeout ? 504 : 502)).json({ error: error.status ? error.message : timeout ? "The summary request timed out." : "The summary provider could not complete the request. Try again or check the provider configuration." });
+  }
 });
 
 // GET /api/channels/:id/pinned — all pinned messages, oldest pin first.

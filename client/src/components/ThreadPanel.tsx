@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BellIcon, BellOffIcon, ChevronsDownIcon } from "lucide-react";
+import { BellIcon, BellOffIcon, ChevronsDownIcon, WandSparkles } from "lucide-react";
 import { api } from "../api.js";
 import { getSocket } from "../socket.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
@@ -39,6 +39,7 @@ export default function ThreadPanel({
   onFindChannels,
   onAddCustomEmoji,
   onClose,
+  onBackToSummary,
   onThreadRead,
   canPost = true,
   onChannelUpdated,
@@ -393,6 +394,10 @@ export default function ThreadPanel({
           <span className="thread-title">{t("thread")}</span>
         </div>
         <div className="thread-header-actions">
+          {onBackToSummary && <button type="button" className="thread-summary-return" data-testid="thread-back-to-summary" onClick={onBackToSummary}>
+            <WandSparkles size={16} aria-hidden="true" />
+            {t("backToSummary")}
+          </button>}
           {!rootDeleted && canInteract && <button
             type="button"
             className={`thread-follow-toggle${following || muted ? " is-following" : ""}`}

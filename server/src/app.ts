@@ -41,6 +41,7 @@ export function createApp() {
   app.use(httpMetricsMiddleware);
 
   app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
+  app.get("/api/config", (_req, res) => res.json({ threadSummaries: config.threadSummaries.enabled }));
   app.get("/api/openapi.json", (_req, res) => res.json(openApiDocument()));
   app.use("/mcp", mcpRouter);
   app.use("/api/desktop-downloads", desktopDownloadsRouter(config.desktopUpdateDir));

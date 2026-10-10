@@ -23,6 +23,54 @@ Install; all runtime images are declared in `values.yaml`. The parent chart
 generates and persists the MongoDB, MinIO, and Echo credentials in the
 pre-install hook Secrets described above.
 
+## Thread summaries
+
+Thread summaries are disabled by default. Enable them in the Helm release and
+point the server at an OpenAI-compatible chat completions endpoint. The API key
+is read from an existing Kubernetes Secret; leave it empty for compatible
+servers that do not require authentication.
+
+```yaml
+server:
+  threadSummaries:
+    enabled: true
+    baseUrl: https://api.openai.com/v1
+    model: gpt-4o-mini
+    apiKeySecret: echo-openai
+    apiKeySecretKey: api-key
+    timeoutMs: 30000
+    maxContextTokens: 12000
+    maxOutputTokens: 700
+```
+
+Create the Secret in the release namespace before upgrading/installing:
+
+```bash
+kubectl create secret generic echo-openai --from-literal=api-key='YOUR_KEY'
+```
+
+The UI reads the feature flag from the server, and the server checks it again
+before summarizing. Requests include the original post for context and up to
+1,000 replies. The summary opens with a brief explanation of the original issue,
+request, or goal, then covers the discussion without copying the original post.
+The provider is asked for JSON Schema output with an overview, developments,
+decisions, outcome, next steps, and open items. The panel offers brief and detailed
+views, source links, and copying. Empty sections are omitted; owners and deadlines
+are requested only when stated. Source references are checked against the supplied
+replies, but this does not verify the factual accuracy of the model’s wording.
+Providers that explicitly reject the schema format are retried using JSON mode,
+then without a format field, within the same timeout. Compatible providers that
+return prose instead still display a readable summary.
+Deleted messages are excluded and attachment contents are not read.
+
+Threads above the configured context budget are rejected rather than silently
+truncated. The estimate includes instructions and reserves room for output;
+it is approximate because Echo does not use provider-specific tokenizers.
+Incomplete provider output is reported as an error. Summaries are generated on
+demand and are not stored. The panel shows a snapshot and flags live discussion
+changes; regenerate it for updates. Structured output needs enough output tokens
+for the JSON as well as its text (the default is 700).
+
 ```bash
 helm install echo ./helm/echo
 ```

@@ -1,6 +1,6 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ArrowUpRight, ChartNoAxesColumnIncreasing, Check, LoaderCircle } from "lucide-react";
+import { ArrowUpRight, ChartNoAxesColumnIncreasing, Check, WandSparkles, LoaderCircle } from "lucide-react";
 import { api } from "../api.js";
 import RetroBoard from "./RetroBoard.js";
 import Avatar from "./Avatar.js";
@@ -71,6 +71,7 @@ function Message({
   onReact,
   onToggleReaction,
   onOpenThread,
+  onSummarizeThread,
   onViewInChannel,
   onQuote,
   onForward,
@@ -721,6 +722,11 @@ function Message({
           {!inThread && (
             <button data-testid={`message-${mid}-reply`} aria-label={t("replyInThread")} title={t("replyInThread")} onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onOpenThread}>
               <ReplyIcon />
+            </button>
+          )}
+          {!inThread && !m.parentId && m.replyCount > 0 && onSummarizeThread && (
+            <button data-testid={`message-${mid}-summarize-thread`} aria-label={t("summarizeThread")} title={t("summarizeThread")} onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onSummarizeThread}>
+              <WandSparkles size={16} strokeWidth={1.8} aria-hidden="true" />
             </button>
           )}
           {canQuote && (

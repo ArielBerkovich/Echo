@@ -9,12 +9,13 @@ import {
   useRef,
   useState,
 } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, getBackendUrl, getToken } from "../api.js";
 import { getSocket } from "../socket.js";
 import Avatar, { GroupAvatar } from "./Avatar.js";
 import ReactionPicker from "./ReactionPicker.js";
 import ThreadPanel from "./ThreadPanel.js";
+import ThreadSummaryPanel from "./ThreadSummaryPanel.js";
 import ForwardModal from "./ForwardModal.js";
 import ChannelDetailsPanel from "./ChannelDetailsPanel.js";
 import MembersPanel from "./MembersPanel.js";
@@ -117,12 +118,14 @@ const ChannelView = forwardRef(function ChannelView({
 }, ref) {
   const { t } = useI18n();
   const queryClient = useQueryClient();
+  const runtimeConfigQuery = useQuery({ queryKey: ["runtime-config"], queryFn: api.getRuntimeConfig, staleTime: Infinity });
   const hasUsableCache = cachedMessages !== null && !hasUnread;
   const isMember = channel.type === "dm" || (channel.members || []).includes(user.id);
   const canPost = isMember && (channel.type === "dm" || !channel.readOnly || channel.createdBy === user.id || (channel.managers || []).includes(user.id));
   const [messages, setMessages] = useState(() => hasUsableCache ? cachedMessages : []);
   const [error, setError] = useState(null);
   const [thread, setThread] = useState(null); // open thread root message, or null
+  const [summaryRoot, setSummaryRoot] = useState(null);
   const [threadJumpTargetId, setThreadJumpTargetId] = useState(null);
   const [threadJumpRequestId, setThreadJumpRequestId] = useState(0);
   const [reactingTo, setReactingTo] = useState(null); // message id with the react picker open
@@ -529,6 +532,7 @@ const ChannelView = forwardRef(function ChannelView({
   }
 
   function openPinnedPanel() {
+    setSummaryRoot(null);
     setThread(null);
     setThreadJumpTargetId(null);
     setShowDetails(false);
@@ -541,6 +545,7 @@ const ChannelView = forwardRef(function ChannelView({
   }
 
   function openMembersPanel() {
+    setSummaryRoot(null);
     setThread(null);
     setThreadJumpTargetId(null);
     setShowDetails(false);
@@ -550,6 +555,7 @@ const ChannelView = forwardRef(function ChannelView({
   }
 
   function openDetailsPanel() {
+    setSummaryRoot(null);
     setThread(null);
     setThreadJumpTargetId(null);
     setShowPinned(false);
@@ -559,6 +565,7 @@ const ChannelView = forwardRef(function ChannelView({
 
   function openFilesPanel() {
     if (showFiles) return;
+    setSummaryRoot(null);
     setThread(null);
     setThreadJumpTargetId(null);
     setShowDetails(false);
@@ -587,7 +594,7 @@ const ChannelView = forwardRef(function ChannelView({
   }));
 
   useEffect(() => {
-    if (!thread && !showMembers && !showPinned && !showFiles) return undefined;
+    if (!thread && !summaryRoot && !showMembers && !showPinned && !showFiles) return undefined;
     function onKeyDown(event) {
       if (event.key !== "Escape" || event.defaultPrevented) return;
       event.preventDefault();
@@ -595,6 +602,8 @@ const ChannelView = forwardRef(function ChannelView({
         setThread(null);
         setThreadJumpTargetId(null);
         setThreadLightbox(null);
+      } else if (summaryRoot) {
+        setSummaryRoot(null);
       } else if (showMembers) {
         setShowMembers(false);
       } else if (showPinned) {
@@ -605,7 +614,7 @@ const ChannelView = forwardRef(function ChannelView({
     }
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [showFiles, showMembers, showPinned, thread]);
+  }, [showFiles, showMembers, showPinned, summaryRoot, thread]);
 
   // Returns a promise so the ForwardModal can show per-destination progress.
   async function forwardTo(dest, options = {}) {
@@ -1065,7 +1074,7 @@ const ChannelView = forwardRef(function ChannelView({
       ? `${typingNames[0]} and ${typingNames.length - 1} others are typing…`
       : "";
 
-  const hasSidePanel = !!thread || showMembers || showPinned || showFiles;
+  const hasSidePanel = !!thread || !!summaryRoot || showMembers || showPinned || showFiles;
 
   return (
     <main
@@ -1307,6 +1316,18 @@ const ChannelView = forwardRef(function ChannelView({
                     saved={savedIds?.has(m.id)}
                     onToggleSave={() => onToggleSave?.(m.id)}
                     onOpenProfile={onOpenProfile}
+                    onSummarizeThread={runtimeConfigQuery.data?.threadSummaries && isMember ? () => {
+                      setActionsFor(null);
+                      setMenuFor(null);
+                      setReactingTo(null);
+                      setThread(null);
+                      setThreadJumpTargetId(null);
+                      setShowDetails(false);
+                      setShowMembers(false);
+                      setShowPinned(false);
+                      setShowFiles(false);
+                      setSummaryRoot(m);
+                    } : undefined}
                     onOpenGroup={onOpenGroup}
                     onOpenChannel={onOpenChannel}
                     showActions={actionsFor === m.id}
@@ -1325,6 +1346,7 @@ const ChannelView = forwardRef(function ChannelView({
                     onToggleReaction={(emoji) => toggleReaction(m.id, emoji)}
                     canInteract={isMember}
                     onOpenThread={() => {
+                      setSummaryRoot(null);
                       setActionsFor(null);
                       setShowDetails(false);
                       if (m.parentId) {
@@ -1452,6 +1474,18 @@ const ChannelView = forwardRef(function ChannelView({
       )}
       </div>
 
+      {summaryRoot && (
+        <div style={{ display: thread ? "none" : "contents" }}>
+          <ThreadSummaryPanel
+            channel={channel}
+            key={summaryRoot.id}
+            root={summaryRoot}
+            onOpenThread={(messageId) => { setThreadJumpTargetId(messageId || null); if (messageId) setThreadJumpRequestId((id) => id + 1); setThread(summaryRoot); }}
+            renderMarkdown={renderMarkdown}
+            onClose={() => setSummaryRoot(null)}
+          />
+        </div>
+      )}
       {thread ? (
         <>
           <ThreadPanel
@@ -1476,6 +1510,7 @@ const ChannelView = forwardRef(function ChannelView({
             onFindChannels={onFindChannels}
             onAddCustomEmoji={onAddCustomEmoji}
             onClose={() => { setThread(null); setThreadJumpTargetId(null); setThreadLightbox(null); }}
+            onBackToSummary={summaryRoot?.id === thread.id ? () => { setThread(null); setThreadJumpTargetId(null); setThreadLightbox(null); } : undefined}
             onThreadRead={onThreadRead}
             onChannelUpdated={onChannelUpdated}
             canPost={canPost}
@@ -1486,7 +1521,7 @@ const ChannelView = forwardRef(function ChannelView({
             composerFocusRequest={composerFocusRequest}
           />
         </>
-      ) : showMembers ? (
+      ) : summaryRoot ? null : showMembers ? (
         <MembersPanel
           channel={{ ...channel, currentUserId: user.id }}
           users={users}

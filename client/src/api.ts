@@ -89,6 +89,11 @@ function unreachableError() {
 function friendlyErrorMessage(status, serverMessage, path, errorLabel) {
   const language = readString("echo.language") === "he" ? "he" : "en";
   if (status >= 500) {
+    if (/\/messages\/[^/]+\/thread-summary$/.test(path)) {
+      return serverMessage || (status === 504
+        ? "The summary took too long. Try again, or increase the provider timeout if you use a local model."
+        : "The summary provider couldn't complete this request. Please try again.");
+    }
     if (path === "/auth/login") return "We couldn't sign you in right now. Please try again in a moment.";
     if (path === "/auth/register") return "We couldn't create your account right now. Please try again in a moment.";
     if (path.startsWith("/integrations/allure")) return serverMessage || "Allure could not be reached. Check the service URL and credentials.";
@@ -122,13 +127,14 @@ async function parseResponse(res, errorLabel, path) {
   return data;
 }
 
-async function request(path, { method = "GET", body } = {}) {
+async function request(path, { method = "GET", body, signal } = {}) {
   const hasBody = body !== undefined;
   const requestUrl = apiUrl(path);
 
   try {
     const res = await fetch(requestUrl, {
       method,
+      signal,
       credentials: "include",
       headers: authHeaders(hasBody ? { "Content-Type": "application/json" } : {}),
       body: hasBody ? JSON.stringify(body) : undefined,
@@ -136,7 +142,7 @@ async function request(path, { method = "GET", body } = {}) {
 
     return parseResponse(res, "Request", path);
   } catch (error) {
-    if (error.status) throw error;
+    if (error.status || error.name === "AbortError") throw error;
     throw unreachableError();
   }
 }
@@ -211,6 +217,8 @@ async function createEmoji(name, file) {
 }
 
 export const api = {
+  getRuntimeConfig: () => request("/config"),
+  summarizeThread: (channelId, msgId, signal) => request(`/channels/${channelId}/messages/${msgId}/thread-summary`, { method: "POST", signal }),
   register: (payload) => request("/auth/register", { method: "POST", body: payload }),
   login: (payload) => request("/auth/login", { method: "POST", body: payload }),
   startMigration: (payload) =>

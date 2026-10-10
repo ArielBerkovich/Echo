@@ -1,0 +1,282 @@
+{
+  "channel": "summary-workplace-demo",
+  "threads": [
+    {
+      "key": "incident",
+      "title": "Checkout errors after the morning deployment",
+      "root": [
+        "maya",
+        "Checkout errors jumped to 18% after the 09:10 deployment. Most failures are on EU payments. Can someone from Platform help investigate? Customer Support needs an update in 15 minutes."
+      ],
+      "replies": [
+        [
+          "daniel",
+          "Looking at the database graphs. Connections are normal, so I do not have evidence that this is a database issue."
+        ],
+        [
+          "leah",
+          "Three customers have reported duplicate payment attempts, but none show a duplicate charge yet. Please do not tell customers they were charged twice."
+        ],
+        [
+          "omar",
+          "The timing matches the new payment retry flag. That is a hypothesis, not a confirmed root cause."
+        ],
+        [
+          "maya",
+          "Let us roll back the deployment rather than change the flag separately. Daniel, can you do that?"
+        ],
+        [
+          "daniel",
+          "Rollback finished at 09:28. Checkout errors are back below 1%."
+        ],
+        [
+          "omar",
+          "Confirmed from the synthetic checks: EU checkout is working again. I did not perform the rollback; Daniel did."
+        ],
+        [
+          "leah",
+          "Support update sent: service restored, investigation ongoing."
+        ],
+        [
+          "daniel",
+          "I will compare retry traces by Monday 12:00. Root cause is still unknown; we should not redeploy this build yet."
+        ]
+      ],
+      "expected": "Daniel performed the rollback; Omar confirmed recovery. Service is restored, but the retry flag is only a hypothesis. Daniel owns trace review by Monday 12:00; redeployment is blocked. Duplicate charges were not confirmed."
+    },
+    {
+      "key": "release",
+      "title": "Search filters launch readiness",
+      "root": [
+        "maya",
+        "Can we ship the new search filters Thursday at 14:00? We need QA sign-off, accessible mobile controls, and a short release note. The marketing email is scheduled for Thursday morning."
+      ],
+      "replies": [
+        [
+          "noa",
+          "Desktop QA passed. Mobile Safari still loses the selected filters when you go back from a result."
+        ],
+        [
+          "daniel",
+          "I have a fix in review. I expect it will be ready this afternoon, but it has not been merged or tested yet."
+        ],
+        [
+          "leah",
+          "Could we ship desktop only and keep mobile on the old flow? Several customers asked for this last week."
+        ],
+        [
+          "omar",
+          "That would need a separate rollout flag we do not have. I think a partial launch introduces more risk."
+        ],
+        [
+          "maya",
+          "Agreed. Moving the target to Monday at 10:00, subject to mobile QA passing. Thursday is cancelled."
+        ],
+        [
+          "noa",
+          "I can retest Monday at 08:30. Also found an unlabeled clear-filters button; that must be fixed before sign-off."
+        ],
+        [
+          "daniel",
+          "Back-navigation fix merged. The accessible label is now added too. Both still need Noa’s verification."
+        ],
+        [
+          "leah",
+          "Marketing email is paused. I will reschedule only after QA confirms."
+        ],
+        [
+          "maya",
+          "Final plan: Monday 10:00 if Noa signs off. Daniel owns fixes; Noa owns QA. No approval to launch yet."
+        ]
+      ],
+      "expected": "Thursday was cancelled. Monday 10:00 is conditional on Noa’s QA sign-off, not a committed launch. Daniel’s fixes are merged but unverified. Marketing is paused. Desktop-only rollout was rejected."
+    },
+    {
+      "key": "design",
+      "title": "CSV export delivery approach",
+      "root": [
+        "noa",
+        "Design review for CSV exports: should every export email a download link, or should small exports download immediately? Research calls suggest people dislike waiting for simple tasks."
+      ],
+      "replies": [
+        [
+          "omar",
+          "I would make everything asynchronous. Large exports are already exceeding the request timeout."
+        ],
+        [
+          "leah",
+          "That solves the backend problem but adds friction for the small exports our support team does all day."
+        ],
+        [
+          "daniel",
+          "We can return a direct download up to 5,000 rows and queue larger requests. The cutoff is a proposal; I have not benchmarked it."
+        ],
+        [
+          "noa",
+          "I like the split flow, but the UI must show the size limit before the user clicks Export."
+        ],
+        [
+          "maya",
+          "Decision for v1: direct download up to 2,000 rows, queued export above that. Do not use the proposed 5,000-row cutoff."
+        ],
+        [
+          "omar",
+          "Okay. I will benchmark the 2,000-row path Tuesday. We still need to decide how long queued files remain available."
+        ],
+        [
+          "leah",
+          "Please avoid email attachments; customers cannot receive large files reliably. A link is fine."
+        ],
+        [
+          "maya",
+          "Confirmed: queued exports send a link, never an attachment. Retention is unresolved; Noa will collect requirements by Wednesday."
+        ]
+      ],
+      "expected": "The agreed cutoff is 2,000 rows, not 5,000. Small exports download directly; larger exports queue and send links, not attachments. Omar benchmarks Tuesday. Retention remains unresolved; Noa collects requirements by Wednesday."
+    },
+    {
+      "key": "code",
+      "title": "Permission-check cache review — PR #482",
+      "root": [
+        "daniel",
+        "PR #482 caches permission checks for 60 seconds. The staging benchmark drops p95 from 220 ms to 90 ms. Can someone review whether this is safe before we merge?"
+      ],
+      "replies": [
+        [
+          "omar",
+          "The timing looks good, but the key only includes userId. Permissions also depend on channelId."
+        ],
+        [
+          "daniel",
+          "Good catch. Updated the key to `${userId}:${channelId}` and added a test for users in two channels."
+        ],
+        [
+          "noa",
+          "There is another case: a user removed from a channel still sees it for up to 60 seconds. The channel key does not fix stale membership."
+        ],
+        [
+          "daniel",
+          "We could invalidate the cache on removal. I have not implemented that yet."
+        ],
+        [
+          "maya",
+          "Permission revocation must take effect immediately. Please do not merge until that case is covered."
+        ],
+        [
+          "daniel",
+          "Reverted the cache change. PR #482 is now closed. The benchmark improvement is not in production."
+        ],
+        [
+          "omar",
+          "I will explore request-scoped caching instead. It avoids sharing old authorization results across requests. Draft proposal due Friday, not an approved implementation."
+        ]
+      ],
+      "expected": "The optimization was reverted and PR #482 closed. The measured speedup did not reach production. Adding channelId did not fix stale permission revocation. Omar’s request-scoped caching is a future proposal due Friday."
+    },
+    {
+      "key": "handoff",
+      "title": "Northstar migration handoff",
+      "root": [
+        "leah",
+        "Northstar’s migration is planned for Sunday at 21:00. Please post the handoff here: backup status, migration owner, customer communication, and rollback criteria."
+      ],
+      "replies": [
+        [
+          "daniel",
+          "Backup completed and restore was verified on staging. I will run the migration. Production restore has not been attempted."
+        ],
+        [
+          "omar",
+          "Rollback if error rate stays above 2% for five minutes or if reconciliation finds any missing invoices. I will monitor until 23:00."
+        ],
+        [
+          "noa",
+          "Staging reconciliation passed for 500 invoices. The customer has about 80,000 invoices, so this is not a full-volume validation."
+        ],
+        [
+          "leah",
+          "Customer notice drafted. Waiting for Maya’s go/no-go before I send it."
+        ],
+        [
+          "maya",
+          "We need the full-volume dry run first. Keep Sunday 21:00 tentative. No go decision yet."
+        ],
+        [
+          "daniel",
+          "Dry run found 12 invoices with missing currency codes. No production data has been changed."
+        ],
+        [
+          "leah",
+          "I asked Northstar for corrected currency values. They have not replied yet."
+        ],
+        [
+          "maya",
+          "Hold the migration. Daniel will rerun reconciliation after corrected data arrives. Leah owns customer follow-up. We will choose a new window after the dry run passes."
+        ]
+      ],
+      "expected": "Migration is on hold and the original window is no longer approved. Twelve records need currency corrections; no production data changed. Leah awaits customer corrections; Daniel reruns reconciliation. Backup restore was verified only on staging."
+    },
+    {
+      "key": "hebrew",
+      "title": "יום צוות — תכנון והרשמה",
+      "root": [
+        "noa",
+        "אנחנו רוצים לקיים יום צוות ביום שלישי, 20 באוקטובר. ההצעה כרגע היא סדנת בישול בתל אביב, עם תקציב של 250 ש״ח לאדם. מי יכול לבדוק זמינות ומי אחראי להרשמה?"
+      ],
+      "replies": [
+        [
+          "leah",
+          "בדקתי מול הספק. אין מקום ביום שלישי, אבל יש אפשרות ביום חמישי, 22 באוקטובר, בשעה 16:00. עדיין לא הזמנתי."
+        ],
+        [
+          "omar",
+          "ביום חמישי אני בכוננות ולא אוכל לצאת מתל אביב. אפשר לבחור מקום ליד המשרד?"
+        ],
+        [
+          "maya",
+          "מאשרת תקציב של עד 200 ש״ח לאדם, ולא 250. נעבור לחמישי בכפוף למציאת מקום מתאים."
+        ],
+        [
+          "daniel",
+          "יש מקום ליד המשרד שמציע סדנה ב-180 ש״ח לאדם, אבל אין שם כרגע אישור לגבי נגישות."
+        ],
+        [
+          "noa",
+          "לא סוגרים בלי אישור נגישות ואפשרות לאוכל טבעוני. אני אבדוק מול המקום עד יום שני."
+        ],
+        [
+          "leah",
+          "פתחתי טופס הרשמה. ההרשמה פתוחה עד יום רביעי ב-12:00. זה לא אישור שהאירוע כבר הוזמן."
+        ],
+        [
+          "maya",
+          "סיכום ההחלטה: חמישי ב-16:00 הוא מועד מתוכנן בלבד. נועה אחראית לבדיקת נגישות ואוכל, לאה להרשמה. המיקום עדיין לא מאושר ולא שולם מקדמה."
+        ]
+      ],
+      "expected": "סיכום בעברית: חמישי 22 באוקטובר ב-16:00 מתוכנן בלבד; אין הזמנה או מקדמה. התקציב המאושר הוא עד 200 ש״ח. נועה בודקת נגישות ואוכל עד שני; לאה מנהלת הרשמה עד רביעי ב-12:00. המיקום טרם אושר."
+    },
+    {
+      "key": "short",
+      "title": "Partner VPN access before the customer demo",
+      "root": [
+        "maya",
+        "The partner VPN is unreachable from the demo environment. This may involve the Network team. Can someone help before the customer demo?"
+      ],
+      "replies": [
+        [
+          "leah",
+          "I have asked the Network team for help. No response yet."
+        ],
+        [
+          "omar",
+          "Access is working again from my laptop now. I do not know what changed."
+        ],
+        [
+          "maya",
+          "Confirmed from the demo environment too. The customer demo can proceed."
+        ]
+      ],
+      "expected": "Leah asked Network for help; Omar and Maya confirmed recovery. The fixer and cause are unknown. Do not claim that Network repaired it. The demo can proceed."
+    }
+  ]
+}
