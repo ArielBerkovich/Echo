@@ -584,15 +584,18 @@ test("quotes a message into the composer", async ({ page }) => {
   expect(sent?.body).toContain(reply);
 });
 
-test("pastes markdown into the composer as formatted content", async ({ page }) => {
+test("pastes Markdown into the ordinary composer as literal text", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByTestId("composer-editor")).toBeVisible();
 
+  const marker = `Pasted heading ${Date.now()}`;
+  const source = `# ${marker}`;
+
   await page.getByTestId("composer-editor").focus();
-  await page.evaluate((body) => {
+  await page.evaluate((text) => {
     const editor = document.querySelector('[data-testid="composer-editor"]');
     const data = new DataTransfer();
-    data.setData("text/plain", body);
+    data.setData("text/plain", text);
     editor.dispatchEvent(
       new ClipboardEvent("paste", {
         bubbles: true,
@@ -600,16 +603,18 @@ test("pastes markdown into the composer as formatted content", async ({ page }) 
         clipboardData: data,
       })
     );
-  }, fixture.messages.formatted.body);
+  }, source);
 
   const editor = page.getByTestId("composer-editor");
-  await expect(editor.locator("h1")).toHaveText("Heading 1");
-  await expect(editor.locator("strong")).toHaveText("Bold text");
-  await expect(editor.locator("s, del")).toHaveText("Strikethrough text");
-  await expect(editor.locator("pre code")).toContainText("formatted via API");
-  await expect(editor.locator("blockquote")).toContainText("Quote line");
-  await expect(editor.locator("li")).toContainText(["Bullet item", "Numbered item"]);
-  await expect(editor.locator('a[href="https://example.com"]')).toHaveText("Echo link");
+  await expect(editor).toHaveText(source);
+  await expect(editor.locator("h1, h2, h3")).toHaveCount(0);
+
+  await page.getByTestId("composer-send").click();
+  const message = messageByText(page, marker);
+  await expect(message.locator(".body h1, .body h2, .body h3")).toHaveCount(0);
+  await expect(message.locator(".body")).toHaveText(source);
+  const { messages } = await requestAsToken(page, fixture.alice.token, `/channels/${fixture.generalChannel.id}/messages`);
+  expect(messages.find((item) => item.body.includes(marker))?.body).toBe(`\\${source}`);
 });
 
 test("pastes multiple lines into the active code block", async ({ page }) => {
@@ -633,31 +638,26 @@ test("pastes multiple lines into the active code block", async ({ page }) => {
   await expect(editor.locator(":scope > p")).toHaveCount(0);
 });
 
-test("serializes Tiptap content through the existing Markdown message contract", async ({ page }) => {
+test("typing a Markdown heading marker keeps it literal in the ordinary composer", async ({ page }) => {
   await page.goto("/");
-  const marker = `Tiptap contract ${Date.now()}`;
-  const body = `# ${marker}\n\n**Bold** and ~~strike~~ with [a link](https://example.com)\n\n- List item\n\n\`\`\`js\nconst compatible = true;\n\`\`\``;
-  const expectedBody = `# ${marker}\n\n**Bold** and ~~strike~~ with [a link](https://example.com)\n\n-   List item\n\n\`\`\`js\nconst compatible = true;\n\`\`\``;
+  const marker = `Typed heading ${Date.now()}`;
   const editor = page.getByTestId("composer-editor");
   await editor.focus();
-  await page.evaluate((markdown) => {
-    const clipboard = new DataTransfer();
-    clipboard.setData("text/plain", markdown);
-    document.querySelector('[data-testid="composer-editor"]').dispatchEvent(new ClipboardEvent("paste", {
-      bubbles: true,
-      cancelable: true,
-      clipboardData: clipboard,
-    }));
-  }, body);
+  await page.keyboard.type(`# ${marker}`);
+  await expect(editor).toHaveText(`# ${marker}`);
+  await expect(editor.locator("h1, h2, h3")).toHaveCount(0);
+
   await page.getByTestId("composer-send").click();
-  await expect(page.getByText(marker)).toBeVisible();
+  const message = messageByText(page, marker);
+  await expect(message.locator(".body h1, .body h2, .body h3")).toHaveCount(0);
+  await expect(message.locator(".body")).toHaveText(`# ${marker}`);
 
   const { messages } = await requestAsToken(
     page,
     fixture.alice.token,
     `/channels/${fixture.generalChannel.id}/messages`
   );
-  expect(messages.find((message) => message.body.includes(marker))?.body).toBe(expectedBody);
+  expect(messages.find((message) => message.body.includes(marker))?.body).toBe(`\\# ${marker}`);
 });
 
 test("pastes raw Markdown into a Markdown section and renders it when sent", async ({ page }) => {

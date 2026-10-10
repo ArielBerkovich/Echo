@@ -27,6 +27,14 @@ td.addRule("underline", {
   replacement: (content) => `<u>${content}</u>`,
 });
 
+// A plain paragraph beginning with a Markdown heading marker is still plain
+// composer text. Escape the marker in the stored body so the message renderer
+// only treats raw Markdown as source inside an explicit Markdown section.
+td.addRule("literalHeading", {
+  filter: (node) => node.nodeName === "P" && node.parentNode?.nodeName !== "LI",
+  replacement: (content) => `${content.replace(/(^|\n)( {0,3}#{1,6})([ \t]+)/g, "$1\\$2$3")}\n\n`,
+});
+
 // ProseMirror/Tiptap represents list-item text as <li><p>…</p></li>. Treat
 // that paragraph as structural so the persisted Markdown stays compatible
 // with the previous editor's compact "- item" representation.

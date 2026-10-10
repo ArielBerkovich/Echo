@@ -405,6 +405,9 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   }, []);
   const editor = useEditor({
     editable: !disabled,
+    // Rich text is created through the toolbar. Raw Markdown shortcuts such
+    // as `# ` should remain literal unless the user is in a Markdown section.
+    enableInputRules: false,
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
@@ -867,24 +870,13 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
 
   function insertPastedContent(text) {
     if (!editor) return;
-    if (editor.isActive("markdownSection")) {
+    // Pasted Markdown is source text. The Markdown section is the explicit
+    // place where that source is interpreted when the message is rendered.
+    if (editor.isActive("markdownSection") || editor.isActive("codeBlock")) {
       editor.commands.insertContent({ type: "text", text });
       return;
     }
-    if (editor.isActive("codeBlock")) {
-      editor.commands.insertContent({ type: "text", text });
-      return;
-    }
-    const html = markdownTextToComposerHtml(text);
-    if (html.includes("<")) {
-      editor.commands.insertContent(html);
-      return;
-    }
-    // Tiptap inserts tag-free strings as text, so HTML entities would become
-    // visible characters (and copy as "&lt;"). Decode them into a text node.
-    const template = document.createElement("template");
-    template.innerHTML = html;
-    editor.commands.insertContent({ type: "text", text: template.content.textContent || "" });
+    editor.commands.insertContent({ type: "text", text });
   }
 
   function startListFromShortcut(text) {
