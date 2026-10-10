@@ -80,6 +80,9 @@ export default function SearchResults({ query, onJump, onClose }) {
     queryKey: queryKeys.search(query),
     queryFn: ({ pageParam }) => api.searchMessages(query, pageParam),
     initialPageParam: 0,
+    // Keep cached results available for a fast first paint, but refetch them
+    // whenever this search is opened again so recent messages are included.
+    staleTime: 0,
     getNextPageParam: (lastPage, pages) => lastPage.hasMore ? pages.length : undefined,
   });
   const results = data?.pages.flatMap((page) => page.results || []) || [];
