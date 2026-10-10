@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { seedWorkspaceFixture } from "./helpers.js";
+import { openRailAction, seedWorkspaceFixture } from "./helpers.js";
 
 test("captures the Hebrew workspace for visual inspection", async ({ page }) => {
   const fixture = await seedWorkspaceFixture(page);
@@ -44,16 +44,19 @@ test("captures the Hebrew workspace for visual inspection", async ({ page }) => 
   await page.screenshot({ path: "test-results/hebrew-message-menu.png", fullPage: true });
 
   await page.locator(".menu-overlay").first().click({ position: { x: 4, y: 4 } });
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.getByTestId("sidebar-more").click();
   const railMenu = page.locator(".rail-more-menu");
   await expect(railMenu).toBeVisible();
   const railMenuBox = await railMenu.boundingBox();
   expect(railMenuBox).not.toBeNull();
   expect(railMenuBox!.x).toBeGreaterThanOrEqual(8);
-  expect(railMenuBox!.x + railMenuBox!.width).toBeLessThanOrEqual(1272);
+  expect(railMenuBox!.x + railMenuBox!.width).toBeLessThanOrEqual(382);
+  expect(railMenuBox!.y + railMenuBox!.height).toBeLessThanOrEqual(836);
   await page.screenshot({ path: "test-results/hebrew-rail-menu.png", fullPage: true });
 
   await page.locator(".menu-overlay").first().click({ position: { x: 4, y: 4 } });
+  await page.setViewportSize({ width: 1280, height: 720 });
   await page.locator(".workspace-search-actions").click();
   await expect(page.getByTestId("quick-switcher-commands-section")).toBeVisible();
   await expect(page.locator(".search-action-row").first()).toHaveCSS("text-align", "right");
@@ -118,11 +121,9 @@ test("renders every primary Hebrew workspace page in RTL", async ({ page }) => {
   await capture("activity", '[data-testid="activity-list"]');
   await page.getByTestId("rail-saved").click();
   await capture("saved", '[data-testid="saved-list"]');
-  await page.getByTestId("sidebar-more").click();
-  await page.getByTestId("more-browse-channels").click();
+  await openRailAction(page, "browse");
   await capture("browse", '[data-testid="channel-browser"]');
-  await page.getByTestId("sidebar-more").click();
-  await page.getByTestId("open-groups").click();
+  await openRailAction(page, "groups");
   await capture("groups", '[data-testid="groups-panel"]');
   await page.getByTestId("rail-settings").click();
   await capture("settings-account", '[data-testid="settings-page"]');

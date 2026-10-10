@@ -1,6 +1,7 @@
 import {
   ChevronDown,
   Code,
+  FileCode2,
   Link,
   List,
   ListOrdered,
@@ -19,6 +20,7 @@ export const BulletListIcon = icon(List);
 export const QuoteIcon = icon(Quote);
 export const CodeIcon = icon(Code);
 export const CodeBlockIcon = icon(SquareCode);
+export const MarkdownIcon = icon(FileCode2);
 export const PlusIcon = icon(Plus);
 export const SmileyIcon = icon(Smile);
 export const SendIcon = icon(Send);

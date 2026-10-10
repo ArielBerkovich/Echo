@@ -6,6 +6,7 @@ import {
   messageById,
   messageByText,
   openLocalAuth,
+  openRailAction,
   railItem,
   requestAsToken,
   seedWorkspaceFixture,
@@ -139,8 +140,7 @@ test("navigates the channel browser results with arrow keys and Enter", async ({
 
   try {
     await page.goto("/");
-    await page.getByTestId("sidebar-more").click();
-    await page.getByTestId("more-browse-channels").click();
+    await openRailAction(page, "browse");
 
     const search = page.getByTestId("channel-browser-search");
     await expect(search).toBeFocused();
@@ -155,8 +155,7 @@ test("navigates the channel browser results with arrow keys and Enter", async ({
     await expect(page.getByTestId("channel-browser")).toBeHidden();
     await expect(page.getByTestId("channel-title")).toContainText(channelName);
 
-    await page.getByTestId("sidebar-more").click();
-    await page.getByTestId("more-browse-channels").click();
+    await openRailAction(page, "browse");
     await expect(page.getByTestId("channel-browser-search")).toBeFocused();
     await page.getByTestId("channel-browser-search").fill(fixture.projectChannel.name);
     const joinedRow = page.getByTestId(`browse-channel-${fixture.projectChannel.name}`);
@@ -343,8 +342,7 @@ test("browses, filters, and joins public channels while private channels stay in
 
   await page.goto("/");
   await expect(page.getByTestId("channel-title")).toContainText("general");
-  await page.getByTestId("sidebar-more").click();
-  await page.getByTestId("more-browse-channels").click();
+  await openRailAction(page, "browse");
 
   await expect(page.getByTestId("channel-browser")).toBeVisible();
   const initialBrowserSearch = page.getByTestId("channel-browser-search");
@@ -355,8 +353,7 @@ test("browses, filters, and joins public channels while private channels stay in
   await expect(page.getByTestId("channel-browser")).toBeHidden();
   await expect(page.getByText(`#${fixture.projectChannel.name}`, { exact: true }).first()).toBeVisible();
 
-  await page.getByTestId("sidebar-more").click();
-  await page.getByTestId("more-browse-channels").click();
+  await openRailAction(page, "browse");
   await expect(page.getByTestId("channel-browser")).toBeVisible();
   const browserSearch = page.getByTestId("channel-browser-search");
   await expect(browserSearch).toBeFocused();
@@ -640,6 +637,96 @@ test("serializes Tiptap content through the existing Markdown message contract",
     `/channels/${fixture.generalChannel.id}/messages`
   );
   expect(messages.find((message) => message.body.includes(marker))?.body).toBe(expectedBody);
+});
+
+test("pastes raw Markdown into a Markdown section and renders it when sent", async ({ page }) => {
+  await page.goto("/");
+  const marker = `Markdown section ${Date.now()}`;
+  const source = `# ${marker}\n\n<name> and **bold** with <u>underline</u>`;
+  await page.getByTestId("composer-markdown-section").click();
+  const section = page.getByTestId("composer-editor").locator("pre[data-markdown-section]");
+  await expect(section).toBeVisible();
+  await page.evaluate((text) => {
+    const editor = document.querySelector('[data-testid="composer-editor"]');
+    const data = new DataTransfer();
+    data.setData("text/plain", text);
+    editor.dispatchEvent(new ClipboardEvent("paste", {
+      bubbles: true,
+      cancelable: true,
+      clipboardData: data,
+    }));
+  }, source);
+  await expect(section).toHaveText(source);
+
+  await page.getByTestId("composer-send").click();
+  const message = messageByText(page, marker);
+  await expect(message.locator(".body h1")).toHaveText(marker);
+  await expect(message.locator(".body")).toContainText("<name> and bold with underline");
+  await expect(message.locator(".body u")).toHaveText("underline");
+  const { messages } = await requestAsToken(page, fixture.alice.token, `/channels/${fixture.generalChannel.id}/messages`);
+  const savedBody = `~~~echo-markdown\n${source}\n~~~`;
+  expect(messages.find((item) => item.body.includes(marker))?.body).toBe(savedBody);
+
+  const messageId = (await message.getAttribute("data-testid")).replace("message-", "");
+  await message.hover();
+  await page.getByTestId(`message-${messageId}-actions`).getByTitle("More message actions").click();
+  await page.getByTestId(`message-${messageId}-edit`).click();
+  const editSection = page.getByTestId("composer-editor").locator("pre[data-markdown-section]");
+  await expect(editSection).toHaveText(source);
+  await page.getByTestId("composer-send").click();
+  const updated = await requestAsToken(page, fixture.alice.token, `/channels/${fixture.generalChannel.id}/messages`);
+  expect(updated.messages.find((item) => item.body.includes(marker))?.body).toBe(savedBody);
+});
+
+test("keeps pasted underline formatting and literal angle-bracket text", async ({ page }) => {
+  await page.goto("/");
+  const marker = `Underline ${Date.now()}`;
+  const source = `${marker}: <name> and <u>underlined</u>`;
+  await page.getByTestId("composer-editor").focus();
+  await page.evaluate((text) => {
+    const editor = document.querySelector('[data-testid="composer-editor"]');
+    const data = new DataTransfer();
+    data.setData("text/plain", text);
+    editor.dispatchEvent(new ClipboardEvent("paste", {
+      bubbles: true,
+      cancelable: true,
+      clipboardData: data,
+    }));
+  }, source);
+  await expect(page.getByTestId("composer-editor").locator("u")).toHaveText("underlined");
+  await expect(page.getByTestId("composer-editor")).toContainText("<name>");
+
+  await page.getByTestId("composer-send").click();
+  const message = messageByText(page, marker);
+  await expect(message.locator(".body u")).toHaveText("underlined");
+  await expect(message.locator(".body")).toContainText("<name> and underlined");
+  const { messages } = await requestAsToken(page, fixture.alice.token, `/channels/${fixture.generalChannel.id}/messages`);
+  expect(messages.find((item) => item.body.includes(marker))?.body).toBe(source);
+});
+
+test("copies literal angle-bracket text from the regular composer", async ({ page }) => {
+  await page.goto("/");
+  const editor = page.getByTestId("composer-editor");
+  await editor.focus();
+  await page.evaluate(() => {
+    const editor = document.querySelector('[data-testid="composer-editor"]');
+    const data = new DataTransfer();
+    data.setData("text/plain", "<name>");
+    editor.dispatchEvent(new ClipboardEvent("paste", {
+      bubbles: true,
+      cancelable: true,
+      clipboardData: data,
+    }));
+  });
+  await expect(editor).toHaveText("<name>");
+  await page.evaluate(() => {
+    document.addEventListener("copy", (event) => {
+      window.__composerCopyText = event.clipboardData?.getData("text/plain");
+    }, { once: true });
+  });
+  await editor.selectText();
+  await page.keyboard.press("ControlOrMeta+C");
+  await expect.poll(() => page.evaluate(() => window.__composerCopyText)).toBe("<name>");
 });
 
 test("opens Echo message links in the current tab and external links in a new tab", async ({ page }) => {

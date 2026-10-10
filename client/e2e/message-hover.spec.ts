@@ -61,6 +61,34 @@ test("keeps a message active while hovering and opening its action menu", async 
   await expect(message).toHaveClass(/menu-open/);
 });
 
+test("uses the conversation palette in the message actions menu", async ({ page }) => {
+  const { id, message } = await openFreshMessage(
+    page,
+    "conversation-menu-palette",
+    `Conversation palette ${fixture.suffix}`
+  );
+
+  await page.evaluate(() => {
+    document.documentElement.style.setProperty("--accent", "rgb(255, 0, 0)");
+  });
+  await message.hover();
+  const actions = page.getByTestId(`message-${id}-actions`);
+  await actions.getByTestId(`message-${id}-more`).click();
+  const menu = page.getByRole("menu", { name: "Message actions" });
+  await expect(menu).toBeVisible();
+
+  const palette = await menu.evaluate((element) => {
+    const styles = getComputedStyle(element);
+    return {
+      menuAccent: styles.getPropertyValue("--accent").trim(),
+      conversationAccent: styles.getPropertyValue("--conversation-accent").trim(),
+      workspaceAccent: getComputedStyle(document.documentElement).getPropertyValue("--accent").trim(),
+    };
+  });
+  expect(palette.menuAccent).toBe(palette.conversationAccent);
+  expect(palette.menuAccent).not.toBe(palette.workspaceAccent);
+});
+
 test("keeps the message action tooltip visible near the left viewport edge", async ({ page }) => {
   const { id, message } = await openFreshMessage(
     page,

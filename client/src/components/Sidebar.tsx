@@ -124,12 +124,17 @@ export default function Sidebar({
 }) {
   const { t } = useI18n();
   const dmsOnly = mode === "dms";
-  const [filter, setFilter] = useState("");
+  const filterKey = dmsOnly ? "dms" : "home";
+  const [filters, setFilters] = useState({ home: "", dms: "" });
+  const filter = filters[filterKey];
+  const updateFilter = (value) => setFilters((current) => ({ ...current, [filterKey]: value }));
   const [chCollapsed, setChCollapsed] = useState(false); // Channels section collapsed?
   const [starredCollapsed, setStarredCollapsed] = useState(false); // Starred section collapsed?
   const [dmCollapsed, setDmCollapsed] = useState(false); // DMs section collapsed?
   const [filterOpen, setFilterOpen] = useState(dmsOnly);
-  const [unreadOnly, setUnreadOnly] = useState(false);
+  const [unreadByView, setUnreadByView] = useState({ home: false, dms: false });
+  const unreadOnly = unreadByView[filterKey];
+  const updateUnreadOnly = (value) => setUnreadByView((current) => ({ ...current, [filterKey]: value }));
   const emojiUrls = useMemo(() => customEmojis.map((emoji) => emoji.url), [customEmojis]);
   const authUrls = useAuthUrls(emojiUrls);
   const previewEmojis = customEmojis
@@ -256,8 +261,8 @@ export default function Sidebar({
               onClick={() => {
                 setFilterOpen((open) => !open);
                 if (filterOpen) {
-                  setFilter("");
-                  setUnreadOnly(false);
+                  updateFilter("");
+                  updateUnreadOnly(false);
                 }
               }}
               title={filterOpen || unreadOnly ? t("closeFilter") : t("filter")}
@@ -282,7 +287,7 @@ export default function Sidebar({
             <input
               data-testid="sidebar-filter"
               value={filter}
-              onChange={(e) => setFilter(e.target.value)}
+              onChange={(e) => updateFilter(e.target.value)}
               placeholder={dmsOnly ? t("findADm") : t("filterChannelsAndDms")}
               autoFocus={!dmsOnly}
             />
@@ -294,7 +299,7 @@ export default function Sidebar({
                 type="button"
                 className={`sidebar-filter-mode ${!unreadOnly ? "active" : ""}`}
                 data-testid="sidebar-filter-all"
-                onClick={() => setUnreadOnly(false)}
+                onClick={() => updateUnreadOnly(false)}
                 aria-label={t("showAllConversations")}
                 aria-pressed={!unreadOnly}
               >
@@ -304,7 +309,7 @@ export default function Sidebar({
                 type="button"
                 className={`sidebar-filter-mode ${unreadOnly ? "active" : ""}`}
                 data-testid="sidebar-unread-toggle"
-                onClick={() => setUnreadOnly(true)}
+                onClick={() => updateUnreadOnly(true)}
                 aria-label={t("showUnreadConversations")}
                 aria-pressed={unreadOnly}
               >

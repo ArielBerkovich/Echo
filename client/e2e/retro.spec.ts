@@ -34,6 +34,8 @@ test("creates and manages a retrospective board", async ({ page }) => {
   await message.click();
   const board = page.locator(".retro-modal");
   await expect(board).toBeVisible();
+  await expect(page.getByTestId("recent-channels-trigger")).not.toBeVisible();
+  await expect(page.locator(".workspace-search-navigation")).not.toBeVisible();
   await expect(board.locator(".retro-column")).toHaveCount(4);
 
   const wentWell = board.locator(".retro-column.sun");
