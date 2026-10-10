@@ -612,6 +612,27 @@ test("pastes markdown into the composer as formatted content", async ({ page }) 
   await expect(editor.locator('a[href="https://example.com"]')).toHaveText("Echo link");
 });
 
+test("pastes multiple lines into the active code block", async ({ page }) => {
+  await page.goto("/");
+  const editor = page.getByTestId("composer-editor");
+  await editor.click();
+  await page.getByTitle("Code block").click();
+  await page.keyboard.type("const first = 1;");
+  await page.evaluate((text) => {
+    const target = document.querySelector('[data-testid="composer-editor"]');
+    const clipboard = new DataTransfer();
+    clipboard.setData("text/plain", text);
+    target.dispatchEvent(new ClipboardEvent("paste", {
+      bubbles: true,
+      cancelable: true,
+      clipboardData: clipboard,
+    }));
+  }, "\nconst second = 2;\nconst third = 3;");
+
+  await expect(editor.locator("pre code")).toHaveText("const first = 1;\nconst second = 2;\nconst third = 3;");
+  await expect(editor.locator(":scope > p")).toHaveCount(0);
+});
+
 test("serializes Tiptap content through the existing Markdown message contract", async ({ page }) => {
   await page.goto("/");
   const marker = `Tiptap contract ${Date.now()}`;
@@ -844,7 +865,7 @@ test("uses Enter for new list items and Shift+Enter for list line breaks", async
   await expect(items.nth(1).locator("br")).toHaveCount(1);
 });
 
-test("starts lists after existing composer text", async ({ page }) => {
+test("turns the current composer line into a list item", async ({ page }) => {
   await page.goto("/");
 
   const editor = page.getByTestId("composer-editor");
@@ -853,14 +874,88 @@ test("starts lists after existing composer text", async ({ page }) => {
   for (const [title, listSelector] of [["Ordered list", "ol"], ["Bulleted list", "ul"]]) {
     await editor.fill("Regular text");
     await page.getByTitle(title).click();
+    await expect(editor.locator(`:scope > ${listSelector} > li`)).toHaveCount(1);
+    await expect(editor.locator(`:scope > ${listSelector} > li`)).toHaveText("Regular text");
+    await page.keyboard.press("Enter");
     await page.keyboard.type("First item");
     await page.keyboard.press("Enter");
     await page.keyboard.type("Second item");
 
-    await expect(editor.locator(":scope > p")).toHaveText("Regular text");
-    await expect(editor.locator(`:scope > ${listSelector} > li`)).toHaveCount(2);
+    await expect(editor.locator(":scope > p")).toHaveCount(0);
+    await expect(editor.locator(`:scope > ${listSelector} > li`)).toHaveCount(3);
+    await expect(editor.locator(`:scope > ${listSelector} > li`).nth(0)).toHaveText("Regular text");
     await expect(editor.locator(`:scope > ${listSelector}`)).toContainText("First item");
     await expect(editor.locator(`:scope > ${listSelector}`)).toContainText("Second item");
+  }
+});
+
+test("starts a list on the new line after a manual line break", async ({ page }) => {
+  await page.goto("/");
+
+  const editor = page.getByTestId("composer-editor");
+  await expect(editor).toBeVisible();
+
+  for (const [title, listSelector] of [["Ordered list", "ol"], ["Bulleted list", "ul"]]) {
+    await editor.fill("Plain text");
+    await editor.press("Shift+Enter");
+    await page.getByTitle(title).click();
+    await page.keyboard.type("List item");
+
+    await expect(editor.locator(":scope > p")).toHaveText("Plain text");
+    await expect(editor.locator(":scope > p br")).toHaveCount(0);
+    await expect(editor.locator(":scope > p")).toHaveCount(1);
+    await expect(editor.locator(`:scope > ${listSelector} > li`)).toHaveText("List item");
+  }
+});
+
+test("converts ordered and bullet shortcuts on the first and later composer lines", async ({ page }) => {
+  await page.goto("/");
+
+  const editor = page.getByTestId("composer-editor");
+  await expect(editor).toBeVisible();
+
+  for (const [marker, listSelector] of [["1.", "ol"], ["*", "ul"]]) {
+    for (const laterLine of [false, true]) {
+      await editor.fill(laterLine ? "Prior line" : "");
+      if (laterLine) await editor.press("Shift+Enter");
+      await page.keyboard.type(marker);
+      await page.keyboard.press("Enter");
+
+      await expect(editor.locator(`:scope > ${listSelector} > li`)).toHaveCount(1);
+      if (laterLine) {
+        await expect(editor.locator(":scope > p")).toHaveText("Prior line");
+        await expect(editor.locator(":scope > p br")).toHaveCount(0);
+      } else {
+        await expect(editor.locator(":scope > p")).toHaveCount(0);
+      }
+      await editor.press("ControlOrMeta+A");
+      await editor.press("Backspace");
+    }
+  }
+});
+
+test("converts typed list markers on the first and later composer lines", async ({ page }) => {
+  await page.goto("/");
+
+  const editor = page.getByTestId("composer-editor");
+  await expect(editor).toBeVisible();
+
+  for (const [marker, listSelector] of [["1.", "ol"], ["*", "ul"]]) {
+    for (const laterLine of [false, true]) {
+      await editor.fill(laterLine ? "Prior line" : "");
+      if (laterLine) await editor.press("Shift+Enter");
+      await page.keyboard.type(`${marker} `);
+
+      await expect(editor.locator(`:scope > ${listSelector} > li`)).toHaveCount(1);
+      if (laterLine) {
+        await expect(editor.locator(":scope > p")).toHaveText("Prior line");
+        await expect(editor.locator(":scope > p br")).toHaveCount(0);
+      } else {
+        await expect(editor.locator(":scope > p")).toHaveCount(0);
+      }
+      await editor.press("ControlOrMeta+A");
+      await editor.press("Backspace");
+    }
   }
 });
 

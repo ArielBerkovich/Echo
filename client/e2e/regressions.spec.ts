@@ -655,15 +655,14 @@ test("keeps the new-message draft while changing the recipient chip", async ({ p
   await expect(editor).toHaveText(draft);
 });
 
-test("starts a new list after existing composer text", async ({ page }) => {
+test("turns existing composer text into a list item", async ({ page }) => {
   await page.goto("/");
   const editor = page.getByTestId("composer-editor").first();
   await editor.fill("Regular text");
   await page.getByTitle("Bulleted list").first().click();
   await page.keyboard.type("List item");
-  await expect(editor.locator(":scope > p")).toHaveText("Regular text");
-  await expect(editor).toContainText("List item");
-  await expect(editor.locator(":scope > ul > li")).toHaveCount(1);
+  await expect(editor.locator(":scope > p")).toHaveCount(0);
+  await expect(editor.locator(":scope > ul > li")).toHaveText("Regular textList item");
 });
 
 test("starts a conversation from the dedicated DMs button with the keyboard", async ({ page }) => {
