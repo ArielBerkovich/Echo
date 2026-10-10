@@ -21,6 +21,7 @@ export default function WorkspaceNavigation({
   onlineIds,
   activeChannel,
   activityBadge,
+  savedCount = 0,
   forceSidebar = false,
   publicChannelCount,
   mode,
@@ -71,6 +72,7 @@ export default function WorkspaceNavigation({
     home: channels.reduce((sum, channel) => sum + (channel.unread || 0), 0),
     dms: dms.reduce((sum, conversation) => sum + (conversation.unread || 0), 0),
     activity: activityBadge,
+    saved: savedCount,
   };
   const showSidebar = forceSidebar || (
     view !== "activity" &&
