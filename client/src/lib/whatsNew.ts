@@ -14,6 +14,33 @@ export type WhatsNewRelease = {
 // Keep release notes in the renderer so they work for air-gapped deployments
 // and always match the desktop binary that shipped them.
 const RELEASES: Record<string, WhatsNewRelease> = {
+  "0.46.0": {
+    id: "0.46.0",
+    title: "What's new in 0.46.0",
+    summary: "Recent channels, user archiving, and visual improvements.",
+    items: [
+      {
+        title: "Recent channels",
+        description: "Quickly return to channels you visited recently.",
+        category: "New",
+      },
+      {
+        title: "User archiving",
+        description: "Admins can archive and restore users in Settings.",
+        category: "New",
+      },
+      {
+        title: "Visual improvements",
+        description: "Conversation surfaces use a more neutral look.",
+        category: "Improved",
+      },
+      {
+        title: "Composer and text fixes",
+        description: "List shortcuts and code pasting work more reliably, and right-to-left text around mentions and display names renders correctly.",
+        category: "Fixed",
+      },
+    ],
+  },
   "0.45.0": {
     id: "0.45.0",
     title: "What's new in 0.45.0",
