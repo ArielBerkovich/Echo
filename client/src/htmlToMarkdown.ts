@@ -22,6 +22,11 @@ td.addRule("strikethrough", {
   replacement: (content) => `~~${content}~~`,
 });
 
+td.addRule("underline", {
+  filter: "u",
+  replacement: (content) => `<u>${content}</u>`,
+});
+
 // ProseMirror/Tiptap represents list-item text as <li><p>…</p></li>. Treat
 // that paragraph as structural so the persisted Markdown stays compatible
 // with the previous editor's compact "- item" representation.
@@ -43,6 +48,16 @@ td.addRule("userMention", {
 td.addRule("channelMention", {
   filter: (node) => node.nodeName === "SPAN" && node.getAttribute("data-channel-mention") !== null,
   replacement: (_content, node) => `#${node.getAttribute("data-channel-mention") || ""}`,
+});
+
+td.addRule("markdownSection", {
+  filter: (node) => node.nodeName === "PRE" && node.hasAttribute("data-markdown-section"),
+  replacement: (_content, node) => {
+    const source = node.textContent || "";
+    const longestFence = Math.max(2, ...[...source.matchAll(/^ {0,3}(~{3,})/gm)].map((match) => match[1].length));
+    const fence = "~".repeat(longestFence + 1);
+    return `\n\n${fence}echo-markdown\n${source}\n${fence}\n\n`;
+  },
 });
 
 export function htmlToMarkdown(html) {

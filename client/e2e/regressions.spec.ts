@@ -212,6 +212,38 @@ test("combines the Home unread filter with text search", async ({ page }) => {
   await expect(page.getByTestId(`dm-row-${slug(fixture.bob.displayName)}`)).toBeVisible();
 });
 
+test("keeps Home and DM view filters separate", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  for (const channelId of [fixture.generalChannel.id, fixture.projectChannel.id, fixture.dmChannel.id]) {
+    await requestAsToken(page, fixture.alice.token, `/channels/${channelId}/read`, { method: "POST" });
+  }
+
+  await page.goto("/");
+  await page.getByTestId("rail-dms").click();
+  const dmFilter = page.getByTestId("sidebar-filter");
+  await expect(dmFilter).toBeVisible();
+  await dmFilter.fill(fixture.bob.displayName);
+  await expect(page.getByTestId(`dm-row-${slug(fixture.bob.displayName)}`)).toBeVisible();
+
+  await page.getByTestId("rail-home").click();
+  await expect(page.getByTestId(`channel-row-${fixture.generalChannel.name}`)).toBeVisible();
+  await expect(page.getByTestId(`dm-row-${slug(fixture.bob.displayName)}`)).toBeVisible();
+  await page.getByTestId("sidebar-filter-toggle").click();
+  await expect(page.getByTestId("sidebar-filter")).toHaveValue("");
+  const unreadToggle = page.getByTestId("sidebar-unread-toggle");
+  await unreadToggle.click();
+  await expect(unreadToggle).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId(`dm-row-${slug(fixture.bob.displayName)}`)).toHaveCount(0);
+
+  await page.getByTestId("rail-dms").click();
+  await expect(page.getByTestId("sidebar-filter")).toHaveValue(fixture.bob.displayName);
+  await expect(page.getByTestId(`dm-row-${slug(fixture.bob.displayName)}`)).toBeVisible();
+
+  await page.getByTestId("rail-home").click();
+  await expect(page.getByTestId("sidebar-unread-toggle")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId(`dm-row-${slug(fixture.bob.displayName)}`)).toHaveCount(0);
+});
+
 test("shows an all-caught-up state when no channels, DMs, or starred items are unread", async ({ page }) => {
   for (const channelId of [fixture.generalChannel.id, fixture.projectChannel.id, fixture.dmChannel.id]) {
     await requestAsToken(page, fixture.alice.token, `/channels/${channelId}/read`, { method: "POST" });

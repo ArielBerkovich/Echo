@@ -409,6 +409,8 @@ test("handles mention autocomplete, @everyone, and attachments", async ({ page }
 
   await composer.fill("@e");
   await page.locator(".mention-item").filter({ hasText: "Notify everyone in this channel" }).click();
+  await expect(composer.locator(".composer-user-mention")).toHaveText("📣 @everyone");
+  await expect(composer.locator(".composer-user-mention")).toHaveClass(/mention--broadcast/);
   await page.keyboard.press("Enter");
   const everyoneMessage = page.locator(".message").filter({ hasText: "📣 @everyone" }).last();
   await expect(everyoneMessage.locator(".mention--broadcast")).toHaveText("📣 @everyone");

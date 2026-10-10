@@ -13,7 +13,7 @@ const STEPS = [
   },
   {
     title: "Get around",
-    body: "Use the rail to move between Home, Direct Messages, Activity, Saved, and recent channels. Browse Channels and Groups appear here when there is room, or under More when the rail is crowded.",
+    body: "Use the rail to move between Home, Direct Messages, Activity, Saved, recent channels, Browse Channels, and Groups.",
     target: ".rail-top",
     placement: "right",
   },
@@ -25,7 +25,7 @@ const STEPS = [
   },
   {
     title: "Browse channels and groups",
-    body: "Open Browse Channels or Groups from the rail. When space is tight, these actions move into More.",
+    body: "Open Browse Channels or Groups from the rail.",
     target: ".rail-top",
     placement: "right",
   },

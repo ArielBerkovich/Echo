@@ -423,6 +423,7 @@ html[data-mode="dark"] {
 .modal.retro-create-modal,
 .modal.retro-modal,
 .modal.retro-idea-modal,
+.msg-menu,
 .mention-popup,
 .emoji-popup-wrap,
 .reaction-picker-quick {
@@ -3059,6 +3060,10 @@ html[data-mode="dark"] .backend-connection-error {
     align-items: center;
     gap: 6px;
     z-index: 101;
+  }
+
+  body:has(.retro-modal) .workspace-search-navigation {
+    display: none;
   }
 
   .workspace-search-navigation button {
@@ -12845,6 +12850,7 @@ html[dir="rtl"] .composer-more-popover .composer-more-action {
 /* Live-rendered formatting inside the WYSIWYG editor */
 .composer-editor strong { font-weight: 700; }
 .composer-editor em { font-style: italic; }
+.composer-editor u { text-decoration: underline; text-underline-offset: 2px; }
 .composer-editor a {
   color: var(--link-color);
 }
@@ -12868,6 +12874,21 @@ html[dir="rtl"] .composer-more-popover .composer-more-action {
   background: none;
   color: var(--composer-text);
   padding: 0;
+}
+.composer-editor pre.composer-markdown-section {
+  border-inline-start: 3px solid var(--accent);
+  padding-top: 24px;
+  position: relative;
+}
+.composer-editor pre.composer-markdown-section::before {
+  content: "Markdown";
+  position: absolute;
+  top: 5px;
+  inset-inline-start: 10px;
+  color: var(--composer-muted);
+  font: 600 10px/1.2 "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  letter-spacing: 0.04em;
+  pointer-events: none;
 }
 .composer-editor ul,
 .composer-editor ol {
@@ -14282,6 +14303,10 @@ html[data-mode="dark"] .emoji-popup-wrap em-emoji-picker {
 }
 .markdown strong {
   font-weight: 700;
+}
+.markdown u {
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 /* Inline code: a subtle bordered chip with a red accent. */
 .markdown code {

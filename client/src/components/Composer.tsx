@@ -31,7 +31,7 @@ import { useI18n } from "../lib/i18n.js";
 import { MENTION_QUERY_RE, peopleSearchSuggestions } from "../lib/mentions.js";
 import { CalendarClock, ChartNoAxesColumnIncreasing, ChevronRight, FileIcon, LayoutPanelTop, Paperclip, Pencil, X } from "lucide-react";
 import {
-  LinkIcon, OrderedListIcon, BulletListIcon, QuoteIcon, CodeIcon, CodeBlockIcon,
+  LinkIcon, OrderedListIcon, BulletListIcon, QuoteIcon, CodeIcon, CodeBlockIcon, MarkdownIcon,
   PlusIcon, SmileyIcon, SendIcon,
 } from "./ComposerIcons.js";
 
@@ -191,7 +191,14 @@ const UserMention = Node.create({
   name: "userMention", inline: true, group: "inline", atom: true, selectable: false,
   addAttributes() { return { username: { default: "" }, label: { default: "" } }; },
   parseHTML() { return [{ tag: "span[data-user-mention]" }]; },
-  renderHTML({ node }) { return ["span", { class: "composer-user-mention", "data-user-mention": node.attrs.username, contenteditable: "false" }, ["bdi", {}, `@${node.attrs.label || node.attrs.username}`]]; },
+  renderHTML({ node }) {
+    const broadcast = node.attrs.username.toLowerCase() === "everyone";
+    return ["span", {
+      class: `composer-user-mention${broadcast ? " mention--broadcast" : ""}`,
+      "data-user-mention": node.attrs.username,
+      contenteditable: "false",
+    }, ["bdi", {}, `${broadcast ? "📣 " : ""}@${node.attrs.label || node.attrs.username}`]];
+  },
   renderText({ node }) { return `@${node.attrs.username}`; },
 });
 
@@ -201,6 +208,24 @@ const ChannelMention = Node.create({
   parseHTML() { return [{ tag: "span[data-channel-mention]" }]; },
   renderHTML({ node }) { return ["span", { class: "composer-channel-mention", "data-channel-mention": node.attrs.name, "data-channel-id": node.attrs.channelId, dir: "ltr", contenteditable: "false" }, `#${node.attrs.name}`]; },
   renderText({ node }) { return `#${node.attrs.name}`; },
+});
+
+// A source block lets people write Markdown without the rich-text composer
+// interpreting pasted syntax before the message is sent.
+const MarkdownSection = Node.create({
+  name: "markdownSection",
+  priority: 101,
+  group: "block",
+  content: "text*",
+  marks: "",
+  code: true,
+  defining: true,
+  parseHTML() {
+    return [{ tag: "pre[data-markdown-section]", preserveWhitespace: "full" }];
+  },
+  renderHTML() {
+    return ["pre", { class: "composer-markdown-section", "data-markdown-section": "true" }, ["code", 0]];
+  },
 });
 
 function deliveryMarkdown(currentEditor) {
@@ -295,6 +320,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     blockquote: false,
     code: false,
     codeBlock: false,
+    markdownSection: false,
   });
   const mentionQueryIsRtl = !!mention && (
     mention.baseDirection === "rtl"
@@ -387,6 +413,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       GroupMention,
       UserMention,
       ChannelMention,
+      MarkdownSection,
       Placeholder.configure({ placeholder }),
     ],
     editorProps: {
@@ -762,6 +789,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
         blockquote: false,
         code: false,
         codeBlock: false,
+        markdownSection: false,
       };
     }
     return {
@@ -774,6 +802,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       blockquote: currentEditor.isActive("blockquote"),
       code: currentEditor.isActive("code"),
       codeBlock: currentEditor.isActive("codeBlock"),
+      markdownSection: currentEditor.isActive("markdownSection"),
     };
   }
 
@@ -831,12 +860,30 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       setPastePrompt({ text, byteLength, tooLong: text.length > MAX_MESSAGE_CHARACTERS, tooLarge: false });
       return;
     }
-    editor?.commands.insertContent(markdownTextToComposerHtml(text));
+    insertPastedContent(text);
+  }
+
+  function insertPastedContent(text) {
+    if (!editor) return;
+    if (editor.isActive("markdownSection")) {
+      editor.commands.insertContent({ type: "text", text });
+      return;
+    }
+    const html = markdownTextToComposerHtml(text);
+    if (html.includes("<")) {
+      editor.commands.insertContent(html);
+      return;
+    }
+    // Tiptap inserts tag-free strings as text, so HTML entities would become
+    // visible characters (and copy as "&lt;"). Decode them into a text node.
+    const template = document.createElement("template");
+    template.innerHTML = html;
+    editor.commands.insertContent({ type: "text", text: template.content.textContent || "" });
   }
 
   function pasteAsText() {
     if (!pastePrompt || pastePrompt.tooLong || pastePrompt.tooLarge) return;
-    editor?.commands.insertContent(markdownTextToComposerHtml(pastePrompt.text));
+    insertPastedContent(pastePrompt.text);
     clearPastePrompt();
   }
 
@@ -869,7 +916,8 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       return;
     }
     if (mention.trigger === "@") {
-      editor.chain().focus().insertContentAt({ from: mention.from, to: mention.to }, [{ type: "userMention", attrs: { username: picked.username, label: picked.displayName } }, { type: "text", text: trailingMentionSpace }]).run();
+      const label = picked.broadcast ? picked.username : picked.displayName;
+      editor.chain().focus().insertContentAt({ from: mention.from, to: mention.to }, [{ type: "userMention", attrs: { username: picked.username, label } }, { type: "text", text: trailingMentionSpace }]).run();
       syncParagraphDirections(editor);
       setMention(null);
       return;
@@ -961,7 +1009,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
         setPasteBlockedNotice(t("pasteBlockedBeforeSend"));
         return;
       }
-      if (editor.isActive("codeBlock")) {
+      if (editor.isActive("codeBlock") || editor.isActive("markdownSection")) {
         e.preventDefault();
         if (e.shiftKey) editor.chain().focus().insertContent("\n").run();
         else editor.chain().focus().exitCode().run();
@@ -1724,6 +1772,9 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
           </button>
           <button type="button" className={`icon-btn ${active.codeBlock ? "active" : ""}`} data-testid="composer-code-block" title={t("codeBlock")} onMouseDown={keepFocus} onClick={() => runFormatting((chain) => chain.toggleCodeBlock())}>
             <CodeBlockIcon />
+          </button>
+          <button type="button" className={`icon-btn ${active.markdownSection ? "active" : ""}`} data-testid="composer-markdown-section" title={t("markdownSection")} aria-label={t("markdownSection")} aria-pressed={active.markdownSection} onMouseDown={keepFocus} onClick={() => runFormatting((chain) => chain.toggleNode("markdownSection", "paragraph"))}>
+            <MarkdownIcon />
           </button>
         </div>
       )}
