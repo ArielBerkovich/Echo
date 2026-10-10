@@ -31,6 +31,38 @@ export async function openLocalAuth(page) {
   await localAccount.click();
 }
 
+export async function openRailAction(page, action, { keyboard = false } = {}) {
+  const directAction = page.getByTestId(`rail-${action}`);
+  const moreButton = page.getByTestId("sidebar-more");
+  const overflowAction = page.getByTestId(action === "browse" ? "more-browse-channels" : "open-groups");
+
+  await expect.poll(async () => (await directAction.isVisible()) || (await moreButton.isVisible())).toBe(true);
+
+  if (await directAction.isVisible()) {
+    if (keyboard) {
+      await directAction.focus();
+      await page.keyboard.press("Enter");
+    } else {
+      await directAction.click();
+    }
+    return;
+  }
+
+  if (keyboard) {
+    await moreButton.focus();
+    await page.keyboard.press("Enter");
+  } else {
+    await moreButton.click();
+  }
+  await expect(overflowAction).toBeVisible();
+  if (keyboard) {
+    await overflowAction.focus();
+    await page.keyboard.press("Enter");
+  } else {
+    await overflowAction.click();
+  }
+}
+
 export async function registerUser(page, { username, password = DEFAULT_PASSWORD, displayName }) {
   const [firstName, ...lastParts] = String(displayName || "Test User").split(/\s+/);
   const registration = () => request(page, "post", "/api/auth/register", {

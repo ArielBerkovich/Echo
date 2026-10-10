@@ -42,7 +42,12 @@ test("moves only rail actions that do not fit into More", async ({ page }) => {
   await expect(page.getByTestId("rail-groups")).toBeVisible();
   await expect(page.getByTestId("sidebar-more")).toHaveCount(0);
 
-  await page.setViewportSize({ width: 1280, height: 400 });
+  await page.locator(".rail-account").evaluate((account) => {
+    account.style.position = "absolute";
+    account.style.top = "370px";
+    account.style.marginTop = "0";
+  });
+  await page.evaluate(() => window.dispatchEvent(new Event("resize")));
   const more = page.getByTestId("sidebar-more");
   await expect(more).toBeVisible();
   let visibleDirectActions = 0;

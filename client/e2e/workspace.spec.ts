@@ -6,6 +6,7 @@ import {
   messageById,
   messageByText,
   openLocalAuth,
+  openRailAction,
   railItem,
   requestAsToken,
   seedWorkspaceFixture,
@@ -139,8 +140,7 @@ test("navigates the channel browser results with arrow keys and Enter", async ({
 
   try {
     await page.goto("/");
-    await page.getByTestId("sidebar-more").click();
-    await page.getByTestId("more-browse-channels").click();
+    await openRailAction(page, "browse");
 
     const search = page.getByTestId("channel-browser-search");
     await expect(search).toBeFocused();
@@ -155,8 +155,7 @@ test("navigates the channel browser results with arrow keys and Enter", async ({
     await expect(page.getByTestId("channel-browser")).toBeHidden();
     await expect(page.getByTestId("channel-title")).toContainText(channelName);
 
-    await page.getByTestId("sidebar-more").click();
-    await page.getByTestId("more-browse-channels").click();
+    await openRailAction(page, "browse");
     await expect(page.getByTestId("channel-browser-search")).toBeFocused();
     await page.getByTestId("channel-browser-search").fill(fixture.projectChannel.name);
     const joinedRow = page.getByTestId(`browse-channel-${fixture.projectChannel.name}`);
@@ -343,8 +342,7 @@ test("browses, filters, and joins public channels while private channels stay in
 
   await page.goto("/");
   await expect(page.getByTestId("channel-title")).toContainText("general");
-  await page.getByTestId("sidebar-more").click();
-  await page.getByTestId("more-browse-channels").click();
+  await openRailAction(page, "browse");
 
   await expect(page.getByTestId("channel-browser")).toBeVisible();
   const initialBrowserSearch = page.getByTestId("channel-browser-search");
@@ -355,8 +353,7 @@ test("browses, filters, and joins public channels while private channels stay in
   await expect(page.getByTestId("channel-browser")).toBeHidden();
   await expect(page.getByText(`#${fixture.projectChannel.name}`, { exact: true }).first()).toBeVisible();
 
-  await page.getByTestId("sidebar-more").click();
-  await page.getByTestId("more-browse-channels").click();
+  await openRailAction(page, "browse");
   await expect(page.getByTestId("channel-browser")).toBeVisible();
   const browserSearch = page.getByTestId("channel-browser-search");
   await expect(browserSearch).toBeFocused();

@@ -36,7 +36,7 @@ export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroup
   const railRef = useRef(null);
   const railTopRef = useRef(null);
   const overflowProbeRef = useRef(null);
-  const [visibleOverflowCount, setVisibleOverflowCount] = useState(0);
+  const [visibleOverflowCount, setVisibleOverflowCount] = useState(null);
   const workspaceLogoSrc = useAuthUrl(workspace?.logoUrl);
   const customEmojiUrls = useAuthUrls(customEmojis.map((emoji) => emoji.url));
   const brandReady = !workspaceLoading && (!workspace?.logoUrl || !!workspaceLogoSrc);
@@ -44,8 +44,8 @@ export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroup
     onBrowseChannels ? { key: "browse", label: t("browseChannels"), Icon: CompassIcon, onClick: onBrowseChannels } : null,
     onOpenGroups ? { key: "groups", label: t("groups"), Icon: ContactRoundIcon, onClick: onOpenGroups } : null,
   ].filter(Boolean);
-  const visibleActions = overflowActions.slice(0, visibleOverflowCount);
-  const hiddenActions = overflowActions.slice(visibleOverflowCount);
+  const visibleActions = overflowActions.slice(0, visibleOverflowCount ?? 0);
+  const hiddenActions = visibleOverflowCount == null ? [] : overflowActions.slice(visibleOverflowCount);
 
   useEffect(() => {
     const rail = railRef.current;

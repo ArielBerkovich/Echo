@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { registerUser, requestAsToken, seedWorkspaceFixture, uniqueSuffix } from "./helpers.js";
+import { openRailAction, registerUser, requestAsToken, seedWorkspaceFixture, uniqueSuffix } from "./helpers.js";
 
 let fixture: Awaited<ReturnType<typeof seedWorkspaceFixture>>;
 
@@ -142,8 +142,7 @@ test.describe("post-login forms are keyboard operable", () => {
 
   test("opens channel browser, settings, and custom-emoji forms with keyboard focus", async ({ page }) => {
     await page.goto(`/channels/${encodeURIComponent(fixture.generalChannel.name)}`);
-    await pressEnter(page.getByTestId("sidebar-more"));
-    await pressEnter(page.getByTestId("more-browse-channels"));
+    await openRailAction(page, "browse", { keyboard: true });
     const browserSearch = page.getByTestId("channel-browser-search");
     await expect(browserSearch).toBeFocused();
     await browserSearch.pressSequentially("project");

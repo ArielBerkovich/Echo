@@ -259,6 +259,8 @@ test.describe("RHSSO login flows (Real integration, runs only when Keycloak is u
       { timeout: 15_000 },
     );
 
+    const walkthrough = page.locator(".wt-card");
+    if (await walkthrough.isVisible()) await walkthrough.locator(".wt-skip").click();
     await expect(page.getByTestId("rail-logout")).toBeVisible({ timeout: 15_000 });
     await page.getByTestId("rail-logout").click();
     await page.getByRole("button", { name: "Sign out", exact: true }).click();
