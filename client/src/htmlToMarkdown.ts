@@ -9,6 +9,11 @@ const td = new TurndownService({
   strongDelimiter: "**",
 });
 
+// Text nodes are ordinary composer text. Keep HTML-like input literal in
+// stored Markdown; structured underline nodes still pass through their rule.
+const escapeMarkdownText = td.escape.bind(td);
+td.escape = (text) => escapeMarkdownText(text).replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
 function normalizeCodeBlockBreaks(html) {
   return String(html || "").replace(
     /(<pre\b[^>]*>\s*<code\b[^>]*>)([\s\S]*?)(<\/code>\s*<\/pre>)/gi,

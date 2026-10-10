@@ -35,6 +35,13 @@ describe("htmlToMarkdown", () => {
     assert.equal(htmlToMarkdown("<p>he\u200bllo</p>"), "hello");
   });
 
+  it("keeps HTML-like text literal in regular composer paragraphs", () => {
+    assert.equal(
+      htmlToMarkdown("<p>&lt;name&gt; and &lt;u&gt;underlined&lt;/u&gt;</p>"),
+      "&lt;name&gt; and &lt;u&gt;underlined&lt;/u&gt;"
+    );
+  });
+
   it("serializes structured mentions using canonical handles", () => {
     assert.equal(
       htmlToMarkdown('<p><span data-user-mention="dev_5">@Dev 5</span> <span data-user-mention="dev.name-5">@Dev Name</span> <span data-channel-mention="public-project">#public-project</span></p>'),

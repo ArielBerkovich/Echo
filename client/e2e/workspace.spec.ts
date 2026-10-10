@@ -699,7 +699,7 @@ test("pastes raw Markdown into a Markdown section and renders it when sent", asy
   expect(updated.messages.find((item) => item.body.includes(marker))?.body).toBe(savedBody);
 });
 
-test("keeps pasted underline formatting and literal angle-bracket text", async ({ page }) => {
+test("keeps pasted HTML-like text literal in the ordinary composer", async ({ page }) => {
   await page.goto("/");
   const marker = `Underline ${Date.now()}`;
   const source = `${marker}: <name> and <u>underlined</u>`;
@@ -714,15 +714,17 @@ test("keeps pasted underline formatting and literal angle-bracket text", async (
       clipboardData: data,
     }));
   }, source);
-  await expect(page.getByTestId("composer-editor").locator("u")).toHaveText("underlined");
-  await expect(page.getByTestId("composer-editor")).toContainText("<name>");
+  await expect(page.getByTestId("composer-editor")).toHaveText(source);
+  await expect(page.getByTestId("composer-editor").locator("u")).toHaveCount(0);
 
   await page.getByTestId("composer-send").click();
   const message = messageByText(page, marker);
-  await expect(message.locator(".body u")).toHaveText("underlined");
-  await expect(message.locator(".body")).toContainText("<name> and underlined");
+  await expect(message.locator(".body u")).toHaveCount(0);
+  await expect(message.locator(".body")).toHaveText(source);
   const { messages } = await requestAsToken(page, fixture.alice.token, `/channels/${fixture.generalChannel.id}/messages`);
-  expect(messages.find((item) => item.body.includes(marker))?.body).toBe(source);
+  expect(messages.find((item) => item.body.includes(marker))?.body).toBe(
+    source.replaceAll("<", "&lt;").replaceAll(">", "&gt;")
+  );
 });
 
 test("copies literal angle-bracket text from the regular composer", async ({ page }) => {
