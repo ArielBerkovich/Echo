@@ -339,6 +339,15 @@ export default function App() {
     setNavOpen(false);
   }
 
+  function handleSelectRecentChannel(recent) {
+    const channel = channels.find((candidate) => candidate.id === recent.id)
+      || allChannels.find((candidate) => candidate.id === recent.id);
+    if (channel) {
+      unhideChannel(channel.id);
+      handleSidebarSelect(channel);
+    }
+  }
+
   function handleBrowseChannels() {
     leaveGroupsView();
     markNavDuringRestore();
@@ -1575,7 +1584,9 @@ export default function App() {
           publicChannelCount={catalogCounts?.all}
           mode={mode}
           onSelectView={handleViewSelect}
+          recents={recents}
           onSelectChannel={handleSidebarSelect}
+          onSelectRecentChannel={handleSelectRecentChannel}
           onPrefetchChannel={prefetchMessages}
           onCreateChannel={() => setShowCreate(true)}
           onOpenGroups={() => handleOpenGroups()}

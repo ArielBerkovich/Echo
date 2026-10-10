@@ -33,9 +33,72 @@ export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroup
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef(null);
+  const railRef = useRef(null);
+  const railTopRef = useRef(null);
+  const overflowProbeRef = useRef(null);
+  const [visibleOverflowCount, setVisibleOverflowCount] = useState(0);
   const workspaceLogoSrc = useAuthUrl(workspace?.logoUrl);
   const customEmojiUrls = useAuthUrls(customEmojis.map((emoji) => emoji.url));
   const brandReady = !workspaceLoading && (!workspace?.logoUrl || !!workspaceLogoSrc);
+  const overflowActions = [
+    onBrowseChannels ? { key: "browse", label: t("browseChannels"), Icon: CompassIcon, onClick: onBrowseChannels } : null,
+    onOpenGroups ? { key: "groups", label: t("groups"), Icon: ContactRoundIcon, onClick: onOpenGroups } : null,
+  ].filter(Boolean);
+  const visibleActions = overflowActions.slice(0, visibleOverflowCount);
+  const hiddenActions = overflowActions.slice(visibleOverflowCount);
+
+  useEffect(() => {
+    const rail = railRef.current;
+    const railTop = railTopRef.current;
+    if (!rail || !railTop) return undefined;
+
+    const updateOverflow = () => {
+      if (window.matchMedia("(max-width: 760px)").matches) {
+        setVisibleOverflowCount(0);
+        return;
+      }
+      const topRect = railTop.getBoundingClientRect();
+      const railRect = rail.getBoundingClientRect();
+      const accountRect = rail.querySelector(".rail-account")?.getBoundingClientRect();
+      const railStyle = window.getComputedStyle(rail);
+      const topStyle = window.getComputedStyle(railTop);
+      const railContentBottom = railRect.bottom - parseFloat(railStyle.paddingBottom || "0");
+      const bottom = accountRect ? Math.min(accountRect.top, railContentBottom) : railContentBottom;
+      const availableHeight = Math.max(0, bottom - topRect.top);
+      const fixedButtons = [...railTop.querySelectorAll(".rail-primary-item")];
+      const fixedHeight = fixedButtons.reduce((sum, button) => sum + button.getBoundingClientRect().height, 0);
+      const probeHeight = overflowProbeRef.current?.getBoundingClientRect().height || 44;
+      const gap = parseFloat(topStyle.rowGap) || 0;
+      const decorationHeight = parseFloat(topStyle.paddingTop) + parseFloat(topStyle.paddingBottom)
+        + parseFloat(topStyle.borderTopWidth) + parseFloat(topStyle.borderBottomWidth);
+
+      let fittingCount = 0;
+      for (let count = overflowActions.length; count >= 0; count -= 1) {
+        const needsMore = count < overflowActions.length;
+        const itemCount = fixedButtons.length + count + (needsMore ? 1 : 0);
+        const neededHeight = fixedHeight + probeHeight * (count + (needsMore ? 1 : 0))
+          + gap * Math.max(0, itemCount - 1) + decorationHeight;
+        if (neededHeight <= availableHeight) {
+          fittingCount = count;
+          break;
+        }
+      }
+      setVisibleOverflowCount((current) => current === fittingCount ? current : fittingCount);
+    };
+
+    updateOverflow();
+    const observer = new ResizeObserver(updateOverflow);
+    observer.observe(rail);
+    observer.observe(railTop);
+    if (overflowProbeRef.current) observer.observe(overflowProbeRef.current);
+    const account = rail.querySelector(".rail-account");
+    if (account) observer.observe(account);
+    window.addEventListener("resize", updateOverflow);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateOverflow);
+    };
+  }, [overflowActions.length]);
 
   useEffect(() => {
     if (!moreOpen) return undefined;
@@ -52,6 +115,10 @@ export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroup
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, [moreOpen]);
+
+  useEffect(() => {
+    if (hiddenActions.length === 0) setMoreOpen(false);
+  }, [hiddenActions.length]);
 
   function onAvatarFileSelected(file) {
     if (!file) return;
@@ -81,7 +148,7 @@ export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroup
 
   const labels = { home: t("home"), dms: t("dms"), activity: t("activity"), saved: t("savedMessages") };
   return (
-    <nav className="rail" aria-label={t("primaryNavigation")}>
+    <nav className="rail" aria-label={t("primaryNavigation")} ref={railRef}>
       <div className={`rail-brand${brandReady ? " ready" : ""}`} aria-label={workspace?.name || "Echo"} data-testid="rail-brand">
         {workspaceLoading || (workspace?.logoUrl && !workspaceLogoSrc)
           ? <span className={`rail-brand-slot${workspace?.logoUrl ? " is-workspace-logo" : ""}`} aria-hidden="true" />
@@ -90,7 +157,7 @@ export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroup
           : <Logo size={38} />}
         {!workspaceLoading && workspace?.name && workspace.name !== "Echo" && <span className="rail-brand-name">{workspace.name}</span>}
       </div>
-      <div className="rail-top">
+      <div className="rail-top" ref={railTopRef}>
         {ITEMS.map(({ key, shortcutId, Icon }) => {
           const label = labels[key];
           const count = badges[key] || 0;
@@ -106,7 +173,7 @@ export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroup
             <button
               key={key}
               type="button"
-              className={`rail-item rail-item-${key} ${view === key ? "active" : ""}`}
+              className={`rail-item rail-primary-item rail-item-${key} ${view === key ? "active" : ""}`}
               data-testid={`rail-${key}`}
               aria-label={activityStateLabel}
               title={shortcutTitle(label, shortcutId)}
@@ -139,21 +206,42 @@ export default function LeftRail({ view, onSelect, onBrowseChannels, onOpenGroup
               </button>
           );
         })}
-        {onOpenGroups ? (
+        {visibleActions.map(({ key, label, Icon, onClick }) => (
+          <button
+            key={key}
+            type="button"
+            className={`rail-item rail-overflow-action ${view === key ? "active" : ""}`}
+            data-testid={`rail-${key}`}
+            aria-label={label}
+            title={label}
+            aria-current={view === key ? "page" : undefined}
+            onClick={onClick}
+          >
+            <span className="rail-icon"><Icon size={22} strokeWidth={2} aria-hidden="true" /></span>
+          </button>
+        ))}
+        {hiddenActions.length > 0 ? (
           <div className="rail-more-wrap" ref={moreRef}>
-            <button type="button" className={`rail-item rail-more-trigger ${moreOpen ? "active" : ""}`} data-testid="sidebar-more" onClick={() => setMoreOpen((open) => !open)} title={moreOpen ? undefined : t("moreWorkspaceOptions")} aria-label={t("moreWorkspaceOptions")} aria-expanded={moreOpen} aria-haspopup="menu">
+            <button type="button" className={`rail-item rail-more-trigger ${moreOpen ? "active" : ""}`} data-testid="sidebar-more" onClick={() => setMoreOpen((open) => !open)} title={t("moreWorkspaceOptions")} aria-label={t("moreWorkspaceOptions")} aria-expanded={moreOpen} aria-haspopup="menu">
               <span className="rail-icon"><MoreIcon /></span>
             </button>
             {moreOpen ? <>
               <div className="menu-overlay" onMouseDown={() => setMoreOpen(false)} />
               <div className="rail-more-menu" role="menu" aria-label={t("moreWorkspaceOptions")}>
-                {onBrowseChannels ? <button type="button" role="menuitem" data-testid="more-browse-channels" onClick={() => { setMoreOpen(false); onBrowseChannels(); }} aria-pressed={view === "browse"}><CompassIcon size={16} aria-hidden="true" /><span><strong>{t("browseChannels")}</strong><small>{t("findPublicChannels")}</small></span></button> : null}
-                <button type="button" role="menuitem" data-testid="open-groups" onClick={() => { setMoreOpen(false); onOpenGroups(); }}><ContactRoundIcon size={16} aria-hidden="true" /><span><strong>{t("groups")}</strong><small>{t("organizePeople")}</small></span></button>
+                {hiddenActions.map(({ key, label, Icon, onClick }) => <button key={key} type="button" role="menuitem" data-testid={key === "browse" ? "more-browse-channels" : "open-groups"} onClick={() => { setMoreOpen(false); onClick(); }} aria-pressed={key === "browse" ? view === "browse" : undefined}><Icon size={16} aria-hidden="true" /><span><strong>{label}</strong><small>{key === "browse" ? t("findPublicChannels") : t("organizePeople")}</small></span></button>)}
               </div>
             </> : null}
           </div>
         ) : null}
       </div>
+      {overflowActions.length > 0 ? (
+        <div
+          className="rail-item rail-overflow-probe"
+          ref={overflowProbeRef}
+          aria-hidden="true"
+          style={{ position: "fixed", top: 0, left: -10000, visibility: "hidden", pointerEvents: "none" }}
+        />
+      ) : null}
       {user && (
         <div className="rail-account">
           <button

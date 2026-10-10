@@ -129,7 +129,7 @@ html[dir="rtl"] .api-note {
    offsets explicitly; direction alone does not change `left`/`right`. */
 @media (min-width: 761px) {
   html[dir="rtl"] .workspace-search-navigation {
-    right: calc(50% - 360px);
+    right: calc(50% - 380px);
     left: auto;
     transform: translate(50%, -50%);
   }
@@ -3053,11 +3053,12 @@ html[data-mode="dark"] .backend-connection-error {
   .workspace-search-navigation {
     position: absolute;
     top: 50%;
-    left: calc(50% - 360px);
+    left: calc(50% - 380px);
     transform: translate(-50%, -50%);
     display: flex;
     align-items: center;
     gap: 6px;
+    z-index: 101;
   }
 
   .workspace-search-navigation button {
@@ -3075,6 +3076,19 @@ html[data-mode="dark"] .backend-connection-error {
 
   .workspace-search-navigation button:hover,
   .workspace-search-navigation button:focus-visible {
+    color: var(--on-navy);
+  }
+
+  .workspace-search-navigation .workspace-recent-channels-trigger {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+  }
+
+  .workspace-search-navigation .workspace-recent-channels-trigger:hover,
+  .workspace-search-navigation .workspace-recent-channels-trigger:focus-visible,
+  .workspace-search-navigation .workspace-recent-channels-trigger.active {
+    background: color-mix(in srgb, var(--on-navy) 9%, transparent);
     color: var(--on-navy);
   }
 
@@ -4471,12 +4485,30 @@ html[data-mode="dark"] .sidebar {
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
   backdrop-filter: blur(10px);
 }
+.workspace-search-navigation .workspace-recent-channels-menu {
+  top: calc(100% + 8px);
+  right: auto;
+  bottom: auto;
+  left: 0;
+  z-index: 1002;
+}
+html[dir="rtl"] .workspace-search-navigation .workspace-recent-channels-menu {
+  right: 0;
+  left: auto;
+}
 .rail-more-menu button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border: 0; border-radius: 7px; background: transparent; color: var(--on-navy-muted); text-align: left; cursor: pointer; }
 .rail-more-menu button:hover, .rail-more-menu button:focus-visible { background: color-mix(in srgb, var(--on-navy) 7%, transparent); color: #fff; outline: 0; }
 .rail-more-menu button svg { color: inherit; flex: none; }
 .rail-more-menu button span { display: grid; gap: 2px; }
 .rail-more-menu button strong { font-size: 13px; }
 .rail-more-menu button small { color: color-mix(in srgb, var(--on-navy-muted) 82%, transparent); font-size: 11px; }
+.workspace-recent-channels-menu { max-height: min(420px, calc(100vh - 32px)); overflow-y: auto; }
+.rail-recents-heading { padding: 8px 10px 6px; color: var(--on-navy); font-size: 13px; font-weight: 700; }
+.workspace-recent-channels-menu button { min-height: 38px; }
+.workspace-recent-channels-menu button.active { background: color-mix(in srgb, var(--on-navy) 10%, transparent); color: var(--on-navy); }
+.workspace-recent-channels-menu button svg { color: inherit; }
+.rail-recents-channel-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rail-recents-empty { padding: 8px 10px; color: var(--on-navy-muted); font-size: 12px; }
 .dm-rich {
   display: flex;
   align-items: stretch;
@@ -17372,11 +17404,11 @@ html[dir="rtl"] .channel-browser-members {
   }
 
   .workspace-search-navigation {
-    left: calc(50% - 540px);
+    left: calc(50% - 560px);
   }
 
   html[dir="rtl"] .workspace-search-navigation {
-    right: calc(50% - 540px);
+    right: calc(50% - 560px);
   }
 
   .workspace-frame {

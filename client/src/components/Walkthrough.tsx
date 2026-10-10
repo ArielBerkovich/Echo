@@ -13,7 +13,7 @@ const STEPS = [
   },
   {
     title: "Get around",
-    body: "Use the rail to move between Home, Direct Messages, Activity, and Saved. Open More for channels, user groups, and other workspace options.",
+    body: "Use the rail to move between Home, Direct Messages, Activity, Saved, and recent channels. Browse Channels and Groups appear here when there is room, or under More when the rail is crowded.",
     target: ".rail-top",
     placement: "right",
   },
@@ -24,9 +24,9 @@ const STEPS = [
     placement: "right",
   },
   {
-    title: "More workspace options",
-    body: "Open More in the rail to browse public channels or user groups, then return to the rail whenever you need those workspace views.",
-    target: '[data-testid="sidebar-more"]',
+    title: "Browse channels and groups",
+    body: "Open Browse Channels or Groups from the rail. When space is tight, these actions move into More.",
+    target: ".rail-top",
     placement: "right",
   },
   {

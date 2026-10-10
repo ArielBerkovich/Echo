@@ -1,7 +1,8 @@
+import { useEffect, useRef, useState } from "react";
 import LeftRail from "./LeftRail.js";
 import Sidebar from "./Sidebar.js";
 import SearchBox from "./SearchBox.js";
-import { ArrowLeftIcon, ArrowRightIcon, SparklesIcon } from "lucide-react";
+import { ArrowLeftIcon, ArrowRightIcon, Clock3Icon, HashIcon, SparklesIcon } from "lucide-react";
 import { shortcutTitle } from "../lib/keyboardShortcuts.js";
 import { useI18n } from "../lib/i18n.js";
 
@@ -24,7 +25,9 @@ export default function WorkspaceNavigation({
   publicChannelCount,
   mode,
   onSelectView,
+  recents = [],
   onSelectChannel,
+  onSelectRecentChannel,
   onPrefetchChannel,
   onCreateChannel,
   onOpenGroups,
@@ -45,6 +48,25 @@ export default function WorkspaceNavigation({
   search,
 }) {
   const { t } = useI18n();
+  const [recentsOpen, setRecentsOpen] = useState(false);
+  const recentsRef = useRef(null);
+  const recentChannels = recents.filter((recent) => recent.type === "channel");
+
+  useEffect(() => {
+    if (!recentsOpen) return undefined;
+    const closeOnOutsidePointer = (event) => {
+      if (!recentsRef.current?.contains(event.target)) setRecentsOpen(false);
+    };
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setRecentsOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [recentsOpen]);
   const badges = {
     home: channels.reduce((sum, channel) => sum + (channel.unread || 0), 0),
     dms: dms.reduce((sum, conversation) => sum + (conversation.unread || 0), 0),
@@ -78,13 +100,48 @@ export default function WorkspaceNavigation({
       </div>
       <div className="workspace-search" data-testid="workspace-search">
         <div className="workspace-search-inner">
-          <div className="workspace-search-navigation">
+          <div className="workspace-search-navigation" ref={recentsRef}>
             <button type="button" onClick={onNavigateBack} title={t("goBack")} aria-label={t("goBack")}>
               <ArrowLeftIcon size={14} strokeWidth={2} aria-hidden="true" />
             </button>
             <button type="button" onClick={onNavigateForward} title={t("goForward")} aria-label={t("goForward")}>
               <ArrowRightIcon size={14} strokeWidth={2} aria-hidden="true" />
             </button>
+            <button
+              type="button"
+              className={`workspace-recent-channels-trigger${recentsOpen ? " active" : ""}`}
+              data-testid="recent-channels-trigger"
+              onClick={() => setRecentsOpen((open) => !open)}
+              title={t("recentChannels")}
+              aria-label={t("recentChannels")}
+              aria-expanded={recentsOpen}
+              aria-haspopup="menu"
+            >
+              <Clock3Icon size={16} strokeWidth={2} aria-hidden="true" />
+            </button>
+            {recentsOpen ? <>
+              <div className="menu-overlay" onMouseDown={() => setRecentsOpen(false)} />
+              <div className="rail-more-menu workspace-recent-channels-menu" role="menu" aria-label={t("recentChannels")} data-testid="recent-channels-menu">
+                <div className="rail-recents-heading">{t("recentChannels")}</div>
+                {recentChannels.length === 0 ? (
+                  <div className="rail-recents-empty">{t("noRecentChannels")}</div>
+                ) : recentChannels.map((channel) => (
+                  <button
+                    key={channel.id}
+                    type="button"
+                    role="menuitem"
+                    data-testid="recent-channel-item"
+                    aria-current={channel.id === activeChannel?.id ? "page" : undefined}
+                    className={channel.id === activeChannel?.id ? "active" : ""}
+                    onClick={() => { setRecentsOpen(false); onSelectRecentChannel?.(channel); }}
+                    title={t("openChannel")}
+                  >
+                    <HashIcon size={15} aria-hidden="true" />
+                    <span className="rail-recents-channel-name" dir="auto">{channel.name}</span>
+                  </button>
+                ))}
+              </div>
+            </> : null}
           </div>
           <SearchBox
             ref={search.inputRef}
