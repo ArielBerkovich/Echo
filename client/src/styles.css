@@ -403,6 +403,8 @@ html[data-mode="dark"] {
 .modal.profile-modal,
 .modal.channel-details-dialog,
 .modal.manager-modal,
+.modal.profile-picture-modal,
+.modal.display-name-modal,
 .modal.leave-channel-confirm-modal,
 .modal.message-delete-confirm-modal,
 .modal.channel-member-remove-confirm-modal,

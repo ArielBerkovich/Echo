@@ -234,6 +234,18 @@ test("keeps composer dialogs and popovers on the chat palette across themes", as
     await expect.poll(() => locator.evaluate((element) => getComputedStyle(element).getPropertyValue("--accent").trim())).toBe(conversationAccent);
   };
 
+  await page.getByTestId("rail-account").click();
+  const profilePictureDialog = page.getByTestId("profile-picture-dialog");
+  await expect(profilePictureDialog).toBeVisible();
+  await expectNeutralAccent(profilePictureDialog);
+  await page.keyboard.press("Escape");
+
+  await page.getByRole("button", { name: "Update display name" }).click();
+  const displayNameDialog = page.getByTestId("display-name-dialog");
+  await expect(displayNameDialog).toBeVisible();
+  await expectNeutralAccent(displayNameDialog);
+  await page.keyboard.press("Escape");
+
   await page.getByTestId("composer-link").click();
   const linkModal = page.locator(".modal.link-modal");
   await expect(linkModal).toBeVisible();
