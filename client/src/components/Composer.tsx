@@ -357,6 +357,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   }, [pastePrompt]);
 
   const keyDownHandlerRef = useRef(null);
+  const textInputHandlerRef = useRef(null);
   const pasteHandlerRef = useRef(null);
   const draftReadyRef = useRef(false);
   const typingActiveRef = useRef(false); // are we currently flagged as typing?
@@ -429,6 +430,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
         keyDownHandlerRef.current?.(event);
         return event.defaultPrevented;
       },
+      handleTextInput: (_view, _from, _to, text) => textInputHandlerRef.current?.(text) || false,
       handlePaste: (_view, event) => {
         pasteHandlerRef.current?.(event);
         return event.defaultPrevented;
@@ -869,6 +871,10 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       editor.commands.insertContent({ type: "text", text });
       return;
     }
+    if (editor.isActive("codeBlock")) {
+      editor.commands.insertContent({ type: "text", text });
+      return;
+    }
     const html = markdownTextToComposerHtml(text);
     if (html.includes("<")) {
       editor.commands.insertContent(html);
@@ -880,6 +886,28 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     template.innerHTML = html;
     editor.commands.insertContent({ type: "text", text: template.content.textContent || "" });
   }
+
+  function startListFromShortcut(text) {
+    if (text !== " " || !editor || editor.isActive("codeBlock") || editor.isActive("markdownSection")) return false;
+    const { selection } = editor.state;
+    if (!selection.empty || !selection.$from.parent.isTextblock) return false;
+    const before = selection.$from.parent.textBetween(0, selection.$from.parentOffset, "\n", "\n");
+    const lineStart = before.lastIndexOf("\n") + 1;
+    const marker = before.slice(lineStart);
+    const match = marker.match(/^(?:([*+-])|(\d+\.))$/);
+    if (!match) return false;
+
+    const startsAfterLineBreak = lineStart > 0;
+    const chain = editor.chain().focus().deleteRange({
+      from: selection.$from.start() + Math.max(0, lineStart - 1),
+      to: selection.from,
+    });
+    if (startsAfterLineBreak && editor.can().splitBlock()) chain.splitBlock();
+    (match[2] ? chain.toggleOrderedList() : chain.toggleBulletList()).run();
+    return true;
+  }
+
+  textInputHandlerRef.current = startListFromShortcut;
 
   function pasteAsText() {
     if (!pastePrompt || pastePrompt.tooLong || pastePrompt.tooLarge) return;
@@ -1019,6 +1047,26 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
         e.preventDefault();
         editor.chain().focus().toggleCode().splitBlock().run();
         return;
+      }
+      if (!e.shiftKey && !editor.isActive("bulletList") && !editor.isActive("orderedList")) {
+        const { selection } = editor.state;
+        if (selection.empty && selection.$from.parent.isTextblock) {
+          const before = selection.$from.parent.textBetween(0, selection.$from.parentOffset, "\n", "\n");
+          const lineStart = before.lastIndexOf("\n") + 1;
+          const marker = before.slice(lineStart);
+          const match = marker.match(/^(?:([*+-])|(\d+\.))[ \t]*$/);
+          if (match) {
+            e.preventDefault();
+            const startsAfterLineBreak = lineStart > 0;
+            const chain = editor.chain().focus().deleteRange({
+              from: selection.$from.start() + Math.max(0, lineStart - 1),
+              to: selection.from,
+            });
+            if (startsAfterLineBreak && editor.can().splitBlock()) chain.splitBlock();
+            (match[2] ? chain.toggleOrderedList() : chain.toggleBulletList()).run();
+            return;
+          }
+        }
       }
       if (
         e.shiftKey
@@ -1272,18 +1320,15 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   function toggleList(kind) {
     if (!editor) return;
 
-    const { selection } = editor.state;
-    const currentBlock = selection.$from.parent;
-    const shouldStartNewList = !selection.empty
-      ? false
-      : !editor.isActive("bulletList")
-        && !editor.isActive("orderedList")
-        && currentBlock.isTextblock
-        && currentBlock.textContent.trim().length > 0
-        && selection.$from.parentOffset > 0;
-
+    const selection = editor.state.selection;
+    const startsAfterManualLineBreak = selection.empty
+      && !editor.isActive("bulletList")
+      && !editor.isActive("orderedList")
+      && selection.$from.nodeBefore?.type.name === "hardBreak";
     const chain = editor.chain().focus();
-    if (shouldStartNewList && editor.can().splitBlock()) chain.splitBlock();
+    if (startsAfterManualLineBreak && editor.can().splitBlock()) {
+      chain.deleteRange({ from: selection.from - 1, to: selection.from }).splitBlock();
+    }
     (kind === "ordered" ? chain.toggleOrderedList() : chain.toggleBulletList()).run();
     syncEditorState(editor);
   }
