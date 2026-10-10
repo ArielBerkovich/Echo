@@ -47,12 +47,31 @@ function toLocalDatetimeInput(date, includeSeconds = false) {
   return includeSeconds ? `${value}:${pad(date.getSeconds())}` : value;
 }
 
+async function expectThemeIndependentBackground(page, locator) {
+  const originalTheme = await page.evaluate(() => document.documentElement.dataset.theme);
+  const readBackground = async (theme) => {
+    await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, theme);
+    return locator.evaluate((element) => getComputedStyle(element).backgroundColor);
+  };
+  const draculaBackground = await readBackground("dracula");
+  expect(await readBackground("nord")).toBe(draculaBackground);
+  await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, originalTheme);
+}
+
 test("manages channels, members, visibility, and leaving", async ({ page }) => {
   await page.goto("/");
 
   const channelName = `team-room-${fixture.suffix}`;
   await page.getByRole("button", { name: "Create channel" }).click();
   const createModal = page.locator(".modal").filter({ hasText: "Create a channel" });
+  await expectThemeIndependentBackground(page, createModal);
+  const selectedChannelType = createModal.locator(".visibility-option.selected");
+  await expectThemeIndependentBackground(page, selectedChannelType);
+  const selectedTypeColors = await selectedChannelType.evaluate((element) => ({
+    background: getComputedStyle(element).backgroundColor,
+    accent: getComputedStyle(element).getPropertyValue("--accent").trim(),
+  }));
+  expect(selectedTypeColors.background).not.toBe(selectedTypeColors.accent);
   await createModal.getByPlaceholder("e.g. marketing").fill(channelName);
   await createModal.getByText("Private", { exact: true }).click();
   await createModal.getByRole("button", { name: "Create" }).click();
@@ -63,6 +82,7 @@ test("manages channels, members, visibility, and leaving", async ({ page }) => {
   await expect(page.getByTestId("channel-title")).toContainText(channelName);
   await expect(page.getByTestId("empty-channel-add-people")).toBeVisible();
   await expect(page.getByTestId("empty-channel-details")).toBeVisible();
+  await expectThemeIndependentBackground(page, page.getByTestId("empty-channel-add-people"));
   await expect(page.getByTestId("channel-visibility")).toHaveCount(0);
   await expect(page.getByTestId("channel-leave")).toHaveCount(0);
 
@@ -86,6 +106,7 @@ test("manages channels, members, visibility, and leaving", async ({ page }) => {
   await details.getByRole("tab", { name: "Members" }).click();
   await details.getByRole("button", { name: "Add people" }).click();
   const addPeople = page.getByTestId("add-people-modal");
+  await expectThemeIndependentBackground(page, addPeople);
   await addPeople.getByPlaceholder("Search people").fill(fixture.bob.username);
   await addPeople.getByTestId(`add-people-add-${fixture.bob.username}`).click();
   await addPeople.getByTestId("add-people-done").click();
@@ -93,6 +114,13 @@ test("manages channels, members, visibility, and leaving", async ({ page }) => {
   await details.getByRole("tab", { name: "Actions" }).click();
   await details.getByRole("button", { name: "Leave channel" }).click();
   const managerModal = page.locator(".manager-modal");
+  const originalTheme = await page.evaluate(() => document.documentElement.dataset.theme);
+  const managerModalBackground = async (theme) => {
+    await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, theme);
+    return managerModal.evaluate((element) => getComputedStyle(element).backgroundColor);
+  };
+  expect(await managerModalBackground("dracula")).toBe(await managerModalBackground("nord"));
+  await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, originalTheme);
   await managerModal.getByTestId("leave-manager-search").fill(fixture.bob.username);
   await managerModal.locator(".manager-candidate").click();
   const leaveResponse = page.waitForResponse(

@@ -174,12 +174,61 @@ html[dir="rtl"] .api-note {
   --input-focus-border: color-mix(in srgb, var(--accent) 72%, var(--border));
   --input-focus-ring: color-mix(in srgb, var(--accent) 24%, transparent);
   --input-focus-shadow: 0 0 0 2px var(--input-focus-ring), 0 2px 5px color-mix(in srgb, var(--text) 7%, transparent);
+  /* Preserve the selected theme palette for app pages nested in the chat
+     workspace, whose conversation surface uses its own mode-only tokens. */
+  --theme-bg: var(--bg);
+  --theme-surface: var(--surface);
+  --theme-surface-2: var(--surface-2);
+  --theme-border: var(--border);
+  --theme-text: var(--text);
+  --theme-muted: var(--muted);
+  --theme-accent: var(--accent);
+  --theme-active-bg: var(--active-bg);
+  --theme-active-bg-2: var(--active-bg-2);
+  --theme-active-fg: var(--active-fg);
+  --theme-active-soft: var(--active-soft);
+  --theme-active-ring: var(--active-ring);
+  --theme-link-color: var(--link-color);
+  --theme-link-hover: var(--link-hover);
+  --theme-input-focus-border: var(--input-focus-border);
+  --theme-input-focus-ring: var(--input-focus-ring);
+  --theme-input-focus-shadow: var(--input-focus-shadow);
+  --theme-code-bg: var(--code-bg);
+  --theme-code-text: var(--code-text);
+  --theme-code-border: var(--code-border);
 
   /* Surfaces (bright) */
   --bg: #f5f8fd;
   --surface: #ffffff;
   --surface-2: #eef3fb;
   --border: #e3e9f2;
+  /* Keep long-form conversation reading neutral across accent themes. */
+  --conversation-bg: #f7f6f2;
+  --conversation-surface: #fffdfa;
+  --conversation-surface-2: #f0efec;
+  --conversation-border: #e7e4df;
+  --conversation-text: #27292d;
+  --conversation-muted: #6d737b;
+  --conversation-icon: #59616b;
+  --conversation-accent: #2563eb;
+  --conversation-active-bg: #2563eb;
+  --conversation-active-fg: #ffffff;
+  --conversation-link: #2563eb;
+  --conversation-link-hover: #1d4ed8;
+  --conversation-code-bg: #f0efec;
+  --conversation-code-text: #29313b;
+  --conversation-code-border: #ddd9d2;
+  --composer-bg: #fffdfa;
+  --composer-toolbar-bg: #f2f0ec;
+  --composer-border: #e7e4df;
+  --composer-text: #292a2e;
+  --composer-muted: #70757c;
+  --composer-control: var(--conversation-icon);
+  --composer-control-hover: #e8e6e2;
+  --composer-focus: #747b84;
+  --composer-code-bg: #efeee9;
+  --composer-code-text: #9c3f60;
+  --composer-pre-bg: #f3f2ee;
 
   /* Text */
   --text: #0f1f3a;
@@ -207,11 +256,11 @@ html[dir="rtl"] .api-note {
 
   /* Image viewer neutrals stay independent of the selected Echo accent theme. */
   --lightbox-bg: #e5e5e5;
-  --lightbox-bar: var(--sidebar-bg);
-  --lightbox-border: color-mix(in srgb, var(--on-navy) 22%, transparent);
-  --lightbox-fg: var(--on-navy);
-  --lightbox-muted: var(--on-navy-muted);
-  --lightbox-hover: color-mix(in srgb, var(--accent) 22%, transparent);
+  --lightbox-bar: #23272e;
+  --lightbox-border: rgba(255, 255, 255, 0.14);
+  --lightbox-fg: #f1f3f5;
+  --lightbox-muted: #b5bbc3;
+  --lightbox-hover: rgba(255, 255, 255, 0.1);
   --lightbox-shadow: 0 16px 44px rgba(0, 0, 0, 0.18);
   --image-editor-canvas-bg: color-mix(in srgb, var(--surface-2) 88%, var(--text) 12%);
 }
@@ -230,6 +279,32 @@ html[data-mode="dark"] {
   --surface: #101726;
   --surface-2: #1a2236;
   --border: #232c40;
+  --conversation-bg: #21252b;
+  --conversation-surface: #2b3037;
+  --conversation-surface-2: #30353c;
+  --conversation-border: #3c424a;
+  --conversation-text: #e6e8eb;
+  --conversation-muted: #c0c6cf;
+  --conversation-icon: #e0e4e9;
+  --conversation-accent: #76b7ff;
+  --conversation-active-bg: #3b82f6;
+  --conversation-active-fg: #ffffff;
+  --conversation-link: #76b7ff;
+  --conversation-link-hover: #9accff;
+  --conversation-code-bg: #1b1f24;
+  --conversation-code-text: #e6e8eb;
+  --conversation-code-border: #3c424a;
+  --composer-bg: #2b3037;
+  --composer-toolbar-bg: #30353c;
+  --composer-border: #3c424a;
+  --composer-text: #e6e8eb;
+  --composer-muted: #acb2ba;
+  --composer-control: var(--conversation-icon);
+  --composer-control-hover: #3a4048;
+  --composer-focus: #a6aeb8;
+  --composer-code-bg: #3a4048;
+  --composer-code-text: #f0a3c0;
+  --composer-pre-bg: #262b31;
   --text: #eaeffb;
   --muted: #8a99b6;
   --code-bg: #060b16;
@@ -239,7 +314,138 @@ html[data-mode="dark"] {
   --shadow-md: 0 10px 28px rgba(0, 0, 0, 0.55);
   --shadow-lg: 0 24px 56px rgba(0, 0, 0, 0.6);
   --lightbox-bg: #30343d;
+  --lightbox-bar: #23272e;
+  --lightbox-border: rgba(255, 255, 255, 0.14);
+  --lightbox-fg: #f1f3f5;
+  --lightbox-muted: #b5bbc3;
+  --lightbox-hover: rgba(255, 255, 255, 0.1);
   --lightbox-shadow: 0 18px 52px rgba(0, 0, 0, 0.55);
+}
+
+/* The conversation canvas follows light/dark mode, independent of the
+   selected Echo theme. Scope the shared UI tokens here so message content,
+   headers, controls, search, and side panels all use the same mode palette. */
+.chat-pane,
+.channel-view,
+.thread-panel {
+  --bg: var(--conversation-bg);
+  --surface: var(--conversation-surface);
+  --surface-2: var(--conversation-surface-2);
+  --border: var(--conversation-border);
+  --text: var(--conversation-text);
+  --muted: var(--conversation-muted);
+  --accent: var(--conversation-accent);
+  --active-bg: var(--conversation-active-bg);
+  --active-bg-2: color-mix(in srgb, var(--active-bg) 68%, #000);
+  --active-fg: var(--conversation-active-fg);
+  --active-soft: color-mix(in srgb, var(--active-bg) 11%, var(--surface));
+  --active-ring: color-mix(in srgb, var(--active-bg) 34%, transparent);
+  --link-color: var(--conversation-link);
+  --link-hover: var(--conversation-link-hover);
+  --input-focus-border: color-mix(in srgb, var(--accent) 72%, var(--border));
+  --input-focus-ring: color-mix(in srgb, var(--accent) 24%, transparent);
+  --input-focus-shadow: 0 0 0 2px var(--input-focus-ring), 0 2px 5px color-mix(in srgb, var(--text) 7%, transparent);
+  --code-bg: var(--conversation-code-bg);
+  --code-text: var(--conversation-code-text);
+  --code-border: var(--conversation-code-border);
+  --tooltip-bg: var(--conversation-surface-2);
+  --tooltip-fg: var(--conversation-text);
+  --tooltip-border: color-mix(in srgb, var(--accent) 42%, var(--border));
+}
+
+/* Keep the quieter chat controls legible in both modes. */
+.msg-actions button,
+.reaction.add,
+.channel-header .header-action-icon,
+.channel-header .dm-starred-toggle:not(.active) {
+  color: var(--conversation-icon);
+}
+
+/* Message action buttons are portaled to body, outside the chat palette
+   scope, so give their toolbar the conversation colors explicitly. */
+.msg-actions {
+  --surface: var(--conversation-surface);
+  --surface-2: var(--conversation-surface-2);
+  --border: var(--conversation-border);
+  --text: var(--conversation-text);
+  --muted: var(--conversation-muted);
+  --accent: var(--conversation-accent);
+}
+
+/* Settings lives inside .chat-pane but retains the selected theme palette. */
+.settings-page {
+  --bg: var(--theme-bg);
+  --surface: var(--theme-surface);
+  --surface-2: var(--theme-surface-2);
+  --border: var(--theme-border);
+  --text: var(--theme-text);
+  --muted: var(--theme-muted);
+  --accent: var(--theme-accent);
+  --active-bg: var(--theme-active-bg);
+  --active-bg-2: var(--theme-active-bg-2);
+  --active-fg: var(--theme-active-fg);
+  --active-soft: var(--theme-active-soft);
+  --active-ring: var(--theme-active-ring);
+  --link-color: var(--theme-link-color);
+  --link-hover: var(--theme-link-hover);
+  --input-focus-border: var(--theme-input-focus-border);
+  --input-focus-ring: var(--theme-input-focus-ring);
+  --input-focus-shadow: var(--theme-input-focus-shadow);
+  --code-bg: var(--theme-code-bg);
+  --code-text: var(--theme-code-text);
+  --code-border: var(--theme-code-border);
+}
+
+/* Chat dialogs and body-portaled chat popovers use the mode palette even
+   outside the conversation canvas or a modal's themed subtree. */
+.modal.new-message-modal,
+.modal.forward-modal,
+.modal.profile-modal,
+.modal.channel-details-dialog,
+.modal.manager-modal,
+.modal.profile-picture-modal,
+.modal.display-name-modal,
+.modal.leave-channel-confirm-modal,
+.modal.message-delete-confirm-modal,
+.modal.channel-member-remove-confirm-modal,
+.modal.retro-delete-confirm-modal,
+.modal.create-channel-modal,
+.modal.add-people-modal,
+.modal.add-emoji-modal,
+.modal.mention-add-modal,
+.modal.groups-create-modal,
+.modal.groups-picker-modal,
+.modal.leave-group-confirm-modal,
+.modal.schedule-modal,
+.modal.scheduled-modal,
+.modal.link-modal,
+.modal.survey-modal,
+.modal.retro-create-modal,
+.modal.retro-modal,
+.modal.retro-idea-modal,
+.mention-popup,
+.emoji-popup-wrap,
+.reaction-picker-quick {
+  --bg: var(--conversation-bg);
+  --surface: var(--conversation-surface);
+  --surface-2: var(--conversation-surface-2);
+  --border: var(--conversation-border);
+  --text: var(--conversation-text);
+  --muted: var(--conversation-muted);
+  --accent: var(--conversation-accent);
+  --active-bg: var(--conversation-active-bg);
+  --active-bg-2: color-mix(in srgb, var(--active-bg) 68%, #000);
+  --active-fg: var(--conversation-active-fg);
+  --active-soft: color-mix(in srgb, var(--active-bg) 11%, var(--surface));
+  --active-ring: color-mix(in srgb, var(--active-bg) 34%, transparent);
+  --link-color: var(--conversation-link);
+  --link-hover: var(--conversation-link-hover);
+  --input-focus-border: color-mix(in srgb, var(--accent) 72%, var(--border));
+  --input-focus-ring: color-mix(in srgb, var(--accent) 24%, transparent);
+  --input-focus-shadow: 0 0 0 2px var(--input-focus-ring), 0 2px 5px color-mix(in srgb, var(--text) 7%, transparent);
+  --code-bg: var(--conversation-code-bg);
+  --code-text: var(--conversation-code-text);
+  --code-border: var(--conversation-code-border);
 }
 
 .echo-tooltip {
@@ -455,34 +661,6 @@ html[data-theme="calm"][data-mode="light"] .workspace-search .search-highlight .
 html[data-theme="calm"][data-mode="light"] .workspace-search .search-highlight .kw-has .kw-label {
   color: #92400e;
 }
-html[data-theme="calm"][data-mode="light"] .messages {
-  background: var(--bg);
-}
-html[data-theme="calm"][data-mode="light"] .chat-pane,
-html[data-theme="calm"][data-mode="light"] .channel-view {
-  background: var(--bg);
-}
-html[data-theme="calm"][data-mode="light"] .channel-header {
-  background: var(--bg);
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
-  box-shadow: none;
-}
-html[data-theme="calm"][data-mode="light"] .message:hover,
-html[data-theme="calm"][data-mode="light"] .message.menu-open,
-html[data-theme="calm"][data-mode="light"] .message.actions-hovered,
-html[data-theme="calm"][data-mode="light"] .message.reaction-open {
-  background: color-mix(in srgb, var(--border) 50%, var(--surface-2)) !important;
-  box-shadow: none;
-}
-html[data-theme="calm"][data-mode="light"][data-interface-direction="rtl"] .message:hover,
-html[data-theme="calm"][data-mode="light"][data-interface-direction="rtl"] .message.menu-open,
-html[data-theme="calm"][data-mode="light"][data-interface-direction="rtl"] .message.actions-hovered,
-html[data-theme="calm"][data-mode="light"][data-interface-direction="rtl"] .message.reaction-open {
-  box-shadow: none;
-}
-html[data-theme="calm"][data-mode="light"] .composer {
-  background: #ffffff;
-}
 html[data-theme="calm"] .workspace-sidebar,
 html[data-theme="calm"] .workspace-sidebar .sidebar {
   background: #1f252b;
@@ -506,20 +684,6 @@ html[data-theme="calm"][data-mode="dark"] {
   --code-bg: #1f252b;
   --code-text: #e5ebf0;
   --code-border: #3a424b;
-}
-html[data-theme="calm"][data-mode="dark"] .messages {
-  background: var(--bg);
-}
-html[data-theme="calm"][data-mode="dark"] .chat-pane {
-  background: var(--bg);
-}
-html[data-theme="calm"][data-mode="dark"] .channel-view {
-  background: var(--bg);
-}
-html[data-theme="calm"][data-mode="dark"] .channel-header {
-  background: #1f252b;
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
-  box-shadow: none;
 }
 
 /* Dracula — purple / pink; signature surfaces in dark mode. */
@@ -645,59 +809,59 @@ html[data-mode="dark"] .search-result .body {
   color: var(--text);
 }
 html[data-mode="dark"] .chat-pane {
-  border-color: rgba(255, 255, 255, 0.06);
+  border-color: var(--conversation-border);
   box-shadow: none;
 }
 
 /* Send box (composer) in dark mode — dark surfaces with clearly legible text. */
 html[data-mode="dark"] .composer {
-  background: var(--surface-2);
-  border-color: var(--border);
+  background: var(--composer-bg);
+  border-color: var(--composer-border);
 }
 html[data-mode="dark"] .composer:focus-within {
-  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 24%, transparent);
+  border-color: var(--composer-focus);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--composer-focus) 24%, transparent);
 }
 html[data-mode="dark"] .composer-toolbar {
-  background: rgba(255, 255, 255, 0.04);
-  border-bottom-color: var(--border);
+  background: var(--composer-toolbar-bg);
+  border-bottom-color: var(--composer-border);
 }
 html[data-mode="dark"] .composer-editor {
-  color: var(--text);
+  color: var(--composer-text);
 }
 html[data-mode="dark"] .editor-placeholder {
-  color: var(--muted);
+  color: var(--composer-muted);
 }
 html[data-mode="dark"] .composer .icon-btn {
-  color: #aab6cf;
+  color: var(--composer-control);
 }
 html[data-mode="dark"] .composer .icon-btn:hover,
 html[data-mode="dark"] .composer .icon-btn.active {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: var(--composer-control-hover);
+  color: var(--composer-text);
 }
 html[data-mode="dark"] .composer .icon-btn.plus {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--composer-control-hover);
 }
 html[data-mode="dark"] .composer .icon-btn.plus:hover {
-  background: rgba(255, 255, 255, 0.16);
+  background: color-mix(in srgb, var(--composer-control-hover) 72%, var(--composer-text));
 }
 html[data-mode="dark"] .composer .tb-sep {
-  background: var(--border);
+  background: var(--composer-border);
 }
 html[data-mode="dark"] .composer-editor code {
-  background: rgba(255, 255, 255, 0.08);
-  color: #f0a3c0;
+  background: var(--composer-code-bg);
+  color: var(--composer-code-text);
 }
 html[data-mode="dark"] .composer-editor pre {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: var(--border);
+  background: var(--composer-pre-bg);
+  border-color: var(--composer-border);
 }
 html[data-mode="dark"] .composer-editor pre code {
-  color: var(--text);
+  color: var(--composer-text);
 }
 html[data-mode="dark"] .composer-editor blockquote {
-  color: var(--muted);
+  color: var(--composer-muted);
 }
 
 /* Mention pills in dark mode — the light-theme text colours are too dark to
@@ -829,6 +993,32 @@ input:focus {
   justify-content: center;
   height: 100vh;
   color: var(--muted);
+}
+.startup-loading {
+  gap: 2px;
+}
+.animated-loading-label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+}
+.loading-dots {
+  display: inline-flex;
+  min-width: 1.2em;
+  letter-spacing: 0.08em;
+}
+.loading-dots span {
+  opacity: 0.2;
+  animation: loading-dot-pulse 1.2s infinite ease-in-out;
+}
+.loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes loading-dot-pulse {
+  0%, 60%, 100% { opacity: 0.2; }
+  30% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .loading-dots span { animation: none; opacity: 1; }
 }
 
 .browser-warning {
@@ -2201,10 +2391,10 @@ html[data-mode="dark"] .backend-connection-error {
   outline-offset: 2px;
 }
 .visibility-option.selected {
-  border-color: var(--active-bg);
-  background: linear-gradient(135deg, var(--active-bg-2), var(--active-bg));
-  color: var(--active-fg);
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--active-bg) 28%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--border));
+  background: color-mix(in srgb, var(--accent) 11%, var(--surface));
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 8%, transparent);
 }
 .visibility-option input {
   position: absolute;
@@ -2229,8 +2419,8 @@ html[data-mode="dark"] .backend-connection-error {
   background: rgba(139, 92, 246, 0.12);
 }
 .visibility-option.selected .vo-icon {
-  color: var(--active-fg);
-  background: color-mix(in srgb, var(--active-fg) 16%, transparent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-2));
 }
 .vo-body {
   min-width: 0;
@@ -2250,12 +2440,12 @@ html[data-mode="dark"] .backend-connection-error {
   margin-top: 2px;
 }
 .visibility-option.selected .vo-desc {
-  color: var(--active-fg);
-  opacity: 0.9;
+  color: var(--muted);
+  opacity: 1;
 }
 .vo-check {
-  color: var(--active-bg);
-  background: var(--active-fg);
+  color: var(--conversation-active-fg);
+  background: var(--accent);
   border-radius: 999px;
   width: 22px;
   height: 22px;
@@ -4124,6 +4314,24 @@ html[data-mode="dark"] .sidebar {
   font-size: 13px;
   padding: 4px 12px;
 }
+.sidebar-caught-up {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 112px;
+  margin: 12px;
+  padding: 16px;
+  border: 1px solid var(--sidebar-border, rgba(255, 255, 255, 0.1));
+  border-radius: 10px;
+  color: var(--on-navy-muted);
+  font-size: 13px;
+  text-align: center;
+}
+.sidebar-caught-up svg {
+  color: var(--on-navy-muted);
+}
 
 /* DMs view: "Find a DM" + rich conversation rows */
 .dm-find {
@@ -4620,7 +4828,7 @@ html[dir="rtl"] .channel-details-section-hint {
   border: 0;
   border-radius: 0;
   overflow: hidden;
-  background: var(--surface);
+  background: var(--conversation-bg);
   box-shadow: none;
 }
 .pane-search {
@@ -4816,6 +5024,19 @@ html[data-mode="dark"] .search-highlight .kw-has .kw-label { color: #fcd34d; }
   animation: fadeInUp 0.14s ease both;
 }
 
+/* The workspace search preview sits above the conversation pane in the
+   navigation layer, so keep its palette aligned with chat in every theme. */
+.workspace-search .search-dropdown {
+  --surface: var(--conversation-surface);
+  --surface-2: var(--conversation-surface-2);
+  --border: var(--conversation-border);
+  --text: var(--conversation-text);
+  --muted: var(--conversation-muted);
+  --accent: var(--conversation-accent);
+  --active-bg: var(--conversation-active-bg);
+  --active-soft: color-mix(in srgb, var(--active-bg) 11%, var(--surface));
+}
+
 /* Add-people filter input */
 .people-filter {
   margin-bottom: 10px;
@@ -4876,7 +5097,7 @@ html[data-mode="dark"] .search-highlight .kw-has .kw-label { color: #fcd34d; }
   flex: 1;
   display: flex;
   flex-direction: row;
-  background: var(--surface);
+  background: var(--conversation-bg);
   min-width: 0;
   min-height: 0;
 }
@@ -4933,6 +5154,9 @@ html[data-mode="dark"] .search-highlight .kw-has .kw-label { color: #fcd34d; }
   flex-direction: column;
   min-height: 0;
   background: var(--surface);
+}
+.thread-panel {
+  background: var(--conversation-bg);
 }
 /* Keep the large-screen side panels consistent with the expanded thread
    surface. Channel details is a modal and keeps its own sizing. */
@@ -5458,6 +5682,7 @@ html[dir="rtl"] .members-panel-person-copy .channel-details-person-handle {
   flex: none;
   padding: 14px 16px;
   border-bottom: 0;
+  background: var(--conversation-bg);
   font-weight: 800;
 }
 .thread-heading {
@@ -9332,6 +9557,13 @@ html[dir="rtl"] .channel-details-person-handle {
   background: var(--lightbox-bg);
 }
 .presentation-viewer {
+  --surface: var(--conversation-surface);
+  --surface-2: var(--conversation-surface-2);
+  --border: var(--conversation-border);
+  --text: var(--conversation-text);
+  --muted: var(--conversation-muted);
+  --accent: var(--conversation-accent);
+  --active-soft: color-mix(in srgb, var(--conversation-active-bg) 11%, var(--surface));
   position: relative;
   display: flex;
   width: 100%;
@@ -9405,6 +9637,12 @@ html[dir="rtl"] .channel-details-person-handle {
   background: rgba(0, 0, 0, 0.65);
 }
 .text-viewer {
+  --surface: var(--conversation-surface);
+  --surface-2: var(--conversation-surface-2);
+  --border: var(--conversation-border);
+  --text: var(--conversation-text);
+  --muted: var(--conversation-muted);
+  --accent: var(--conversation-accent);
   display: flex;
   flex-direction: column;
   width: min(1100px, 100%);
@@ -9480,9 +9718,9 @@ html[dir="rtl"] .channel-details-person-handle {
   justify-content: space-between;
   gap: 14px;
   padding: 10px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--composer-border);
   border-radius: 12px;
-  background: var(--surface);
+  background: var(--composer-bg);
   box-shadow: var(--shadow-md);
 }
 .composer-paste-content {
@@ -9499,8 +9737,8 @@ html[dir="rtl"] .channel-details-person-handle {
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
-  color: var(--accent);
+  background: var(--composer-control-hover);
+  color: var(--composer-control);
 }
 .composer-paste-prompt.is-error {
   border-color: color-mix(in srgb, var(--danger) 30%, var(--border));
@@ -9523,7 +9761,7 @@ html[dir="rtl"] .channel-details-person-handle {
   line-height: 1.35;
 }
 .composer-paste-copy span {
-  color: var(--muted);
+  color: var(--composer-muted);
 }
 .composer-paste-actions {
   display: flex;
@@ -9540,7 +9778,7 @@ html[dir="rtl"] .channel-details-person-handle {
 }
 .composer-paste-dismiss {
   background: transparent;
-  color: var(--muted);
+  color: var(--composer-muted);
 }
 .composer-paste-dismiss:hover,
 .composer-paste-dismiss:focus-visible {
@@ -9577,9 +9815,9 @@ html[dir="rtl"] .channel-details-person-handle {
 }
 .pending-att {
   position: relative;
-  border: 1px solid var(--border);
+  border: 1px solid var(--composer-border);
   border-radius: 10px;
-  background: var(--surface);
+  background: var(--composer-bg);
 }
 .pending-att.is-image img {
   display: block;
@@ -9604,7 +9842,8 @@ html[dir="rtl"] .channel-details-person-handle {
   cursor: pointer;
 }
 .pending-image-edit:hover,
-.pending-image-edit:focus-visible { background: var(--accent); }
+.pending-image-edit:hover,
+.pending-image-edit:focus-visible { background: var(--blue-500); }
 .custom-image-editor-shell {
   position: fixed;
   inset: 0;
@@ -9618,6 +9857,18 @@ html[dir="rtl"] .channel-details-person-handle {
   direction: inherit;
 }
 .custom-image-editor {
+  --bg: var(--conversation-bg);
+  --surface: var(--conversation-surface);
+  --surface-2: var(--conversation-surface-2);
+  --border: var(--conversation-border);
+  --text: var(--conversation-text);
+  --muted: var(--conversation-muted);
+  --accent: var(--conversation-accent);
+  --active-bg: var(--conversation-active-bg);
+  --active-fg: var(--conversation-active-fg);
+  --active-soft: color-mix(in srgb, var(--active-bg) 11%, var(--surface));
+  --link-hover: var(--conversation-link-hover);
+  --image-editor-canvas-bg: color-mix(in srgb, var(--surface-2) 88%, var(--text) 12%);
   display: flex;
   width: min(1320px, 100%);
   height: min(860px, 100%);
@@ -10773,14 +11024,14 @@ html[dir="rtl"] .groups-create-modal .forward-destination-copy {
 }
 .forward-note-field .composer {
   margin: 0;
-  border-color: var(--border);
+  border-color: var(--composer-border);
   border-radius: 10px;
-  background: var(--surface-2);
+  background: var(--composer-bg);
   box-shadow: none;
 }
 .forward-note-field .composer-toolbar {
   padding: 3px 6px;
-  background: color-mix(in srgb, var(--surface) 70%, var(--surface-2));
+  background: var(--composer-toolbar-bg);
 }
 .forward-note-field .composer-toolbar .icon-btn {
   min-width: 30px;
@@ -11440,16 +11691,16 @@ html[dir="rtl"] .groups-create-modal .forward-destination-copy {
   height: 64px;
   flex: none;
   padding: 14px 24px;
-  border-bottom: 0;
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  border-bottom: 1px solid var(--conversation-border);
+  background: var(--conversation-bg);
+  box-shadow: none;
   backdrop-filter: saturate(1.1);
   z-index: 1;
   min-width: 0;
 }
 html[data-mode="dark"] .channel-header {
-  background: color-mix(in srgb, var(--surface) 72%, transparent);
-  border-bottom-color: rgba(255, 255, 255, 0.06);
+  background: var(--conversation-bg);
+  border-bottom-color: var(--conversation-border);
 }
 .channel-header[data-testid="activity-header"],
 .channel-header[data-testid="saved-header"],
@@ -11731,7 +11982,7 @@ html[dir="rtl"] .conversation-notification-menu { right: auto; left: 0; }
   display: flex;
   flex-direction: column;
   gap: 4px;
-  background: linear-gradient(180deg, var(--bg), var(--surface) 120px);
+  background: var(--conversation-bg);
 }
 .messages-inner {
   width: calc(100% + (2 * var(--messages-gutter)));
@@ -11948,15 +12199,15 @@ html[data-mode="dark"] .new-messages-button:hover {
   color: var(--accent);
 }
 .empty-state-action.primary {
-  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
-  background: var(--accent);
-  color: var(--active-fg);
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
+  background: var(--active-soft);
+  color: var(--accent);
 }
 .empty-state-action.primary:hover,
 .empty-state-action.primary:focus-visible {
-  border-color: var(--accent);
-  background: var(--active-bg);
-  color: var(--active-fg);
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+  color: var(--accent);
 }
 
 /* ---- Loading skeletons ---- */
@@ -12147,8 +12398,8 @@ html[data-mode="dark"] .new-messages-button:hover {
   unicode-bidi: isolate;
   padding: 1px 5px;
   border-radius: 5px;
-  background: color-mix(in srgb, var(--accent) 15%, transparent);
-  color: var(--accent);
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--blue-500);
   font-weight: 650;
   white-space: nowrap;
 }
@@ -12273,9 +12524,9 @@ html[data-interface-direction="ltr"] .composer-user-mention {
 .composer {
   position: relative;
   margin: 4px 20px 22px;
-  border: 1px solid rgba(29, 28, 29, 0.18);
+  border: 1px solid var(--composer-border);
   border-radius: 12px;
-  background: #fff;
+  background: var(--composer-bg);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
@@ -12287,8 +12538,8 @@ html[data-interface-direction="ltr"] .composer-user-mention {
   z-index: 1001;
 }
 .composer:focus-within {
-  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 24%, transparent);
+  border-color: var(--composer-focus);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--composer-focus) 24%, transparent);
 }
 .composer.dragging-files {
   border-color: var(--blue-500);
@@ -12302,7 +12553,7 @@ html[data-interface-direction="ltr"] .composer-user-mention {
   align-items: center;
   justify-content: center;
   border-radius: 11px;
-  background: color-mix(in srgb, var(--surface) 88%, var(--blue-500));
+  background: color-mix(in srgb, var(--composer-bg) 88%, var(--blue-500));
   color: var(--blue-500);
   font-size: 14px;
   font-weight: 750;
@@ -12314,7 +12565,7 @@ html[data-interface-direction="ltr"] .composer-user-mention {
   z-index: 1000;
   border: 3px dashed color-mix(in srgb, var(--blue-500) 72%, transparent);
   border-radius: 0;
-  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  background: color-mix(in srgb, var(--composer-bg) 82%, transparent);
   font-size: 18px;
 }
 .composer-editing {
@@ -12323,9 +12574,9 @@ html[data-interface-direction="ltr"] .composer-user-mention {
   justify-content: space-between;
   gap: 12px;
   padding: 9px 12px;
-  border-bottom: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
-  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
-  color: var(--text);
+  border-bottom: 1px solid var(--composer-border);
+  background: var(--composer-toolbar-bg);
+  color: var(--composer-text);
   font-size: 13px;
 }
 .composer.is-editing .composer-editing {
@@ -12340,7 +12591,7 @@ html[data-interface-direction="ltr"] .composer-user-mention {
   min-width: 0;
 }
 .composer-editing span {
-  color: var(--muted);
+  color: var(--composer-muted);
   font-size: 12px;
   white-space: nowrap;
 }
@@ -12350,13 +12601,13 @@ html[data-interface-direction="ltr"] .composer-user-mention {
   border: 0;
   border-radius: 5px;
   background: transparent;
-  color: var(--muted);
+  color: var(--composer-muted);
   font-size: 12px;
   cursor: pointer;
 }
 .composer-edit-cancel:hover {
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  color: var(--text);
+  background: var(--composer-control-hover);
+  color: var(--composer-text);
 }
 
 .composer-toolbar {
@@ -12367,8 +12618,8 @@ html[data-interface-direction="ltr"] .composer-user-mention {
   box-sizing: border-box;
   flex-wrap: nowrap;
   height: 45px;
-  background: #f8f8f8;
-  border-bottom: 1px solid #ececec;
+  background: var(--composer-toolbar-bg);
+  border-bottom: 1px solid var(--composer-border);
   border-radius: 11px 11px 0 0;
 }
 .composer.is-editing .composer-toolbar {
@@ -12420,6 +12671,20 @@ html[data-interface-direction="ltr"] .composer-user-mention {
 }
 .icon-btn.plus:hover { background: #e6e6e6; }
 
+.composer .icon-btn {
+  color: var(--composer-control);
+}
+.composer .icon-btn:hover,
+.composer .icon-btn.active,
+.composer .icon-btn.plus,
+.composer .icon-btn.plus:hover {
+  background: var(--composer-control-hover);
+  color: var(--composer-text);
+}
+.composer .tb-sep {
+  background: var(--composer-border);
+}
+
 .composer-more-actions {
   position: relative;
   display: inline-flex;
@@ -12441,9 +12706,9 @@ html[data-interface-direction="ltr"] .composer-user-mention {
   gap: 2px;
   min-width: 190px;
   padding: 6px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--composer-border);
   border-radius: 10px;
-  background: var(--surface);
+  background: var(--composer-bg);
   box-shadow: var(--shadow-md);
   animation: composer-actions-in 120ms ease-out both;
 }
@@ -12455,13 +12720,13 @@ html[data-interface-direction="ltr"] .composer-user-mention {
   width: 100%;
   min-width: 0;
   padding: 9px 10px;
-  color: var(--text);
+  color: var(--composer-text);
   font-size: 13px;
   text-align: left;
 }
 .composer-more-popover .composer-more-action:hover,
 .composer-more-popover .composer-more-action:focus-visible {
-  background: var(--surface-2);
+  background: var(--composer-control-hover);
 }
 /* The left action cluster becomes the physical right edge in RTL. Mirror the
    popover anchor so the panel grows into the composer instead of beyond it. */
@@ -12501,7 +12766,7 @@ html[dir="rtl"] .composer-more-popover .composer-more-action {
   font-family: inherit;
   font-size: 15px;
   line-height: 1.46;
-  color: #1d1c1d;
+  color: var(--composer-text);
   min-height: 22px;
   max-height: 280px;
   overflow-y: auto;
@@ -12536,7 +12801,7 @@ html[dir="rtl"] .composer-more-popover .composer-more-action {
 }
 .composer-editor p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
-  color: #8d8d8d;
+  color: var(--composer-muted);
   direction: ltr;
   text-align: left;
   unicode-bidi: isolate;
@@ -12552,16 +12817,16 @@ html[dir="rtl"] .composer-more-popover .composer-more-action {
   color: var(--link-color);
 }
 .composer-editor code {
-  background: #eef2f9;
-  color: #b4456f;
+  background: var(--composer-code-bg);
+  color: var(--composer-code-text);
   padding: 1px 5px;
   border-radius: 5px;
   font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
   font-size: 0.9em;
 }
 .composer-editor pre {
-  background: #f3f5f9;
-  border: 1px solid #e3e9f2;
+  background: var(--composer-pre-bg);
+  border: 1px solid var(--composer-border);
   padding: 8px 10px;
   border-radius: 8px;
   margin: 4px 0;
@@ -12569,7 +12834,7 @@ html[dir="rtl"] .composer-more-popover .composer-more-action {
 }
 .composer-editor pre code {
   background: none;
-  color: #1d1c1d;
+  color: var(--composer-text);
   padding: 0;
 }
 .composer-editor ul,
@@ -12607,7 +12872,7 @@ html[dir="rtl"] .composer-more-popover .composer-more-action {
   padding: 2px 0;
   padding-inline-start: 12px;
   border-inline-start: 3px solid var(--blue-400);
-  color: #475569;
+  color: var(--composer-muted);
 }
 /* Quote paragraphs decide their own base direction. This keeps an English
    quoted message readable inside a Hebrew composer and vice versa. */
@@ -12722,8 +12987,8 @@ html[data-interface-direction="rtl"] .composer-editor li > p {
   right: 0;
   margin-bottom: 8px;
   min-width: 210px;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--composer-bg);
+  border: 1px solid var(--composer-border);
   border-radius: 10px;
   box-shadow: var(--shadow-md);
   padding: 6px;
@@ -12736,7 +13001,7 @@ html[data-interface-direction="rtl"] .composer-editor li > p {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--muted);
+  color: var(--composer-muted);
   padding: 6px 10px 4px;
 }
 .send-menu button {
@@ -12750,19 +13015,19 @@ html[data-interface-direction="rtl"] .composer-editor li > p {
   padding: 9px 10px;
   border-radius: 7px;
   font-size: 14px;
-  color: var(--text);
+  color: var(--composer-text);
   cursor: pointer;
 }
 .send-menu-sub {
   font-size: 12px;
-  color: var(--muted);
+  color: var(--composer-muted);
   font-weight: 500;
 }
 .send-menu button:hover:not(:disabled) {
-  background: var(--surface-2);
+  background: var(--composer-control-hover);
 }
 .send-menu button:disabled {
-  color: var(--muted);
+  color: var(--composer-muted);
   opacity: 0.55;
   cursor: not-allowed;
 }
@@ -13477,9 +13742,9 @@ html[data-interface-direction="rtl"] .scheduled-banner-copy {
   width: min(352px, calc(100vw - 16px));
   max-width: calc(100vw - 16px);
   height: 390px;
-  --rgb-background: 255, 255, 255;
-  --rgb-input: 248, 250, 252;
-  --rgb-color: 15, 31, 58;
+  --rgb-background: 255, 253, 250;
+  --rgb-input: 240, 239, 236;
+  --rgb-color: 39, 41, 45;
   --rgb-accent: 37, 99, 235;
   overscroll-behavior: contain;
   touch-action: pan-y;
@@ -13514,19 +13779,10 @@ html[data-interface-direction="rtl"] .scheduled-banner-copy {
   }
 }
 html[data-mode="dark"] .emoji-popup-wrap em-emoji-picker {
-  --rgb-background: 16, 23, 38;
-  --rgb-input: 26, 34, 54;
-  --rgb-color: 234, 239, 251;
-  --rgb-accent: 59, 130, 246;
-}
-html[data-theme="midnight"] .emoji-popup-wrap em-emoji-picker {
-  --rgb-accent: 139, 92, 246;
-}
-html[data-theme="dracula"] .emoji-popup-wrap em-emoji-picker {
-  --rgb-accent: 189, 147, 249;
-}
-html[data-theme="sand"] .emoji-popup-wrap em-emoji-picker {
-  --rgb-accent: 194, 104, 42;
+  --rgb-background: 43, 48, 55;
+  --rgb-input: 48, 53, 60;
+  --rgb-color: 230, 232, 235;
+  --rgb-accent: 118, 183, 255;
 }
 
 /* Add-people modal list */
@@ -15928,6 +16184,7 @@ html[data-mode="dark"] .hljs-class .hljs-title {
 }
 .channel-browser {
   animation: paneIn 0.2s ease both;
+  background: var(--bg);
 }
 .channel-browser-header {
   gap: 10px;
@@ -16728,7 +16985,7 @@ html[dir="rtl"] .channel-browser-members {
     min-height: 68px;
     height: auto;
     padding: 12px 14px 12px 16px;
-    background: var(--surface-2);
+    background: var(--conversation-bg);
   }
 
   .thread-heading {
@@ -16973,6 +17230,11 @@ html[dir="rtl"] .channel-browser-members {
 .retro-modal { background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 3%, var(--surface)), var(--surface)); }.retro-modal .modal-header { padding-bottom: 14px; border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }.retro-modal .modal-header h2 { letter-spacing: -.025em; }.retro-intro { display: flex; align-items: center; justify-content: space-between; }.retro-columns { padding: 4px 3px 14px; }.retro-column { border: 1px solid color-mix(in srgb, var(--border) 75%, transparent); border-top: 4px solid var(--retro-tone); box-shadow: 0 3px 12px #0000000a; }.retro-column > header { letter-spacing: -.01em; }.retro-column-submit { margin-top: 12px; border: 1px dashed color-mix(in srgb, var(--accent) 38%, var(--border)); background: color-mix(in srgb, var(--surface) 70%, var(--accent)); }.retro-item { border-color: color-mix(in srgb, var(--border) 68%, transparent); transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease; }.retro-item:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--accent) 32%, var(--border)); box-shadow: 0 5px 14px #00000012; }.retro-idea-modal .composer { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }.retro-idea-modal .composer .composer-editor { min-height: 92px; }.retro-idea-modal .modal-actions { margin-top: 14px; }.retro-idea-modal .modal-actions .btn-primary:disabled { opacity: .45; cursor: not-allowed; }
 .retro-column > header > span { color: var(--retro-tone); }
 
+.retro-idea-modal .composer {
+  border-color: var(--composer-border);
+  background: var(--composer-bg);
+}
+
 /* Keep the board as the only scrolling surface so category headers can stay pinned. */
 .modal.retro-modal {
   display: flex;
@@ -17207,15 +17469,11 @@ html[dir="rtl"] .channel-browser-members {
   }
 }
 
-/* Calm Harbor keeps navigation and conversation on one neutral charcoal
-   surface; the rail remains the only colored navigation treatment. */
+/* Calm Harbor keeps neutral navigation; the conversation canvas is shared by
+   all themes and follows the active light/dark mode. */
 html[data-theme="calm"][data-mode="dark"] .workspace-sidebar,
-html[data-theme="calm"][data-mode="dark"] .workspace-sidebar .sidebar,
-html[data-theme="calm"][data-mode="dark"] .channel-view,
-html[data-theme="calm"][data-mode="dark"] .chat-pane,
-html[data-theme="calm"][data-mode="dark"] .messages {
-  background: #1f252b !important;
-  background-image: none !important;
+html[data-theme="calm"][data-mode="dark"] .workspace-sidebar .sidebar {
+  background: #1f252b;
 }
 html[data-theme="calm"] .channel-list {
   scrollbar-color: var(--muted) #1f252b;

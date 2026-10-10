@@ -147,7 +147,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
             {selected.length ? (
               <div ref={selectedRecipientsRef} className="new-message-search new-message-search-selected" data-testid="new-message-search">
                 {selected.map((user) => <span className="forward-chip new-message-recipient" data-testid="new-message-recipient" key={user.id}>
-                  <span>{user.displayName}</span>
+                  <span><bdi dir="auto">{user.displayName}</bdi></span>
                   <button type="button" aria-label={`Remove ${user.displayName}`} onMouseDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); remove(user.id); }}>
                     <XIcon size={13} aria-hidden="true" />
                   </button>
@@ -207,7 +207,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
                 >
                   <Avatar name={user.displayName} src={user.avatarUrl} size={34} />
                   <span className="person-info">
-                    <span className="person-name">{user.displayName}</span>
+                    <span className="person-name"><bdi dir="auto">{user.displayName}</bdi></span>
                     <span className="person-handle">@{user.username}</span>
                   </span>
                 </button>

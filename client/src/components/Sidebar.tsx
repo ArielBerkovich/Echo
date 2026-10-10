@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronDownIcon, HashIcon, ListFilterIcon, LockKeyholeIcon, MailOpenIcon, MessageCircleIcon, SquarePenIcon, StarIcon } from "lucide-react";
+import { CheckCircle2Icon, ChevronDownIcon, HashIcon, ListFilterIcon, LockKeyholeIcon, MailOpenIcon, MessageCircleIcon, SquarePenIcon, StarIcon } from "lucide-react";
 import Avatar, { GroupAvatar } from "./Avatar.js";
 import { relativeTime } from "../lib/time.js";
 import { useAuthUrls } from "../lib/useAuthUrl.js";
@@ -371,6 +371,12 @@ export default function Sidebar({
         // One scrolling list; the Channels and Direct Messages sections each
         // collapse from their header so you can shrink one to see the other.
         <div className="channel-list">
+          {unreadOnly && shownChannels.length === 0 && shownDms.length === 0 ? (
+            <div className="sidebar-caught-up" data-testid="unread-empty-state">
+              <CheckCircle2Icon size={22} strokeWidth={1.8} aria-hidden="true" />
+              <span>{t("allCaughtUp")}</span>
+            </div>
+          ) : <>
           {starredSection}
           <div className="section-label section-toggle channels-section-label">
             <button
@@ -425,6 +431,7 @@ export default function Sidebar({
               {unreadOnly ? t("noUnreadDms") : filter ? t("noMatchingDms") : t("composeToStartConversation")}
             </div>
           )}
+          </>}
         </div>
       )}
     </aside>

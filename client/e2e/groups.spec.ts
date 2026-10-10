@@ -26,6 +26,14 @@ test("members govern membership and the last member leaving deletes the group", 
     await expect(panel.locator(".groups-panel-member").getByText(fixture.alice.displayName)).toHaveCount(0);
     await memberSearch.fill("");
     await panel.getByRole("button", { name: "Add people" }).click();
+    const peoplePicker = page.locator(".groups-picker-modal");
+    const originalTheme = await page.evaluate(() => document.documentElement.dataset.theme);
+    const pickerBackground = async (theme) => {
+      await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, theme);
+      return peoplePicker.evaluate((element) => getComputedStyle(element).backgroundColor);
+    };
+    expect(await pickerBackground("dracula")).toBe(await pickerBackground("nord"));
+    await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, originalTheme);
     await expect(page.getByLabel("Search people to add")).toBeVisible();
     await page.getByRole("button", { name: "Close" }).click();
 
@@ -33,7 +41,14 @@ test("members govern membership and the last member leaving deletes the group", 
     await expect(panel.getByRole("button", { name: "Assign" })).toHaveCount(0);
 
     await panel.getByRole("button", { name: "Leave group" }).click();
-    await expect(page.getByRole("heading", { name: "Leave this group?" })).toBeVisible();
+    const leaveGroupDialog = page.locator(".leave-group-confirm-modal");
+    await expect(leaveGroupDialog.getByRole("heading", { name: "Leave this group?" })).toBeVisible();
+    const leaveGroupBackground = async (theme) => {
+      await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, theme);
+      return leaveGroupDialog.evaluate((element) => getComputedStyle(element).backgroundColor);
+    };
+    expect(await leaveGroupBackground("dracula")).toBe(await leaveGroupBackground("nord"));
+    await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, originalTheme);
     await page.getByRole("button", { name: "Leave group", exact: true }).last().click();
     await expect(panel.getByRole("button", { name: "Add people" })).toHaveCount(0);
 

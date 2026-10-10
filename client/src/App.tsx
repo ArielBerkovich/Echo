@@ -11,6 +11,7 @@ import WorkspaceNavigation from "./components/WorkspaceNavigation.js";
 import WorkspaceOverlays from "./components/WorkspaceOverlays.js";
 import WorkspaceContent from "./components/WorkspaceContent.js";
 import SessionExpiredDialog from "./components/SessionExpiredDialog.js";
+import AnimatedLoadingLabel from "./components/AnimatedLoadingLabel.jsx";
 import { readJson, readString, writeJson, writeString } from "./lib/storage.js";
 import { notifyPermission, notifySupported, requestNotifyPermission, setNotifyPref } from "./lib/notify.js";
 import { BUILT_IN_GIT_EMOJIS } from "./lib/gitEmojis.js";
@@ -1496,10 +1497,11 @@ export default function App() {
     activeChannel && activeUnreadCount === 0 ? scrollStates[activeChannel.id] || null : null;
 
   if (loading) {
+    const loadingLabel = startupUnavailable ? t("echoRestarting") : t("loading");
     return (
       <>
-        <div className="centered" role="status">
-          {startupUnavailable ? t("echoRestarting") : t("loading")}
+        <div className="centered startup-loading" role="status" aria-label={loadingLabel}>
+          <AnimatedLoadingLabel label={loadingLabel} />
         </div>
         {showSessionExpiredDialog ? <SessionExpiredDialog onSignOut={handleLogout} /> : null}
       </>

@@ -212,6 +212,91 @@ test("combines the Home unread filter with text search", async ({ page }) => {
   await expect(page.getByTestId(`dm-row-${slug(fixture.bob.displayName)}`)).toBeVisible();
 });
 
+test("shows an all-caught-up state when no channels, DMs, or starred items are unread", async ({ page }) => {
+  for (const channelId of [fixture.generalChannel.id, fixture.projectChannel.id, fixture.dmChannel.id]) {
+    await requestAsToken(page, fixture.alice.token, `/channels/${channelId}/read`, { method: "POST" });
+  }
+
+  await page.goto("/");
+  await page.getByTestId("sidebar-filter-toggle").click();
+  await page.getByTestId("sidebar-unread-toggle").click();
+
+  await expect(page.getByTestId("unread-empty-state")).toContainText("You’re all caught up! No unread messages.");
+  await expect(page.getByTestId("channel-row-general")).toHaveCount(0);
+  await expect(page.getByTestId(`dm-row-${slug(fixture.bob.displayName)}`)).toHaveCount(0);
+});
+
+test("keeps composer dialogs and popovers on the chat palette across themes", async ({ page }) => {
+  await page.goto(`/channels/${encodeURIComponent(fixture.generalChannel.name)}`);
+  await page.evaluate(() => { document.documentElement.dataset.theme = "midnight"; });
+  const conversationAccent = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--conversation-accent").trim());
+  const expectNeutralAccent = async (locator) => {
+    await expect.poll(() => locator.evaluate((element) => getComputedStyle(element).getPropertyValue("--accent").trim())).toBe(conversationAccent);
+  };
+
+  await page.getByTestId("rail-account").click();
+  const profilePictureDialog = page.getByTestId("profile-picture-dialog");
+  await expect(profilePictureDialog).toBeVisible();
+  await expectNeutralAccent(profilePictureDialog);
+  await page.keyboard.press("Escape");
+
+  await page.getByRole("button", { name: "Update display name" }).click();
+  const displayNameDialog = page.getByTestId("display-name-dialog");
+  await expect(displayNameDialog).toBeVisible();
+  await expectNeutralAccent(displayNameDialog);
+  await page.keyboard.press("Escape");
+
+  await page.getByTestId("composer-link").click();
+  const linkModal = page.locator(".modal.link-modal");
+  await expect(linkModal).toBeVisible();
+  await expectNeutralAccent(linkModal);
+  await linkModal.getByRole("button", { name: "Cancel" }).click();
+
+  await page.getByTestId("composer-editor").fill(`Theme palette check ${fixture.suffix}`);
+  await page.getByTestId("composer-send-options").click();
+  await page.locator(".send-menu").getByRole("button").nth(1).click();
+  const scheduleModal = page.locator(".modal.schedule-modal");
+  await expect(scheduleModal).toBeVisible();
+  await expectNeutralAccent(scheduleModal);
+  await page.keyboard.press("Escape");
+
+  await page.getByTestId("composer-more-actions").click();
+  await page.getByTestId("composer-survey").click();
+  const surveyModal = page.getByTestId("survey-modal");
+  await expect(surveyModal).toBeVisible();
+  await expectNeutralAccent(surveyModal);
+  await page.keyboard.press("Escape");
+
+  await page.getByTestId("composer-more-actions").click();
+  await page.getByTestId("composer-retro").click();
+  const retroModal = page.locator(".modal.retro-create-modal");
+  await expect(retroModal).toBeVisible();
+  await expectNeutralAccent(retroModal);
+  await page.keyboard.press("Escape");
+
+  await page.getByTestId("composer-emoji-toggle").click();
+  const emojiPicker = page.locator(".emoji-popup-wrap");
+  await expect(emojiPicker).toBeVisible();
+  await expectNeutralAccent(emojiPicker);
+  const expectedEmojiAccent = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--conversation-accent").trim().match(/[0-9a-f]{2}/gi)?.map((part) => Number.parseInt(part, 16)).join(","));
+  await expect.poll(() => emojiPicker.locator("em-emoji-picker").evaluate((element) => getComputedStyle(element).getPropertyValue("--rgb-accent").replaceAll(" ", ""))).toBe(expectedEmojiAccent);
+  await page.getByTestId("composer-emoji-toggle").click();
+
+  const editor = page.getByTestId("composer-editor");
+  await editor.fill(`@${fixture.bob.username}`);
+  const mentionPopup = page.locator(".mention-popup");
+  await expect(mentionPopup).toBeVisible();
+  await expectNeutralAccent(mentionPopup);
+  await editor.press("Escape");
+  const message = page.getByTestId(`message-${fixture.messages.searchHit.id}`);
+  await expect(message).toBeVisible();
+  await message.hover();
+  await page.getByTestId(`message-${fixture.messages.searchHit.id}-add-reaction-action`).click();
+  const reactionPicker = page.locator(".reaction-picker-quick");
+  await expect(reactionPicker).toBeVisible();
+  await expectNeutralAccent(reactionPicker);
+});
+
 test("opens regular search with the current channel scope", async ({ page }) => {
   await page.goto(`/channels/${fixture.projectChannel.name}`);
   await expect(page.getByTestId("channel-title")).toContainText(fixture.projectChannel.name);
@@ -692,6 +777,60 @@ test("adds a channel-message author to Starred without opening a DM first", asyn
   await requestAsToken(page, fixture.alice.token, `/users/${candidate.user.id}/vip`, { method: "POST" });
 });
 
+test("keeps channel and user details dialogs on the neutral chat palette", async ({ page }) => {
+  await page.goto(`/channels/${fixture.projectChannel.name}`);
+  await page.getByTestId("channel-title").click();
+  const details = page.getByTestId("channel-details-dialog");
+  await expect(details).toBeVisible();
+
+  const channelBackground = async (theme) => {
+    await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, theme);
+    return details.evaluate((element) => getComputedStyle(element).backgroundColor);
+  };
+  const chatSurface = () => page.locator(".chat-pane").evaluate((element) => getComputedStyle(element).getPropertyValue("--surface").trim());
+  const expectedSurface = await chatSurface();
+  const draculaBackground = await channelBackground("dracula");
+  expect(await details.evaluate((element) => getComputedStyle(element).getPropertyValue("--surface").trim())).toBe(expectedSurface);
+  expect(await channelBackground("nord")).toBe(draculaBackground);
+  await details.getByRole("button", { name: "Close channel details" }).click();
+
+  await page.addStyleTag({ content: ".message, .msg-actions button { transition: none !important; }" });
+  const message = page.getByTestId(`message-${fixture.messages.threadRoot.id}`);
+  await message.hover();
+  const messageHoverBackground = async (theme) => {
+    await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, theme);
+    return message.evaluate((element) => getComputedStyle(element).backgroundColor);
+  };
+  expect(await messageHoverBackground("dracula")).toBe(await messageHoverBackground("nord"));
+  const moreAction = page.getByTestId(`message-${fixture.messages.threadRoot.id}-more`);
+  await moreAction.hover();
+  const moreActionBackground = async (theme) => {
+    await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, theme);
+    return moreAction.evaluate((element) => getComputedStyle(element).backgroundColor);
+  };
+  expect(await moreActionBackground("dracula")).toBe(await moreActionBackground("nord"));
+
+  await page.getByTestId("search-input").fill("chat preview");
+  const searchPreview = page.locator(".workspace-search .search-dropdown");
+  await expect(searchPreview).toBeVisible();
+  const searchPreviewBackground = async (theme) => {
+    await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, theme);
+    return searchPreview.evaluate((element) => getComputedStyle(element).backgroundColor);
+  };
+  expect(await searchPreviewBackground("dracula")).toBe(await searchPreviewBackground("nord"));
+
+  await page.goto(`/dms/${fixture.dmChannel.id}`);
+  await page.getByTestId(`message-${fixture.messages.dmMessage.id}-avatar`).click();
+  const profile = page.getByTestId("profile-modal");
+  await expect(profile).toBeVisible();
+  const profileBackground = async (theme) => {
+    await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, theme);
+    return profile.evaluate((element) => getComputedStyle(element).backgroundColor);
+  };
+  expect(await profile.evaluate((element) => getComputedStyle(element).getPropertyValue("--surface").trim())).toBe(expectedSurface);
+  expect(await profileBackground("dracula")).toBe(await profileBackground("nord"));
+});
+
 test("opens people and channels searched from Activity and Saved", async ({ page }) => {
   await page.goto("/");
 
@@ -863,6 +1002,15 @@ test("removes a channel from the sidebar after leaving it", async ({ page }) => 
   const details = page.getByTestId("channel-details-dialog");
   await details.getByRole("tab", { name: "Actions" }).click();
   await details.getByTestId("channel-leave").click();
+  const leaveConfirmation = page.locator(".leave-channel-confirm-modal");
+  await expect(leaveConfirmation).toBeVisible();
+  const originalTheme = await page.evaluate(() => document.documentElement.dataset.theme);
+  const leaveConfirmationBackground = async (theme) => {
+    await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, theme);
+    return leaveConfirmation.evaluate((element) => getComputedStyle(element).backgroundColor);
+  };
+  expect(await leaveConfirmationBackground("dracula")).toBe(await leaveConfirmationBackground("nord"));
+  await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, originalTheme);
   await page.getByRole("button", { name: "Leave", exact: true }).click();
 
   await expect(row).toHaveCount(0);
