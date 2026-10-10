@@ -54,6 +54,16 @@ server:
   # Pre-install hook Secret consumed by the Echo server.
   existingSecret: echo-secret
   jwtSecret: ""
+  threadSummaries:
+    enabled: false
+    baseUrl: https://api.openai.com/v1
+    model: gpt-4o-mini
+    # Reference a Secret containing the API key. Keep provider credentials out of values files.
+    apiKeySecret: ""
+    apiKeySecretKey: api-key
+    timeoutMs: 30000
+    maxContextTokens: 12000
+    maxOutputTokens: 700
   s3:
     endpoint: ""
     accessKey: ""

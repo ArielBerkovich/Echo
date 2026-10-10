@@ -68,6 +68,25 @@ spec:
             {{- end }}
             - name: CLIENT_ORIGIN
               value: {{ include "echo.clientOrigin" . | quote }}
+            - name: THREAD_SUMMARIES_ENABLED
+              value: {{ .Values.server.threadSummaries.enabled | quote }}
+            - name: OPENAI_BASE_URL
+              value: {{ .Values.server.threadSummaries.baseUrl | quote }}
+            - name: OPENAI_MODEL
+              value: {{ .Values.server.threadSummaries.model | quote }}
+            - name: OPENAI_TIMEOUT_MS
+              value: {{ .Values.server.threadSummaries.timeoutMs | quote }}
+            - name: OPENAI_MAX_CONTEXT_TOKENS
+              value: {{ .Values.server.threadSummaries.maxContextTokens | quote }}
+            - name: OPENAI_MAX_OUTPUT_TOKENS
+              value: {{ .Values.server.threadSummaries.maxOutputTokens | quote }}
+            {{- if .Values.server.threadSummaries.apiKeySecret }}
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.server.threadSummaries.apiKeySecret | quote }}
+                  key: {{ .Values.server.threadSummaries.apiKeySecretKey | quote }}
+            {{- end }}
             - name: S3_ENDPOINT
               value: {{ include "echo.s3Endpoint" . | quote }}
             - name: S3_ACCESS_KEY

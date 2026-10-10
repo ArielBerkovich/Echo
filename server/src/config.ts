@@ -4,6 +4,11 @@ function required(name) {
   return val;
 }
 
+function positiveInteger(name, fallback, minimum) {
+  const value = Number(process.env[name]);
+  return Number.isSafeInteger(value) && value >= minimum ? value : fallback;
+}
+
 // Central configuration, sourced from environment with sensible local defaults.
 export const config = {
   port: Number(process.env.PORT) || 4000,
@@ -36,6 +41,15 @@ export const config = {
   },
   // How many messages to return per history page.
   messagePageSize: 50,
+  threadSummaries: {
+    enabled: process.env.THREAD_SUMMARIES_ENABLED === "true",
+    baseUrl: String(process.env.OPENAI_BASE_URL || "https://api.openai.com/v1").replace(/\/+$/, ""),
+    apiKey: process.env.OPENAI_API_KEY || "",
+    model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+    timeoutMs: positiveInteger("OPENAI_TIMEOUT_MS", 30000, 1000),
+    maxContextTokens: positiveInteger("OPENAI_MAX_CONTEXT_TOKENS", 12000, 1000),
+    maxOutputTokens: positiveInteger("OPENAI_MAX_OUTPUT_TOKENS", 700, 100),
+  },
   // S3-compatible object storage (MinIO locally) for file uploads.
   s3: {
     endpoint: process.env.S3_ENDPOINT || "http://localhost:9000",
