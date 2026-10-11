@@ -14,6 +14,28 @@ export type WhatsNewRelease = {
 // Keep release notes in the renderer so they work for air-gapped deployments
 // and always match the desktop binary that shipped them.
 const RELEASES: Record<string, WhatsNewRelease> = {
+  "0.48.0": {
+    id: "0.48.0",
+    title: "What's new in 0.48.0",
+    summary: "AI thread summary settings, GIF emoji uploads, and interface refinements.",
+    items: [
+      {
+        title: "AI thread summary settings",
+        description: "Configure the AI integration used for thread catch-up summaries directly from Settings.",
+        category: "New",
+      },
+      {
+        title: "GIF custom emoji uploads",
+        description: "Upload animated GIFs as custom emoji.",
+        category: "New",
+      },
+      {
+        title: "Interface refinements",
+        description: "Improved RTL emoji navigation, walkthrough targeting, and workspace spacing.",
+        category: "Improved",
+      },
+    ],
+  },
   "0.47.1": {
     id: "0.47.1",
     title: "What's new in 0.47.1",
