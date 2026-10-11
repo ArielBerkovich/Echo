@@ -118,7 +118,7 @@ const ChannelView = forwardRef(function ChannelView({
 }, ref) {
   const { t } = useI18n();
   const queryClient = useQueryClient();
-  const runtimeConfigQuery = useQuery({ queryKey: ["runtime-config"], queryFn: api.getRuntimeConfig, staleTime: Infinity });
+  const runtimeConfigQuery = useQuery({ queryKey: ["runtime-config"], queryFn: api.getRuntimeConfig, staleTime: 30000, refetchInterval: 30000 });
   const hasUsableCache = cachedMessages !== null && !hasUnread;
   const isMember = channel.type === "dm" || (channel.members || []).includes(user.id);
   const canPost = isMember && (channel.type === "dm" || !channel.readOnly || channel.createdBy === user.id || (channel.managers || []).includes(user.id));

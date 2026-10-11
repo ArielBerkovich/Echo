@@ -217,6 +217,8 @@ async function createEmoji(name, file) {
 }
 
 export const api = {
+  getAIIntegration: () => request("/integrations/ai"),
+  saveAIIntegration: (settings) => request("/integrations/ai", { method: "PUT", body: settings }),
   getRuntimeConfig: () => request("/config"),
   summarizeThread: (channelId, msgId, signal) => request(`/channels/${channelId}/messages/${msgId}/thread-summary`, { method: "POST", signal }),
   register: (payload) => request("/auth/register", { method: "POST", body: payload }),

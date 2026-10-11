@@ -1,3 +1,4 @@
+import AIIntegration from "./AIIntegration.js";
 import { useEffect, useRef, useState } from "react";
 import { Building2Icon, CheckIcon, ChevronDownIcon, Code2Icon, DownloadIcon, GitPullRequestIcon, KeyboardIcon, PaletteIcon, PlugZapIcon, SlidersHorizontalIcon, UserRoundIcon, WebhookIcon } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -857,6 +858,7 @@ export default function SettingsModal({
               </div>
             </div>
             <div className="integration-card-grid">
+            <AIIntegration />
             <article className="integration-card jenkins-integration-card">
               <button type="button" className="integration-card-main" onClick={() => { setJenkinsDownloadError(null); setJenkinsOptionsOpen(true); }}>
                 <div className="integration-card-icon"><JenkinsIntegrationIcon /></div>
