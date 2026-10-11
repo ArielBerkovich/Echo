@@ -15744,38 +15744,38 @@ html[data-mode="dark"] .hljs-class .hljs-title {
     font-size: 11px;
   }
   .rail-top {
-    width: 100%;
+    width: 54px;
     flex: 0 1 auto;
-    gap: 9px;
-    padding: 6px;
-    border-radius: 27px;
+    gap: 6px;
+    padding: 5px 4px;
+    border-radius: 23px;
   }
   .rail-item {
-    width: 72px;
-    min-height: 70px;
-    gap: 5px;
-    padding-block: 10px;
-    border-radius: 21px;
-    font-size: 14px;
+    width: 44px;
+    min-height: 44px;
+    gap: 4px;
+    padding: 0;
+    border-radius: 14px;
+    font-size: 10px;
   }
   .rail-active-indicator {
     transition-duration: 420ms;
   }
   .rail-icon {
-    width: 40px;
-    height: 36px;
+    width: 34px;
+    height: 30px;
   }
   .rail-icon svg {
-    width: 25px;
-    height: 25px;
+    width: 22px;
+    height: 22px;
   }
   .rail-badge {
     top: -5px;
     right: -5px;
-    min-width: 22px;
-    height: 22px;
-    border-radius: 11px;
-    font-size: 12px;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    font-size: 10px;
   }
 
   .sidebar-header {
@@ -17557,10 +17557,7 @@ html[dir="rtl"] .channel-browser-members {
     line-height: 22px;
   }
 
-  .rail-item {
-    min-height: 76px;
-    font-size: 14px;
-  }
+  .rail-item { min-height: 44px; }
 
   .composer-editor {
     font-size: 20px;
