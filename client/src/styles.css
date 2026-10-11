@@ -17557,7 +17557,30 @@ html[dir="rtl"] .channel-browser-members {
     line-height: 22px;
   }
 
-  .rail-item { min-height: 44px; }
+  /* Give very wide displays a little more breathing room without bringing
+     back the oversized 1600px rail treatment. */
+  .rail-top {
+    width: 58px;
+    gap: 7px;
+    padding: 6px 5px;
+    border-radius: 25px;
+  }
+
+  .rail-item {
+    width: 46px;
+    min-height: 46px;
+    border-radius: 15px;
+  }
+
+  .rail-icon {
+    width: 35px;
+    height: 31px;
+  }
+
+  .rail-icon svg {
+    width: 23px;
+    height: 23px;
+  }
 
   .composer-editor {
     font-size: 20px;
