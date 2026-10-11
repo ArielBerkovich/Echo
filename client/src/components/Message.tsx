@@ -724,11 +724,6 @@ function Message({
               <ReplyIcon />
             </button>
           )}
-          {!inThread && !m.parentId && m.replyCount > 0 && onSummarizeThread && (
-            <button data-testid={`message-${mid}-summarize-thread`} aria-label={t("summarizeThread")} title={t("summarizeThread")} onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onSummarizeThread}>
-              <WandSparkles size={16} strokeWidth={1.8} aria-hidden="true" />
-            </button>
-          )}
           {canQuote && (
             <button data-testid={`message-${mid}-quote`} aria-label={t("quoteMessage")} title={t("quoteMessage")} onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onQuote}>
               <QuoteIcon />
@@ -737,6 +732,11 @@ function Message({
           <button data-testid={`message-${mid}-forward`} aria-label={t("forwardMessage")} title={t("forwardMessage")} onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onForward}>
             <ShareIcon />
           </button>
+          {!inThread && !m.parentId && m.replyCount > 0 && onSummarizeThread && (
+            <button data-testid={`message-${mid}-summarize-thread`} aria-label={t("summarizeThread")} title={t("summarizeThread")} onMouseEnter={activateMessage} onMouseOver={activateMessage} onClick={onSummarizeThread}>
+              <WandSparkles size={16} strokeWidth={1.8} aria-hidden="true" />
+            </button>
+          )}
           <button
             type="button"
             data-testid={`message-${mid}-more`}
