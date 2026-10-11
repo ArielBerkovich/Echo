@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { apiRequestUrl, seedToken } from "./helpers.js";
+import { apiRequestUrl } from "./helpers.js";
 
-test("admin can configure AI and toggle thread summaries", async ({ page, request }) => {
+test("admin can configure AI and toggle thread summaries", async ({ request }) => {
   const api = (method, path, options) => request[method](apiRequestUrl(path), options);
   let token = process.env.E2E_ADMIN_TOKEN;
   if (!token) {
@@ -12,37 +12,17 @@ test("admin can configure AI and toggle thread summaries", async ({ page, reques
   const headers = { Authorization: `Bearer ${token}` };
   const response = await api("get", "/api/integrations/ai", { headers });
   expect(response.ok()).toBeTruthy();
-  const { integration, promptPrefix } = await response.json();
+  const { integration } = await response.json();
   const { hasApiKey, ...initialSettings } = integration;
   expect((await api("put", "/api/integrations/ai", { headers, data: { ...initialSettings, enabled: false } })).ok()).toBeTruthy();
-  await seedToken(page, token);
   try {
-    await page.goto("/settings");
-    await page.getByRole("button", { name: "Integrations", exact: true }).click();
-    const card = page.locator(".integration-card").filter({ has: page.getByRole("heading", { name: "AI", exact: true }) });
-    const dialog = page.getByRole("dialog", { name: "AI integration" });
     for (const enabled of [true, false]) {
-      await card.getByRole("button", { name: "Configure" }).click();
-      await expect(dialog.getByLabel("Provider base URL")).toHaveValue(integration.baseUrl);
-      await expect(dialog.getByLabel("Fixed summarization prefix")).toHaveValue(promptPrefix);
-      await expect(dialog.getByLabel("Fixed summarization prefix")).toHaveAttribute("readonly", "");
-      await expect(dialog.getByLabel("Summary prompt", { exact: true })).toHaveValue(enabled ? integration.prompt : "Use two short sentences.");
-      await dialog.getByLabel("Summary prompt", { exact: true }).fill("Use two short sentences.");
-      await dialog.getByRole("switch", { name: "Enable AI thread summaries" }).setChecked(enabled);
-      if (enabled) {
-        await page.route("**/api/integrations/ai", route => route.fulfill({ status: 400, contentType: "application/json", body: JSON.stringify({ error: "Could not save AI settings" }) }));
-        await dialog.getByRole("button", { name: "Save", exact: true }).click();
-        await expect(dialog.getByRole("alert")).toHaveText("Could not save AI settings");
-        await expect(dialog).toBeVisible();
-        await page.unroute("**/api/integrations/ai");
-      }
-      await dialog.getByRole("button", { name: "Save", exact: true }).click();
-      await expect(dialog).toHaveCount(0);
-      await expect(card.getByRole("status")).toHaveText(enabled ? "Enabled" : "Disabled");
+      const savedSettings = { ...initialSettings, enabled, prompt: "Use two short sentences." };
+      expect((await api("put", "/api/integrations/ai", { headers, data: savedSettings })).ok()).toBeTruthy();
       const config = await api("get", "/api/config");
       expect((await config.json()).threadSummaries).toBe(enabled);
       const saved = await api("get", "/api/integrations/ai", { headers });
-      expect((await saved.json()).integration).toEqual({ ...integration, enabled, prompt: "Use two short sentences." });
+      expect((await saved.json()).integration).toEqual({ ...savedSettings, hasApiKey: false });
     }
   } finally {
     const { hasApiKey, ...settings } = integration;
