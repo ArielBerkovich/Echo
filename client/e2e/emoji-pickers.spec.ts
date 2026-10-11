@@ -4,6 +4,7 @@ import { messageById, seedWorkspaceFixture } from "./helpers.js";
 let fixture: Awaited<ReturnType<typeof seedWorkspaceFixture>>;
 
 const GIT_PULL_REQUEST = "git-pull-request";
+const ONE_BY_ONE_GIF = Buffer.from("R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==", "base64");
 
 test.beforeEach(async ({ page }) => {
   fixture = await seedWorkspaceFixture(page);
@@ -39,6 +40,36 @@ async function openForwardDialog(page: Page) {
 }
 
 test.describe("custom emoji pickers", () => {
+  test("uploads a GIF custom emoji and sends it", async ({ page }) => {
+    await page.goto("/");
+    const emojiName = `gif${Date.now().toString(36).slice(-8)}`;
+    await page.getByRole("button", { name: "Emoji", exact: true }).click();
+    await page.getByRole("button", { name: "Add custom emoji" }).click();
+
+    const modal = page.getByTestId("add-emoji-modal");
+    await modal.getByTestId("emoji-file-input").setInputFiles({
+      name: `${emojiName}.gif`,
+      mimeType: "image/gif",
+      buffer: ONE_BY_ONE_GIF,
+    });
+    await modal.getByTestId("emoji-shortcode-input").fill(emojiName);
+    await modal.getByTestId("emoji-submit").click();
+    await expect(modal).toBeHidden();
+
+    await page.getByTestId("composer-emoji-toggle").click();
+    const picker = emojiPicker(page);
+    const search = picker.locator('input[type="search"]');
+    await search.fill(emojiName);
+    const uploaded = picker.locator(`button[title="${emojiName}"]`);
+    await expect(uploaded).toBeVisible();
+    await uploaded.click();
+
+    const editor = page.getByTestId("composer-editor");
+    await expect(editor.locator(`img.custom-emoji[alt=":${emojiName}:"]`)).toBeVisible();
+    await page.getByTestId("composer-send").click();
+    await expect(page.locator(`img.custom-emoji[alt=":${emojiName}:"]`).last()).toBeVisible();
+  });
+
   test("inserts a Git emoji from the channel composer above message controls", async ({ page }) => {
     await page.goto("/");
     const editor = page.getByTestId("composer-editor");

@@ -5,6 +5,7 @@ import { formatSize } from "../lib/format.js";
 import { useAuthUrl } from "../lib/useAuthUrl.js";
 import { fetchFile } from "../api.js";
 import { highlightFile, languageForFilename } from "../lib/syntaxHighlight.js";
+import { languageDirection } from "../lib/languages.js";
 import Avatar from "./Avatar.js";
 import { useI18n } from "../lib/i18n.js";
 
@@ -287,7 +288,7 @@ function FileAttachment({ a }) {
 
 function PresentationAttachment({ a }) {
   const { t, language } = useI18n();
-  const isRtl = language === "he";
+  const isRtl = languageDirection(language) === "rtl";
   const src = useAuthUrl(a.url);
   const [presentation, setPresentation] = useState(null);
   const [slideIndex, setSlideIndex] = useState(0);
@@ -326,12 +327,12 @@ function PresentationAttachment({ a }) {
     if (!open) return undefined;
     const onKeyDown = (event) => {
       if (event.key === "Escape") setOpen(false);
-      else if (event.key === "ArrowLeft") changeSlide(-1);
-      else if (event.key === "ArrowRight") changeSlide(1);
+      else if (event.key === "ArrowLeft") changeSlide(isRtl ? 1 : -1);
+      else if (event.key === "ArrowRight") changeSlide(isRtl ? -1 : 1);
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [open, presentation]);
+  }, [open, presentation, isRtl]);
 
   const slide = presentation?.parsed.slides[slideIndex];
   const svg = slide && presentation.renderSlideToSvg(presentation.parsed, slide);
