@@ -34,7 +34,11 @@ emojisRouter.post("/", upload.single("file"), async (req, res) => {
 
   const ALLOWED_EMOJI_MIME = new Set(["image/png", "image/jpeg", "image/gif", "image/webp"]);
   const detected = await fileTypeFromBuffer(req.file.buffer);
-  const contentType = detected?.mime ?? "";
+  // Some browsers and image tools omit enough signature bytes for file-type
+  // to identify an otherwise valid GIF. Keep the browser's declared image
+  // type as a safe fallback, but never accept a non-image or unsupported MIME.
+  const declaredType = String(req.file.mimetype || "").toLowerCase();
+  const contentType = detected?.mime || (ALLOWED_EMOJI_MIME.has(declaredType) ? declaredType : "");
   if (!ALLOWED_EMOJI_MIME.has(contentType)) {
     return res.status(400).json({ error: "custom emoji must be a PNG, JPEG, GIF, or WebP image" });
   }

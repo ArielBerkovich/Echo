@@ -10,6 +10,10 @@ import { useI18n } from "../lib/i18n.js";
 
 const MAX_EMOJI_BYTES = 5 * 1024 * 1024;
 
+function isImageFile(file) {
+  return !!file && (String(file.type || "").startsWith("image/") || /\.(?:gif|png|jpe?g|webp)$/i.test(file.name || ""));
+}
+
 // Upload an image/GIF and register it as a :shortcode: custom emoji.
 export default function AddEmojiModal({ existing = [], onCreated, onClose }) {
   const { t, translateError } = useI18n();
@@ -45,7 +49,7 @@ export default function AddEmojiModal({ existing = [], onCreated, onClose }) {
 
   function pickFile(e) {
     const f = e.target.files?.[0];
-    if (f && !f.type.startsWith("image/")) {
+    if (f && !isImageFile(f)) {
       setServerError(t("customEmojiImageRequired"));
       return;
     }

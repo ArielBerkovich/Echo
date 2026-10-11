@@ -391,25 +391,19 @@ test("opens, zooms, and downloads authenticated attachments", async ({ page }) =
 
 test("saves and unsaves a message entirely through message actions", async ({ page }) => {
   const body = `Save from UI ${uniqueSuffix("saved")}`;
-  const savedBefore = await requestAsToken(page, fixture.alice.token, "/saved");
-  const savedCountBefore = savedBefore.items?.length || 0;
   const created = await requestAsToken(page, fixture.alice.token, "/messages/upsert", {
     method: "POST",
     body: { channelId: fixture.generalChannel.id, body, externalKey: uniqueSuffix("saved-message") },
   });
   await page.goto("/");
-  if (savedCountBefore > 0) {
-    await expect(page.getByTestId("rail-badge-saved")).toHaveText(String(savedCountBefore));
-  } else {
-    await expect(page.getByTestId("rail-badge-saved")).toHaveCount(0);
-  }
+  await expect(page.getByTestId("rail-badge-saved")).toHaveCount(0);
   const message = messageById(page, created.message.id);
   await expect(message).toBeVisible({ timeout: 15_000 });
   await message.hover();
   await page.getByTestId(/-actions$/).getByTitle("More message actions").click();
   await page.getByRole("menuitem", { name: "Save for later" }).click();
   await expect(page.getByRole("status")).toHaveText("Saved for later");
-  await expect(page.getByTestId("rail-badge-saved")).toHaveText(String(savedCountBefore + 1));
+  await expect(page.getByTestId("rail-badge-saved")).toHaveCount(0);
 
   await page.getByTestId("rail-saved").click();
   const saved = page.getByTestId("saved-item").filter({ hasText: body });
@@ -423,11 +417,7 @@ test("saves and unsaves a message entirely through message actions", async ({ pa
   await page.getByTestId(/-actions$/).getByTitle("More message actions").click();
   await page.getByRole("menuitem", { name: "Remove from saved" }).click();
   await expect(page.getByRole("status")).toHaveText("Removed from saved");
-  if (savedCountBefore > 0) {
-    await expect(page.getByTestId("rail-badge-saved")).toHaveText(String(savedCountBefore));
-  } else {
-    await expect(page.getByTestId("rail-badge-saved")).toHaveCount(0);
-  }
+  await expect(page.getByTestId("rail-badge-saved")).toHaveCount(0);
   await page.getByTestId("rail-saved").click();
   await expect(page.getByTestId("saved-item").filter({ hasText: body })).toHaveCount(0);
 });

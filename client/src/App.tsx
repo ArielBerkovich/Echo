@@ -1580,7 +1580,6 @@ export default function App() {
           onlineIds={onlineIds}
           activeChannel={activeChannel}
           activityBadge={activityBadge}
-          savedCount={savedIds.size}
           forceSidebar={!!searchQuery}
           publicChannelCount={catalogCounts?.all}
           mode={mode}
