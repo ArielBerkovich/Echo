@@ -123,6 +123,7 @@ export default function EmojiPicker({ onPick, onClose, customEmojis = [], onAddC
     let shadowObserver;
     const categoryLabels = new Set([
       ...Object.values(emojiMartI18n.categories),
+      "Git",
       t("people"),
       t("customEmojiCategory"),
     ]);
