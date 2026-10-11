@@ -1,3 +1,5 @@
+import { aiRouter } from "./routes/ai.js";
+import { AISettings } from "./services/aiSettings.js";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -41,7 +43,7 @@ export function createApp() {
   app.use(httpMetricsMiddleware);
 
   app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
-  app.get("/api/config", (_req, res) => res.json({ threadSummaries: config.threadSummaries.enabled }));
+  app.get("/api/config", async (_req, res) => res.json({ threadSummaries: !!(await AISettings.findById("ai").lean())?.enabled }));
   app.get("/api/openapi.json", (_req, res) => res.json(openApiDocument()));
   app.use("/mcp", mcpRouter);
   app.use("/api/desktop-downloads", desktopDownloadsRouter(config.desktopUpdateDir));
@@ -65,6 +67,7 @@ export function createApp() {
   app.use("/api/integrations/azure-devops", azureDevOpsRouter);
   app.use("/api/integrations/allure", allureRouter);
   app.use("/api/integrations/jenkins", jenkinsRouter);
+  app.use("/api/integrations/ai", aiRouter);
 
   // Keep the process alive and return a consistent JSON payload on crashes.
   app.use((err, _req, res, _next) => {

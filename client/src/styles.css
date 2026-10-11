@@ -17950,3 +17950,20 @@ html[data-theme="calm"] .channel-list::-webkit-scrollbar-track {
   .summary-references button { min-height: 32px; }
   .summary-source-author button { width: 40px; height: 40px; }
 }
+
+.ai-integration-modal { max-height: calc(100dvh - 40px); overflow-y: auto; }
+.ai-integration-modal .settings-field { display: flex; flex-direction: column; gap: 6px; margin-top: 16px; font-size: 14px; }
+.ai-integration-modal .integration-notify-option { margin-top: 12px; }
+
+.ai-integration-icon { color: var(--accent); background: var(--surface-2); }
+.ai-integration-title { display: inline-flex; align-items: center; gap: 12px; }
+.ai-integration-title .ai-integration-icon { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--border); border-radius: 10px; flex: 0 0 auto; }
+.ai-integration-modal .integration-switch { min-width: 44px; min-height: 44px; justify-content: center; flex: 0 0 auto; }
+.ai-integration-modal .integration-switch input:disabled + .integration-switch-track { opacity: .5; }
+@media (prefers-reduced-motion: reduce) { .ai-integration-modal .integration-switch-track, .ai-integration-modal .integration-switch-track span { transition: none; } }
+.ai-integration-modal .integration-switch input { inset: 0; width: 100%; height: 100%; margin: 0; z-index: 1; pointer-events: auto; cursor: pointer; }
+
+.thread-summary-plain-text { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; line-height: 1.7; color: var(--text); }
+
+.ai-integration-modal textarea.settings-input { resize: vertical; min-height: 88px; line-height: 1.5; }
+.ai-integration-modal .ai-prompt-prefix { color: var(--muted); background: var(--surface-2); }

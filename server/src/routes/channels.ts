@@ -1,3 +1,4 @@
+import { getAISettings } from "../services/aiSettings.js";
 import { summarizeThreadDiscussion } from "../services/threadSummaryService.js";
 import { Router } from "express";
 import mongoose from "mongoose";
@@ -604,7 +605,8 @@ channelsRouter.get("/:id/messages/:msgId/thread", async (req, res) => {
 });
 
 channelsRouter.post("/:id/messages/:msgId/thread-summary", async (req, res) => {
-  if (!config.threadSummaries.enabled) return res.status(404).json({ error: "not found" });
+  const aiSettings = await getAISettings();
+  if (!aiSettings.enabled) return res.status(404).json({ error: "not found" });
   if (!mongoose.isValidObjectId(req.params.id) || !mongoose.isValidObjectId(req.params.msgId)) return res.status(404).json({ error: "thread not found" });
   try {
     const channel = await Channel.findById(req.params.id);
@@ -612,7 +614,7 @@ channelsRouter.post("/:id/messages/:msgId/thread-summary", async (req, res) => {
     const thread = await getThreadMessages({ channelId: channel._id, messageId: req.params.msgId, resolveParent: false, limit: 1001 });
     if (!thread || thread.root.parentId) return res.status(404).json({ error: "thread not found" });
     if (thread.replies.length > 1000) return res.status(413).json({ error: "This thread is too long to summarize." });
-    res.json(await summarizeThreadDiscussion(thread, config.threadSummaries));
+    res.json(await summarizeThreadDiscussion(thread, aiSettings));
   } catch (error) {
     console.error("Thread summary request failed:", error.message);
     const timeout = error.name === "TimeoutError";

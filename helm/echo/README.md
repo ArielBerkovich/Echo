@@ -25,61 +25,29 @@ pre-install hook Secrets described above.
 
 ## Thread summaries
 
-Thread summaries are disabled by default. Enable them in the Helm release and
-point the server at an OpenAI-compatible chat completions endpoint. The API key
-is read from a Kubernetes Secret in the release namespace. Set `apiKeySecret`
-and `apiKey` to let Helm create the Secret if it is missing. If the Secret
-already exists, Helm leaves it unchanged. Leave `apiKeySecret` empty for
-compatible servers that do not require authentication.
-
-```yaml
-server:
-  threadSummaries:
-    enabled: true
-    baseUrl: https://api.openai.com/v1
-    model: gpt-4o-mini
-    apiKeySecret: echo-openai
-    apiKey: "YOUR_KEY"
-    apiKeySecretKey: api-key
-    timeoutMs: 30000
-    maxContextTokens: 12000
-    maxOutputTokens: 700
-```
-
-The Secret is created by a `pre-install,pre-upgrade` hook and retained after
-uninstall. The key must be a real provider credential; Echo cannot generate it.
-To use a separately managed Secret, set `apiKeySecret` and `apiKeySecretKey`
-and leave `apiKey` empty. With no `apiKey`, Helm only references the Secret,
-so it must exist before the server starts. Change credentials directly in the
-Secret and restart the server; later Helm upgrades do not overwrite them.
-
-Supplying `apiKey` through Helm stores it in Helm release data. Keep credential
-values files out of version control, or use a separately managed Secret.
-Helm's cluster lookup preserves existing Secrets during install/upgrade;
-offline `helm template` cannot see them and renders creation when `apiKey`
-is supplied.
+Thread summaries are disabled by default. An Echo administrator can configure and enable
+AI in **Settings → Integrations → AI**. Configure the OpenAI-compatible base URL,
+model, optional API key, summary prompt, timeout, and context/output token limits there.
+Custom prompt instructions always follow Echo’s fixed summarization prefix. Settings
+are stored in MongoDB and apply without restarting the server. API keys are encrypted
+using the workspace JWT secret and are never returned to the settings page.
+Existing Helm AI settings are no longer used; configure the integration after upgrading.
 
 The UI reads the feature flag from the server, and the server checks it again
 before summarizing. Requests include the original post for context and up to
 1,000 replies. The summary opens with a brief explanation of the original issue,
 request, or goal, then covers the discussion without copying the original post.
-The provider is asked for JSON Schema output with an overview, developments,
-decisions, outcome, next steps, and open items. The panel offers brief and detailed
-views, source links, and copying. Empty sections are omitted; owners and deadlines
-are requested only when stated. Source references are checked against the supplied
-replies, but this does not verify the factual accuracy of the model’s wording.
-Providers that explicitly reject the schema format are retried using JSON mode,
-then without a format field, within the same timeout. Compatible providers that
-return prose instead still display a readable summary.
-Deleted messages are excluded and attachment contents are not read.
+The provider is asked for one or two short paragraphs of plain text, covering the
+original issue, important changes, and latest outcome. The panel shows the text
+with copy and regenerate actions. Echo does not request structured JSON or source
+references. Empty or truncated provider responses are rejected. Deleted messages
+are excluded and attachment contents are not read.
 
 Threads above the configured context budget are rejected rather than silently
 truncated. The estimate includes instructions and reserves room for output;
 it is approximate because Echo does not use provider-specific tokenizers.
-Incomplete provider output is reported as an error. Summaries are generated on
-demand and are not stored. The panel shows a snapshot and flags live discussion
-changes; regenerate it for updates. Structured output needs enough output tokens
-for the JSON as well as its text (the default is 700).
+Summaries are generated on demand and are not stored. The panel flags live
+discussion changes; regenerate it for updates.
 
 ```bash
 helm install echo ./helm/echo
