@@ -140,6 +140,22 @@ export default function EmojiPicker({ onPick, onClose, customEmojis = [], onAddC
       setRtl(pickerElement.shadowRoot.querySelector('input[type="search"]'));
       const nav = pickerElement.shadowRoot.querySelector("#nav");
       setRtl(nav);
+      if (nav) {
+        const categoryButtons = Array.from(nav.querySelectorAll("button[title]"))
+          .filter((button) => categoryLabels.has(button.getAttribute("title")));
+        const selectedButton = categoryButtons.find((button) => button.hasAttribute("aria-selected"));
+        const underline = nav.querySelector(".bar");
+        const layout = underline?.parentElement;
+        if (selectedButton && underline && layout) {
+          const layoutRect = layout.getBoundingClientRect();
+          const buttonRect = selectedButton.getBoundingClientRect();
+          const right = Math.max(0, layoutRect.right - buttonRect.right);
+          underline.style.width = `${buttonRect.width}px`;
+          underline.style.left = "auto";
+          underline.style.right = `${right}px`;
+          underline.style.transform = "none";
+        }
+      }
       const categoryButtons = Array.from(pickerElement.shadowRoot.querySelectorAll("button[title]"))
         .filter((button) => categoryLabels.has(button.getAttribute("title")));
       for (const button of categoryButtons) {
