@@ -26,7 +26,7 @@ const STEPS = [
   {
     title: "Browse channels and groups",
     body: "Open Browse Channels or Groups from the rail.",
-    target: ".rail-top",
+    target: ".rail-overflow-action, .rail-more-trigger",
     placement: "right",
   },
   {
