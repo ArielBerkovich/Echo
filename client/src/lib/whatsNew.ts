@@ -14,6 +14,18 @@ export type WhatsNewRelease = {
 // Keep release notes in the renderer so they work for air-gapped deployments
 // and always match the desktop binary that shipped them.
 const RELEASES: Record<string, WhatsNewRelease> = {
+  "0.47.1": {
+    id: "0.47.1",
+    title: "What's new in 0.47.1",
+    summary: "Simpler setup for thread catch-up summaries.",
+    items: [
+      {
+        title: "Thread summary configuration",
+        description: "Helm deployments can now create the API key Secret automatically from a supplied key, while keeping existing credentials unchanged.",
+        category: "Improved",
+      },
+    ],
+  },
   "0.47.0": {
     id: "0.47.0",
     title: "What's new in 0.47.0",

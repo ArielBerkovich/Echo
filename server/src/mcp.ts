@@ -784,7 +784,7 @@ function registerTools(server, user) {
 }
 
 export function createMcpServer(user) {
-  const server = new McpServer({ name: "echo", version: "0.47.0" });
+  const server = new McpServer({ name: "echo", version: "0.47.1" });
   registerTools(server, user);
   return server;
 }
