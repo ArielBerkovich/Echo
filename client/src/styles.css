@@ -11817,11 +11817,6 @@ html[data-mode="dark"] .channel-header {
   background: var(--conversation-bg);
   border-bottom-color: var(--conversation-border);
 }
-.channel-header[data-testid="activity-header"],
-.channel-header[data-testid="saved-header"],
-.channel-header.channel-browser-header {
-  border-bottom: 0;
-}
 .channel-header .ch-name {
   font-weight: 800;
   font-size: 18px;
