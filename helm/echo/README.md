@@ -27,8 +27,10 @@ pre-install hook Secrets described above.
 
 Thread summaries are disabled by default. Enable them in the Helm release and
 point the server at an OpenAI-compatible chat completions endpoint. The API key
-is read from an existing Kubernetes Secret; leave it empty for compatible
-servers that do not require authentication.
+is read from a Kubernetes Secret in the release namespace. Set `apiKeySecret`
+and `apiKey` to let Helm create the Secret if it is missing. If the Secret
+already exists, Helm leaves it unchanged. Leave `apiKeySecret` empty for
+compatible servers that do not require authentication.
 
 ```yaml
 server:
@@ -37,17 +39,25 @@ server:
     baseUrl: https://api.openai.com/v1
     model: gpt-4o-mini
     apiKeySecret: echo-openai
+    apiKey: "YOUR_KEY"
     apiKeySecretKey: api-key
     timeoutMs: 30000
     maxContextTokens: 12000
     maxOutputTokens: 700
 ```
 
-Create the Secret in the release namespace before upgrading/installing:
+The Secret is created by a `pre-install,pre-upgrade` hook and retained after
+uninstall. The key must be a real provider credential; Echo cannot generate it.
+To use a separately managed Secret, set `apiKeySecret` and `apiKeySecretKey`
+and leave `apiKey` empty. With no `apiKey`, Helm only references the Secret,
+so it must exist before the server starts. Change credentials directly in the
+Secret and restart the server; later Helm upgrades do not overwrite them.
 
-```bash
-kubectl create secret generic echo-openai --from-literal=api-key='YOUR_KEY'
-```
+Supplying `apiKey` through Helm stores it in Helm release data. Keep credential
+values files out of version control, or use a separately managed Secret.
+Helm's cluster lookup preserves existing Secrets during install/upgrade;
+offline `helm template` cannot see them and renders creation when `apiKey`
+is supplied.
 
 The UI reads the feature flag from the server, and the server checks it again
 before summarizing. Requests include the original post for context and up to

@@ -58,8 +58,10 @@ server:
     enabled: false
     baseUrl: https://api.openai.com/v1
     model: gpt-4o-mini
-    # Reference a Secret containing the API key. Keep provider credentials out of values files.
+    # Reference a Secret in the release namespace; create it if missing and apiKey is supplied.
     apiKeySecret: ""
+    # Used only to create a missing Secret. Existing credentials are preserved.
+    apiKey: ""
     apiKeySecretKey: api-key
     timeoutMs: 30000
     maxContextTokens: 12000
