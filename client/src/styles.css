@@ -732,6 +732,38 @@ html[data-theme="sand"][data-mode="light"] {
 }
 
 /* Rose — soft pink; signature pink surfaces in light mode. */
+html[data-theme="rose"] {
+  --accent: #c94f78;
+  --active-bg: #a83d62;
+  --on-navy: #fff1f5;
+  --on-navy-muted: #e4a9bb;
+  --sidebar-bg: linear-gradient(165deg, #6b2944 0%, #511d34 52%, #351322 100%);
+  --rail-bg: #2a0d1a;
+}
+html[data-theme="rose"][data-mode="light"] {
+  --bg: #fff1f5;
+  --surface: #fffafd;
+  --surface-2: #f9e3eb;
+  --border: #edc9d5;
+  --text: #3b1d2a;
+  --muted: #806574;
+  --code-bg: #f8e5ec;
+  --code-text: #4a2435;
+  --code-border: #e7c0ce;
+}
+html[data-theme="rose"][data-mode="dark"] {
+  --bg: #1c1016;
+  --surface: #291822;
+  --surface-2: #38212d;
+  --border: #5b3547;
+  --text: #faeaf0;
+  --muted: #c59aaa;
+  --code-bg: #160b11;
+  --code-text: #f6dce5;
+  --code-border: #5b3547;
+  --accent: #e27b9e;
+  --active-bg: #bd5078;
+}
 
 /* ---- Theme-tinted dark surfaces so the chat panel stays on-brand in dark
    mode without flattening into a generic layout. ---- */

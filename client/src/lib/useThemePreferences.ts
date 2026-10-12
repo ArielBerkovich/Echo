@@ -9,6 +9,7 @@ export const THEMES = [
   { id: "dracula", label: "Dracula", swatch: ["#343746", "#282a36", "#bd93f9"] },
   { id: "sand", label: "Sand", swatch: ["#5a4632", "#fffdf8", "#c2682a"] },
   { id: "calm", label: "Stillwater", swatch: ["#1d2936", "#202a35", "#78a9c4"] },
+  { id: "rose", label: "Rose", swatch: ["#6b2944", "#fff1f5", "#c94f78"] },
 ];
 
 const DEFAULT_THEME = "nord";

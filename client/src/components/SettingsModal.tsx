@@ -48,6 +48,7 @@ const THEME_TRANSLATION_KEYS = {
   dracula: "themeDracula",
   sand: "themeSand",
   calm: "themeStillwater",
+  rose: "themeRose",
 };
 
 function LanguageSelect({ language, setLanguage, t }) {
