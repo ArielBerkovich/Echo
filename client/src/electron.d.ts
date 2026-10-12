@@ -12,6 +12,9 @@ declare global {
       wasUpdated?: boolean;
       saveBackendUrl(value: string): Promise<{ ok: boolean; error?: string }>;
       changeBackendUrl(value: string): Promise<{ ok: boolean; error?: string }>;
+      getFullscreen(): Promise<{ ok: boolean; fullScreen: boolean }>;
+      toggleFullscreen(): Promise<{ ok: boolean; fullScreen: boolean }>;
+      onFullscreenChange(handler: (fullScreen: boolean) => void): () => void;
     };
     echoDesktopAuth?: {
       loadToken(): Promise<string | null>;

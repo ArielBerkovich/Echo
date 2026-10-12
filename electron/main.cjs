@@ -302,6 +302,12 @@ function createWindow(url, uiUrl = null) {
   mainWindow.on("closed", () => {
     mainWindow = undefined;
   });
+  const notifyFullscreenState = () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    mainWindow.webContents.send("echo:fullscreen-changed", mainWindow.isFullScreen());
+  };
+  mainWindow.on("enter-full-screen", notifyFullscreenState);
+  mainWindow.on("leave-full-screen", notifyFullscreenState);
   configureDesktopUpdates(url);
 }
 
@@ -376,6 +382,16 @@ ipcMain.handle("echo:clear-auth-token", () => {
   return { ok: true };
 });
 ipcMain.handle("echo:start-rhsso-login", () => startRhssoLogin());
+ipcMain.handle("echo:get-fullscreen", () => ({
+  ok: true,
+  fullScreen: Boolean(mainWindow && !mainWindow.isDestroyed() && mainWindow.isFullScreen()),
+}));
+ipcMain.handle("echo:toggle-fullscreen", () => {
+  if (!mainWindow || mainWindow.isDestroyed()) return { ok: false, fullScreen: false };
+  const fullScreen = !mainWindow.isFullScreen();
+  mainWindow.setFullScreen(fullScreen);
+  return { ok: true, fullScreen };
+});
 
 ipcMain.on("echo:show-notification", (event, { id, title, body, tag } = {}) => {
   // Keep this check in the privileged process so renderer focus races cannot

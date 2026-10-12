@@ -1,6 +1,6 @@
 import AIIntegration from "./AIIntegration.js";
 import { useEffect, useRef, useState } from "react";
-import { Building2Icon, CheckIcon, ChevronDownIcon, Code2Icon, DownloadIcon, GitPullRequestIcon, KeyboardIcon, PaletteIcon, PlugZapIcon, SlidersHorizontalIcon, UserRoundIcon, WebhookIcon } from "lucide-react";
+import { Building2Icon, CheckIcon, ChevronDownIcon, Code2Icon, DownloadIcon, GitPullRequestIcon, KeyboardIcon, Maximize2Icon, Minimize2Icon, PaletteIcon, PlugZapIcon, SlidersHorizontalIcon, UserRoundIcon, WebhookIcon } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { api, getBackendUrl } from "../api.js";
@@ -991,7 +991,10 @@ export default function SettingsModal({
 
           {activeTab === "mcp" && <McpSettings />}
 
-          {activeTab === "desktop" && <DesktopDownloads downloads={desktopDownloads} error={desktopDownloadsError} />}
+          {activeTab === "desktop" && <>
+            <DesktopWindowSettings />
+            <DesktopDownloads downloads={desktopDownloads} error={desktopDownloadsError} />
+          </>}
 
           {activeTab === "shortcuts" && (
             <section className="settings-section settings-shortcuts-section">
@@ -1050,6 +1053,44 @@ function DesktopDownloads({ downloads, error }) {
         })}
       </div>
       {downloads.version && <p className="settings-hint">{t("packageVersion").replace("{version}", downloads.version)}</p>}
+    </section>
+  );
+}
+
+function DesktopWindowSettings() {
+  const { t } = useI18n();
+  const desktopConfig = window.echoDesktopConfig;
+  const nativeDesktop = Boolean(desktopConfig?.appVersion && desktopConfig.toggleFullscreen);
+  const [fullScreen, setFullScreen] = useState(false);
+
+  useEffect(() => {
+    if (!nativeDesktop || !desktopConfig) return undefined;
+    let cancelled = false;
+    void desktopConfig.getFullscreen().then((result) => {
+      if (!cancelled) setFullScreen(result.fullScreen);
+    });
+    const removeListener = desktopConfig.onFullscreenChange(setFullScreen);
+    return () => {
+      cancelled = true;
+      removeListener();
+    };
+  }, [desktopConfig, nativeDesktop]);
+
+  if (!nativeDesktop || !desktopConfig) return null;
+
+  async function toggleFullscreen() {
+    const result = await desktopConfig.toggleFullscreen();
+    if (result.ok) setFullScreen(result.fullScreen);
+  }
+
+  return (
+    <section className="settings-section desktop-window-settings" data-testid="desktop-window-settings">
+      <h3>{t("desktopWindow")}</h3>
+      <p className="settings-hint">{t("desktopWindowHint")}</p>
+      <button type="button" className="btn-secondary desktop-fullscreen-button" aria-pressed={fullScreen} aria-label={fullScreen ? t("exitFullscreen") : t("enterFullscreen")} onClick={() => void toggleFullscreen()}>
+        {fullScreen ? <Minimize2Icon size={16} aria-hidden="true" /> : <Maximize2Icon size={16} aria-hidden="true" />}
+        {fullScreen ? t("exitFullscreen") : t("enterFullscreen")}
+      </button>
     </section>
   );
 }
