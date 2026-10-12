@@ -7919,6 +7919,17 @@ html[data-interface-direction="rtl"] .message .msg-menu {
 .settings-content-desktop {
   grid-template-columns: minmax(0, 720px);
 }
+.desktop-window-settings {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.desktop-fullscreen-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
 .settings-content-preferences {
   display: flex;
   flex-direction: column;
@@ -16316,6 +16327,11 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   animation: paneIn 0.2s ease both;
   background: var(--bg);
 }
+.channel-browser .channel-main {
+  flex: 1 1 auto;
+  width: auto;
+  margin-inline: 0;
+}
 .channel-browser-header {
   gap: 10px;
 }
@@ -16350,8 +16366,8 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   display: flex;
   align-items: center;
   gap: 14px;
-  max-width: 960px;
-  margin: 0 0 20px;
+  max-width: none;
+  margin: 0 auto 20px;
 }
 .channel-browser-search {
   display: flex;
@@ -16447,20 +16463,20 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   color: var(--accent);
 }
 .channel-browser-error {
-  max-width: 960px;
-  margin: 0 0 14px;
+  max-width: none;
+  margin: 0 auto 14px;
 }
 .channel-browser-results-summary {
-  max-width: 960px;
-  margin: -6px 0 10px;
+  max-width: none;
+  margin: -6px auto 10px;
   color: var(--muted);
   font-size: 12px;
 }
 .channel-browser-list {
   display: grid;
   gap: 10px;
-  max-width: 960px;
-  margin: 0;
+  max-width: none;
+  margin: 0 auto;
 }
 .channel-browser-row {
   display: flex;
@@ -16615,8 +16631,8 @@ html[dir="rtl"] .channel-browser-members {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  max-width: 960px;
-  margin: 18px 0 0;
+  max-width: none;
+  margin: 18px auto 0;
   color: var(--muted);
   font-size: 12px;
 }

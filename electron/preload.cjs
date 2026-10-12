@@ -26,6 +26,17 @@ contextBridge.exposeInMainWorld("echoDesktopConfig", {
   changeBackendUrl(value) {
     return ipcRenderer.invoke("echo:change-backend-url", value);
   },
+  getFullscreen() {
+    return ipcRenderer.invoke("echo:get-fullscreen");
+  },
+  toggleFullscreen() {
+    return ipcRenderer.invoke("echo:toggle-fullscreen");
+  },
+  onFullscreenChange(handler) {
+    const listener = (_event, fullScreen) => handler(Boolean(fullScreen));
+    ipcRenderer.on("echo:fullscreen-changed", listener);
+    return () => ipcRenderer.removeListener("echo:fullscreen-changed", listener);
+  },
 });
 
 contextBridge.exposeInMainWorld("echoDesktopAuth", {
