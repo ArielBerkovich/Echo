@@ -101,6 +101,12 @@
     </dependency>
     <dependency>
       <groupId>io.jenkins.plugins</groupId>
+      <artifactId>commons-lang3-api</artifactId>
+      <version>3.18.0-98.v3a_674c06072d</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.jenkins.plugins</groupId>
       <artifactId>caffeine-api</artifactId>
       <version>3.2.4-208.v7e2da_a_7db_82b_</version>
       <scope>test</scope>
