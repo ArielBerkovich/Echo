@@ -14,6 +14,18 @@ export type WhatsNewRelease = {
 // Keep release notes in the renderer so they work for air-gapped deployments
 // and always match the desktop binary that shipped them.
 const RELEASES: Record<string, WhatsNewRelease> = {
+  "0.50.0": {
+    id: "0.50.0",
+    title: "What's new in 0.50.0",
+    summary: "A new Rose theme for a softer, pink-accented Echo experience.",
+    items: [
+      {
+        title: "Rose theme",
+        description: "Choose the new Rose theme in Settings, with light and dark variants.",
+        category: "New",
+      },
+    ],
+  },
   "0.49.0": {
     id: "0.49.0",
     title: "What's new in 0.49.0",
