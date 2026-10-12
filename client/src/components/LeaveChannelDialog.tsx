@@ -122,7 +122,7 @@ function ManagerCandidate({ user, selected, onSelect }) {
     >
       <Avatar name={user.displayName} src={user.avatarUrl} size={32} />
       <div className="person-info">
-        <div className="person-name">{user.displayName}</div>
+        <div className="person-name">{user.displayName}{user.deprecated && <span className="deprecated-label">{t("deprecatedLabel")}</span>}</div>
         <div className="person-handle">@{user.username}</div>
       </div>
       {selected ? <span className="manager-selected-check" aria-label={t("selectedManager")}>✓</span> : null}

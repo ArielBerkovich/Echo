@@ -89,15 +89,21 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
       .map((dm) => {
       const participants = (dm.participants || [dm.withUser]).filter((person) => person?.id && person.id !== currentUserId);
       const isGroup = dm.isGroup || participants.length > 1;
+      const displayNameFor = (person) => {
+        const directoryUser = users.find((user) => user.id === person.id);
+        const name = person.displayName || person.username;
+        return directoryUser?.deprecated || person.deprecated ? `${name} ${t("deprecatedLabel")}` : name;
+      };
       return {
       id: dm.id,
       kind: "dm",
       userId: isGroup ? undefined : dm.withUser.id,
-      label: participants.map((person) => person.displayName || person.username).join(", ") || t("directMessage"),
+      label: participants.map(displayNameFor).join(", ") || t("directMessage"),
       handle: isGroup ? t("groupDm") : t("directMessage"),
       avatarUrl: !isGroup ? dm.withUser?.avatarUrl || null : null,
       username: !isGroup ? dm.withUser?.username || "" : "",
       isGroup,
+      deprecated: !isGroup && !!(users.find((user) => user.id === dm.withUser.id)?.deprecated || dm.withUser.deprecated),
       };
       });
     const knownDmUserIds = new Set(dmItems.filter((dm) => !dm.isGroup).map((dm) => dm.userId));
@@ -107,6 +113,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
         id: user.id,
         kind: "user",
         label: user.displayName || user.username || t("person"),
+        deprecated: !!user.deprecated,
         handle: `@${user.username}`,
         avatarUrl: user.avatarUrl || null,
         username: user.username,
@@ -114,7 +121,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
     return {
       all: [...channelItems, ...dmItems, ...people],
     };
-  }, [channels, currentUserId, dms, users]);
+  }, [channels, currentUserId, dms, t, users]);
 
   const hasQuery = Boolean(query.trim());
   const resultGroups = useMemo(() => {
@@ -231,7 +238,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
               <div className="forward-selected-chips" aria-label={t("selectedRecipients")}>
                 {selected.map((destination) => (
                   <span className="forward-chip" key={destinationKey(destination)}>
-                    <span className={destination.kind === "channel" ? "forward-channel-label" : undefined}><DestinationLabel destination={destination} /></span>
+                    <span className={destination.kind === "channel" ? "forward-channel-label" : undefined}><DestinationLabel destination={destination} />{(destination.kind === "user" || destination.kind === "dm") && destination.deprecated && <> <span className="deprecated-label">{t("deprecatedLabel")}</span></>}</span>
                     <button type="button" className="chip-remove" aria-label={t("removeRecipient").replace("{recipient}", labelFor(destination))} onClick={() => removeDestination(destination)} disabled={isSubmitting}>
                       <XIcon size={13} aria-hidden="true" />
                     </button>
@@ -294,7 +301,7 @@ export default function ForwardModal({ message, channels = [], dms = [], users =
                         >
                           <DestinationIcon destination={destination} />
                           <span className="forward-destination-copy">
-                            <strong className={destination.kind === "channel" ? "forward-channel-label" : undefined}><DestinationLabel destination={destination} /></strong>
+                            <strong className={destination.kind === "channel" ? "forward-channel-label" : undefined}><DestinationLabel destination={destination} />{(destination.kind === "user" || destination.kind === "dm") && destination.deprecated && <> <span className="deprecated-label">{t("deprecatedLabel")}</span></>}</strong>
                             <small>{destination.handle}</small>
                           </span>
                           <span className="forward-selection-indicator" aria-hidden="true">{isSelected ? <Check size={14} strokeWidth={2.5} /> : <Plus size={14} strokeWidth={2.5} />}</span>

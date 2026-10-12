@@ -19,7 +19,7 @@ export default function MentionAddModal({ prompt, channelName, adding, error, on
         {prompt.users.map((u) => (
           <div className="mention-add-user" key={u.id}>
             <Avatar name={u.displayName} src={u.avatarUrl} size={28} />
-            <span className="mi-name">{u.displayName}</span>
+            <span className="mi-name">{u.displayName}{u.deprecated && <> <span className="deprecated-label">{t("deprecatedLabel")}</span></>}</span>
             <span className="mi-handle">@{u.username}</span>
           </div>
         ))}
