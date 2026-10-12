@@ -58,7 +58,8 @@ test.describe("user deprecation", () => {
       await expect(newMessage.getByTestId("new-message-recipient").locator(".deprecated-label")).toHaveText("(archived)");
       await page.keyboard.press("Escape");
 
-      await page.goto("/");
+      await page.goto(`/channels/${encodeURIComponent(fixture.generalChannel.name)}`);
+      await expect(page.getByTestId("channel-title")).toContainText("general");
       const source = messageById(page, fixture.messages.searchHit.id);
       await expect(source).toBeVisible();
       await source.hover();
