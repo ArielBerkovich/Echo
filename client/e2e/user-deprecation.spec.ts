@@ -68,9 +68,9 @@ test.describe("user deprecation", () => {
       const forwardSearch = forward.getByTestId("forward-search");
       await forwardSearch.fill(archived.user.username);
       const forwardRecipient = forward.locator(".forward-destination-row").filter({ hasText: archived.user.username });
-      await expect(forwardRecipient.locator(".deprecated-label")).toHaveText("(archived)");
+      await expect(forwardRecipient).toContainText("(archived)");
       await forwardRecipient.click();
-      await expect(forward.locator(".forward-selected-chips .deprecated-label")).toHaveText("(archived)");
+      await expect(forward.locator(".forward-selected-chips .forward-chip")).toContainText("(archived)");
       await page.keyboard.press("Escape");
 
       await page.goto(`/channels/${encodeURIComponent(fixture.projectChannel.name)}`);
