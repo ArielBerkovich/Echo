@@ -11,10 +11,19 @@ function isProtectedFileUrl(url) {
   return !!url?.startsWith("/api/files/");
 }
 
+// The web app is served from the same origin as these public assets. Packaged
+// Electron builds are served from file:// instead, so a root-relative URL
+// would otherwise point at the filesystem root and fail to load.
+export function resolvePublicUrl(url) {
+  if (!url) return null;
+  if (!getBackendUrl() || !url.startsWith("/")) return url;
+  return `./${url.slice(1)}`;
+}
+
 // Read completed entries without acquiring resources during React render.
 // The effect below still owns retention/release and starts any missing fetch.
 function cachedAuthUrl(url, token) {
-  if (!isProtectedFileUrl(url)) return url || null;
+  if (!isProtectedFileUrl(url)) return resolvePublicUrl(url);
   if (cacheToken !== token) return null;
   return fileCache.get(url)?.src || null;
 }
@@ -50,7 +59,7 @@ function pruneFileCache() {
 // of downloading and decoding an attachment on every channel visit.
 function acquireAuthUrl(url) {
   if (!isProtectedFileUrl(url)) {
-    return { promise: Promise.resolve(url || null), release() {} };
+    return { promise: Promise.resolve(resolvePublicUrl(url)), release() {} };
   }
 
   const token = getToken();
@@ -105,7 +114,7 @@ function acquireAuthUrl(url) {
 
 // Fetches a /api/files/* URL with the Authorization header and returns a
 // local blob URL so <img> and <a> elements work without exposing the JWT.
-// Returns null while loading, and the original url if it's not an api/files path.
+// Public URLs are made portable for packaged Electron builds.
 export function useAuthUrl(url) {
   const token = getToken();
   const [resolved, setResolved] = useState(() => ({ source: url, token, src: cachedAuthUrl(url, token) }));
