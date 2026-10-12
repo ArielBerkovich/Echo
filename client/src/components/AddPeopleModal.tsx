@@ -125,7 +125,7 @@ export default function AddPeopleModal({ channel, users, onAdd, onClose }) {
                 <div className={`person-row${firstVisible + index === activeIndex ? " active" : ""}`} key={u.id} style={{ transform: `translateY(${(firstVisible + index) * PEOPLE_ROW_HEIGHT}px)` }}>
                   <Avatar name={u.displayName} src={u.avatarUrl} size={32} />
                   <div className="person-info">
-                    <div className="person-name">{u.displayName}</div>
+                    <div className="person-name">{u.displayName}{u.deprecated && <span className="deprecated-label">{t("deprecatedLabel")}</span>}</div>
                     <div className="person-handle">@{u.username}</div>
                   </div>
                   <button type="button" className="btn-secondary" data-testid={`add-people-add-${u.username}`} disabled={adding === u.id} onClick={() => add(u)}>

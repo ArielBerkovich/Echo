@@ -1558,7 +1558,7 @@ function AdminPasswordReset({ users, currentUserId }) {
               {candidates.map((u) => (
                 <button key={u.id} type="button" className="search-row" data-testid={`admin-reset-user-${u.username}`} onClick={() => pick(u)}>
                   <Avatar name={u.displayName} src={u.avatarUrl} size={24} />
-                  <span className="search-name">{u.displayName}</span>
+                  <span className="search-name">{u.displayName}{u.deprecated && <span className="deprecated-label">{t("deprecatedLabel")}</span>}</span>
                   <span className="search-handle">@{u.username}</span>
                 </button>
               ))}

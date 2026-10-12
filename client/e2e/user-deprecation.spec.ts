@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { requestAsToken, seedToken, seedWorkspaceFixture, slug } from "./helpers.js";
+import { messageById, registerUser, requestAsToken, seedToken, seedWorkspaceFixture, slug, uniqueSuffix } from "./helpers.js";
 
 const DEFAULT_ADMIN_PASSWORD = "Password1";
 
@@ -21,6 +21,98 @@ async function dismissWalkthrough(page) {
 }
 
 test.describe("user deprecation", () => {
+  test("labels archived users throughout people pickers", async ({ page }) => {
+    const fixture = await seedWorkspaceFixture(page);
+    const admin = await loginWorkspaceAdmin(page);
+    test.skip(!admin, "Set E2E_ADMIN_PASSWORD to run admin-only user deprecation coverage");
+    const suffix = uniqueSuffix("archived-picker").replace(/[^a-z0-9]/gi, "").slice(-12);
+    const archived = await registerUser(page, {
+      username: `archived.picker${suffix}`,
+      displayName: "Archived Picker",
+    });
+    const original = (await requestAsToken(page, admin.token, "/users")).users.find((user) => user.id === archived.user.id);
+    let archivedByTest = false;
+
+    try {
+      await requestAsToken(page, admin.token, `/admin/users/${archived.user.id}/deprecated`, {
+        method: "PATCH",
+        body: { deprecated: true },
+      });
+      archivedByTest = true;
+      await seedToken(page, fixture.alice.token);
+
+      await page.goto(`/channels/${encodeURIComponent(fixture.projectChannel.name)}`);
+      const composer = page.getByTestId("composer-editor");
+      await composer.fill(`@${archived.user.username}`);
+      const mention = page.locator(".mention-item").filter({ hasText: archived.user.displayName });
+      await expect(mention.locator(".deprecated-label")).toHaveText("(archived)");
+
+      await page.keyboard.press("Escape");
+      await page.getByRole("button", { name: "New message" }).first().click();
+      const newMessage = page.getByTestId("new-message-modal");
+      const recipientSearch = newMessage.getByTestId("new-message-search-input");
+      await recipientSearch.fill(archived.user.username);
+      const recipient = newMessage.getByTestId(`new-message-user-${archived.user.username}`);
+      await expect(recipient.locator(".deprecated-label")).toHaveText("(archived)");
+      await recipient.click();
+      await expect(newMessage.getByTestId("new-message-recipient").locator(".deprecated-label")).toHaveText("(archived)");
+      await page.keyboard.press("Escape");
+
+      await page.goto("/");
+      const source = messageById(page, fixture.messages.searchHit.id);
+      await expect(source).toBeVisible();
+      await source.hover();
+      await page.getByTestId(`message-${fixture.messages.searchHit.id}-forward`).click({ force: true });
+      const forward = page.getByTestId("forward-modal");
+      const forwardSearch = forward.getByTestId("forward-search");
+      await forwardSearch.fill(archived.user.username);
+      const forwardRecipient = forward.locator(".forward-destination-row").filter({ hasText: archived.user.username });
+      await expect(forwardRecipient.locator(".deprecated-label")).toHaveText("(archived)");
+      await forwardRecipient.click();
+      await expect(forward.locator(".forward-selected-chips .deprecated-label")).toHaveText("(archived)");
+      await page.keyboard.press("Escape");
+
+      await page.goto(`/channels/${encodeURIComponent(fixture.projectChannel.name)}`);
+      await page.getByTestId("channel-members").click();
+      await page.getByRole("button", { name: /add people/i }).click();
+      const channelPicker = page.getByTestId("add-people-modal");
+      await channelPicker.getByTestId("add-people-search").fill(archived.user.username);
+      await expect(channelPicker.locator(".person-row").getByText(archived.user.displayName).locator("xpath=..")
+        .locator(".deprecated-label")).toHaveText("(archived)");
+      await page.keyboard.press("Escape");
+
+      await page.goto("/groups");
+      await page.getByRole("button", { name: "Create group" }).click();
+      const createGroup = page.locator(".groups-create-modal");
+      await createGroup.locator("#create-group-member-search").fill(archived.user.username);
+      const groupCandidate = createGroup.locator("#create-group-member-results .forward-destination-row");
+      await expect(groupCandidate.locator(".deprecated-label")).toHaveText("(archived)");
+      await groupCandidate.click();
+      await expect(createGroup.locator(".forward-selected-chips .deprecated-label")).toHaveText("(archived)");
+      await page.keyboard.press("Escape");
+
+      const group = await requestAsToken(page, fixture.alice.token, "/groups", {
+        method: "POST",
+        body: { name: `Archived Picker ${suffix}`, memberIds: [] },
+      });
+      await page.goto("/groups");
+      const groupsPanel = page.getByTestId("groups-panel");
+      await groupsPanel.getByRole("button", { name: new RegExp(group.group.name) }).click();
+      await groupsPanel.getByRole("button", { name: "Add people" }).click();
+      const groupPicker = page.locator(".groups-picker-modal");
+      await groupPicker.getByRole("searchbox", { name: "Search people to add" }).fill(archived.user.username);
+      const groupPerson = groupPicker.locator(".groups-picker-row").filter({ hasText: archived.user.username });
+      await expect(groupPerson.locator(".deprecated-label")).toHaveText("(archived)");
+    } finally {
+      if (archivedByTest) {
+        await requestAsToken(page, admin.token, `/admin/users/${archived.user.id}/deprecated`, {
+          method: "PATCH",
+          body: { deprecated: !!original?.deprecated },
+        });
+      }
+    }
+  });
+
   test("admin can archive and restore a user, with search and realtime labels", async ({ browser, page }) => {
     const admin = await loginWorkspaceAdmin(page);
     test.skip(!admin, "Set E2E_ADMIN_PASSWORD to run admin-only user deprecation coverage");

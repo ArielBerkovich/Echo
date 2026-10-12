@@ -5,11 +5,10 @@ export default defineConfig({
   timeout: 30_000,
   retries: process.env.CI ? 2 : 0,
   expect: { timeout: 10_000 },
-  // Specs share state within a worker, and the backend uses one shared
-  // workspace database. Keep the default serialized so unrelated files
-  // cannot race through shared notifications, activity, and realtime state.
-  // E2E_WORKERS remains available for intentionally isolated environments.
-  fullyParallel: false,
+  // Locally, specs share one workspace database, so keep them serialized.
+  // CI gives every shard an isolated backend and one worker, allowing
+  // per-test sharding without concurrent access to shared realtime state.
+  fullyParallel: !!process.env.CI,
   workers: Number(process.env.E2E_WORKERS || 1),
   reporter: "list",
   use: {

@@ -1711,7 +1711,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                   <Avatar name={u.displayName} src={u.avatarUrl} size={26} />
                 )}
                 <span className="mention-item-copy">
-                  <span className={`mi-name${u.channelTag ? " mi-name-channel" : ""}`} dir={u.channelTag ? "ltr" : "auto"}>{u.channelTag ? `#${u.name}` : u.broadcast ? `@${u.username}` : u.displayName}</span>
+                  <span className={`mi-name${u.channelTag ? " mi-name-channel" : ""}`} dir={u.channelTag ? "ltr" : "auto"}>{u.channelTag ? `#${u.name}` : u.broadcast ? `@${u.username}` : u.displayName}{!u.channelTag && !u.broadcast && !u.groupMention && u.deprecated && <> <span className="deprecated-label">{t("deprecatedLabel")}</span></>}</span>
                   <span
                     className="mi-handle"
                     dir={u.channelTag || (!u.broadcast && !u.groupMention) ? "ltr" : "auto"}
