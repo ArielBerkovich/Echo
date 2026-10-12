@@ -66,8 +66,8 @@ test.describe("user deprecation", () => {
       await page.getByTestId(`message-${fixture.messages.searchHit.id}-forward`).click({ force: true });
       const forward = page.getByTestId("forward-modal");
       const forwardSearch = forward.getByTestId("forward-search");
-      await forwardSearch.fill(archived.user.username);
-      const forwardRecipient = forward.locator(".forward-destination-row").filter({ hasText: archived.user.username });
+      await forwardSearch.fill(archived.user.displayName);
+      const forwardRecipient = forward.locator(".forward-destination-row").filter({ hasText: archived.user.displayName });
       await expect(forwardRecipient).toContainText("(archived)");
       await forwardRecipient.click();
       await expect(forward.locator(".forward-selected-chips .forward-chip")).toContainText("(archived)");
