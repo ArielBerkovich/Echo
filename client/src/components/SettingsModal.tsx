@@ -217,6 +217,8 @@ export default function SettingsModal({
   const [mentionWebhookSaved, setMentionWebhookSaved] = useState(false);
   const [mentionWebhookSecretCopied, setMentionWebhookSecretCopied] = useState(false);
   const workspaceLogoSrc = useAuthUrl(workspaceLogoUrl);
+  const azureIconSrc = useAuthUrl("/azure-devops-icon.svg");
+  const allureIconSrc = useAuthUrl("/allure-docker-icon.png");
 
   const nameChanged = displayName.trim() !== user.displayName;
 
@@ -878,7 +880,7 @@ export default function SettingsModal({
             {!azureLoading && !azureIntegration && <article className="integration-card integration-card-placeholder"><div><h3>Azure DevOps</h3><p className="settings-hint">Connect Azure DevOps to bring pull requests, comments, approvals, and build status into Echo.</p><button type="button" className="btn-primary" onClick={createAzureIntegration}>Enable Azure DevOps</button></div></article>}
             {azureIntegration && <article className="integration-card">
               <button type="button" className="integration-card-main" onClick={() => setAzureOptionsOpen(true)}>
-                <div className="integration-card-icon"><img className="azure-integration-icon" src="/azure-devops-icon.svg" alt="" /></div>
+                <div className="integration-card-icon"><img className="azure-integration-icon" src={azureIconSrc} alt="" /></div>
                 <div className="integration-card-copy">
                   <h3>Azure DevOps</h3>
                   <span>dev.azure.com</span>
@@ -891,7 +893,7 @@ export default function SettingsModal({
             </article>}
             <article className="integration-card allure-integration-card">
               <button type="button" className="integration-card-main" onClick={() => setAllureOptionsOpen(true)}>
-                <div className="integration-card-icon"><img className="allure-integration-icon" src="/allure-docker-icon.png" alt="" /></div>
+                <div className="integration-card-icon"><img className="allure-integration-icon" src={allureIconSrc} alt="" /></div>
                 <div className="integration-card-copy">
                   <h3>allure docker service</h3>
                   <span>{allureIntegration?.enabled ? `${allureIntegration.projects?.length || 0} project channels` : "Not configured"}</span>
@@ -942,7 +944,7 @@ export default function SettingsModal({
             {allureOptionsOpen && <div className="integration-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setAllureOptionsOpen(false); }}>
               <section className="integration-dialog" role="dialog" aria-modal="true" aria-labelledby="allure-integration-title">
                 <div className="integration-dialog-header">
-                  <div className="integration-dialog-title"><img className="allure-integration-icon" src="/allure-docker-icon.png" alt="" /><div><h3 id="allure-integration-title">allure docker service</h3><p>Integration settings</p></div></div>
+                  <div className="integration-dialog-title"><img className="allure-integration-icon" src={allureIconSrc} alt="" /><div><h3 id="allure-integration-title">allure docker service</h3><p>Integration settings</p></div></div>
                   <CloseButton onClick={() => setAllureOptionsOpen(false)} label="Close integration settings" />
                 </div>
                 <div className="integration-dialog-body allure-settings-body">
@@ -974,7 +976,7 @@ export default function SettingsModal({
             {azureOptionsOpen && azureIntegration && <div className="integration-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setAzureOptionsOpen(false); }}>
               <section className="integration-dialog" role="dialog" aria-modal="true" aria-labelledby="azure-integration-title">
                 <div className="integration-dialog-header">
-                  <div className="integration-dialog-title"><img className="azure-integration-icon" src="/azure-devops-icon.svg" alt="" /><div><h3 id="azure-integration-title">Azure DevOps</h3><p>Integration settings</p></div></div>
+                  <div className="integration-dialog-title"><img className="azure-integration-icon" src={azureIconSrc} alt="" /><div><h3 id="azure-integration-title">Azure DevOps</h3><p>Integration settings</p></div></div>
                   <CloseButton onClick={() => setAzureOptionsOpen(false)} label="Close integration settings" />
                 </div>
                 <div className="integration-dialog-body">
