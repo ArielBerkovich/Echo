@@ -16039,6 +16039,17 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   box-shadow: none;
   transition: color 140ms ease, transform 140ms ease;
 }
+.channel-header .channel-members-action {
+  width: auto;
+  min-width: 30px;
+  gap: 5px;
+  padding: 0 5px;
+}
+.channel-members-count {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
 .channel-header .header-actions {
   gap: 0;
 }

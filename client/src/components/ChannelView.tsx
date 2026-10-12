@@ -1050,6 +1050,7 @@ const ChannelView = forwardRef(function ChannelView({
   const dmDisplayLabel = truncateDmTitle(dmLabel);
   const dmAvatar = dmUser?.avatarUrl || null;
   const isGroupDm = isDm && ((channel.members || []).length > 2 || dmParticipants.length > 1);
+  const channelMemberCount = channel.memberCount ?? channel.members?.length ?? channel.participants?.length ?? 0;
 
   useEffect(() => {
     if (!isMember || !canPost || openThreadId) return undefined;
@@ -1160,12 +1161,13 @@ const ChannelView = forwardRef(function ChannelView({
               {isGroupDm && (
                 <ChannelOptionButton
                   active={showMembers}
+                  className="channel-members-action"
                   data-testid="channel-members"
                   title={t("viewMembers")}
                   label={t("viewMembers")}
                   aria-controls="members-panel"
                   onClick={openMembersPanel}
-                  icon={<UsersRoundIcon size={16} strokeWidth={1.8} />}
+                  icon={<><UsersRoundIcon size={16} strokeWidth={1.8} /><span className="channel-members-count">{channelMemberCount}</span></>}
                 />
               )}
             </div>
@@ -1230,12 +1232,13 @@ const ChannelView = forwardRef(function ChannelView({
               />
               <ChannelOptionButton
                 active={showMembers}
+                className="channel-members-action"
                 data-testid="channel-members"
                 title={t("viewMembers")}
                 label={t("viewMembers")}
                 aria-controls="members-panel"
                 onClick={openMembersPanel}
-                icon={<UsersRoundIcon size={16} strokeWidth={1.8} />}
+                icon={<><UsersRoundIcon size={16} strokeWidth={1.8} /><span className="channel-members-count">{channelMemberCount}</span></>}
               />
             </div>
           </>
