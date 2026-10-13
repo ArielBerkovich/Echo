@@ -11,7 +11,7 @@ const channelSchema = new mongoose.Schema(
       minlength: 1,
       maxlength: 64,
       // Channel names are lowercase and contain no spaces.
-      match: /^[a-z0-9_-]+$/,
+      match: /^[a-z][a-z0-9_-]*$/,
     },
     type: { type: String, enum: ["public", "private", "dm"], default: "public" },
     // Short one-liner shown in the header; longer "about" text for the details panel.

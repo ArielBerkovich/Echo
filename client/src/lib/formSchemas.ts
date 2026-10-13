@@ -75,7 +75,7 @@ export const channelSchema = z.object({
   name: z
     .string()
     .transform(normalizeChannelNameInput)
-    .pipe(z.string().min(1, "Channel name is required").max(64, "Channel name must be 64 characters or fewer").regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Channel names cannot contain underscores, consecutive dashes, or start/end with a dash")),
+    .pipe(z.string().min(1, "Channel name is required").max(64, "Channel name must be 64 characters or fewer").regex(/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/, "Channel names must start with a letter and use lowercase letters, numbers, and single dashes")),
   type: z.enum(["public", "private"]),
   readOnly: z.boolean().default(false),
 });

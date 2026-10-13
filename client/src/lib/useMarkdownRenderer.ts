@@ -1,4 +1,6 @@
 import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "../api.js";
 import { createRenderer } from "../markdown.js";
 import { useAuthUrls } from "./useAuthUrl.js";
 
@@ -7,6 +9,20 @@ const rendererCache = [];
 const MAX_RENDERERS = 8;
 
 export function useMarkdownRenderer(users = EMPTY, username, customEmojis = EMPTY, channels = EMPTY) {
+  const { data: workspaceChannels = EMPTY } = useQuery({
+    queryKey: ["workspace", "channels"],
+    queryFn: async () => (await api.listChannels()).channels || [],
+  });
+  const knownChannels = useMemo(() => {
+    const byId = new Map();
+    for (const channel of [...workspaceChannels, ...channels]) if (channel?.id) byId.set(channel.id, channel);
+    return [...byId.values()];
+  }, [workspaceChannels, channels]);
+  const { data: workspaceData } = useQuery({
+    queryKey: ["workspace", "settings"],
+    queryFn: async () => (await api.getWorkspace()).workspace || {},
+  });
+  const workItemProjectUrl = workspaceData?.azureWorkItems?.enabled ? workspaceData.azureWorkItems.projectUrl : "";
   const knownUsernames = useMemo(() => {
     const map = new Map();
     for (const user of users) {
@@ -35,16 +51,16 @@ export function useMarkdownRenderer(users = EMPTY, username, customEmojis = EMPT
   return useMemo(() => {
     const index = rendererCache.findIndex((entry) =>
       entry.users === users && entry.username === username &&
-      entry.channels === channels && entry.emojiUrls === emojiUrls
+      entry.channels === knownChannels && entry.emojiUrls === emojiUrls && entry.workItemProjectUrl === workItemProjectUrl
     );
     if (index !== -1) {
       const [entry] = rendererCache.splice(index, 1);
       rendererCache.push(entry);
       return entry.render;
     }
-    const render = createRenderer(knownUsernames, username, authenticatedEmojis, channels);
-    rendererCache.push({ users, username, channels, emojiUrls, render });
+    const render = createRenderer(knownUsernames, username, authenticatedEmojis, knownChannels, workItemProjectUrl);
+    rendererCache.push({ users, username, channels: knownChannels, emojiUrls, workItemProjectUrl, render });
     if (rendererCache.length > MAX_RENDERERS) rendererCache.shift();
     return render;
-  }, [users, knownUsernames, username, emojiUrls, channels]);
+  }, [users, knownUsernames, username, emojiUrls, knownChannels, workItemProjectUrl]);
 }

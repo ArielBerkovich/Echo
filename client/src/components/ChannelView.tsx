@@ -22,6 +22,7 @@ import MembersPanel from "./MembersPanel.js";
 import Message, { SystemMessage } from "./Message.js";
 import { LightboxImage } from "./Attachments.js";
 import Composer from "./Composer.js";
+import { workItemLabel } from "../lib/workItemText.js";
 import { ChannelOptionButton, CloseButton } from "./Button.js";
 import { Input, InputShell } from "./Input.js";
 import ConfirmDialog from "./ConfirmDialog.js";
@@ -488,7 +489,13 @@ const ChannelView = forwardRef(function ChannelView({
   // ---- Edit / delete / forward ----
   function startEdit(m) {
     setMenuFor(null);
-    setEditing({ id: m.id, draft: m.body, attachments: m.attachments || [] });
+    const draft = (m.workItems || []).reduce((body, item) => {
+      if (!item?.text || !item?.url) return body;
+      const labelText = workItemLabel(item.id, item);
+      const label = labelText.replace(/[\\`*_{}\[\]()#+.!|>~-]/g, "\\$&");
+      return body.replace(item.text, `[${label}](${item.url})`);
+    }, m.body);
+    setEditing({ id: m.id, draft, attachments: m.attachments || [] });
   }
 
   function saveEdit() {
@@ -1679,7 +1686,7 @@ function PinnedPanel({ messages, renderMarkdown, emojiMap, onUnpin, canUnpin = t
               </div>
               <div
                 className="pinned-item-body markdown"
-                dangerouslySetInnerHTML={{ __html: renderMarkdown(m.body || "", { mentionedChannels: m.mentionedChannels }) }}
+                dangerouslySetInnerHTML={{ __html: renderMarkdown(m.body || "", { mentionedChannels: m.mentionedChannels, workItems: m.workItems }) }}
               />
               {canUnpin && <button className="pinned-unpin" data-testid={`pinned-${m.id}-unpin`} onClick={() => onUnpin(m)}>
                   {t("unpinMessage")}

@@ -162,7 +162,7 @@ export function sanitizeAttachments(attachments) {
 // channel room, DM room joins so both participants receive it, and
 // `activity:bump` to anyone it's "activity" for. Shared by the live socket
 // sender and the scheduled-message dispatcher so both behave identically.
-export async function deliverMessage({ channel, authorId, body, parentId, broadcastToChannel = false, attachments, survey, retro, card, idempotencyKey, passwordHelpRequest }) {
+export async function deliverMessage({ channel, authorId, body, activityBody = body, parentId, broadcastToChannel = false, attachments, survey, retro, card, idempotencyKey, passwordHelpRequest, workItems = [] }) {
   const io = getIO();
   const cid = channel._id.toString();
   const requestedBroadcast = broadcastToChannel === true;
@@ -173,7 +173,7 @@ export async function deliverMessage({ channel, authorId, body, parentId, broadc
     if (!parent) throw new Error("thread not found");
   }
 
-  const activityMetadata = await buildMessageActivityMetadata({ body, parentId, authorId });
+  const activityMetadata = await buildMessageActivityMetadata({ body: activityBody, parentId, authorId });
   // A group ping never grants access. For private channels retain only group
   // members who are already channel members; public channels are visible to
   // every Echo account. Explicit @user mentions preserve their existing flow.
@@ -194,6 +194,7 @@ export async function deliverMessage({ channel, authorId, body, parentId, broadc
     channel: channel._id,
     author: authorId,
     body: body || "",
+    workItems,
     parentId: parentId || null,
     broadcastToChannel: shouldBroadcast,
     attachments: attachments || [],

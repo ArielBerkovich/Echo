@@ -227,7 +227,7 @@ function Message({
       onContextMenu={onBodyContextMenu}
     >
       {cardMarkup?.before && <div dangerouslySetInnerHTML={{ __html: renderMarkdown(cardMarkup.before) }} />}
-      {!cardMarkup && m.body && <div dangerouslySetInnerHTML={{ __html: decorateGroupMentions(renderMarkdown(displayGroupMentions(m.body, m.mentionedGroups), { mentionedChannels: m.mentionedChannels }), m.mentionedGroups) }} />}
+      {!cardMarkup && m.body && <div dangerouslySetInnerHTML={{ __html: decorateGroupMentions(renderMarkdown(displayGroupMentions(m.body, m.mentionedGroups), { mentionedChannels: m.mentionedChannels, workItems: m.workItems }), m.mentionedGroups) }} />}
       {m.editedAt && <span className="edited-label"> ({t("edited")})</span>}
       {messageCard && <Card card={messageCard} usersById={usersById} />}
     </div>
