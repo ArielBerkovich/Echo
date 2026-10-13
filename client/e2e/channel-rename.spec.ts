@@ -51,7 +51,7 @@ test("lets channel managers rename channels and rejects invalid or unauthorized 
     });
     expect(unauthorized.status()).toBe(403);
 
-    for (const invalidName of ["", "bad_name", "bad--name", "-bad", "bad-", "general"]) {
+    for (const invalidName of ["", "12345", "bad_name", "bad--name", "-bad", "bad-", "general"]) {
       const response = await rawApi(page, fixture.alice.token, `/channels/${channel.id}`, {
         method: "PATCH",
         body: { name: invalidName },
@@ -73,7 +73,7 @@ test("lets channel managers rename channels and rejects invalid or unauthorized 
     const renameInput = rename.getByRole("textbox", { name: "Name" });
     const saveRename = rename.getByRole("button", { name: "Save" });
     await renameInput.fill("bad_name");
-    await expect(rename).toContainText("Use lowercase letters, numbers, and single dashes only.");
+    await expect(rename).toContainText("Start with a letter; use lowercase letters, numbers, and single dashes.");
     await expect(saveRename).toBeDisabled();
     await renameInput.fill(occupiedName);
     await expect(rename).toContainText("This channel name is already in use.");
