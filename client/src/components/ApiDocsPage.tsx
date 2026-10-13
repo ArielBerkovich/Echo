@@ -63,8 +63,28 @@ function buildGroups(token) {
       ],
     },
     {
-      title: "Messages",
-      note: "Also available in real time over Socket.IO — emit message:send with { channelId, body, parentId?, attachments? }. Use a channel name or username when sending over REST.",
+      title: "Read messages",
+      note: "Read message history by channel id. Private channels and direct messages require membership.",
+      endpoints: [
+        {
+          method: "GET",
+          path: "/api/channels/:channelId/messages",
+          desc: "Read the latest channel messages in chronological order. Returns { messages, lastReadAt }. Use before with an ISO timestamp to page older history, or around with a message id to load around a specific message.",
+          curl: `curl "${ORIGIN}/api/channels/CHANNEL_ID/messages" \\
+  ${auth}`,
+        },
+        {
+          method: "GET",
+          path: "/api/channels/:channelId/messages/:messageId/thread",
+          desc: "Read a message thread. Returns { parent, replies }.",
+          curl: `curl "${ORIGIN}/api/channels/CHANNEL_ID/messages/MESSAGE_ID/thread" \\
+  ${auth}`,
+        },
+      ],
+    },
+    {
+      title: "Send messages",
+      note: "This REST endpoint mirrors the message:send Socket.IO event. Use a channel name or channel id in the path. Optional fields include parentId for thread replies, broadcastToChannel, attachments, card, survey, and retro. You can send an Idempotency-Key header to safely retry a request.",
       formats: [
         { label: "Bold", syntax: "**bold text**" },
         { label: "Italic", syntax: "_italic text_" },
@@ -81,8 +101,8 @@ function buildGroups(token) {
       endpoints: [
         {
           method: "POST",
-          path: "/api/channels/:channelName/messages",
-          desc: "Send a message to a channel or DM by name (or pass its id). Body: { body, parentId?, attachments? }. parentId posts a thread reply.",
+          path: "/api/channels/:channel/messages",
+          desc: "Send a message to a channel by name or id. Body: { body, parentId?, broadcastToChannel?, attachments?, card?, survey?, retro?, idempotencyKey? }.",
           curl: `curl -X POST ${ORIGIN}/api/channels/general/messages \\
   ${auth} \\
   ${json} \\
@@ -105,6 +125,229 @@ function buildGroups(token) {
   ${auth} \\
   ${json} \\
   -d '{"body":"Hello Bob"}'`,
+        },
+      ],
+    },
+    {
+      title: "Message tools",
+      endpoints: [
+        {
+          method: "GET",
+          path: "/api/search/messages?q=:query&page=:page",
+          desc: "Search messages you can access. Supports in:channel, from:@username, and has:file|image|link filters. Pages contain up to 20 results.",
+          curl: `curl --get ${ORIGIN}/api/search/messages \\
+  ${auth} \\
+  --data-urlencode 'q=deploy in:general'`,
+        },
+        {
+          method: "POST",
+          path: "/api/channels/:channelId/messages/:messageId/reactions",
+          desc: "Toggle a reaction, or set present to true/false to add or remove it idempotently. Body: { emoji, present? }.",
+          curl: `curl -X POST ${ORIGIN}/api/channels/CHANNEL_ID/messages/MESSAGE_ID/reactions \\
+  ${auth} \\
+  ${json} \\
+  -d '{"emoji":"👍","present":true}'`,
+        },
+        {
+          method: "POST",
+          path: "/api/channels/:channelId/messages/:messageId/survey-vote",
+          desc: "Replace your survey selection. Body: { optionIds }; use an empty array to clear your vote.",
+          curl: `curl -X POST ${ORIGIN}/api/channels/CHANNEL_ID/messages/MESSAGE_ID/survey-vote \\
+  ${auth} \\
+  ${json} \\
+  -d '{"optionIds":["OPTION_ID"]}'`,
+        },
+        {
+          method: "GET",
+          path: "/api/channels/:channelId/pinned",
+          desc: "List pinned messages in a channel. Returns { messages }.",
+          curl: `curl ${ORIGIN}/api/channels/CHANNEL_ID/pinned \\
+  ${auth}`,
+        },
+        {
+          method: "POST",
+          path: "/api/channels/:channelId/messages/:messageId/thread-summary",
+          desc: "Generate an AI summary for a thread when thread summaries are enabled.",
+          curl: `curl -X POST ${ORIGIN}/api/channels/CHANNEL_ID/messages/MESSAGE_ID/thread-summary \\
+  ${auth}`,
+        },
+      ],
+    },
+    {
+      title: "Channel and DM management",
+      endpoints: [
+        {
+          method: "POST",
+          path: "/api/channels/:channelId/join",
+          desc: "Join a public channel. Private channels are invite-only.",
+          curl: `curl -X POST ${ORIGIN}/api/channels/CHANNEL_ID/join \\
+  ${auth}`,
+        },
+        {
+          method: "POST",
+          path: "/api/channels/:channelId/leave",
+          desc: "Leave a channel. A manager may need to pass managerId when leaving.",
+          curl: `curl -X POST ${ORIGIN}/api/channels/CHANNEL_ID/leave \\
+  ${auth}`,
+        },
+        {
+          method: "POST",
+          path: "/api/channels/:channelId/members",
+          desc: "Add a user to a channel. Body: { userId }.",
+          curl: `curl -X POST ${ORIGIN}/api/channels/CHANNEL_ID/members \\
+  ${auth} \\
+  ${json} \\
+  -d '{"userId":"USER_ID"}'`,
+        },
+        {
+          method: "DELETE",
+          path: "/api/channels/:channelId/members/:userId",
+          desc: "Remove a member from a channel. Only the channel creator can remove members.",
+          curl: `curl -X DELETE ${ORIGIN}/api/channels/CHANNEL_ID/members/USER_ID \\
+  ${auth}`,
+        },
+        {
+          method: "POST",
+          path: "/api/channels/:channelId/managers",
+          desc: "Promote a channel member to manager. Body: { userId }.",
+          curl: `curl -X POST ${ORIGIN}/api/channels/CHANNEL_ID/managers \\
+  ${auth} \\
+  ${json} \\
+  -d '{"userId":"USER_ID"}'`,
+        },
+        {
+          method: "GET",
+          path: "/api/dms",
+          desc: "List your direct message conversations. Returns { conversations }.",
+          curl: `curl ${ORIGIN}/api/dms \\
+  ${auth}`,
+        },
+        {
+          method: "PATCH",
+          path: "/api/dms/:id",
+          desc: "Rename a group DM. Body: { name }.",
+          curl: `curl -X PATCH ${ORIGIN}/api/dms/DM_ID \\
+  ${auth} \\
+  ${json} \\
+  -d '{"name":"project-chat"}'`,
+        },
+        {
+          method: "DELETE",
+          path: "/api/dms/:id",
+          desc: "Hide a DM from your sidebar.",
+          curl: `curl -X DELETE ${ORIGIN}/api/dms/DM_ID \\
+  ${auth}`,
+        },
+      ],
+    },
+    {
+      title: "Saved messages, activity, and scheduling",
+      endpoints: [
+        {
+          method: "GET",
+          path: "/api/saved",
+          desc: "List your saved messages. Returns { items }.",
+          curl: `curl ${ORIGIN}/api/saved \\
+  ${auth}`,
+        },
+        {
+          method: "POST",
+          path: "/api/saved/:messageId",
+          desc: "Toggle whether a message is saved for later.",
+          curl: `curl -X POST ${ORIGIN}/api/saved/MESSAGE_ID \\
+  ${auth}`,
+        },
+        {
+          method: "GET",
+          path: "/api/activity",
+          desc: "List your recent mentions, broadcasts, and thread replies. Returns { items }.",
+          curl: `curl ${ORIGIN}/api/activity \\
+  ${auth}`,
+        },
+        {
+          method: "POST",
+          path: "/api/activity/read",
+          desc: "Mark displayed activity items as read. Body: { items: [{ id, createdAt }] }.",
+          curl: `curl -X POST ${ORIGIN}/api/activity/read \\
+  ${auth} \\
+  ${json} \\
+  -d '{"items":[{"id":"ACTIVITY_ID","createdAt":"2026-10-13T09:00:00.000Z"}]}'`,
+        },
+        {
+          method: "DELETE",
+          path: "/api/activity/:id",
+          desc: "Dismiss one activity item.",
+          curl: `curl -X DELETE ${ORIGIN}/api/activity/ACTIVITY_ID \\
+  ${auth}`,
+        },
+        {
+          method: "DELETE",
+          path: "/api/activity",
+          desc: "Dismiss your activity feed.",
+          curl: `curl -X DELETE ${ORIGIN}/api/activity \\
+  ${auth}`,
+        },
+        {
+          method: "POST",
+          path: "/api/channels/:channelId/read",
+          desc: "Mark a channel or DM as read. Optionally pass thread with a root message id to mark a thread read. Body: { thread? }.",
+          curl: `curl -X POST ${ORIGIN}/api/channels/CHANNEL_ID/read \\
+  ${auth} \\
+  ${json} \\
+  -d '{}'`,
+        },
+        {
+          method: "POST",
+          path: "/api/scheduled",
+          desc: "Schedule a message for future delivery. Body: { channelId, body, scheduledFor, parentId?, attachments? }.",
+          curl: `curl -X POST ${ORIGIN}/api/scheduled \\
+  ${auth} \\
+  ${json} \\
+  -d '{"channelId":"CHANNEL_ID","body":"Deploy update","scheduledFor":"2030-01-15T09:00:00.000Z"}'`,
+        },
+        {
+          method: "GET",
+          path: "/api/scheduled",
+          desc: "List your pending scheduled messages. Add channelId to filter by channel.",
+          curl: `curl ${ORIGIN}/api/scheduled \\
+  ${auth}`,
+        },
+        {
+          method: "PATCH",
+          path: "/api/scheduled/:id",
+          desc: "Update a scheduled message body and/or scheduledFor time.",
+          curl: `curl -X PATCH ${ORIGIN}/api/scheduled/SCHEDULED_MESSAGE_ID \\
+  ${auth} \\
+  ${json} \\
+  -d '{"body":"Updated deploy update"}'`,
+        },
+        {
+          method: "DELETE",
+          path: "/api/scheduled/:id",
+          desc: "Cancel a scheduled message.",
+          curl: `curl -X DELETE ${ORIGIN}/api/scheduled/SCHEDULED_MESSAGE_ID \\
+  ${auth}`,
+        },
+      ],
+    },
+    {
+      title: "Custom emoji",
+      endpoints: [
+        {
+          method: "GET",
+          path: "/api/emojis",
+          desc: "List custom emoji available in the workspace. Returns { emojis }.",
+          curl: `curl ${ORIGIN}/api/emojis \\
+  ${auth}`,
+        },
+        {
+          method: "POST",
+          path: "/api/emojis",
+          desc: "Add a custom emoji image using multipart form fields name and file.",
+          curl: `curl -X POST ${ORIGIN}/api/emojis \\
+  ${auth} \\
+  -F "name=party_parrot" \\
+  -F "file=@/path/to/emoji.png"`,
         },
       ],
     },
@@ -157,7 +400,7 @@ export default function ApiDocsPage({ onClose, embedded = false }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(null);
-  const [openGroups, setOpenGroups] = useState(() => new Set());
+  const [openGroups, setOpenGroups] = useState(() => new Set(["Read messages", "Send messages"]));
 
   const groups = buildGroups(token);
 
