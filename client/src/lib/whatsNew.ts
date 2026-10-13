@@ -14,6 +14,23 @@ export type WhatsNewRelease = {
 // Keep release notes in the renderer so they work for air-gapped deployments
 // and always match the desktop binary that shipped them.
 const RELEASES: Record<string, WhatsNewRelease> = {
+  "0.52.0": {
+    id: "0.52.0",
+    title: "What's new in 0.52.0",
+    summary: "Link Azure DevOps work items in messages and see channel member counts at a glance.",
+    items: [
+      {
+        title: "Azure DevOps work item links",
+        description: "Show work item titles when you include #ID references in messages. Configure token expiration reminders in Settings.",
+        category: "New",
+      },
+      {
+        title: "Channel member counts",
+        description: "See the member count beside the member button in channel headers.",
+        category: "Improved",
+      },
+    ],
+  },
   "0.50.1": {
     id: "0.50.1",
     title: "What's new in 0.50.1",
