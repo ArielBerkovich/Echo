@@ -863,7 +863,6 @@ export default function SettingsModal({
             </div>
             <div className="integration-card-grid">
             <AIIntegration />
-            <AzureWorkItemsIntegration />
             <article className="integration-card jenkins-integration-card">
               <button type="button" className="integration-card-main" onClick={() => { setJenkinsDownloadError(null); setJenkinsOptionsOpen(true); }}>
                 <div className="integration-card-icon"><JenkinsIntegrationIcon /></div>
@@ -878,21 +877,20 @@ export default function SettingsModal({
                 <span className="integration-card-status">{t("available")}</span>
               </div>
             </article>
-            {azureLoading && !azureIntegration && <article className="integration-card integration-card-placeholder"><p className="settings-hint">Loading integration…</p></article>}
-            {!azureLoading && !azureIntegration && <article className="integration-card integration-card-placeholder"><div><h3>Azure DevOps</h3><p className="settings-hint">Connect Azure DevOps to bring pull requests, comments, approvals, and build status into Echo.</p><button type="button" className="btn-primary" onClick={createAzureIntegration}>Enable Azure DevOps</button></div></article>}
-            {azureIntegration && <article className="integration-card">
+            <article className="integration-card">
               <button type="button" className="integration-card-main" onClick={() => setAzureOptionsOpen(true)}>
                 <div className="integration-card-icon"><img className="azure-integration-icon" src={azureIconSrc} alt="" /></div>
                 <div className="integration-card-copy">
                   <h3>Azure DevOps</h3>
                   <span>dev.azure.com</span>
-                  <p>Bring pull requests, comments, approvals, and build status into Echo.</p>
+                  <p>Configure pull request notifications and work item links in one place.</p>
                 </div>
               </button>
               <div className="integration-card-footer">
                 <button type="button" className="btn-secondary" onClick={() => setAzureOptionsOpen(true)}>{t("configure")}</button>
+                <span className="integration-card-status" role="status">{azureLoading ? "Loading…" : azureIntegration?.active ? "Connected" : "Configure"}</span>
               </div>
-            </article>}
+            </article>
             <article className="integration-card allure-integration-card">
               <button type="button" className="integration-card-main" onClick={() => setAllureOptionsOpen(true)}>
                 <div className="integration-card-icon"><img className="allure-integration-icon" src={allureIconSrc} alt="" /></div>
@@ -975,18 +973,22 @@ export default function SettingsModal({
               </section>
             </div>}
             {allureResetOpen && <ConfirmDialog title="Reset Allure integration?" message="This clears the saved URL and credentials, removes the project selection, and archives the Allure channels. You can reconnect later." confirmLabel="Reset integration" danger onConfirm={resetAllure} onCancel={() => setAllureResetOpen(false)} />}
-            {azureOptionsOpen && azureIntegration && <div className="integration-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setAzureOptionsOpen(false); }}>
+            {azureOptionsOpen && <div className="integration-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setAzureOptionsOpen(false); }}>
               <section className="integration-dialog" role="dialog" aria-modal="true" aria-labelledby="azure-integration-title">
                 <div className="integration-dialog-header">
                   <div className="integration-dialog-title"><img className="azure-integration-icon" src={azureIconSrc} alt="" /><div><h3 id="azure-integration-title">Azure DevOps</h3><p>Integration settings</p></div></div>
                   <CloseButton onClick={() => setAzureOptionsOpen(false)} label="Close integration settings" />
                 </div>
                 <div className="integration-dialog-body">
-                  <div className="integration-option-row"><div><strong>Integration status</strong><span>{azureIntegration.active ? "Azure events are enabled" : "Azure events are disabled"}</span></div><label className={`integration-switch${azureIntegration.active ? " is-on" : ""}`}><input type="checkbox" checked={!!azureIntegration.active} disabled={azureLoading} onChange={(event) => setAzureActive(event.target.checked)} /><span className="integration-switch-track"><span /></span></label></div>
-                  <div className="integration-dialog-section"><h4>Webhook endpoint</h4><p className="settings-hint">Add this URL to an Azure DevOps Service Hook.</p><input id="azure-webhook-endpoint" className="settings-input" value={azureEndpoint} readOnly /><div className="integration-actions"><button type="button" className="btn-secondary" disabled={!azureEndpoint} onClick={copyAzureEndpoint}>Copy endpoint</button><button type="button" className="btn-secondary" disabled={azureLoading} onClick={regenerateAzureToken}>Regenerate token</button></div></div>
-                  <div className="integration-dialog-section"><h4>Events to send</h4><div className="integration-notify-grid">{AZURE_NOTIFY_OPTIONS.map(([key, label]) => <label key={key} className="integration-notify-option"><span>{label}</span><span className={`integration-switch integration-notify-switch${azureIntegration.notify?.[key] !== false ? " is-on" : ""}`}><input type="checkbox" checked={azureIntegration.notify?.[key] !== false} disabled={azureLoading || !azureIntegration.active} onChange={(event) => setAzureNotification(key, event.target.checked)} /><span className="integration-switch-track"><span /></span></span></label>)}</div></div>
-                  {azureIntegration.lastReceivedAt && <p className="settings-hint">Last event: {new Date(azureIntegration.lastReceivedAt).toLocaleString()}</p>}
-                  {azureIntegration.lastError && <p className="error">{azureIntegration.lastError}</p>}
+                  {!azureIntegration && <div className="integration-dialog-section"><h4>Pull request notifications</h4><p className="settings-hint">Create a Service Hook endpoint to send pull request and build events from Azure DevOps to Echo.</p><button type="button" className="btn-primary" disabled={azureLoading} onClick={createAzureIntegration}>{azureLoading ? "Connecting…" : "Enable pull request notifications"}</button></div>}
+                  {azureIntegration && <>
+                    <div className="integration-option-row"><div><strong>Pull request notifications</strong><span>{azureIntegration.active ? "Azure events are enabled" : "Azure events are disabled"}</span></div><label className={`integration-switch${azureIntegration.active ? " is-on" : ""}`}><input type="checkbox" checked={!!azureIntegration.active} disabled={azureLoading} onChange={(event) => setAzureActive(event.target.checked)} /><span className="integration-switch-track"><span /></span></label></div>
+                    <div className="integration-dialog-section"><h4>Webhook endpoint</h4><p className="settings-hint">Add this URL to an Azure DevOps Service Hook.</p><input id="azure-webhook-endpoint" className="settings-input" value={azureEndpoint} readOnly /><div className="integration-actions"><button type="button" className="btn-secondary" disabled={!azureEndpoint} onClick={copyAzureEndpoint}>Copy endpoint</button><button type="button" className="btn-secondary" disabled={azureLoading} onClick={regenerateAzureToken}>Regenerate token</button></div></div>
+                    <div className="integration-dialog-section"><h4>Events to send</h4><div className="integration-notify-grid">{AZURE_NOTIFY_OPTIONS.map(([key, label]) => <label key={key} className="integration-notify-option"><span>{label}</span><span className={`integration-switch integration-notify-switch${azureIntegration.notify?.[key] !== false ? " is-on" : ""}`}><input type="checkbox" checked={azureIntegration.notify?.[key] !== false} disabled={azureLoading || !azureIntegration.active} onChange={(event) => setAzureNotification(key, event.target.checked)} /><span className="integration-switch-track"><span /></span></span></label>)}</div></div>
+                    {azureIntegration.lastReceivedAt && <p className="settings-hint">Last event: {new Date(azureIntegration.lastReceivedAt).toLocaleString()}</p>}
+                    {azureIntegration.lastError && <p className="error">{azureIntegration.lastError}</p>}
+                  </>}
+                  <AzureWorkItemsIntegration embedded />
                 </div>
               </section>
             </div>}

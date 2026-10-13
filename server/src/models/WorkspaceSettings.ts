@@ -7,6 +7,7 @@ const workspaceSettingsSchema = new mongoose.Schema(
     logoKey: { type: String, default: null },
     azureWorkItems: {
       enabled: { type: Boolean, default: false },
+      projectUrl: { type: String, default: "", trim: true, maxlength: 500 },
       urlPrefix: { type: String, default: "", trim: true, maxlength: 500 },
       tokenCiphertext: { type: String, default: null },
       hasToken: { type: Boolean, default: false },
@@ -38,12 +39,14 @@ const workspaceSettingsSchema = new mongoose.Schema(
 );
 
 workspaceSettingsSchema.methods.toPublicJSON = function () {
+  const legacyProjectUrl = String(this.azureWorkItems?.urlPrefix || "").replace(/\/_workitems\/edit\/?$/i, "");
+  const azureProjectUrl = this.azureWorkItems?.projectUrl || legacyProjectUrl;
   return {
     name: this.name || "",
     logoUrl: this.logoKey ? `/api/files/${this.logoKey}` : null,
     azureWorkItems: {
-      enabled: !!this.azureWorkItems?.enabled && !!this.azureWorkItems?.tokenCiphertext && !!this.azureWorkItems?.urlPrefix,
-      urlPrefix: this.azureWorkItems?.urlPrefix || "",
+      enabled: !!this.azureWorkItems?.enabled && !!this.azureWorkItems?.tokenCiphertext && !!azureProjectUrl,
+      projectUrl: azureProjectUrl,
     },
   };
 };

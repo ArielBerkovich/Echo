@@ -10,7 +10,7 @@ function dateValue(value) {
   return Number.isFinite(date.getTime()) ? date.toISOString().slice(0, 10) : "";
 }
 
-export default function AzureWorkItemsIntegration() {
+export default function AzureWorkItemsIntegration({ embedded = false }) {
   const queryClient = useQueryClient();
   const query = useQuery({ queryKey: ["azure-work-items-integration"], queryFn: api.getAzureWorkItemsIntegration });
   const channelsQuery = useQuery({ queryKey: ["workspace", "channels"], queryFn: async () => (await api.listChannels()).channels || [] });
@@ -25,7 +25,7 @@ export default function AzureWorkItemsIntegration() {
   function configure() {
     setDraft({
       enabled: integration?.enabled || false,
-      urlPrefix: integration?.urlPrefix || "",
+      projectUrl: integration?.projectUrl || "",
       expiresAt: dateValue(integration?.expiresAt),
       notifyChannel: integration?.notifyChannel || "",
     });
@@ -54,6 +54,45 @@ export default function AzureWorkItemsIntegration() {
     }
   }
 
+  const editor = <form onSubmit={save}>
+    <p className="settings-hint">Use your Azure DevOps project URL, such as https://dev.azure.com/org/project. Enter the token expiration date shown in Azure DevOps.</p>
+    <fieldset disabled={busy} style={{ border: 0, padding: 0, margin: 0 }}>
+      <div className="integration-option-row">
+        <div><strong id="work-items-enabled-label">Enable work item links</strong><span id="work-items-enabled-hint">Resolve numeric #IDs to Azure DevOps work item titles</span></div>
+        <label className={`integration-switch${draft.enabled ? " is-on" : ""}`}>
+          <input type="checkbox" role="switch" aria-labelledby="work-items-enabled-label" aria-describedby="work-items-enabled-hint" checked={draft.enabled} onChange={(event) => setDraft((value) => ({ ...value, enabled: event.target.checked }))} />
+          <span className="integration-switch-track"><span /></span>
+        </label>
+      </div>
+      <label className="settings-field">Azure DevOps project URL<input className="settings-input" type="url" required={draft.enabled} maxLength={500} placeholder="https://dev.azure.com/org/project" value={draft.projectUrl} onChange={(event) => setDraft((value) => ({ ...value, projectUrl: event.target.value }))} /></label>
+      <label className="settings-field">Personal access token<input className="settings-input" type="password" autoComplete="new-password" maxLength={10000} value={token} placeholder={integration?.hasToken ? "Token saved — leave blank to keep" : "Paste a work item read token"} onChange={(event) => setToken(event.target.value)} /></label>
+      <label className="settings-field">Token expiration date<input className="settings-input" type="date" required={draft.enabled} value={draft.expiresAt} onChange={(event) => setDraft((value) => ({ ...value, expiresAt: event.target.value }))} /></label>
+      <label className="settings-field">Reminder channel<select className="settings-input" required={draft.enabled} value={draft.notifyChannel} onChange={(event) => setDraft((value) => ({ ...value, notifyChannel: event.target.value }))}>
+        <option value="">Choose a channel</option>
+        {channels.map((channel) => <option key={channel.id} value={channel.id}>#{channel.name}</option>)}
+      </select></label>
+      <p className="settings-hint">Reminders are sent 14 days, 7 days, then daily through the day before expiry. Replacing the token starts a new reminder sequence.</p>
+    </fieldset>
+    {error && <p className="error" role="alert">{error}</p>}
+    <ModalActions>
+      <button type="button" className="btn-secondary" disabled={busy} onClick={() => setDraft(null)}>Cancel</button>
+      <button type="submit" className="btn-primary" disabled={busy}>{busy ? "Saving…" : "Save work item settings"}</button>
+    </ModalActions>
+  </form>;
+
+  if (embedded) return <section className="integration-dialog-section azure-work-items-settings">
+    <h4>Work item links</h4>
+    {integration?.lastError && <p className="error" role="alert">{integration.lastError}</p>}
+    {integration?.notifyChannelMissing && <p className="error" role="alert">The reminder channel is unavailable. Choose another channel.</p>}
+    {query.isError && <p className="error" role="alert">{query.error.message}</p>}
+    {!draft && <div className="integration-work-item-summary">
+      <p className="settings-hint">{integration?.enabled ? `Work item links are enabled for ${integration.projectUrl}.` : "Resolve numeric #IDs to Azure DevOps work item titles and notify a channel before the token expires."}</p>
+      <button type="button" className="btn-secondary" disabled={!integration && query.isPending} onClick={configure}>{integration ? "Configure work item links" : "Set up work item links"}</button>
+      <span className="integration-card-status" role="status">{query.isPending ? "Loading…" : integration?.enabled ? "Enabled" : "Disabled"}</span>
+    </div>}
+    {draft && editor}
+  </section>;
+
   return <>
     <article className="integration-card">
       <div className="integration-card-main">
@@ -73,28 +112,7 @@ export default function AzureWorkItemsIntegration() {
       </div>
     </article>
     {draft && <Modal className="ai-integration-modal" closeDisabled={busy} title="Azure DevOps work items" onClose={() => { if (!busy) setDraft(null); }}>
-      <form onSubmit={save}>
-        <p className="settings-hint">Use a work item URL such as https://dev.azure.com/org/project/_workitems/edit. Enter the token expiration date shown in Azure DevOps.</p>
-        <fieldset disabled={busy} style={{ border: 0, padding: 0, margin: 0 }}>
-          <div className="integration-option-row">
-            <div><strong id="work-items-enabled-label">Enable work item links</strong><span id="work-items-enabled-hint">Resolve numeric #IDs to Azure DevOps work item titles</span></div>
-            <label className={`integration-switch${draft.enabled ? " is-on" : ""}`}>
-              <input type="checkbox" role="switch" aria-labelledby="work-items-enabled-label" aria-describedby="work-items-enabled-hint" checked={draft.enabled} onChange={(event) => setDraft((value) => ({ ...value, enabled: event.target.checked }))} />
-              <span className="integration-switch-track"><span /></span>
-            </label>
-          </div>
-          <label className="settings-field">Work item URL<input className="settings-input" type="url" required={draft.enabled} maxLength={500} placeholder="https://dev.azure.com/org/project/_workitems/edit" value={draft.urlPrefix} onChange={(event) => setDraft((value) => ({ ...value, urlPrefix: event.target.value }))} /></label>
-          <label className="settings-field">Personal access token<input className="settings-input" type="password" autoComplete="new-password" maxLength={10000} value={token} placeholder={integration?.hasToken ? "Token saved — leave blank to keep" : "Paste a work item read token"} onChange={(event) => setToken(event.target.value)} /></label>
-          <label className="settings-field">Token expiration date<input className="settings-input" type="date" required={draft.enabled} value={draft.expiresAt} onChange={(event) => setDraft((value) => ({ ...value, expiresAt: event.target.value }))} /></label>
-          <label className="settings-field">Reminder channel<select className="settings-input" required={draft.enabled} value={draft.notifyChannel} onChange={(event) => setDraft((value) => ({ ...value, notifyChannel: event.target.value }))}>
-            <option value="">Choose a channel</option>
-            {channels.map((channel) => <option key={channel.id} value={channel.id}>#{channel.name}</option>)}
-          </select></label>
-          <p className="settings-hint">Reminders are sent 14 days, 7 days, then daily through the day before expiry. Replacing the token starts a new reminder sequence.</p>
-        </fieldset>
-        {error && <p className="error" role="alert">{error}</p>}
-        <ModalActions><button type="button" className="btn-secondary" disabled={busy} onClick={() => setDraft(null)}>Cancel</button><button type="submit" className="btn-primary" disabled={busy}>{busy ? "Saving…" : "Save"}</button></ModalActions>
-      </form>
+      {editor}
     </Modal>}
   </>;
 }

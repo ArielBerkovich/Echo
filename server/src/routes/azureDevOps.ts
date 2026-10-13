@@ -13,7 +13,7 @@ import {
   decryptAzureDevOpsToken,
 } from "../azureDevOps.js";
 import { Channel } from "../models/Channel.js";
-import { getWorkItemSettings, normalizeWorkItemUrlPrefix, resolveWorkItemTitles, saveWorkItemToken, workItemSettingsJSON } from "../azureWorkItems.js";
+import { getWorkItemSettings, normalizeAzureProjectUrl, resolveWorkItemTitles, saveWorkItemToken, workItemSettingsJSON } from "../azureWorkItems.js";
 
 export const azureDevOpsWebhookRouter = Router();
 
@@ -54,9 +54,9 @@ azureDevOpsRouter.get("/work-items", async (_req, res) => {
 azureDevOpsRouter.patch("/work-items", async (req, res) => {
   const settings = await getWorkItemSettings();
   const current = settings.azureWorkItems || {};
-  const requestedPrefix = req.body?.urlPrefix === undefined ? current.urlPrefix || "" : String(req.body.urlPrefix || "").trim();
-  const prefix = req.body?.urlPrefix === undefined ? requestedPrefix : requestedPrefix ? normalizeWorkItemUrlPrefix(requestedPrefix) : "";
-  if (requestedPrefix && !prefix) return res.status(400).json({ error: "Enter an Azure DevOps work item URL ending in /_workitems/edit" });
+  const requestedProjectUrl = req.body?.projectUrl === undefined ? current.projectUrl || current.urlPrefix || "" : String(req.body.projectUrl || "").trim();
+  const projectUrl = req.body?.projectUrl === undefined ? normalizeAzureProjectUrl(requestedProjectUrl) : requestedProjectUrl ? normalizeAzureProjectUrl(requestedProjectUrl) : "";
+  if (requestedProjectUrl && !projectUrl) return res.status(400).json({ error: "Enter an Azure DevOps project URL such as https://dev.azure.com/org/project" });
   const token = req.body?.token === undefined ? null : String(req.body.token).trim();
   if (token?.length > 10000) return res.status(400).json({ error: "Token is too long" });
   const expiresAt = req.body?.expiresAt === undefined ? current.expiresAt : req.body.expiresAt ? new Date(req.body.expiresAt) : null;
@@ -68,10 +68,11 @@ azureDevOpsRouter.patch("/work-items", async (req, res) => {
   }
   const nextToken = token ? saveWorkItemToken(token) : current.tokenCiphertext;
   const enabled = req.body?.enabled === undefined ? !!current.enabled : !!req.body.enabled;
-  if (enabled && (!prefix || !nextToken || !expiresAt || !channelId)) return res.status(400).json({ error: "A URL, token, expiration date, and reminder channel are required" });
+  if (enabled && (!projectUrl || !nextToken || !expiresAt || !channelId)) return res.status(400).json({ error: "A project URL, token, expiration date, and reminder channel are required" });
   settings.azureWorkItems = {
     enabled,
-    urlPrefix: prefix || "",
+    projectUrl: projectUrl || "",
+    urlPrefix: "",
     tokenCiphertext: nextToken || null,
     expiresAt: expiresAt || null,
     notifyChannel: channelId || null,

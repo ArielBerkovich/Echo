@@ -153,7 +153,7 @@ function wrapEmojis(html) {
 }
 
 // `customEmojis` is an array of { name, url } for workspace custom emoji/GIFs.
-export function createRenderer(knownUsernames, me, customEmojis = [], channels = [], workItemUrlPrefix = "") {
+export function createRenderer(knownUsernames, me, customEmojis = [], channels = [], workItemProjectUrl = "") {
   // Message feeds are frequently unmounted and remounted while navigating
   // between workspace views. Keep rendered HTML for the lifetime of this
   // renderer so revisiting a feed does not repeat Markdown parsing, sanitizing,
@@ -253,10 +253,10 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
         name: "workItemTag",
         level: "inline",
         start(src) {
-          return workItemUrlPrefix ? src.indexOf("#") : undefined;
+          return workItemProjectUrl ? src.indexOf("#") : undefined;
         },
         tokenizer(src) {
-          if (!workItemUrlPrefix) return undefined;
+          if (!workItemProjectUrl) return undefined;
           const match = /^#(\d{1,10})(?![\w-])/.exec(src);
           if (!match) return undefined;
           const id = match[1];
@@ -270,7 +270,7 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
           if (!item) return `#${escapeHtml(token.id)}`;
           const type = String(item.type || "");
           const escape = escapeHtml;
-          const href = item.url || `${workItemUrlPrefix}/${encodeURIComponent(token.id)}`;
+          const href = item.url || `${workItemProjectUrl}/_workitems/edit/${encodeURIComponent(token.id)}`;
           const displayText = workItemLabel(token.id, item);
           return `<a class="work-item-link" href="${escape(href)}" target="_blank" rel="noopener noreferrer">${escape(displayText)}</a>`;
         },

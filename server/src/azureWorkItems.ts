@@ -7,15 +7,22 @@ import { sendMessage } from "./services/messageService.js";
 const CACHE_TTL_MS = 15 * 60 * 1000;
 const workItemCache = new Map<string, { title: string; type: string; assignee: { displayName: string; uniqueName: string } | null; expiresAt: number }>();
 
-export function normalizeWorkItemUrlPrefix(value: unknown) {
+export function normalizeAzureProjectUrl(value: unknown) {
   const raw = String(value || "").trim().replace(/\/+$/, "");
   try {
     const url = new URL(raw);
     if (url.protocol !== "https:" || url.hostname !== "dev.azure.com" || url.search || url.hash) return null;
-    const match = /^\/([^/]+)\/([^/]+)\/_workitems\/edit$/i.exec(url.pathname);
-    if (!match) return null;
-    return `https://dev.azure.com/${encodeURIComponent(decodeURIComponent(match[1]))}/${encodeURIComponent(decodeURIComponent(match[2]))}/_workitems/edit`;
+    const parts = url.pathname.split("/").filter(Boolean);
+    if (parts.length === 4 && parts[2].toLowerCase() === "_workitems" && parts[3].toLowerCase() === "edit") parts.splice(2);
+    if (parts.length !== 2) return null;
+    const [organization, project] = parts.map((part) => decodeURIComponent(part));
+    if (!organization || !project) return null;
+    return `https://dev.azure.com/${encodeURIComponent(organization)}/${encodeURIComponent(project)}`;
   } catch { return null; }
+}
+
+function azureProjectUrl(settings: any) {
+  return normalizeAzureProjectUrl(settings.projectUrl || settings.urlPrefix);
 }
 
 export async function getWorkItemSettings() {
@@ -24,9 +31,10 @@ export async function getWorkItemSettings() {
 
 export function workItemSettingsJSON(settings: any) {
   const item = settings.azureWorkItems || {};
+  const projectUrl = azureProjectUrl(item) || "";
   return {
-    enabled: !!item.enabled && !!item.tokenCiphertext && !!item.urlPrefix,
-    urlPrefix: item.urlPrefix || "",
+    enabled: !!item.enabled && !!item.tokenCiphertext && !!projectUrl,
+    projectUrl,
     hasToken: !!item.tokenCiphertext,
     expiresAt: item.expiresAt || null,
     notifyChannel: item.notifyChannel ? String(item.notifyChannel) : "",
@@ -37,23 +45,21 @@ export function workItemSettingsJSON(settings: any) {
 export async function resolveWorkItemTitles(ids: string[], { refresh = false }: { refresh?: boolean } = {}) {
   const settings = await getWorkItemSettings();
   const item = settings.azureWorkItems;
-  if (!item?.enabled || !item?.tokenCiphertext || !item?.urlPrefix) return { items: {}, missingIds: [] };
+  const projectUrl = azureProjectUrl(item);
+  if (!item?.enabled || !item?.tokenCiphertext || !projectUrl) return { items: {}, missingIds: [] };
   const token = decryptAzureDevOpsToken(item.tokenCiphertext);
   if (!token) return { items: {}, missingIds: [] };
   const normalized = [...new Set(ids)].filter((id) => /^\d{1,10}$/.test(id));
   const result: Record<string, { title: string; type: string; url: string; assignee: { displayName: string; uniqueName: string } | null }> = {};
   const missingIds: string[] = [];
   const missing: string[] = [];
-  const match = /^https:\/\/dev\.azure\.com\/([^/]+)\/([^/]+)\/_workitems\/edit$/i.exec(item.urlPrefix);
-  if (!match) return { items: result, missingIds };
-  const cachePrefix = `${match[1]}/${match[2]}:`;
+  const cachePrefix = `${projectUrl}:`;
   for (const id of normalized) {
     const cached = workItemCache.get(`${cachePrefix}${id}`);
-    if (!refresh && cached && cached.expiresAt > Date.now()) result[id] = { title: cached.title, type: cached.type, url: `${item.urlPrefix}/${id}`, assignee: cached.assignee };
+    if (!refresh && cached && cached.expiresAt > Date.now()) result[id] = { title: cached.title, type: cached.type, url: `${projectUrl}/_workitems/edit/${id}`, assignee: cached.assignee };
     else missing.push(id);
   }
   if (!missing.length) return { items: result, missingIds };
-  const projectUrl = `https://dev.azure.com/${match[1]}/${match[2]}`;
   const authorization = `Basic ${Buffer.from(`:${token}`).toString("base64")}`;
   await Promise.all(missing.map(async (id) => {
     try {
@@ -82,7 +88,7 @@ export async function resolveWorkItemTitles(ids: string[], { refresh = false }: 
           if (cached.expiresAt <= cutoff || workItemCache.size > 4000) workItemCache.delete(key);
         }
       }
-      result[id] = { title, type, url: `${item.urlPrefix}/${id}`, assignee };
+      result[id] = { title, type, url: `${projectUrl}/_workitems/edit/${id}`, assignee };
     } catch { /* Work item linking must never break message rendering. */ }
   }));
   return { items: result, missingIds };
