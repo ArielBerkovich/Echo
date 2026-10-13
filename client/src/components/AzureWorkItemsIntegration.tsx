@@ -20,7 +20,10 @@ export default function AzureWorkItemsIntegration({ embedded = false }) {
   const [error, setError] = useState("");
   const integration = query.data?.integration;
   const azureIcon = useAuthUrl("/azure-devops-icon.svg");
-  const channels = (channelsQuery.data || []).filter((channel) => channel.type !== "dm" && !channel.isArchived);
+  // Channel lists can contain null entries when returned from older/corrupt
+  // workspace data. Keep the integration dialog usable so an admin can pick a
+  // valid reminder channel instead of crashing the whole settings modal.
+  const channels = (Array.isArray(channelsQuery.data) ? channelsQuery.data : []).filter((channel) => channel && channel.type !== "dm" && !channel.isArchived);
 
   function configure() {
     setDraft({
