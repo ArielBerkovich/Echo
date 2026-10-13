@@ -18021,3 +18021,9 @@ html[data-theme="calm"] .channel-list::-webkit-scrollbar-track {
 
 .ai-integration-modal textarea.settings-input { resize: vertical; min-height: 88px; line-height: 1.5; }
 .ai-integration-modal .ai-prompt-prefix { color: var(--muted); background: var(--surface-2); }
+
+.app-error-screen { min-height: 100dvh; display: grid; place-items: center; padding: 24px; color: var(--text); background: var(--surface); }
+.app-error-card { width: min(100%, 440px); padding: 28px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface-2); box-shadow: 0 12px 36px color-mix(in srgb, var(--text) 12%, transparent); }
+.app-error-card h1 { margin: 0 0 10px; font-size: 22px; }
+.app-error-card p { margin: 0 0 20px; color: var(--muted); line-height: 1.5; }
+.app-error-card button { min-height: 44px; }
