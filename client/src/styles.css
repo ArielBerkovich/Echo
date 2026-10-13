@@ -14571,6 +14571,12 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   color: var(--link-hover);
   text-decoration: underline;
 }
+.markdown .work-item-pending,
+.markdown .work-item-unresolved { color: inherit; }
+.markdown a.work-item-link { display: inline-flex; align-items: baseline; gap: 4px; vertical-align: baseline; }
+.markdown .work-item-assignee { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; font-size: .92em; }
+.markdown .work-item-assignee-avatar { display: inline-grid; width: 16px; height: 16px; flex: none; place-items: center; border-radius: 50%; color: #fff; font-size: 8px; font-weight: 700; line-height: 1; }
+.markdown .work-item-assignee-name { max-width: 180px; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
 .markdown h1,
 .markdown h2,
 .markdown h3 {
@@ -18015,3 +18021,9 @@ html[data-theme="calm"] .channel-list::-webkit-scrollbar-track {
 
 .ai-integration-modal textarea.settings-input { resize: vertical; min-height: 88px; line-height: 1.5; }
 .ai-integration-modal .ai-prompt-prefix { color: var(--muted); background: var(--surface-2); }
+
+.app-error-screen { min-height: 100dvh; display: grid; place-items: center; padding: 24px; color: var(--text); background: var(--surface); }
+.app-error-card { width: min(100%, 440px); padding: 28px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface-2); box-shadow: 0 12px 36px color-mix(in srgb, var(--text) 12%, transparent); }
+.app-error-card h1 { margin: 0 0 10px; font-size: 22px; }
+.app-error-card p { margin: 0 0 20px; color: var(--muted); line-height: 1.5; }
+.app-error-card button { min-height: 44px; }

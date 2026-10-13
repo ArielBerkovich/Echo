@@ -86,6 +86,7 @@ export default function SavedFeed({ user, users = [], customEmojis = [], onJump,
                 body={it.body}
                 renderMarkdown={renderMarkdown}
                 mentionedChannels={it.mentionedChannels}
+                workItems={it.workItems}
               />
             </div>
             <button

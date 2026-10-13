@@ -1,4 +1,5 @@
 import { Router } from "express";
+import rateLimit from "express-rate-limit";
 import { AzureDevOpsIntegration } from "../models/AzureDevOpsIntegration.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { requireAdmin } from "../middleware/requireAdmin.js";
@@ -11,6 +12,8 @@ import {
   processAzureDevOpsEvent,
   decryptAzureDevOpsToken,
 } from "../azureDevOps.js";
+import { Channel } from "../models/Channel.js";
+import { getWorkItemSettings, normalizeAzureProjectUrl, resolveWorkItemTitles, saveWorkItemToken, workItemSettingsJSON } from "../azureWorkItems.js";
 
 export const azureDevOpsWebhookRouter = Router();
 
@@ -32,7 +35,53 @@ azureDevOpsWebhookRouter.post("/:token", async (req, res) => {
 
 export const azureDevOpsRouter = Router();
 azureDevOpsRouter.use(azureDevOpsWebhookRouter);
+
+const workItemResolveLimiter = rateLimit({ windowMs: 60_000, limit: 120, standardHeaders: true, legacyHeaders: false });
+azureDevOpsRouter.get("/work-items/resolve", requireAuth, workItemResolveLimiter, async (req, res) => {
+  const ids = String(req.query.ids || "").split(",").slice(0, 25);
+  res.json(await resolveWorkItemTitles(ids, { refresh: true }));
+});
+
 azureDevOpsRouter.use(requireAuth, requireAdmin);
+
+azureDevOpsRouter.get("/work-items", async (_req, res) => {
+  const settings = await getWorkItemSettings();
+  const value = workItemSettingsJSON(settings);
+  const channel = value.notifyChannel ? await Channel.findById(value.notifyChannel).select({ name: 1, isArchived: 1 }).lean() : null;
+  res.json({ integration: { ...value, notifyChannelName: channel?.name || null, notifyChannelMissing: !!value.notifyChannel && (!channel || channel.isArchived) } });
+});
+
+azureDevOpsRouter.patch("/work-items", async (req, res) => {
+  const settings = await getWorkItemSettings();
+  const current = settings.azureWorkItems || {};
+  const requestedProjectUrl = req.body?.projectUrl === undefined ? current.projectUrl || current.urlPrefix || "" : String(req.body.projectUrl || "").trim();
+  const projectUrl = req.body?.projectUrl === undefined ? normalizeAzureProjectUrl(requestedProjectUrl) : requestedProjectUrl ? normalizeAzureProjectUrl(requestedProjectUrl) : "";
+  if (requestedProjectUrl && !projectUrl) return res.status(400).json({ error: "Enter an Azure DevOps project URL such as https://dev.azure.com/org/project" });
+  const token = req.body?.token === undefined ? null : String(req.body.token).trim();
+  if (token?.length > 10000) return res.status(400).json({ error: "Token is too long" });
+  const expiresAt = req.body?.expiresAt === undefined ? current.expiresAt : req.body.expiresAt ? new Date(req.body.expiresAt) : null;
+  if (expiresAt && !Number.isFinite(expiresAt.getTime())) return res.status(400).json({ error: "Enter a valid token expiration date" });
+  const channelId = req.body?.notifyChannel === undefined ? String(current.notifyChannel || "") : String(req.body.notifyChannel || "");
+  if (channelId) {
+    const channel = await Channel.findById(channelId);
+    if (!channel || channel.isArchived || channel.type === "dm") return res.status(400).json({ error: "Choose an active channel for token reminders" });
+  }
+  const nextToken = token ? saveWorkItemToken(token) : current.tokenCiphertext;
+  const enabled = req.body?.enabled === undefined ? !!current.enabled : !!req.body.enabled;
+  if (enabled && (!projectUrl || !nextToken || !expiresAt || !channelId)) return res.status(400).json({ error: "A project URL, token, expiration date, and reminder channel are required" });
+  settings.azureWorkItems = {
+    enabled,
+    projectUrl: projectUrl || "",
+    urlPrefix: "",
+    tokenCiphertext: nextToken || null,
+    expiresAt: expiresAt || null,
+    notifyChannel: channelId || null,
+    lastReminderKey: token ? null : current.lastReminderKey || null,
+    lastError: null,
+  };
+  await settings.save();
+  res.json({ integration: workItemSettingsJSON(settings) });
+});
 
 azureDevOpsRouter.get("/", async (_req, res) => {
   // Azure DevOps is a single app-level integration. Keep older records hidden

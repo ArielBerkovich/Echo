@@ -159,6 +159,10 @@ async function getActivityItems(me) {
       threadId,
       author: m.author?.toPublicJSON?.() || null,
       body: m.body,
+      workItems: (m.workItems || []).map((item) => ({
+        id: item.id, text: item.text, title: item.title, type: item.type || "", url: item.url || "",
+        assignee: item.assignee?.displayName ? { displayName: item.assignee.displayName, uniqueName: item.assignee.uniqueName || "" } : null,
+      })),
       mentionedGroups: (m.mentionedGroups || []).map((group) => ({
         provider: group.provider || "echo",
         id: group.id,
