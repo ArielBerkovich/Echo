@@ -1,5 +1,6 @@
 import { Message } from "../models/Message.js";
 import { deliverMessage } from "../deliver.js";
+import { expandWorkItemReferences, normalizeWorkItemMarkdownLinks, resolveWorkItemTitles, workItemMessageText } from "../azureWorkItems.js";
 
 /**
  * Application-level message creation used by every transport. Callers are
@@ -29,10 +30,25 @@ export async function sendMessage({
     if (existing) return { message: existing.toPublicJSON(), idempotent: true };
   }
 
+  const workItemIds = [...new Set([...String(body || "").matchAll(/#(\d{1,10})(?![\w-])/g)].map((match) => match[1]))].slice(0, 20);
+  let workItems = [];
+  let messageBody = body || "";
+  let activityBody = body || "";
+  if (workItemIds.length) {
+    try {
+      const { items } = await resolveWorkItemTitles(workItemIds, { refresh: true });
+      workItems = Object.entries(items).map(([id, item]) => ({ id, ...item, text: workItemMessageText(id, item) }));
+      const itemMap = Object.fromEntries(workItems.map((item) => [item.id, item]));
+      activityBody = normalizeWorkItemMarkdownLinks(messageBody, itemMap);
+      messageBody = expandWorkItemReferences(activityBody, itemMap);
+    } catch { /* Azure lookup failure must never block sending a message. */ }
+  }
+
   const message = await deliverMessage({
     channel,
     authorId,
-    body,
+    body: messageBody,
+    activityBody,
     parentId,
     broadcastToChannel,
     idempotencyKey: idempotencyKey || null,
@@ -41,6 +57,7 @@ export async function sendMessage({
     retro,
     card,
     passwordHelpRequest,
+    workItems,
   });
   return { message };
 }

@@ -211,7 +211,7 @@ export async function updateChannel(channelKey: string, actorId: ChannelActor, c
     if (currentName.toLowerCase() === "general") return { error: "the general channel cannot be renamed" };
     if (typeof changes.name !== "string") return { error: "channel name must be a string" };
     const normalizedName = changes.name.trim().toLowerCase();
-    if (!isValidChannelName(normalizedName)) return { error: "channel names must use lowercase letters, numbers, and single dashes" };
+    if (!isValidChannelName(normalizedName)) return { error: "Channel names must start with a letter and use lowercase letters, numbers, and single dashes" };
     if (normalizedName === "general") return { error: "general is reserved for the default channel" };
     if (normalizedName !== currentName) {
       const existing = await Channel.findOne({ name: normalizedName, _id: { $ne: channel._id } }).select({ _id: 1 }).lean();

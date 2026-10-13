@@ -31,7 +31,7 @@ export function FeedContent({ loading, loadingLabel = "Loading…", items, empty
   return children;
 }
 
-export const FeedMessage = memo(function FeedMessage({ author, context, time, body, renderMarkdown, mentionedChannels }) {
+export const FeedMessage = memo(function FeedMessage({ author, context, time, body, renderMarkdown, mentionedChannels, workItems }) {
   return (
     <>
       <div className="meta">
@@ -43,7 +43,7 @@ export const FeedMessage = memo(function FeedMessage({ author, context, time, bo
         <div
           className="body markdown"
           dir="auto"
-          dangerouslySetInnerHTML={{ __html: renderMarkdown(body, { mentionedChannels }) }}
+          dangerouslySetInnerHTML={{ __html: renderMarkdown(body, { mentionedChannels, workItems }) }}
         />
       ) : null}
     </>

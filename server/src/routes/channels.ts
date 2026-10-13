@@ -442,7 +442,7 @@ channelsRouter.patch("/:id", async (req, res) => {
     }
     const normalizedName = name.trim().toLowerCase();
     if (!isValidChannelName(normalizedName)) {
-      return res.status(400).json({ error: "channel names must use lowercase letters, numbers, and single dashes" });
+      return res.status(400).json({ error: "Channel names must start with a letter and use lowercase letters, numbers, and single dashes" });
     }
     if (normalizedName === "general") {
       return res.status(400).json({ error: "general is reserved for the default channel" });

@@ -4,6 +4,7 @@ import emojiData from "@emoji-mart/data";
 import { escapeHtml, highlightCode } from "./lib/syntaxHighlight.js";
 import { isEchoMessageLink } from "./lib/workspaceRoutes.js";
 import { languageLocale } from "./lib/languages.js";
+import { workItemLabel } from "./lib/workItemText.js";
 
 // Syntax-highlight a fenced code block. Uses the declared language (```python)
 // when given/known, otherwise auto-detects across the common languages
@@ -152,7 +153,7 @@ function wrapEmojis(html) {
 }
 
 // `customEmojis` is an array of { name, url } for workspace custom emoji/GIFs.
-export function createRenderer(knownUsernames, me, customEmojis = [], channels = []) {
+export function createRenderer(knownUsernames, me, customEmojis = [], channels = [], workItemUrlPrefix = "") {
   // Message feeds are frequently unmounted and remounted while navigating
   // between workspace views. Keep rendered HTML for the lifetime of this
   // renderer so revisiting a feed does not repeat Markdown parsing, sanitizing,
@@ -164,6 +165,7 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
     channels.filter((channel) => channel.type === "public").map((channel) => channel.name.toLowerCase())
   );
   let activeResolvedChannels = new Map();
+  let activeWorkItems = new Map();
   const marked = new Marked({
     breaks: true, // single newline => <br>
     gfm: true,
@@ -237,6 +239,7 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
           const m = /^#([a-z0-9_-]+)/i.exec(src);
           if (!m) return undefined;
           const name = m[1].toLowerCase();
+          if (/^\d+$/.test(name) && activeWorkItems.has(name)) return undefined;
           if (!activeResolvedChannels.has(name) && !publicChannels.has(name)) return undefined;
           return { type: "channelTag", raw: m[0], name };
         },
@@ -244,6 +247,32 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
           const mention = activeResolvedChannels.get(token.name);
           const channelId = mention?.channelId ? ` data-channel-id="${escapeHtml(mention.channelId)}"` : "";
           return `<span class="channel-tag" dir="ltr"${channelId} data-channel-tag="${escapeHtml(token.name)}">#${escapeHtml(token.name)}</span>`;
+        },
+      },
+      {
+        name: "workItemTag",
+        level: "inline",
+        start(src) {
+          return workItemUrlPrefix ? src.indexOf("#") : undefined;
+        },
+        tokenizer(src) {
+          if (!workItemUrlPrefix) return undefined;
+          const match = /^#(\d{1,10})(?![\w-])/.exec(src);
+          if (!match) return undefined;
+          const id = match[1];
+          if (activeResolvedChannels.has(id)) return undefined;
+          const item = activeWorkItems.get(id);
+          const raw = item?.text && src.startsWith(item.text) ? item.text : match[0];
+          return { type: "workItemTag", raw, id };
+        },
+        renderer(token) {
+          const item = activeWorkItems.get(token.id);
+          if (!item) return `#${escapeHtml(token.id)}`;
+          const type = String(item.type || "");
+          const escape = escapeHtml;
+          const href = item.url || `${workItemUrlPrefix}/${encodeURIComponent(token.id)}`;
+          const displayText = workItemLabel(token.id, item);
+          return `<a class="work-item-link" href="${escape(href)}" target="_blank" rel="noopener noreferrer">${escape(displayText)}</a>`;
         },
       },
       {
@@ -297,10 +326,12 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
   return (text, options = {}) => {
     const source = text ?? "";
     const resolvedChannels = new Map((options.mentionedChannels || []).map((mention) => [String(mention.name).toLowerCase(), mention]));
-    const cacheKey = resolvedChannels.size ? `${source}\u0000${JSON.stringify([...resolvedChannels])}` : source;
+    const workItems = new Map((options.workItems || []).map((item) => [String(item.id), item]));
+    const cacheKey = resolvedChannels.size || workItems.size ? `${source}\u0000${JSON.stringify([...resolvedChannels])}\u0000${JSON.stringify([...workItems])}` : source;
     const cached = renderedCache.get(cacheKey);
     if (cached !== undefined) return cached;
     activeResolvedChannels = resolvedChannels;
+    activeWorkItems = workItems;
 
     const html = marked.parse(preserveMarkdownBlankLines(source))
       .replace(/&lt;p&gt;&lt;br(?:\s*\/)?&gt;&lt;\/p&gt;/gi, "<p><br></p>");
@@ -311,7 +342,7 @@ export function createRenderer(knownUsernames, me, customEmojis = [], channels =
         "p", "br", "strong", "em", "del", "u", "code", "pre", "blockquote",
         "ul", "ol", "li", "a", "span", "bdi", "time", "h1", "h2", "h3", "hr", "img",
       ],
-    ALLOWED_ATTR: ["class", "dir", "datetime", "href", "title", "target", "rel", "src", "alt", "data-channel-tag", "data-channel-id", "data-mention"],
+    ALLOWED_ATTR: ["class", "dir", "datetime", "href", "title", "target", "rel", "src", "alt", "aria-label", "data-channel-tag", "data-channel-id", "data-mention"],
       // Authenticated custom emoji are rendered through local blob URLs before
       // this HTML is inserted into the chat. Keep those URLs while retaining
       // a narrow allowlist for markdown links and image sources.

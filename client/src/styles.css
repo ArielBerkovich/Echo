@@ -14571,6 +14571,12 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   color: var(--link-hover);
   text-decoration: underline;
 }
+.markdown .work-item-pending,
+.markdown .work-item-unresolved { color: inherit; }
+.markdown a.work-item-link { display: inline-flex; align-items: baseline; gap: 4px; vertical-align: baseline; }
+.markdown .work-item-assignee { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; font-size: .92em; }
+.markdown .work-item-assignee-avatar { display: inline-grid; width: 16px; height: 16px; flex: none; place-items: center; border-radius: 50%; color: #fff; font-size: 8px; font-weight: 700; line-height: 1; }
+.markdown .work-item-assignee-name { max-width: 180px; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
 .markdown h1,
 .markdown h2,
 .markdown h3 {

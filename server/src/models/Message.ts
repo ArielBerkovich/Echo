@@ -11,6 +11,19 @@ const messageSchema = new mongoose.Schema(
     author: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     // Body is optional when the message carries one or more attachments.
     body: { type: String, default: "", trim: true, maxlength: 4000 },
+    workItems: [{
+      _id: false,
+      id: { type: String, required: true },
+      text: { type: String, required: true, maxlength: 700 },
+      title: { type: String, required: true },
+      type: { type: String, default: "" },
+      url: { type: String, default: "", maxlength: 2048 },
+      assignee: {
+        _id: false,
+        displayName: { type: String, default: "" },
+        uniqueName: { type: String, default: "" },
+      },
+    }],
     // Uploaded files stored in object storage; metadata only lives here.
     attachments: [
       {
@@ -208,6 +221,10 @@ messageSchema.methods.toPublicJSON = function () {
     id: this._id.toString(),
     channelId: this.channel.toString(),
     body: this.body,
+    workItems: (this.workItems || []).map((item) => ({
+      id: item.id, text: item.text, title: item.title, type: item.type || "", url: item.url || "",
+      assignee: item.assignee?.displayName ? { displayName: item.assignee.displayName, uniqueName: item.assignee.uniqueName || "" } : null,
+    })),
     createdAt: this.createdAt,
     editedAt: this.editedAt || null,
     kind: this.kind || "user",

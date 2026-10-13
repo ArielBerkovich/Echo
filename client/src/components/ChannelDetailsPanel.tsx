@@ -432,7 +432,7 @@ function EditableName({ value, error, onCheckAvailability, onSave }) {
   const [changed, setChanged] = useState(false);
   const [availability, setAvailability] = useState("idle");
   const normalized = draft.trim().toLowerCase();
-  const valid = /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(normalized) && normalized.length <= 64 && normalized !== "general";
+  const valid = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(normalized) && normalized.length <= 64 && normalized !== "general";
   const unchanged = normalized === String(value || "").toLowerCase();
   const canSave = valid && (unchanged || availability === "available") && !saving;
   const showFormatError = changed && !valid;

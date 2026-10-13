@@ -1,5 +1,6 @@
 import { ActivityEvent } from "../models/ActivityEvent.js";
 import { Message } from "../models/Message.js";
+import { expandWorkItemReferences, normalizeWorkItemMarkdownLinks, resolveWorkItemTitles, workItemMessageText } from "../azureWorkItems.js";
 import { applySurveyVote } from "../deliver.js";
 import { applyReaction, reactionSummary } from "../lib/reactions.js";
 import { buildMessageActivityMetadata } from "../lib/messageActivity.js";
@@ -43,10 +44,18 @@ export async function voteInSurvey({ channel, message, userId, optionIds }) {
 }
 
 export async function editMessage({ channel, message, userId, body, attachments }) {
-  message.body = body;
+  let sourceBody = normalizeWorkItemMarkdownLinks(String(body || ""), Object.fromEntries((message.workItems || []).map((item) => [item.id, item])));
+  let messageBody = sourceBody;
+  const ids = [...new Set([...sourceBody.matchAll(/#(\d{1,10})(?![\w-])/g)].map((match) => match[1]))].slice(0, 20);
+  try {
+    const { items } = await resolveWorkItemTitles(ids, { refresh: true });
+    message.workItems = Object.entries(items).map(([id, item]) => ({ id, ...item, text: workItemMessageText(id, item) }));
+    messageBody = expandWorkItemReferences(messageBody, Object.fromEntries(message.workItems.map((item) => [item.id, item])));
+  } catch { message.workItems = []; }
+  message.body = messageBody;
   if (attachments !== undefined) message.attachments = attachments;
   Object.assign(message, await buildMessageActivityMetadata({
-    body,
+    body: sourceBody,
     parentId: message.parentId,
     authorId: userId,
   }));
@@ -58,6 +67,7 @@ export async function editMessage({ channel, message, userId, body, attachments 
     channelId: channel._id.toString(),
     parentId: message.parentId ? message.parentId.toString() : null,
     body: message.body,
+    workItems: message.toPublicJSON().workItems,
     attachments: message.toPublicJSON().attachments,
     editedAt: message.editedAt,
     mentionedUserIds: message.mentionedUserIds.map((id) => id.toString()),

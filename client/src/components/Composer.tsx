@@ -1,6 +1,7 @@
 import { Suspense, forwardRef, lazy, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { EditorContent, useEditor } from "@tiptap/react";
+import { useQuery } from "@tanstack/react-query";
 import { Node } from "@tiptap/core";
 import { TextSelection } from "@tiptap/pm/state";
 import StarterKit from "@tiptap/starter-kit";
@@ -29,6 +30,7 @@ import Modal, { ModalActions } from "./Modal.js";
 import { useMentionGate } from "../lib/useMentionGate.js";
 import { useI18n } from "../lib/i18n.js";
 import { MENTION_QUERY_RE, peopleSearchSuggestions } from "../lib/mentions.js";
+import { workItemLabel, workItemTypeEmoji } from "../lib/workItemText.js";
 import { CalendarClock, ChartNoAxesColumnIncreasing, ChevronRight, FileIcon, LayoutPanelTop, Paperclip, Pencil, X } from "lucide-react";
 import {
   LinkIcon, OrderedListIcon, BulletListIcon, QuoteIcon, CodeIcon, CodeBlockIcon, MarkdownIcon,
@@ -273,6 +275,12 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   const [mentionPopupPosition, setMentionPopupPosition] = useState(null);
   const [groups, setGroups] = useState([]);
   const [catalogChannels, setCatalogChannels] = useState([]);
+  const [workItemPreview, setWorkItemPreview] = useState(null);
+  const { data: workspaceSettings } = useQuery({
+    queryKey: ["workspace", "settings"],
+    queryFn: async () => (await api.getWorkspace()).workspace || {},
+  });
+  const workItemsEnabled = !!workspaceSettings?.azureWorkItems?.enabled;
   const [activeIdx, setActiveIdx] = useState(0);
   const activeMentionItemRef = useRef(null);
   const [emojiOpen, setEmojiOpen] = useState(false);
@@ -289,6 +297,23 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     }).catch(() => {}), 180);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [mention, onFindChannels]);
+  useEffect(() => {
+    const query = String(mention?.query || "");
+    if (!workItemsEnabled || mention?.trigger !== "#" || !/^\d{1,10}$/.test(query)) {
+      setWorkItemPreview(null);
+      return undefined;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      api.resolveAzureWorkItems([query]).then(({ items }) => {
+        if (!cancelled) {
+          const item = items?.[query];
+          setWorkItemPreview(item ? { ...item, id: `work-item-${query}`, workItemId: query, workItemTag: true } : null);
+        }
+      }).catch(() => { if (!cancelled) setWorkItemPreview(null); });
+    }, 250);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [mention?.query, mention?.trigger, workItemsEnabled]);
   useEffect(() => {
     if (!mention) return undefined;
     const dismissOutside = (event) => {
@@ -576,11 +601,13 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     const q = mention.query.toLowerCase();
     if (mention.trigger === "#") {
       const available = [...new Map([...channels, ...catalogChannels].map((item) => [item.id, item])).values()];
-      return available
+      const channelSuggestions = available
         .filter((item) => item.type === "public")
         .filter((item) => item.name.toLowerCase().includes(q))
         .slice(0, 8)
         .map((item) => ({ ...item, channelTag: true }));
+      const workItem = workItemPreview && String(workItemPreview.workItemId) === mention.query ? workItemPreview : null;
+      return [...(workItem ? [workItem] : []), ...channelSuggestions];
     }
     // @everyone broadcast option (channels only, not DMs).
     const specials = !isDm
@@ -594,7 +621,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       .map((group) => ({ ...group, username: `group.${group.provider}.${group.id}`, displayName: group.name, groupMention: true })) : [];
     const people = peopleSearchSuggestions(users, q);
     return [...specials, ...groupSuggestions, ...people];
-  }, [mention, users, channels, catalogChannels, isDm, groups]);
+  }, [mention, users, channels, catalogChannels, isDm, groups, workItemPreview]);
 
   useLayoutEffect(() => {
     if (!mention || !editor) {
@@ -938,6 +965,16 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     if (mention.trigger === "@") {
       const label = picked.broadcast ? picked.username : picked.displayName;
       editor.chain().focus().insertContentAt({ from: mention.from, to: mention.to }, [{ type: "userMention", attrs: { username: picked.username, label } }, { type: "text", text: trailingMentionSpace }]).run();
+      syncParagraphDirections(editor);
+      setMention(null);
+      return;
+    }
+    if (picked.workItemTag) {
+      const text = workItemLabel(picked.workItemId, picked);
+      editor.chain().focus().insertContentAt({ from: mention.from, to: mention.to }, [
+        { type: "text", text, marks: [{ type: "link", attrs: { href: picked.url } }] },
+        { type: "text", text: " " },
+      ]).run();
       syncParagraphDirections(editor);
       setMention(null);
       return;
@@ -1688,7 +1725,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
             className={`mention-popup ${mentionQueryIsRtl ? "mention-popup-rtl" : "mention-popup-ltr"}`}
             style={mentionPopupPosition}
           >
-            <div className="mention-popup-head">{mention.trigger === "#" ? t("mentionPublicChannels") : t("mentionPeopleAndGroups")}</div>
+            <div className="mention-popup-head">{mention.trigger === "#" ? t("mentionChannelsAndWorkItems") : t("mentionPeopleAndGroups")}</div>
             <div className="mention-popup-results">
             {suggestions.map((u, idx) => (
               <button
@@ -1701,7 +1738,9 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                 onMouseDown={keepFocus}
                 onClick={() => applyMention(u)}
               >
-                {u.channelTag ? (
+                {u.workItemTag ? (
+                  <span className="mention-mega">{workItemTypeEmoji(u.type)}</span>
+                ) : u.channelTag ? (
                   <span className="mention-channel-mark">#</span>
                 ) : u.broadcast ? (
                   <span className="mention-mega">📣</span>
@@ -1711,12 +1750,12 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                   <Avatar name={u.displayName} src={u.avatarUrl} size={26} />
                 )}
                 <span className="mention-item-copy">
-                  <span className={`mi-name${u.channelTag ? " mi-name-channel" : ""}`} dir={u.channelTag ? "ltr" : "auto"}>{u.channelTag ? `#${u.name}` : u.broadcast ? `@${u.username}` : u.displayName}{!u.channelTag && !u.broadcast && !u.groupMention && u.deprecated && <> <span className="deprecated-label">{t("deprecatedLabel")}</span></>}</span>
+                  <span className={`mi-name${u.channelTag ? " mi-name-channel" : ""}`} dir={u.channelTag ? "ltr" : "auto"}>{u.workItemTag ? workItemLabel(u.workItemId, u) : u.channelTag ? `#${u.name}` : u.broadcast ? `@${u.username}` : u.displayName}{!u.channelTag && !u.workItemTag && !u.broadcast && !u.groupMention && u.deprecated && <> <span className="deprecated-label">{t("deprecatedLabel")}</span></>}</span>
                   <span
                     className="mi-handle"
                     dir={u.channelTag || (!u.broadcast && !u.groupMention) ? "ltr" : "auto"}
                   >
-                    {u.channelTag ? t("mentionPublicChannel") : u.broadcast ? u.displayName : u.groupMention ? u.path : `@${u.username}`}
+                    {u.workItemTag ? t("workItemSuggestionType") : u.channelTag ? t("mentionPublicChannel") : u.broadcast ? u.displayName : u.groupMention ? u.path : `@${u.username}`}
                   </span>
                 </span>
               </button>
