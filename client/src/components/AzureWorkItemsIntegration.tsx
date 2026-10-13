@@ -57,7 +57,9 @@ export default function AzureWorkItemsIntegration({ embedded = false }) {
     }
   }
 
-  const editor = <form onSubmit={save}>
+  // Build the form only after the admin opens it. JSX expressions are
+  // evaluated immediately, even if the resulting element is rendered later.
+  const editor = draft ? <form onSubmit={save}>
     <p className="settings-hint">Use your Azure DevOps project URL, such as https://dev.azure.com/org/project. Enter the token expiration date shown in Azure DevOps.</p>
     <fieldset disabled={busy} style={{ border: 0, padding: 0, margin: 0 }}>
       <div className="integration-option-row">
@@ -81,7 +83,7 @@ export default function AzureWorkItemsIntegration({ embedded = false }) {
       <button type="button" className="btn-secondary" disabled={busy} onClick={() => setDraft(null)}>Cancel</button>
       <button type="submit" className="btn-primary" disabled={busy}>{busy ? "Saving…" : "Save work item settings"}</button>
     </ModalActions>
-  </form>;
+  </form> : null;
 
   if (embedded) return <section className="integration-dialog-section azure-work-items-settings">
     <h4>Work item links</h4>
