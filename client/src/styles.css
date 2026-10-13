@@ -16045,6 +16045,27 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   box-shadow: none;
   transition: color 140ms ease, transform 140ms ease;
 }
+.channel-header .channel-members-action {
+  position: relative;
+  width: 40px;
+  min-width: 40px;
+  padding: 0;
+}
+.channel-header .channel-members-action > svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.channel-members-count {
+  position: absolute;
+  top: 50%;
+  inset-inline-end: 2px;
+  transform: translateY(-50%);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
 .channel-header .header-actions {
   gap: 0;
 }
