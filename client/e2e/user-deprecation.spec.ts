@@ -63,7 +63,9 @@ test.describe("user deprecation", () => {
       const source = messageById(page, fixture.messages.searchHit.id);
       await expect(source).toBeVisible();
       await source.hover();
-      await page.getByTestId(`message-${fixture.messages.searchHit.id}-forward`).click({ force: true });
+      const forwardButton = page.getByTestId(`message-${fixture.messages.searchHit.id}-forward`);
+      await expect(forwardButton).toBeVisible();
+      await forwardButton.click();
       const forward = page.getByTestId("forward-modal");
       const forwardSearch = forward.getByTestId("forward-search");
       await expect(forward).toBeVisible();
