@@ -882,7 +882,7 @@ export default function SettingsModal({
                 <div className="integration-card-icon"><img className="azure-integration-icon" src={azureIconSrc} alt="" /></div>
                 <div className="integration-card-copy">
                   <h3>Azure DevOps</h3>
-                  <span>dev.azure.com</span>
+                  <span>Work item links</span>
                   <p>Configure pull request notifications and work item links in one place.</p>
                 </div>
               </button>

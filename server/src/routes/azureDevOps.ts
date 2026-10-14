@@ -56,7 +56,7 @@ azureDevOpsRouter.patch("/work-items", async (req, res) => {
   const current = settings.azureWorkItems || {};
   const requestedProjectUrl = req.body?.projectUrl === undefined ? current.projectUrl || current.urlPrefix || "" : String(req.body.projectUrl || "").trim();
   const projectUrl = req.body?.projectUrl === undefined ? normalizeAzureProjectUrl(requestedProjectUrl) : requestedProjectUrl ? normalizeAzureProjectUrl(requestedProjectUrl) : "";
-  if (requestedProjectUrl && !projectUrl) return res.status(400).json({ error: "Enter an Azure DevOps project URL such as https://dev.azure.com/org/project" });
+  if (requestedProjectUrl && !projectUrl) return res.status(400).json({ error: "Enter an HTTPS Azure DevOps project URL with a collection and project path" });
   const token = req.body?.token === undefined ? null : String(req.body.token).trim();
   if (token?.length > 10000) return res.status(400).json({ error: "Token is too long" });
   const expiresAt = req.body?.expiresAt === undefined ? current.expiresAt : req.body.expiresAt ? new Date(req.body.expiresAt) : null;

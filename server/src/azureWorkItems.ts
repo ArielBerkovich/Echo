@@ -11,13 +11,11 @@ export function normalizeAzureProjectUrl(value: unknown) {
   const raw = String(value || "").trim().replace(/\/+$/, "");
   try {
     const url = new URL(raw);
-    if (url.protocol !== "https:" || url.hostname !== "dev.azure.com" || url.search || url.hash) return null;
+    if (!["http:", "https:"].includes(url.protocol) || url.username || url.password || url.search || url.hash) return null;
     const parts = url.pathname.split("/").filter(Boolean);
-    if (parts.length === 4 && parts[2].toLowerCase() === "_workitems" && parts[3].toLowerCase() === "edit") parts.splice(2);
-    if (parts.length !== 2) return null;
-    const [organization, project] = parts.map((part) => decodeURIComponent(part));
-    if (!organization || !project) return null;
-    return `https://dev.azure.com/${encodeURIComponent(organization)}/${encodeURIComponent(project)}`;
+    if (parts.length >= 2 && parts.at(-2)?.toLowerCase() === "_workitems" && parts.at(-1)?.toLowerCase() === "edit") parts.splice(-2);
+    const path = parts.map((part) => encodeURIComponent(decodeURIComponent(part))).join("/");
+    return `${url.origin}${path ? `/${path}` : ""}`;
   } catch { return null; }
 }
 

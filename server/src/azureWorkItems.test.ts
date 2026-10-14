@@ -17,9 +17,15 @@ describe("Azure DevOps project URLs", () => {
     );
   });
 
-  it("rejects URLs that are not a dev.azure.com project URL", () => {
-    assert.equal(normalizeAzureProjectUrl("http://dev.azure.com/org/project"), null);
-    assert.equal(normalizeAzureProjectUrl("https://example.com/org/project"), null);
+  it("accepts URLs regardless of host or project path shape", () => {
+    assert.equal(normalizeAzureProjectUrl("https://org.visualstudio.com/Echo"), "https://org.visualstudio.com/Echo");
+    assert.equal(normalizeAzureProjectUrl("https://ado.example.com/tfs/collection/Echo/_workitems/edit"), "https://ado.example.com/tfs/collection/Echo");
+    assert.equal(normalizeAzureProjectUrl("http://internal.example.com/team"), "http://internal.example.com/team");
+    assert.equal(normalizeAzureProjectUrl("https://internal.example.com"), "https://internal.example.com");
+  });
+
+  it("rejects malformed URLs and URLs with credentials or query data", () => {
+    assert.equal(normalizeAzureProjectUrl("https://user:pass@example.com/org/project"), null);
     assert.equal(normalizeAzureProjectUrl("https://dev.azure.com/org/project?view=1"), null);
     assert.equal(normalizeAzureProjectUrl("https://dev.azure.com/org"), null);
   });
