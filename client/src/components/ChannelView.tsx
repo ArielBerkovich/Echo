@@ -33,10 +33,11 @@ import { shouldGroupWithPreviousMessage } from "../lib/messageGrouping.js";
 import { appendReplyParticipant } from "../lib/replyParticipants.js";
 import { formatSize } from "../lib/format.js";
 import { useMarkdownRenderer } from "../lib/useMarkdownRenderer.js";
-import { ChevronsDownIcon, DownloadIcon, FileIcon, FileTextIcon, MessageSquareTextIcon, PaperclipIcon, SearchIcon, StarIcon, UsersRoundIcon } from "lucide-react";
+import { ChevronsDownIcon, DownloadIcon, FileIcon, FileTextIcon, MessageSquareTextIcon, PaperclipIcon, SearchIcon, StarIcon, UserPlusIcon, UsersRoundIcon } from "lucide-react";
 import { queryKeys } from "../lib/queryClient.js";
 import { useI18n } from "../lib/i18n.js";
 import ConversationNotificationButton from "./NotificationPreferences.js";
+import AddGroupModal from "./AddGroupModal.js";
 
 // Shimmering placeholder rows shown while a channel's history loads, so the
 // pane has structure immediately instead of flashing an empty "say hello" state.
@@ -1276,14 +1277,14 @@ const ChannelView = forwardRef(function ChannelView({
                   <div className="empty-state-glyph">{channel.type === "private" ? "🔒" : "#"}</div>
                   <h3>{channel.name}</h3>
                   <p>{t(channel.type === "private" ? "privateChannelBeginning" : "channelBeginning", { channel: `#${channel.name}` })} 👋</p>
-                  {isMember && <ChannelSetupActions channel={channel} onAddPeople={onAddPeople} onOpenDetails={openDetailsPanel} />}
+                  {isMember && <ChannelSetupActions channel={channel} onAddPeople={onAddPeople} onUpdated={onChannelUpdated} onOpenDetails={openDetailsPanel} />}
                 </>
               )}
             </div>
           ) : (
             <>
               {messages.every((message) => message.kind === "system") && isMember && !isDm && (
-                <ChannelSetupActions channel={channel} onAddPeople={onAddPeople} onOpenDetails={openDetailsPanel} inline />
+                <ChannelSetupActions channel={channel} onAddPeople={onAddPeople} onUpdated={onChannelUpdated} onOpenDetails={openDetailsPanel} inline />
               )}
               {messages.map((m, i) => {
               const prev = messages[i - 1];
@@ -1645,8 +1646,9 @@ const ChannelView = forwardRef(function ChannelView({
 
 export default ChannelView;
 
-function ChannelSetupActions({ channel, onAddPeople, onOpenDetails, inline = false }) {
+function ChannelSetupActions({ channel, onAddPeople, onUpdated, onOpenDetails, inline = false }) {
   const { t } = useI18n();
+  const [showAddGroup, setShowAddGroup] = useState(false);
   return (
     <div className={`empty-state-setup${inline ? " channel-setup-inline" : ""}`} aria-label={t("setUpChannel")}>
       <strong>{t("makeSpaceUseful")}</strong>
@@ -1654,8 +1656,14 @@ function ChannelSetupActions({ channel, onAddPeople, onOpenDetails, inline = fal
       <div className="empty-state-actions">
         {channel.name?.toLowerCase() !== "general" && (
           <button type="button" className="empty-state-action primary" data-testid="empty-channel-add-people" onClick={onAddPeople}>
-            <UsersRoundIcon size={16} strokeWidth={1.9} />
+            <UserPlusIcon size={16} strokeWidth={1.9} />
             {t("addPeople")}
+          </button>
+        )}
+        {channel.name?.toLowerCase() !== "general" && (
+          <button type="button" className="empty-state-action" data-testid="empty-channel-add-group" onClick={() => setShowAddGroup(true)}>
+            <UsersRoundIcon size={16} strokeWidth={1.9} />
+            {t("addGroup")}
           </button>
         )}
         <button type="button" className="empty-state-action" data-testid="empty-channel-details" onClick={onOpenDetails}>
@@ -1663,6 +1671,7 @@ function ChannelSetupActions({ channel, onAddPeople, onOpenDetails, inline = fal
           {t("addTopicOrDescription")}
         </button>
       </div>
+      {showAddGroup && <AddGroupModal channel={channel} onUpdated={onUpdated} onClose={() => setShowAddGroup(false)} />}
     </div>
   );
 }

@@ -6,17 +6,19 @@ import Avatar from "./Avatar.js";
 import { Button, CloseButton } from "./Button.js";
 import { Input, InputShell } from "./Input.js";
 import Modal from "./Modal.js";
+import AddGroupModal from "./AddGroupModal.js";
 import { useI18n } from "../lib/i18n.js";
 import {
   FileTextIcon,
   HashIcon,
   LockKeyholeIcon,
-  PlusIcon,
   SearchIcon,
   Trash2Icon,
   LogOutIcon,
   Globe2Icon,
   PencilIcon,
+  UserPlusIcon,
+  UsersRoundIcon,
 } from "lucide-react";
 
 const MEMBER_ROW_HEIGHT = 58;
@@ -36,6 +38,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
   const memberListRef = useRef(null);
   const [memberListScrollTop, setMemberListScrollTop] = useState(0);
   const [memberListHeight, setMemberListHeight] = useState(MEMBER_LIST_HEIGHT);
+  const [showAddGroup, setShowAddGroup] = useState(false);
 
   const byId = new Map(users.map((u) => [u.id, u]));
   const creator = byId.get(channel.createdBy);
@@ -310,12 +313,14 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
           </div>}
 
           {activeTab === "members" && <section className="channel-details-section channel-details-members-section cd-section" role="tabpanel" id="channel-details-panel-members" aria-labelledby="channel-details-tab-members">
-            {canAddPeople && (
+            {canAddPeople && <div className="channel-details-add-actions">
               <Button variant="subtle" className="channel-add-people channel-details-add-primary" onClick={onAddPeople} aria-label={t("addPeopleToThisChannel")}>
-                <PlusIcon size={17} strokeWidth={2.2} />
-                <span>{t("addPeople")}</span>
+                <UserPlusIcon size={16} strokeWidth={1.9} aria-hidden="true" /><span>{t("addPeople")}</span>
               </Button>
-            )}
+              <Button variant="subtle" className="channel-add-people channel-details-add-primary" onClick={() => setShowAddGroup(true)} aria-label={t("addGroupToThisChannel")}>
+                <UsersRoundIcon size={16} strokeWidth={1.9} aria-hidden="true" /><span>{t("addGroup")}</span>
+              </Button>
+            </div>}
 
             <InputShell className="channel-details-search channel-details-member-filter">
               <SearchIcon size={16} strokeWidth={1.8} aria-hidden="true" />
@@ -420,6 +425,7 @@ export default function ChannelDetailsPanel({ channel, users = [], user, onUpdat
 
           {error && errorField !== "name" && <div className="error">{error}</div>}
         </div>
+        {showAddGroup && <AddGroupModal channel={channel} onUpdated={onUpdated} onClose={() => setShowAddGroup(false)} />}
     </Modal>
   );
 }

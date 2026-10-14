@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api.js";
-import { SearchIcon, UsersRoundIcon } from "lucide-react";
+import { SearchIcon, UsersRoundIcon, UserPlusIcon } from "lucide-react";
 import { useI18n } from "../lib/i18n.js";
 import Avatar from "./Avatar.js";
 import ConfirmDialog from "./ConfirmDialog.js";
 import { CloseButton } from "./Button.js";
 import { Button } from "./Button.js";
 import { Input, InputShell } from "./Input.js";
+import AddGroupModal from "./AddGroupModal.js";
 
 const MEMBER_ROW_HEIGHT = 58;
 const MEMBER_LIST_HEIGHT = 340;
@@ -28,6 +29,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
   const [listHeight, setListHeight] = useState(MEMBER_LIST_HEIGHT);
   const [activeIndex, setActiveIndex] = useState(0);
   const [loadedMemberUsers, setLoadedMemberUsers] = useState([]);
+  const [showAddGroup, setShowAddGroup] = useState(false);
   const searchRef = useRef(null);
   const listRef = useRef(null);
 
@@ -243,11 +245,14 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
             )}
           </section>
         )}
-        {canAddPeople && (
-          <Button variant="subtle" className="channel-add-people members-panel-add" onClick={onAddPeople}>
-            + {t("addPeople")}
+        {canAddPeople && <div className="members-panel-add-actions">
+          <Button variant="subtle" className="channel-add-people members-panel-add" onClick={onAddPeople} aria-label={t("addPeopleToThisChannel")}>
+            <UserPlusIcon size={16} strokeWidth={1.9} aria-hidden="true" />{t("addPeople")}
           </Button>
-        )}
+          <Button variant="subtle" className="channel-add-people members-panel-add" onClick={() => setShowAddGroup(true)} aria-label={t("addGroupToThisChannel")}>
+            <UsersRoundIcon size={16} strokeWidth={1.9} aria-hidden="true" />{t("addGroup")}
+          </Button>
+        </div>}
 
         <InputShell className="channel-details-search members-panel-search">
           <SearchIcon size={16} strokeWidth={1.8} aria-hidden="true" />
@@ -331,7 +336,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
         </div>
       </div>
       {removeTarget && (
-        <ConfirmDialog
+      <ConfirmDialog
           title={t("removeMemberQuestion").replace("{name}", removeTarget.displayName)}
           message={t("removeMemberMessage").replace("{channel}", `#${channel.name}`)}
           confirmLabel={t("removeFromChannel")}
@@ -342,6 +347,7 @@ export default function MembersPanel({ channel, users = [], onOpenProfile, onAdd
           onCancel={() => !removing && setRemoveTarget(null)}
         />
       )}
+      {showAddGroup && <AddGroupModal channel={{ ...channel, members: memberIds }} onUpdated={onUpdated} onClose={() => setShowAddGroup(false)} />}
     </aside>
   );
 }
