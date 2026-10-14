@@ -60,7 +60,7 @@ export default function AzureWorkItemsIntegration({ embedded = false }) {
   // Build the form only after the admin opens it. JSX expressions are
   // evaluated immediately, even if the resulting element is rendered later.
   const editor = draft ? <form onSubmit={save}>
-    <p className="settings-hint">Use your Azure DevOps project URL, such as https://dev.azure.com/org/project. Enter the token expiration date shown in Azure DevOps.</p>
+    <p className="settings-hint">Use your Azure DevOps project URL, including its organization or collection and project path. Enter the token expiration date shown in Azure DevOps.</p>
     <fieldset disabled={busy} style={{ border: 0, padding: 0, margin: 0 }}>
       <div className="integration-option-row">
         <div><strong id="work-items-enabled-label">Enable work item links</strong><span id="work-items-enabled-hint">Resolve numeric #IDs to Azure DevOps work item titles</span></div>
@@ -69,7 +69,7 @@ export default function AzureWorkItemsIntegration({ embedded = false }) {
           <span className="integration-switch-track"><span /></span>
         </label>
       </div>
-      <label className="settings-field">Azure DevOps project URL<input className="settings-input" type="url" required={draft.enabled} maxLength={500} placeholder="https://dev.azure.com/org/project" value={draft.projectUrl} onChange={(event) => setDraft((value) => ({ ...value, projectUrl: event.target.value }))} /></label>
+      <label className="settings-field">Azure DevOps project URL<input className="settings-input" type="url" required={draft.enabled} maxLength={500} placeholder="https://your-azure-devops-host/org/project" value={draft.projectUrl} onChange={(event) => setDraft((value) => ({ ...value, projectUrl: event.target.value }))} /></label>
       <label className="settings-field">Personal access token<input className="settings-input" type="password" autoComplete="new-password" maxLength={10000} value={token} placeholder={integration?.hasToken ? "Token saved — leave blank to keep" : "Paste a work item read token"} onChange={(event) => setToken(event.target.value)} /></label>
       <label className="settings-field">Token expiration date<input className="settings-input" type="date" required={draft.enabled} value={draft.expiresAt} onChange={(event) => setDraft((value) => ({ ...value, expiresAt: event.target.value }))} /></label>
       <label className="settings-field">Reminder channel<select className="settings-input" required={draft.enabled} value={draft.notifyChannel} onChange={(event) => setDraft((value) => ({ ...value, notifyChannel: event.target.value }))}>
@@ -104,7 +104,7 @@ export default function AzureWorkItemsIntegration({ embedded = false }) {
         <div className="integration-card-icon"><img className="azure-integration-icon" src={azureIcon} alt="" /></div>
         <div className="integration-card-copy">
           <h3>Azure DevOps work items</h3>
-          <span>dev.azure.com</span>
+          <span>Work item links</span>
           <p>Show work item titles for #IDs and remind a channel before the token expires.</p>
         </div>
       </div>
