@@ -23,9 +23,25 @@ export function NotificationDefaults() {
       throw error;
     }
   }
+  async function saveDisplay(display) {
+    const previous = client.getQueryData(queryKeys.notificationSettings);
+    client.setQueryData(queryKeys.notificationSettings, { ...previous, display });
+    try {
+      const next = await api.updateNotificationSettings({ display });
+      client.setQueryData(queryKeys.notificationSettings, next);
+    } catch (error) {
+      client.setQueryData(queryKeys.notificationSettings, previous);
+      throw error;
+    }
+  }
   return <div className="notification-default-options" role="radiogroup" aria-label={t("notificationDefaults")}>
     {[ ["mentions", t("notifyMentionsAndDms")], ["all", t("notifyAllMessages")] ].map(([value, label]) => <label key={value}>
       <input type="radio" name="notification-default" value={value} checked={(query.data?.defaults || "mentions") === value} disabled={query.isLoading} onChange={() => save(value).catch(() => {})} />
+      <span>{label}</span>
+    </label>)}
+    <h4>{t("notificationDisplay")}</h4>
+    {[ ["minimized", t("notificationWhenMinimized")], ["always", t("notificationAlways")] ].map(([value, label]) => <label key={value}>
+      <input type="radio" name="notification-display" value={value} checked={(query.data?.display || "minimized") === value} disabled={query.isLoading} onChange={() => saveDisplay(value).catch(() => {})} />
       <span>{label}</span>
     </label>)}
     {entries.length > 0 && <section className="notification-exceptions">

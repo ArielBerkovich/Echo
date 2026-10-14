@@ -54,6 +54,7 @@ const userSchema = new mongoose.Schema(
     // Channels this user has marked for quick access in the Starred section.
     starredChannels: [{ type: mongoose.Schema.Types.ObjectId, ref: "Channel" }],
     notificationDefaults: { type: String, enum: ["mentions", "all"], default: "mentions" },
+    notificationDisplay: { type: String, enum: ["minimized", "always"], default: "minimized" },
     conversationNotifications: { type: Map, of: String, default: {} },
   },
   { timestamps: true }

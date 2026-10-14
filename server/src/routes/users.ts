@@ -33,6 +33,7 @@ usersRouter.get("/notification-settings", async (req, res) => {
   ]);
   res.json({
     defaults: req.user.notificationDefaults || "mentions",
+    display: req.user.notificationDisplay || "minimized",
     conversations,
     labels,
     followedThreads: followedThreads.map((item) => String(item.thread)),
@@ -41,10 +42,14 @@ usersRouter.get("/notification-settings", async (req, res) => {
 });
 
 usersRouter.put("/notification-settings", async (req, res) => {
-  const { defaults, conversationId, rule } = req.body || {};
+  const { defaults, display, conversationId, rule } = req.body || {};
   if (defaults !== undefined) {
     if (!["mentions", "all"].includes(defaults)) return res.status(400).json({ error: "invalid notification default" });
     req.user.notificationDefaults = defaults;
+  }
+  if (display !== undefined) {
+    if (!["minimized", "always"].includes(display)) return res.status(400).json({ error: "invalid notification display preference" });
+    req.user.notificationDisplay = display;
   }
   if (conversationId !== undefined) {
     if (!/^[a-f0-9]{24}$/i.test(String(conversationId))) return res.status(400).json({ error: "invalid conversation id" });
@@ -69,6 +74,7 @@ usersRouter.put("/notification-settings", async (req, res) => {
   ]);
   res.json({
     defaults: req.user.notificationDefaults || "mentions",
+    display: req.user.notificationDisplay || "minimized",
     conversations,
     labels,
     followedThreads: followedThreads.map((item) => String(item.thread)),
