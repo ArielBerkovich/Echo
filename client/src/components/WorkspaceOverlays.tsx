@@ -41,6 +41,7 @@ export default function WorkspaceOverlays({
   onUserUpdated,
   onToggleStarred,
   onOpenDm,
+  onOpenGroup,
   onOpenApiDocs,
   onFinishTour,
   onClose,
@@ -98,6 +99,7 @@ export default function WorkspaceOverlays({
           isStarred={starredIds.has(profileUser.id)}
           onToggleStarred={() => onToggleStarred(profileUser.id)}
           onMessage={onOpenDm}
+          onOpenGroup={onOpenGroup}
           onClose={onClose.profile}
         />
       ) : null}

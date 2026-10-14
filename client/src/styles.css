@@ -2770,6 +2770,15 @@ html[data-mode="dark"] .backend-connection-error {
   color: var(--muted);
   font-size: 14px;
 }
+.profile-groups { width: 100%; min-width: 0; margin-top: 18px; text-align: left; }
+.profile-groups h3 { margin: 0 0 8px; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.profile-groups-list { display: grid; gap: 5px; max-height: min(220px, 32vh); overflow-y: auto; padding: 1px 3px 1px 1px; }
+.profile-group-link { display: flex; align-items: center; gap: 10px; width: 100%; min-width: 0; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); color: var(--text); text-align: left; cursor: pointer; transition: background 120ms ease, border-color 120ms ease; }
+.profile-group-link:hover, .profile-group-link:focus-visible { border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); background: color-mix(in srgb, var(--accent) 8%, var(--surface-2)); }
+.profile-group-icon { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 30px; height: 30px; border-radius: 9px; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+.profile-group-name { min-width: 0; overflow: hidden; font-size: 13px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.profile-group-arrow { flex: none; margin-inline-start: auto; color: var(--muted); }
+.profile-groups-status { padding: 12px; border: 1px solid var(--border); border-radius: 10px; color: var(--muted); background: var(--surface-2); font-size: 12px; text-align: center; }
 .profile-presence,
 .profile-directory-source {
   display: inline-flex;
