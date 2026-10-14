@@ -152,16 +152,27 @@ test("Groups REST API validates names and exposes the membership lifecycle", asy
     const bobMembers = await requestAsToken(page, fixture.bob.token, `/groups/${groupId}/members`);
     expect(bobMembers.members.map((member) => member.id)).toEqual(expect.arrayContaining([fixture.alice.id, fixture.bob.id]));
 
-    const removed = await requestAsToken(page, fixture.bob.token, `/groups/${groupId}/members/${fixture.alice.id}`, {
+    await expect(requestAsToken(page, fixture.bob.token, `/groups/${groupId}/members/${fixture.alice.id}`, {
+      method: "DELETE",
+    })).rejects.toThrow("group owner only");
+
+    const left = await requestAsToken(page, fixture.bob.token, `/groups/${groupId}/leave`, { method: "POST" });
+    expect(left.group.memberCount).toBe(1);
+    expect(left.group.currentUserRole).toBe("owner");
+
+    await requestAsToken(page, fixture.alice.token, `/groups/${groupId}/members`, {
+      method: "POST",
+      body: { userId: fixture.bob.id },
+    });
+    const removed = await requestAsToken(page, fixture.alice.token, `/groups/${groupId}/members/${fixture.bob.id}`, {
       method: "DELETE",
     });
     expect(removed.group.memberCount).toBe(1);
     expect(removed.group.currentUserRole).toBe("owner");
-    await expect(requestAsToken(page, fixture.alice.token, `/groups/${groupId}/members`)).rejects.toThrow("group member only");
 
-    const left = await requestAsToken(page, fixture.bob.token, `/groups/${groupId}/leave`, { method: "POST" });
-    expect(left.deleted).toBe(true);
-    await expect(requestAsToken(page, fixture.alice.token, `/groups/${groupId}`)).rejects.toThrow("group not found");
+    const deleted = await requestAsToken(page, fixture.alice.token, `/groups/${groupId}/leave`, { method: "POST" });
+    expect(deleted.deleted).toBe(true);
+    await expect(requestAsToken(page, fixture.bob.token, `/groups/${groupId}`)).rejects.toThrow("group not found");
   } finally {
     await requestAsToken(page, fixture.alice.token, `/groups/${groupId}`, { method: "DELETE" }).catch(() => {});
     await requestAsToken(page, fixture.bob.token, `/groups/${groupId}`, { method: "DELETE" }).catch(() => {});
