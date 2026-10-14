@@ -67,6 +67,15 @@ describe("Channel.toPublicJSON", () => {
     assert.equal(canParticipateInChannel(channel, visitor), false);
   });
 
+  it("requires DM membership to participate", () => {
+    const member = new mongoose.Types.ObjectId();
+    const visitor = new mongoose.Types.ObjectId();
+    const channel = { type: "dm", members: [member] };
+
+    assert.equal(canParticipateInChannel(channel, member), true);
+    assert.equal(canParticipateInChannel(channel, visitor), false);
+  });
+
   it("normalizes empty topic and description", () => {
     const channel = new Channel({
       name: "random",
