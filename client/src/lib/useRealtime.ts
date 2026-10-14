@@ -391,8 +391,10 @@ export function useRealtime({
         ? mentionedInUnmutedConversation
         : normalNotification);
       if (!mine && msg.kind !== "system" && shouldNotify && notificationsActive()) {
+        const alwaysDisplay = notificationSettings?.display === "always";
         const focusedHere = !!active && msg.channelId === active.id && document.hasFocus();
-        if (!focusedHere) {
+        const shouldDisplay = alwaysDisplay || (!document.hasFocus() && !focusedHere);
+        if (shouldDisplay) {
           const sender = msg.author?.displayName || t("unknownSender");
           const preview = notificationPreview(msg.body) || t("sentAttachment");
           if (inDms) {
