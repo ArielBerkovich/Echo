@@ -227,7 +227,10 @@ export function useRealtime({
     const onPresence = ({ online } = {}) => setOnlineIds(new Set(online || []));
     const mergeChannel = (prev, updated) => {
       const exists = prev.some((c) => c.id === updated.id);
-      if (updated.type !== "public" || updated.isArchived) {
+      const isVisible = updated.type === "public" || (
+        updated.type === "private" && (updated.members || []).some((memberId) => String(memberId) === String(user.id))
+      );
+      if (!isVisible || updated.isArchived) {
         return prev.filter((c) => c.id !== updated.id);
       }
       const next = exists
