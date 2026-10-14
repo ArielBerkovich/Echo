@@ -106,7 +106,7 @@ function GroupDetails({ group, onOpenProfile, onLeave, onAddPeople, onRemoveMemb
         {group.isMember ? <div className="groups-detail-section-actions"><Button variant="subtle" onClick={onLeave}><LogOutIcon size={15} aria-hidden="true" />{t("leaveGroup")}</Button><Button variant="subtle" onClick={onAddPeople}><UserPlusIcon size={15} aria-hidden="true" />{t("addPeople")}</Button></div> : null}
       </header>
       <div className="groups-detail-list">
-        {visibleMembers.length ? visibleMembers.map((member) => <GroupMember key={member.id} member={member} removable={group.isMember && member.id !== group.currentUserId} onOpenProfile={onOpenProfile} onRemove={onRemoveMember} />) : <div className="groups-members-empty">{t("noMembersMatch").replace("{query}", memberQuery.trim())}</div>}
+        {visibleMembers.length ? visibleMembers.map((member) => <GroupMember key={member.id} member={member} removable={group.currentUserRole === "owner" && member.id !== group.currentUserId} onOpenProfile={onOpenProfile} onRemove={onRemoveMember} />) : <div className="groups-members-empty">{t("noMembersMatch").replace("{query}", memberQuery.trim())}</div>}
       </div>
     </section>
   );

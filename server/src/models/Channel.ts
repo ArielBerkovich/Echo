@@ -82,7 +82,7 @@ export function isChannelMember(channel, userId) {
 // Public channels can be previewed by non-members, but participation always
 // requires membership. Keep this separate from public-channel visibility.
 export function canParticipateInChannel(channel, userId) {
-  return channel.type === "dm" || isChannelMember(channel, userId);
+  return isChannelMember(channel, userId);
 }
 
 export const Channel = mongoose.model("Channel", channelSchema);

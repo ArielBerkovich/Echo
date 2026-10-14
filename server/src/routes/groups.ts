@@ -104,10 +104,12 @@ groupsRouter.post("/:groupId/members", async (req, res) => {
 
 async function removeMember(req, res, self) {
   const group = await requireMember(req, res); if (!group) return;
+  if (!self && !group.owner.equals(req.user._id)) return res.status(403).json({ error: "group owner only" });
   const userId = self ? req.user._id : req.params.userId;
   if (!self && !validId(userId)) return res.status(400).json({ error: "valid user id is required" });
   const target = await membership(group._id, userId);
   if (!target) return res.status(404).json({ error: "member not found" });
+  if (!self && target.role === "owner") return res.status(400).json({ error: "the owner must leave or transfer ownership" });
   const count = await GroupMembership.countDocuments({ group: group._id });
   if (count === 1) {
     group.deletedAt = new Date(); group.archivedBy = req.user._id; await group.save();
