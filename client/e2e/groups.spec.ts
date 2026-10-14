@@ -158,7 +158,9 @@ test("Groups REST API validates names and exposes the membership lifecycle", asy
 
     const left = await requestAsToken(page, fixture.bob.token, `/groups/${groupId}/leave`, { method: "POST" });
     expect(left.group.memberCount).toBe(1);
-    expect(left.group.currentUserRole).toBe("owner");
+    expect(left.group.currentUserRole).toBeNull();
+    const afterBobLeaves = await requestAsToken(page, fixture.alice.token, `/groups/${groupId}`);
+    expect(afterBobLeaves.group.currentUserRole).toBe("owner");
 
     await requestAsToken(page, fixture.alice.token, `/groups/${groupId}/members`, {
       method: "POST",
