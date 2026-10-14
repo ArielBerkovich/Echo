@@ -14,6 +14,28 @@ export type WhatsNewRelease = {
 // Keep release notes in the renderer so they work for air-gapped deployments
 // and always match the desktop binary that shipped them.
 const RELEASES: Record<string, WhatsNewRelease> = {
+  "0.54.0": {
+    id: "0.54.0",
+    title: "What's new in 0.54.0",
+    summary: "Choose how notifications appear, find messages by display name, and keep private channel lists up to date.",
+    items: [
+      {
+        title: "Notification display preference",
+        description: "Choose how notifications are displayed in your preferences.",
+        category: "New",
+      },
+      {
+        title: "Search by display name",
+        description: "Find messages by searching for a person's display name.",
+        category: "Improved",
+      },
+      {
+        title: "Private channel lists",
+        description: "Keep private channels visible to members after channel updates.",
+        category: "Fixed",
+      },
+    ],
+  },
   "0.53.0": {
     id: "0.53.0",
     title: "What's new in 0.53.0",
