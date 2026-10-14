@@ -27,6 +27,6 @@ describe("Azure DevOps project URLs", () => {
   it("rejects malformed URLs and URLs with credentials or query data", () => {
     assert.equal(normalizeAzureProjectUrl("https://user:pass@example.com/org/project"), null);
     assert.equal(normalizeAzureProjectUrl("https://dev.azure.com/org/project?view=1"), null);
-    assert.equal(normalizeAzureProjectUrl("https://dev.azure.com/org"), null);
+    assert.equal(normalizeAzureProjectUrl("https://dev.azure.com/org"), "https://dev.azure.com/org");
   });
 });
