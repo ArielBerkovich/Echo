@@ -1788,6 +1788,10 @@ export default function App() {
           setProfileUser(null);
           handleOpenDm(target);
         }}
+        onOpenGroup={(group) => {
+          setProfileUser(null);
+          handleOpenGroups(group);
+        }}
         onOpenApiDocs={openApiDocs}
         onFinishTour={finishTour}
         onClose={{
