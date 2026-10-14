@@ -150,7 +150,7 @@ test("opens a group DM by ID, shows members, and updates its name after adding s
   await expect(members).toContainText(fixture.bob.displayName);
   await expect(members).toContainText(third.user.displayName);
 
-  await members.getByRole("button", { name: "+ Add people" }).click();
+  await members.getByRole("button", { name: "Add people to this channel" }).click();
   const addPeople = page.getByTestId("add-people-modal");
   await addPeople.getByTestId("add-people-search").fill(fourth.user.username);
   await expect(addPeople).toContainText(fourth.user.displayName);
@@ -182,7 +182,7 @@ test("lets an added member open and message the group DM", async ({ browser, pag
   await page.goto(`/dms/${created.channel.id}`);
   await page.getByTestId("channel-members").click();
   const members = page.getByTestId("members-panel");
-  await members.getByRole("button", { name: "+ Add people" }).click();
+  await members.getByRole("button", { name: "Add people to this channel" }).click();
   const addPeople = page.getByTestId("add-people-modal");
   await addPeople.getByTestId("add-people-search").fill(fourth.user.username);
   await addPeople.getByTestId(`add-people-add-${fourth.user.username}`).click();
