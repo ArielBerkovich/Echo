@@ -31,6 +31,11 @@ afterEach(() => {
 
 describe("What's new release content", () => {
   it("matches authored content to the desktop version", () => {
+    assert.equal(getWhatsNewRelease("0.53.0")?.id, "0.53.0");
+    assert.deepEqual(
+      getWhatsNewRelease("0.53.0")?.items.map(({ title }) => title),
+      ["Add groups to channels", "Group memberships in profiles", "Custom Azure DevOps links"],
+    );
     assert.equal(getWhatsNewRelease("0.52.0")?.id, "0.52.0");
     assert.deepEqual(
       getWhatsNewRelease("0.52.0")?.items.map(({ title }) => title),
@@ -114,11 +119,11 @@ describe("What's new release content", () => {
     installBrowser();
     globalThis.window = { location: { search: "?whats-new-preview=1" } } as Window & typeof globalThis;
     assert.equal(isWhatsNewPreview(), true);
-    assert.deepEqual(getWhatsNewReleases("0.39.0", true).map(({ id }) => id), ["0.52.0", "0.50.1", "0.50.0", "0.49.0", "0.48.0", "0.47.1", "0.47.0", "0.46.0", "0.45.0", "0.44.0", "0.43.0", "0.42.0", "0.41.0", "0.40.0", "0.39.0"]);
+    assert.deepEqual(getWhatsNewReleases("0.39.0", true).map(({ id }) => id), ["0.53.0", "0.52.0", "0.50.1", "0.50.0", "0.49.0", "0.48.0", "0.47.1", "0.47.0", "0.46.0", "0.45.0", "0.44.0", "0.43.0", "0.42.0", "0.41.0", "0.40.0", "0.39.0"]);
   });
 
   it("returns all authored releases for a known desktop version", () => {
-    assert.deepEqual(getWhatsNewReleases("0.40.0").map(({ id }) => id), ["0.52.0", "0.50.1", "0.50.0", "0.49.0", "0.48.0", "0.47.1", "0.47.0", "0.46.0", "0.45.0", "0.44.0", "0.43.0", "0.42.0", "0.41.0", "0.40.0", "0.39.0"]);
+    assert.deepEqual(getWhatsNewReleases("0.40.0").map(({ id }) => id), ["0.53.0", "0.52.0", "0.50.1", "0.50.0", "0.49.0", "0.48.0", "0.47.1", "0.47.0", "0.46.0", "0.45.0", "0.44.0", "0.43.0", "0.42.0", "0.41.0", "0.40.0", "0.39.0"]);
   });
 
   it("only treats the native renderer as a desktop app", () => {
