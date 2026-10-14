@@ -23,9 +23,10 @@ function parseQuery(raw) {
     inName = inMatch[1];
     text = text.replace(inMatch[0], " ");
   }
-  const fromMatch = text.match(/(?:^|\s)from:\s*@?(\S+)/i);
+  // Display names can contain spaces; stop at the next structured filter.
+  const fromMatch = text.match(/(?:^|\s)from:\s*@?(.+?)(?=\s+(?:in:|from:|has:)|\s*$)/i);
   if (fromMatch) {
-    fromName = fromMatch[1];
+    fromName = fromMatch[1].trim();
     text = text.replace(fromMatch[0], " ");
   }
   const hasMatch = text.match(/(?:^|\s)has:\s*(\w+)/i);
@@ -65,9 +66,8 @@ searchRouter.get("/messages", async (req, res) => {
 
   // from:<@user> — restrict to one author.
   if (fromName) {
-    const author = await User.findOne({
-      username: new RegExp(`^${escapeSearchRegex(fromName)}$`, "i"),
-    });
+    const escapedName = new RegExp(`^${escapeSearchRegex(fromName)}$`, "i");
+    const author = await User.findOne({ $or: [{ username: escapedName }, { displayName: escapedName }] });
     if (!author) return res.json(empty);
     authorId = author._id;
   }

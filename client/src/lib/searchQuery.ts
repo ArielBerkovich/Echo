@@ -10,9 +10,11 @@ export function parseSearchQuery(raw) {
     filters.push({ type: "in", value: inM[1] });
     text = text.replace(inM[0], " ");
   }
-  const fromM = text.match(/(?:^|\s)from:@?(\S+)/i);
+  // Display names may contain spaces. Capture through the next filter token
+  // (or the end of the query), while retaining username-style from: values.
+  const fromM = text.match(/(?:^|\s)from:\s*@?(.+?)(?=\s+(?:in:|from:|has:)|\s*$)/i);
   if (fromM) {
-    filters.push({ type: "from", value: fromM[1] });
+    filters.push({ type: "from", value: fromM[1].trim() });
     text = text.replace(fromM[0], " ");
   }
   const hasM = text.match(/(?:^|\s)has:(\w+)/i);

@@ -29,6 +29,16 @@ describe("parseSearchQuery", () => {
     });
   });
 
+  it("keeps a multiword display name in the from filter", () => {
+    assert.deepEqual(parseSearchQuery("from:@Or Vazna has:file"), {
+      text: "",
+      filters: [
+        { type: "from", value: "Or Vazna" },
+        { type: "has", value: "file" },
+      ],
+    });
+  });
+
   it("only removes the first token of each supported filter type", () => {
     assert.deepEqual(parseSearchQuery("in:one in:two from:bob from:ann has:file has:link"), {
       text: "in:two  from:ann  has:link",
