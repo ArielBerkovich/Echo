@@ -13649,6 +13649,9 @@ html[data-interface-direction="rtl"] .scheduled-banner-copy {
 .scheduled-item.is-next .scheduled-item-marker {
   background: color-mix(in srgb, var(--accent) 14%, var(--surface));
 }
+.scheduled-item.is-failed {
+  border-color: color-mix(in srgb, var(--danger, #c43f3f) 28%, var(--border));
+}
 .scheduled-body {
   min-width: 0;
 }
@@ -13674,6 +13677,12 @@ html[data-interface-direction="rtl"] .scheduled-banner-copy {
   letter-spacing: 0.06em;
   line-height: 1.2;
   text-transform: uppercase;
+}
+.scheduled-failed-label {
+  margin-bottom: 3px;
+  color: var(--danger, #c43f3f);
+  font-size: 11px;
+  font-weight: 700;
 }
 .scheduled-preview {
   display: -webkit-box;

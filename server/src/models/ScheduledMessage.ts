@@ -21,6 +21,10 @@ const scheduledMessageSchema = new mongoose.Schema(
       },
     ],
     scheduledFor: { type: Date, required: true, index: true },
+    status: { type: String, enum: ["pending", "failed"], default: "pending", index: true },
+    attemptCount: { type: Number, default: 0 },
+    nextAttemptAt: { type: Date, default: null, index: true },
+    lastError: { type: String, default: "", maxlength: 500 },
     // Temporary ownership marker used by the distributed scheduler. It is
     // intentionally not exposed by toPublicJSON().
     dispatchLeaseUntil: { type: Date, default: null, index: true },
@@ -45,6 +49,8 @@ scheduledMessageSchema.methods.toPublicJSON = function () {
       url: `/api/files/${a.key}`,
     })),
     scheduledFor: this.scheduledFor,
+    status: this.status,
+    ...(this.status === "failed" ? { error: "Could not send this scheduled message after several attempts." } : {}),
   };
 };
 
