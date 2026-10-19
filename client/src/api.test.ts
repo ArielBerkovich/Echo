@@ -122,6 +122,19 @@ describe("api request helpers", () => {
     );
   });
 
+  it("requests bounded user and group directory pages", async () => {
+    const paths = [];
+    globalThis.fetch = async (path) => {
+      paths.push(path);
+      return { ok: true, json: async () => ({ users: [], groups: [] }) };
+    };
+
+    await api.listUsers({ page: 2, limit: 50, query: "ann+test" });
+    await api.listGroups({ page: 3, limit: 25 });
+    assert.equal(paths[0], "/api/users?page=2&limit=50&q=ann%2Btest");
+    assert.equal(paths[1], "/api/groups?page=3&limit=25");
+  });
+
   it("softens authentication errors while preserving server details", async () => {
     globalThis.fetch = async () => ({
       ok: false,

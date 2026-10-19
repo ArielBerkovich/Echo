@@ -1,14 +1,14 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
-import { canParticipateInChannel, canPostToChannel, isChannelManager } from "./models/Channel.js";
+import { Channel, canParticipateInChannel, canPostToChannel, isChannelManager } from "./models/Channel.js";
 import { sanitizeAttachments, attachmentLimitError, sanitizeSurvey, surveyError, sanitizeRetro, retroError, updateRetro } from "./deliver.js";
 import { sanitizeCard, cardError } from "./lib/messageCard.js";
 import { normalizeChannelName } from "./automation.js";
 import { emitToChannel, joinUserToChannel } from "./realtime.js";
 import { deleteMessage, editMessage, reactToMessage, toggleMessagePin, voteInSurvey } from "./services/messageActionService.js";
 import { findMessageInChannel, getThreadMessages, listPinnedMessages } from "./services/messageQueryService.js";
-import { findSearchableChannels, searchMessages } from "./services/messageSearchService.js";
+import { searchMessages } from "./services/messageSearchService.js";
 import { queryChannelHistory } from "./services/messageHistoryService.js";
 import { isValidChannelName } from "./lib/channelName.js";
 import {
@@ -288,22 +288,34 @@ function registerTools(server, user) {
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
     async ({ query, channel: channelKey, limit, offset }) => {
-      const visibleChannels = await findSearchableChannels({ userId, excludeArchived: true });
-      let channels = visibleChannels;
+      let channelId;
+      let channelName;
       if (channelKey) {
-        const requested = visibleChannels.find((item) => item.name === normalizeChannelName(channelKey));
+        const requested = await Channel.findOne({
+          name: normalizeChannelName(channelKey),
+          isArchived: false,
+          $or: [{ type: "public" }, { members: userId }],
+        }, { _id: 1, name: 1 });
         if (!requested) return textResult({ query, results: [] });
-        channels = [requested];
+        channelId = requested._id;
+        channelName = requested.name;
       }
       const terms = query.trim().split(/\s+/).filter(Boolean).slice(0, 10);
-      const docs = await searchMessages({ channelIds: channels.map((item) => item._id), terms, skip: offset, limit: limit + 1 });
-      const channelNames = new Map(channels.map((item) => [item._id.toString(), item.name]));
+      const docs = await searchMessages({ userId, channelId, excludeArchived: true, terms, skip: offset, limit: limit + 1 });
       const hasMore = docs.length > limit;
       return textResult({
         query,
         results: docs.slice(0, limit).map((message) => ({
-          ...compactMessage(message),
-          channelName: channelNames.get(message.channel.toString()) || null,
+          id: message._id.toString(),
+          channelId: message.channel.toString(),
+          channelName: message.channelName || channelName || null,
+          body: message.body,
+          createdAt: message.createdAt,
+          author: message.authorInfo ? {
+            id: message.authorInfo._id.toString(),
+            username: message.authorInfo.username,
+            displayName: message.authorInfo.displayName,
+          } : null,
         })),
         offset,
         limit,

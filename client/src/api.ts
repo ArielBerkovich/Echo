@@ -263,9 +263,14 @@ export const api = {
     request(`/integrations/azure-devops/${encodeURIComponent(id)}/token`, { method: "POST" }),
   updateAzureDevOpsIntegration: (id, payload) =>
     request(`/integrations/azure-devops/${encodeURIComponent(id)}`, { method: "PATCH", body: payload }),
-  listUsers: () => request("/users"),
+  listUsers: ({ page = 0, limit = 100, query } = {}) => {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (query) params.set("q", query);
+    return request(`/users?${params}`);
+  },
   setUserDeprecated: (userId, deprecated) => request(`/admin/users/${encodeURIComponent(userId)}/deprecated`, { method: "PATCH", body: { deprecated } }),
-  listGroups: () => request("/groups"),
+  listGroups: ({ page = 0, limit = 100 } = {}) =>
+    request(`/groups?page=${page}&limit=${limit}`),
   getGroup: (groupId, legacyId) => request(`/groups/${encodeURIComponent(legacyId || groupId)}`),
   createGroup: (payload) => request("/groups", { method: "POST", body: payload }),
   updateGroup: (groupId, payload) => request(`/groups/${encodeURIComponent(groupId)}`, { method: "PATCH", body: payload }),
