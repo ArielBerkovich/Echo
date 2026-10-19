@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { BUILT_IN_GIT_EMOJIS } from "../lib/gitEmojis.js";
+import AppErrorBoundary from "./AppErrorBoundary.js";
 
 // These surfaces are interaction-driven and are not needed to paint the
 // workspace. Keep them out of the initial route chunk until they are opened.
@@ -77,6 +78,7 @@ export default function WorkspaceOverlays({
         />
       ) : null}
       {showSettings ? (
+        <AppErrorBoundary fallback="Settings could not be loaded.">
         <SettingsModal
           user={user}
           users={users}
@@ -89,9 +91,11 @@ export default function WorkspaceOverlays({
           onClose={onClose.settings}
           onOpenApiDocs={onOpenApiDocs}
         />
+        </AppErrorBoundary>
       ) : null}
-      {showApiDocs ? <ApiDocsPage onClose={onClose.apiDocs} /> : null}
+      {showApiDocs ? <AppErrorBoundary fallback="The API reference could not be loaded."><ApiDocsPage onClose={onClose.apiDocs} /></AppErrorBoundary> : null}
       {profileUser ? (
+        <AppErrorBoundary resetKey={profileUser.id} fallback="This profile could not be loaded.">
         <UserProfileModal
           user={profileUser}
           currentUserId={user.id}
@@ -102,6 +106,7 @@ export default function WorkspaceOverlays({
           onOpenGroup={onOpenGroup}
           onClose={onClose.profile}
         />
+        </AppErrorBoundary>
       ) : null}
       {showTour ? <Walkthrough onClose={onFinishTour} /> : null}
       {toast ? <div className={`toast${toast.tone === "error" ? " toast-error" : ""}`} role={toast.tone === "error" ? "alert" : "status"} onClick={onClose.toast}>{typeof toast === "string" ? toast : toast.message}</div> : null}

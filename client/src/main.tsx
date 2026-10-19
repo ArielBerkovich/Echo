@@ -8,6 +8,7 @@ import AppErrorBoundary from "./components/AppErrorBoundary.js";
 import ThemedTooltipLayer from "./components/ThemedTooltipLayer.js";
 import { LocaleProvider } from "./lib/i18n.js";
 import { queryClient } from "./lib/queryClient.js";
+import { claimPreloadReload } from "./lib/preloadRecovery.js";
 import "@fontsource/asap/latin-400.css";
 import "@fontsource/asap/latin-500.css";
 import "@fontsource/asap/latin-600.css";
@@ -24,13 +25,14 @@ const Router = window.location.protocol === "file:" ? HashRouter : BrowserRouter
 // open. Vite reports that stale-chunk case here; reload once to pick up the
 // new index and matching assets.
 window.addEventListener("vite:preloadError", (event) => {
-  event.preventDefault();
-  const key = "echo:preload-reload-attempted";
-  if (sessionStorage.getItem(key)) return;
-  sessionStorage.setItem(key, "1");
-  window.location.reload();
+  try {
+    if (!claimPreloadReload(sessionStorage)) return;
+    event.preventDefault();
+    window.location.reload();
+  } catch {
+    // Keep the browser's normal load-error handling if session storage is unavailable.
+  }
 });
-window.addEventListener("load", () => sessionStorage.removeItem("echo:preload-reload-attempted"), { once: true });
 
 createRoot(document.getElementById("root")).render(
   <QueryClientProvider client={queryClient}>

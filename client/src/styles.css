@@ -18132,6 +18132,7 @@ html[data-theme="calm"] .channel-list::-webkit-scrollbar-track {
 .ai-integration-modal .ai-prompt-prefix { color: var(--muted); background: var(--surface-2); }
 
 .app-error-screen { min-height: 100dvh; display: grid; place-items: center; padding: 24px; color: var(--text); background: var(--surface); }
+.panel-error-boundary { display: grid; justify-items: start; gap: 10px; max-width: 100%; padding: 12px; border: 1px solid color-mix(in srgb, var(--danger, #c43f3f) 30%, var(--border)); border-radius: 10px; color: var(--text); background: var(--surface); font-size: 13px; }
 .app-error-card { width: min(100%, 440px); padding: 28px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface-2); box-shadow: 0 12px 36px color-mix(in srgb, var(--text) 12%, transparent); }
 .app-error-card h1 { margin: 0 0 10px; font-size: 22px; }
 .app-error-card p { margin: 0 0 20px; color: var(--muted); line-height: 1.5; }
