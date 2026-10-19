@@ -6,6 +6,7 @@ import {
   hashWebhookToken,
   normalizeChannelName,
   normalizeFields,
+  postAutomationMessage,
   renderAutomationBody,
 } from "./automation.js";
 
@@ -39,5 +40,16 @@ describe("automation helpers", () => {
     assert.ok(token.length >= 32);
     assert.equal(hashWebhookToken(token), hashWebhookToken(token));
     assert.notEqual(hashWebhookToken(token), token);
+  });
+
+  it("rejects automation messages above the model body limit as a client error", async () => {
+    await assert.rejects(
+      postAutomationMessage({
+        channel: { _id: "channel" },
+        authorId: "user",
+        payload: { body: "x".repeat(4001) },
+      }),
+      (error) => error.status === 400 && /4000/.test(error.message)
+    );
   });
 });

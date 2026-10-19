@@ -4,6 +4,7 @@ import { Message } from "../models/Message.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { listSavedMessages } from "../services/savedMessageService.js";
 import { toggleSavedMessage } from "../services/userStateService.js";
+import { isValidObjectId } from "../lib/objectId.js";
 
 export const savedRouter = Router();
 savedRouter.use(requireAuth);
@@ -16,6 +17,7 @@ function canAccess(channel, userId) {
 // message for the current user. Returns the new state.
 savedRouter.post("/:messageId", async (req, res) => {
   const me = req.user;
+  if (!isValidObjectId(req.params.messageId)) return res.status(400).json({ error: "invalid message id" });
   const msg = await Message.findById(req.params.messageId);
   if (!msg) return res.status(404).json({ error: "message not found" });
   const channel = await Channel.findById(msg.channel);
