@@ -23,4 +23,15 @@ describe("keyboard shortcut registry", () => {
       new Set(KEYBOARD_SHORTCUTS.map((shortcut) => shortcut.id))
     );
   });
+
+  it("documents the Electron zoom controls without registering them as web hotkeys", () => {
+    const desktop = KEYBOARD_SHORTCUT_GROUPS.find((group) => group.label === "Desktop");
+    assert.deepEqual(desktop.shortcuts.map((shortcut) => shortcut.id), [
+      "desktop-zoom-in", "desktop-zoom-out", "desktop-zoom-reset",
+    ]);
+    assert.deepEqual(desktop.shortcuts.map((shortcut) => shortcut.keys), [
+      ["Ctrl / ⌘", "+ / ="], ["Ctrl / ⌘", "−"], ["Ctrl / ⌘", "0"],
+    ]);
+    for (const shortcut of desktop.shortcuts) assert.deepEqual(getKeyboardHotkeys(shortcut.id), []);
+  });
 });

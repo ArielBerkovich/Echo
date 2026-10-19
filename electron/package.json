@@ -13,6 +13,7 @@
   "scripts": {
     "start": "electron .",
     "start:dev": "ELECTRON_START_URL=http://localhost:5173 electron .",
+    "test": "node --test *.test.cjs",
     "dist": "ELECTRON_BUILD=1 npm --prefix ../client run build && electron-builder",
     "test:e2e:rhsso": "playwright test --config playwright.rhsso.config.cjs"
   },
