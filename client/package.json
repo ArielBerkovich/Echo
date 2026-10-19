@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "typecheck": "node -e \"console.log('TypeScript migration check: noCheck=true, so this validates parsing/module resolution, not full type safety.')\" && tsc --noEmit",
+    "typecheck": "node -e \"console.log('Running syntax and undefined-identifier checks; broader type errors remain under migration.')\" && tsc --noEmit && node scripts/check-undefined-identifiers.mjs",
     "preview": "vite preview",
     "test": "node --import tsx --test $(find src \\( -name '*.test.ts' -o -name '*.test.tsx' -o -name '*.test.js' \\) -print)",
     "test:e2e": "playwright test",

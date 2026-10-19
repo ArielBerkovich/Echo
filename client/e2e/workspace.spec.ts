@@ -300,6 +300,28 @@ test("opens API reference from Settings", async ({ page }) => {
   expect(Math.abs(innerBox.x - contentBox.x - contentPaddingLeft)).toBeLessThanOrEqual(1);
 });
 
+test("shows a translated profile error when saving settings fails", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByText("#general", { exact: true })).toBeVisible();
+  await page.route("**/api/users/me", async (route) => {
+    if (route.request().method() === "PATCH") {
+      await route.fulfill({ status: 400, contentType: "application/json", body: JSON.stringify({ error: "Profile update rejected" }) });
+      return;
+    }
+    await route.continue();
+  });
+
+  await page.getByTestId("rail-settings").click();
+  const settings = page.getByTestId("settings-page");
+  await settings.getByTestId("settings-display-name").fill(`Changed ${fixture.suffix}`);
+  await settings.locator(".settings-profile-section").getByRole("button", { name: "Save" }).click();
+
+  const error = settings.locator(".settings-content > .error");
+  await expect(error).toBeVisible();
+  await expect(error).toContainText("Profile update rejected");
+  await expect(error).not.toContainText("translateError is not defined");
+});
+
 test("browses, filters, and joins public channels while private channels stay invite-only", async ({ page }) => {
   const suffix = Date.now();
   const publicPrefix = `zz-discoverable-${suffix}`;

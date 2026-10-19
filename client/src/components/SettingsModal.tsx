@@ -178,7 +178,7 @@ export default function SettingsModal({
   settingsTab = "account",
   onSettingsTabChange,
 }) {
-  const { language, setLanguage, t } = useI18n();
+  const { language, setLanguage, t, translateError } = useI18n();
   const [displayName, setDisplayName] = useState(user.displayName);
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl || null);
   const [busy, setBusy] = useState(false);
@@ -1431,7 +1431,7 @@ function ChangePassword() {
 // Admin-only: pick a user and issue them a one-time password. The admin shares
 // it; the user logs in with it and is forced to choose their own new password.
 function AdminUserDeprecation({ users, currentUserId }) {
-  const { t } = useI18n();
+  const { t, translateError } = useI18n();
   const [query, setQuery] = useState("");
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState(null);
@@ -1473,7 +1473,7 @@ function AdminUserDeprecation({ users, currentUserId }) {
 }
 
 function AdminPasswordReset({ users, currentUserId }) {
-  const { t } = useI18n();
+  const { t, translateError } = useI18n();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(null);
   const [busy, setBusy] = useState(false);
