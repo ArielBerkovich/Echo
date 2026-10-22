@@ -5,6 +5,7 @@ import { requireAuth } from "../middleware/requireAuth.js";
 import { getObject } from "../storage.js";
 import { decodeMultipartFilename } from "../lib/filenames.js";
 import { canAccessAttachment, isImageContentType, storeAttachment } from "../services/attachmentService.js";
+import { streamDownload } from "../lib/downloadStream.js";
 
 export const uploadsRouter = Router();
 
@@ -88,7 +89,7 @@ filesRouter.get("/:key", requireAuth, async (req, res) => {
       req.query.download ? "attachment" : "inline"
     );
     if (range && obj.ContentRange) res.status(206);
-    obj.Body.pipe(res);
+    streamDownload(obj.Body, res, (err) => console.error("file stream failed:", err));
   } catch (err) {
     console.error("file stream failed:", err);
     res.status(502).json({ error: "could not read file" });
