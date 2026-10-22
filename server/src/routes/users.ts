@@ -86,10 +86,19 @@ usersRouter.put("/notification-settings", async (req, res) => {
 // GET /api/users — directory used to power @mention autocomplete.
 // Excludes the internal system account.
 usersRouter.get("/", async (req, res) => {
-  const users = await listDirectoryUsers();
+  const pageText = String(req.query.page ?? "0");
+  const limitText = String(req.query.limit ?? "100");
+  if (!/^\d+$/.test(pageText) || Number(pageText) > 10000) return res.status(400).json({ error: "page must be between 0 and 10000" });
+  if (!/^\d+$/.test(limitText)) return res.status(400).json({ error: "limit must be a positive integer" });
+  const page = Number(pageText);
+  const limit = Math.max(1, Math.min(Number(limitText) || 100, 200));
+  const query = typeof req.query.q === "string" ? req.query.q.trim().slice(0, 80) : "";
+  const docs = await listDirectoryUsers({ skip: page * limit, limit: limit + 1, query });
+  const hasMore = docs.length > limit;
+  const users = docs.slice(0, limit);
   // Keep the signed-in user discoverable even when a large directory pushes
   // them past the autocomplete limit.
-  if (!users.some((user) => user._id.equals(req.user._id))) {
+  if (page === 0 && !query && !users.some((user) => user._id.equals(req.user._id))) {
     const currentUser = await findUserById(req.user._id);
     if (currentUser && currentUser.username !== "system") users.push(currentUser);
   }
@@ -99,6 +108,9 @@ usersRouter.get("/", async (req, res) => {
       ...u.toPublicJSON(),
       aliases: aliases.get(u._id.toString()) || [],
     })),
+    page,
+    limit,
+    hasMore,
   });
 });
 

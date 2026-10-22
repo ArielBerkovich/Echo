@@ -107,7 +107,7 @@ test("virtualizes the full member list for large groups", async ({ page }) => {
     avatarUrl: null,
   }));
 
-  await page.route("**/api/groups", (route) => route.fulfill({
+  await page.route("**/api/groups*", (route) => route.fulfill({
     status: 200,
     contentType: "application/json",
     body: JSON.stringify({ groups: [{ id: "virtual-group", name: "Large Test Group", memberCount: members.length, members }] }),
