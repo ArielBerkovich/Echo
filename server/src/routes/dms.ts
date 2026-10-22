@@ -1,5 +1,5 @@
 import { Router } from "express";
-import mongoose from "mongoose";
+import { isValidObjectId } from "../lib/objectId.js";
 import { Channel } from "../models/Channel.js";
 import { User } from "../models/User.js";
 import { Message } from "../models/Message.js";
@@ -30,7 +30,7 @@ function canManageGroupDm(channel, userId) {
 
 // PATCH /api/dms/:id — rename a group DM.
 dmsRouter.patch("/:id", async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
+  if (!isValidObjectId(req.params.id)) {
     return res.status(404).json({ error: "conversation not found" });
   }
   const channel = await Channel.findOne({ _id: req.params.id, type: "dm", members: req.user._id });
@@ -39,7 +39,7 @@ dmsRouter.patch("/:id", async (req, res) => {
     return res.status(403).json({ error: "only the group DM creator can manage this conversation" });
   }
   const name = String(req.body?.name || "").trim();
-  if (!name || name.length > 64 || !/^[a-z0-9_-]+$/i.test(name)) {
+  if (!/^[a-z][a-z0-9_-]{0,63}$/i.test(name)) {
     return res.status(400).json({ error: "group DM names may contain only English letters (A-Z), numbers, dashes, and underscores" });
   }
   const existing = await Channel.findOne({ name: name.toLowerCase(), _id: { $ne: channel._id } });
@@ -52,7 +52,7 @@ dmsRouter.patch("/:id", async (req, res) => {
 // POST /api/dms/:id/convert — turn a group DM into a private channel without
 // changing its ID, members, messages, or links.
 dmsRouter.post("/:id/convert", async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
+  if (!isValidObjectId(req.params.id)) {
     return res.status(404).json({ error: "conversation not found" });
   }
   const channel = await Channel.findOne({ _id: req.params.id, type: "dm", members: req.user._id });
@@ -83,7 +83,7 @@ dmsRouter.post("/:id/convert", async (req, res) => {
 
 // DELETE /api/dms/:id — remove a DM from the current user's sidebar.
 dmsRouter.delete("/:id", async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
+  if (!isValidObjectId(req.params.id)) {
     return res.status(404).json({ error: "conversation not found" });
   }
   await Channel.updateOne(
@@ -98,7 +98,7 @@ dmsRouter.delete("/:id", async (req, res) => {
 dmsRouter.post("/", async (req, res) => {
   const { userId, userIds } = req.body || {};
   const requestedIds = Array.isArray(userIds) ? userIds : [userId];
-  if (!requestedIds.length || requestedIds.some((id) => !mongoose.isValidObjectId(id))) {
+  if (!requestedIds.length || requestedIds.some((id) => !isValidObjectId(id))) {
     return res.status(400).json({ error: "valid userId or userIds are required" });
   }
   const uniqueIds = [...new Set(requestedIds.map(String))];

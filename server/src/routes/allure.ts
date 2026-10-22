@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { decodePathValue } from "../lib/uri.js";
 import crypto from "crypto";
 import { Channel } from "../models/Channel.js";
 import { Message } from "../models/Message.js";
@@ -284,7 +285,8 @@ function reportTokenFromRequest(req, projectId) {
   const cookieName = reportCookieName(projectId);
   const cookies = String(req.headers.cookie || "").split(";");
   const entry = cookies.find((item) => item.trim().startsWith(`${cookieName}=`));
-  return entry ? decodeURIComponent(entry.trim().slice(cookieName.length + 1)) : "";
+  if (!entry) return "";
+  return decodePathValue(entry.trim().slice(cookieName.length + 1)) || "";
 }
 
 allureRouter.get("/projects/:projectId/report/*", async (req, res) => {

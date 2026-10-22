@@ -14,24 +14,30 @@ export const webhooksRouter = Router();
 // POST /api/webhooks/:token — incoming webhook receiver for CI/CD tools.
 // No Bearer token is required; the opaque URL token identifies the destination.
 webhooksRouter.post("/:token", async (req, res) => {
+  if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) return res.status(400).json({ error: "webhook payload must be an object" });
   const tokenHash = hashWebhookToken(req.params.token);
   const hook = await IncomingWebhook.findOne({ tokenHash, active: true });
   if (!hook) return res.status(404).json({ error: "webhook not found" });
-
-  const channel = await resolveAutomationChannel({
-    userId: hook.createdBy,
-    channelId: req.body?.channelId,
-    channelName: req.body?.channelName,
-    fallbackChannelId: hook.channel,
-  });
-  const result = await postAutomationMessage({
-    channel,
-    authorId: hook.createdBy,
-    payload: req.body || {},
-    source: "webhook",
-    idempotencyKey: req.header("Idempotency-Key"),
-  });
-  res.status(result.created ? 201 : 200).json(result);
+  try {
+    const channel = await resolveAutomationChannel({
+      userId: hook.createdBy,
+      channelId: req.body?.channelId,
+      channelName: req.body?.channelName,
+      fallbackChannelId: hook.channel,
+    });
+    const result = await postAutomationMessage({
+      channel,
+      authorId: hook.createdBy,
+      payload: req.body,
+      source: "webhook",
+      idempotencyKey: req.header("Idempotency-Key"),
+    });
+    res.status(result.created ? 201 : 200).json(result);
+  } catch (error) {
+    const status = Number(error?.status);
+    if (status >= 400 && status < 500) return res.status(status).json({ error: error.message });
+    throw error;
+  }
 });
 
 webhooksRouter.use(requireAuth);
