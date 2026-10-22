@@ -24,8 +24,15 @@ export function userExists(userId: unknown) {
   return User.exists({ _id: userId });
 }
 
-export function listDirectoryUsers({ skip = 0, limit }: { skip?: number; limit?: number } = {}) {
-  const query = User.find({ username: { $ne: "system" } }).sort({ displayName: 1 });
+export function listDirectoryUsers({ skip = 0, limit = 100, query: rawQuery }: { skip?: number; limit?: number; query?: string } = {}) {
+  const filter: Record<string, unknown> = { username: { $ne: "system" } };
+  const term = String(rawQuery || "").trim().slice(0, 80);
+  if (term) {
+    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const match = new RegExp(escaped, "i");
+    filter.$or = [{ username: match }, { displayName: match }];
+  }
+  const query = User.find(filter).sort({ displayName: 1, _id: 1 });
   if (skip) query.skip(skip);
-  return limit === undefined ? query : query.limit(limit);
+  return query.limit(limit);
 }

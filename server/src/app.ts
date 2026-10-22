@@ -1,3 +1,4 @@
+import "express-async-errors";
 import { aiRouter } from "./routes/ai.js";
 import { AISettings } from "./services/aiSettings.js";
 import express from "express";

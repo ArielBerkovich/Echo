@@ -130,7 +130,7 @@ jobs:
 
       - name: Build client
         working-directory: client
-        run: npm run build
+        run: npm run typecheck && npm run build
 
   e2e-shards:
     name: E2E (${{ matrix.shard }})
