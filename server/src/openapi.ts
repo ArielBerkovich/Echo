@@ -142,6 +142,31 @@ export function openApiDocument() {
           responses: { 201: { description: "Message created" } },
         },
       },
+      "/api/channels/{channelId}/messages/{messageId}": {
+        patch: {
+          summary: "Edit a message authored by the caller",
+          parameters: [
+            { name: "channelId", in: "path", required: true, schema: { type: "string" } },
+            { name: "messageId", in: "path", required: true, schema: { type: "string" } },
+          ],
+          requestBody: {
+            required: true,
+            content: { "application/json": { schema: {
+              type: "object",
+              properties: {
+                body: { type: "string", maxLength: 4000 },
+                attachments: { type: "array" },
+              },
+            } } },
+          },
+          responses: {
+            200: { description: "Updated message" },
+            400: { description: "Empty or invalid message body" },
+            403: { description: "Caller cannot edit this message" },
+            404: { description: "Channel or message not found" },
+          },
+        },
+      },
       "/api/users/{username}/messages": {
         post: {
           summary: "Send a direct message by username",

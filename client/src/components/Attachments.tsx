@@ -8,6 +8,7 @@ import { highlightFile, languageForFilename } from "../lib/syntaxHighlight.js";
 import { languageDirection } from "../lib/languages.js";
 import Avatar from "./Avatar.js";
 import { useI18n } from "../lib/i18n.js";
+import AppErrorBoundary from "./AppErrorBoundary.js";
 
 // Renders a message's attachments: images inline, everything else as a
 // downloadable file chip. Pass onOpenLightbox(src, name) to delegate image
@@ -22,7 +23,9 @@ export default function Attachments({ attachments = [], onOpenLightbox, sender }
           : isTextAttachment(a)
             ? <TextAttachment key={a.key} a={a} />
           : isPresentationAttachment(a)
-            ? <PresentationAttachment key={a.key} a={a} />
+            ? <AppErrorBoundary key={a.key} fallback={<FileAttachment a={a} />}>
+                <PresentationAttachment a={a} />
+              </AppErrorBoundary>
           : <FileAttachment key={a.key} a={a} />
       )}
     </div>

@@ -116,7 +116,17 @@ function friendlyErrorMessage(status, serverMessage, path, errorLabel) {
 }
 
 async function parseResponse(res, errorLabel, path) {
-  const data = await res.json().catch(() => ({}));
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    if (res.ok) {
+      const error = new Error("Echo returned an invalid response. Please try again.");
+      error.status = 502;
+      throw error;
+    }
+    data = {};
+  }
   if (!res.ok) {
     if (res.status === 401) notifyAuthExpired(path);
     const error = new Error(friendlyErrorMessage(res.status, data.error, path, errorLabel));
@@ -317,14 +327,20 @@ export const api = {
       : before
       ? `?before=${encodeURIComponent(before)}`
       : "";
-    return request(`/channels/${id}/messages${qs}`);
+    return request(`/channels/${id}/messages${qs}`).then((result) => {
+      if (!Array.isArray(result?.messages)) throw new Error("Echo returned an invalid message history.");
+      return result;
+    });
   },
   searchMessages: (q, page = 0, sort = "relevance") =>
     request(`/search/messages?q=${encodeURIComponent(q)}&page=${page}&sort=${sort}`),
   markRead: (id, thread = null) =>
     request(`/channels/${id}/read`, { method: "POST", body: thread ? { thread } : undefined }),
   getThread: (channelId, msgId) =>
-    request(`/channels/${channelId}/messages/${msgId}/thread`),
+    request(`/channels/${channelId}/messages/${msgId}/thread`).then((result) => {
+      if (!Array.isArray(result?.replies)) throw new Error("Echo returned an invalid thread.");
+      return result;
+    }),
   voteSurvey: (channelId, messageId, optionIds) =>
     request(`/channels/${channelId}/messages/${messageId}/survey-vote`, {
       method: "POST",

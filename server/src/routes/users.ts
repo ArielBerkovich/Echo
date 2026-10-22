@@ -1,5 +1,4 @@
 import { Router } from "express";
-import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import { Channel } from "../models/Channel.js";
 import { requireAuth } from "../middleware/requireAuth.js";
@@ -14,6 +13,8 @@ import { ThreadFollow } from "../models/ThreadFollow.js";
 import { findUserById, findUserByUsername, listDirectoryUsers, userExists } from "../services/userDirectoryService.js";
 import { ensureDmChannel, ensureSelfDmChannel } from "../services/conversationService.js";
 import { sendMessage } from "../services/messageService.js";
+import { isValidObjectId } from "../lib/objectId.js";
+import { decodePathValue } from "../lib/uri.js";
 
 export const usersRouter = Router();
 usersRouter.use(requireAuth);
@@ -119,7 +120,12 @@ usersRouter.get("/vips", async (req, res) => {
 
 // POST /api/users/:username/messages — open or reuse a DM by username and send.
 usersRouter.post("/:username/messages", async (req, res) => {
-  const username = decodeURIComponent(String(req.params.username)).trim().toLowerCase();
+  if (req.body?.body !== undefined && typeof req.body.body !== "string") return res.status(400).json({ error: "body must be text" });
+  const text = String(req.body?.body || "").trim();
+  if (text.length > 4000) return res.status(400).json({ error: "message body must be 4000 characters or fewer" });
+  const decodedUsername = decodePathValue(String(req.params.username));
+  if (decodedUsername === null) return res.status(400).json({ error: "invalid username" });
+  const username = decodedUsername.trim().toLowerCase();
   const recipient = username === "system" ? null : await findUserByUsername(username);
   if (!recipient) return res.status(404).json({ error: "user not found" });
 
@@ -127,7 +133,6 @@ usersRouter.post("/:username/messages", async (req, res) => {
   const channel = isSelf
     ? await ensureSelfDmChannel(req.user._id)
     : await ensureDmChannel(req.user._id, recipient._id);
-  const text = String(req.body?.body || "").trim();
   const survey = sanitizeSurvey(req.body?.survey);
   const card = sanitizeCard(req.body?.card);
   const invalidCard = cardError(req.body?.card);
@@ -139,9 +144,8 @@ usersRouter.post("/:username/messages", async (req, res) => {
   if (!text && attachments.length === 0 && !survey && !card) {
     return res.status(400).json({ error: "message needs text, an attachment, or a card" });
   }
-  const parentId = req.body?.parentId && mongoose.isValidObjectId(req.body.parentId)
-    ? req.body.parentId
-    : null;
+  if (req.body?.parentId != null && !isValidObjectId(req.body.parentId)) return res.status(400).json({ error: "invalid parent message" });
+  const parentId = req.body?.parentId || null;
   const idempotencyKey = String(req.header("Idempotency-Key") || req.body?.idempotencyKey || "").trim();
   const result = await sendMessage({
     channel,
@@ -165,7 +169,7 @@ usersRouter.post("/:username/messages", async (req, res) => {
 // Resolve a directory entry for message authors that arrived before the
 // client refreshed its full user list.
 usersRouter.get("/:id", async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ error: "valid user id is required" });
+  if (!isValidObjectId(req.params.id)) return res.status(400).json({ error: "valid user id is required" });
   const user = await findUserById(req.params.id);
   if (!user || user.username === "system") return res.status(404).json({ error: "user not found" });
   const aliases = await aliasesByUserId([user._id]);
@@ -175,7 +179,7 @@ usersRouter.get("/:id", async (req, res) => {
 // POST /api/users/:id/vip — toggle whether :id is a VIP for the current user.
 usersRouter.post("/:id/vip", async (req, res) => {
   const { id } = req.params;
-  if (!mongoose.isValidObjectId(id)) {
+  if (!isValidObjectId(id)) {
     return res.status(400).json({ error: "valid user id is required" });
   }
   if (String(id) === String(req.user._id)) {
@@ -216,6 +220,7 @@ usersRouter.patch("/me", async (req, res) => {
   const { displayName, avatarKey } = req.body || {};
 
   if (displayName !== undefined) {
+    if (typeof displayName !== "string") return res.status(400).json({ error: "display name must be text" });
     const name = String(displayName).trim();
     if (name.length < 1 || name.length > 64) {
       return res.status(400).json({ error: "display name must be 1-64 characters" });
@@ -223,6 +228,7 @@ usersRouter.patch("/me", async (req, res) => {
     req.user.displayName = name;
   }
   if (avatarKey !== undefined) {
+    if (avatarKey !== null && typeof avatarKey !== "string") return res.status(400).json({ error: "invalid avatar reference" });
     // Accept our own opaque upload keys, or null to remove the avatar.
     if (avatarKey !== null && !/^[a-z0-9-]+\.[a-z0-9]+$/i.test(String(avatarKey))) {
       return res.status(400).json({ error: "invalid avatar reference" });

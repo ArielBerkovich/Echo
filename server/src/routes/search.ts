@@ -2,6 +2,7 @@ import { Router } from "express";
 import { User } from "../models/User.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { escapeSearchRegex, findSearchableChannels, searchMessages } from "../services/messageSearchService.js";
+import { parsePage } from "../lib/page.js";
 
 export const searchRouter = Router();
 searchRouter.use(requireAuth);
@@ -42,14 +43,14 @@ function parseQuery(raw) {
 // channels and DMs they belong to), newest first. Supports `in:<channel>`,
 // `from:<@user>` and `has:<file|image|link>` filters.
 searchRouter.get("/messages", async (req, res) => {
+  const page = parsePage(req.query.page);
+  if (page === null) return res.status(400).json({ error: "page must be an integer between 0 and 10000" });
   const raw = String(req.query.q || "").trim().slice(0, 200);
   const empty = { query: raw, page: 0, hasMore: false, results: [] };
   if (!raw) return res.json(empty);
 
   const { text, inName, fromName, has } = parseQuery(raw);
   if (!text && !inName && !fromName && !has) return res.json(empty);
-
-  const page = Math.max(0, parseInt(req.query.page, 10) || 0);
 
   // Channels this user is allowed to search within (public + their own).
   const visible = await findSearchableChannels({ userId: req.user._id });

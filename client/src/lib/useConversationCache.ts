@@ -11,7 +11,8 @@ export function useConversationCache(userId) {
   const [scrollStates, setScrollStates] = useState({});
 
   useEffect(() => {
-    setScrollStates(userId ? readJson(scrollStorageKey(userId), {}) : {});
+    const value = userId ? readJson(scrollStorageKey(userId), {}) : {};
+    setScrollStates(value && typeof value === "object" && !Array.isArray(value) ? value : {});
   }, [userId]);
 
   const cacheMessages = useCallback((channelId, messages) => {

@@ -14,6 +14,7 @@ import {
 } from "../azureDevOps.js";
 import { Channel } from "../models/Channel.js";
 import { getWorkItemSettings, normalizeAzureProjectUrl, resolveWorkItemTitles, saveWorkItemToken, workItemSettingsJSON } from "../azureWorkItems.js";
+import { isValidObjectId } from "../lib/objectId.js";
 
 export const azureDevOpsWebhookRouter = Router();
 
@@ -122,6 +123,7 @@ azureDevOpsRouter.post("/", async (req, res) => {
 });
 
 azureDevOpsRouter.post("/:id/token", async (req, res) => {
+  if (!isValidObjectId(req.params.id)) return res.status(404).json({ error: "integration not found" });
   const integration = await AzureDevOpsIntegration.findById(req.params.id);
   if (!integration) return res.status(404).json({ error: "integration not found" });
   const token = createAzureDevOpsToken();
@@ -132,6 +134,7 @@ azureDevOpsRouter.post("/:id/token", async (req, res) => {
 });
 
 azureDevOpsRouter.patch("/:id", async (req, res) => {
+  if (!isValidObjectId(req.params.id)) return res.status(404).json({ error: "integration not found" });
   const integration = await AzureDevOpsIntegration.findById(req.params.id);
   if (!integration) return res.status(404).json({ error: "integration not found" });
   if (req.body?.name !== undefined) {
@@ -162,6 +165,7 @@ azureDevOpsRouter.patch("/:id", async (req, res) => {
 });
 
 azureDevOpsRouter.delete("/:id", async (req, res) => {
+  if (!isValidObjectId(req.params.id)) return res.status(404).json({ error: "integration not found" });
   const deleted = await AzureDevOpsIntegration.deleteOne({ _id: req.params.id });
   if (!deleted.deletedCount) return res.status(404).json({ error: "integration not found" });
   res.json({ ok: true });

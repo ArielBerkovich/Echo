@@ -44,6 +44,8 @@ export default function WorkspaceNavigation({
   onOpenWalkthrough,
   onNavigateBack,
   onNavigateForward,
+  canNavigateBack = false,
+  canNavigateForward = false,
   onToggleMode,
   search,
 }) {
@@ -101,10 +103,10 @@ export default function WorkspaceNavigation({
       <div className="workspace-search" data-testid="workspace-search">
         <div className="workspace-search-inner">
           <div className="workspace-search-navigation" ref={recentsRef}>
-            <button type="button" onClick={onNavigateBack} title={t("goBack")} aria-label={t("goBack")}>
+            <button type="button" onClick={onNavigateBack} disabled={!canNavigateBack} title={t("goBack")} aria-label={t("goBack")}>
               <ArrowLeftIcon size={14} strokeWidth={2} aria-hidden="true" />
             </button>
-            <button type="button" onClick={onNavigateForward} title={t("goForward")} aria-label={t("goForward")}>
+            <button type="button" onClick={onNavigateForward} disabled={!canNavigateForward} title={t("goForward")} aria-label={t("goForward")}>
               <ArrowRightIcon size={14} strokeWidth={2} aria-hidden="true" />
             </button>
             <button
