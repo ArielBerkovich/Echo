@@ -14,6 +14,38 @@ export type WhatsNewRelease = {
 // Keep release notes in the renderer so they work for air-gapped deployments
 // and always match the desktop binary that shipped them.
 const RELEASES: Record<string, WhatsNewRelease> = {
+  "0.55.0": {
+    id: "0.55.0",
+    title: "What's new in 0.55.0",
+    summary: "Edit messages through the API, move through workspaces faster, and get more reliable conversations and automation.",
+    items: [
+      {
+        title: "REST message editing",
+        description: "Edit messages through Echo's REST API.",
+        category: "New",
+      },
+      {
+        title: "Workspace navigation shortcuts",
+        description: "Move between workspace views with keyboard shortcuts.",
+        category: "New",
+      },
+      {
+        title: "Persistent desktop zoom shortcuts",
+        description: "Adjust and retain desktop zoom settings with keyboard shortcuts.",
+        category: "New",
+      },
+      {
+        title: "Markdown thread summaries",
+        description: "Thread summaries now render Markdown for clearer formatting.",
+        category: "Improved",
+      },
+      {
+        title: "Reliability improvements",
+        description: "Improve search and directory queries, scheduled message retries, API validation, socket handling, and error recovery.",
+        category: "Fixed",
+      },
+    ],
+  },
   "0.54.0": {
     id: "0.54.0",
     title: "What's new in 0.54.0",
