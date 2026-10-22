@@ -4,6 +4,7 @@ import { sendMessage } from "./services/messageService.js";
 import { retryPendingAzureDevOpsEvents } from "./azureDevOps.js";
 import { notifyAllureReports } from "./routes/allure.js";
 import { notifyAzureWorkItemTokenExpiry } from "./azureWorkItems.js";
+import { scheduledClaimFilter, scheduledFailureUpdate, scheduledIdempotencyKey } from "./lib/scheduledRetry.js";
 
 const TICK_MS = Math.max(250, Number(process.env.SCHEDULER_TICK_MS) || 15000); // check for due messages on a fixed cadence
 const LEASE_MS = Math.max(TICK_MS * 2, 60_000);
@@ -15,10 +16,7 @@ async function dispatchDue() {
     const now = new Date();
     const leaseUntil = new Date(now.getTime() + LEASE_MS);
     const sm = await ScheduledMessage.findOneAndUpdate(
-      {
-        scheduledFor: { $lte: now },
-        $or: [{ dispatchLeaseUntil: null }, { dispatchLeaseUntil: { $lte: now } }],
-      },
+      scheduledClaimFilter(now),
       { $set: { dispatchLeaseUntil: leaseUntil } },
       { sort: { scheduledFor: 1 }, new: true }
     );
@@ -41,14 +39,16 @@ async function dispatchDue() {
         body: sm.body,
         parentId: sm.parentId,
         attachments: sm.attachments,
+        idempotencyKey: scheduledIdempotencyKey(sm._id),
       });
       await ScheduledMessage.deleteOne({ _id: sm._id, dispatchLeaseUntil: leaseUntil });
     } catch (err) {
       // Transient failure — leave it queued and retry on the next tick.
-      console.error("scheduled dispatch failed (will retry):", err.message);
+      const retry = scheduledFailureUpdate(sm.attemptCount || 0, err, now);
+      console.error(`scheduled dispatch failed (attempt ${retry.attemptCount}, ${retry.status}):`, err.message);
       await ScheduledMessage.updateOne(
         { _id: sm._id, dispatchLeaseUntil: leaseUntil },
-        { $set: { dispatchLeaseUntil: null } }
+        { $set: { dispatchLeaseUntil: null, ...retry } }
       ).catch(() => {});
     }
   }

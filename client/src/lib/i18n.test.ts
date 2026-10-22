@@ -68,6 +68,8 @@ describe("Hebrew scheduled message translations", () => {
     assert.equal(translations.he.scheduledForTarget.replace("{target}", translations.he.thisChannel), "עבור הערוץ הזה");
     assert.equal(translations.he.pickFutureTime, "יש לבחור שעה בעתיד.");
     assert.equal(translations.he.writeBeforeScheduling, "יש לכתוב הודעה לפני התזמון.");
+    assert.equal(translations.he.scheduledDeliveryFailed, "לא ניתן היה לשלוח הודעה זו.");
+    assert.equal(translations.en.scheduledDeliveryFailed, "This message could not be delivered.");
   });
 });
 
