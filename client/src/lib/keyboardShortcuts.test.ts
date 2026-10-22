@@ -11,6 +11,8 @@ import {
 describe("keyboard shortcut registry", () => {
   it("keeps displayed shortcuts and runtime hotkeys together", () => {
     assert.deepEqual(getKeyboardHotkeys("new-message"), ["ctrl+shift+m", "meta+shift+m"]);
+    assert.deepEqual(getKeyboardHotkeys("go-back"), ["alt+left", "meta+["]);
+    assert.deepEqual(getKeyboardHotkeys("go-forward"), ["alt+right", "meta+]"]);
     assert.equal(formatKeyboardShortcut("new-message"), "⌘/Ctrl+⇧M");
     assert.equal(shortcutTitle("New message", "new-message"), "New message · \u2066⌘/Ctrl+⇧M\u2069");
   });

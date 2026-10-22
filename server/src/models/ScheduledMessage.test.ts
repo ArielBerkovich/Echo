@@ -46,6 +46,7 @@ describe("ScheduledMessage.toPublicJSON", () => {
         },
       ],
       scheduledFor,
+      status: "pending",
     });
   });
 
@@ -62,5 +63,19 @@ describe("ScheduledMessage.toPublicJSON", () => {
     assert.equal(json.parentId, null);
     assert.equal(json.attachments[0].width, null);
     assert.equal(json.attachments[0].height, null);
+  });
+
+  it("exposes terminal delivery failures to the message author", () => {
+    const scheduled = new ScheduledMessage({
+      channel: new mongoose.Types.ObjectId(),
+      author: new mongoose.Types.ObjectId(),
+      scheduledFor: new Date("2026-06-10T09:00:00Z"),
+      status: "failed",
+      lastError: "private database detail",
+    });
+    const json = scheduled.toPublicJSON();
+    assert.equal(json.status, "failed");
+    assert.match(json.error, /could not send/i);
+    assert.equal(JSON.stringify(json).includes("private database detail"), false);
   });
 });

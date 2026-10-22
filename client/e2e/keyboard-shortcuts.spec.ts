@@ -27,6 +27,27 @@ test.describe("documented keyboard shortcuts", () => {
     await expect(desktopShortcuts.locator("kbd")).toHaveText(["Ctrl / ⌘", "+ / =", "Ctrl / ⌘", "−", "Ctrl / ⌘", "0"]);
   });
 
+  test("navigates backward and forward with history shortcuts and ignores them while typing", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByTestId("composer-editor")).toBeVisible();
+    await page.getByTestId("rail-dms").click();
+    await expect(page.getByTestId("dms-header")).toBeVisible();
+    await page.getByTestId("rail-home").click();
+    await expect(page.getByTestId("composer-editor")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Go back" })).toBeEnabled();
+    await page.getByTestId("rail-home").focus();
+
+    await page.keyboard.press("Alt+ArrowLeft");
+    await expect(page.getByTestId("dms-header")).toBeVisible();
+    const search = page.getByTestId("search-input");
+    await search.focus();
+    await page.keyboard.press("Alt+ArrowRight");
+    await expect(page.getByTestId("dms-header")).toBeVisible();
+    await search.blur();
+    await page.keyboard.press("Alt+ArrowRight");
+    await expect(page.getByTestId("composer-editor")).toBeVisible();
+  });
+
   test("keeps Ctrl+F focused on workspace search and opens the switcher with Ctrl+K", async ({ page }) => {
     await page.goto("/");
     const search = page.getByTestId("search-input");

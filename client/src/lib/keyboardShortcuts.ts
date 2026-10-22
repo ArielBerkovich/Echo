@@ -13,6 +13,8 @@ const SHORTCUTS = [
   { id: "desktop-zoom-in", group: "Desktop", keys: ["Ctrl / ⌘", "+ / ="], description: "Zoom in" },
   { id: "desktop-zoom-out", group: "Desktop", keys: ["Ctrl / ⌘", "−"], description: "Zoom out" },
   { id: "desktop-zoom-reset", group: "Desktop", keys: ["Ctrl / ⌘", "0"], description: "Reset zoom" },
+  { id: "go-back", group: "Navigation", keys: ["Alt", "←"], hotkeys: ["alt+left", "meta+["], description: "Go back in workspace history" },
+  { id: "go-forward", group: "Navigation", keys: ["Alt", "→"], hotkeys: ["alt+right", "meta+]"], description: "Go forward in workspace history" },
   { id: "message-actions", group: "Message actions", keys: ["Enter"], description: "Open actions for the focused message" },
 ];
 
