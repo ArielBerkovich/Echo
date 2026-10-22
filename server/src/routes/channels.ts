@@ -19,7 +19,7 @@ import { normalizeChannelName } from "../automation.js";
 import { ActivityEvent } from "../models/ActivityEvent.js";
 import { isValidChannelName } from "../lib/channelName.js";
 import { CustomEmoji } from "../models/CustomEmoji.js";
-import { reactToMessage, voteInSurvey } from "../services/messageActionService.js";
+import { editMessage, reactToMessage, voteInSurvey } from "../services/messageActionService.js";
 import { getThreadMessages, listPinnedMessages } from "../services/messageQueryService.js";
 import { queryChannelHistory } from "../services/messageHistoryService.js";
 import { getThreadFollow, markRead, setThreadFollow } from "../services/userStateService.js";
@@ -33,6 +33,8 @@ import {
   removeChannelMember,
 } from "../services/channelService.js";
 import { sendMessage } from "../services/messageService.js";
+import { isValidObjectId } from "../lib/objectId.js";
+import { decodePathValue } from "../lib/uri.js";
 
 // Whitelist attachment fields (keys produced by /api/uploads). Mirrors the
 // socket sender so the REST and realtime paths behave identically.
@@ -76,7 +78,7 @@ channelsRouter.use(requireAuth);
 // remain active even when the containing conversation is muted.
 channelsRouter.get("/:channelId/threads/:threadId/follow", async (req, res) => {
   const { channelId, threadId } = req.params;
-  if (!mongoose.isValidObjectId(channelId) || !mongoose.isValidObjectId(threadId)) return res.status(404).json({ error: "thread not found" });
+  if (!isValidObjectId(channelId) || !isValidObjectId(threadId)) return res.status(404).json({ error: "thread not found" });
   const channel = await Channel.findById(channelId).select("members type");
   const root = await Message.findOne({ _id: threadId, channel: channelId, parentId: null }).select("_id");
   if (!channel || !root || !canParticipateInChannel(channel, req.user._id)) return res.status(404).json({ error: "thread not found" });
@@ -89,7 +91,7 @@ channelsRouter.get("/:channelId/threads/:threadId/follow", async (req, res) => {
 
 channelsRouter.put("/:channelId/threads/:threadId/follow", async (req, res) => {
   const { channelId, threadId } = req.params;
-  if (!mongoose.isValidObjectId(channelId) || !mongoose.isValidObjectId(threadId)) {
+  if (!isValidObjectId(channelId) || !isValidObjectId(threadId)) {
     return res.status(404).json({ error: "thread not found" });
   }
   const channel = await Channel.findById(channelId).select("members type");
@@ -113,7 +115,7 @@ function decodeCatalogCursor(raw) {
   if (!raw) return null;
   try {
     const parsed = JSON.parse(Buffer.from(String(raw), "base64url").toString("utf8"));
-    if (typeof parsed?.name !== "string" || !mongoose.isValidObjectId(parsed?.id)) return null;
+    if (typeof parsed?.name !== "string" || !isValidObjectId(parsed?.id)) return null;
     return { name: parsed.name, id: new mongoose.Types.ObjectId(parsed.id) };
   } catch {
     return null;
@@ -271,7 +273,7 @@ channelsRouter.post("/", async (req, res) => {
 
 // GET /api/channels/:id/name-availability — check a candidate name for a manager.
 channelsRouter.get("/:id/name-availability", async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
+  if (!isValidObjectId(req.params.id)) {
     return res.status(404).json({ error: "channel not found" });
   }
   const channel = await Channel.findById(req.params.id).select("name type isArchived createdBy managers");
@@ -291,7 +293,7 @@ channelsRouter.get("/:id/name-availability", async (req, res) => {
 // POST /api/channels/:id/star — toggle the current user's channel star.
 // This is a private navigation preference; it never changes channel access.
 channelsRouter.post("/:id/star", async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
+  if (!isValidObjectId(req.params.id)) {
     return res.status(404).json({ error: "channel not found" });
   }
   const channel = await Channel.findById(req.params.id);
@@ -321,7 +323,7 @@ channelsRouter.post("/:id/star", async (req, res) => {
 
 // POST /api/channels/:id/join — add the current user to a channel's membership.
 channelsRouter.post("/:id/join", async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
+  if (!isValidObjectId(req.params.id)) {
     return res.status(404).json({ error: "channel not found" });
   }
   const result = await joinChannel(req.params.id, req.user._id);
@@ -332,7 +334,7 @@ channelsRouter.post("/:id/join", async (req, res) => {
 // POST /api/channels/:id/members { userId } — add another user to a channel.
 channelsRouter.post("/:id/members", async (req, res) => {
   const { userId } = req.body || {};
-  if (!mongoose.isValidObjectId(req.params.id) || !mongoose.isValidObjectId(userId)) {
+  if (!isValidObjectId(req.params.id) || !isValidObjectId(userId)) {
     return res.status(400).json({ error: "valid channel id and userId are required" });
   }
   const result = await addChannelMember(req.params.id, req.user._id, userId);
@@ -346,7 +348,7 @@ channelsRouter.post("/:id/members", async (req, res) => {
 // POST /api/channels/:id/managers { userId } — promote a channel member.
 channelsRouter.post("/:id/managers", async (req, res) => {
   const { userId } = req.body || {};
-  if (!mongoose.isValidObjectId(req.params.id) || !mongoose.isValidObjectId(userId)) {
+  if (!isValidObjectId(req.params.id) || !isValidObjectId(userId)) {
     return res.status(400).json({ error: "valid channel id and userId are required" });
   }
   const result = await promoteChannelManager(req.params.id, req.user._id, userId);
@@ -361,7 +363,7 @@ channelsRouter.post("/:id/managers", async (req, res) => {
 // another member from the channel.
 channelsRouter.delete("/:id/members/:userId", async (req, res) => {
   const { id, userId } = req.params;
-  if (!mongoose.isValidObjectId(id) || !mongoose.isValidObjectId(userId)) {
+  if (!isValidObjectId(id) || !isValidObjectId(userId)) {
     return res.status(400).json({ error: "valid channel id and userId are required" });
   }
   const result = await removeChannelMember(id, req.user._id, userId);
@@ -374,7 +376,7 @@ channelsRouter.delete("/:id/members/:userId", async (req, res) => {
 
 // POST /api/channels/:id/leave — remove the current user from a channel.
 channelsRouter.post("/:id/leave", async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
+  if (!isValidObjectId(req.params.id)) {
     return res.status(404).json({ error: "channel not found" });
   }
   const result = await leaveChannel(req.params.id, req.user._id, req.body?.managerId);
@@ -387,7 +389,7 @@ channelsRouter.post("/:id/leave", async (req, res) => {
 
 // DELETE /api/channels/:id — archive an empty channel owned by the creator.
 channelsRouter.delete("/:id", async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
+  if (!isValidObjectId(req.params.id)) {
     return res.status(404).json({ error: "channel not found" });
   }
   const result = await archiveChannel(req.params.id, req.user._id);
@@ -402,11 +404,11 @@ channelsRouter.delete("/:id", async (req, res) => {
 // `thread` (root message id) in the body to mark a specific thread read
 // instead of the channel's main timeline.
 channelsRouter.post("/:id/read", async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
+  if (!isValidObjectId(req.params.id)) {
     return res.status(404).json({ error: "channel not found" });
   }
   const thread =
-    req.body?.thread && mongoose.isValidObjectId(req.body.thread) ? req.body.thread : null;
+    req.body?.thread && isValidObjectId(req.body.thread) ? req.body.thread : null;
   await markRead({ userId: req.user._id, channelId: req.params.id, threadId: thread });
   res.json({ ok: true });
 });
@@ -417,7 +419,7 @@ channelsRouter.post("/:id/read", async (req, res) => {
 //   { topic } / { description } → update info (any member)
 //   { readOnly }              → restrict posting to the creator/managers
 channelsRouter.patch("/:id", async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
+  if (!isValidObjectId(req.params.id)) {
     return res.status(404).json({ error: "channel not found" });
   }
   const { name, type, topic, description, readOnly } = req.body || {};
@@ -519,7 +521,7 @@ channelsRouter.patch("/:id", async (req, res) => {
 // GET /api/channels/:id — a channel's info, with the creator and members
 // resolved to user objects.
 channelsRouter.get("/:id", async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
+  if (!isValidObjectId(req.params.id)) {
     return res.status(404).json({ error: "channel not found" });
   }
   const channel = await Channel.findById(req.params.id);
@@ -540,7 +542,7 @@ channelsRouter.get("/:id", async (req, res) => {
 
 // GET /api/channels/:id/messages?before=<ISO> — paginated history, newest first.
 channelsRouter.get("/:id/messages", async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
+  if (!isValidObjectId(req.params.id)) {
     return res.status(404).json({ error: "channel not found" });
   }
   const channel = await Channel.findById(req.params.id);
@@ -556,7 +558,7 @@ channelsRouter.get("/:id/messages", async (req, res) => {
     channelId: channel._id,
     limit: config.messagePageSize,
     before: before && !Number.isNaN(before.getTime()) ? before : undefined,
-    around: req.query.around && mongoose.isValidObjectId(req.query.around) ? req.query.around : undefined,
+    around: req.query.around && isValidObjectId(req.query.around) ? req.query.around : undefined,
     forwardNote: req.query.forwardNote ? String(req.query.forwardNote) : undefined,
   });
   if (!history) return res.status(404).json({ error: "message not found" });
@@ -583,7 +585,7 @@ channelsRouter.get("/:id/messages", async (req, res) => {
 
 // GET /api/channels/:id/messages/:msgId/thread — a thread's root + replies.
 channelsRouter.get("/:id/messages/:msgId/thread", async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id) || !mongoose.isValidObjectId(req.params.msgId)) {
+  if (!isValidObjectId(req.params.id) || !isValidObjectId(req.params.msgId)) {
     return res.status(404).json({ error: "not found" });
   }
   const channel = await Channel.findById(req.params.id);
@@ -607,7 +609,7 @@ channelsRouter.get("/:id/messages/:msgId/thread", async (req, res) => {
 channelsRouter.post("/:id/messages/:msgId/thread-summary", async (req, res) => {
   const aiSettings = await getAISettings();
   if (!aiSettings.enabled) return res.status(404).json({ error: "not found" });
-  if (!mongoose.isValidObjectId(req.params.id) || !mongoose.isValidObjectId(req.params.msgId)) return res.status(404).json({ error: "thread not found" });
+  if (!isValidObjectId(req.params.id) || !isValidObjectId(req.params.msgId)) return res.status(404).json({ error: "thread not found" });
   try {
     const channel = await Channel.findById(req.params.id);
     if (!channel || channel.isArchived || !canParticipateInChannel(channel, req.user._id)) return res.status(404).json({ error: "thread not found" });
@@ -624,7 +626,7 @@ channelsRouter.post("/:id/messages/:msgId/thread-summary", async (req, res) => {
 
 // GET /api/channels/:id/pinned — all pinned messages, oldest pin first.
 channelsRouter.get("/:id/pinned", async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
+  if (!isValidObjectId(req.params.id)) {
     return res.status(404).json({ error: "channel not found" });
   }
   const channel = await Channel.findById(req.params.id);
@@ -640,7 +642,7 @@ channelsRouter.get("/:id/pinned", async (req, res) => {
 // Unlike message history this includes thread replies, because a file shared in
 // a thread is still shared with the whole conversation.
 channelsRouter.get("/:id/files", async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
+  if (!isValidObjectId(req.params.id)) {
     return res.status(404).json({ error: "channel not found" });
   }
   const channel = await Channel.findById(req.params.id);
@@ -675,7 +677,9 @@ channelsRouter.get("/:id/files", async (req, res) => {
 // POST /api/channels/:id/messages — send a message (REST equivalent of the
 // `message:send` socket event). Body: { body, parentId?, broadcastToChannel?, attachments? }.
 channelsRouter.post("/:id/messages", async (req, res) => {
+  if (req.body?.body !== undefined && typeof req.body.body !== "string") return res.status(400).json({ error: "body must be text" });
   const text = String(req.body?.body || "").trim();
+  if (text.length > 4000) return res.status(400).json({ error: "message body must be 4000 characters or fewer" });
   const survey = sanitizeSurvey(req.body?.survey);
   const retro = sanitizeRetro(req.body?.retro);
   const card = sanitizeCard(req.body?.card);
@@ -689,8 +693,10 @@ channelsRouter.post("/:id/messages", async (req, res) => {
   if (!text && files.length === 0 && !survey && !retro && !card) {
     return res.status(400).json({ error: "message needs text, an attachment, or a card" });
   }
-  const channelKey = decodeURIComponent(String(req.params.id));
-  const channel = mongoose.isValidObjectId(channelKey)
+  const channelKey = decodePathValue(String(req.params.id));
+  if (channelKey === null) return res.status(400).json({ error: "invalid channel name" });
+  if (req.body?.broadcastToChannel !== undefined && typeof req.body.broadcastToChannel !== "boolean") return res.status(400).json({ error: "broadcastToChannel must be a boolean" });
+  const channel = isValidObjectId(channelKey)
     ? await Channel.findById(channelKey)
     : await Channel.findOne({ name: normalizeChannelName(channelKey) });
   if (!channel || channel.isArchived) return res.status(404).json({ error: "channel not found" });
@@ -703,8 +709,13 @@ channelsRouter.post("/:id/messages", async (req, res) => {
   if (!canPostToChannel(channel, req.user._id)) {
     return res.status(403).json({ error: "only channel managers can post in this read-only channel" });
   }
-  const parentId =
-    req.body?.parentId && mongoose.isValidObjectId(req.body.parentId) ? req.body.parentId : null;
+  if (req.body?.parentId != null && !isValidObjectId(req.body.parentId)) return res.status(400).json({ error: "invalid parent message" });
+  const parentId = req.body?.parentId || null;
+  if (req.body?.broadcastToChannel === true && !parentId) return res.status(400).json({ error: "a channel reply must belong to a thread" });
+  if (req.body?.broadcastToChannel === true) {
+    const parent = await Message.findOne({ _id: parentId, channel: channel._id, parentId: null }, { _id: 1 }).lean();
+    if (!parent) return res.status(404).json({ error: "thread not found" });
+  }
 
   const idempotencyKey = String(req.header("Idempotency-Key") || req.body?.idempotencyKey || "").trim();
   const result = await sendMessage({
@@ -722,10 +733,44 @@ channelsRouter.post("/:id/messages", async (req, res) => {
   res.status(result.idempotent ? 200 : 201).json(result);
 });
 
+// PATCH /api/channels/:id/messages/:messageId — edit an authored message.
+channelsRouter.patch("/:id/messages/:messageId", async (req, res) => {
+  const { id, messageId } = req.params;
+  if (!mongoose.isValidObjectId(id) || !mongoose.isValidObjectId(messageId)) {
+    return res.status(404).json({ error: "message not found" });
+  }
+  const body = typeof req.body?.body === "string" ? req.body.body.trim() : "";
+  const attachmentError = attachmentLimitError(req.body?.attachments);
+  if (attachmentError) return res.status(400).json({ error: attachmentError });
+  const attachments = req.body?.attachments === undefined
+    ? undefined
+    : sanitizeAttachments(req.body.attachments);
+  if ((!body && (!attachments || attachments.length === 0)) || body.length > 4000) {
+    return res.status(400).json({ error: "message needs text or an attachment and text must be at most 4000 characters" });
+  }
+
+  const [channel, message] = await Promise.all([
+    Channel.findById(id),
+    Message.findOne({ _id: messageId, channel: id }),
+  ]);
+  if (!channel || !message || channel.isArchived) return res.status(404).json({ error: "message not found" });
+  if (!canParticipateInChannel(channel, req.user._id)) return res.status(403).json({ error: "access denied" });
+  if (message.kind === "system" || message.forwardedFrom) {
+    return res.status(400).json({ error: "this message cannot be edited" });
+  }
+  if (!message.author.equals(req.user._id)) return res.status(403).json({ error: "you can only edit your own messages" });
+  if (!canPostToChannel(channel, req.user._id)) {
+    return res.status(403).json({ error: "only channel managers can edit messages in this read-only channel" });
+  }
+
+  const result = await editMessage({ channel, message, userId: req.user._id, body, attachments });
+  res.json({ message: result.message.toPublicJSON() });
+});
+
 // POST /api/channels/:channelId/messages/:messageId/survey-vote — replace the
 // caller's survey selection. An empty optionIds array clears their vote.
 channelsRouter.post("/:id/messages/:messageId/survey-vote", async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id) || !mongoose.isValidObjectId(req.params.messageId)) {
+  if (!isValidObjectId(req.params.id) || !isValidObjectId(req.params.messageId)) {
     return res.status(404).json({ error: "survey not found" });
   }
   const channel = await Channel.findById(req.params.id);
@@ -749,7 +794,7 @@ channelsRouter.post("/:id/messages/:messageId/survey-vote", async (req, res) => 
 // summary so REST clients and realtime clients can apply the same shape.
 channelsRouter.post(["/:id/messages/:messageId/reactions", "/:id/messages/:messageId/reaction"], async (req, res) => {
   const { id, messageId } = req.params;
-  if (!mongoose.isValidObjectId(id) || !mongoose.isValidObjectId(messageId)) {
+  if (!isValidObjectId(id) || !isValidObjectId(messageId)) {
     return res.status(404).json({ error: "message not found" });
   }
 

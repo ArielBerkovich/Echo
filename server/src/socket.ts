@@ -14,6 +14,7 @@ import { roomFor, userRoom } from "./lib/rooms.js";
 import { activeConnections, recordSocketError } from "./metrics.js";
 import { deleteMessage, editMessage, reactToMessage, toggleMessagePin, voteInSurvey } from "./services/messageActionService.js";
 import { sendMessage } from "./services/messageService.js";
+import { acknowledgeSocket, safeSocketHandler } from "./lib/safeSocketHandler.js";
 
 // Wire up the real-time messaging layer on top of the HTTP server.
 export function attachSocket(httpServer) {
@@ -60,7 +61,7 @@ export function attachSocket(httpServer) {
 
   function ackError(ack, type, message) {
     recordSocketError(type);
-    ack?.({ error: message });
+    acknowledgeSocket(ack, { error: message });
   }
 
   // Authenticate every socket from the handshake before it can do anything.
@@ -98,6 +99,16 @@ export function attachSocket(httpServer) {
     activeConnections.inc();
     socket.on("error", () => recordSocketError("connection"));
 
+    function onSocketEvent(eventName, handler, objectPayload = false) {
+      socket.on(eventName, safeSocketHandler(eventName, handler, {
+        objectPayload,
+        onFailure: (name, error) => {
+          recordSocketError(name);
+          console.error(`Unhandled ${name} socket event error:`, error);
+        },
+      }));
+    }
+
     // A personal room so we can reach this user's sockets later (e.g. to pull
     // them into a DM created after they connected).
     socket.join(userRoom(socket.user._id.toString()));
@@ -120,7 +131,7 @@ export function attachSocket(httpServer) {
       .catch(() => {});
 
     // Join a channel room so this socket receives its live messages.
-    socket.on("channel:join", async (channelId, ack) => {
+    onSocketEvent("channel:join", async (channelId, ack) => {
       try {
         const channel = await Channel.findById(channelId);
         if (!channel) return ackError(ack, "channel_join", "channel not found");
@@ -131,13 +142,13 @@ export function attachSocket(httpServer) {
           return ackError(ack, "channel_join", "access denied");
         }
         socket.join(roomFor(channelId));
-        ack?.({ ok: true });
+        acknowledgeSocket(ack, { ok: true });
       } catch {
         ackError(ack, "channel_join", "could not join channel");
       }
     });
 
-    socket.on("channel:leave", async (channelId) => {
+    onSocketEvent("channel:leave", async (channelId) => {
       if (!channelId) return;
       const channel = await Channel.findById(channelId).catch(() => {
         recordSocketError("channel_leave");
@@ -148,7 +159,7 @@ export function attachSocket(httpServer) {
     });
 
     // Relay an ephemeral typing signal to everyone else in the channel.
-    socket.on("typing", async ({ channelId, typing } = {}) => {
+    onSocketEvent("typing", async ({ channelId, typing } = {}) => {
       if (!channelId) return;
       const channel = await Channel.findById(channelId).catch(() => {
         recordSocketError("typing");
@@ -160,10 +171,10 @@ export function attachSocket(httpServer) {
         typing: !!typing,
         user: { id: socket.user._id.toString(), displayName: socket.user.displayName },
       });
-    });
+    }, true);
 
     // Toggle the current user's emoji reaction on a message.
-    socket.on("reaction:toggle", async (payload = {}, ack) => {
+    onSocketEvent("reaction:toggle", async (payload = {}, ack) => {
       try {
         const { messageId, present } = payload;
         const emoji = typeof payload.emoji === "string" ? payload.emoji.trim() : "";
@@ -181,14 +192,14 @@ export function attachSocket(httpServer) {
 
         const uid = socket.user._id;
         const result = await reactToMessage({ channel, message, userId: uid, emoji, present });
-        ack?.({ ok: true, reactions: result.reactions, added: result.added, changed: result.changed, present: result.present });
+        acknowledgeSocket(ack, { ok: true, reactions: result.reactions, added: result.added, changed: result.changed, present: result.present });
       } catch (err) {
         ackError(ack, "reaction", err.message || "could not react");
       }
-    });
+    }, true);
 
     // Persist an incoming message and fan it out to everyone in the room.
-    socket.on("message:send", async ({ channelId, body, parentId, broadcastToChannel, attachments, survey, retro, card } = {}, ack) => {
+    onSocketEvent("message:send", async ({ channelId, body, parentId, broadcastToChannel, attachments, survey, retro, card } = {}, ack) => {
       try {
         const text = String(body || "").trim();
         const attachmentError = attachmentLimitError(attachments);
@@ -225,24 +236,24 @@ export function attachSocket(httpServer) {
           retro: normalizedRetro,
           card: normalizedCard,
         });
-        ack?.({ ok: true, message: result.message });
+        acknowledgeSocket(ack, { ok: true, message: result.message });
       } catch (err) {
         ackError(ack, "message_send", err.message || "could not send message");
       }
-    });
+    }, true);
 
-    socket.on("survey:vote", async ({ messageId, optionIds } = {}, ack) => {
+    onSocketEvent("survey:vote", async ({ messageId, optionIds } = {}, ack) => {
       try {
         const message = await Message.findById(messageId);
         if (!message?.survey) return ackError(ack, "survey_vote", "survey not found");
         const channel = await Channel.findById(message.channel);
         if (!channel || !canParticipateInChannel(channel, socket.user._id)) return ackError(ack, "survey_vote", "join the channel to participate");
         const result = await voteInSurvey({ channel, message, userId: socket.user._id, optionIds });
-        ack?.({ ok: true, survey: result.survey });
+        acknowledgeSocket(ack, { ok: true, survey: result.survey });
       } catch (err) { ackError(ack, "survey_vote", err.message || "could not vote"); }
-    });
+    }, true);
 
-    socket.on("retro:update", async ({ messageId, change } = {}, ack) => {
+    onSocketEvent("retro:update", async ({ messageId, change } = {}, ack) => {
       try {
         const message = await Message.findById(messageId);
         if (!message?.retro) return ackError(ack, "retro_update", "retro board not found");
@@ -251,12 +262,12 @@ export function attachSocket(httpServer) {
         const updated = await updateRetro(message, socket.user._id, change);
         const retro = updated.toPublicJSON().retro;
         io.to(roomFor(message.channel.toString())).emit("message:retro", { messageId: message.id, retro });
-        ack?.({ ok: true, retro });
+        acknowledgeSocket(ack, { ok: true, retro });
       } catch (err) { ackError(ack, "retro_update", err.message || "could not update retro board"); }
-    });
+    }, true);
 
     // Edit one of your own messages; broadcast the new body to the room.
-    socket.on("message:edit", async ({ messageId, body, attachments } = {}, ack) => {
+    onSocketEvent("message:edit", async ({ messageId, body, attachments } = {}, ack) => {
       try {
         const text = String(body || "").trim();
         const attachmentError = attachmentLimitError(attachments);
@@ -282,14 +293,14 @@ export function attachSocket(httpServer) {
         }
 
         await editMessage({ channel: editChannel, message, userId: socket.user._id, body: text, attachments: files });
-        ack?.({ ok: true });
+        acknowledgeSocket(ack, { ok: true });
       } catch (err) {
         ackError(ack, "message_edit", err.message || "could not edit message");
       }
-    });
+    }, true);
 
     // Delete one of your own messages (and any thread replies under it).
-    socket.on("message:delete", async ({ messageId } = {}, ack) => {
+    onSocketEvent("message:delete", async ({ messageId } = {}, ack) => {
       try {
         if (!messageId) return ackError(ack, "message_delete", "messageId is required");
 
@@ -304,14 +315,14 @@ export function attachSocket(httpServer) {
         }
 
         await deleteMessage({ channel: deleteChannel, message });
-        ack?.({ ok: true });
+        acknowledgeSocket(ack, { ok: true });
       } catch (err) {
         ackError(ack, "message_delete", err.message || "could not delete message");
       }
-    });
+    }, true);
 
     // Pin or unpin a message — any channel member can do this.
-    socket.on("message:pin", async ({ messageId } = {}, ack) => {
+    onSocketEvent("message:pin", async ({ messageId } = {}, ack) => {
       try {
         if (!messageId) return ackError(ack, "message_pin", "messageId is required");
         const message = await Message.findById(messageId).populate("author");
@@ -323,14 +334,14 @@ export function attachSocket(httpServer) {
         }
 
         await toggleMessagePin({ channel, message, userId: socket.user._id });
-        ack?.({ ok: true });
+        acknowledgeSocket(ack, { ok: true });
       } catch (err) {
         ackError(ack, "message_pin", err.message || "could not pin message");
       }
-    });
+    }, true);
 
     // Forward an existing message into another channel/DM you can access.
-    socket.on("message:forward", async ({ messageId, channelId, note = "" } = {}, ack) => {
+    onSocketEvent("message:forward", async ({ messageId, channelId, note = "" } = {}, ack) => {
       try {
         if (!messageId || !channelId) {
           return ackError(ack, "message_forward", "messageId and channelId are required");
@@ -392,11 +403,11 @@ export function attachSocket(httpServer) {
 
         const payload = message.toPublicJSON();
         io.to(roomFor(target._id.toString())).emit("message:new", payload);
-        ack?.({ ok: true, message: payload });
+        acknowledgeSocket(ack, { ok: true, message: payload });
       } catch (err) {
         ackError(ack, "message_forward", err.message || "could not forward message");
       }
-    });
+    }, true);
   });
 
   return io;

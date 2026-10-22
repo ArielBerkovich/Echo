@@ -26,7 +26,10 @@ export async function listScheduledMessages({ authorId, channelId, pendingOnly =
   pendingOnly?: boolean;
 }) {
   const filter: Record<string, unknown> = { author: authorId };
-  if (pendingOnly) filter.scheduledFor = { $gt: new Date() };
+  if (pendingOnly) {
+    filter.scheduledFor = { $gt: new Date() };
+    filter.status = "pending";
+  }
   if (channelId) filter.channel = channelId;
   return ScheduledMessage.find(filter).sort({ scheduledFor: 1 });
 }
@@ -41,6 +44,10 @@ export async function updateScheduledMessage({ messageId, authorId, body, schedu
   if (!message) return null;
   if (body !== undefined) message.body = body;
   if (scheduledFor !== undefined) message.scheduledFor = scheduledFor;
+  message.status = "pending";
+  message.attemptCount = 0;
+  message.nextAttemptAt = null;
+  message.lastError = "";
   await message.save();
   return message;
 }

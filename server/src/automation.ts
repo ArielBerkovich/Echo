@@ -130,6 +130,11 @@ export async function postAutomationMessage({
   idempotencyKey,
 }) {
   const body = renderAutomationBody(payload);
+  if (body.length > 4000) {
+    const err = new Error("message body must be 4000 characters or fewer");
+    err.status = 400;
+    throw err;
+  }
   const attachmentError = attachmentLimitError(payload.attachments);
   if (attachmentError) {
     const err = new Error(attachmentError);

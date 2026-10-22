@@ -1,6 +1,7 @@
 import { lazy, Suspense, useRef } from "react";
 import { useI18n } from "../lib/i18n.js";
 import AnimatedLoadingLabel from "./AnimatedLoadingLabel.jsx";
+import AppErrorBoundary from "./AppErrorBoundary.js";
 
 // Conversation history, feeds, and browse/search results pull in markdown,
 // sanitization, and message interaction code. Load each surface when selected
@@ -89,5 +90,10 @@ function ActiveWorkspaceView({ view, groups, search, browse, feeds, conversation
     content = <ChannelView ref={channelViewRef} key={channel.id} channel={channel} {...props} />;
   }
 
-  return <Suspense fallback={<div className="empty-state"><p role="status" aria-label={t("loading")}><AnimatedLoadingLabel label={t("loading")} /></p></div>}>{content}</Suspense>;
+  return <AppErrorBoundary
+    resetKey={`${view}:${conversation.channel?.id || ""}:${search.query || ""}:${groups?.openGroup?.id || ""}`}
+    fallback="This panel could not be loaded. The rest of Echo is still available."
+  >
+    <Suspense fallback={<div className="empty-state"><p role="status" aria-label={t("loading")}><AnimatedLoadingLabel label={t("loading")} /></p></div>}>{content}</Suspense>
+  </AppErrorBoundary>;
 }

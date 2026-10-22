@@ -20,6 +20,7 @@ workspaceRouter.patch("/", requireAuth, requireAdmin, async (req, res) => {
   const settings = await getSettings();
 
   if (name !== undefined) {
+    if (typeof name !== "string") return res.status(400).json({ error: "organization name must be text" });
     const nextName = String(name).trim();
     if (nextName.length > 80) {
       return res.status(400).json({ error: "organization name must be at most 80 characters" });
@@ -27,6 +28,7 @@ workspaceRouter.patch("/", requireAuth, requireAdmin, async (req, res) => {
     settings.name = nextName;
   }
   if (logoKey !== undefined) {
+    if (logoKey !== null && typeof logoKey !== "string") return res.status(400).json({ error: "invalid logo reference" });
     if (logoKey !== null && !/^[a-z0-9-]+\.[a-z0-9]+$/i.test(String(logoKey))) {
       return res.status(400).json({ error: "invalid logo reference" });
     }

@@ -15,6 +15,7 @@ import { getSocket } from "../socket.js";
 import Avatar, { GroupAvatar } from "./Avatar.js";
 import ReactionPicker from "./ReactionPicker.js";
 import ThreadPanel from "./ThreadPanel.js";
+import AppErrorBoundary from "./AppErrorBoundary.js";
 import ThreadSummaryPanel from "./ThreadSummaryPanel.js";
 import ForwardModal from "./ForwardModal.js";
 import ChannelDetailsPanel from "./ChannelDetailsPanel.js";
@@ -1499,6 +1500,7 @@ const ChannelView = forwardRef(function ChannelView({
       )}
       {thread ? (
         <>
+          <AppErrorBoundary resetKey={`${channel.id}:${thread.id}`} fallback="The thread panel could not be loaded. The channel is still available.">
           <ThreadPanel
             channel={channel}
             recoveryEpoch={recoveryEpoch}
@@ -1531,6 +1533,7 @@ const ChannelView = forwardRef(function ChannelView({
             openThreadJumpRequestId={threadJumpTargetId ? threadJumpRequestId : 0}
             composerFocusRequest={composerFocusRequest}
           />
+          </AppErrorBoundary>
         </>
       ) : summaryRoot ? null : showMembers ? (
         <MembersPanel

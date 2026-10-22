@@ -1638,15 +1638,16 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                     </div>
                   </div>
                 ) : (
-                  <div className={`scheduled-item${index === 0 ? " is-next" : ""}`} key={s.id}>
+                  <div className={`scheduled-item${index === 0 && s.status !== "failed" ? " is-next" : ""}${s.status === "failed" ? " is-failed" : ""}`} key={s.id}>
                     <span className="scheduled-item-marker" aria-hidden="true">
                       <CalendarClock size={15} strokeWidth={2} />
                     </span>
                     <div className="scheduled-body">
                       <div className="scheduled-when">
-                        {index === 0 && <span className="scheduled-next-label">{t("nextUp")}</span>}
+                        {index === 0 && s.status !== "failed" && <span className="scheduled-next-label">{t("nextUp")}</span>}
                         {formatDateTime(s.scheduledFor)}
                       </div>
+                      {s.status === "failed" && <div className="scheduled-failed-label">{t("scheduledDeliveryFailed")}</div>}
                       <div className="scheduled-preview" dir="auto">
                         {s.body || t("attachmentCount").replace("{count}", String(s.attachments.length))}
                       </div>
@@ -1655,9 +1656,11 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
                       )}
                     </div>
                     <div className="scheduled-actions">
-                      <button type="button" className="scheduled-edit-btn" onClick={() => startSchedEdit(s)}>
-                        {t("edit")}
-                      </button>
+                      {s.status !== "failed" && (
+                        <button type="button" className="scheduled-edit-btn" onClick={() => startSchedEdit(s)}>
+                          {t("edit")}
+                        </button>
+                      )}
                       <button type="button" className="link-danger" onClick={() => cancelScheduled(s.id)}>
                         {t("cancelScheduledMessage")}
                       </button>
