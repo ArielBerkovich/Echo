@@ -19,6 +19,7 @@
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "express": "^4.19.2",
+    "express-async-errors": "^3.1.1",
     "express-rate-limit": "^8.5.2",
     "file-type": "^22.0.1",
     "helmet": "^8.2.0",
