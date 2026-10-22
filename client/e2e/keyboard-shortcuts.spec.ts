@@ -16,6 +16,17 @@ test.describe("documented keyboard shortcuts", () => {
     throw new Error(`Could not reach ${await locator.getAttribute("data-testid")} with Tab`);
   }
 
+  test("lists desktop zoom shortcuts in the keyboard help", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Settings" }).click();
+    await page.getByRole("button", { name: "Keyboard shortcuts" }).click();
+    const desktopShortcuts = page.locator(".shortcut-group").filter({ has: page.getByRole("heading", { name: "Desktop" }) });
+    await expect(desktopShortcuts.getByText("Zoom in")).toBeVisible();
+    await expect(desktopShortcuts.getByText("Zoom out")).toBeVisible();
+    await expect(desktopShortcuts.getByText("Reset zoom")).toBeVisible();
+    await expect(desktopShortcuts.locator("kbd")).toHaveText(["Ctrl / ⌘", "+ / =", "Ctrl / ⌘", "−", "Ctrl / ⌘", "0"]);
+  });
+
   test("navigates backward and forward with history shortcuts and ignores them while typing", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByTestId("composer-editor")).toBeVisible();

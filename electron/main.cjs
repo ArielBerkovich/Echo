@@ -1,5 +1,6 @@
 const { app, BrowserWindow, dialog, ipcMain, Menu, Notification, safeStorage, shell } = require("electron");
 const { autoUpdater } = require("electron-updater");
+const { nextZoomLevel, readStoredZoomLevel, writeStoredZoomLevel, zoomActionForInput } = require("./zoom.cjs");
 const fs = require("node:fs");
 const path = require("node:path");
 
@@ -28,6 +29,34 @@ function configPath() {
 
 function pendingUpdatePath() {
   return path.join(app.getPath("userData"), "pending-update.json");
+}
+
+function zoomLevelPath() {
+  return path.join(app.getPath("userData"), "zoom-level.json");
+}
+
+function readZoomLevel() {
+  return readStoredZoomLevel(zoomLevelPath());
+}
+
+function saveZoomLevel(level) {
+  try {
+    writeStoredZoomLevel(zoomLevelPath(), level);
+  } catch (error) {
+    console.warn("Could not save the Echo zoom level:", error?.message || error);
+  }
+}
+
+function configureWindowZoom(window) {
+  window.webContents.setZoomLevel(readZoomLevel());
+  window.webContents.on("before-input-event", (event, input) => {
+    const action = zoomActionForInput(input);
+    if (!action) return;
+    event.preventDefault();
+    const next = nextZoomLevel(window.webContents.getZoomLevel(), action);
+    window.webContents.setZoomLevel(next);
+    saveZoomLevel(next);
+  });
 }
 
 function authTokenPath() {
@@ -285,6 +314,7 @@ function createWindow(url, uiUrl = null) {
       ],
     },
   });
+  configureWindowZoom(mainWindow);
 
   mainWindow.webContents.setWindowOpenHandler(({ url: targetUrl }) => {
     openExternalUrl(targetUrl);

@@ -1010,7 +1010,7 @@ export default function SettingsModal({
               <div className="shortcut-groups">
                 {KEYBOARD_SHORTCUT_GROUPS.map((group) => (
                   <section className="shortcut-group" key={group.label} aria-labelledby={`shortcut-group-${group.label.toLowerCase()}`}>
-                    <h4 id={`shortcut-group-${group.label.toLowerCase()}`}>{group.label === "Navigation" ? t("navigation") : t("messageActionsGroup")}</h4>
+                    <h4 id={`shortcut-group-${group.label.toLowerCase()}`}>{group.label === "Navigation" ? t("navigation") : group.label === "Desktop" ? t("desktop") : t("messageActionsGroup")}</h4>
                     <div className="shortcut-list">
                       {group.shortcuts.map((shortcut) => (
                         <div className="shortcut-row" key={`${group.label}-${shortcut.description}`}>

@@ -10,6 +10,9 @@ const SHORTCUTS = [
   { id: "go-activity", group: "Navigation", keys: ["⌘ / Ctrl", "⇧", "A"], hotkeys: ["ctrl+shift+a", "meta+shift+a"], description: "Go to Activity" },
   { id: "go-saved", group: "Navigation", keys: ["⌘ / Ctrl", "⇧", "S"], hotkeys: ["ctrl+shift+s", "meta+shift+s"], description: "Go to Saved messages" },
   { id: "open-settings", group: "Navigation", keys: ["⌘ / Ctrl", ","], hotkeys: ["ctrl+comma", "meta+comma"], description: "Open Settings" },
+  { id: "desktop-zoom-in", group: "Desktop", keys: ["Ctrl / ⌘", "+ / ="], description: "Zoom in" },
+  { id: "desktop-zoom-out", group: "Desktop", keys: ["Ctrl / ⌘", "−"], description: "Zoom out" },
+  { id: "desktop-zoom-reset", group: "Desktop", keys: ["Ctrl / ⌘", "0"], description: "Reset zoom" },
   { id: "go-back", group: "Navigation", keys: ["Alt", "←"], hotkeys: ["alt+left", "meta+["], description: "Go back in workspace history" },
   { id: "go-forward", group: "Navigation", keys: ["Alt", "→"], hotkeys: ["alt+right", "meta+]"], description: "Go forward in workspace history" },
   { id: "message-actions", group: "Message actions", keys: ["Enter"], description: "Open actions for the focused message" },
@@ -17,7 +20,7 @@ const SHORTCUTS = [
 
 export const KEYBOARD_SHORTCUTS = SHORTCUTS;
 
-export const KEYBOARD_SHORTCUT_GROUPS = ["Navigation", "Message actions"].map((label) => ({
+export const KEYBOARD_SHORTCUT_GROUPS = ["Navigation", "Message actions", "Desktop"].map((label) => ({
   label,
   shortcuts: SHORTCUTS.filter((shortcut) => shortcut.group === label),
 }));
