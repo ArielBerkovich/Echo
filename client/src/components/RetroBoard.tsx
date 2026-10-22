@@ -166,7 +166,6 @@ function RetroColumn({
   onEdit,
   onDelete,
   onDragStart,
-  onDragEnd,
   onDrop,
 }) {
   const { t } = useI18n();
@@ -203,7 +202,7 @@ function RetroColumn({
             onEdit={onEdit}
             onDelete={onDelete}
             onDragStart={onDragStart}
-            onDragEnd={onDragEnd}
+            onDragEnd={() => setIsOver(false)}
           />
         ))}
       </div>
@@ -390,7 +389,6 @@ export default function RetroBoard({
                     event.dataTransfer.effectAllowed = "move";
                     event.dataTransfer.setData("text/plain", item.id);
                   }}
-                  onDragEnd={() => setIsOver(false)}
                   onDrop={(event, columnId) => {
                     event.preventDefault();
                     const itemId = event.dataTransfer.getData("text/plain");

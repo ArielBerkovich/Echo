@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { ActivityEvent } from "../models/ActivityEvent.js";
+import { removeSavedMessagesForChannel } from "./savedMessageCleanup.js";
 import { Channel, isChannelManager } from "../models/Channel.js";
 import { Message } from "../models/Message.js";
 import { User } from "../models/User.js";
@@ -279,8 +280,7 @@ export async function leaveChannel(channelKey: string, userId: ChannelActor, man
   if (isCreator && remainingMembers.length === 0) return { error: "Empty channels must be deleted instead" };
 
   if (channel.type === "private") {
-    const messages = await Message.find({ channel: channel._id }, { _id: 1 }).lean();
-    if (messages.length) await User.updateOne({ _id: userId }, { $pull: { savedMessages: { $in: messages.map((message) => message._id) } } });
+    await removeSavedMessagesForChannel(userId, channel._id);
   }
   await User.updateOne({ _id: userId }, { $pull: { starredChannels: channel._id } });
   await ActivityEvent.deleteMany({ recipient: userId, channel: channel._id, type: { $ne: "channel_remove" } }).catch(() => {});
@@ -304,13 +304,7 @@ export async function archiveChannel(channelKey: string, userId: ChannelActor): 
   }
 
   if (channel.type === "private") {
-    const savedMessageIds = await Message.find({ channel: channel._id }, { _id: 1 }).lean();
-    if (savedMessageIds.length) {
-      await User.updateOne(
-        { _id: userId },
-        { $pull: { savedMessages: { $in: savedMessageIds.map((message) => message._id) } } },
-      );
-    }
+    await removeSavedMessagesForChannel(userId, channel._id);
   }
   await ActivityEvent.deleteMany({ channel: channel._id }).catch(() => {});
   channel.isArchived = true;
