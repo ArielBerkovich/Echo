@@ -19,7 +19,7 @@ import { normalizeChannelName } from "../automation.js";
 import { ActivityEvent } from "../models/ActivityEvent.js";
 import { isValidChannelName } from "../lib/channelName.js";
 import { CustomEmoji } from "../models/CustomEmoji.js";
-import { reactToMessage, voteInSurvey } from "../services/messageActionService.js";
+import { editMessage, reactToMessage, voteInSurvey } from "../services/messageActionService.js";
 import { getThreadMessages, listPinnedMessages } from "../services/messageQueryService.js";
 import { queryChannelHistory } from "../services/messageHistoryService.js";
 import { getThreadFollow, markRead, setThreadFollow } from "../services/userStateService.js";
@@ -731,6 +731,40 @@ channelsRouter.post("/:id/messages", async (req, res) => {
     idempotencyKey: idempotencyKey || null,
   });
   res.status(result.idempotent ? 200 : 201).json(result);
+});
+
+// PATCH /api/channels/:id/messages/:messageId — edit an authored message.
+channelsRouter.patch("/:id/messages/:messageId", async (req, res) => {
+  const { id, messageId } = req.params;
+  if (!mongoose.isValidObjectId(id) || !mongoose.isValidObjectId(messageId)) {
+    return res.status(404).json({ error: "message not found" });
+  }
+  const body = typeof req.body?.body === "string" ? req.body.body.trim() : "";
+  const attachmentError = attachmentLimitError(req.body?.attachments);
+  if (attachmentError) return res.status(400).json({ error: attachmentError });
+  const attachments = req.body?.attachments === undefined
+    ? undefined
+    : sanitizeAttachments(req.body.attachments);
+  if ((!body && (!attachments || attachments.length === 0)) || body.length > 4000) {
+    return res.status(400).json({ error: "message needs text or an attachment and text must be at most 4000 characters" });
+  }
+
+  const [channel, message] = await Promise.all([
+    Channel.findById(id),
+    Message.findOne({ _id: messageId, channel: id }),
+  ]);
+  if (!channel || !message || channel.isArchived) return res.status(404).json({ error: "message not found" });
+  if (!canParticipateInChannel(channel, req.user._id)) return res.status(403).json({ error: "access denied" });
+  if (message.kind === "system" || message.forwardedFrom) {
+    return res.status(400).json({ error: "this message cannot be edited" });
+  }
+  if (!message.author.equals(req.user._id)) return res.status(403).json({ error: "you can only edit your own messages" });
+  if (!canPostToChannel(channel, req.user._id)) {
+    return res.status(403).json({ error: "only channel managers can edit messages in this read-only channel" });
+  }
+
+  const result = await editMessage({ channel, message, userId: req.user._id, body, attachments });
+  res.json({ message: result.message.toPublicJSON() });
 });
 
 // POST /api/channels/:channelId/messages/:messageId/survey-vote — replace the
