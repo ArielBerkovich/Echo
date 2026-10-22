@@ -103,7 +103,8 @@ test("shows a dot instead of a Home notification count", async ({ page }) => {
 
 test("does not offer DM removal in the dedicated DMs view", async ({ page }) => {
   await page.goto("/");
-  await railItem(page, "dms").click({ force: true });
+  await expect(page.getByTestId("composer-editor")).toBeVisible();
+  await railItem(page, "dms").click();
   await expect(page.getByTestId("sidebar")).toHaveClass(/dms-view/);
 
   const row = dmRow(page, fixture.bob.displayName);
