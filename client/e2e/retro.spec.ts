@@ -14,6 +14,8 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("creates and manages a retrospective board", async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
   const title = `Retro ${uniqueSuffix("board")}`;
   await page.getByTestId("composer-more-actions").click();
   await page.getByTestId("composer-retro").click();
@@ -64,6 +66,7 @@ test("creates and manages a retrospective board", async ({ page }) => {
     .filter({ hasText: "The release process stayed smooth" })
     .dragTo(backlog);
   await expect(backlog).toContainText("The release process stayed smooth");
+  expect(pageErrors.some((message) => message.includes("setIsOver is not defined"))).toBe(false);
 
   await backlog
     .locator(".retro-item")
