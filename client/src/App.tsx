@@ -31,10 +31,12 @@ import {
   recentForConversation,
 } from "./lib/recentConversations.js";
 import { useHotkeys } from "react-hotkeys-hook";
+import AppErrorBoundary from "./components/AppErrorBoundary.js";
 
 const HIDDEN_KEY = "echo.hiddenChannels";
 function loadHidden() {
-  return new Set(readJson(HIDDEN_KEY, []));
+  const value = readJson(HIDDEN_KEY, []);
+  return new Set(Array.isArray(value) ? value.filter((id) => typeof id === "string") : []);
 }
 
 const RECENTS_KEY = "echo.recentSearches";
@@ -374,7 +376,7 @@ export default function App() {
     if (actionId === "view-files") return channelViewRef.current?.openFilesPanel();
     if (actionId === "view-pinned") return channelViewRef.current?.openPinnedPanel();
     if (actionId === "toggle-channel-starred") return activeChannel && handleToggleChannelStarred(activeChannel.id);
-    if (actionId === "view-profile") return activeChannel?.dmUserId && setProfileUser(activeChannel.dmUserId);
+    if (actionId === "view-profile") return activeChannel?.dmUserId && openProfile(activeChannel.dmUserId);
     if (actionId === "toggle-dm-starred") {
       return isGroupDmChannel(activeChannel)
         ? activeChannel && handleToggleChannelStarred(activeChannel.id)
@@ -760,16 +762,19 @@ export default function App() {
         } else if (hasExplicitRoute) {
           await applyRouteLocation(route, chs, conversations);
         } else if (!navDuringRestoreRef.current) {
-          const saved = readJson(`echo.loc.${user.id}`, null);
+          const storedLocation = readJson(`echo.loc.${user.id}`, null);
+          const saved = storedLocation && typeof storedLocation === "object" && !Array.isArray(storedLocation) ? storedLocation : null;
           applyLocation(saved, chs, conversations);
           const savedConversation = saved?.convType === "dm"
             ? conversations.find((conversation) => conversation.id === saved.convId)
             : chs.find((channel) => channel.id === saved?.convId);
           navigate(workspacePath({
-            ...(saved || {}),
+            view: ["home", "dms", "browse", "groups", "activity", "saved", "settings"].includes(saved?.view) ? saved.view : "home",
+            convId: typeof saved?.convId === "string" ? saved.convId : null,
+            convType: saved?.convType === "dm" ? "dm" : savedConversation?.type || null,
             convName: saved?.convType === "dm"
-              ? savedConversation?.withUser.username
-              : savedConversation?.name,
+              ? savedConversation?.withUser?.username || saved?.convName || ""
+              : savedConversation?.name || "",
           }), { replace: true });
         } else {
           writeCurrentLocation(user.id);
@@ -1565,6 +1570,7 @@ export default function App() {
         data-mobile-nav={isMobileViewport() && !activeChannel && !searchQuery && view !== "browse" && view !== "groups" ? "true" : "false"}
       >
         <div className="workspace-frame">
+          <AppErrorBoundary fallback="The navigation panel could not be loaded." resetKey={user?.id}>
           <WorkspaceNavigation
           view={view}
           user={user}
@@ -1621,6 +1627,7 @@ export default function App() {
               hasMessageSearch: Boolean(searchQuery),
             }}
           />
+          </AppErrorBoundary>
 
           {/* Backdrop closes the nav drawer on narrow screens. */}
           <div className="nav-backdrop" data-testid="nav-backdrop" onClick={() => setNavOpen(false)} />
