@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLocation, useNavigate } from "react-router";
+import { useLocation, useNavigate, useNavigationType } from "react-router";
 import { api, consumeRhssoCallback, getToken, restoreNativeToken, setToken, subscribeAuthExpired } from "./api.js";
 import { disconnectSocket } from "./socket.js";
 import { useRealtime } from "./lib/useRealtime.js";
@@ -31,10 +31,12 @@ import {
   recentForConversation,
 } from "./lib/recentConversations.js";
 import { useHotkeys } from "react-hotkeys-hook";
+import AppErrorBoundary from "./components/AppErrorBoundary.js";
 
 const HIDDEN_KEY = "echo.hiddenChannels";
 function loadHidden() {
-  return new Set(readJson(HIDDEN_KEY, []));
+  const value = readJson(HIDDEN_KEY, []);
+  return new Set(Array.isArray(value) ? value.filter((id) => typeof id === "string") : []);
 }
 
 const RECENTS_KEY = "echo.recentSearches";
@@ -70,6 +72,7 @@ export default function App() {
   const queryClient = useQueryClient();
   const location = useLocation();
   const navigate = useNavigate();
+  const navigationType = useNavigationType();
   const [initialRoute] = useState(() => currentRoute(location));
   const [rhssoError] = useState(() => consumeRhssoCallback());
   const [user, setUser] = useState(null);
@@ -117,6 +120,45 @@ export default function App() {
   const [navOpen, setNavOpen] = useState(false); // mobile: rail+sidebar drawer open?
   const [showTour, setShowTour] = useState(false); // first-run walkthrough
   const [composerFocusRequest, setComposerFocusRequest] = useState(0);
+  const historyEntriesRef = useRef([{ key: location.key, path: `${location.pathname}${location.search}${location.hash}` }]);
+  const historyIndexRef = useRef(0);
+  const [historyBounds, setHistoryBounds] = useState({ back: false, forward: false });
+
+  useEffect(() => {
+    const entries = historyEntriesRef.current;
+    if (navigationType === "PUSH") {
+      entries.splice(historyIndexRef.current + 1);
+      entries.push({ key: location.key, path: `${location.pathname}${location.search}${location.hash}` });
+      historyIndexRef.current = entries.length - 1;
+    } else if (navigationType === "REPLACE") {
+      entries[historyIndexRef.current] = { key: location.key, path: `${location.pathname}${location.search}${location.hash}` };
+    } else {
+      const index = entries.findIndex((entry) => entry.key === location.key);
+      if (index >= 0) historyIndexRef.current = index;
+    }
+    setHistoryBounds({
+      back: historyIndexRef.current > 0,
+      forward: historyIndexRef.current < entries.length - 1,
+    });
+  }, [location.key, location.pathname, location.search, location.hash, navigationType]);
+
+  const navigateBack = useCallback(() => {
+    if (historyIndexRef.current > 0) {
+      historyIndexRef.current -= 1;
+      setHistoryBounds({ back: historyIndexRef.current > 0, forward: true });
+      navigate(historyEntriesRef.current[historyIndexRef.current].path, { replace: true });
+    }
+  }, [navigate]);
+  const navigateForward = useCallback(() => {
+    if (historyIndexRef.current < historyEntriesRef.current.length - 1) {
+      historyIndexRef.current += 1;
+      setHistoryBounds({
+        back: historyIndexRef.current > 0,
+        forward: historyIndexRef.current < historyEntriesRef.current.length - 1,
+      });
+      navigate(historyEntriesRef.current[historyIndexRef.current].path, { replace: true });
+    }
+  }, [navigate]);
 
   useEffect(() => subscribeAuthExpired(() => setSessionExpired(true)), []);
   useEffect(() => {
@@ -178,6 +220,31 @@ export default function App() {
   useHotkeys(getKeyboardHotkeys("go-activity"), () => handleViewSelect("activity"), hotkeyOptions, [user]);
   useHotkeys(getKeyboardHotkeys("go-saved"), () => handleViewSelect("saved"), hotkeyOptions, [user]);
   useHotkeys(getKeyboardHotkeys("open-settings"), () => openSettings(), hotkeyOptions, [user]);
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (isEditableTarget(event.target)) return;
+      const back = (event.altKey && (event.key === "ArrowLeft" || event.key === "Left" || event.code === "ArrowLeft")) || (event.metaKey && event.key === "[");
+      const forward = (event.altKey && (event.key === "ArrowRight" || event.key === "Right" || event.code === "ArrowRight")) || (event.metaKey && event.key === "]");
+      if (back && historyIndexRef.current > 0) {
+        event.preventDefault();
+        navigateBack();
+      } else if (forward && historyIndexRef.current < historyEntriesRef.current.length - 1) {
+        event.preventDefault();
+        navigateForward();
+      }
+    };
+    const onMouseUp = (event) => {
+      if (isEditableTarget(event.target)) return;
+      if (event.button === 3 && historyIndexRef.current > 0) navigateBack();
+      if (event.button === 4 && historyIndexRef.current < historyEntriesRef.current.length - 1) navigateForward();
+    };
+    document.addEventListener("keydown", onKeyDown, true);
+    window.addEventListener("mouseup", onMouseUp, true);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown, true);
+      window.removeEventListener("mouseup", onMouseUp, true);
+    };
+  }, [navigateBack, navigateForward]);
 
   // Echo's own images should not become native drag sources. This keeps
   // logos, avatars, and message images from being dropped into the composer;
@@ -374,7 +441,7 @@ export default function App() {
     if (actionId === "view-files") return channelViewRef.current?.openFilesPanel();
     if (actionId === "view-pinned") return channelViewRef.current?.openPinnedPanel();
     if (actionId === "toggle-channel-starred") return activeChannel && handleToggleChannelStarred(activeChannel.id);
-    if (actionId === "view-profile") return activeChannel?.dmUserId && setProfileUser(activeChannel.dmUserId);
+    if (actionId === "view-profile") return activeChannel?.dmUserId && openProfile(activeChannel.dmUserId);
     if (actionId === "toggle-dm-starred") {
       return isGroupDmChannel(activeChannel)
         ? activeChannel && handleToggleChannelStarred(activeChannel.id)
@@ -760,16 +827,19 @@ export default function App() {
         } else if (hasExplicitRoute) {
           await applyRouteLocation(route, chs, conversations);
         } else if (!navDuringRestoreRef.current) {
-          const saved = readJson(`echo.loc.${user.id}`, null);
+          const storedLocation = readJson(`echo.loc.${user.id}`, null);
+          const saved = storedLocation && typeof storedLocation === "object" && !Array.isArray(storedLocation) ? storedLocation : null;
           applyLocation(saved, chs, conversations);
           const savedConversation = saved?.convType === "dm"
             ? conversations.find((conversation) => conversation.id === saved.convId)
             : chs.find((channel) => channel.id === saved?.convId);
           navigate(workspacePath({
-            ...(saved || {}),
+            view: ["home", "dms", "browse", "groups", "activity", "saved", "settings"].includes(saved?.view) ? saved.view : "home",
+            convId: typeof saved?.convId === "string" ? saved.convId : null,
+            convType: saved?.convType === "dm" ? "dm" : savedConversation?.type || null,
             convName: saved?.convType === "dm"
-              ? savedConversation?.withUser.username
-              : savedConversation?.name,
+              ? savedConversation?.withUser?.username || saved?.convName || ""
+              : savedConversation?.name || "",
           }), { replace: true });
         } else {
           writeCurrentLocation(user.id);
@@ -1565,6 +1635,7 @@ export default function App() {
         data-mobile-nav={isMobileViewport() && !activeChannel && !searchQuery && view !== "browse" && view !== "groups" ? "true" : "false"}
       >
         <div className="workspace-frame">
+          <AppErrorBoundary fallback="The navigation panel could not be loaded." resetKey={user?.id}>
           <WorkspaceNavigation
           view={view}
           user={user}
@@ -1601,8 +1672,10 @@ export default function App() {
           onOpenSettings={openSettings}
           onOpenApiDocs={openApiDocs}
           onOpenWalkthrough={openWalkthrough}
-          onNavigateBack={() => navigate(-1)}
-          onNavigateForward={() => navigate(1)}
+          onNavigateBack={navigateBack}
+          onNavigateForward={navigateForward}
+          canNavigateBack={historyBounds.back}
+          canNavigateForward={historyBounds.forward}
           onToggleMode={toggleMode}
             search={{
               inputRef: searchRef,
@@ -1621,6 +1694,7 @@ export default function App() {
               hasMessageSearch: Boolean(searchQuery),
             }}
           />
+          </AppErrorBoundary>
 
           {/* Backdrop closes the nav drawer on narrow screens. */}
           <div className="nav-backdrop" data-testid="nav-backdrop" onClick={() => setNavOpen(false)} />

@@ -13649,6 +13649,9 @@ html[data-interface-direction="rtl"] .scheduled-banner-copy {
 .scheduled-item.is-next .scheduled-item-marker {
   background: color-mix(in srgb, var(--accent) 14%, var(--surface));
 }
+.scheduled-item.is-failed {
+  border-color: color-mix(in srgb, var(--danger, #c43f3f) 28%, var(--border));
+}
 .scheduled-body {
   min-width: 0;
 }
@@ -13674,6 +13677,12 @@ html[data-interface-direction="rtl"] .scheduled-banner-copy {
   letter-spacing: 0.06em;
   line-height: 1.2;
   text-transform: uppercase;
+}
+.scheduled-failed-label {
+  margin-bottom: 3px;
+  color: var(--danger, #c43f3f);
+  font-size: 11px;
+  font-weight: 700;
 }
 .scheduled-preview {
   display: -webkit-box;
@@ -18126,12 +18135,38 @@ html[data-theme="calm"] .channel-list::-webkit-scrollbar-track {
 @media (prefers-reduced-motion: reduce) { .ai-integration-modal .integration-switch-track, .ai-integration-modal .integration-switch-track span { transition: none; } }
 .ai-integration-modal .integration-switch input { inset: 0; width: 100%; height: 100%; margin: 0; z-index: 1; pointer-events: auto; cursor: pointer; }
 
-.thread-summary-plain-text { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; line-height: 1.7; color: var(--text); }
+.thread-summary-markdown {
+  max-width: 65ch;
+  margin-inline: auto;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+.thread-summary-markdown > :first-child { margin-top: 0; }
+.thread-summary-markdown > :last-child { margin-bottom: 0; }
+.thread-summary-markdown p { margin: 0 0 14px; }
+.thread-summary-markdown h1,
+.thread-summary-markdown h2,
+.thread-summary-markdown h3 { margin: 22px 0 10px; color: var(--text); line-height: 1.35; }
+.thread-summary-markdown h1 { font-size: 20px; }
+.thread-summary-markdown h2 { font-size: 18px; }
+.thread-summary-markdown h3 { font-size: 16px; }
+.thread-summary-markdown ul,
+.thread-summary-markdown ol { margin: 6px 0 16px; padding-inline-start: 24px; }
+.thread-summary-markdown li + li { margin-top: 7px; }
+.thread-summary-markdown blockquote { margin: 14px 0; padding-inline-start: 14px; border-inline-start: 3px solid var(--border); color: var(--muted); }
+.thread-summary-markdown code { padding: 2px 5px; border-radius: 4px; background: var(--surface-2); font-size: .9em; }
+.thread-summary-markdown pre { overflow-x: auto; padding: 12px; border-radius: 8px; background: var(--surface-2); }
+.thread-summary-markdown pre code { padding: 0; background: none; }
+.thread-summary-markdown a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
 
 .ai-integration-modal textarea.settings-input { resize: vertical; min-height: 88px; line-height: 1.5; }
 .ai-integration-modal .ai-prompt-prefix { color: var(--muted); background: var(--surface-2); }
 
 .app-error-screen { min-height: 100dvh; display: grid; place-items: center; padding: 24px; color: var(--text); background: var(--surface); }
+.panel-error-boundary { display: grid; justify-items: start; gap: 10px; max-width: 100%; padding: 12px; border: 1px solid color-mix(in srgb, var(--danger, #c43f3f) 30%, var(--border)); border-radius: 10px; color: var(--text); background: var(--surface); font-size: 13px; }
 .app-error-card { width: min(100%, 440px); padding: 28px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface-2); box-shadow: 0 12px 36px color-mix(in srgb, var(--text) 12%, transparent); }
 .app-error-card h1 { margin: 0 0 10px; font-size: 22px; }
 .app-error-card p { margin: 0 0 20px; color: var(--muted); line-height: 1.5; }

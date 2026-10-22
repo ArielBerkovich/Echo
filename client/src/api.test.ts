@@ -50,6 +50,17 @@ describe("api request helpers", () => {
     assert.equal(call[1].body, JSON.stringify({ name: "general", type: "private" }));
   });
 
+  it("rejects a successful response that is not JSON", async () => {
+    globalThis.fetch = async () => ({ ok: true, json: async () => { throw new SyntaxError("invalid json"); } });
+    await assert.rejects(api.listChannels(), /Echo returned an invalid response/);
+  });
+
+  it("rejects malformed successful message history and thread payloads", async () => {
+    globalThis.fetch = async () => ({ ok: true, json: async () => ({}) });
+    await assert.rejects(api.getMessages("channel"), /invalid message history/);
+    await assert.rejects(api.getThread("channel", "root"), /invalid thread/);
+  });
+
 
   it("sends password-help requests without requiring a session", async () => {
     let call;

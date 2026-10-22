@@ -1,5 +1,5 @@
 import { Router } from "express";
-import mongoose from "mongoose";
+import { isValidObjectId } from "../lib/objectId.js";
 import { canPostToChannel, Channel } from "../models/Channel.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { sanitizeAttachments, attachmentLimitError } from "../deliver.js";
@@ -17,10 +17,13 @@ scheduledRouter.use(requireAuth);
 // POST /api/scheduled — queue a message for future delivery.
 scheduledRouter.post("/", async (req, res) => {
   const { channelId, body, parentId, attachments, scheduledFor } = req.body || {};
-  if (!mongoose.isValidObjectId(channelId)) {
+  if (!isValidObjectId(channelId)) {
     return res.status(400).json({ error: "invalid channel" });
   }
+  if (body !== undefined && typeof body !== "string") return res.status(400).json({ error: "body must be text" });
   const text = String(body || "").trim();
+  if (text.length > 4000) return res.status(400).json({ error: "message body must be 4000 characters or fewer" });
+  if (parentId != null && !isValidObjectId(parentId)) return res.status(400).json({ error: "invalid parent message" });
   const attachmentError = attachmentLimitError(attachments);
   if (attachmentError) return res.status(400).json({ error: attachmentError });
   const files = sanitizeAttachments(attachments);
@@ -45,7 +48,7 @@ scheduledRouter.post("/", async (req, res) => {
     channelId: channel._id,
     authorId: req.user._id,
     body: text,
-    parentId: parentId && mongoose.isValidObjectId(parentId) ? parentId : null,
+    parentId: parentId || null,
     attachments: files,
     scheduledFor: when,
   });
@@ -54,16 +57,17 @@ scheduledRouter.post("/", async (req, res) => {
 
 // GET /api/scheduled[?channelId=...] — the caller's pending scheduled messages.
 scheduledRouter.get("/", async (req, res) => {
+  if (req.query.channelId !== undefined && !isValidObjectId(req.query.channelId)) return res.status(400).json({ error: "invalid channel" });
   const docs = await listScheduledMessages({
     authorId: req.user._id,
-    channelId: req.query.channelId && mongoose.isValidObjectId(req.query.channelId) ? req.query.channelId : undefined,
+    channelId: req.query.channelId && isValidObjectId(req.query.channelId) ? req.query.channelId : undefined,
   });
   res.json({ scheduled: docs.map((d) => d.toPublicJSON()) });
 });
 
 // PATCH /api/scheduled/:id — edit a scheduled message's text and/or time.
 scheduledRouter.patch("/:id", async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
+  if (!isValidObjectId(req.params.id)) {
     return res.status(404).json({ error: "not found" });
   }
   const doc = await findScheduledMessage({ messageId: req.params.id, authorId: req.user._id });
@@ -94,7 +98,7 @@ scheduledRouter.patch("/:id", async (req, res) => {
 
 // DELETE /api/scheduled/:id — cancel one of your scheduled messages.
 scheduledRouter.delete("/:id", async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
+  if (!isValidObjectId(req.params.id)) {
     return res.status(404).json({ error: "not found" });
   }
   const cancelled = await cancelScheduledMessage({ messageId: req.params.id, authorId: req.user._id });

@@ -300,6 +300,28 @@ test("opens API reference from Settings", async ({ page }) => {
   expect(Math.abs(innerBox.x - contentBox.x - contentPaddingLeft)).toBeLessThanOrEqual(1);
 });
 
+test("ignores a non-array hidden-channel cache during startup", async ({ page }) => {
+  await page.goto(`/channels/${encodeURIComponent(fixture.generalChannel.name)}`);
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.generalChannel.name);
+  await page.evaluate(() => localStorage.setItem("echo.hiddenChannels", JSON.stringify({ corrupt: true })));
+  await page.reload();
+  await expect(page.getByTestId("channel-title")).toContainText(fixture.generalChannel.name);
+});
+
+test("contains a non-JSON channel response to its panel", async ({ page }) => {
+  await page.route("**/api/channels/*/messages", async (route) => {
+    if (route.request().method() === "GET") {
+      await route.fulfill({ status: 200, contentType: "text/html", body: "temporarily unavailable" });
+      return;
+    }
+    await route.continue();
+  });
+  await page.goto(`/channels/${encodeURIComponent(fixture.generalChannel.name)}`);
+  await expect(page.getByTestId("channel-error")).toContainText("invalid response");
+  await page.getByTestId("rail-settings").click();
+  await expect(page.getByTestId("settings-page")).toBeVisible();
+});
+
 test("browses, filters, and joins public channels while private channels stay invite-only", async ({ page }) => {
   const suffix = Date.now();
   const publicPrefix = `zz-discoverable-${suffix}`;

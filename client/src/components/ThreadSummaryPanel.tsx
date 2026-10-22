@@ -5,7 +5,7 @@ import { getSocket } from "../socket.js";
 import { useI18n } from "../lib/i18n.js";
 import { CloseButton } from "./Button.js";
 
-export default function ThreadSummaryPanel({ channel, root, onClose, onOpenThread }) {
+export default function ThreadSummaryPanel({ channel, root, onClose, onOpenThread, renderMarkdown }) {
   const { t } = useI18n();
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -96,7 +96,7 @@ export default function ThreadSummaryPanel({ channel, root, onClose, onOpenThrea
         {stale && result && <div className="summary-stale" role="status"><span>{t("summaryDiscussionChanged")}</span><button type="button" disabled={loading} onClick={summarize}>{t("summaryUpdate")}</button></div>}
         {loading && <div className="thread-summary-loading" role="status"><LoaderCircle className="spinner" size={18} aria-hidden="true" /><div>{t("summarizing")}<span>{t("summaryLoadingHint")}</span></div></div>}
         {error && <div className="thread-summary-error" role="alert"><p>{error}</p><button type="button" onClick={summarize}>{t("retrySummary")}</button></div>}
-        {result && <div className="thread-summary-plain-text" dir="auto">{result.summary}</div>}
+        {result && <div className="thread-summary-markdown" dir="auto" dangerouslySetInnerHTML={{ __html: renderMarkdown(result.summary) }} />}
       </div>
       <footer className="thread-summary-footer"><button type="button" onClick={() => onOpenThread()}>{t("viewSummaryThread")}<ArrowRight size={16} aria-hidden="true" /></button></footer>
     </aside>

@@ -2,10 +2,11 @@ import { Router } from "express";
 import mongoose from "mongoose";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { Group, GroupMembership, getGroup, groupSummary, listGroups, groupUsers } from "../groupDirectory.js";
+import { isValidObjectId } from "../lib/objectId.js";
 
 export const groupsRouter = Router();
 groupsRouter.use(requireAuth);
-const validId = (value) => mongoose.isValidObjectId(value);
+const validId = isValidObjectId;
 const objectId = (value) => new mongoose.Types.ObjectId(value);
 const handlePattern = /^[a-z0-9][a-z0-9-]{0,30}[a-z0-9]$/;
 const groupNamePattern = /^[A-Za-z0-9]+(?:[ -][A-Za-z0-9]+)*$/;
@@ -43,6 +44,8 @@ groupsRouter.get("/", async (req, res) => {
 });
 
 groupsRouter.post("/", async (req, res) => {
+  if (req.body?.memberIds !== undefined && !Array.isArray(req.body.memberIds)) return res.status(400).json({ error: "memberIds must be an array" });
+  if (req.body?.description !== undefined && typeof req.body.description !== "string") return res.status(400).json({ error: "description must be text" });
   const name = String(req.body?.name || "").trim();
   const description = String(req.body?.description || "").trim();
   const memberIds = [...new Set(Array.isArray(req.body?.memberIds) ? req.body.memberIds.map(String) : [])];
@@ -71,12 +74,14 @@ groupsRouter.get("/:groupId", async (req, res) => {
 });
 
 groupsRouter.patch("/:groupId", async (req, res) => {
+  if (req.body?.description !== undefined && typeof req.body.description !== "string") return res.status(400).json({ error: "description must be text" });
   const group = await activeGroup(req.params.groupId);
   if (!group) return res.status(404).json({ error: "group not found" });
   if (!group.owner.equals(req.user._id)) return res.status(403).json({ error: "group owner only" });
   if (req.body?.name !== undefined) group.name = String(req.body.name).trim();
   if (req.body?.description !== undefined) group.description = String(req.body.description).trim();
   if (req.body?.handle !== undefined) group.handle = String(req.body.handle).trim().toLowerCase();
+  if (group.description.length > 160) return res.status(400).json({ error: "description must be 160 characters or fewer" });
   if (!groupNamePattern.test(group.name) || group.name.length > 40 || !handlePattern.test(group.handle)) return res.status(400).json({ error: "group names may contain English letters, numbers, spaces, and hyphens only" });
   try {
     if (await Group.exists(groupNameMatch(group.name, group._id))) return res.status(409).json({ error: "a group with that name already exists" });
