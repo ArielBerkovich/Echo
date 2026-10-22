@@ -31,7 +31,17 @@ async function requireMember(req, res) {
   return group;
 }
 
-groupsRouter.get("/", async (req, res) => res.json({ groups: await listGroups(req.user._id) }));
+groupsRouter.get("/", async (req, res) => {
+  const pageText = String(req.query.page ?? "0");
+  const limitText = String(req.query.limit ?? "100");
+  if (!/^\d+$/.test(pageText) || Number(pageText) > 10000) return res.status(400).json({ error: "page must be between 0 and 10000" });
+  if (!/^\d+$/.test(limitText)) return res.status(400).json({ error: "limit must be a positive integer" });
+  const page = Number(pageText);
+  const requestedLimit = Number(limitText);
+  const limit = Math.max(1, Math.min(requestedLimit || 100, 100));
+  const result = await listGroups(req.user._id, { skip: page * limit, limit });
+  res.json({ ...result, page, limit });
+});
 
 groupsRouter.post("/", async (req, res) => {
   if (req.body?.memberIds !== undefined && !Array.isArray(req.body.memberIds)) return res.status(400).json({ error: "memberIds must be an array" });

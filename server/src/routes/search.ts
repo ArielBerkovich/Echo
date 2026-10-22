@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { User } from "../models/User.js";
+import { Channel } from "../models/Channel.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { escapeSearchRegex, findSearchableChannels, searchMessages } from "../services/messageSearchService.js";
 import { parsePage } from "../lib/page.js";
@@ -53,16 +54,17 @@ searchRouter.get("/messages", async (req, res) => {
   if (!text && !inName && !fromName && !has) return res.json(empty);
 
   // Channels this user is allowed to search within (public + their own).
-  const visible = await findSearchableChannels({ userId: req.user._id });
-  const chanMap = new Map(visible.map((c) => [c._id.toString(), c]));
-  let channelIds = visible.map((c) => c._id);
+  let channelId;
   let authorId;
 
   // in:<channel> — restrict to a single channel the user can see.
   if (inName) {
-    const ch = visible.find((c) => (c.name || "").toLowerCase() === inName.toLowerCase());
+    const ch = await Channel.findOne({
+      name: new RegExp(`^${escapeSearchRegex(inName)}$`, "i"),
+      $or: [{ type: "public" }, { members: req.user._id }],
+    }, { _id: 1 });
     if (!ch) return res.json(empty); // unknown / inaccessible channel → no results
-    channelIds = [ch._id];
+    channelId = ch._id;
   }
 
   // from:<@user> — restrict to one author.
@@ -77,7 +79,8 @@ searchRouter.get("/messages", async (req, res) => {
   // Fetch one extra to know whether another page exists, without a count query.
   const terms = text ? text.split(/\s+/).filter(Boolean) : [];
   const docs = await searchMessages({
-    channelIds,
+    userId: req.user._id,
+    channelId,
     terms,
     authorId,
     has,
@@ -87,14 +90,24 @@ searchRouter.get("/messages", async (req, res) => {
 
   const hasMore = docs.length > PAGE_SIZE;
   const results = docs.slice(0, PAGE_SIZE).map((m) => {
-    const c = chanMap.get(m.channel.toString());
+    const author = m.authorInfo;
     return {
       id: m._id.toString(),
       channelId: m.channel.toString(),
-      channelName: c?.name || null,
-      channelType: c?.type || null,
+      channelName: m.channelName || null,
+      channelType: m.channelType || null,
       parentId: m.parentId ? m.parentId.toString() : null,
-      author: m.author?.toPublicJSON?.() || null,
+      author: author ? {
+        id: author._id.toString(),
+        username: author.username,
+        displayName: author.displayName,
+        avatarUrl: author.avatarUrlOverride || (author.avatarKey ? `/api/files/${author.avatarKey}` : null),
+        isAdmin: !!author.isAdmin,
+        deprecated: !!author.deprecated,
+        canChangePassword: author.authOrigin !== "rhsso" && !author.rhssoSubject,
+        mustResetPassword: !!author.mustResetPassword,
+        onboarded: !!author.onboarded,
+      } : null,
       body: m.body,
       createdAt: m.createdAt,
     };

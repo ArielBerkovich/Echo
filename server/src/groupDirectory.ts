@@ -12,13 +12,43 @@ export async function groupSummary(group, userId) {
   return { ...group.toPublicJSON(), memberCount: members.length, members, currentUserId: String(userId), isMember: memberships.some((item) => String(item.user?._id) === String(userId)), currentUserRole: memberships.find((item) => String(item.user?._id) === String(userId))?.role || null, canDelete: !!viewer?.isAdmin || String(group.owner) === String(userId) };
 }
 
-export async function listGroups(userId) {
-  const groups = await Group.find({ archivedAt: null, deletedAt: null }).sort({ name: 1 });
-  const summaries = await Promise.all(groups.map((group) => groupSummary(group, userId)));
-  return summaries.sort((left, right) => {
-    if (left.isMember !== right.isMember) return left.isMember ? -1 : 1;
-    return left.name.localeCompare(right.name);
-  });
+export async function listGroups(userId, { skip = 0, limit = 100 } = {}) {
+  const docs = await Group.find({ archivedAt: null, deletedAt: null })
+    .sort({ name: 1, _id: 1 })
+    .skip(skip)
+    .limit(limit + 1);
+  const hasMore = docs.length > limit;
+  const groups = docs.slice(0, limit);
+  if (!groups.length) return { groups: [], hasMore };
+
+  const groupIds = groups.map((group) => group._id);
+  const [memberships, viewer] = await Promise.all([
+    GroupMembership.find({ group: { $in: groupIds } }).populate("user").sort({ createdAt: 1 }),
+    User.findById(userId, { isAdmin: 1 }).lean(),
+  ]);
+  const byGroup = new Map();
+  for (const membership of memberships) {
+    const key = String(membership.group);
+    if (!byGroup.has(key)) byGroup.set(key, []);
+    byGroup.get(key).push(membership);
+  }
+  return {
+    hasMore,
+    groups: groups.map((group) => {
+      const rows = byGroup.get(String(group._id)) || [];
+      const members = rows.filter((row) => row.user).map((row) => ({ ...row.user.toPublicJSON(), role: row.role }));
+      const ownMembership = rows.find((row) => String(row.user?._id) === String(userId));
+      return {
+        ...group.toPublicJSON(),
+        memberCount: members.length,
+        members,
+        currentUserId: String(userId),
+        isMember: !!ownMembership,
+        currentUserRole: ownMembership?.role || null,
+        canDelete: !!viewer?.isAdmin || String(group.owner) === String(userId),
+      };
+    }),
+  };
 }
 
 export async function getGroup(id, userId) {
