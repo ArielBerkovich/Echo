@@ -235,7 +235,6 @@ test.describe("RHSSO login flows (Real integration, runs only when Keycloak is u
     }
     await expect(page.getByTestId("rail-logout")).toBeVisible({ timeout: 15_000 });
     await page.getByTestId("rail-settings").click();
-    await page.getByRole("button", { name: "Account", exact: true }).click();
     await expect(page.getByTestId("sso-password-settings")).toBeVisible();
     await expect(page.getByTestId("change-password-form")).toHaveCount(0);
 
