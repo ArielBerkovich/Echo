@@ -129,6 +129,18 @@ function buildGroups(token) {
       ],
     },
     {
+      title: "Edit messages",
+      note: "Edit messages you authored. Channel membership and posting permissions still apply.",
+      endpoints: [
+        {
+          method: "PATCH",
+          path: "/api/channels/:channelId/messages/:messageId",
+          desc: "Edit a message authored by you. Body: { body?, attachments? } — provide message text or at least one attachment; text is limited to 4000 characters.",
+          curl: `curl -X PATCH ${ORIGIN}/api/channels/CHANNEL_ID/messages/MESSAGE_ID ${auth} ${json} -d '{"body":"Updated message text"}'`,
+        },
+      ],
+    },
+    {
       title: "Message tools",
       endpoints: [
         {
@@ -400,7 +412,7 @@ export default function ApiDocsPage({ onClose, embedded = false }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(null);
-  const [openGroups, setOpenGroups] = useState(() => new Set(["Read messages", "Send messages"]));
+  const [openGroups, setOpenGroups] = useState(() => new Set(["Read messages", "Send messages", "Edit messages"]));
 
   const groups = buildGroups(token);
 
