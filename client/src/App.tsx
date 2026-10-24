@@ -222,13 +222,17 @@ export default function App() {
   useHotkeys(getKeyboardHotkeys("open-settings"), () => openSettings(), hotkeyOptions, [user]);
   useEffect(() => {
     const onKeyDown = (event) => {
-      if (isEditableTarget(event.target)) return;
       const back = (event.altKey && (event.key === "ArrowLeft" || event.key === "Left" || event.code === "ArrowLeft")) || (event.metaKey && event.key === "[");
       const forward = (event.altKey && (event.key === "ArrowRight" || event.key === "Right" || event.code === "ArrowRight")) || (event.metaKey && event.key === "]");
-      if (back && historyIndexRef.current > 0) {
+      const canGoBack = historyIndexRef.current > 0;
+      const canGoForward = historyIndexRef.current < historyEntriesRef.current.length - 1;
+      // History navigation remains available while the composer is focused,
+      // but leave regular editing keys and unavailable shortcuts alone.
+      if (isEditableTarget(event.target) && !(back && canGoBack) && !(forward && canGoForward)) return;
+      if (back && canGoBack) {
         event.preventDefault();
         navigateBack();
-      } else if (forward && historyIndexRef.current < historyEntriesRef.current.length - 1) {
+      } else if (forward && canGoForward) {
         event.preventDefault();
         navigateForward();
       }

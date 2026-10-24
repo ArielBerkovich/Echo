@@ -27,25 +27,29 @@ test.describe("documented keyboard shortcuts", () => {
     await expect(desktopShortcuts.locator("kbd")).toHaveText(["Ctrl / ⌘", "+ / =", "Ctrl / ⌘", "−", "Ctrl / ⌘", "0"]);
   });
 
-  test("navigates backward and forward with history shortcuts and ignores them while typing", async ({ page }) => {
+  test("navigates backward and forward with history shortcuts while the composer is focused", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByTestId("composer-editor")).toBeVisible();
-    await page.getByTestId("rail-dms").click();
-    await expect(page.getByTestId("dms-header")).toBeVisible();
-    await page.getByTestId("rail-home").click();
+    await channelRow(page, fixture.projectChannel.name).click();
     await expect(page.getByTestId("composer-editor")).toBeVisible();
+    const projectUrl = page.url();
+    await channelRow(page, "general").click();
+    await expect(page.getByTestId("composer-editor")).toBeVisible();
+    const generalUrl = page.url();
     await expect(page.getByRole("button", { name: "Go back" })).toBeEnabled();
-    await page.getByTestId("rail-home").focus();
+    await page.getByTestId("composer-editor").focus();
 
     await page.keyboard.press("Alt+ArrowLeft");
-    await expect(page.getByTestId("dms-header")).toBeVisible();
-    const search = page.getByTestId("search-input");
-    await search.focus();
-    await page.keyboard.press("Alt+ArrowRight");
-    await expect(page.getByTestId("dms-header")).toBeVisible();
-    await search.blur();
+    await expect(page.getByTestId("composer-editor")).toBeVisible();
+    await expect(page).toHaveURL(projectUrl);
+    await page.getByTestId("composer-editor").focus();
     await page.keyboard.press("Alt+ArrowRight");
     await expect(page.getByTestId("composer-editor")).toBeVisible();
+    await expect(page).toHaveURL(generalUrl);
+    await page.getByTestId("composer-editor").focus();
+    await page.keyboard.press("Alt+ArrowLeft");
+    await expect(page.getByTestId("composer-editor")).toBeVisible();
+    await expect(page).toHaveURL(projectUrl);
   });
 
   test("keeps Ctrl+F focused on workspace search and opens the switcher with Ctrl+K", async ({ page }) => {

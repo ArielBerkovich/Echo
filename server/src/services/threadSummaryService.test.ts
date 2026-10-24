@@ -6,14 +6,13 @@ import { summarizeThreadDiscussion } from "./threadSummaryService.js";
 const thread = { root: { _id: "root", body: "Restore staging", author: { displayName: "Alex" } }, replies: [{ _id: "reply", body: "Staging is restored", author: { displayName: "Alex" } }] };
 const settings = { baseUrl: "http://provider.test/v1", model: "test", timeoutMs: 1000, maxContextTokens: 8192, maxOutputTokens: 1000 };
 
-test("requests a concise Markdown summary and returns the whole summary", async () => {
+test("requests plain text and returns the whole summary without structured sections", async () => {
   const originalFetch = globalThis.fetch;
   const summary = "Staging failed during deployment. Alex restored it.\n\nHealth checks now pass.";
   globalThis.fetch = async (_url, options) => {
     const request = JSON.parse(options.body);
     assert.equal("response_format" in request, false);
-    assert.match(request.messages[0].content, /Markdown/);
-    assert.match(request.messages[0].content, /short headings or bullets/);
+    assert.match(request.messages[0].content, /plain[- ]text/);
     assert.equal(JSON.parse(request.messages[1].content).replies[0].text, "Staging is restored");
     return Response.json({ choices: [{ finish_reason: "stop", message: { content: summary } }] });
   };
