@@ -1467,6 +1467,7 @@ const ChannelView = forwardRef(function ChannelView({
           customEmojis={customEmojis}
           mode={mode}
           onAddCustomEmoji={onAddCustomEmoji}
+          onToast={onToast}
           onError={setError}
           onChannelUpdated={onChannelUpdated}
           captureScreenDrops={!thread}

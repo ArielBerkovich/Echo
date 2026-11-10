@@ -230,6 +230,7 @@ export const api = {
   getAIIntegration: () => request("/integrations/ai"),
   saveAIIntegration: (settings) => request("/integrations/ai", { method: "PUT", body: settings }),
   getRuntimeConfig: () => request("/config"),
+  rephraseMessage: (text, signal) => request("/ai/rephrase", { method: "POST", body: { text }, signal }),
   summarizeThread: (channelId, msgId, signal) => request(`/channels/${channelId}/messages/${msgId}/thread-summary`, { method: "POST", signal }),
   register: (payload) => request("/auth/register", { method: "POST", body: payload }),
   login: (payload) => request("/auth/login", { method: "POST", body: payload }),

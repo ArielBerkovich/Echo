@@ -1,5 +1,6 @@
 import "express-async-errors";
 import { aiRouter } from "./routes/ai.js";
+import { aiAssistRouter } from "./routes/aiAssist.js";
 import { AISettings } from "./services/aiSettings.js";
 import express from "express";
 import cors from "cors";
@@ -69,6 +70,7 @@ export function createApp() {
   app.use("/api/integrations/allure", allureRouter);
   app.use("/api/integrations/jenkins", jenkinsRouter);
   app.use("/api/integrations/ai", aiRouter);
+  app.use("/api/ai", aiAssistRouter);
 
   // Keep the process alive and return a consistent JSON payload on crashes.
   app.use((err, _req, res, _next) => {

@@ -11,6 +11,7 @@ import { languageDirection } from "../lib/languages.js";
 import { getSocket } from "../socket.js";
 import { htmlToMarkdown } from "../htmlToMarkdown.js";
 import { markdownTextToComposerHtml } from "../markdownPaste.js";
+import RephraseControl from "./RephraseControl.js";
 import { formatSize } from "../lib/format.js";
 import { formatDateTime, interfaceLocale } from "../lib/time.js";
 import { readString, writeString } from "../lib/storage.js";
@@ -254,7 +255,7 @@ function hasSendableContent(currentEditor) {
 // Rich-text message composer: @mention autocomplete, a formatting toolbar,
 // emoji, and file attachments. Owns all of its own editor state — mount it with
 // a `key={channel.id}` so switching channels yields a fresh, empty composer.
-const Composer = forwardRef(function Composer({ channel, sendChannel = null, parentId = null, alsoSendToChannel = false, onAlsoSendToChannelChange, users = [], channels = [], onFindChannels, customEmojis = [], onAddCustomEmoji, onError, onChannelUpdated, onSent, onSend, initialContent = null, sendDisabled = false, allowEmptySend = false, sendAriaLabel, sendTitle, sendTestId, onDraftChange, onEditSave, onEditCancel, editing = null, placeholder: customPlaceholder, mode = "light", captureScreenDrops = false, showSchedule = true, showSend = true, showAttachments = true, submitOnEnter = false, disabled = false }, ref) {
+const Composer = forwardRef(function Composer({ channel, sendChannel = null, parentId = null, alsoSendToChannel = false, onAlsoSendToChannelChange, users = [], channels = [], onFindChannels, customEmojis = [], onAddCustomEmoji, onError, onToast, onChannelUpdated, onSent, onSend, initialContent = null, sendDisabled = false, allowEmptySend = false, sendAriaLabel, sendTitle, sendTestId, onDraftChange, onEditSave, onEditCancel, editing = null, placeholder: customPlaceholder, mode = "light", captureScreenDrops = false, showSchedule = true, showSend = true, showAttachments = true, submitOnEnter = false, disabled = false }, ref) {
   const { language, t } = useI18n();
   const direction = languageDirection(language);
   // Keep custom-emoji blob URLs alive for the full composer lifetime. The
@@ -1981,6 +1982,13 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
           <button ref={emojiToggleRef} type="button" className={`icon-btn emoji-toggle ${emojiOpen ? "active" : ""}`} data-testid="composer-emoji-toggle" title={t("emoji")} onMouseDown={keepFocus} onClick={() => setEmojiOpen((v) => !v)}>
             <SmileyIcon />
           </button>
+          <RephraseControl
+            hasRichTokens={() => !!editor?.view.dom.querySelector("[data-user-mention], [data-group-mention], [data-channel-mention], [data-custom-emoji]")}
+            getDraft={() => editor ? deliveryMarkdown(editor) : ""}
+            applyDraft={(text) => { if (editor && !editor.isDestroyed) { editor.commands.setContent(composerContent(text), false); syncEditorState(editor); } }}
+            restoreFocus={restoreComposerFocus}
+            onError={(message) => onToast ? onToast({ message, tone: "error", durationMs: 5000 }) : onError?.(message)}
+          />
         </div>
 
         <div className="right">
