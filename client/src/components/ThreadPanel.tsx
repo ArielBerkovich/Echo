@@ -564,6 +564,7 @@ export default function ThreadPanel({
         onFindChannels={onFindChannels}
         customEmojis={customEmojis}
         onAddCustomEmoji={onAddCustomEmoji}
+        onToast={onToast}
         onError={setError}
         onChannelUpdated={onChannelUpdated}
         captureScreenDrops
