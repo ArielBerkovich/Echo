@@ -79,13 +79,18 @@ test("cancelling a pending request keeps the original draft", async ({ page }) =
   await expect(dialog.getByRole("status")).toBeVisible();
   const geometry = await dialog.locator(".composer-rephrase-ripple").evaluate(element => {
     const box = element.getBoundingClientRect();
-    const dot = element.querySelector("i")!.getBoundingClientRect();
-    const ring = getComputedStyle(element, "::before");
-    return { dx: dot.x + dot.width / 2 - (box.x + box.width / 2), dy: dot.y + dot.height / 2 - (box.y + box.height / 2), ringWidth: ring.width, ringHeight: ring.height };
+    const rings = [...element.querySelectorAll("span")];
+    return rings.map(ring => {
+      ring.getAnimations().forEach(animation => { animation.pause(); animation.currentTime = 500; });
+      const rect = ring.getBoundingClientRect();
+      return { dx: rect.x + rect.width / 2 - (box.x + box.width / 2), dy: rect.y + rect.height / 2 - (box.y + box.height / 2), width: rect.width, height: rect.height };
+    });
   });
-  expect(Math.abs(geometry.dx)).toBeLessThan(0.1);
-  expect(Math.abs(geometry.dy)).toBeLessThan(0.1);
-  expect(geometry.ringWidth).toBe(geometry.ringHeight);
+  for (const ring of geometry) {
+    expect(Math.abs(ring.dx)).toBeLessThan(0.1);
+    expect(Math.abs(ring.dy)).toBeLessThan(0.1);
+    expect(ring.width).toBeCloseTo(ring.height, 1);
+  }
   await dialog.getByRole("button", { name: "Close rephrase options" }).click();
   release();
   await expect(dialog).toHaveCount(0);
