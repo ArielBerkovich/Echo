@@ -6,18 +6,6 @@ import { api } from "../api.js";
 import { useI18n } from "../lib/i18n.js";
 import { rephraseRenderedDiff } from "../lib/rephraseRenderedDiff.js";
 
-function RephraseWizard() {
-  return <svg className="rephrase-wizard" viewBox="0 0 72 72" width="64" height="64" fill="none" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M15 32h30M20 30l10-22 10 22M25 23h10" />
-    <path d="M20 33v6c0 10 4 19 10 22 6-3 10-12 10-22v-6" />
-    <path d="M23 42c2 1 4 1 7 0 3 1 5 1 7 0M27 50c2 1 4 1 6 0" />
-    <path d="M16 64c1-6 5-10 10-11m18 11c-1-6-5-10-10-11" />
-    <g className="rephrase-wizard-wand"><path d="M41 56l7-6M48 50l11-16" /><circle cx="48" cy="50" r="2" fill="#293544" /></g>
-    <path className="rephrase-wizard-spark" d="M60 19l1.6 4.4L66 25l-4.4 1.6L60 31l-1.6-4.4L54 25l4.4-1.6L60 19Z" />
-    <path d="M28 37h.1M33 37h.1" strokeWidth="2.5" />
-  </svg>;
-}
-
 export default function RephraseControl({ getDraft, applyDraft, restoreFocus, onError }) {
   const { t } = useI18n();
   const { data: config } = useQuery({ queryKey: ["runtime-config"], queryFn: api.getRuntimeConfig, staleTime: 30000, refetchInterval: 30000 });
@@ -89,7 +77,7 @@ export default function RephraseControl({ getDraft, applyDraft, restoreFocus, on
             <div><strong id="composer-rephrase-title"><WandSparkles size={16} aria-hidden="true" />{t("rephraseWithAi")}<small className="composer-rephrase-beta">{t("rephraseBeta")}</small></strong></div>
             <button type="button" className="composer-rephrase-close" aria-label={t("closeRephrase")} title={t("closeRephrase")} onClick={close}><X size={16} aria-hidden="true" /></button>
           </div>
-          {state.status === "loading" && <div className="composer-rephrase-loading" role="status"><span className="composer-rephrase-loading-icon" aria-hidden="true"><RephraseWizard /></span><span className="composer-rephrase-loading-text">{t("rephraseLoading")}</span></div>}
+          {state.status === "loading" && <div className="composer-rephrase-loading" role="status"><span className="composer-rephrase-loading-icon" aria-hidden="true"><WandSparkles className="rephrase-loading-art" size={42} strokeWidth={1.35} /></span><span className="composer-rephrase-loading-text">{t("rephraseLoading")}</span></div>}
           {state.status === "error" && <div className="composer-rephrase-status"><p role="alert">{state.error}</p><div className="composer-rephrase-actions"><button type="button" className="btn-primary" onClick={run}>{t("rephraseRetry")}</button></div></div>}
           {diff && <>
             <div className="composer-rephrase-comparison">
