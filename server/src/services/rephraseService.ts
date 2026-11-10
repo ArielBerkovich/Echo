@@ -37,7 +37,6 @@ INPUT
 {"draft": string, "constraints": string[]}
 Follow any constraints provided.`;
 
-const STYLES = ["professional"];
 const MIN_REPHRASE_OUTPUT_TOKENS = 500;
 
 function rephraseError(status, message) {
@@ -119,15 +118,11 @@ function parseOptions(content, draft) {
   }
   const options = Array.isArray(parsed) ? parsed : parsed?.options;
   if (!Array.isArray(options)) throw rephraseError(502, "The rephrase provider returned invalid options.");
-  const normalized = STYLES.map((key) => {
-    const option = options.find((candidate) => candidate?.key === key);
-    const text = typeof option?.text === "string" ? option.text.trim() : "";
-    if (!text) throw rephraseError(502, "The rephrase provider returned incomplete options.");
-    const formatted = ensureBareCodeIsFenced(normalizeCodeBlocks(text), draft);
-    return { key, text: preserveHardStructures(formatted, draft) };
-  });
-  if (normalized.some((option) => !option.text)) throw rephraseError(502, "The rephrase provider returned incomplete options.");
-  return { canRephrase: true, options: normalized };
+  const option = options.find((candidate) => candidate?.key === "professional");
+  const text = typeof option?.text === "string" ? option.text.trim() : "";
+  if (!text) throw rephraseError(502, "The rephrase provider returned incomplete options.");
+  const formatted = ensureBareCodeIsFenced(normalizeCodeBlocks(text), draft);
+  return { canRephrase: true, options: [{ key: "professional", text: preserveHardStructures(formatted, draft) }] };
 }
 
 function validateDraft(text) {
