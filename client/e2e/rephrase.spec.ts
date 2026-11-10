@@ -77,7 +77,7 @@ test("cancelling a pending request keeps the original draft", async ({ page }) =
   await requestStarted;
   const dialog = page.getByTestId("composer-rephrase-popover");
   await expect(dialog.getByRole("status")).toBeVisible();
-  await expect(dialog.locator(".composer-rephrase-wave span")).toHaveCount(5);
+  await expect(dialog.locator(".composer-rephrase-sparkle")).toBeVisible();
   await dialog.getByRole("button", { name: "Close rephrase options" }).click();
   release();
   await expect(dialog).toHaveCount(0);

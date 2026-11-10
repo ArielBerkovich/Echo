@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, WandSparkles, X } from "lucide-react";
+import { ArrowRight, Sparkles, WandSparkles, X } from "lucide-react";
 import { api } from "../api.js";
 import { useI18n } from "../lib/i18n.js";
 import { rephraseRenderedDiff } from "../lib/rephraseRenderedDiff.js";
@@ -77,7 +77,7 @@ export default function RephraseControl({ getDraft, applyDraft, restoreFocus, on
             <div><strong id="composer-rephrase-title"><WandSparkles size={16} aria-hidden="true" />{t("rephraseWithAi")}<small className="composer-rephrase-beta">{t("rephraseBeta")}</small></strong></div>
             <button type="button" className="composer-rephrase-close" aria-label={t("closeRephrase")} title={t("closeRephrase")} onClick={close}><X size={16} aria-hidden="true" /></button>
           </div>
-          {state.status === "loading" && <div className="composer-rephrase-loading" role="status"><span className="composer-rephrase-loading-icon" aria-hidden="true"><span className="composer-rephrase-wave"><span /><span /><span /><span /><span /></span></span><span className="composer-rephrase-loading-text">{t("rephraseLoading")}</span></div>}
+          {state.status === "loading" && <div className="composer-rephrase-loading" role="status"><span className="composer-rephrase-loading-icon" aria-hidden="true"><Sparkles className="composer-rephrase-sparkle" size={28} strokeWidth={1.8} /></span><span className="composer-rephrase-loading-text">{t("rephraseLoading")}</span></div>}
           {state.status === "error" && <div className="composer-rephrase-status"><p role="alert">{state.error}</p><div className="composer-rephrase-actions"><button type="button" className="btn-primary" onClick={run}>{t("rephraseRetry")}</button></div></div>}
           {diff && <>
             <div className="composer-rephrase-comparison">
