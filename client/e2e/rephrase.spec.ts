@@ -47,7 +47,7 @@ test("shows provider errors and retries without losing the draft", async ({ page
   await expect(editor).toHaveText("please send report");
   await dialog.getByRole("button", { name: "Try again" }).click();
   await expect(dialog.getByRole("region", { name: "After" })).toContainText("Please send the report.");
-  await dialog.getByRole("button", { name: "Cancel" }).click();
+  await dialog.getByRole("button", { name: "Close rephrase options" }).click();
   await expect(editor).toHaveText("please send report");
   expect(calls).toBe(2);
 });
