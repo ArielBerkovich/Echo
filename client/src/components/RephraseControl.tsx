@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, WandSparkles, X } from "lucide-react";
+import { ArrowRight, WandSparkles } from "lucide-react";
 import { api } from "../api.js";
+import Modal from "./Modal.js";
 import { useI18n } from "../lib/i18n.js";
 import { rephraseRenderedDiff } from "../lib/rephraseRenderedDiff.js";
 
@@ -15,14 +15,11 @@ export default function RephraseControl({ getDraft, applyDraft, restoreFocus, on
   const { data: config } = useQuery({ queryKey: ["runtime-config"], queryFn: api.getRuntimeConfig, staleTime: 30000, refetchInterval: 30000 });
   const [state, setState] = useState({ status: "idle", draft: "", text: "", error: "" });
   const request = useRef<AbortController | null>(null);
-  const dialogRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => () => request.current?.abort(), []);
   useEffect(() => {
     if (state.status === "idle") return undefined;
-    if (dialogRef.current && !dialogRef.current.contains(document.activeElement)) dialogRef.current.focus();
     const onKeyDown = (event) => {
-      if (event.key === "Escape") { event.preventDefault(); close(); return; }
       if (state.status !== "ready" || event.key !== "Enter" || event.repeat || event.isComposing || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
       const target = event.target as HTMLElement | null;
       if (target?.closest("button, a, input, textarea, select, [contenteditable='true']")) return;
@@ -74,13 +71,7 @@ export default function RephraseControl({ getDraft, applyDraft, restoreFocus, on
         <WandSparkles size={18} strokeWidth={1.8} aria-hidden="true" /><span className="composer-ai-beta" aria-hidden="true">Beta</span>
       </button>
     </span>
-    {state.status !== "idle" && createPortal(
-      <div className="composer-rephrase-screen" onClick={close}>
-        <div ref={dialogRef} tabIndex={-1} className={`composer-rephrase-popover ${state.status === "loading" ? "composer-rephrase-popover-loading" : ""}`} role="dialog" aria-modal="true" aria-labelledby="composer-rephrase-title" data-testid="composer-rephrase-popover" onClick={event => event.stopPropagation()}>
-          <div className="composer-rephrase-header">
-            <div><strong id="composer-rephrase-title"><WandSparkles size={16} aria-hidden="true" />{t("rephraseWithAi")}<small className="composer-rephrase-beta">{t("rephraseBeta")}</small></strong></div>
-            <button type="button" className="composer-rephrase-close" aria-label={t("closeRephrase")} title={t("closeRephrase")} onClick={close}><X size={16} aria-hidden="true" /></button>
-          </div>
+    {state.status !== "idle" && <Modal title={<span className="composer-rephrase-modal-title"><WandSparkles size={18} aria-hidden="true" />{t("rephraseWithAi")}<small className="composer-rephrase-beta">{t("rephraseBeta")}</small></span>} className={`composer-rephrase-popover ${state.status === "loading" ? "composer-rephrase-popover-loading" : ""}`} backdropClassName="composer-rephrase-backdrop" testId="composer-rephrase-popover" closeLabel={t("closeRephrase")} onClose={close} onOpenAutoFocus={event => { event.preventDefault(); (event.currentTarget as HTMLElement).focus(); }}>
           {state.status === "loading" && <div className="composer-rephrase-loading" role="status"><span className="composer-rephrase-loading-icon"><RephraseLoadingGraphic /></span><span className="composer-rephrase-loading-text">{t("rephraseLoading")}</span></div>}
           {state.status === "error" && <div className="composer-rephrase-status"><p role="alert">{state.error}</p><div className="composer-rephrase-actions"><button type="button" className="btn-primary" onClick={run}>{t("rephraseRetry")}</button></div></div>}
           {diff && <>
@@ -92,7 +83,6 @@ export default function RephraseControl({ getDraft, applyDraft, restoreFocus, on
             {diff.unchanged && <p className="composer-rephrase-unchanged" role="status">{t("rephraseNoChanges")}</p>}
             <div className="composer-rephrase-actions"><button type="button" className="btn-primary" onClick={apply}>{t("useRephrase")}</button></div>
           </>}
-        </div>
-      </div>, document.body)}
+    </Modal>}
   </>;
 }
