@@ -1983,6 +1983,7 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
             <SmileyIcon />
           </button>
           <RephraseControl
+            hasRichTokens={() => !!editor?.view.dom.querySelector("[data-user-mention], [data-group-mention], [data-channel-mention], [data-custom-emoji]")}
             getDraft={() => editor ? deliveryMarkdown(editor) : ""}
             applyDraft={(text) => { if (editor && !editor.isDestroyed) { editor.commands.setContent(composerContent(text), false); syncEditorState(editor); } }}
             restoreFocus={restoreComposerFocus}

@@ -6,6 +6,20 @@ test.beforeEach(async ({ page }) => {
   await page.route("**/api/config", route => route.fulfill({ json: { threadSummaries: true } }));
 });
 
+test("keeps mention nodes intact when rephrasing is unavailable for rich tokens", async ({ page }) => {
+  const fixture = await seedWorkspaceFixture(page);
+  await page.goto("/channels/general");
+  const editor = page.getByTestId("composer-editor");
+  await editor.fill("Hello ");
+  await editor.pressSequentially(`@${fixture.alice.username}`);
+  await page.locator(".mention-item").filter({ hasText: `@${fixture.alice.username}` }).first().click();
+  await expect(editor.locator("[data-user-mention]")).toHaveCount(1);
+  await page.getByTestId("composer-rephrase").click();
+  await expect(page.getByText("Rephrasing messages with mentions or custom emoji isn't supported yet.")).toBeVisible();
+  await expect(editor.locator("[data-user-mention]")).toHaveCount(1);
+  await expect(page.getByTestId("composer-rephrase-popover")).toHaveCount(0);
+});
+
 test("rephrases a draft, compares changes, and applies formatted output", async ({ page }) => {
   const draft = "hey please send the report and check the budget";
   const rewrite = "Please:\n\n- Send the **report**.\n- Check the budget.";

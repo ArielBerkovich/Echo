@@ -10,7 +10,7 @@ function RephraseLoadingGraphic() {
   return <svg className="rephrase-animation-message" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M13 7h22a6 6 0 0 1 6 6v17a6 6 0 0 1-6 6H24l-11 7v-7a6 6 0 0 1-6-6V13a6 6 0 0 1 6-6Z"/><path className="rephrase-reflow-line rephrase-reflow-line-one" d="M16 17h16"/><path className="rephrase-reflow-line rephrase-reflow-line-two" d="M16 23h12"/><path className="rephrase-reflow-line rephrase-reflow-line-three" d="M16 29h9"/></svg>;
 }
 
-export default function RephraseControl({ getDraft, applyDraft, restoreFocus, onError }) {
+export default function RephraseControl({ getDraft, applyDraft, restoreFocus, onError, hasRichTokens }) {
   const { t } = useI18n();
   const { data: config } = useQuery({ queryKey: ["runtime-config"], queryFn: api.getRuntimeConfig, staleTime: 30000, refetchInterval: 30000 });
   const [state, setState] = useState({ status: "idle", draft: "", text: "", error: "" });
@@ -39,6 +39,7 @@ export default function RephraseControl({ getDraft, applyDraft, restoreFocus, on
 
   async function run() {
     if (state.status === "loading") return;
+    if (hasRichTokens()) { onError(t("rephraseRichTokensUnsupported")); return; }
     const draft = getDraft().trim();
     if (!draft) { onError(t("rephraseEmpty")); return; }
     const controller = new AbortController();
@@ -58,6 +59,7 @@ export default function RephraseControl({ getDraft, applyDraft, restoreFocus, on
   }
 
   function apply() {
+    if (hasRichTokens()) { close(); onError(t("rephraseRichTokensUnsupported")); return; }
     if (getDraft().trim() !== state.draft) { close(); onError(t("rephraseDraftChanged")); return; }
     applyDraft(state.text);
     close();
