@@ -51,3 +51,34 @@ test("shows provider errors and retries without losing the draft", async ({ page
   await expect(editor).toHaveText("please send report");
   expect(calls).toBe(2);
 });
+
+
+test("hides rephrasing when AI is disabled", async ({ page }) => {
+  await page.route("**/api/config", route => route.fulfill({ json: { threadSummaries: false } }));
+  await page.goto("/channels/general");
+  await expect(page.getByTestId("composer-editor")).toBeVisible();
+  await expect(page.getByTestId("composer-rephrase")).toHaveCount(0);
+});
+
+test("cancelling a pending request keeps the original draft", async ({ page }) => {
+  let release;
+  const waitForRelease = new Promise<void>(resolve => { release = resolve; });
+  let started;
+  const requestStarted = new Promise<void>(resolve => { started = resolve; });
+  await page.route("**/api/ai/rephrase", async route => {
+    started();
+    await waitForRelease;
+    await route.fulfill({ json: { canRephrase: true, options: [{ key: "professional", text: "A late result." }] } }).catch(() => {});
+  });
+  await page.goto("/channels/general");
+  const editor = page.getByTestId("composer-editor");
+  await editor.fill("keep my draft");
+  await page.getByTestId("composer-rephrase").click();
+  await requestStarted;
+  const dialog = page.getByTestId("composer-rephrase-popover");
+  await expect(dialog.getByRole("status")).toBeVisible();
+  await dialog.getByRole("button", { name: "Close rephrase options" }).click();
+  release();
+  await expect(dialog).toHaveCount(0);
+  await expect(editor).toHaveText("keep my draft");
+});

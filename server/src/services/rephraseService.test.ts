@@ -51,7 +51,7 @@ test("returns an explicit no-rephrase result when the provider cannot understand
   } finally { globalThis.fetch = originalFetch; }
 });
 
-test("removes accidental blank lines inside generated code blocks", async () => {
+test("preserves blank lines in generated code blocks", async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => Response.json({ choices: [{ message: { content: JSON.stringify({ options: [
     { key: "professional", text: "```js\nconst a = 1;\n\nconst b = 2;\n```" },
@@ -60,21 +60,18 @@ test("removes accidental blank lines inside generated code blocks", async () => 
   ] }) } }] });
   try {
     const result = await rephraseMessage("const a = 1;", settings);
-    assert.equal(result.options[0].text, "```js\nconst a = 1;\nconst b = 2;\n```");
+    assert.equal(result.options[0].text, "```js\nconst a = 1;\n\nconst b = 2;\n```");
   } finally { globalThis.fetch = originalFetch; }
 });
 
-test("fences clearly code-like output when a provider omits Markdown fences", async () => {
+test("rejects rewrites that alter fenced code", async () => {
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = async () => Response.json({ choices: [{ message: { content: JSON.stringify({ options: [
-    { key: "professional", text: "var isPrime=true; for (var i=2; i<candidate; i++) { isPrime=false; }" },
-    { key: "concise", text: "var isPrime=true;\nfor (var i=2; i<candidate; i++) {\n  isPrime=false;\n}" },
-    { key: "warm", text: "Let's review this code together." },
-  ] }) } }] });
+  const draft = "Please review:\n\n```python\nprint(1)\n\nprint(2)\n```";
+  globalThis.fetch = async () => Response.json({ choices: [{ message: { content: JSON.stringify({ canRephrase: true, options: [{ key: "professional", text: "Please review:\n\n```python\nprint(1)\nprint(2)\n```" }] }) } }] });
   try {
-    const result = await rephraseMessage("var isPrime=true;\n\nwhile (i<candidate) {\n}", settings);
-    assert.match(result.options[0].text, /^```javascript\n/);
-    assert.match(result.options[0].text, /\n```$/);
+    const result = await rephraseMessage(draft, settings);
+    assert.equal(result.canRephrase, false);
+    assert.match(result.reason, /protected/);
   } finally { globalThis.fetch = originalFetch; }
 });
 
@@ -88,7 +85,8 @@ test("preserves hard formatting when a provider flattens or translates it", asyn
   ] }) } }] });
   try {
     const result = await rephraseMessage(draft, settings);
-    assert.equal(result.options[0].text, draft);
+    assert.equal(result.canRephrase, false);
+    assert.match(result.reason, /protected/);
   } finally { globalThis.fetch = originalFetch; }
 });
 
@@ -122,4 +120,15 @@ test("accepts ordinary messages requesting information", async () => {
   globalThis.fetch = async () => Response.json({ choices: [{ message: { content: JSON.stringify({ canRephrase: true, options: [{ key: "professional", text: "Please send me the message." }] }) } }] });
   try { assert.equal((await rephraseMessage("send me the message", settings)).options[0].text, "Please send me the message."); }
   finally { globalThis.fetch = originalFetch; }
+});
+
+test("rejects rewrites that omit a URL or change inline code", async () => {
+  const originalFetch = globalThis.fetch;
+  let output = "Please read the documentation.";
+  globalThis.fetch = async () => Response.json({ choices: [{ message: { content: JSON.stringify({ canRephrase: true, options: [{ key: "professional", text: output }] }) } }] });
+  try {
+    assert.equal((await rephraseMessage("See https://example.com/docs", settings)).canRephrase, false);
+    output = "Run `npm update`.";
+    assert.equal((await rephraseMessage("Run `npm install`", settings)).canRephrase, false);
+  } finally { globalThis.fetch = originalFetch; }
 });

@@ -11,7 +11,7 @@ import { languageDirection } from "../lib/languages.js";
 import { getSocket } from "../socket.js";
 import { htmlToMarkdown } from "../htmlToMarkdown.js";
 import { markdownTextToComposerHtml } from "../markdownPaste.js";
-import { rephraseRenderedDiff } from "../lib/rephraseRenderedDiff.js";
+import RephraseControl from "./RephraseControl.js";
 import { formatSize } from "../lib/format.js";
 import { formatDateTime, interfaceLocale } from "../lib/time.js";
 import { readString, writeString } from "../lib/storage.js";
@@ -32,7 +32,7 @@ import { useMentionGate } from "../lib/useMentionGate.js";
 import { useI18n } from "../lib/i18n.js";
 import { MENTION_QUERY_RE, peopleSearchSuggestions } from "../lib/mentions.js";
 import { workItemLabel, workItemTypeEmoji } from "../lib/workItemText.js";
-import { ArrowRight, CalendarClock, ChartNoAxesColumnIncreasing, ChevronRight, FileIcon, LayoutPanelTop, LoaderCircle, Paperclip, Pencil, WandSparkles, X } from "lucide-react";
+import { CalendarClock, ChartNoAxesColumnIncreasing, ChevronRight, FileIcon, LayoutPanelTop, Paperclip, Pencil, X } from "lucide-react";
 import {
   LinkIcon, OrderedListIcon, BulletListIcon, QuoteIcon, CodeIcon, CodeBlockIcon, MarkdownIcon,
   PlusIcon, SmileyIcon, SendIcon,
@@ -281,13 +281,6 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     queryKey: ["workspace", "settings"],
     queryFn: async () => (await api.getWorkspace()).workspace || {},
   });
-  const { data: runtimeConfig } = useQuery({
-    queryKey: ["runtime-config"],
-    queryFn: api.getRuntimeConfig,
-    staleTime: 30000,
-    refetchInterval: 30000,
-  });
-  const aiRephraseEnabled = runtimeConfig?.threadSummaries === true;
   const workItemsEnabled = !!workspaceSettings?.azureWorkItems?.enabled;
   const [activeIdx, setActiveIdx] = useState(0);
   const activeMentionItemRef = useRef(null);
@@ -297,12 +290,6 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
   // Guards sends that @-mention non-members of a private channel.
   const { gate, mentionModal } = useMentionGate({ channel, users, onChannelUpdated });
   const [moreActionsOpen, setMoreActionsOpen] = useState(false);
-  const [rephraseOpen, setRephraseOpen] = useState(false);
-  const [rephraseLoading, setRephraseLoading] = useState(false);
-  const [rephraseOptions, setRephraseOptions] = useState([]);
-  const [rephraseError, setRephraseError] = useState("");
-  const rephraseRequestRef = useRef(null);
-  const rephraseDraftRef = useRef("");
   useEffect(() => {
     if (!mention || mention.trigger !== "#" || !onFindChannels) return undefined;
     let cancelled = false;
@@ -394,19 +381,6 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
     window.addEventListener("keydown", handlePastePromptKeyDown);
     return () => window.removeEventListener("keydown", handlePastePromptKeyDown);
   }, [pastePrompt]);
-
-  useEffect(() => () => rephraseRequestRef.current?.abort(), []);
-
-  useEffect(() => {
-    if (!rephraseOpen) return undefined;
-    const closeOnEscape = (event) => {
-      if (event.key !== "Escape") return;
-      event.preventDefault();
-      closeRephrase();
-    };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [rephraseOpen]);
 
   const keyDownHandlerRef = useRef(null);
   const textInputHandlerRef = useRef(null);
@@ -931,57 +905,6 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
       return;
     }
     editor.commands.insertContent({ type: "text", text });
-  }
-
-  async function requestRephrase() {
-    if (!editor || rephraseLoading) return;
-    const text = deliveryMarkdown(editor).trim();
-    if (!text) {
-      (onToast || (({ message }) => onError?.(message)))({ message: t("rephraseEmpty"), tone: "error" });
-      return;
-    }
-    rephraseDraftRef.current = text;
-    const controller = new AbortController();
-    rephraseRequestRef.current = controller;
-    setRephraseOpen(true);
-    setRephraseLoading(true);
-    setRephraseOptions([]);
-    setRephraseError("");
-    try {
-      const result = await api.rephraseMessage(text, controller.signal);
-      if (controller.signal.aborted) return;
-      if (result.canRephrase === false) setRephraseError(result.reason || t("rephraseUnable"));
-      else if (result.options?.length) setRephraseOptions(result.options);
-      else setRephraseError(t("rephraseFailed"));
-    } catch (error) {
-      if (!controller.signal.aborted) setRephraseError(error.message || t("rephraseFailed"));
-    } finally {
-      if (!controller.signal.aborted) setRephraseLoading(false);
-      if (rephraseRequestRef.current === controller) rephraseRequestRef.current = null;
-    }
-  }
-
-  function closeRephrase() {
-    rephraseRequestRef.current?.abort();
-    rephraseRequestRef.current = null;
-    setRephraseLoading(false);
-    setRephraseOpen(false);
-    setRephraseOptions([]);
-    restoreComposerFocus();
-  }
-
-  function applyRephrase(option) {
-    if (!option?.text || !editor) return;
-    if (deliveryMarkdown(editor).trim() !== rephraseDraftRef.current) {
-      closeRephrase();
-      (onToast || (({ message }) => onError?.(message)))({ message: t("rephraseDraftChanged"), tone: "error", durationMs: 5000 });
-      return;
-    }
-    editor.commands.setContent(composerContent(option.text), false);
-    syncEditorState(editor);
-    setRephraseOpen(false);
-    setRephraseOptions([]);
-    restoreComposerFocus();
   }
 
   function startListFromShortcut(text) {
@@ -1799,57 +1722,6 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
 
       {mentionModal}
 
-      {rephraseOpen && (() => {
-        const popup = (
-          <div className="composer-rephrase-screen" onClick={closeRephrase}>
-            <div className="composer-rephrase-popover" role="dialog" aria-modal="true" aria-labelledby="composer-rephrase-title" data-testid="composer-rephrase-popover" onClick={(event) => event.stopPropagation()}>
-              <div className="composer-rephrase-header">
-                <div>
-                  <strong id="composer-rephrase-title"><WandSparkles size={16} aria-hidden="true" />{t("rephraseWithAi")}</strong>
-                  <span>{rephraseOptions.length ? t("rephraseWithAiHint") : t("rephraseDirectHint")}</span>
-                </div>
-                <button type="button" className="composer-rephrase-close" aria-label={t("closeRephrase")} title={t("closeRephrase")} onClick={closeRephrase}>
-                  <X size={16} aria-hidden="true" />
-                </button>
-              </div>
-              {!rephraseOptions.length && <div className="composer-rephrase-status">
-                {rephraseLoading && <p role="status"><LoaderCircle size={18} className="spinner" aria-hidden="true" />{t("rephraseLoading")}</p>}
-                {rephraseError && <>
-                  <p role="alert">{rephraseError}</p>
-                  <div className="composer-rephrase-actions">
-                    <button type="button" className="btn-secondary" onClick={closeRephrase}>{t("cancel")}</button>
-                    <button type="button" className="btn-primary" onClick={requestRephrase}>{t("rephraseRetry")}</button>
-                  </div>
-                </>}
-              </div>}
-              {rephraseOptions.length > 0 && (() => {
-                const option = rephraseOptions[0];
-                const diff = rephraseRenderedDiff(rephraseDraftRef.current, option.text);
-                return <>
-                  <div className="composer-rephrase-comparison">
-                    <section className="composer-rephrase-original" aria-label={t("rephraseBefore")}>
-                      <span className="composer-rephrase-option-label">{t("rephraseBefore")}</span>
-                      <div className="composer-rephrase-option-text composer-rephrase-preview composer-rephrase-diff" dir="auto" dangerouslySetInnerHTML={{ __html: diff.before }} />
-                    </section>
-                    <span className="composer-rephrase-arrow" aria-hidden="true"><ArrowRight size={18} /></span>
-                    <section className="composer-rephrase-result" aria-label={t("rephraseAfter")}>
-                      <span className="composer-rephrase-option-label">{t("rephraseAfter")}</span>
-                      <div className="composer-rephrase-option-text composer-rephrase-preview composer-rephrase-diff" dir="auto" dangerouslySetInnerHTML={{ __html: diff.after }} />
-                    </section>
-                  </div>
-                  {diff.unchanged && <p className="composer-rephrase-unchanged" role="status">{t("rephraseNoChanges")}</p>}
-                  <div className="composer-rephrase-actions">
-                    <button type="button" className="btn-secondary" onClick={closeRephrase}>{t("cancel")}</button>
-                    <button type="button" className="btn-primary" onClick={() => applyRephrase(option)}>{t("useRephrase")}</button>
-                  </div>
-                </>;
-              })()}
-            </div>
-          </div>
-        );
-        return createPortal(popup, document.body);
-      })()}
-
       {mention && suggestions.length > 0 && mentionPopupPosition && (() => {
         const popup = (
           <div
@@ -2110,25 +1982,12 @@ const Composer = forwardRef(function Composer({ channel, sendChannel = null, par
           <button ref={emojiToggleRef} type="button" className={`icon-btn emoji-toggle ${emojiOpen ? "active" : ""}`} data-testid="composer-emoji-toggle" title={t("emoji")} onMouseDown={keepFocus} onClick={() => setEmojiOpen((v) => !v)}>
             <SmileyIcon />
           </button>
-          {aiRephraseEnabled && (
-            <span className="composer-ai-rephrase-control">
-              <button
-                type="button"
-                className={`icon-btn composer-ai-rephrase ${rephraseOpen ? "active" : ""}`}
-                data-testid="composer-rephrase"
-                title={t("rephraseWithAiBeta")}
-                aria-label={t("rephraseWithAiBeta")}
-                aria-haspopup="dialog"
-                aria-expanded={rephraseOpen}
-                disabled={rephraseLoading}
-                onMouseDown={keepFocus}
-                onClick={requestRephrase}
-              >
-                <WandSparkles size={18} strokeWidth={1.8} aria-hidden="true" />
-                <span className="composer-ai-beta" aria-hidden="true">Beta</span>
-              </button>
-            </span>
-          )}
+          <RephraseControl
+            getDraft={() => editor ? deliveryMarkdown(editor) : ""}
+            applyDraft={(text) => { if (editor && !editor.isDestroyed) { editor.commands.setContent(composerContent(text), false); syncEditorState(editor); } }}
+            restoreFocus={restoreComposerFocus}
+            onError={(message) => onToast ? onToast({ message, tone: "error", durationMs: 5000 }) : onError?.(message)}
+          />
         </div>
 
         <div className="right">
