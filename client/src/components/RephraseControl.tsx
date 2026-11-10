@@ -77,7 +77,7 @@ export default function RephraseControl({ getDraft, applyDraft, restoreFocus, on
             <div><strong id="composer-rephrase-title"><WandSparkles size={16} aria-hidden="true" />{t("rephraseWithAi")}<small className="composer-rephrase-beta">{t("rephraseBeta")}</small></strong></div>
             <button type="button" className="composer-rephrase-close" aria-label={t("closeRephrase")} title={t("closeRephrase")} onClick={close}><X size={16} aria-hidden="true" /></button>
           </div>
-          {state.status === "loading" && <div className="composer-rephrase-status"><p role="status"><span className="composer-rephrase-ripple" aria-hidden="true"><span /><span /></span>{t("rephraseLoading")}</p></div>}
+          {state.status === "loading" && <div className="composer-rephrase-status"><p role="status"><span className="composer-rephrase-wave" aria-hidden="true"><span /><span /><span /><span /><span /></span>{t("rephraseLoading")}</p></div>}
           {state.status === "error" && <div className="composer-rephrase-status"><p role="alert">{state.error}</p><div className="composer-rephrase-actions"><button type="button" className="btn-primary" onClick={run}>{t("rephraseRetry")}</button></div></div>}
           {diff && <>
             <div className="composer-rephrase-comparison">

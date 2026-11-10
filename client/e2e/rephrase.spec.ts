@@ -77,20 +77,7 @@ test("cancelling a pending request keeps the original draft", async ({ page }) =
   await requestStarted;
   const dialog = page.getByTestId("composer-rephrase-popover");
   await expect(dialog.getByRole("status")).toBeVisible();
-  const geometry = await dialog.locator(".composer-rephrase-ripple").evaluate(element => {
-    const box = element.getBoundingClientRect();
-    const rings = [...element.querySelectorAll("span")];
-    return rings.map(ring => {
-      ring.getAnimations().forEach(animation => { animation.pause(); animation.currentTime = 500; });
-      const rect = ring.getBoundingClientRect();
-      return { dx: rect.x + rect.width / 2 - (box.x + box.width / 2), dy: rect.y + rect.height / 2 - (box.y + box.height / 2), width: rect.width, height: rect.height };
-    });
-  });
-  for (const ring of geometry) {
-    expect(Math.abs(ring.dx)).toBeLessThan(0.1);
-    expect(Math.abs(ring.dy)).toBeLessThan(0.1);
-    expect(ring.width).toBeCloseTo(ring.height, 1);
-  }
+  await expect(dialog.locator(".composer-rephrase-wave span")).toHaveCount(5);
   await dialog.getByRole("button", { name: "Close rephrase options" }).click();
   release();
   await expect(dialog).toHaveCount(0);
