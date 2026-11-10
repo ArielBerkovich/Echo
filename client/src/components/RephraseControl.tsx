@@ -68,7 +68,7 @@ export default function RephraseControl({ getDraft, applyDraft, restoreFocus, on
   return <>
     <span className="composer-ai-rephrase-control">
       <button type="button" className={`icon-btn composer-ai-rephrase ${state.status !== "idle" ? "active" : ""}`} data-testid="composer-rephrase" title={t("rephraseWithAiBeta")} aria-label={t("rephraseWithAiBeta")} aria-haspopup="dialog" aria-expanded={state.status !== "idle"} disabled={state.status === "loading"} onMouseDown={event => event.preventDefault()} onClick={run}>
-        <WandSparkles size={18} strokeWidth={1.8} aria-hidden="true" /><span className="composer-ai-beta" aria-hidden="true">Beta</span>
+        <WandSparkles size={18} strokeWidth={1.8} aria-hidden="true" /><span className="composer-ai-beta" aria-hidden="true">{t("rephraseBeta")}</span>
       </button>
     </span>
     {state.status !== "idle" && <Modal title={<span className="composer-rephrase-modal-title"><WandSparkles size={18} aria-hidden="true" />{t("rephraseWithAi")}<small className="composer-rephrase-beta">{t("rephraseBeta")}</small></span>} className={`composer-rephrase-popover ${state.status === "loading" ? "composer-rephrase-popover-loading" : ""}`} backdropClassName="composer-rephrase-backdrop" testId="composer-rephrase-popover" closeLabel={t("closeRephrase")} onClose={close} onOpenAutoFocus={event => { event.preventDefault(); (event.currentTarget as HTMLElement).focus(); }}>
