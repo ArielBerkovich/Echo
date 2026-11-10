@@ -421,6 +421,7 @@ html[data-mode="dark"] {
 .modal.scheduled-modal,
 .modal.link-modal,
 .modal.survey-modal,
+.modal.composer-rephrase-popover,
 .modal.retro-create-modal,
 .modal.retro-modal,
 .modal.retro-idea-modal,
@@ -18149,7 +18150,7 @@ html[data-theme="calm"] .channel-list::-webkit-scrollbar-track {
 
 
 .composer-rephrase-backdrop { z-index: 1200; padding: 24px; }
-.composer-rephrase-popover { width: min(820px, calc(100vw - 40px)); max-height: calc(100vh - 48px); overflow-y: auto; }
+.modal.composer-rephrase-popover { width: min(820px, calc(100vw - 40px)); max-height: calc(100vh - 48px); overflow-y: auto; border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border)); background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 6%, var(--surface)), var(--surface) 54%); }
 .composer-rephrase-modal-title { display: flex; align-items: center; gap: 9px; }
 .composer-rephrase-modal-title svg { color: var(--accent); }
 .composer-rephrase-option-text { display: block; overflow-y: auto; max-height: min(42vh, 320px); color: var(--composer-text); }
@@ -18250,7 +18251,7 @@ html[data-theme="calm"] .channel-list::-webkit-scrollbar-track {
 
 .composer-rephrase-beta { display: inline-flex; align-items: center; padding: 2px 6px; border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--composer-border)); border-radius: 5px; background: color-mix(in srgb, var(--accent) 10%, var(--composer-bg)); color: var(--accent); font-size: 10px; font-weight: 700; line-height: 1.2; }
 
-.composer-rephrase-popover-loading { width: min(440px, 100%); }
+.modal.composer-rephrase-popover-loading { width: min(440px, 100%); }
 .composer-rephrase-loading { display: flex; min-height: 160px; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 8px 0 18px; color: var(--composer-text); }
 .composer-rephrase-loading-icon { display: grid; place-items: center; width: 80px; height: 80px; border-radius: 20px; background: #293544; color: #fff; }
 .composer-rephrase-loading-text { font-size: 14px; font-weight: 600; line-height: 1.4; text-align: center; }
