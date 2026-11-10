@@ -18282,16 +18282,11 @@ html[data-theme="calm"] .channel-list::-webkit-scrollbar-track {
 
 .composer-rephrase-beta { display: inline-flex; align-items: center; padding: 2px 6px; border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--composer-border)); border-radius: 5px; background: color-mix(in srgb, var(--accent) 10%, var(--composer-bg)); color: var(--accent); font-size: 10px; font-weight: 700; line-height: 1.2; }
 
-.rephrase-draw-path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: rephrase-ink-draw 3s ease-in-out infinite; }
-.rephrase-draw-frame { animation-delay: 0s; }
-.rephrase-draw-line-one { animation-delay: .18s; }
-.rephrase-draw-line-two { animation-delay: .34s; }
-.rephrase-draw-line-three { animation-delay: .5s; }
-.rephrase-draw-writing-ink { animation-delay: .68s; }
-.rephrase-writing-pencil { transform-box: view-box; animation: rephrase-pencil-write 3s ease-in-out infinite; }
-@keyframes rephrase-pencil-write { 0%, 24% { transform: translate(5px, -12px); } 40%, 70% { transform: translate(15px, -12px); } 82%, 100% { transform: translate(5px, -12px); } }
-@keyframes rephrase-ink-draw { 0%, 8% { stroke-dashoffset: 1; } 38%, 78% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 1; } }
-@media (prefers-reduced-motion: reduce) { .rephrase-draw-path { animation: none; stroke-dashoffset: 0; } .rephrase-writing-pencil { animation: none; transform: translate(15px, -12px); } }
+.rephrase-reflow-line { transform-box: fill-box; transform-origin: left center; animation: rephrase-line-reflow 2.4s ease-in-out infinite; }
+.rephrase-reflow-line-two { animation-delay: .16s; }
+.rephrase-reflow-line-three { animation-delay: .32s; }
+@keyframes rephrase-line-reflow { 0%, 100% { opacity: .62; transform: scaleX(.72); } 50% { opacity: 1; transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) { .rephrase-reflow-line { animation: none; } }
 
 .composer-rephrase-popover-loading { width: min(440px, 100%); }
 .composer-rephrase-loading { display: flex; min-height: 160px; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 8px 0 18px; color: var(--composer-text); }
