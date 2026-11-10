@@ -72,12 +72,12 @@ export default function RephraseControl({ getDraft, applyDraft, restoreFocus, on
     </span>
     {state.status !== "idle" && createPortal(
       <div className="composer-rephrase-screen" onClick={close}>
-        <div ref={dialogRef} tabIndex={-1} className="composer-rephrase-popover" role="dialog" aria-modal="true" aria-labelledby="composer-rephrase-title" data-testid="composer-rephrase-popover" onClick={event => event.stopPropagation()}>
+        <div ref={dialogRef} tabIndex={-1} className={`composer-rephrase-popover ${state.status === "loading" ? "composer-rephrase-popover-loading" : ""}`} role="dialog" aria-modal="true" aria-labelledby="composer-rephrase-title" data-testid="composer-rephrase-popover" onClick={event => event.stopPropagation()}>
           <div className="composer-rephrase-header">
             <div><strong id="composer-rephrase-title"><WandSparkles size={16} aria-hidden="true" />{t("rephraseWithAi")}<small className="composer-rephrase-beta">{t("rephraseBeta")}</small></strong></div>
             <button type="button" className="composer-rephrase-close" aria-label={t("closeRephrase")} title={t("closeRephrase")} onClick={close}><X size={16} aria-hidden="true" /></button>
           </div>
-          {state.status === "loading" && <div className="composer-rephrase-status"><p role="status"><span className="composer-rephrase-wave" aria-hidden="true"><span /><span /><span /><span /><span /></span>{t("rephraseLoading")}</p></div>}
+          {state.status === "loading" && <div className="composer-rephrase-loading" role="status"><span className="composer-rephrase-loading-icon" aria-hidden="true"><span className="composer-rephrase-wave"><span /><span /><span /><span /><span /></span></span><span className="composer-rephrase-loading-text">{t("rephraseLoading")}</span></div>}
           {state.status === "error" && <div className="composer-rephrase-status"><p role="alert">{state.error}</p><div className="composer-rephrase-actions"><button type="button" className="btn-primary" onClick={run}>{t("rephraseRetry")}</button></div></div>}
           {diff && <>
             <div className="composer-rephrase-comparison">

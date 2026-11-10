@@ -18292,3 +18292,8 @@ html[data-theme="calm"] .channel-list::-webkit-scrollbar-track {
 .composer-rephrase-wave span:nth-child(5) { animation-delay: -.8s; }
 @keyframes composer-rephrase-wave { 0%, 40%, 100% { transform: scaleY(.4); } 20% { transform: scaleY(1); } }
 @media (prefers-reduced-motion: reduce) { .composer-rephrase-wave span { animation: none; transform: scaleY(.5); } .composer-rephrase-wave span:nth-child(3) { transform: scaleY(.8); } }
+
+.composer-rephrase-popover-loading { width: min(440px, 100%); }
+.composer-rephrase-loading { display: flex; min-height: 160px; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 8px 0 18px; color: var(--composer-text); }
+.composer-rephrase-loading-icon { display: grid; place-items: center; width: 64px; height: 64px; border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--composer-border)); border-radius: 18px; background: color-mix(in srgb, var(--accent) 10%, var(--composer-bg)); }
+.composer-rephrase-loading-text { font-size: 14px; font-weight: 600; line-height: 1.4; text-align: center; }
