@@ -74,7 +74,7 @@ export default function RephraseControl({ getDraft, applyDraft, restoreFocus, on
       <div className="composer-rephrase-screen" onClick={close}>
         <div ref={dialogRef} tabIndex={-1} className="composer-rephrase-popover" role="dialog" aria-modal="true" aria-labelledby="composer-rephrase-title" data-testid="composer-rephrase-popover" onClick={event => event.stopPropagation()}>
           <div className="composer-rephrase-header">
-            <div><strong id="composer-rephrase-title"><WandSparkles size={16} aria-hidden="true" />{t("rephraseWithAi")}<small className="composer-rephrase-beta">{t("rephraseBeta")}</small></strong>{!diff && <span>{t("rephraseDirectHint")}</span>}</div>
+            <div><strong id="composer-rephrase-title"><WandSparkles size={16} aria-hidden="true" />{t("rephraseWithAi")}<small className="composer-rephrase-beta">{t("rephraseBeta")}</small></strong></div>
             <button type="button" className="composer-rephrase-close" aria-label={t("closeRephrase")} title={t("closeRephrase")} onClick={close}><X size={16} aria-hidden="true" /></button>
           </div>
           {state.status === "loading" && <div className="composer-rephrase-status"><p role="status"><LoaderCircle size={18} className="spinner" aria-hidden="true" />{t("rephraseLoading")}</p></div>}
