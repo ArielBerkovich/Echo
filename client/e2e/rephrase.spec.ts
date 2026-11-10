@@ -24,7 +24,7 @@ test("rephrases a draft, compares changes, and applies formatted output", async 
   await expect(dialog.getByRole("region", { name: "After" }).locator("strong")).toHaveText("report");
   await expect(dialog.locator("ins").first()).toBeVisible();
   expect(requestedDraft).toBe(draft);
-  await dialog.getByRole("button", { name: "Use this version" }).click();
+  await dialog.getByRole("button", { name: "Use suggestion" }).click();
   await expect(dialog).toHaveCount(0);
   await expect(editor.locator("ul li")).toHaveCount(2);
   await expect(editor.locator("strong")).toHaveText("report");
@@ -81,4 +81,18 @@ test("cancelling a pending request keeps the original draft", async ({ page }) =
   release();
   await expect(dialog).toHaveCount(0);
   await expect(editor).toHaveText("keep my draft");
+});
+
+
+test("Enter applies the suggestion without sending it", async ({ page }) => {
+  await page.route("**/api/ai/rephrase", route => route.fulfill({ json: { canRephrase: true, options: [{ key: "professional", text: "Please send the report." }] } }));
+  await page.goto("/channels/general");
+  const editor = page.getByTestId("composer-editor");
+  await editor.fill("send report please");
+  await page.getByTestId("composer-rephrase").click();
+  const dialog = page.getByTestId("composer-rephrase-popover");
+  await expect(dialog.getByRole("region", { name: "After" })).toContainText("Please send the report.");
+  await page.keyboard.press("Enter");
+  await expect(dialog).toHaveCount(0);
+  await expect(editor).toHaveText("Please send the report.");
 });

@@ -11,16 +11,23 @@ export default function RephraseControl({ getDraft, applyDraft, restoreFocus, on
   const { data: config } = useQuery({ queryKey: ["runtime-config"], queryFn: api.getRuntimeConfig, staleTime: 30000, refetchInterval: 30000 });
   const [state, setState] = useState({ status: "idle", draft: "", text: "", error: "" });
   const request = useRef<AbortController | null>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => () => request.current?.abort(), []);
   useEffect(() => {
     if (state.status === "idle") return undefined;
+    if (dialogRef.current && !dialogRef.current.contains(document.activeElement)) dialogRef.current.focus();
     const onKeyDown = (event) => {
-      if (event.key === "Escape") { event.preventDefault(); close(); }
+      if (event.key === "Escape") { event.preventDefault(); close(); return; }
+      if (state.status !== "ready" || event.key !== "Enter" || event.repeat || event.isComposing || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("button, a, input, textarea, select, [contenteditable='true']")) return;
+      event.preventDefault();
+      apply();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [state.status]);
+  }, [state]);
 
   function close() {
     request.current?.abort();
@@ -65,12 +72,12 @@ export default function RephraseControl({ getDraft, applyDraft, restoreFocus, on
     </span>
     {state.status !== "idle" && createPortal(
       <div className="composer-rephrase-screen" onClick={close}>
-        <div className="composer-rephrase-popover" role="dialog" aria-modal="true" aria-labelledby="composer-rephrase-title" data-testid="composer-rephrase-popover" onClick={event => event.stopPropagation()}>
+        <div ref={dialogRef} tabIndex={-1} className="composer-rephrase-popover" role="dialog" aria-modal="true" aria-labelledby="composer-rephrase-title" data-testid="composer-rephrase-popover" onClick={event => event.stopPropagation()}>
           <div className="composer-rephrase-header">
             <div><strong id="composer-rephrase-title"><WandSparkles size={16} aria-hidden="true" />{t("rephraseWithAi")}<small className="composer-rephrase-beta">{t("rephraseBeta")}</small></strong><span>{diff ? t("rephraseWithAiHint") : t("rephraseDirectHint")}</span></div>
             <button type="button" className="composer-rephrase-close" aria-label={t("closeRephrase")} title={t("closeRephrase")} onClick={close}><X size={16} aria-hidden="true" /></button>
           </div>
-          {state.status === "loading" && <div className="composer-rephrase-status"><p role="status"><LoaderCircle size={18} className="spinner" aria-hidden="true" />{t("rephraseLoading")}</p></div>}
+          {state.status === "loading" && <div className="composer-rephrase-status"><p role="status"><LoaderCircle size={18} className="spinner" aria-hidden="true" />{t("rephraseLoading")}</p><div className="composer-rephrase-actions"><button type="button" className="btn-secondary" onClick={close}>{t("cancel")}</button></div></div>}
           {state.status === "error" && <div className="composer-rephrase-status"><p role="alert">{state.error}</p><div className="composer-rephrase-actions"><button type="button" className="btn-secondary" onClick={close}>{t("cancel")}</button><button type="button" className="btn-primary" onClick={run}>{t("rephraseRetry")}</button></div></div>}
           {diff && <>
             <div className="composer-rephrase-comparison">
@@ -78,7 +85,7 @@ export default function RephraseControl({ getDraft, applyDraft, restoreFocus, on
               <span className="composer-rephrase-arrow" aria-hidden="true"><ArrowRight size={18} /></span>
               <section className="composer-rephrase-result" aria-label={t("rephraseAfter")}><span className="composer-rephrase-option-label">{t("rephraseAfter")}</span><div className="composer-rephrase-option-text composer-rephrase-preview composer-rephrase-diff" dir="auto" dangerouslySetInnerHTML={{ __html: diff.after }} /></section>
             </div>
-            {diff.unchanged && <p className="composer-rephrase-unchanged" role="status">{t("rephraseNoChanges")}</p>}
+            <p className="composer-rephrase-unchanged" role={diff.unchanged ? "status" : undefined}>{diff.unchanged ? t("rephraseNoChanges") : t("rephraseChangesHint")}</p>
             <div className="composer-rephrase-actions"><button type="button" className="btn-secondary" onClick={close}>{t("cancel")}</button><button type="button" className="btn-primary" onClick={apply}>{t("useRephrase")}</button></div>
           </>}
         </div>
