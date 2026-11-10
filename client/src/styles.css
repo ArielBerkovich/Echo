@@ -18287,9 +18287,11 @@ html[data-theme="calm"] .channel-list::-webkit-scrollbar-track {
 .rephrase-draw-line-one { animation-delay: .18s; }
 .rephrase-draw-line-two { animation-delay: .34s; }
 .rephrase-draw-line-three { animation-delay: .5s; }
-.rephrase-draw-pencil { animation-delay: .68s; }
+.rephrase-draw-writing-ink { animation-delay: .68s; }
+.rephrase-writing-pencil { transform-box: view-box; animation: rephrase-pencil-write 3s ease-in-out infinite; }
+@keyframes rephrase-pencil-write { 0%, 24% { transform: translate(5px, -12px); } 40%, 70% { transform: translate(15px, -12px); } 82%, 100% { transform: translate(5px, -12px); } }
 @keyframes rephrase-ink-draw { 0%, 8% { stroke-dashoffset: 1; } 38%, 78% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 1; } }
-@media (prefers-reduced-motion: reduce) { .rephrase-draw-path { animation: none; stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) { .rephrase-draw-path { animation: none; stroke-dashoffset: 0; } .rephrase-writing-pencil { animation: none; transform: translate(15px, -12px); } }
 
 .composer-rephrase-popover-loading { width: min(440px, 100%); }
 .composer-rephrase-loading { display: flex; min-height: 160px; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 8px 0 18px; color: var(--composer-text); }
