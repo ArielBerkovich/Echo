@@ -18281,3 +18281,9 @@ html[data-theme="calm"] .channel-list::-webkit-scrollbar-track {
 .composer-rephrase-status p { display: flex; align-items: center; gap: 10px; margin: 0; color: var(--composer-text); line-height: 1.5; }
 
 .composer-rephrase-beta { display: inline-flex; align-items: center; padding: 2px 6px; border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--composer-border)); border-radius: 5px; background: color-mix(in srgb, var(--accent) 10%, var(--composer-bg)); color: var(--accent); font-size: 10px; font-weight: 700; line-height: 1.2; }
+
+.composer-rephrase-ripple { position: relative; display: inline-block; flex: 0 0 24px; width: 24px; height: 24px; color: var(--accent); }
+.composer-rephrase-ripple::before, .composer-rephrase-ripple::after { content: ""; position: absolute; inset: 3px; border: 1.5px solid currentColor; border-radius: 50%; animation: composer-rephrase-ripple 1.8s ease-out infinite; }
+.composer-rephrase-ripple::after { animation-delay: -.9s; }
+@keyframes composer-rephrase-ripple { 0% { transform: scale(.25); opacity: .85; } 100% { transform: scale(1.2); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .composer-rephrase-ripple::before { animation: none; opacity: .8; } .composer-rephrase-ripple::after { animation: none; transform: scale(.55); opacity: .55; } }
