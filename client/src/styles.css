@@ -18282,11 +18282,14 @@ html[data-theme="calm"] .channel-list::-webkit-scrollbar-track {
 
 .composer-rephrase-beta { display: inline-flex; align-items: center; padding: 2px 6px; border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--composer-border)); border-radius: 5px; background: color-mix(in srgb, var(--accent) 10%, var(--composer-bg)); color: var(--accent); font-size: 10px; font-weight: 700; line-height: 1.2; }
 
-.composer-rephrase-sparkle { color: var(--composer-text); transform-origin: center; animation: composer-rephrase-sparkle 2.2s ease-in-out infinite; }
-@keyframes composer-rephrase-sparkle { 0%, 100% { transform: scale(.9); opacity: .68; } 50% { transform: scale(1.08); opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .composer-rephrase-sparkle { animation: none; } }
+.rephrase-wizard { overflow: visible; }
+.rephrase-wizard-wand { transform-box: fill-box; transform-origin: 8% 85%; animation: rephrase-wizard-wave 2.8s ease-in-out infinite; }
+.rephrase-wizard-spark { transform-box: fill-box; transform-origin: center; animation: rephrase-wizard-spark 2.8s ease-in-out infinite; }
+@keyframes rephrase-wizard-wave { 0%, 100% { transform: rotate(0deg); } 40%, 60% { transform: rotate(-8deg); } }
+@keyframes rephrase-wizard-spark { 0%, 100% { transform: scale(.7); opacity: .45; } 45%, 65% { transform: scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .rephrase-wizard-wand, .rephrase-wizard-spark { animation: none; } }
 
 .composer-rephrase-popover-loading { width: min(440px, 100%); }
 .composer-rephrase-loading { display: flex; min-height: 160px; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 8px 0 18px; color: var(--composer-text); }
-.composer-rephrase-loading-icon { display: grid; place-items: center; width: 64px; height: 64px; border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--composer-border)); border-radius: 18px; background: color-mix(in srgb, var(--accent) 10%, var(--composer-bg)); }
+.composer-rephrase-loading-icon { display: grid; place-items: center; width: 80px; height: 80px; border-radius: 20px; background: #293544; }
 .composer-rephrase-loading-text { font-size: 14px; font-weight: 600; line-height: 1.4; text-align: center; }
