@@ -132,3 +132,20 @@ test("rejects rewrites that omit a URL or change inline code", async () => {
     assert.equal((await rephraseMessage("Run `npm install`", settings)).canRephrase, false);
   } finally { globalThis.fetch = originalFetch; }
 });
+
+test("rejects lost numbers, quotes, and numbered list structure", async () => {
+  const originalFetch = globalThis.fetch;
+  let output = "I'm running late.";
+  globalThis.fetch = async () => Response.json({ choices: [{ message: { content: JSON.stringify({ canRephrase: true, options: [{ key: "professional", text: output }] }) } }] });
+  try {
+    assert.equal((await rephraseMessage("Running 10 minutes late.", settings)).canRephrase, false);
+    output = "The customer reported a problem.";
+    assert.equal((await rephraseMessage('The customer said "it freezes".', settings)).canRephrase, false);
+    output = "The customer said it freezes.";
+    assert.equal((await rephraseMessage('The customer said "it freezes".', settings)).canRephrase, false);
+    output = 'The customer said "it freezes". Please investigate.';
+    assert.equal((await rephraseMessage('The customer said "it freezes".', settings)).canRephrase, true);
+    output = "- Open settings\n- Turn off alerts";
+    assert.equal((await rephraseMessage("1. Open settings\n2. Turn off alerts", settings)).canRephrase, false);
+  } finally { globalThis.fetch = originalFetch; }
+});
