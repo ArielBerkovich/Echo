@@ -1,7 +1,6 @@
 import { REPHRASE_PROMPT } from "./rephrasePrompt.js";
 
 export async function requestRephrase(draft, constraints, settings, outputTokens) {
-  const signal = AbortSignal.timeout(settings.timeoutMs);
   const requestBody = {
     model: settings.model,
     messages: [
@@ -31,13 +30,11 @@ export async function requestRephrase(draft, constraints, settings, outputTokens
     method: "POST",
     headers: { "content-type": "application/json", ...(settings.apiKey ? { authorization: `Bearer ${settings.apiKey}` } : {}) },
     body: JSON.stringify({ ...requestBody, response_format: responseFormat }),
-    signal,
   });
   let response = await send({ type: "json_schema", json_schema: { name: "rephrase", strict: true, schema: responseSchema } });
   // Some OpenAI-compatible providers support JSON mode but not JSON schemas.
   if (response.status === 400) response = await send({ type: "json_object" });
   const data = await response.json().catch((error) => {
-    if (signal.aborted) throw signal.reason;
     if (error instanceof SyntaxError) return {};
     throw error;
   });

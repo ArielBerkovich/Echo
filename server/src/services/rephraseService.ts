@@ -13,6 +13,13 @@ function preservesProtectedContent(text, draft) {
   const originalItems = draft.match(listPattern) || [];
   const rewrittenItems = text.match(listPattern) || [];
   if (originalItems.length && rewrittenItems.length !== originalItems.length) return false;
+  const numberedItems = draft.match(/^[ \t]{0,3}\d+[.)][ \t]+.+$/gm) || [];
+  const rewrittenNumberedItems = text.match(/^[ \t]{0,3}\d+[.)][ \t]+.+$/gm) || [];
+  if (numberedItems.length && rewrittenNumberedItems.length !== numberedItems.length) return false;
+  const numbers = draft.match(/(?<![\p{L}\p{N}])\d+(?:[.,:]\d+)*/gu) || [];
+  if (numbers.some((number) => !(text.match(/(?<![\p{L}\p{N}])\d+(?:[.,:]\d+)*/gu) || []).includes(number))) return false;
+  const quotes = [...draft.matchAll(/"([^"\n]+)"|“([^”\n]+)”/g)].map(match => match[0]);
+  if (quotes.some(quote => !text.includes(quote))) return false;
   const urls = draft.match(/https?:\/\/[^\s)]+/g) || [];
   if (urls.some((url) => !text.includes(url))) return false;
   const inlineCode = [...draft.matchAll(/(?<!`)`([^`\n]+)`(?!`)/g)].map((match) => match[0]);
@@ -26,7 +33,7 @@ function preservesProtectedContent(text, draft) {
 function inputConstraints(draft) {
   const constraints = [];
   if (/```|~~~/.test(draft) || /(?:const|let|var|function|SELECT\s|npm run)\b/.test(draft)) {
-    constraints.push("The draft contains code: copy every code statement exactly and keep it in a fenced code block.");
+    constraints.push("The draft may contain code: preserve code and commands exactly. Use a fenced block only when a standalone block helps readability.");
   }
   if (/(^|\n)\s{0,3}(?:[-*+]\s+|\d+[.)]\s+)/.test(draft)) {
     constraints.push("The draft contains a list: every list item must remain a list item in the same order.");
