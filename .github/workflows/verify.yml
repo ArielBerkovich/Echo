@@ -431,11 +431,28 @@ jobs:
         working-directory: client
         run: ELECTRON_BUILD=1 npm run build
 
-      - name: Run Electron RHSSO E2E tests
+      - name: Run Electron unit tests
+        working-directory: electron
+        run: npm test
+
+      - name: Package desktop application
+        working-directory: electron
+        run: npx electron-builder --linux --dir --publish never
+
+      - name: Run packaged Electron RHSSO E2E tests
         working-directory: electron
         env:
           ECHO_URL: http://localhost:8091
+          ECHO_ELECTRON_EXECUTABLE: dist/linux-unpacked/echo-desktop
         run: xvfb-run --auto-servernum npm run test:e2e:rhsso
+
+      - name: Upload Electron failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-rhsso-failure
+          path: electron/test-results/
+          if-no-files-found: ignore
 
       - name: Show RHSSO stack logs on failure
         if: failure()

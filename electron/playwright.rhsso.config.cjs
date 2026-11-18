@@ -1,6 +1,7 @@
 const { defineConfig } = require("@playwright/test");
 
-// Runs the packaged-renderer Electron shell against the RHSSO Compose stack.
+// Runs against the RHSSO Compose stack. Set ECHO_ELECTRON_EXECUTABLE to test
+// the packaged application instead of launching the shell from source.
 // The stack is intentionally started outside this config so it can be shared
 // with the browser RHSSO integration suite.
 module.exports = defineConfig({
