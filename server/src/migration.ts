@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import { config } from "./config.js";
+import { rhssoUserQuery } from "./lib/rhssoUsers.js";
 import { signToken } from "./auth.js";
 import { emitAll, disconnectUserSockets } from "./realtime.js";
 import { passwordProblem } from "./password.js";
@@ -111,7 +112,7 @@ export async function startMigration({ oldUsername, oldPassword, targetType }) {
 }
 
 export async function createRhssoCreationIntent(identity) {
-  if (await User.exists({ rhssoIssuer: identity.issuer, rhssoSubject: identity.subject })) {
+  if (await User.exists(rhssoUserQuery(identity.username))) {
     throw httpError(409, "This RHSSO identity already belongs to an Echo account.");
   }
   const intent = await MigrationIntent.create({
@@ -178,7 +179,7 @@ export async function stageRhssoIdentity(token, identity) {
       (source.tokenVersion ?? 0) !== intent.sourceTokenVersion) {
     throw httpError(409, "The old account changed. Please start the migration again.");
   }
-  if (await User.exists({ rhssoIssuer: identity.issuer, rhssoSubject: identity.subject })) {
+  if (await User.exists(rhssoUserQuery(identity.username))) {
     throw httpError(409, "This RHSSO identity already belongs to an Echo account.");
   }
 
@@ -224,10 +225,7 @@ export async function completeRhssoSignup(token) {
           intent.targetType !== "rhsso" || intent.sourceUser) {
         throw httpError(409, "This RHSSO account creation can no longer be completed.");
       }
-      const existing = await User.findOne({
-        rhssoIssuer: intent.targetIssuer,
-        rhssoSubject: intent.targetSubject,
-      }).session(session);
+      const existing = await User.findOne(rhssoUserQuery(intent.targetUsername)).session(session);
       if (existing) {
         completedUser = existing;
       } else {
@@ -264,12 +262,7 @@ export async function completeRhssoSignup(token) {
 async function availableIntentUsername(value, session) {
   const base = validateTargetUsername(value);
   if (!(await usernameIsReserved(base, { session }))) return base;
-  for (let suffix = 1; suffix < 10000; suffix += 1) {
-    const text = String(suffix);
-    const candidate = `${base.slice(0, 32 - text.length)}${text}`;
-    if (!(await usernameIsReserved(candidate, { session }))) return candidate;
-  }
-  throw httpError(409, "Could not allocate an Echo username for this RHSSO identity.");
+  throw httpError(409, `@${base} is already taken. Use account migration to link an existing local account.`, { usernameTaken: true });
 }
 
 function validateTargetUsername(value) {
@@ -334,8 +327,7 @@ export async function completeMigration(token, { username: requestedUsername, pa
       if (intent.targetType === "rhsso" &&
           await User.exists({
             _id: { $ne: source._id },
-            rhssoIssuer: intent.targetIssuer,
-            rhssoSubject: intent.targetSubject,
+            ...rhssoUserQuery(intent.targetUsername),
           }).session(session)) {
         throw httpError(409, "This RHSSO identity already belongs to an Echo account.");
       }

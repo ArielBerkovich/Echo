@@ -12,6 +12,7 @@ import { sendMessage } from "../services/messageService.js";
 import { passwordProblem } from "../password.js";
 import { usernameCandidate, usernameFromName } from "../lib/usernames.js";
 import { config } from "../config.js";
+import { rhssoUserQuery, rhssoUsername } from "../lib/rhssoUsers.js";
 import { usernameIsReserved } from "../lib/userAliases.js";
 import { clearUserActivity } from "../lib/activity.js";
 import {
@@ -87,29 +88,6 @@ function rhssoClientRedirect(res, error, token = "", clientOrigin = config.clien
   return res.redirect(302, `${clientOrigin.replace(/\/+$/, "")}/#${fragment}`);
 }
 
-function externalUsername(value) {
-  const normalized = String(value || "")
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9_.-]+/g, ".")
-    .replace(/^[._-]+|[._-]+$/g, "")
-    .slice(0, 32)
-    .replace(/[._-]+$/g, "");
-  return normalized.length >= 2 ? normalized : `user.${normalized || "rhsso"}`.slice(0, 32);
-}
-
-async function availableExternalUsername(value) {
-  const base = externalUsername(value);
-  if (!(await usernameIsReserved(base))) return base;
-  for (let suffix = 1; suffix < 10000; suffix += 1) {
-    const text = String(suffix);
-    const candidate = `${base.slice(0, 32 - text.length)}${text}`;
-    if (!(await usernameIsReserved(candidate))) return candidate;
-  }
-  throw new Error("Could not allocate an Echo username for this RHSSO identity");
-}
-
 // GET /api/auth/rhsso/login — starts an OIDC authorization-code + PKCE flow.
 authRouter.get("/rhsso/login", async (req, res) => {
   try {
@@ -126,7 +104,7 @@ authRouter.get("/rhsso/login", async (req, res) => {
 });
 
 // GET /api/auth/rhsso/callback — validates RHSSO's ID token, provisions the
-// identity without linking by username, and returns an ordinary Echo session.
+// identity by its RHSSO username, and returns an ordinary Echo session.
 authRouter.get("/rhsso/callback", async (req, res) => {
   res.setHeader("Set-Cookie", clearRhssoCookie());
   let migrationFlow = false;
@@ -160,7 +138,7 @@ authRouter.get("/rhsso/callback", async (req, res) => {
       }
       await stageRhssoIdentity(intentToken, {
         ...identity,
-        username: externalUsername(identity.username),
+        username: rhssoUsername(identity.username),
       });
       return migrationClientRedirect(res, "", clientOrigin);
     }
@@ -170,7 +148,7 @@ authRouter.get("/rhsso/callback", async (req, res) => {
       flowToken,
     });
 
-    let user = await User.findOne({ rhssoIssuer: identity.issuer, rhssoSubject: identity.subject });
+    let user = await User.findOne(rhssoUserQuery(identity.username));
     if (user?.isAdmin) {
       return rhssoClientRedirect(
         res,
@@ -182,7 +160,7 @@ authRouter.get("/rhsso/callback", async (req, res) => {
     if (!user) {
       const pending = await createRhssoCreationIntent({
         ...identity,
-        username: externalUsername(identity.username),
+        username: rhssoUsername(identity.username),
       });
       res.setHeader("Set-Cookie", [clearRhssoCookie(), migrationIntentCookie(pending.token)]);
       return rhssoCreationClientRedirect(res, clientOrigin);

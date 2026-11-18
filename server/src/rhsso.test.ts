@@ -3,6 +3,10 @@ import crypto from "node:crypto";
 import http from "node:http";
 import { after, before, describe, it } from "node:test";
 import jwt from "jsonwebtoken";
+import express from "express";
+import { authRouter } from "./routes/auth.js";
+import { User } from "./models/User.js";
+import { rhssoUsername } from "./lib/rhssoUsers.js";
 import { config } from "./config.js";
 import {
   beginRhssoLogin,
@@ -21,6 +25,8 @@ describe("RHSSO OpenID Connect flow", () => {
   let backchannelUrl;
   let expectedNonce;
   let tokenRequest;
+  let subject = "rhsso-subject-1";
+  let username = "jane.doe";
 
   before(async () => {
     server = http.createServer(async (req, res) => {
@@ -44,7 +50,7 @@ describe("RHSSO OpenID Connect flow", () => {
         const idToken = jwt.sign(
           {
             nonce: expectedNonce,
-            preferred_username: "jane.doe",
+            preferred_username: username,
             profile: { display: "Jane Doe" },
           },
           privateKey,
@@ -53,7 +59,7 @@ describe("RHSSO OpenID Connect flow", () => {
             keyid: "test-key",
             issuer: publicIssuer,
             audience: "echo-client",
-            subject: "rhsso-subject-1",
+            subject,
             expiresIn: "5m",
           }
         );
@@ -123,6 +129,62 @@ describe("RHSSO OpenID Connect flow", () => {
       finishRhssoLogin({ code: "authorization-code", state: "wrong-state", flowToken }),
       /Invalid RHSSO login callback/
     );
+  });
+
+  it("logs a recreated RHSSO user into the same Echo account by username", async (t) => {
+    const user = { _id: "existing-echo-user", username: "jane.doe", rhssoSubject: "old-id", tokenVersion: 0 };
+    const queries = [];
+    t.mock.method(User, "findOne", async (query) => {
+      queries.push(query);
+      return query.username === user.username ? user : null;
+    });
+    const app = express();
+    app.use("/api/auth", authRouter);
+    const callbackServer = app.listen(0, "127.0.0.1");
+    await new Promise((resolve) => callbackServer.listening ? resolve() : callbackServer.once("listening", resolve));
+    try {
+      for (const id of ["old-id", "recreated-id"]) {
+        subject = id;
+        const { flowToken } = await beginRhssoLogin();
+        const flow = jwt.verify(flowToken, config.jwtSecret);
+        expectedNonce = flow.nonce;
+        const response = await fetch(`http://127.0.0.1:${callbackServer.address().port}/api/auth/rhsso/callback?code=test&state=${flow.state}`, {
+          headers: { Cookie: `echo_rhsso_flow=${flowToken}` },
+          redirect: "manual",
+        });
+        assert.equal(response.status, 302);
+        const fragment = new URLSearchParams(new URL(response.headers.get("location")).hash.slice(1));
+        assert.equal(fragment.get("rhsso_error"), null);
+        assert.equal(jwt.verify(fragment.get("rhsso_token"), config.jwtSecret).sub, user._id);
+      }
+      assert.equal(queries.length, 2);
+      for (const query of queries) {
+        assert.equal(query.username, "jane.doe");
+        assert.equal(query.rhssoSubject, undefined);
+        assert.equal(query.rhssoIssuer, undefined);
+      }
+    } finally {
+      subject = "rhsso-subject-1";
+      await new Promise((resolve) => callbackServer.close(resolve));
+    }
+  });
+
+  it("rejects a missing username instead of using the subject as a username", async () => {
+    const { flowToken } = await beginRhssoLogin();
+    const flow = jwt.verify(flowToken, config.jwtSecret);
+    expectedNonce = flow.nonce;
+    username = undefined;
+    try {
+      await assert.rejects(finishRhssoLogin({ code: "test", state: flow.state, flowToken }), /must provide a username/);
+    } finally {
+      username = "jane.doe";
+    }
+  });
+
+  it("normalizes case and rejects usernames that would need lossy rewriting", () => {
+    assert.equal(rhssoUsername(" My_User "), "my_user");
+    assert.throws(() => rhssoUsername("my user"), /must provide a username/);
+    assert.throws(() => rhssoUsername(""), /must provide a username/);
   });
 
   it("signs and reuses an allowed LAN callback origin", async () => {

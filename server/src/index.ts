@@ -7,6 +7,7 @@ import { startScheduler } from "./scheduler.js";
 import { ensureBucket } from "./storage.js";
 import { config } from "./config.js";
 import { Message } from "./models/Message.js";
+import { User } from "./models/User.js";
 import { UserAlias } from "./models/UserAlias.js";
 import { MigrationIntent } from "./models/MigrationIntent.js";
 import { UserMigrationAudit } from "./models/UserMigrationAudit.js";
@@ -16,6 +17,12 @@ async function start() {
   await connectDb();
   await ensureDefaultChannel();
   await ensureBucket();
+  // Remove the legacy identity constraint; RHSSO accounts are keyed by username.
+  try {
+    await User.collection.dropIndex("rhssoIssuer_1_rhssoSubject_1");
+  } catch (error) {
+    if (error.code !== 27 && error.code !== 26) throw error;
+  }
   await Message.syncIndexes();
   await UserAlias.syncIndexes();
   await MigrationIntent.syncIndexes();
