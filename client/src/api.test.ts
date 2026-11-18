@@ -146,6 +146,21 @@ describe("api request helpers", () => {
     assert.equal(paths[1], "/api/groups?page=3&limit=25");
   });
 
+  it("loads the complete user directory through authenticated cancellable pages", async () => {
+    const paths = [];
+    const controller = new AbortController();
+    setToken("directory-token");
+    globalThis.fetch = async (path, options) => {
+      paths.push(path);
+      assert.equal(options.headers.Authorization, "Bearer directory-token");
+      assert.equal(options.signal, controller.signal);
+      const page = Number(new URL(path, "http://echo.test").searchParams.get("page"));
+      return { ok: true, json: async () => ({ users: [{ id: String(page) }], hasMore: page === 0 }) };
+    };
+    assert.deepEqual(await api.listAllUsers({ signal: controller.signal }), [{ id: "0" }, { id: "1" }]);
+    assert.deepEqual(paths, ["/api/users?page=0&limit=200", "/api/users?page=1&limit=200"]);
+  });
+
   it("softens authentication errors while preserving server details", async () => {
     globalThis.fetch = async () => ({
       ok: false,

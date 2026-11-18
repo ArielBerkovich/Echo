@@ -24,11 +24,11 @@ export function userExists(userId: unknown) {
   return User.exists({ _id: userId });
 }
 
-export function listDirectoryUsers({ skip = 0, limit = 100, query: rawQuery }: { skip?: number; limit?: number; query?: string } = {}) {
+export function listDirectoryUsers({ skip = 0, limit = 100, query: rawQuery, includeHidden = false }: { skip?: number; limit?: number; query?: string; includeHidden?: boolean } = {}) {
   const filter: Record<string, unknown> = { username: { $ne: "system" } };
   const term = String(rawQuery || "").trim().slice(0, 80);
   if (term) {
-    filter.hidden = { $ne: true };
+    if (!includeHidden) filter.hidden = { $ne: true };
     const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const match = new RegExp(escaped, "i");
     filter.$or = [{ username: match }, { displayName: match }];

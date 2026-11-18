@@ -43,7 +43,7 @@ export function useWorkspaceQueries(enabled) {
   );
   const [users, setUsers, usersQuery] = useQueryState(
     workspaceKeys.users,
-    async () => (await api.listUsers()).users || [],
+    ({ signal }) => api.listAllUsers({ signal }),
     enabled,
     EMPTY_LIST,
   );

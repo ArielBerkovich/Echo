@@ -9,9 +9,24 @@ import { requireAuth } from "../middleware/requireAuth.js";
 import { requireAdmin } from "../middleware/requireAdmin.js";
 import { sendMessage } from "../services/messageService.js";
 import { emitToChannel, emitAll } from "../realtime.js";
+import { listDirectoryUsers } from "../services/userDirectoryService.js";
+import { parsePage } from "../lib/page.js";
 
 export const adminRouter = Router();
 adminRouter.use(requireAuth, requireAdmin);
+
+// Admin management must find hidden accounts and users beyond the client's
+// initial directory page. Ordinary discovery searches still exclude hidden users.
+adminRouter.get("/users", async (req, res) => {
+  const page = parsePage(req.query.page);
+  if (page === null) return res.status(400).json({ error: "page must be between 0 and 10000" });
+  const limitText = String(req.query.limit ?? "100");
+  if (!/^\d+$/.test(limitText)) return res.status(400).json({ error: "limit must be a positive integer" });
+  const limit = Math.max(1, Math.min(Number(limitText) || 100, 200));
+  const query = typeof req.query.q === "string" ? req.query.q.trim().slice(0, 80) : "";
+  const docs = await listDirectoryUsers({ skip: page * limit, limit: limit + 1, query, includeHidden: true });
+  res.json({ users: docs.slice(0, limit).map((user) => user.toPublicJSON()), page, limit, hasMore: docs.length > limit });
+});
 
 // PATCH /api/admin/users/:id/deprecated
 adminRouter.patch("/users/:id/deprecated", async (req, res) => {

@@ -15020,6 +15020,12 @@ html[data-mode="dark"] .hljs-class .hljs-title {
   flex: 1;
   min-width: 0;
 }
+.admin-user-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
 .admin-user-results {
   flex-basis: 100%;
   display: flex;
@@ -18272,3 +18278,11 @@ html[data-theme="calm"] .channel-list::-webkit-scrollbar-track {
 .hide-candidate-identity { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow-wrap: anywhere; }
 .hide-candidate-identity bdi { color: var(--muted); font-size: 13px; }
 .hide-candidate-row button { flex-shrink: 0; }
+
+.managed-users-dialog {
+  width: 720px;
+  max-height: calc(100dvh - 40px);
+  display: flex;
+  flex-direction: column;
+}
+.managed-users-content { min-height: 0; overflow-y: auto; }
