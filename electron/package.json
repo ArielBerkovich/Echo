@@ -30,6 +30,7 @@
     "productName": "Echo",
     "files": [
       "main.cjs",
+      "zoom.cjs",
       "preload.cjs",
       "setup.html"
     ],

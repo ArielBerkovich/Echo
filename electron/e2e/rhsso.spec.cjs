@@ -2,6 +2,7 @@ const path = require("node:path");
 const { _electron: electron, expect, test } = require("@playwright/test");
 
 const electronDir = path.resolve(__dirname, "..");
+const executablePath = process.env.ECHO_ELECTRON_EXECUTABLE;
 const echoUrl = process.env.ECHO_URL || "http://localhost:8091";
 const rhssoPort = new URL(process.env.RHSSO_ORIGIN || "http://localhost:8180").port;
 const rhssoUser = process.env.RHSSO_USER || "jane.doe";
@@ -10,17 +11,23 @@ const rhssoPassword = process.env.RHSSO_PASSWORD || "UserPassword1";
 test("signs in through RHSSO, sends messages, and signs out from the Electron shell", async ({}, testInfo) => {
   const userDataDir = testInfo.outputPath("electron-user-data");
   const app = await electron.launch({
-    args: [electronDir, `--user-data-dir=${userDataDir}`],
+    ...(executablePath ? { executablePath: path.resolve(executablePath) } : {}),
+    args: [...(executablePath ? [] : [electronDir]), `--user-data-dir=${userDataDir}`],
     cwd: electronDir,
     env: {
       ...process.env,
+      ELECTRON_START_URL: "",
       ECHO_BACKEND_URL: echoUrl,
       ECHO_DISABLE_AUTO_UPDATE: "1",
     },
   });
 
   try {
+    if (executablePath) {
+      expect(await app.evaluate(({ app }) => app.isPackaged)).toBe(true);
+    }
     const mainWindow = await app.firstWindow();
+    await mainWindow.waitForURL((url) => url.protocol === "file:");
     await expect(mainWindow.getByRole("button", { name: "Sign in with RHSSO" })).toBeVisible();
     expect(await mainWindow.evaluate(() => Boolean(window.echoDesktopAuth))).toBe(true);
 
@@ -35,6 +42,7 @@ test("signs in through RHSSO, sends messages, and signs out from the Electron sh
     await rhssoWindow.locator("#kc-login").click();
 
     const creationModal = mainWindow.getByTestId("creation-migration-modal");
+    await expect(creationModal.or(mainWindow.getByTestId("rail-logout"))).toBeVisible();
     if (await creationModal.isVisible().catch(() => false)) {
       await creationModal.getByRole("button", { name: "Create a new Echo account" }).click();
     }
