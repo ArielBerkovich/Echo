@@ -14,6 +14,33 @@ export type WhatsNewRelease = {
 // Keep release notes in the renderer so they work for air-gapped deployments
 // and always match the desktop binary that shipped them.
 const RELEASES: Record<string, WhatsNewRelease> = {
+  "0.58.0": {
+    id: "0.58.0",
+    title: "What's new in 0.58.0",
+    summary: "Manage user visibility independently, control AI rephrasing, and get more reliable desktop startup and sign-in.",
+    items: [
+      {
+        title: "User visibility controls",
+        description: "Admins can hide users from discovery independently of archiving, and find archived accounts and possible duplicates to hide in bulk.",
+        category: "New",
+      },
+      {
+        title: "AI rephrasing controls",
+        description: "Admins can enable message rephrasing separately from thread summaries. Rephrasing is disabled by default.",
+        category: "Improved",
+      },
+      {
+        title: "Desktop startup",
+        description: "Fixed a crash when launching the packaged desktop app.",
+        category: "Fixed",
+      },
+      {
+        title: "RHSSO account matching",
+        description: "Sign-in now matches accounts by username more reliably.",
+        category: "Fixed",
+      },
+    ],
+  },
   "0.57.0": {
     id: "0.57.0",
     title: "What's new in 0.57.0",
