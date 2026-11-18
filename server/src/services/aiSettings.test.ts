@@ -5,6 +5,9 @@ import { decryptAllureSecret } from "../allure.js";
 
 test("AI defaults to disabled and public settings never expose credentials", () => {
   assert.equal(publicAISettings(null).enabled, false);
+  assert.equal(publicAISettings(null).rephraseEnabled, false);
+  assert.equal(publicAISettings({ enabled: true }).rephraseEnabled, false);
+  assert.equal(aiSettingsUpdate({ ...aiDefaults, rephraseEnabled: true }).rephraseEnabled, true);
   const result = publicAISettings({ ...aiDefaults, apiKeyCiphertext: "secret", apiKey: "plain" });
   assert.equal(result.hasApiKey, true);
   assert.equal("apiKey" in result, false);
@@ -18,7 +21,7 @@ test("AI key updates encrypt, preserve omitted keys, and allow removal", () => {
   assert.equal(aiSettingsUpdate({ ...aiDefaults, apiKey: "" }).apiKeyCiphertext, null);
 });
 test("AI settings validate provider URLs, flags, and token budgets", () => {
-  for (const invalid of [{ enabled: "false" }, { baseUrl: "file:///tmp/test" }, { baseUrl: "https://user:key@example.com" }, { timeoutMs: 0 }, { maxOutputTokens: 12000 }, { model: " " }]) {
+  for (const invalid of [{ rephraseEnabled: "false" }, { enabled: "false" }, { baseUrl: "file:///tmp/test" }, { baseUrl: "https://user:key@example.com" }, { timeoutMs: 0 }, { maxOutputTokens: 12000 }, { model: " " }]) {
     assert.throws(() => aiSettingsUpdate({ ...aiDefaults, ...invalid }));
   }
   assert.equal(aiSettingsUpdate({ ...aiDefaults, baseUrl: "http://localhost:8080/v1/" }).baseUrl, "http://localhost:8080/v1");

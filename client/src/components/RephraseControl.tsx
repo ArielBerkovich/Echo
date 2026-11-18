@@ -65,7 +65,7 @@ export default function RephraseControl({ getDraft, applyDraft, restoreFocus, on
     close();
   }
 
-  if (!config?.threadSummaries) return null;
+  if (!config?.rephraseEnabled) return null;
   const diff = state.status === "ready" ? rephraseRenderedDiff(state.draft, state.text) : null;
   return <>
     <span className="composer-ai-rephrase-control">

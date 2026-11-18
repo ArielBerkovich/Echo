@@ -45,7 +45,10 @@ export function createApp() {
   app.use(httpMetricsMiddleware);
 
   app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
-  app.get("/api/config", async (_req, res) => res.json({ threadSummaries: !!(await AISettings.findById("ai").lean())?.enabled }));
+  app.get("/api/config", async (_req, res) => {
+    const settings = await AISettings.findById("ai").lean();
+    res.json({ threadSummaries: !!settings?.enabled, rephraseEnabled: !!settings?.rephraseEnabled });
+  });
   app.get("/api/openapi.json", (_req, res) => res.json(openApiDocument()));
   app.use("/mcp", mcpRouter);
   app.use("/api/desktop-downloads", desktopDownloadsRouter(config.desktopUpdateDir));

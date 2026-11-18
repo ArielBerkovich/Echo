@@ -3,10 +3,11 @@ import { z } from "zod";
 import mongoose from "mongoose";
 import { encryptAllureSecret, decryptAllureSecret } from "../allure.js";
 
-export const aiDefaults = { enabled: false, baseUrl: "https://api.openai.com/v1", model: "gpt-4o-mini", timeoutMs: 30000, maxContextTokens: 12000, maxOutputTokens: 700, prompt: DEFAULT_SUMMARY_PROMPT };
+export const aiDefaults = { enabled: false, rephraseEnabled: false, baseUrl: "https://api.openai.com/v1", model: "gpt-4o-mini", timeoutMs: 30000, maxContextTokens: 12000, maxOutputTokens: 700, prompt: DEFAULT_SUMMARY_PROMPT };
 const schema = new mongoose.Schema({
   _id: { type: String, default: "ai" },
   enabled: { type: Boolean, default: false },
+  rephraseEnabled: { type: Boolean, default: false },
   baseUrl: { type: String, default: aiDefaults.baseUrl },
   model: { type: String, default: aiDefaults.model },
   timeoutMs: { type: Number, default: aiDefaults.timeoutMs },
@@ -18,6 +19,7 @@ const schema = new mongoose.Schema({
 export const AISettings = mongoose.model("AISettings", schema);
 export const aiSettingsInput = z.object({
   enabled: z.boolean(),
+  rephraseEnabled: z.boolean().optional(),
   baseUrl: z.string().trim().max(500).url().refine(value => { const url = new URL(value); return ["http:", "https:"].includes(url.protocol) && !url.username && !url.password && !url.search && !url.hash; }, "Use an HTTP or HTTPS base URL without credentials, query parameters, or a fragment").transform(value => value.replace(/\/+$/, "")),
   model: z.string().trim().min(1).max(200),
   timeoutMs: z.number().int().min(1000).max(300000),
@@ -33,7 +35,7 @@ export async function getAISettings() {
   const doc = await AISettings.findById("ai").lean();
   const { hasApiKey, ...settings } = publicAISettings(doc);
   const apiKey = decryptAllureSecret(doc?.apiKeyCiphertext);
-  if (settings.enabled && hasApiKey && !apiKey) throw new Error("Cannot decrypt AI API key");
+  if ((settings.enabled || settings.rephraseEnabled) && hasApiKey && !apiKey) throw new Error("Cannot decrypt AI API key");
   return { ...settings, apiKey: apiKey || "" };
 }
 export function aiSettingsUpdate(input) {

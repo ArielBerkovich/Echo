@@ -17,10 +17,10 @@ test("admin can configure AI and toggle thread summaries", async ({ request }) =
   expect((await api("put", "/api/integrations/ai", { headers, data: { ...initialSettings, enabled: false } })).ok()).toBeTruthy();
   try {
     for (const enabled of [true, false]) {
-      const savedSettings = { ...initialSettings, enabled, prompt: "Use two short sentences." };
+      const savedSettings = { ...initialSettings, enabled, rephraseEnabled: !enabled, prompt: "Use two short sentences." };
       expect((await api("put", "/api/integrations/ai", { headers, data: savedSettings })).ok()).toBeTruthy();
       const config = await api("get", "/api/config");
-      expect((await config.json()).threadSummaries).toBe(enabled);
+      expect(await config.json()).toMatchObject({ threadSummaries: enabled, rephraseEnabled: !enabled });
       const saved = await api("get", "/api/integrations/ai", { headers });
       expect((await saved.json()).integration).toEqual({ ...savedSettings, hasApiKey: false });
     }

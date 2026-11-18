@@ -22,8 +22,8 @@ test("authenticated rephrase route calls the configured provider", async () => {
   const originalUserFind = User.findById;
   const originalSettingsFind = AISettings.findById;
   User.findById = async () => user as any;
-  let enabled = true;
-  AISettings.findById = () => ({ lean: async () => ({ enabled, baseUrl: `http://127.0.0.1:${(provider.address() as any).port}/v1`, model: "test", timeoutMs: 3000, maxContextTokens: 12000, maxOutputTokens: 700 }) }) as any;
+  let rephraseEnabled = true;
+  AISettings.findById = () => ({ lean: async () => ({ enabled: false, rephraseEnabled, baseUrl: `http://127.0.0.1:${(provider.address() as any).port}/v1`, model: "test", timeoutMs: 3000, maxContextTokens: 12000, maxOutputTokens: 700 }) }) as any;
   const app = express();
   app.use(express.json());
   app.use("/api/ai", aiAssistRouter);
@@ -37,7 +37,7 @@ test("authenticated rephrase route calls the configured provider", async () => {
     assert.equal((await response.json()).options[0].text, "Please send the report.");
     assert.equal(providerRequest.response_format.type, "json_schema");
     assert.equal(JSON.parse(providerRequest.messages[1].content).draft, "send report");
-    enabled = false;
+    rephraseEnabled = false;
     const disabled = await fetch(url, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${signToken(user)}` }, body: JSON.stringify({ text: "send report" }) });
     assert.equal(disabled.status, 404);
   } finally {
