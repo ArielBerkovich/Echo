@@ -59,7 +59,7 @@ export default function NewMessageModal({ currentUserId, users, customEmojis, mo
   const matches = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     return users
-      .filter((user) => user.id !== currentUserId)
+      .filter((user) => !user.hidden && user.id !== currentUserId)
       .filter((user) => !normalized
         || user.displayName.toLowerCase().includes(normalized)
         || user.username.toLowerCase().includes(normalized))

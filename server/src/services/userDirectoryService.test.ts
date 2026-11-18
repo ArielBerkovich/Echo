@@ -21,6 +21,7 @@ test("directory search applies bounded pagination and an escaped term filter", a
     assert.equal(skip, 25);
     assert.equal(limit, 51);
     assert.equal(filter.username.$ne, "system");
+    assert.deepEqual(filter.hidden, { $ne: true });
     assert.equal(filter.$or[0].username.source, "ann\\.\\+");
   } finally {
     User.find = originalFind;
