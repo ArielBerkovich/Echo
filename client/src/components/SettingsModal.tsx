@@ -1,6 +1,6 @@
 import AIIntegration from "./AIIntegration.js";
 import AzureWorkItemsIntegration from "./AzureWorkItemsIntegration.js";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Building2Icon, CheckIcon, ChevronDownIcon, Code2Icon, DownloadIcon, GitPullRequestIcon, KeyboardIcon, Maximize2Icon, Minimize2Icon, PaletteIcon, PlugZapIcon, SlidersHorizontalIcon, UserRoundIcon, WebhookIcon } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -701,7 +701,7 @@ export default function SettingsModal({
               <p className="settings-hint">{t("desktopNotificationsHint")}</p>
               <NotificationToggle />
             </section>
-            {!user.isAdmin ? (user.canChangePassword ? <ChangePassword /> : <SsoPasswordNotice />) : <><AdminPasswordReset users={users} currentUserId={user.id} /><AdminUserDeprecation currentUserId={user.id} /></>}
+            {!user.isAdmin ? (user.canChangePassword ? <ChangePassword /> : <SsoPasswordNotice />) : <><AdminPasswordReset users={users} currentUserId={user.id} /><AdminUserDeprecation users={users} currentUserId={user.id} /></>}
           </>}
 
           {activeTab === "preferences" && <>
@@ -1432,7 +1432,7 @@ function ChangePassword() {
 }
 
 // Admin-only archival and discovery visibility controls.
-function AdminUserDeprecation({ currentUserId }) {
+function AdminUserDeprecation({ users, currentUserId }) {
   const managedUsersButtonRef = useRef(null);
   const [showAllManaged, setShowAllManaged] = useState(false);
   const [hideDialogOpen, setHideDialogOpen] = useState(false);
@@ -1461,8 +1461,13 @@ function AdminUserDeprecation({ currentUserId }) {
     return () => { cancelled = true; clearTimeout(timer); };
   }, [normalizedQuery, showAllManaged, searchKey, searchAttempt]);
   const result = searchResult?.key === searchKey ? searchResult : null;
+  // Admin search owns discovery and visibility flags. Keep profile fields live
+  // through the shared directory without dropping users absent from its cache.
+  const liveProfiles = useMemo(() => new Map(users.map((u) => [u.id, {
+    displayName: u.displayName, avatarUrl: u.avatarUrl,
+  }])), [users]);
   const matches = normalizedQuery || showAllManaged
-    ? (result?.users || []).map((u) => statusOverrides[u.id] === undefined ? u : { ...u, ...statusOverrides[u.id] })
+    ? (result?.users || []).map((u) => ({ ...u, ...liveProfiles.get(u.id), ...statusOverrides[u.id] }))
       .filter((u) => u.id !== currentUserId && !u.isAdmin && (!showAllManaged || u.hidden || u.deprecated))
       .sort((a, b) => Number(b.username.toLowerCase() === normalizedQuery) - Number(a.username.toLowerCase() === normalizedQuery))
     : [];
