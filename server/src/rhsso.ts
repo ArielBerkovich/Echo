@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import jwt from "jsonwebtoken";
 import { config } from "./config.js";
+import { rhssoUsername } from "./lib/rhssoUsers.js";
 
 const FLOW_TTL_SECONDS = 10 * 60;
 let discoveryCache;
@@ -172,7 +173,7 @@ export async function finishRhssoLogin({ code, state, flowToken, expectedKind = 
   return {
     issuer: claims.iss,
     subject: claims.sub,
-    username: readClaim(claims, config.rhsso.usernameClaim) || claims.preferred_username || claims.sub,
+    username: rhssoUsername(readClaim(claims, config.rhsso.usernameClaim) || claims.preferred_username),
     displayName: configuredDisplayName || fallbackDisplayName || claims.preferred_username || claims.sub,
     ...(flow.intentId ? { intentId: flow.intentId } : {}),
   };
