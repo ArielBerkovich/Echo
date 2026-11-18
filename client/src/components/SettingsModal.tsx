@@ -1,16 +1,18 @@
 import AIIntegration from "./AIIntegration.js";
 import AzureWorkItemsIntegration from "./AzureWorkItemsIntegration.js";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Building2Icon, CheckIcon, ChevronDownIcon, Code2Icon, DownloadIcon, GitPullRequestIcon, KeyboardIcon, Maximize2Icon, Minimize2Icon, PaletteIcon, PlugZapIcon, SlidersHorizontalIcon, UserRoundIcon, WebhookIcon } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { api, getBackendUrl } from "../api.js";
 import Avatar from "./Avatar.js";
+import { loadUserDirectory } from "../lib/userDirectory.js";
 import { MAX_DISPLAY_NAME_LENGTH } from "../lib/profile.js";
 import ApiDocsPage from "./ApiDocsPage.js";
 import ProfilePictureDialog from "./ProfilePictureDialog.js";
 import ConfirmDialog from "./ConfirmDialog.js";
 import HideUsersDialog from "./HideUsersDialog.js";
+import Modal, { ModalActions } from "./Modal.js";
 import { PASSWORD_RULE } from "../lib/password.js";
 import { passwordPairSchema } from "../lib/formSchemas.js";
 import { uploadSizeError } from "../lib/uploads.js";
@@ -1431,18 +1433,45 @@ function ChangePassword() {
 
 // Admin-only archival and discovery visibility controls.
 function AdminUserDeprecation({ users, currentUserId }) {
+  const managedUsersButtonRef = useRef(null);
+  const [showAllManaged, setShowAllManaged] = useState(false);
   const [hideDialogOpen, setHideDialogOpen] = useState(false);
   const { t, translateError } = useI18n();
   const [query, setQuery] = useState("");
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState(null);
   const [statusOverrides, setStatusOverrides] = useState({});
-  const normalizedQuery = query.trim().replace(/^@+/, "").toLowerCase();
-  const candidates = normalizedQuery
-    ? users.map((u) => statusOverrides[u.id] === undefined ? u : { ...u, ...statusOverrides[u.id] })
-      .filter((u) => u.id !== currentUserId && !u.isAdmin &&
-        (u.displayName.toLowerCase().includes(normalizedQuery) || u.username.toLowerCase().includes(normalizedQuery))).slice(0, 8)
+  const [searchResult, setSearchResult] = useState(null);
+  const [searchAttempt, setSearchAttempt] = useState(0);
+  const normalizedQuery = query.trim().replace(/^@+/, "").toLowerCase().slice(0, 80);
+  const searchKey = `${showAllManaged}:${normalizedQuery}`;
+  useEffect(() => {
+    if (!normalizedQuery && !showAllManaged) return;
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const users = showAllManaged
+          ? await loadUserDirectory((options) => api.listAdminUsers({ ...options, query: normalizedQuery }))
+          : (await api.listAdminUsers({ query: normalizedQuery, limit: 200 })).users;
+        if (!cancelled) setSearchResult({ key: searchKey, users });
+      } catch (error) {
+        if (!cancelled) setSearchResult({ key: searchKey, error: error.message });
+      }
+    }, 200);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [normalizedQuery, showAllManaged, searchKey, searchAttempt]);
+  const result = searchResult?.key === searchKey ? searchResult : null;
+  // Admin search owns discovery and visibility flags. Keep profile fields live
+  // through the shared directory without dropping users absent from its cache.
+  const liveProfiles = useMemo(() => new Map(users.map((u) => [u.id, {
+    displayName: u.displayName, avatarUrl: u.avatarUrl,
+  }])), [users]);
+  const matches = normalizedQuery || showAllManaged
+    ? (result?.users || []).map((u) => ({ ...u, ...liveProfiles.get(u.id), ...statusOverrides[u.id] }))
+      .filter((u) => u.id !== currentUserId && !u.isAdmin && (!showAllManaged || u.hidden || u.deprecated))
+      .sort((a, b) => Number(b.username.toLowerCase() === normalizedQuery) - Number(a.username.toLowerCase() === normalizedQuery))
     : [];
+  const candidates = showAllManaged ? matches : matches.slice(0, 8);
 
   async function toggle(u, field = "deprecated") {
     setBusyId(u.id);
@@ -1457,13 +1486,18 @@ function AdminUserDeprecation({ users, currentUserId }) {
     finally { setBusyId(null); }
   }
 
-  return (
-    <section className="settings-section" data-testid="admin-deprecation">
-      <h3>{t("adminDeprecationTitle")}</h3>
-      <p className="settings-hint">{t("adminDeprecationDescription")}</p>
-      <button type="button" className="btn-secondary mb-3" data-testid="find-users-to-hide" onClick={() => setHideDialogOpen(true)}>{t("findUsersToHide")}</button>
-      {hideDialogOpen && <HideUsersDialog currentUserId={currentUserId} onClose={() => setHideDialogOpen(false)} onUserUpdated={(updated) => setStatusOverrides((previous) => ({ ...previous, [updated.id]: { deprecated: !!updated.deprecated, hidden: !!updated.hidden } }))} />}
-      <input className="settings-input" data-testid="admin-deprecation-search" placeholder={t("findUserByName")} value={query} onChange={(event) => setQuery(event.target.value)} />
+  function closeManagedUsers() {
+    setShowAllManaged(false);
+    setQuery("");
+    setError(null);
+    requestAnimationFrame(() => managedUsersButtonRef.current?.focus());
+  }
+
+  const userControls = <>
+      <input className="settings-input" data-testid="admin-deprecation-search" aria-label={t("findUserByName")} placeholder={t("findUserByName")} value={query} onChange={(event) => setQuery(event.target.value)} />
+      {(normalizedQuery || showAllManaged) && !result && <p role="status">{t("searching")}</p>}
+      {result?.error && <div className="error" role="alert">{translateError(result.error)} <button type="button" className="btn-secondary" onClick={() => { setSearchResult(null); setSearchAttempt((attempt) => attempt + 1); }}>{t("tryAgain")}</button></div>}
+      {showAllManaged && result?.users && candidates.length === 0 && <p role="status">{t("noHiddenArchivedUsers")}</p>}
       {candidates.length > 0 && <div className="admin-user-results">
         {candidates.map((u) => <div key={u.id} className="search-row" data-testid={`admin-deprecation-user-${u.username}`}>
           <Avatar name={u.displayName} src={u.avatarUrl} size={24} />
@@ -1475,6 +1509,21 @@ function AdminUserDeprecation({ users, currentUserId }) {
         </div>)}
       </div>}
       {error && <div className="error">{error}</div>}
+  </>;
+
+  return (
+    <section className="settings-section" data-testid="admin-deprecation">
+      <h3>{t("adminDeprecationTitle")}</h3>
+      <p className="settings-hint">{t("adminDeprecationDescription")}</p>
+      <div className="admin-user-actions">
+        <button type="button" className="btn-secondary" data-testid="find-users-to-hide" onClick={() => setHideDialogOpen(true)}>{t("findUsersToHide")}</button>
+        <button type="button" className="btn-secondary" ref={managedUsersButtonRef} data-testid="show-hidden-archived-users" aria-haspopup="dialog" onClick={() => { setQuery(""); setError(null); setShowAllManaged(true); }}>{t("showHiddenArchivedUsers")}</button>
+      </div>
+      {hideDialogOpen && <HideUsersDialog currentUserId={currentUserId} onClose={() => setHideDialogOpen(false)} onUserUpdated={(updated) => setStatusOverrides((previous) => ({ ...previous, [updated.id]: { deprecated: !!updated.deprecated, hidden: !!updated.hidden } }))} />}
+      {showAllManaged ? <Modal title={t("hiddenArchivedUsersTitle")} className="managed-users-dialog" testId="managed-users-dialog" closeDisabled={!!busyId} onClose={closeManagedUsers}>
+        <div className="managed-users-content">{userControls}</div>
+        <ModalActions><button type="button" className="btn-secondary" disabled={!!busyId} onClick={closeManagedUsers}>{t("close")}</button></ModalActions>
+      </Modal> : userControls}
     </section>
   );
 }

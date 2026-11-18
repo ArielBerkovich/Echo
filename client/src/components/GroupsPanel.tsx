@@ -205,7 +205,7 @@ export default function GroupsPanel({ onOpenProfile, openGroup = null }) {
 
   useEffect(() => {
     refresh(openGroup?.id);
-    api.listUsers().then((result) => setUsers(result.users || [])).catch(() => setError(t("peopleLoadError"))).finally(() => setLoadingDirectory(false));
+    api.listAllUsers().then(setUsers).catch(() => setError(t("peopleLoadError"))).finally(() => setLoadingDirectory(false));
   }, [openGroup?.id, refresh]);
 
   const selectedMemberIds = useMemo(() => new Set((selected?.members || []).map((member) => member.id)), [selected?.members]);

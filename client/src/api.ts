@@ -1,3 +1,4 @@
+import { loadUserDirectory } from "./lib/userDirectory.js";
 import { readString, writeString } from "./lib/storage.js";
 import { translations } from "./lib/i18n.js";
 
@@ -274,10 +275,16 @@ export const api = {
     request(`/integrations/azure-devops/${encodeURIComponent(id)}/token`, { method: "POST" }),
   updateAzureDevOpsIntegration: (id, payload) =>
     request(`/integrations/azure-devops/${encodeURIComponent(id)}`, { method: "PATCH", body: payload }),
-  listUsers: ({ page = 0, limit = 100, query } = {}) => {
+  listUsers: ({ page = 0, limit = 100, query, signal } = {}) => {
     const params = new URLSearchParams({ page: String(page), limit: String(limit) });
     if (query) params.set("q", query);
-    return request(`/users?${params}`);
+    return request(`/users?${params}`, { signal });
+  },
+  listAllUsers: ({ signal } = {}) => loadUserDirectory(api.listUsers, { signal }),
+  listAdminUsers: ({ page = 0, limit = 100, query } = {}) => {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (query) params.set("q", query);
+    return request(`/admin/users?${params}`);
   },
   setUserHidden: (userId, hidden) => request(`/admin/users/${encodeURIComponent(userId)}/hidden`, { method: "PATCH", body: { hidden } }),
   setUserDeprecated: (userId, deprecated) => request(`/admin/users/${encodeURIComponent(userId)}/deprecated`, { method: "PATCH", body: { deprecated } }),

@@ -23,6 +23,11 @@ test("directory search applies bounded pagination and an escaped term filter", a
     assert.equal(filter.username.$ne, "system");
     assert.deepEqual(filter.hidden, { $ne: true });
     assert.equal(filter.$or[0].username.source, "ann\\.\\+");
+    await listDirectoryUsers({ query: "ann.+", includeHidden: true });
+    assert.equal(filter.hidden, undefined);
+    assert.equal(filter.$or[0].username.source, "ann\\.\\+");
+    assert.equal(filter.username.$ne, "system");
+
   } finally {
     User.find = originalFind;
   }

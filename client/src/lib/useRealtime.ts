@@ -104,7 +104,7 @@ export function useRealtime({
       if (activeRef.current?.id) socket.emit("channel:join", activeRef.current.id);
 
       const results = await Promise.allSettled([
-        api.listUsers(),
+        api.listAllUsers(),
         api.listChannels(),
         api.listDms(),
         api.listEmojis(),
@@ -114,7 +114,7 @@ export function useRealtime({
       ]);
       if (cancelled || run !== recoveryRun) return;
 
-      if (results[0].status === "fulfilled") setUsers(results[0].value.users || []);
+      if (results[0].status === "fulfilled") setUsers(results[0].value);
       if (results[1].status === "fulfilled") setChannels(results[1].value.channels || []);
       if (results[2].status === "fulfilled") setDms(results[2].value.conversations || []);
       if (results[3].status === "fulfilled") setCustomEmojis(results[3].value.emojis || []);
