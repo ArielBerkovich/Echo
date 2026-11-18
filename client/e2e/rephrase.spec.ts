@@ -3,7 +3,7 @@ import { seedWorkspaceFixture } from "./helpers.js";
 
 test.beforeEach(async ({ page }) => {
   await seedWorkspaceFixture(page);
-  await page.route("**/api/config", route => route.fulfill({ json: { threadSummaries: true } }));
+  await page.route("**/api/config", route => route.fulfill({ json: { threadSummaries: false, rephraseEnabled: true } }));
 });
 
 test("keeps mention nodes intact when rephrasing is unavailable for rich tokens", async ({ page }) => {
@@ -67,8 +67,8 @@ test("shows provider errors and retries without losing the draft", async ({ page
 });
 
 
-test("hides rephrasing when AI is disabled", async ({ page }) => {
-  await page.route("**/api/config", route => route.fulfill({ json: { threadSummaries: false } }));
+test("hides rephrasing by default even when summaries are enabled", async ({ page }) => {
+  await page.route("**/api/config", route => route.fulfill({ json: { threadSummaries: true } }));
   await page.goto("/channels/general");
   await expect(page.getByTestId("composer-editor")).toBeVisible();
   await expect(page.getByTestId("composer-rephrase")).toHaveCount(0);

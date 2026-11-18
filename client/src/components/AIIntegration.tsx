@@ -35,22 +35,29 @@ export default function AIIntegration() {
     <article className="integration-card">
       <button type="button" className="integration-card-main" disabled={!integration || busy} onClick={openSettings}>
         <div className="integration-card-icon ai-integration-icon"><Bot size={34} strokeWidth={1.8} aria-hidden="true" /></div>
-        <div className="integration-card-copy"><h3>AI</h3><p>Thread summaries through an OpenAI-compatible provider.</p></div>
+        <div className="integration-card-copy"><h3>AI</h3><p>Thread summaries and message rephrasing through an OpenAI-compatible provider.</p></div>
       </button>
       <div className="integration-card-footer">
         <button type="button" className="btn-secondary" disabled={!integration || busy} onClick={openSettings}>Configure</button>
-        <span className="integration-card-status" role="status">{query.isPending ? "Loading…" : integration?.enabled ? "Enabled" : "Disabled"}</span>
+        <span className="integration-card-status" role="status">{query.isPending ? "Loading…" : (integration?.enabled || integration?.rephraseEnabled) ? "Enabled" : "Disabled"}</span>
       </div>
       {query.isError && <div role="alert" className="error">{query.error.message}<button type="button" className="btn-secondary" onClick={() => query.refetch()}>Retry</button></div>}
     </article>
     {draft && <Modal className="ai-integration-modal" closeDisabled={busy} title={<span className="ai-integration-title"><span className="ai-integration-icon"><Bot size={26} strokeWidth={1.8} aria-hidden="true" /></span>AI integration</span>} onClose={() => { if (!busy) setDraft(null); }}>
       <form onSubmit={save}>
-        <p className="settings-hint">Enable thread summaries for the workspace. Thread content is sent to the configured provider when someone requests a summary.</p>
+        <p className="settings-hint">Enable AI features for the workspace. Thread content or message drafts are sent to the configured provider when someone requests a summary or rewrite.</p>
         <fieldset disabled={busy} style={{ border: 0, padding: 0, margin: 0 }}>
           <div className="integration-option-row">
             <div><strong id="ai-enable-label">Enable AI thread summaries</strong><span id="ai-enable-hint">{draft.enabled ? "Summaries are enabled for the workspace" : "Summaries are disabled for the workspace"}</span></div>
             <label className={`integration-switch${draft.enabled ? " is-on" : ""}`}>
               <input type="checkbox" role="switch" aria-labelledby="ai-enable-label" aria-describedby="ai-enable-hint" checked={draft.enabled} onChange={event => change("enabled", event.target.checked)} />
+              <span className="integration-switch-track"><span /></span>
+            </label>
+          </div>
+          <div className="integration-option-row">
+            <div><strong id="ai-rephrase-label">Enable AI message rephrasing</strong><span id="ai-rephrase-hint">Disabled by default. Allow workspace members to rephrase message drafts.</span></div>
+            <label className={`integration-switch${draft.rephraseEnabled ? " is-on" : ""}`}>
+              <input type="checkbox" role="switch" aria-labelledby="ai-rephrase-label" aria-describedby="ai-rephrase-hint" checked={!!draft.rephraseEnabled} onChange={event => change("rephraseEnabled", event.target.checked)} />
               <span className="integration-switch-track"><span /></span>
             </label>
           </div>

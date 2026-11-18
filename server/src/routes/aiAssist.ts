@@ -8,7 +8,7 @@ aiAssistRouter.use(requireAuth);
 
 aiAssistRouter.post("/rephrase", async (req, res) => {
   const settings = await getAISettings();
-  if (!settings.enabled) return res.status(404).json({ error: "not found" });
+  if (!settings.rephraseEnabled) return res.status(404).json({ error: "not found" });
   try {
     res.json(await rephraseMessage(req.body?.text, settings));
   } catch (error) {
