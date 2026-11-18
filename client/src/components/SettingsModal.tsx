@@ -10,6 +10,7 @@ import { MAX_DISPLAY_NAME_LENGTH } from "../lib/profile.js";
 import ApiDocsPage from "./ApiDocsPage.js";
 import ProfilePictureDialog from "./ProfilePictureDialog.js";
 import ConfirmDialog from "./ConfirmDialog.js";
+import HideUsersDialog from "./HideUsersDialog.js";
 import { PASSWORD_RULE } from "../lib/password.js";
 import { passwordPairSchema } from "../lib/formSchemas.js";
 import { uploadSizeError } from "../lib/uploads.js";
@@ -1428,9 +1429,9 @@ function ChangePassword() {
   );
 }
 
-// Admin-only: pick a user and issue them a one-time password. The admin shares
-// it; the user logs in with it and is forced to choose their own new password.
+// Admin-only archival and discovery visibility controls.
 function AdminUserDeprecation({ users, currentUserId }) {
+  const [hideDialogOpen, setHideDialogOpen] = useState(false);
   const { t, translateError } = useI18n();
   const [query, setQuery] = useState("");
   const [busyId, setBusyId] = useState(null);
@@ -1438,17 +1439,19 @@ function AdminUserDeprecation({ users, currentUserId }) {
   const [statusOverrides, setStatusOverrides] = useState({});
   const normalizedQuery = query.trim().replace(/^@+/, "").toLowerCase();
   const candidates = normalizedQuery
-    ? users.map((u) => statusOverrides[u.id] === undefined ? u : { ...u, deprecated: statusOverrides[u.id] })
+    ? users.map((u) => statusOverrides[u.id] === undefined ? u : { ...u, ...statusOverrides[u.id] })
       .filter((u) => u.id !== currentUserId && !u.isAdmin &&
         (u.displayName.toLowerCase().includes(normalizedQuery) || u.username.toLowerCase().includes(normalizedQuery))).slice(0, 8)
     : [];
 
-  async function toggle(u) {
+  async function toggle(u, field = "deprecated") {
     setBusyId(u.id);
     setError(null);
     try {
-      const { user: updated } = await api.setUserDeprecated(u.id, !u.deprecated);
-      setStatusOverrides((previous) => ({ ...previous, [u.id]: !!updated.deprecated }));
+      const { user: updated } = await (field === "hidden"
+        ? api.setUserHidden(u.id, !u.hidden)
+        : api.setUserDeprecated(u.id, !u.deprecated));
+      setStatusOverrides((previous) => ({ ...previous, [u.id]: { deprecated: !!updated.deprecated, hidden: !!updated.hidden } }));
     }
     catch (err) { setError(translateError(err.message)); }
     finally { setBusyId(null); }
@@ -1458,12 +1461,16 @@ function AdminUserDeprecation({ users, currentUserId }) {
     <section className="settings-section" data-testid="admin-deprecation">
       <h3>{t("adminDeprecationTitle")}</h3>
       <p className="settings-hint">{t("adminDeprecationDescription")}</p>
+      <button type="button" className="btn-secondary mb-3" data-testid="find-users-to-hide" onClick={() => setHideDialogOpen(true)}>{t("findUsersToHide")}</button>
+      {hideDialogOpen && <HideUsersDialog currentUserId={currentUserId} onClose={() => setHideDialogOpen(false)} onUserUpdated={(updated) => setStatusOverrides((previous) => ({ ...previous, [updated.id]: { deprecated: !!updated.deprecated, hidden: !!updated.hidden } }))} />}
       <input className="settings-input" data-testid="admin-deprecation-search" placeholder={t("findUserByName")} value={query} onChange={(event) => setQuery(event.target.value)} />
       {candidates.length > 0 && <div className="admin-user-results">
         {candidates.map((u) => <div key={u.id} className="search-row" data-testid={`admin-deprecation-user-${u.username}`}>
           <Avatar name={u.displayName} src={u.avatarUrl} size={24} />
           <span className="search-name"><span className="search-name-text">{u.displayName}</span>{u.deprecated && <span className="deprecated-label">{t("deprecatedLabel")}</span>}</span>
           <bdi className="search-handle" dir="ltr">@{u.username}</bdi>
+          {u.hidden && <span className="deprecated-label">{t("hiddenUserLabel")}</span>}
+          <button type="button" className="btn-secondary" disabled={busyId === u.id} onClick={() => toggle(u, "hidden")}>{u.hidden ? t("showUser") : t("hideUser")}</button>
           <button type="button" className="btn-secondary" disabled={busyId === u.id} onClick={() => toggle(u)}>{u.deprecated ? t("restoreUser") : t("deprecateUser")}</button>
         </div>)}
       </div>}

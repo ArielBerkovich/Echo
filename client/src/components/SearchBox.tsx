@@ -250,7 +250,7 @@ const SearchBox = forwardRef(function SearchBox(
     () => [
       ...new Map(
         users
-          .filter((user) => user?.id && user?.username && user.displayName)
+          .filter((user) => !user?.hidden && user?.id && user?.username && user.displayName)
           .map((user) => [user.username.toLowerCase(), user])
       ).values(),
     ],

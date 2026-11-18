@@ -28,6 +28,7 @@ export function listDirectoryUsers({ skip = 0, limit = 100, query: rawQuery }: {
   const filter: Record<string, unknown> = { username: { $ne: "system" } };
   const term = String(rawQuery || "").trim().slice(0, 80);
   if (term) {
+    filter.hidden = { $ne: true };
     const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const match = new RegExp(escaped, "i");
     filter.$or = [{ username: match }, { displayName: match }];

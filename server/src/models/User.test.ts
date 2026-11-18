@@ -26,6 +26,7 @@ describe("User.toPublicJSON", () => {
       "canChangePassword",
       "deprecated",
       "displayName",
+      "hidden",
       "id",
       "isAdmin",
       "mustResetPassword",
@@ -77,4 +78,14 @@ describe("User.toPublicJSON", () => {
     assert.deepEqual(user.starredChannels, []);
     assert.deepEqual(user.vips, []);
   });
+});
+
+ it("keeps visibility independent of archival", () => {
+  for (const deprecated of [false, true]) {
+    for (const hidden of [false, true]) {
+      const user = new User({ username: "person", displayName: "Person", passwordHash: "hash", deprecated, hidden });
+      assert.equal(user.toPublicJSON().hidden, hidden);
+      assert.equal(user.toPublicJSON().deprecated, deprecated);
+    }
+  }
 });

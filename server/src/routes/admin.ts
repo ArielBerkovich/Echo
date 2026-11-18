@@ -28,6 +28,21 @@ adminRouter.patch("/users/:id/deprecated", async (req, res) => {
   res.json({ user });
 });
 
+// Visibility is independent of archival and does not affect account access.
+adminRouter.patch("/users/:id/hidden", async (req, res) => {
+  const { id } = req.params;
+  if (!mongoose.isValidObjectId(id)) return res.status(404).json({ error: "user not found" });
+  if (typeof req.body?.hidden !== "boolean") return res.status(400).json({ error: "hidden must be a boolean" });
+  const target = await User.findById(id);
+  if (!target || target.username === "system") return res.status(404).json({ error: "user not found" });
+  if (target.isAdmin) return res.status(403).json({ error: "admin users cannot be hidden" });
+  target.hidden = req.body.hidden;
+  await target.save();
+  const user = target.toPublicJSON();
+  emitAll("user:update", { user });
+  res.json({ user });
+});
+
 // A readable random one-time password (no easily-confused characters).
 function generateOtp(len = 12) {
   const chars = "abcdefghijkmnpqrstuvwxyzACDEFGHJKLMNPQRSTUVWXYZ23456789";

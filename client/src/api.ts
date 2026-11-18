@@ -279,6 +279,7 @@ export const api = {
     if (query) params.set("q", query);
     return request(`/users?${params}`);
   },
+  setUserHidden: (userId, hidden) => request(`/admin/users/${encodeURIComponent(userId)}/hidden`, { method: "PATCH", body: { hidden } }),
   setUserDeprecated: (userId, deprecated) => request(`/admin/users/${encodeURIComponent(userId)}/deprecated`, { method: "PATCH", body: { deprecated } }),
   listGroups: ({ page = 0, limit = 100 } = {}) =>
     request(`/groups?page=${page}&limit=${limit}`),

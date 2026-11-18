@@ -103,3 +103,11 @@ describe("mention people suggestions", () => {
     assert.deepEqual(matches.map((user) => user.id), ["long"]);
   });
 });
+
+it("omits hidden people from suggestions regardless of archival", () => {
+  const visible = { id: "visible", username: "person.visible", displayName: "Person", deprecated: true };
+  const hidden = [false, true].map((deprecated) => ({ id: String(deprecated), username: "person.hidden", displayName: "Person", hidden: true, deprecated }));
+  for (const query of ["", "person", "Person"]) {
+    assert.deepEqual(peopleSearchSuggestions([...hidden, visible], query), [visible]);
+  }
+});
